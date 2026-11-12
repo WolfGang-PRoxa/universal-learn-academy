@@ -110,7 +110,27 @@ async function lister(racine) {
       : etats.some((e) => e === "maj") ? "maj" : etats.some((e) => e !== "absent") ? "partiel" : "absent";
     return Object.assign({}, p, { court: p.dossier || p.court || niveauCourt(p.niveau || p.titre), etat, taille: membres.reduce((t, c) => t + (c.taille || 0), 0), nombre: membres.length });
   });
-  return { genere: cat.genere, source, cours, packs };
+  // Cursus exemples : des packs rangés chacun dans un dossier (L1, L2, L3…)
+  const cursus = (Array.isArray(cat.cursus) ? cat.cursus : []).map((c) => {
+    const lignes = c.packs.map((x) => ({ pack: x.pack, dossier: x.dossier, cours: (packs.find((p) => p.id === x.pack) || { cours: [] }).cours }));
+    const ids = [...new Set(lignes.flatMap((l) => l.cours))];
+    return Object.assign({}, c, { packs: lignes, nombre: ids.length, taille: cours.filter((x) => ids.includes(x.id)).reduce((t, x) => t + (x.taille || 0), 0) });
+  });
+  return { genere: cat.genere, source, cours, packs, cursus };
+}
+
+/** Vérifie un manifeste de cursus exemple (explore/cursus/<id>.json) ; renvoie les problèmes. */
+function verifierCursus(c, idsPacks) {
+  const pb = [];
+  if (!c || c.format !== "ula-cursus-1") pb.push("format ula-cursus-1 attendu");
+  if (!c || !/^[a-z0-9][a-z0-9-]{0,80}$/.test(String(c.id || ""))) pb.push("id invalide");
+  if (!c || !c.titre) pb.push("titre manquant");
+  if (!c || !Array.isArray(c.packs) || !c.packs.length) pb.push("liste de packs vide");
+  else for (const x of c.packs) {
+    if (!x || !x.pack || (idsPacks && !idsPacks.has(x.pack))) pb.push(`pack inconnu : ${x && x.pack}`);
+    if (!x || !x.dossier || /[\\/:*?"<>|]/.test(x.dossier)) pb.push(`dossier invalide pour ${x && x.pack}`);
+  }
+  return pb;
 }
 
 /** « Licence 1 informatique » -> « L1 » ; sinon le niveau tel quel. */
@@ -225,4 +245,4 @@ function supprimer(racine, id) {
   return { id };
 }
 
-module.exports = { DEPOT, TAG, VERSION_INSTALLEE, telecharger, lister, installer, installerPack, supprimer, estSource, packsDuCatalogue, niveauCourt, verifierPack };
+module.exports = { DEPOT, TAG, VERSION_INSTALLEE, telecharger, lister, installer, installerPack, supprimer, estSource, packsDuCatalogue, niveauCourt, verifierPack, verifierCursus };

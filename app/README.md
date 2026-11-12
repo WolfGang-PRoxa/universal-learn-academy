@@ -15,7 +15,7 @@ Les versions suivantes s'installent d'elles-mêmes au démarrage (voir « Mises 
 
 ## Premier lancement
 
-L'accueil demande le nom d'utilisateur, prérempli avec celui de la session Windows ou Linux : c'est le nom du dossier de son espace. Puis le « Catalogue en ligne » de l'accueil propose les cours ; chaque cours téléchargé se range dans un dossier de son cursus (voir `_outils/ula/README.md`).
+L'accueil demande le nom d'utilisateur, prérempli avec celui de la session Windows ou Linux : c'est le nom du dossier de son espace. Il propose aussi un cursus exemple (« Informatique » : dossiers L1, L2, L3 avec tous leurs cours) et de télécharger ses cours tout de suite, en arrière-plan. Puis le « Catalogue en ligne » de l'accueil propose les cours ; chaque cours téléchargé se range dans un dossier de son cursus (voir `_outils/ula/README.md`).
 
 ```
 Documents/ULA/                    dossier des données (par défaut)
@@ -115,6 +115,8 @@ npm run check      # vérifications : syntaxe, règles, paquet/catalogue/proposi
 npm run dist       # construit installeur Windows et AppImage dans dist/ sans les publier (-- --win ou -- --linux pour un seul)
 npm run catalogue  # construit le catalogue dans app/.catalogue (-- --publier pour l'envoyer)
 ```
+
+Packs et cursus exemples (catalogue, côté développeur seulement) : `npm run catalogue -- pack-ajouter | pack-ajouter-cours | cursus-ajouter | cursus-ajouter-pack | verifier`, voir `_outils/ula/README.md`.
 
 `ULA_USER_DATA=<dossier>` lance l'application avec un autre dossier de paramètres (essais) ; `ULA_CATALOGUE=<dossier>` lui fait lire un catalogue local (par exemple `app/.catalogue`).
 

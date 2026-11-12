@@ -74,10 +74,12 @@
         x = el("select");
         c.choix.forEach(function (ch) { var op = el("option", null, ch.texte); op.value = ch.valeur; x.appendChild(op); });
       } else if (c.long) x = el("textarea");
+      else if (c.case) { x = el("input"); x.type = "checkbox"; x.checked = c.valeur !== false; }
       else { x = el("input"); x.type = "text"; }
       x.id = id;
-      if (c.valeur != null) x.value = c.valeur;
-      zone.appendChild(l); zone.appendChild(x);
+      if (c.valeur != null && !c.case) x.value = c.valeur;
+      if (c.case) { l.textContent = ""; l.className = "ula-case"; l.appendChild(x); l.appendChild(document.createTextNode(" " + c.libelle)); zone.appendChild(l); }
+      else { zone.appendChild(l); zone.appendChild(x); }
       champs[c.nom] = x;
     });
     var err = document.getElementById("dialogue-erreur");
@@ -96,7 +98,7 @@
         if (d.open) d.close(valeur || "");
         if (valeur !== "ok") return resolve(null);
         var r = {};
-        Object.keys(champs).forEach(function (k) { r[k] = champs[k].value; });
+        Object.keys(champs).forEach(function (k) { r[k] = champs[k].type === "checkbox" ? champs[k].checked : champs[k].value; });
         resolve(r);
       }
       var form = d.querySelector("form");
@@ -119,6 +121,7 @@
         progression = {};
         (r[2].matieres || []).forEach(function (m) { if (m.id) progression[m.id] = m; });
         rendre();
+        api("GET", "ula/catalogue/travail").then(function (t) { if (t.actif) suivreTravail(); }).catch(function () {});
       })
       .catch(function (e) {
         main.querySelectorAll("section, #attente").forEach(function (x) { x.remove(); });
@@ -164,15 +167,26 @@
       var champ = el("input");
       champ.type = "text"; champ.value = etat.session; champ.setAttribute("aria-label", "Nom d'utilisateur");
       champ.className = "ula-champ";
+      var choix = el("select");
+      choix.className = "ula-champ"; choix.setAttribute("aria-label", "Cursus exemple");
+      var aucun = el("option", null, "Cursus exemple : aucun"); aucun.value = ""; choix.appendChild(aucun);
+      var caseL = el("label", "ula-case");
+      var caseT = el("input"); caseT.type = "checkbox"; caseT.checked = true;
+      caseL.appendChild(caseT); caseL.appendChild(document.createTextNode(" Télécharger les cours maintenant"));
       var ok = el("button", "ula-bouton principal", "Créer mon profil");
       ok.type = "submit";
-      form.appendChild(champ); form.appendChild(ok);
+      form.appendChild(champ); form.appendChild(choix); form.appendChild(caseL); form.appendChild(ok);
+      cursusExemples().then(function (liste) {
+        liste.forEach(function (c) { var o = el("option", null, "Cursus exemple : " + c.titre + " (" + c.nombre + " cours, " + taille(c.taille) + ")"); o.value = c.id; choix.appendChild(o); });
+        if (liste.length) choix.value = liste[0].id;
+      });
       form.addEventListener("submit", function (e) {
         e.preventDefault();
         ok.disabled = true;
-        api("POST", "ula/profils", { nom: champ.value }).then(charger).catch(afficherErreur).then(function () { ok.disabled = false; });
+        creerProfil2(champ.value, choix.value, caseT.checked).catch(afficherErreur).then(function () { ok.disabled = false; });
       });
       s.appendChild(form);
+      s.appendChild(el("p", "ula-note", "Un cursus exemple range tout de suite les cours d'une formation dans tes dossiers (L1, L2, L3) ; « aucun » pour composer ton cursus toi-même."));
       return s;
     }
     var liste = el("div", "ula-profils");
@@ -202,9 +216,57 @@
     return s;
   }
 
+  // Cursus exemples du catalogue en ligne (liste vide si le catalogue ne répond pas)
+  function cursusExemples() {
+    return api("GET", "ula/catalogue").then(function (c) { catalogue = catalogue || c; return c.cursus || []; }).catch(function () { return []; });
+  }
+
   function creerProfil(valeur) {
-    return demander({ titre: "Nouveau profil", texte: "Nom d'utilisateur (le nom du dossier de ton espace).", champs: [{ nom: "nom", libelle: "Nom d'utilisateur", valeur: valeur || "" }], ok: "Créer" })
-      .then(function (r) { if (r) return api("POST", "ula/profils", { nom: r.nom }).then(charger); });
+    return cursusExemples().then(function (liste) {
+      var options = [{ valeur: "", texte: "Aucun : je compose mon cursus" }].concat(liste.map(function (c) { return { valeur: c.id, texte: c.titre + " (" + c.nombre + " cours, " + taille(c.taille) + ")" }; }));
+      return demander({
+        titre: "Nouveau profil",
+        texte: "Nom d'utilisateur (le nom du dossier de ton espace)." + (liste.length ? "" : "\nLe catalogue en ligne ne répond pas : le cursus exemple pourra être ajouté plus tard."),
+        champs: [{ nom: "nom", libelle: "Nom d'utilisateur", valeur: valeur || "" }, { nom: "cursus", libelle: "Cursus exemple", choix: options }, { nom: "telecharger", libelle: "Télécharger les cours maintenant", case: true, valeur: true }],
+        ok: "Créer"
+      }).then(function (r) { if (r) return creerProfil2(r.nom, r.cursus, r.telecharger); });
+    });
+  }
+
+  function creerProfil2(nom, cursus, telecharger) {
+    return api("POST", "ula/profils", { nom: nom, cursus: cursus || null, telecharger: telecharger !== false }).then(function (r) {
+      return charger().then(function () { return compteRenduCursus(r.cursusExemple); });
+    });
+  }
+
+  function compteRenduCursus(x) {
+    if (!x) return;
+    if (x.erreur) return demander({ titre: "Profil créé", texte: x.erreur, seulementOk: true });
+    if (x.telechargement) suivreTravail();
+    var texte = "Cursus « " + x.titre + " » : " + x.cours + " cours rangés dans " + x.dossiers.map(function (d) { return d.split("/").pop(); }).join(", ") + ".";
+    if (x.telechargement) texte += "\nTéléchargement de " + x.aTelecharger + " cours en arrière-plan : tu peux continuer pendant ce temps.";
+    else if (x.aTelecharger) texte += "\n" + x.aTelecharger + " cours restent à télécharger (« Tout télécharger » dans ton cursus).";
+    return demander({ titre: "Cursus prêt", texte: texte, seulementOk: true });
+  }
+
+  // Bandeau des téléchargements en arrière-plan (cursus exemple, « Tout télécharger »)
+  var suivi = null;
+  function suivreTravail() {
+    if (suivi) return;
+    var bandeau = el("p", "ula-attente");
+    bandeau.id = "ula-travail";
+    main.insertBefore(bandeau, main.querySelector("section"));
+    suivi = setInterval(function () {
+      api("GET", "ula/catalogue/travail").then(function (t) {
+        var b = document.getElementById("ula-travail") || bandeau;
+        if (!b.isConnected) main.insertBefore(b, main.querySelector("section"));
+        if (t.actif) { b.textContent = "Téléchargement des cours : " + (t.faits + t.deja) + "/" + t.total + (t.enCours ? " · " + t.enCours + "…" : ""); return; }
+        clearInterval(suivi); suivi = null; b.remove();
+        charger().then(function () {
+          if (t.erreurs && t.erreurs.length) demander({ titre: "Téléchargement incomplet", texte: t.erreurs.length + " cours n'ont pas pu être téléchargés :\n- " + t.erreurs.map(function (e) { return e.id + " : " + e.erreur; }).join("\n- ") + "\n\n« Tout télécharger » reprend seulement ceux-là.", seulementOk: true });
+        });
+      }).catch(function () {});
+    }, 1500);
   }
 
   /* -- Cursus ---------------------------------------------------------------------- */
@@ -248,8 +310,8 @@
         if (info) ligne.appendChild(el("span", "ula-cours-info", info));
       } else {
         ligne.appendChild(el("span", "ula-cours-titre", n.nom));
-        ligne.appendChild(el("span", "ula-absent", "cours « " + n.cours + " » non installé"));
-        outils.appendChild(lienBouton("Catalogue", "#catalogue"));
+        ligne.appendChild(el("span", "ula-absent", "à télécharger"));
+        if (!etat.source) outils.appendChild(bouton("Télécharger", "discret", function () { return api("POST", "ula/catalogue/installer-tout", { ids: [n.cours] }).then(suivreTravail); }));
       }
     } else if (n.type === "perso") {
       ligne.appendChild(el("span", "ula-pastille"));
@@ -304,6 +366,9 @@
       s.appendChild(ul);
     }
     var act = el("div", "ula-actions");
+    var manquants = [];
+    (function p(n) { if (n && n.type === "lien" && !coursInstalle(n.cours)) manquants.push(n.cours); ((n && n.enfants) || []).forEach(p); })(a);
+    if (manquants.length && !etat.source) act.appendChild(bouton("Tout télécharger (" + manquants.length + " cours)", "principal", function () { return api("POST", "ula/catalogue/installer-tout", { ids: manquants }).then(suivreTravail); }));
     act.appendChild(bouton("+ Dossier", null, function () { return nouveauDossier(etat.profil); }));
     act.appendChild(bouton("+ Cours", null, function () { return ajouterCours(null, etat.profil); }));
     s.appendChild(act);
@@ -426,6 +491,26 @@
   function taille(o) { return (o / 1e6).toFixed(1).replace(".", ",") + " Mo"; }
 
   // Packs par niveau d'étude : en tête du catalogue
+  function rendreCursus(zone) {
+    if (!catalogue.cursus || !catalogue.cursus.length) return;
+    zone.appendChild(el("h3", null, "Cursus exemples"));
+    var ul = el("ul", "ula-cartes");
+    catalogue.cursus.forEach(function (c) {
+      var li = el("li", "ula-carte");
+      li.appendChild(el("h3", null, "Cursus " + c.titre));
+      li.appendChild(el("p", "ula-cours-info", [c.origine, c.packs.map(function (x) { return x.dossier; }).join(", "), c.nombre + " cours", taille(c.taille)].filter(Boolean).join(" · ")));
+      if (c.description) li.appendChild(el("p", "ula-note", c.description));
+      var act = el("div", "ula-actions");
+      if (etat.profil) act.appendChild(bouton("Ajouter à mon cursus…", "principal", function () {
+        return demander({ titre: "Cursus " + c.titre, texte: "Les dossiers " + c.packs.map(function (x) { return x.dossier; }).join(", ") + " sont créés dans ton espace avec les liens vers leurs cours ; ce qui y est déjà reste en place.", champs: [{ nom: "telecharger", libelle: "Télécharger les cours maintenant", case: true, valeur: !catalogue.source }], ok: "Ajouter" })
+          .then(function (r) { if (r) return api("POST", "ula/cursus/appliquer", { id: c.id, telecharger: r.telecharger }).then(function (x) { return charger().then(function () { return compteRenduCursus(x); }); }); });
+      }));
+      li.appendChild(act);
+      ul.appendChild(li);
+    });
+    zone.appendChild(ul);
+  }
+
   function rendrePacks(zone) {
     if (!catalogue.packs || !catalogue.packs.length) return;
     zone.appendChild(el("h3", null, "Packs"));
@@ -489,6 +574,7 @@
 
   function rendreCatalogue(zone) {
     zone.innerHTML = "";
+    rendreCursus(zone);
     rendrePacks(zone);
     var ul = el("ul", "ula-cartes");
     catalogue.cours.forEach(function (c) {

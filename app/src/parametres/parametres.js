@@ -403,9 +403,18 @@ function carteProfils() {
     try { e = await api.profils.etat(); }
     catch (err) { zone.replaceChildren(etat('erreur', messageErreur(err)), h('div', { class: 'ligne' }, bouton('Réessayer', { genre: 'leger', onClick: charger }))); return; }
     const nouveau = h('input', { type: 'text', value: e.profils.length ? '' : e.session, placeholder: e.session, spellcheck: 'false' });
+    const choixCursus = h('select', {}, h('option', { value: '' }, 'Aucun : je compose mon cursus'));
+    const telecharger = h('input', { type: 'checkbox', checked: true });
+    api.profils.cursus().then((liste) => {
+      for (const c of liste) choixCursus.append(h('option', { value: c.id }, `${c.titre} (${c.nombre} cours)`));
+    });
     const creer = async () => {
-      try { await api.profils.creer(nouveau.value || e.session); note('Profil créé et choisi.'); charger(); }
-      catch (err) { note(messageErreur(err), { erreur: true, duree: 6000 }); }
+      try {
+        const r = await api.profils.creer(nouveau.value || e.session, choixCursus.value || null, telecharger.checked);
+        const x = r.cursusExemple;
+        note(x && x.erreur ? x.erreur : x ? `Profil créé : cursus « ${x.titre} » rangé (${x.cours} cours)${x.telechargement ? ', téléchargement en cours (suivi sur l’accueil)' : ''}.` : 'Profil créé et choisi.', { duree: 8000, erreur: Boolean(x && x.erreur) });
+        charger();
+      } catch (err) { note(messageErreur(err), { erreur: true, duree: 6000 }); }
     };
     const liste = e.profils.map((p) => h('label', {},
       h('input', { type: 'radio', name: 'profil', value: p.nom, checked: p.nom === e.profil, onChange: async () => {
@@ -418,6 +427,8 @@ function carteProfils() {
       e.profils.length ? h('div', { class: 'choix' }, ...liste) : etat('alerte', 'Aucun profil : en créer un pour enregistrer ta progression.'),
       h('div', { class: 'ligne' },
         h('label', { class: 'champ' }, h('span', {}, 'Nouveau profil (nom d’utilisateur)'), nouveau),
+        h('label', { class: 'champ' }, h('span', {}, 'Cursus exemple'), choixCursus),
+        h('label', {}, telecharger, ' Télécharger les cours maintenant'),
         bouton('Ajouter', { genre: e.profils.length ? '' : 'principal', onClick: creer })),
       e.profil ? h('div', { class: 'ligne' },
         h('label', { class: 'champ' }, h('span', {}, `Renommer « ${e.profil} »`), renommer),

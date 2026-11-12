@@ -4,7 +4,9 @@
 
      GET  etat                         racine, profils, profil actif, cours installés
      PUT  profil { nom }               choisit le profil actif (mémorisé sur le poste)
-     POST profils { nom }              crée un profil (et le choisit)
+     POST profils { nom, cursus, telecharger }  crée un profil (et le choisit), avec un cursus exemple
+     POST cursus/appliquer { id, telecharger }  range un cursus exemple dans l'espace du profil actif
+     POST catalogue/installer-tout { ids }       téléchargements en arrière-plan ; GET catalogue/travail : leur état
      POST profils/renommer { ancien, nouveau }
      GET  cursus                       arbre du cursus du profil actif, avec les cours
      POST cursus/dossier { parent, nom }        crée un dossier de cursus
@@ -54,6 +56,59 @@ function ouvrirDossier(abs) {
 
 let installations = new Map();   // id -> { etat, journal, erreur }
 
+/* Téléchargements en arrière-plan (cursus exemple, « Tout télécharger ») : une seule file
+   à la fois ; des cours demandés pendant qu'elle tourne s'y ajoutent ; un cours déjà
+   installé à la bonne version n'est pas retéléchargé ; un échec n'arrête pas les autres. */
+let travail = null;
+function lancerTravail(RACINE, ids) {
+  if (travail && !travail.fin) {
+    for (const id of ids) if (!travail.ids.includes(id)) travail.ids.push(id);
+    return travail;
+  }
+  travail = { ids: [...new Set(ids)], faits: [], deja: [], erreurs: [], enCours: null, debut: Date.now(), fin: null };
+  const t = travail;
+  (async () => {
+    for (let i = 0; i < t.ids.length; i++) {
+      const id = t.ids[i];
+      t.enCours = id;
+      try {
+        const { cours } = await catalogue.lister(RACINE);
+        const c = cours.find((x) => x.id === id);
+        if (!c) { t.erreurs.push({ id, erreur: "absent du catalogue" }); continue; }
+        if (c.etat === "installe" || c.etat === "source") { t.deja.push(id); continue; }
+        await catalogue.installer(RACINE, id);
+        t.faits.push(id);
+      } catch (e) { t.erreurs.push({ id, erreur: e.message }); }
+    }
+    t.enCours = null;
+    t.fin = Date.now();
+  })();
+  return t;
+}
+function etatTravail() {
+  if (!travail) return { actif: false };
+  return { actif: !travail.fin, total: travail.ids.length, faits: travail.faits.length, deja: travail.deja.length, erreurs: travail.erreurs, enCours: travail.enCours, fin: travail.fin };
+}
+
+/** Range un cursus exemple dans l'espace d'un profil (dossiers et liens), et lance au besoin
+    le téléchargement de ses cours. Le catalogue en ligne doit répondre. */
+async function appliquerCursus(RACINE, profil, id, telecharger) {
+  const cat = await catalogue.lister(RACINE);
+  const cu = cat.cursus.find((c) => c.id === id);
+  if (!cu) throw new Error(`Cursus exemple inconnu : ${id}`);
+  const titres = Object.fromEntries(cat.cours.map((c) => [c.id, c.titre]));
+  const dossiers = [];
+  const ids = [];
+  for (const l of cu.packs) {
+    const r = espace.ajouterPack(RACINE, profil, l.cours, l.dossier, titres);
+    dossiers.push(r.dossier);
+    ids.push(...l.cours);
+  }
+  const aTelecharger = cat.source ? [] : cat.cours.filter((c) => ids.includes(c.id) && (c.etat === "absent" || c.etat === "maj")).map((c) => c.id);
+  if (telecharger && aTelecharger.length) lancerTravail(RACINE, aTelecharger);
+  return { cursus: id, titre: cu.titre, dossiers, cours: [...new Set(ids)].length, aTelecharger: aTelecharger.length, telechargement: Boolean(telecharger && aTelecharger.length) };
+}
+
 async function api(route, req, res, o) {
   const { RACINE } = o.chemins;
   const m = req.method;
@@ -71,8 +126,24 @@ async function api(route, req, res, o) {
       const b = await corps();
       const n = espace.creerProfil(RACINE, b.nom);
       espace.choisirProfil(RACINE, n);
-      return ok(etat(RACINE));
+      // Cursus exemple : le profil est créé même si le catalogue ne répond pas
+      let cursusExemple = null;
+      if (b.cursus) {
+        try { cursusExemple = await appliquerCursus(RACINE, n, String(b.cursus), b.telecharger !== false); }
+        catch (e) { cursusExemple = { erreur: `Profil créé, mais le cursus exemple n'a pas pu être rangé (${e.message}). Il s'ajoute plus tard depuis le catalogue en ligne de l'accueil.` }; }
+      }
+      return ok(Object.assign(etat(RACINE), { cursusExemple }));
     }
+    if (route === "cursus/appliquer" && m === "POST") {
+      const b = await corps();
+      return ok(await appliquerCursus(RACINE, profilRequis(RACINE), String(b.id), b.telecharger !== false));
+    }
+    if (route === "catalogue/installer-tout" && m === "POST") {
+      const b = await corps();
+      lancerTravail(RACINE, (Array.isArray(b.ids) ? b.ids : []).map(String));
+      return ok(etatTravail());
+    }
+    if (route === "catalogue/travail" && m === "GET") return ok(etatTravail());
     if (route === "profils/renommer" && m === "POST") {
       const b = await corps();
       espace.renommerProfil(RACINE, String(b.ancien), b.nouveau);

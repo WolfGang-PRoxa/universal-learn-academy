@@ -17,6 +17,9 @@
 // contrôle est bloquant : règles personnelles, empreintes des fichiers de TP, adresse
 // électronique de l'identité git dans les fichiers texte.
 //
+// Packs et cursus se gèrent en ligne de commande : npm run catalogue -- cursus-ajouter,
+// pack-ajouter, cursus-ajouter-pack, pack-ajouter-cours, verifier (manifestes.mjs).
+//
 // Une archive n'est reconstruite et renvoyée que si le contenu du cours a changé
 // (« version » : empreinte du contenu) ; catalogue.json est envoyé en dernier.
 
@@ -30,7 +33,7 @@ import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
 const regles = require('./contenu-regles.cjs');
 const zip = require('../../_outils/ula/lib/zip.js');
-const { verifierPack } = require('../../_outils/ula/lib/catalogue.js');
+const { verifierPack, verifierCursus } = require('../../_outils/ula/lib/catalogue.js');
 const { DEPOT_PUBLIC } = require('../src/depot.js');
 
 const app = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -119,6 +122,20 @@ export function packsDuDepot(idsCours) {
   return packs;
 }
 
+/** Cursus exemples (explore/cursus/<id>.json suivis par git), vérifiés contre les packs. */
+export function cursusDuDepot(idsPacks) {
+  const fichiers = git(['ls-files', '--', 'explore/cursus/*.json']).toString('utf8').trim().split('\n').filter(Boolean);
+  const problemes = [];
+  const liste = fichiers.map((f) => {
+    const c = JSON.parse(fs.readFileSync(path.join(racine, f), 'utf8'));
+    if (path.posix.basename(f, '.json') !== c.id) problemes.push(`${f} : id « ${c.id} » différent du nom du fichier`);
+    for (const pb of verifierCursus(c, idsPacks)) problemes.push(`${f} : ${pb}`);
+    return { id: c.id, titre: c.titre, origine: c.origine || '', description: c.description || '', packs: c.packs.map((x) => ({ pack: x.pack, dossier: x.dossier })) };
+  });
+  if (problemes.length) throw new Error(`Cursus invalides :\n- ${problemes.join('\n- ')}`);
+  return liste;
+}
+
 function catalogueEnLigne() {
   const r = spawnSync('gh', ['release', 'download', TAG, '--repo', depot, '--pattern', 'catalogue.json', '--output', '-'], { encoding: 'utf8', maxBuffer: 1 << 26 });
   if (r.status !== 0) return null;
@@ -168,10 +185,11 @@ export function construire({ publier = false } = {}) {
     cours: entrees.sort((a, b) => a.domaine.localeCompare(b.domaine) || a.id.localeCompare(b.id)),
     packs: packsDuDepot(new Set(entrees.map((e) => e.id))),
   };
+  catalogue.cursus = cursusDuDepot(new Set(catalogue.packs.map((p) => p.id)));
   const fichierCatalogue = path.join(sortie, 'catalogue.json');
   fs.writeFileSync(fichierCatalogue, JSON.stringify(catalogue, null, 1) + '\n');
   const total = entrees.reduce((s, e) => s + e.taille, 0);
-  console.log(`✓ ${entrees.length} cours (${(total / 1e6).toFixed(0)} Mo), ${catalogue.packs.length} pack(s), ${aEnvoyer.length} archive(s) à envoyer, contrôle des données personnelles passé`);
+  console.log(`✓ ${entrees.length} cours (${(total / 1e6).toFixed(0)} Mo), ${catalogue.packs.length} pack(s), ${catalogue.cursus.length} cursus, ${aEnvoyer.length} archive(s) à envoyer, contrôle des données personnelles passé`);
 
   if (!publier) { console.log('  Aperçu seulement (app/.catalogue) : relancer avec --publier pour envoyer.'); return catalogue; }
 
@@ -202,6 +220,12 @@ export function construire({ publier = false } = {}) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  // Packs et cursus exemples : npm run catalogue -- <commande> (voir manifestes.mjs)
+  const { COMMANDES, executer } = await import('./manifestes.mjs');
+  if (COMMANDES.includes(process.argv[2])) {
+    try { process.exit(executer(process.argv[2], process.argv.slice(3))); }
+    catch (e) { console.error(`✗ ${e.message}`); process.exit(1); }
+  }
   try { construire({ publier: process.argv.includes('--publier') }); }
   catch (e) { console.error(`\n✗ ${e.message}`); process.exit(1); }
 }

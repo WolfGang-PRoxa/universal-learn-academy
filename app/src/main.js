@@ -286,7 +286,8 @@ function enregistrerIpc() {
   // Profils : par l'API du serveur local (extension ula), comme l'accueil
   traiter("profils:etat", () => apiQuiz("GET", "ula/etat"));
   traiter("profils:choisir", (nom) => apiQuiz("PUT", "ula/profil", { nom: String(nom) }));
-  traiter("profils:creer", (nom) => apiQuiz("POST", "ula/profils", { nom: String(nom) }));
+  traiter("profils:creer", (nom, cursus, telecharger) => apiQuiz("POST", "ula/profils", { nom: String(nom), cursus: cursus ? String(cursus) : null, telecharger: telecharger !== false }));
+  traiter("profils:cursus", () => apiQuiz("GET", "ula/catalogue").then((c) => c.cursus || []).catch(() => []));
   traiter("profils:renommer", (ancien, nouveau) => apiQuiz("POST", "ula/profils/renommer", { ancien: String(ancien), nouveau: String(nouveau) }));
 
   traiter("raccourcis:statut", () => raccourcis.statut());

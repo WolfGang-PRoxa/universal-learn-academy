@@ -260,6 +260,17 @@ const zip = require('../../_outils/ula/lib/zip.js');
     verifier(!pb.length && n === p.id + '.json', `explore/packs/${n} invalide : ${pb.join(', ')}`);
   }
   verifier(cat.verifierPack({ format: 'ula-pack-1', id: 'x', titre: 'X', cours: ['inconnu', 'inconnu'] }, ids).length >= 2, 'Pack avec cours inconnu ou en double accepté.');
+  // Cursus exemples : uniquement des packs existants, un dossier valide pour chacun
+  const idsPacks = new Set(packs.map((n) => n.replace(/\.json$/, '')));
+  for (const n of fs.readdirSync(path.join(racine, 'explore', 'cursus')).filter((x) => x.endsWith('.json'))) {
+    const c = JSON.parse(fs.readFileSync(path.join(racine, 'explore', 'cursus', n), 'utf8'));
+    const pb = cat.verifierCursus(c, idsPacks);
+    verifier(!pb.length && n === c.id + '.json', `explore/cursus/${n} invalide : ${pb.join(', ')}`);
+  }
+  verifier(cat.verifierCursus({ format: 'ula-cursus-1', id: 'x', titre: 'X', packs: [{ pack: 'inconnu', dossier: 'a/b' }] }, idsPacks).length >= 2, 'Cursus avec pack inconnu accepté.');
+  const { verifierTout } = await import('./manifestes.mjs');
+  const pbManifestes = verifierTout();
+  verifier(!pbManifestes.length, `Packs ou cursus invalides : ${pbManifestes.join(' ; ')}`);
   // Ranger un pack dans le cursus : dossier créé, cours déjà présents laissés à leur place
   const r = path.join(temp, 'ula-packs');
   const ecrire = (c, t) => { const f = path.join(r, ...c.split('/')); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, t); };

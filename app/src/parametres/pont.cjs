@@ -27,7 +27,8 @@ contextBridge.exposeInMainWorld("studies", {
   profils: {
     etat: () => appeler("profils:etat"),
     choisir: (nom) => appeler("profils:choisir", nom),
-    creer: (nom) => appeler("profils:creer", nom),
+    creer: (nom, cursus, telecharger) => appeler("profils:creer", nom, cursus, telecharger),
+    cursus: () => appeler("profils:cursus"),
     renommer: (ancien, nouveau) => appeler("profils:renommer", ancien, nouveau)
   },
 

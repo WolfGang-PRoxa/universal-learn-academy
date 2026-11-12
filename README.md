@@ -15,7 +15,7 @@ L'application se met à jour d'elle-même au démarrage (option dans ses paramè
 
 ## Profils et cursus
 
-Au premier lancement, l'application demande un nom d'utilisateur (celui de la session est proposé). Plusieurs profils peuvent partager un poste. Chacun range les cours du catalogue dans son cursus, avec les dossiers qu'il veut (L1, L2, Prépa, Perso…) : un cours y est un lien, et sa progression (tentatives, TD, TP, suivi) s'enregistre à côté, dans le dossier du profil. Une mise à jour d'un cours ne touche jamais au travail.
+Au premier lancement, l'application demande un nom d'utilisateur (celui de la session est proposé) et propose un cursus exemple : « Informatique » range d'un coup les trois années de licence dans les dossiers L1, L2 et L3, et peut télécharger tous leurs cours en arrière-plan. Plusieurs profils peuvent partager un poste. Chacun range les cours du catalogue dans son cursus, avec les dossiers qu'il veut (L1, L2, Prépa, Perso…) : un cours y est un lien, et sa progression (tentatives, TD, TP, suivi) s'enregistre à côté, dans le dossier du profil. Une mise à jour d'un cours ne touche jamais au travail.
 
 ```
 ULA/                         (Documents/ULA par défaut)

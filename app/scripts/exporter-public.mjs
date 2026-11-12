@@ -51,7 +51,7 @@ const fichiers = new Map();   // chemin public -> Buffer
 const suivis = git(racine, ['ls-files', '-z']).split('\0').filter(Boolean);
 for (const c of coursDuDepot()) for (const f of fichiersDuCours(c.dossier, tp)) fichiers.set(f.chemin, f.donnees);
 for (const c of suivis) {
-  const garder = /^explore\/[^/]+\/index\.html$/.test(c) || /^explore\/packs\/[^/]+\.json$/.test(c) || (c.startsWith('_outils/') && !regles.exclusion(c)) || RACINE_PUBLIQUE.includes(c)
+  const garder = /^explore\/[^/]+\/index\.html$/.test(c) || /^explore\/(packs|cursus)\/[^/]+\.json$/.test(c) || (c.startsWith('_outils/') && !regles.exclusion(c)) || RACINE_PUBLIQUE.includes(c)
     || (c.startsWith('app/') && !APP_PRIVE.some((m) => m.test(c)));
   const abs = path.join(racine, ...c.split('/'));
   if (garder && fs.existsSync(abs)) fichiers.set(c, fs.readFileSync(abs));

@@ -9,6 +9,7 @@ ula/                                  racine des données
 ├── index.html                        accueil statique (pages ouvertes depuis le disque)
 ├── explore/                          catalogue, en lecture seule
 │   ├── packs/<id>.json               packs par niveau d'étude (ula-pack-1)
+│   ├── cursus/<id>.json              cursus exemples : des packs rangés en dossiers (ula-cursus-1)
 │   └── <domaine>/                    informatique, mathematiques, langues…
 │       ├── index.html                accueil du domaine (index_niveau.py ; dynamique s'il manque)
 │       └── <cours>/                  un cours : ula-cours.json, generated_courses/, generated_quizzes/,
@@ -37,7 +38,7 @@ Règle d'or : **rien de ce que l'utilisateur produit n'est écrit dans `explore/
 - `/index.html` est l'accueil dynamique (`accueil.html`) : profils, cursus, cours installés, catalogue en ligne, outils. Un accueil de domaine absent (cours téléchargés) l'est aussi, filtré sur le domaine.
 - Une page d'un cours non installé renvoie au catalogue.
 
-Routes de l'extension (`serveur/extension.js`) : `POST catalogue/installer-pack`, `POST cursus/ajouter-pack`, `GET etat`, `PUT profil`, `POST profils`, `POST profils/renommer`, `GET cursus`, `POST cursus/dossier|renommer|deplacer|retirer|ajouter`, `GET catalogue`, `POST catalogue/installer|supprimer`, `POST proposer`, `POST ouvrir`.
+Routes de l'extension (`serveur/extension.js`) : `POST profils` (avec `cursus`, `telecharger`), `POST cursus/appliquer`, `POST catalogue/installer-tout`, `GET catalogue/travail`, `POST catalogue/installer-pack`, `POST cursus/ajouter-pack`, `GET etat`, `PUT profil`, `POST profils`, `POST profils/renommer`, `GET cursus`, `POST cursus/dossier|renommer|deplacer|retirer|ajouter`, `GET catalogue`, `POST catalogue/installer|supprimer`, `POST proposer`, `POST ouvrir`.
 
 ## Catalogue à la demande
 
@@ -54,6 +55,37 @@ Un pack regroupe les cours d'un niveau (« Licence 1 informatique ») : `explore
 Dans l'accueil, la section « Packs » est en tête du catalogue en ligne, avec le nombre de cours et la taille totale. « Télécharger le pack » installe les cours un par un, avec une progression globale ; un cours en échec n'arrête pas les autres, et relancer le pack ne reprend que ceux qui manquent. Puis « Ranger dans mon cursus » ajoute les cours dans un dossier (nom proposé modifiable, `L1`…) : un cours déjà dans le cursus reste où il est, rien n'est écrasé.
 
 Packs actuels : Licence 1, 2 et 3 informatique (toutes les matières de chaque année, y compris mathématiques, langues, communication et projet). Un cours accepté se range dans un pack avec `npm run accepter-proposition -- <zip> --pack <id>` ; `npm run catalogue` vérifie que chaque pack ne cite que des cours existants.
+
+## Cursus exemples
+
+Un cursus exemple regroupe des packs, chacun rangé dans un dossier : `explore/cursus/<id>.json`, format `ula-cursus-1` (`id`, `titre`, `origine`, `description`, liste ordonnée `packs` de `{ pack, dossier }`). Aujourd'hui : « Informatique » = packs Licence 1, 2 et 3 informatique dans `L1`, `L2`, `L3`. Publié dans `catalogue.json` comme les packs.
+
+À la création d'un profil (premier lancement, « Nouveau profil… » de l'accueil, ou paramètres de l'application) : choix « Cursus exemple » (aucun, ou un cursus du catalogue) et case « Télécharger les cours maintenant », cochée par défaut. Avec un cursus, les dossiers sont créés avec les liens vers tous les cours de chaque pack ; case cochée, les cours se téléchargent en arrière-plan (bandeau de progression sur l'accueil, l'application reste utilisable, un cours en échec n'arrête pas les autres, un cours déjà installé n'est pas retéléchargé) ; décochée, chaque cours du cursus affiche « à télécharger », avec « Tout télécharger » plus tard. Si le catalogue en ligne ne répond pas, le profil est créé quand même, avec un message ; le cursus s'ajoute ensuite depuis la section « Cursus exemples » du catalogue. Fonctionne pareil avec `lancer.bat` (même accueil, même serveur) ; dans le dépôt source, les liens sont créés et rien n'est téléchargé.
+
+## Côté développeur : gérer packs et cursus
+
+Les packs et les cursus exemples sont réservés au développeur du catalogue : l'application les lit dans `catalogue.json` (lecture seule), sans aucune interface pour les modifier. Un nouveau cursus, un pack ajouté à un cursus ou une matière ajoutée à un pack apparaît chez les utilisateurs dès la publication du catalogue, sans nouvelle version de l'application.
+
+Depuis `app/` :
+
+| Commande | Effet |
+|---|---|
+| `npm run catalogue -- pack-ajouter <id> "<titre>" [--dossier L1] [--origine "…"] [--description "…"]` | nouveau pack `explore/packs/<id>.json` (vide) |
+| `npm run catalogue -- pack-ajouter-cours <pack> <cours> [<cours>…]` | ajoute des cours (ids de `explore/<domaine>/<cours>/`) à un pack |
+| `npm run catalogue -- cursus-ajouter <id> "<titre>" [--origine "…"] [--description "…"]` | nouveau cursus `explore/cursus/<id>.json` (vide) |
+| `npm run catalogue -- cursus-ajouter-pack <cursus> <pack> [dossier]` | ajoute un pack à un cursus, rangé dans `dossier` (par défaut celui du pack) |
+| `npm run catalogue -- verifier` | vérifie tous les packs et cursus |
+
+Chaque commande refuse un id inconnu (cours ou pack inexistant) ou un doublon, puis revérifie tout ; un pack ou un cursus encore vide est signalé et refusé à la publication. `npm run catalogue` (et `npm run check`) refont ces vérifications. Ensuite : committer, puis `npm run catalogue -- --publier`.
+
+Exemple, un cursus « Mathématiques » avec un pack de licence 1 :
+
+```bash
+npm run catalogue -- pack-ajouter licence-1-mathematiques "Licence 1 mathématiques" --dossier L1 --origine "Le Mans Université"
+npm run catalogue -- pack-ajouter-cours licence-1-mathematiques mathematiques-l1 anglais-l1
+npm run catalogue -- cursus-ajouter mathematiques "Mathématiques" --origine "Le Mans Université"
+npm run catalogue -- cursus-ajouter-pack mathematiques licence-1-mathematiques
+```
 
 ## Proposer un cours
 
@@ -85,3 +117,5 @@ _outils/ula/
 
 - **1.0**, 12 novembre 2026 : création, avec la réorganisation de `studies` en `ula` : catalogue `explore/<domaine>/<cours>/`, profils et cursus libres, travail toujours écrit dans l'espace du profil, catalogue à la demande, « Proposer ce cours ».
 - **1.1**, 12 novembre 2026 : packs par niveau d'étude (`explore/packs/`, section « Packs » du catalogue, rangement dans le cursus), domaine Communication et projet, catalogue complet (30 cours).
+- **1.2**, 12 novembre 2026 : cursus exemples (`explore/cursus/`, « Informatique » = L1, L2, L3) proposés à la création d'un profil, téléchargements en arrière-plan avec progression, « à télécharger » et « Tout télécharger » dans le cursus.
+- **1.3**, 12 novembre 2026 : outil du développeur pour les packs et cursus (`npm run catalogue -- pack-ajouter`, `pack-ajouter-cours`, `cursus-ajouter`, `cursus-ajouter-pack`, `verifier`) ; l'application les lit seulement.

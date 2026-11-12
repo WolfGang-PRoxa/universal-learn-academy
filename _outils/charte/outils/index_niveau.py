@@ -63,7 +63,7 @@ def cours_du_domaine(domaine):
 
 def domaines():
     connus = [d for d in DOMAINES if (EXPLORE / d).is_dir()]
-    autres = sorted(p.name for p in EXPLORE.iterdir() if p.is_dir() and p.name not in DOMAINES and p.name != "packs" and not p.name.startswith(".")) if EXPLORE.is_dir() else []
+    autres = sorted(p.name for p in EXPLORE.iterdir() if p.is_dir() and p.name not in DOMAINES and p.name not in ("packs", "cursus") and not p.name.startswith(".")) if EXPLORE.is_dir() else []
     return connus + autres
 
 

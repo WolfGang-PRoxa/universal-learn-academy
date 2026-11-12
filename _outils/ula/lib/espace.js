@@ -82,7 +82,7 @@ function cours(racine) {
   const res = [];
   const base = path.join(racine, EXPLORE);
   let domaines = [];
-  try { domaines = fs.readdirSync(base, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith(".") && d.name !== "packs"); } catch (e) { return res; }
+  try { domaines = fs.readdirSync(base, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith(".") && d.name !== "packs" && d.name !== "cursus"); } catch (e) { return res; }
   for (const d of domaines) {
     let ids = [];
     try { ids = fs.readdirSync(path.join(base, d.name), { withFileTypes: true }).filter((x) => x.isDirectory() && !x.name.startsWith(".")); } catch (e) { continue; }
@@ -281,7 +281,7 @@ function ajouterCours(racine, nomProfil, id, dossierCible, nom) {
 
 /** Ajoute les cours d'un pack dans un dossier du cursus (créé au besoin à la racine de
     l'espace) ; un cours déjà dans le cursus, où qu'il soit, n'est ni déplacé ni dupliqué. */
-function ajouterPack(racine, nomProfil, ids, nomDossier) {
+function ajouterPack(racine, nomProfil, ids, nomDossier, titres = {}) {
   const p = profil(racine, nomProfil);
   if (!p) throw new Error("Aucun profil choisi.");
   const n = nomValide(nomDossier, "nom du dossier");
@@ -293,7 +293,7 @@ function ajouterPack(racine, nomProfil, ids, nomDossier) {
   const ajoutes = [], presents = [];
   for (const id of ids) {
     if (deja.has(id)) { presents.push(id); continue; }
-    ajouterCours(racine, nomProfil, id, rel(racine, dossier));
+    ajouterCours(racine, nomProfil, id, rel(racine, dossier), titres[id] ? slug(titres[id]) : null);
     deja.add(id);
     ajoutes.push(id);
   }
