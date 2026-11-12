@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="se">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TP Tron : faire communiquer deux processus · Programmation système L3</title>
+<meta name="description" content="TP Tron de programmation système (L3) : un processus pilote lit le clavier, un processus course fait avancer les motos sur une piste ncurses, et il faut les faire communiquer avec les outils vus en cours. Sujet repris de la documentation de l'archive, ce que fournit le squelette tron.c, organisation des fichiers, commandes pour compiler, tester et jouer sous Linux et sous Windows (WSL), lanceurs run.sh et run.bat.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/langues/dos.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">Programmation système</a>
+    <span aria-current="page">TP 3 · Tron</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Programmation système</span> TP 3 · L3 S5</p>
+    <h1>TP Tron : faire communiquer deux processus</h1>
+    <p class="chapeau">Une course de motos inspirée du film Tron : le joueur dirige sa moto au clavier, les autres sont pilotées par le système, et chaque moto laisse derrière elle un mur. Le jeu tourne dans deux processus, l'un qui lit le clavier, l'autre qui fait avancer les motos, et tout le TP consiste à les faire communiquer. Cette page reprend la présentation de l'archive, décrit le squelette fourni, puis donne les commandes pour compiler, tester et jouer à la fac et sous Windows.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TP/TP3_Tron/">TP/TP3_Tron/</a>, l'archive fournie · présentation dans sa <a href="../TP/TP3_Tron/Documentation/html/index.html">documentation Doxygen</a></dd></div>
+      <div><dt>Enseignant</dt><dd>B. Jacob</dd></div>
+      <div><dt>Séance</dt><dd><time datetime="2026-11-18">18 nov. 2026</time></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Manipuler les outils de communication entre processus vus en cours.</li>
+        <li>Faire communiquer deux processus indépendants : celui qui exécute <code>pilote()</code>, qui lit les directions tapées par le joueur, et celui qui exécute <code>course()</code>, qui fait avancer toutes les motos.</li>
+        <li>Programmer pour cela le fichier <code>Jeu/tron.c</code>, et lui seul.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">À rendre</p>
+      <ul>
+        <li>La documentation de l'archive ne le précise pas : voir les consignes de la zone de dépôt UMTICE du TP.</li>
+        <li>Cours à revoir : <a href="cours-04-processus.html">les processus</a>, <a href="cours-05-tubes.html">les tubes</a>, <a href="cours-06-files-de-messages.html">les files de messages</a> et <a href="cours-03-signaux.html">les signaux</a>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le sujet <span class="ref">documentation de l'archive</span></h2>
+    <p>La présentation qui suit est celle de la page d'accueil de la documentation Doxygen de l'archive, rédigée par B. Jacob.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Présentation <span>Le jeu</span></p>
+      <p>Ce TP s'inspire du jeu de la course des motos du film <a href="https://fr.wikipedia.org/wiki/Tron">Tron</a> : un joueur pilote une moto sur une vaste piste, en même temps que des motos pilotées par le système. Toutes les motos vont à la même vitesse et ne s'arrêtent jamais. Chaque moto laisse une trace, pareille à un mur, derrière elle. Si une moto s'écrase sur un mur (une trace de moto ou les limites de la piste), elle perd : elle explose et sa trace disparaît. Le but est donc d'être la dernière moto en lice.</p>
+    </div>
+
+    <p>Ce TP a pour but de manipuler les outils de communication entre processus standards vus en cours. Il s'agit ici de faire communiquer deux processus indépendants :</p>
+    <ul>
+      <li>celui qui exécutera la fonction <code>pilote()</code>, qui gère les interactions avec l'utilisateur pour diriger sa moto ;</li>
+      <li>celui qui exécutera la fonction <code>course()</code>, qui fait avancer toutes les motos du jeu sur une piste (celle de l'utilisateur comme les autres).</li>
+    </ul>
+    <p>Ces processus seront gérés dans le programme <code>tron.c</code>, que vous devez donc programmer.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Ce que fournit le squelette <span class="ref">Jeu/tron.c</span></h2>
+    <p><span class="badge ajout">Ajout</span> La documentation ne décrit pas le squelette : voici ce qu'il contient, lu dans <code>Jeu/tron.c</code>. Il compile tel quel, mais son <code>main</code> s'arrête juste après avoir lu ses paramètres : <code>./tron</code> ne lance encore ni le pilote ni la course.</p>
+    <dl class="glossaire">
+      <dt><code>pilote()</code></dt>
+      <dd>passe le clavier en mode brut (<code>stdin_set_raw</code> : chaque touche est lue tout de suite, sans <kbd>Entrée</kbd>, et sans écho), puis lit les touches une à une jusqu'à la touche d'arrêt. Pour chaque touche valide, elle trouve son indice <code>i_trouve</code> dans le tableau <code>tab_car</code> ; il reste un « A FAIRE » : envoyer ou recevoir ces caractères avec le processus de la course. Elle remet enfin le clavier dans son mode d'origine.</dd>
+      <dt><code>course(hauteur, largeur, N, tempo)</code></dt>
+      <dd>crée la piste et l'écran ncurses, puis les <code>N</code> motos : la moto 0, celle du joueur, au centre de la piste, vers l'est ; les autres à des places et dans des directions tirées au hasard. Elle fait ensuite avancer toutes les motos actives d'un pas, attend <code>tempo</code> microsecondes, et recommence, jusqu'à ce qu'il ne reste qu'une moto ou que <code>Arret</code> devienne vrai. Les motos du système contournent seules les obstacles (<code>mvt_moto_avancer</code> avec <code>pilotage_automatique</code> à <code>VRAI</code>) ; celle du joueur va tout droit, et une moto qui s'écrase explose. La course affiche « PERDU » si la moto 0 s'écrase, « GAGNE » si elle est la dernière.</dd>
+      <dt><code>main</code></dt>
+      <dd>vérifie les quatre paramètres (au plus <code>MAX_MOTOS</code> = 8 motos), traduit la vitesse en temporisation, initialise le générateur aléatoire ; il reste un « A FAIRE » : programmer la communication entre le pilote et la course.</dd>
+    </dl>
+
+    <div class="tableau compact">
+      <table>
+        <caption>Les touches, d'après les constantes de <code>tron.c</code> (majuscule ou minuscule)</caption>
+        <thead><tr><th>Constante</th><th>Touche</th><th>Effet attendu</th></tr></thead>
+        <tbody>
+          <tr><th><code>CAR_NORD</code></th><td><kbd>H</kbd></td><td>aller vers le haut (nord)</td></tr>
+          <tr><th><code>CAR_SUD</code></th><td><kbd>B</kbd></td><td>aller vers le bas (sud)</td></tr>
+          <tr><th><code>CAR_EST</code></th><td><kbd>D</kbd></td><td>aller vers la droite (est)</td></tr>
+          <tr><th><code>CAR_OUEST</code></th><td><kbd>Q</kbd></td><td>aller vers la gauche (ouest)</td></tr>
+          <tr><th><code>CAR_ARRET</code></th><td><kbd>A</kbd></td><td>arrêter le jeu</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Le commentaire du fichier invite à changer ces touches si on le souhaite. Les directions sont celles du type <code>direction_t</code> de <a href="../TP/TP3_Tron/Documentation/html/commun_8h.html"><code>commun.h</code></a> (<code>NORD</code>, <code>EST</code>, <code>SUD</code>, <code>OUEST</code>), et <a href="../TP/TP3_Tron/Documentation/html/moto_8h.html"><code>moto.h</code></a> donne l'accès à la direction d'une moto (<code>moto_direction_get</code>, <code>moto_direction_set</code>).</p>
+
+    <div class="tableau compact">
+      <table>
+        <caption>Paramètres de <code>./tron &lt;hauteur piste&gt; &lt;largeur piste&gt; &lt;nb motos&gt; &lt;vitesse&gt;</code></caption>
+        <thead><tr><th>Vitesse</th><th>Temporisation entre deux pas</th></tr></thead>
+        <tbody>
+          <tr><th><code>L</code> (lente)</th><td>1 000 000 µs, soit 1 s</td></tr>
+          <tr><th><code>M</code> (moyenne)</th><td>500 000 µs</td></tr>
+          <tr><th><code>R</code> (rapide)</th><td>250 000 µs</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Le mode brut coupe <kbd>Ctrl</kbd> + <kbd>C</kbd></span></p>
+      <p><span class="badge ajout">Ajout</span> <code>cfmakeraw</code>, appelée par <code>stdin_set_raw</code>, désactive aussi les signaux du clavier (option <code>ISIG</code>) : pendant que le pilote tourne, <kbd>Ctrl</kbd> + <kbd>C</kbd> n'envoie plus <code>SIGINT</code>, et on quitte par la touche d'arrêt. Si le programme s'arrête sans remettre le clavier dans son mode d'origine, le terminal n'affiche plus ce qu'on tape : taper <code>reset</code> puis <kbd>Entrée</kbd> à l'aveugle, ou <code>./run.sh arreter</code>, qui le remet aussi.</p>
+    </div>
+
+    <p><span class="badge a-verifier">À vérifier</span> Deux détails du squelette, sans effet sur le jeu : <code>main</code> déclare un <code>nomprog</code> local qui masque la variable globale du même nom, si bien que les messages d'erreur de <code>course()</code> affichent un nom de programme vide ; et le message d'erreur sur la vitesse affiche <code>argv[3]</code> (le nombre de motos) au lieu de <code>argv[4]</code>.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>L'archive <span class="ref">documentation de l'archive</span></h2>
+    <p>Les fichiers sont répartis dans les dossiers suivants ; on ne programme que dans <code>Jeu</code>.</p>
+    <dl class="glossaire">
+      <dt><code>Jeu</code></dt>
+      <dd>le dossier de votre programme <code>tron.c</code> (<a href="../TP/TP3_Tron/Documentation/html/tron_8c.html">sa documentation</a>) ;</dd>
+      <dt><code>Commun</code></dt>
+      <dd>fonctions et constantes communes à tous les TDA (types de données abstraits) (<a href="../TP/TP3_Tron/Documentation/html/commun_8h.html"><code>commun.h</code></a>) ;</dd>
+      <dt><code>Coord</code></dt>
+      <dd>TDA d'une coordonnée, utilisée dans l'écran, les motos, la piste… (<a href="../TP/TP3_Tron/Documentation/html/coord_8h.html"><code>coord.h</code></a>) ;</dd>
+      <dt><code>Ecran</code></dt>
+      <dd>TDA de l'écran géré par la bibliothèque ncurses (<a href="../TP/TP3_Tron/Documentation/html/ecran_8h.html"><code>ecran.h</code></a>) ;</dd>
+      <dt><code>Moto</code></dt>
+      <dd>TDA d'une moto (<a href="../TP/TP3_Tron/Documentation/html/moto_8h.html"><code>moto.h</code></a>) ;</dd>
+      <dt><code>Mvt</code></dt>
+      <dd>TDA du mouvement d'une moto sur la piste (<a href="../TP/TP3_Tron/Documentation/html/mvt__moto_8h.html"><code>mvt_moto.h</code></a>) ; on y trouve aussi des tests d'affichage de ces mouvements sur la sortie standard et sur un écran géré par ncurses ;</dd>
+      <dt><code>Piste</code></dt>
+      <dd>TDA d'une piste (<a href="../TP/TP3_Tron/Documentation/html/piste_8h.html"><code>piste.h</code></a>, affichage : <a href="../TP/TP3_Tron/Documentation/html/piste__ecran_8h.html"><code>piste_ecran.h</code></a>) ;</dd>
+      <dt><code>TRON.TAGS</code></dt>
+      <dd>fichier d'indexation des fonctions, des constantes… (utile sous emacs) ;</dd>
+      <dt><code>Makefile*</code></dt>
+      <dd>la compilation avec make ;</dd>
+      <dt><code>Documentation</code></dt>
+      <dd>la documentation Doxygen : <a href="../TP/TP3_Tron/Documentation/html/index.html">page d'accueil</a>, <a href="../TP/TP3_Tron/Documentation/html/files.html">liste des fichiers</a>.</dd>
+    </dl>
+    <p><span class="badge ajout">Ajout</span> L'écran ncurses redirige la sortie d'erreur du programme dans un fichier <code>&lt;pid&gt;_stderr</code> du dossier courant, qu'il affiche dans sa fenêtre de messages et qu'il supprime à sa destruction : un <code>fprintf(stderr, …)</code> n'apparaît donc pas dans le terminal pendant la course. Un programme interrompu laisse ce fichier derrière lui ; <code>./run.sh arreter</code> le supprime.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Compiler, tester et jouer à la fac</h2>
+    <p>Sur les machines Linux de la fac, tout fonctionne directement, avec les commandes de la documentation ou avec le lanceur <code>run.sh</code>.</p>
+
+    <h3>Les commandes de la documentation</h3>
+    <p>L'archive est déjà décompressée dans <code>TP/TP3_Tron</code> (la documentation part de <code>tar xvf TP_tron.tar.gz</code>). On compile tout le TP depuis son dossier racine, on vérifie au besoin que tout est bien compilé avec les tests unitaires, puis on va dans <code>Jeu</code>, où <code>make all</code> recompile <code>tron</code> après chaque modification de <code>tron.c</code> :</p>
+<pre class="terminal"><code>$ make -f Makefile all
+$ make tests
+$ cd Jeu
+$ make all
+$ ./tron 10 30 5 M</code></pre>
+    <p><span class="badge ajout">Ajout</span> Les tests de l'enseignant passent tous sur la version fournie (vérifié le 8 novembre 2026 sous Ubuntu, gcc 13, ncurses 6.4). Ceux des dossiers <code>Ecran</code>, <code>Mvt</code> et <code>Piste</code> ouvrent un écran ncurses et y font défiler des motos : il leur faut un vrai terminal d'au moins 32 colonnes sur 10 lignes, sinon <code>test_ecran</code> s'arrête sur « Dimensions ecran demandees &gt; Dimensions console ».</p>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>La taille de la fenêtre</span></p>
+      <p><span class="badge ajout">Ajout</span> L'écran est la piste dans un cadre, au-dessus d'une fenêtre de messages de trois lignes : une piste de <em>h</em> lignes sur <em>l</em> colonnes demande une console d'au moins <em>h</em> + 5 lignes et <em>l</em> + 2 colonnes, soit 15 lignes sur 32 colonnes pour <code>./tron 10 30 5 M</code>. Dans une console plus petite, ncurses coupe l'affichage sans message. <code>./run.sh jouer</code> vérifie la taille avant de lancer le jeu.</p>
+    </div>
+
+    <h3>Avec le lanceur run.sh</h3>
+    <p><span class="badge ajout">Ajout</span> <code>run.sh</code>, à la racine du TP, regroupe ces commandes ; il ne touche pas à <code>tron.c</code>, il le compile et le lance :</p>
+<pre class="terminal"><code>$ ./run.sh                      # compile tout le TP
+$ ./run.sh tests                # compile, puis les tests de l'enseignant
+$ ./run.sh jouer                # compile, puis ./tron 10 30 5 M
+$ ./run.sh jouer 20 60 8 R      # piste de 20 x 60, 8 motos, vitesse rapide
+$ ./run.sh arreter</code></pre>
+    <ul>
+      <li>Sans argument, il compile tout le TP par le Makefile de l'enseignant, comme la documentation, après avoir vérifié que gcc, make et ncurses sont installés.</li>
+      <li><code>tests</code> vérifie que la console est assez grande, compile, puis lance <code>make tests</code>.</li>
+      <li><code>jouer</code> prend les paramètres de <code>tron</code> (par défaut <code>10 30 5 M</code>), vérifie la taille de la console, recompile ce qui a changé et lance <code>Jeu/tron</code>. À la fin de la partie, il remet le terminal en état (mode du clavier, curseur), et signale les processus <code>tron</code> qui tourneraient encore, par exemple un pilote qui attend une course déjà finie.</li>
+      <li><code>arreter</code> arrête ces processus restés en vie (<code>pkill -x tron</code>), remet le terminal en état, supprime les fichiers <code>*_stderr</code> laissés dans <code>Jeu</code> et affiche les files de messages qui existent encore (<code>ipcs -q</code>) ; il n'en supprime aucune : <code>ipcrm -q &lt;msqid&gt;</code> le fait.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Chez soi, sous Windows</h2>
+    <p>Le TP repose sur des primitives POSIX (plusieurs processus et les outils qui les font communiquer) et sur ncurses, qui n'existent pas sous Windows : il se compile et s'exécute dans WSL, qui fait tourner Ubuntu à côté de Windows. La page <a href="../../../_outils/environnements/c.html">Compiler un TP en C sous Windows et sous Linux</a> détaille l'installation.</p>
+
+    <h3>Une fois : installer WSL, gcc, make et ncurses</h3>
+    <p>C'est déjà fait sur ce PC pour le TP Transports (31 octobre 2026 : Ubuntu 26.04, gcc 15.2, make 4.4, gdb 17.1, ncurses). Sur un autre PC, <code>wsl --install -d Ubuntu</code>, dans un terminal Windows ouvert en administrateur, installe WSL, puis, dans le shell d'Ubuntu (<code>wsl</code>) :</p>
+<pre class="terminal"><code>$ sudo apt update
+$ sudo apt install build-essential gdb libncurses-dev</code></pre>
+
+    <h3>À chaque séance : run.bat</h3>
+    <p><code>run.bat</code>, à la racine du TP, prend les mêmes arguments que <code>run.sh</code>. Il monte au besoin le lecteur <code>G:</code> du Drive dans WSL (sous <code>/mnt/g</code>, en administrateur, sans mot de passe), puis lance <code>run.sh</code> dans WSL, depuis le dossier du TP. Le jeu s'affiche dans la fenêtre où l'on a tapé la commande, et y lit le clavier.</p>
+<pre data-fichier="cmd"><code class="language-dos">cd /d "C:\Users\piaur\Prog\studies\L3\SE_PS\TP\TP3_Tron"
+run.bat
+run.bat tests
+run.bat jouer 10 30 5 M
+run.bat arreter</code></pre>
+    <p>Les fichiers sont ceux du Drive : on modifie <code>tron.c</code> sous Windows avec son éditeur habituel, et WSL le compile tel quel. Une fenêtre du Terminal Windows s'ouvre en 120 colonnes sur 30 lignes : assez pour une piste de 25 lignes sur 118 colonnes.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Deux processus : le pilote lit les touches du joueur, la course fait avancer toutes les motos et tient l'écran ; le TP consiste à les faire communiquer avec les outils vus en cours.</li>
+        <li>On ne programme que <code>Jeu/tron.c</code> : les deux « A FAIRE » sont dans <code>pilote()</code> et dans <code>main</code>.</li>
+        <li>Touches <kbd>H</kbd>, <kbd>B</kbd>, <kbd>D</kbd>, <kbd>Q</kbd> pour les directions, <kbd>A</kbd> pour arrêter ; en mode brut, <kbd>Ctrl</kbd> + <kbd>C</kbd> ne fonctionne plus.</li>
+        <li>À la fac : <code>make -f Makefile all</code> et <code>make tests</code> à la racine, puis <code>make all</code> et <code>./tron 10 30 5 M</code> dans <code>Jeu</code>.</li>
+        <li><code>./run.sh</code> compile, <code>./run.sh tests</code> teste, <code>./run.sh jouer</code> lance le jeu, <code>./run.sh arreter</code> fait le ménage ; sous Windows, <code>run.bat</code> fait de même dans WSL.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Dans quel sens circule l'information entre les deux processus ?</summary>
+        <div><p>Au moins du pilote vers la course : c'est le pilote qui lit les touches, et la course qui change la direction de la moto 0 et décide de l'arrêt. Le sujet laisse ouverte la question d'un retour de la course vers le pilote, par exemple quand la partie se termine alors que le pilote attend encore une touche.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi ne suffit-il pas que le pilote mette la variable globale <code>Arret</code> à vrai pour arrêter la course ?</summary>
+        <div><p>Après un <code>fork</code>, chaque processus a sa propre copie de la mémoire, variables globales comprises : une modification faite dans le pilote n'est pas vue par la course, et inversement (voir <a href="cours-04-processus.html">le cours sur les processus</a>). C'est précisément pour cela qu'il faut un outil de communication entre processus.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quels outils vus en cours permettent à un processus d'envoyer des caractères à un autre ?</summary>
+        <div><p>Un tube (<code>pipe</code>, entre un père et son fils, ou un tube nommé), une file de messages System V (<code>msgsnd</code> et <code>msgrcv</code>), ou, pour de simples événements, des signaux. Le choix fait partie du TP : il dépend notamment de la façon dont la course, qui ne doit pas s'arrêter entre deux pas, lira les directions.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi le pilote passe-t-il le clavier en mode brut ?</summary>
+        <div><p>En mode normal (canonique), le terminal garde la ligne tapée jusqu'à <kbd>Entrée</kbd> : <code>getchar()</code> ne rendrait les touches qu'à ce moment. En mode brut, chaque touche est transmise tout de suite, sans écho, ce qu'il faut pour diriger une moto en temps réel.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi ce TP ne se compile-t-il pas avec le gcc de Windows (MinGW) ?</summary>
+        <div><p>Il repose sur des primitives POSIX, comme <code>fork</code>, les tubes, les files de messages et <code>termios</code>, et sur ncurses : MinGW produit des programmes Windows natifs, sans ces primitives. Il faut un vrai Linux, la fac ou WSL.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="tp-02-transports.html"><small>← TP précédent</small>Transports</a>
+    <a class="suivant" href="index.html"><small>Matière →</small>Programmation système</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Programmation système · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

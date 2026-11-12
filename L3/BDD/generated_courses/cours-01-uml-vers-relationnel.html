@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Du diagramme de classes au modèle relationnel · Bases de données L3</title>
+<meta name="description" content="Cours 1 de bases de données (L3) : modéliser avec un diagramme de classes UML, le vérifier (formes normales), puis le traduire en modèle relationnel.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-01-uml-vers-relationnel.html" title="Quiz · Du diagramme de classes au modèle relationnel">
+<link rel="quiz" href="../generated_quizzes/quiz-formes-normales.html" title="Quiz · Formes normales">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale (format de l'écrit)">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">Bases de données</a>
+    <span aria-current="page">Cours 1 · Du diagramme de classes au MR</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> Cours 1 · L3 S5</p>
+    <h1>Du diagramme de classes au modèle relationnel</h1>
+    <p class="chapeau">Ce premier cours rappelle comment décrire des données avec un diagramme de classes UML, comment vérifier ce diagramme, formes normales comprises, puis comment le traduire règle par règle en modèle relationnel, prêt à être implanté dans un SGBD.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/2026_Cours_BDD1.1.pdf">2026_Cours_BDD1.1.pdf</a> · 40 diapos</dd></div>
+      <div><dt>Enseignants</dt><dd>Théo Mariotte, Mathilde Mottay</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-21">21 sept. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Lire et construire un diagramme de classes : classes, attributs, identifiants, associations et multiplicités.</li>
+        <li>Vérifier un diagramme avant de le traduire : noms, types, attributs multivalués, formes normales 1NF à 3NF.</li>
+        <li>Traduire un diagramme en modèle relationnel avec les cinq règles du cours.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Le cours de bases de données de L2 : relations, clés.</li>
+        <li>Les notions de classe et d'objet vues en programmation orientée objet.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le cycle de vie d'une base de données <span class="ref">diapo 4</span></h2>
+    <p>Une base de données ne commence pas par du SQL. Elle part d'un besoin du monde réel, que l'on décrit d'abord sous une forme abstraite avant de l'implanter. Le schéma du cours, repris d'un support de Sylvain Meigner, résume ce parcours en trois étapes.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 680 280" width="680" role="img" aria-labelledby="fig-cycle-titre">
+        <title id="fig-cycle-titre">Cycle d'une base de données : le concepteur analyse le monde réel et produit un diagramme de classes, traduit en modèle relationnel puis implanté dans le SGBD, que les utilisateurs exploitent.</title>
+        <defs>
+          <marker id="fleche-cycle" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="20" y="24" width="160" height="60" rx="8"/>
+        <text x="100" y="50" text-anchor="middle" class="gras">Monde réel</text>
+        <text x="100" y="70" text-anchor="middle" class="t2" font-size="13">une école</text>
+
+        <rect class="boite" x="260" y="24" width="160" height="60" rx="8"/>
+        <text x="340" y="50" text-anchor="middle" class="gras">Concepteur</text>
+        <text x="340" y="70" text-anchor="middle" class="t2" font-size="13">analyse le besoin</text>
+
+        <rect class="boite" x="500" y="24" width="160" height="60" rx="8"/>
+        <text x="580" y="50" text-anchor="middle" class="gras">Diagramme</text>
+        <text x="580" y="70" text-anchor="middle" class="t2" font-size="13">de classes UML</text>
+
+        <rect class="boite" x="500" y="204" width="160" height="60" rx="8"/>
+        <text x="580" y="230" text-anchor="middle" class="gras">Modèle relationnel</text>
+        <text x="580" y="250" text-anchor="middle" class="t2" font-size="13">tables et clés</text>
+
+        <path class="boite-accent" d="M278 212 V252 A62 10 0 0 0 402 252 V212"/>
+        <ellipse class="boite-accent" cx="340" cy="212" rx="62" ry="10"/>
+        <text x="340" y="242" text-anchor="middle" class="gras accent">SGBD</text>
+
+        <rect class="boite" x="20" y="204" width="160" height="60" rx="8"/>
+        <text x="100" y="230" text-anchor="middle" class="gras">Utilisateurs</text>
+        <text x="100" y="250" text-anchor="middle" class="t2" font-size="13">requêtes</text>
+
+        <path class="trait" d="M260 54 H186" marker-end="url(#fleche-cycle)"/>
+        <path class="trait" d="M420 54 H494" marker-end="url(#fleche-cycle)"/>
+        <path class="trait" d="M580 84 V198" marker-end="url(#fleche-cycle)"/>
+        <path class="trait" d="M500 234 H408" marker-end="url(#fleche-cycle)"/>
+        <path class="trait" d="M150 84 L280 202" marker-end="url(#fleche-cycle)"/>
+        <path class="trait" d="M180 234 H272" marker-end="url(#fleche-cycle)"/>
+
+        <g font-size="12">
+          <circle class="boite-accent" cx="223" cy="38" r="10"/><text x="223" y="42" text-anchor="middle" class="accent gras">1</text>
+          <circle class="boite-accent" cx="457" cy="38" r="10"/><text x="457" y="42" text-anchor="middle" class="accent gras">1</text>
+          <circle class="boite-accent" cx="597" cy="141" r="10"/><text x="597" y="145" text-anchor="middle" class="accent gras">2</text>
+          <circle class="boite-accent" cx="454" cy="219" r="10"/><text x="454" y="223" text-anchor="middle" class="accent gras">2</text>
+          <circle class="boite-accent" cx="228" cy="132" r="10"/><text x="228" y="136" text-anchor="middle" class="accent gras">2</text>
+          <circle class="boite-accent" cx="226" cy="219" r="10"/><text x="226" y="223" text-anchor="middle" class="accent gras">3</text>
+        </g>
+      </svg>
+      <figcaption>Cycle d'une base de données, d'après Sylvain Meigner. Les numéros indiquent l'ordre des étapes.</figcaption>
+    </figure>
+
+    <ol class="etapes">
+      <li><strong>Analyse.</strong> Le concepteur observe le monde réel (ici une école, avec ses élèves et son professeur) et le décrit par un diagramme de classes.</li>
+      <li><strong>Traduction et implantation.</strong> Le diagramme est traduit en modèle relationnel, puis implanté dans le SGBD, qui reçoit les données du monde réel.</li>
+      <li><strong>Exploitation.</strong> Les utilisateurs interrogent et mettent à jour la base à travers le SGBD.</li>
+    </ol>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>L'école du schéma</span></p>
+      <p>Le diagramme distingue une classe <code>Personne</code> (identifiant, nom, prénom) et deux cas particuliers : <code>Eleve</code>, qui ajoute un âge, et <code>Professeur</code>, qui ajoute une spécialité. Traduit en modèle relationnel, il donne :</p>
+      <div class="relations">
+        <p><b>Personne</b>(<u>id_personne</u>, nom, prénom)</p>
+        <p><b>Eleve</b>(<u>#id_personne</u>, age)</p>
+        <p><b>Professeur</b>(<u>#id_personne</u>, specialite)</p>
+      </div>
+      <p>La suite du cours explique chacun de ces éléments : la clé soulignée, le <code>#</code>, et pourquoi <code>id_personne</code> se retrouve dans les trois relations (section 5.4).</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Trois niveaux de description</span></p>
+      <p>Les étapes du cycle font descendre la description d'un niveau à chaque fois :</p>
+      <ul>
+        <li><strong>niveau conceptuel</strong> : le diagramme de classes dit <em>quelles</em> données on veut garder et comment elles sont liées, sans aucune considération technique ;</li>
+        <li><strong>niveau logique</strong> : le modèle relationnel décrit ces données sous forme de relations (tables) reliées par des clés ;</li>
+        <li><strong>niveau physique</strong> : le SGBD (<span class="en" lang="en">DBMS</span>, par exemple PostgreSQL) stocke réellement les tables et exécute les requêtes SQL.</li>
+      </ul>
+      <p>Une erreur de conception au premier niveau se paie à tous les suivants : c'est pourquoi le cours insiste autant sur la vérification du diagramme avant la traduction.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Classes, instances et attributs <span class="ref">diapos 5–11</span></h2>
+    <p>UML (<span class="en" lang="en">Unified Modeling Language</span>) sert ici de langage de modélisation des données. On en utilise le diagramme de classes, qui décrit les types de choses à mémoriser, leurs propriétés et leurs liens.</p>
+
+    <h3>Classe et instance <span class="ref">diapos 5–6</span></h3>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Classe</span></p>
+      <p>Une <dfn>classe</dfn> (<span class="en" lang="en">class</span>) est un type abstrait caractérisé par des propriétés communes à un ensemble d'objets, c'est-à-dire de choses de même nature. Des choses sont de même nature quand elles partagent la même sémantique et ont des propriétés, les <dfn>attributs</dfn>, en commun.</p>
+      <p>Une classe est un regroupement <strong>nommé</strong> et cohérent de ces choses : <em>chien</em>, <em>train</em>. Dans une base de données relationnelle (BDR), une classe correspond à une <strong>table</strong>.</p>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 440 140" width="440" role="img" aria-labelledby="fig-classe-titre">
+        <title id="fig-classe-titre">La classe Personne : son nom en haut, ses quatre attributs en dessous.</title>
+        <defs>
+          <marker id="fleche-classe" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein-accent"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="20" y="12" width="180" height="114" rx="3"/>
+        <path class="boite" d="M20 40 H200"/>
+        <text x="110" y="31" text-anchor="middle" class="gras">Personne</text>
+        <g font-size="13">
+          <text x="28" y="58">Nom</text>
+          <text x="28" y="78">Prénom</text>
+          <text x="28" y="98">Date de naissance</text>
+          <text x="28" y="118">Ville de naissance</text>
+        </g>
+        <path class="accent" d="M206 26 H258" marker-end="url(#fleche-classe)"/>
+        <text x="268" y="31" class="accent">Nom de la classe</text>
+        <path class="accent" d="M210 46 H218 V124 H210"/>
+        <path class="accent" d="M218 85 H258" marker-end="url(#fleche-classe)"/>
+        <text x="268" y="90" class="accent">Attributs</text>
+      </svg>
+      <figcaption>Une classe se dessine par un rectangle : le nom en haut, un attribut par ligne.</figcaption>
+    </figure>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Instance de classe</span></p>
+      <p>Une <dfn>instance</dfn> (<span class="en" lang="en">instance</span>) est une chose concrète ou abstraite du monde réel qui possède les attributs de sa classe : le chien de mon voisin, le train n° 4578 à destination de Grenoble. Dans une BDR, une instance correspond à un <strong>tuple</strong>, c'est-à-dire une ligne de la table.</p>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Classe ≠ instance de classe</span></p>
+      <p><code>Personne</code> est une classe. Gustav Mahler, né le 7 juillet 1860 à Kaliště, en est une instance. Confondre les deux conduit à créer une classe par individu, ou une table par ligne.</p>
+    </div>
+
+    <table>
+      <caption>Trois instances de la classe Personne, soit trois tuples de la table</caption>
+      <thead>
+        <tr><th>Nom</th><th>Prénom</th><th>Date de naissance</th><th>Ville de naissance</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Mahler</td><td>Gustav</td><td>07/07/1860</td><td>Kaliště</td></tr>
+        <tr><td>Boulanger</td><td>Lili</td><td>21/08/1893</td><td>Paris</td></tr>
+        <tr><td>Sohy</td><td>Charlotte</td><td>07/07/1887</td><td>Paris</td></tr>
+      </tbody>
+    </table>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Correspondance des vocabulaires</span></p>
+      <p>Le même objet porte un nom différent à chaque niveau. Ce tableau sert de fil conducteur pour tout le module.</p>
+      <table>
+        <thead>
+          <tr><th>Diagramme de classes (UML)</th><th>Modèle relationnel</th><th>SQL, dans le SGBD</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Classe</td><td>Relation</td><td>Table</td></tr>
+          <tr><td>Instance</td><td>Tuple</td><td>Ligne</td></tr>
+          <tr><td>Attribut</td><td>Attribut</td><td>Colonne</td></tr>
+          <tr><td>Identifiant <code>{PK}</code></td><td>Clé primaire (soulignée)</td><td><code>PRIMARY KEY</code></td></tr>
+          <tr><td>Association</td><td>Relation ou clé étrangère (<code>#</code>)</td><td>Table ou <code>FOREIGN KEY</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Attributs : domaine et valeur <span class="ref">diapo 7</span></h3>
+    <p>Un <dfn>attribut</dfn> (<span class="en" lang="en">attribute</span>) est une caractéristique de la classe décrite. Il possède :</p>
+    <ul>
+      <li>un <strong>domaine de valeurs</strong> : entier, chaîne de caractères, date… Le domaine est simple (un entier) ou complexe, c'est-à-dire structuré (une adresse, faite d'un numéro, d'une voie, d'un code postal et d'une commune) ;</li>
+      <li>une <strong>valeur</strong>, propre à chaque instance.</li>
+    </ul>
+    <p>On retrouve la notion de relation de l'algèbre relationnelle, où chaque attribut est suivi de son domaine :</p>
+    <div class="relations">
+      <p><b>Personne</b>(Nom : VARCHAR, Prénom : VARCHAR, Date de naissance : DATE, Ville : VARCHAR)</p>
+    </div>
+    <p>Un attribut a enfin une <dfn>multiplicité</dfn>, minimale et maximale :</p>
+    <ul>
+      <li>la multiplicité <strong>minimale</strong> dit si l'attribut est obligatoire ou non (valeur libre ou faiblement contrainte) ;</li>
+      <li>la multiplicité <strong>maximale</strong> dit s'il prend une seule valeur ou plusieurs (attribut <dfn>multivalué</dfn>, par exemple une liste de choix).</li>
+    </ul>
+
+    <h3>Notation des multiplicités <span class="ref">diapo 8</span></h3>
+    <p>La multiplicité s'écrit entre crochets après le nom de l'attribut : <code>&lt;nom d'attribut&gt; [&lt;min&gt;..&lt;max&gt;]</code>.</p>
+    <table>
+      <caption>Multiplicités d'un attribut</caption>
+      <thead>
+        <tr><th>Notation</th><th>Signification</th><th>Exemple</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>[1]</code></td><td>une valeur, obligatoire</td><td>le nom</td></tr>
+        <tr><td><code>[0..1]</code></td><td>une valeur, facultative</td><td>l'immatriculation d'un véhicule</td></tr>
+        <tr><td><code>[0..*]</code></td><td>plusieurs valeurs, éventuellement aucune</td><td></td></tr>
+        <tr><td><code>[1..*]</code></td><td>une ou plusieurs valeurs</td><td>les prénoms (diapo 11)</td></tr>
+        <tr><td><code>[2..10]</code></td><td>entre 2 et 10 valeurs</td><td></td></tr>
+      </tbody>
+    </table>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Seuls les attributs monovalués sont admis d'office</span></p>
+      <p>Les multiplicités <code>[1]</code> et <code>[0..1]</code> sont autorisées. Toutes les autres, qui rendent l'attribut multivalué, doivent être justifiées ou conduire à la création d'une nouvelle classe (voir la section 4.1 et la première forme normale).</p>
+      <p><span class="badge a-verifier">À vérifier</span> La diapo écrit « sont autorisés [0], [0..1] ». Une multiplicité <code>[0]</code> (aucune valeur possible) n'aurait pas de sens pour un attribut : il s'agit très probablement de <code>[1]</code>, l'attribut obligatoire à une seule valeur.</p>
+    </div>
+
+    <h3>L'identifiant <span class="ref">diapos 9–10</span></h3>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Identifiant (clé primaire)</span></p>
+      <p>L'<dfn>identifiant</dfn> d'une classe est un <strong>ensemble minimal</strong> d'attributs qui permet d'identifier de manière unique chaque <strong>instance</strong> de la classe. En algèbre relationnelle, il devient la <dfn>clé primaire</dfn> (<span class="en" lang="en">primary key</span>, PK). Il est :</p>
+      <ul>
+        <li><strong>unique par classe</strong> : une classe a un et un seul identifiant ;</li>
+        <li><strong>discriminant</strong> : deux instances de la même classe ne peuvent pas avoir la même valeur d'identifiant ;</li>
+        <li><strong>invariant dans le temps</strong> : sa valeur ne change pas au cours de la vie de l'instance.</li>
+      </ul>
+    </div>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Choisir l'identifiant</span></p>
+      <ol>
+        <li>Chercher une combinaison d'attributs dont la valeur est unique pour chaque instance.</li>
+        <li>Si ce n'est pas possible, créer un identifiant artificiel, unique pour chaque instance : un numéro.</li>
+      </ol>
+    </div>
+
+    <table>
+      <caption>La table Personne après l'ajout d'un identifiant artificiel Id</caption>
+      <thead>
+        <tr><th>Id</th><th>Nom</th><th>Prénom</th><th>Date de naissance</th><th>Ville de naissance</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>Mahler</td><td>Gustav</td><td>07/07/1860</td><td>Kaliště</td></tr>
+        <tr><td>2</td><td>Boulanger</td><td>Lili</td><td>21/08/1893</td><td>Paris</td></tr>
+        <tr><td>3</td><td>Sohy</td><td>Charlotte</td><td>07/07/1887</td><td>Paris</td></tr>
+      </tbody>
+    </table>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi ne pas prendre le nom et le prénom ?</span></p>
+      <p>Sur ces trois lignes, le couple (Nom, Prénom) est unique. Mais rien ne garantit qu'une future instance n'aura pas le même : deux homonymes suffisent à casser l'unicité. Et un nom peut changer, par mariage par exemple, ce qui viole l'invariance. D'où l'étape 2 et l'identifiant artificiel.</p>
+      <p><strong>Minimal</strong> veut dire qu'on ne peut retirer aucun attribut sans perdre l'unicité. Si le numéro de sécurité sociale suffit à distinguer les personnes, le couple (no sécu, nom) est lui aussi unique, mais il n'est pas minimal : ce n'est pas un identifiant.</p>
+    </div>
+
+    <h3>Représentation d'une classe et de ses attributs <span class="ref">diapo 11</span></h3>
+    <ul>
+      <li>Une classe est un rectangle, avec son nom encadré en haut.</li>
+      <li>Chaque attribut occupe une ligne : <code>&lt;nom_att&gt; : &lt;type&gt; [&lt;min&gt;..&lt;max&gt;]</code>.</li>
+      <li>L'identifiant est précisé par <code>{PK}</code>.</li>
+      <li>Les types peuvent être standards (<code>float</code>, <code>char</code>, <code>varchar</code>, <code>bool</code>) ou spécifiques (<code>date</code>, <code>Adresse</code>, type personnalisé).</li>
+      <li>La multiplicité dit si l'attribut est obligatoire ou non, monovalué ou multivalué.</li>
+      <li>Un attribut dont la valeur ne peut pas se répéter entre deux instances porte <code>{unique}</code>.</li>
+    </ul>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 600 150" width="600" role="img" aria-labelledby="fig-repr-titre">
+        <title id="fig-repr-titre">Deux classes avec attributs typés : Personne et Passport.</title>
+        <rect class="boite" x="10" y="8" width="270" height="134" rx="3"/>
+        <path class="boite" d="M10 36 H280"/>
+        <text x="145" y="27" text-anchor="middle" class="gras">Personne</text>
+        <g font-size="12.5">
+          <text x="18" y="54" class="mono">nom : string [1]</text>
+          <text x="18" y="74" class="mono">prénoms : string [1..*]</text>
+          <text x="18" y="94" class="mono">no sécu : string [1] {unique}</text>
+          <text x="18" y="114" class="mono">célibataire : boolean [0..1]</text>
+          <text x="18" y="134" class="mono">date de naissance : date [1]</text>
+        </g>
+        <rect class="boite" x="320" y="8" width="270" height="134" rx="3"/>
+        <path class="boite" d="M320 36 H590"/>
+        <text x="455" y="27" text-anchor="middle" class="gras">Passport</text>
+        <g font-size="12.5">
+          <text x="328" y="54" class="mono">numéro : integer {PK}</text>
+          <text x="328" y="74" class="mono">nom : string [1]</text>
+          <text x="328" y="94" class="mono">prénom1 : string [1]</text>
+          <text x="328" y="114" class="mono">prénom2 : string [0..1]</text>
+          <text x="328" y="134" class="mono">adresse : Adresse [1]</text>
+        </g>
+      </svg>
+      <figcaption>Attributs typés, avec multiplicités, identifiant <code>{PK}</code> et contrainte <code>{unique}</code>.</figcaption>
+    </figure>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>{PK} ou {unique} ?</span></p>
+      <p>Une classe n'a qu'un identifiant, mais plusieurs attributs peuvent être uniques. Le numéro de sécurité sociale de <code>Personne</code> est unique, et pourrait servir d'identifiant : on parle de <dfn>clé candidate</dfn>. Parmi les clés candidates, on en choisit une comme <code>{PK}</code> ; les autres gardent <code>{unique}</code>.</p>
+      <p>Telle qu'elle est dessinée, <code>Personne</code> n'a pas de <code>{PK}</code> : il faudra lui en donner un avant la traduction (section 4.2). <code>Passport</code>, lui, a déjà le sien, <code>numéro</code>.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les associations <span class="ref">diapos 12–21</span></h2>
+    <p>Les classes seules ne suffisent pas : le monde réel est fait de liens entre les choses. Une personne possède une voiture, un musicien joue dans un orchestre. Les associations modélisent ces liens.</p>
+
+    <h3>Association et instance d'association <span class="ref">diapo 12</span></h3>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Instance d'association, association</span></p>
+      <p>Une <dfn>instance d'association</dfn> est un lien sémantique entre deux instances de classes, souvent porté par un verbe : « Gustav <em>compose</em> la symphonie n° 4 ».</p>
+      <p>Une <dfn>association</dfn> (<span class="en" lang="en">association</span>) est un ensemble <strong>nommé</strong> d'instances d'association de mêmes caractéristiques : « compose », entre les compositeurs et les œuvres. Son objectif est de modéliser un ensemble de liens entre classes qui existent dans le monde réel.</p>
+    </div>
+
+    <h3>Participants, attributs et multiplicités <span class="ref">diapo 13</span></h3>
+    <ul>
+      <li><strong>Participants</strong> : les classes impliquées dans l'association.</li>
+      <li><strong>Attributs</strong> : une association ne porte un attribut que s'il dépend de <em>tous</em> les participants. Dans « Gustav compose la symphonie n° 4 en août 1900 », la date ne dépend ni du compositeur seul ni de l'œuvre seule, mais du couple. Un attribut porté par une association se modélise par une <dfn>classe d'association</dfn>.</li>
+      <li><strong>Multiplicité</strong> : le nombre minimum et maximum de fois où une instance de la classe intervient dans l'association. En général, le minimum vaut 0 ou 1 et le maximum 1 ou <code>*</code> (plusieurs).</li>
+    </ul>
+
+    <div class="tableau centre">
+    <table>
+      <caption>Les quatre multiplicités d'association usuelles</caption>
+      <thead>
+        <tr><th>Min.</th><th>Max.</th><th>Notation</th><th>Abrégé</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>0</td><td>1</td><td><code>0..1</code></td><td></td></tr>
+        <tr><td>1</td><td>1</td><td><code>1..1</code></td><td><code>1</code></td></tr>
+        <tr><td>0</td><td>*</td><td><code>0..*</code></td><td><code>*</code></td></tr>
+        <tr><td>1</td><td>*</td><td><code>1..*</code></td><td></td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention</p>
+      <p>Les multiplicités doivent obligatoirement être indiquées lors de la construction du diagramme de classes. Sans elles, la traduction en modèle relationnel est impossible : ce sont elles qui décident de la règle à appliquer (section 5).</p>
+    </div>
+
+    <h3>Les multiplicités admises <span class="ref">diapos 14–16</span></h3>
+    <ul>
+      <li><code>0..1</code> : chaque instance de la classe participe au plus une fois à l'association. Elle existe même si elle n'y est pas impliquée.</li>
+      <li><code>0..*</code> : chaque instance participe ou non, sans limitation de nombre.</li>
+      <li><code>1..1</code> : chaque instance participe obligatoirement une fois, et une seule. Elle n'existe pas sinon.</li>
+      <li><code>1..*</code> : une instance n'existe que si elle participe au moins une fois à l'association.</li>
+    </ul>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 560 94" width="560" role="img" aria-labelledby="fig-possede-titre">
+        <title id="fig-possede-titre">Association possède entre Voiture et Personne : étoile côté Voiture, 1 côté Personne.</title>
+        <rect class="boite" x="20" y="10" width="150" height="74" rx="3"/>
+        <path class="boite" d="M20 38 H170"/>
+        <text x="95" y="29" text-anchor="middle" class="gras">Voiture</text>
+        <g font-size="13"><text x="28" y="56">Couleur</text><text x="28" y="76">Marque</text></g>
+        <rect class="boite" x="390" y="10" width="150" height="74" rx="3"/>
+        <path class="boite" d="M390 38 H540"/>
+        <text x="465" y="29" text-anchor="middle" class="gras">Personne</text>
+        <g font-size="13"><text x="398" y="56">Nom</text><text x="398" y="76">Prénom</text></g>
+        <path class="trait" d="M170 50 H390"/>
+        <text x="180" y="43" class="gras">*</text>
+        <text x="380" y="43" text-anchor="end" class="gras">1</text>
+        <text x="280" y="43" text-anchor="middle" font-size="13">◂ possède</text>
+      </svg>
+      <figcaption>Une personne possède de 0 à plusieurs voitures ; une voiture n'est possédée que par une seule personne.</figcaption>
+    </figure>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Lire une multiplicité</span></p>
+      <p>Une multiplicité se lit <strong>depuis l'autre classe</strong> : celle qui est écrite à côté de <code>Voiture</code> dit combien de voitures sont liées à <em>une</em> personne. Sur la figure :</p>
+      <ul>
+        <li><code>*</code> côté <code>Voiture</code> : une personne possède 0, 1 ou plusieurs voitures ;</li>
+        <li><code>1</code> côté <code>Personne</code> : une voiture appartient à exactement une personne.</li>
+      </ul>
+      <p>Réflexe à prendre : pour chaque association, écrire les deux phrases « un X est lié à … Y » et « un Y est lié à … X », et vérifier qu'elles ont du sens dans le monde réel.</p>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 560 186" width="560" role="img" aria-labelledby="fig-joue-titre">
+        <title id="fig-joue-titre">Association joue entre Musicien·ne et Orchestre, avec la classe d'association Activité reliée en pointillés.</title>
+        <rect class="boite" x="20" y="10" width="150" height="74" rx="3"/>
+        <path class="boite" d="M20 38 H170"/>
+        <text x="95" y="29" text-anchor="middle" class="gras">Musicien·ne</text>
+        <g font-size="13"><text x="28" y="56">Nom</text><text x="28" y="76">Prénom</text></g>
+        <rect class="boite" x="390" y="10" width="150" height="74" rx="3"/>
+        <path class="boite" d="M390 38 H540"/>
+        <text x="465" y="29" text-anchor="middle" class="gras">Orchestre</text>
+        <g font-size="13"><text x="398" y="56">Type</text><text x="398" y="76">Adresse</text></g>
+        <path class="trait" d="M170 50 H390"/>
+        <text x="180" y="43" class="gras">1..*</text>
+        <text x="380" y="43" text-anchor="end" class="gras">*</text>
+        <text x="280" y="43" text-anchor="middle" font-size="13">joue ▸</text>
+        <path class="pointille" d="M280 50 V104"/>
+        <rect class="boite-accent" x="205" y="104" width="150" height="74" rx="3"/>
+        <path class="boite-accent" d="M205 132 H355"/>
+        <text x="280" y="123" text-anchor="middle" class="gras accent">Activité</text>
+        <g font-size="13"><text x="213" y="150">Date début</text><text x="213" y="170">Date fin</text></g>
+      </svg>
+      <figcaption>Un·e ou plusieurs musicien·nes jouent dans 0 à N orchestres. La période d'activité est un attribut de l'association, porté par la classe d'association <code>Activité</code>.</figcaption>
+    </figure>
+
+    <h3>Associations plurielles <span class="ref">diapo 17</span></h3>
+    <p>Deux classes peuvent être impliquées dans plusieurs associations. Cela permet de factoriser certaines informations : une même personne peut écrire des livres et en critiquer d'autres. C'est l'association qui détermine le rôle de la personne, sans qu'il faille créer deux classes <code>Auteur</code> et <code>Critique</code>.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 560 94" width="560" role="img" aria-labelledby="fig-plur-titre">
+        <title id="fig-plur-titre">Deux associations entre Personne et Livre : écrit, avec 1..* côté Personne, et critique, avec étoile côté Personne.</title>
+        <rect class="boite" x="20" y="10" width="150" height="74" rx="3"/>
+        <path class="boite" d="M20 38 H170"/>
+        <text x="95" y="29" text-anchor="middle" class="gras">Personne</text>
+        <g font-size="13"><text x="28" y="56">nom</text><text x="28" y="76">prénom</text></g>
+        <rect class="boite" x="390" y="10" width="150" height="74" rx="3"/>
+        <path class="boite" d="M390 38 H540"/>
+        <text x="465" y="29" text-anchor="middle" class="gras">Livre</text>
+        <g font-size="13"><text x="398" y="56">titre</text><text x="398" y="76">année</text></g>
+        <path class="trait" d="M170 42 H390"/>
+        <text x="180" y="36" class="gras accent">1..*</text>
+        <text x="280" y="36" text-anchor="middle" font-size="13">écrit ▸</text>
+        <text x="380" y="36" text-anchor="end" class="gras">*</text>
+        <path class="trait" d="M170 74 H390"/>
+        <text x="180" y="68" class="gras accent">*</text>
+        <text x="280" y="68" text-anchor="middle" font-size="13">critique ▸</text>
+        <text x="380" y="68" text-anchor="end" class="gras">*</text>
+      </svg>
+      <figcaption>Une même classe <code>Personne</code> joue deux rôles, auteur et critique, selon l'association.</figcaption>
+    </figure>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>À la multiplicité minimale</span></p>
+      <p><span class="badge ajout">Ajout</span> Côté <code>Personne</code>, « écrit » porte <code>1..*</code> : tout livre a au moins un auteur. « Critique » porte <code>*</code> : un livre peut n'avoir aucune critique. Côté <code>Livre</code>, les deux minimums valent 0 : comme la classe <code>Personne</code> regroupe auteurs et critiques, une personne peut très bien n'avoir écrit aucun livre (elle ne fait que critiquer). Mettre <code>1..*</code> de ce côté obligerait chaque critique à être aussi auteur.</p>
+    </div>
+
+    <h3>Associations de spécialisation <span class="ref">diapos 18–19</span></h3>
+    <p>L'association « est un » relie une classe générique (<code>Personne</code>) à une classe spécialisée (<code>Critique</code>). Sa multiplicité est toujours <code>0..1</code> côté spécialisé et <code>1</code> côté générique, et se lit ainsi :</p>
+    <ul>
+      <li>chaque instance de la classe générique est associée à <strong>au plus</strong> une instance de la classe spécialisée : une personne est critique, ou ne l'est pas ;</li>
+      <li>chaque instance de la classe spécialisée est associée à <strong>exactement</strong> une instance de la classe générique : un critique est une personne, et une seule.</li>
+    </ul>
+    <p>Comme cette multiplicité est toujours la même, on simplifie le modèle : on supprime les multiplicités <code>0..1 — 1</code> et le nom « est un », et on les remplace par une flèche qui pointe vers la classe générique.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 520 214" width="520" role="img" aria-labelledby="fig-spe-titre">
+        <title id="fig-spe-titre">Spécialisation : Critique est un Personne, écrit d'abord avec les multiplicités 1 et 0..1, puis simplifié en une flèche de Critique vers Personne.</title>
+        <defs>
+          <marker id="fleche-spe" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+          <marker id="fleche-spe-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein-accent"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="30" y="10" width="150" height="74" rx="3"/>
+        <path class="boite" d="M30 38 H180"/>
+        <text x="105" y="29" text-anchor="middle" class="gras">Personne</text>
+        <g font-size="13"><text x="38" y="56">nom</text><text x="38" y="76">prénom</text></g>
+        <rect class="boite" x="30" y="150" width="150" height="54" rx="3"/>
+        <path class="boite" d="M30 178 H180"/>
+        <text x="105" y="169" text-anchor="middle" class="gras">Critique</text>
+        <text x="38" y="196" font-size="13">adresse</text>
+        <path class="trait" d="M105 150 V90" marker-end="url(#fleche-spe)"/>
+        <g font-size="13">
+          <text x="113" y="104" class="gras">1</text>
+          <text x="113" y="124">est un</text>
+          <text x="113" y="144" class="gras">0..1</text>
+        </g>
+
+        <text x="260" y="108" text-anchor="middle" font-size="13" class="accent">simplification</text>
+        <path class="accent" d="M222 118 H292" marker-end="url(#fleche-spe-accent)"/>
+
+        <rect class="boite" x="330" y="10" width="150" height="74" rx="3"/>
+        <path class="boite" d="M330 38 H480"/>
+        <text x="405" y="29" text-anchor="middle" class="gras">Personne</text>
+        <g font-size="13"><text x="338" y="56">nom</text><text x="338" y="76">prénom</text></g>
+        <rect class="boite" x="330" y="150" width="150" height="54" rx="3"/>
+        <path class="boite" d="M330 178 H480"/>
+        <text x="405" y="169" text-anchor="middle" class="gras">Critique</text>
+        <text x="338" y="196" font-size="13">adresse</text>
+        <path class="trait" d="M405 150 V90" marker-end="url(#fleche-spe)"/>
+      </svg>
+      <figcaption>La forme complète « est un » (à gauche) et sa forme simplifiée par une flèche vers la classe générique (à droite).</figcaption>
+    </figure>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Spécialisation et héritage</span></p>
+      <p>C'est l'<dfn>héritage</dfn> de la programmation objet (<span class="en" lang="en">generalization</span>) : un critique <em>est</em> une personne, il a donc un nom et un prénom, auxquels s'ajoute son adresse. On ne répète pas les attributs de la classe générique dans la classe spécialisée.</p>
+      <p>En UML standard, la flèche d'héritage a une pointe en triangle creux. C'est celle que l'on retrouve dans les diagrammes de classes du cours de POO.</p>
+    </div>
+
+    <h3>Association réflexive <span class="ref">diapo 20</span></h3>
+    <p>Une association peut relier plusieurs fois la même classe. Tout employé·e est dirigé·e par un·e autre employé·e (sauf le ou la big chef·fe), et un·e employé·e peut en diriger plusieurs autres : l'association « dirige » modélise une <strong>hiérarchie</strong> à l'intérieur de la classe <code>Employe</code>.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 420 120" width="420" role="img" aria-labelledby="fig-refl-titre">
+        <title id="fig-refl-titre">Association réflexive dirige sur la classe Employé, avec les rôles chef (0..1) et subordonné (étoile).</title>
+        <rect class="boite" x="30" y="10" width="150" height="94" rx="3"/>
+        <path class="boite" d="M30 38 H180"/>
+        <text x="105" y="29" text-anchor="middle" class="gras">Employe</text>
+        <g font-size="13"><text x="38" y="56">nom</text><text x="38" y="76">prénom</text><text x="38" y="96">fonction</text></g>
+        <path class="trait" d="M180 34 H300 V88 H180"/>
+        <g font-size="13">
+          <text x="188" y="27"><tspan class="gras">0..1</tspan> chef</text>
+          <text x="188" y="106"><tspan class="gras">*</tspan> subordonné</text>
+          <text x="308" y="65">dirige ▸</text>
+        </g>
+      </svg>
+      <figcaption>Chaque employé·e a au plus un·e chef·fe et peut avoir plusieurs subordonné·es.</figcaption>
+    </figure>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarques</p>
+      <ul>
+        <li>Les deux participants sont des éléments d'une même classe, avec des rôles différents : ici deux personnes, l'une cheffe, l'autre subordonnée.</li>
+        <li>On précise les rôles aux deux extrémités (« chef », « subordonné ») pour faciliter la lecture.</li>
+        <li>Une association réflexive peut aussi être symétrique, sans hiérarchie : « être frère ou sœur de ». Dans ce cas, on ne spécifie pas les rôles.</li>
+      </ul>
+    </div>
+
+    <h3>Composition <span class="ref">diapo 21</span></h3>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Composition</span></p>
+      <p>La <dfn>composition</dfn> (<span class="en" lang="en">composition</span>) est une spécialisation de l'association <code>1 — 1..*</code>. C'est une association de propriété exclusive : un objet « tout » (première classe) possède des parties (deuxième classe), et ces parties ne peuvent pas être partagées avec un autre « tout ». On la dessine avec un losange plein du côté du « tout ».</p>
+    </div>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Reconnaître une composition</span></p>
+      <ul>
+        <li>Une partie n'existe pas seule.</li>
+        <li>Supprimer le « tout » supprime ses parties.</li>
+      </ul>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 560 178" width="560" role="img" aria-labelledby="fig-compo-titre">
+        <title id="fig-compo-titre">Deux compositions : une commande contient des produits, un bâtiment contient des salles ; losange plein côté commande et côté bâtiment.</title>
+        <rect class="boite" x="20" y="10" width="150" height="74" rx="3"/>
+        <path class="boite" d="M20 38 H170"/>
+        <text x="95" y="29" text-anchor="middle" class="gras">Commande</text>
+        <g font-size="13"><text x="28" y="56">date</text><text x="28" y="76">…</text></g>
+        <rect class="boite" x="390" y="10" width="150" height="74" rx="3"/>
+        <path class="boite" d="M390 38 H540"/>
+        <text x="465" y="29" text-anchor="middle" class="gras">Produit</text>
+        <g font-size="13"><text x="398" y="56">nom</text><text x="398" y="76">…</text></g>
+        <path class="plein" d="M170 50 l10 -6 l10 6 l-10 6 z"/>
+        <path class="trait" d="M190 50 H390"/>
+        <text x="198" y="43" class="gras">1</text>
+        <text x="290" y="43" text-anchor="middle" font-size="13">contient ▸</text>
+        <text x="380" y="43" text-anchor="end" class="gras">1..*</text>
+
+        <rect class="boite" x="20" y="96" width="150" height="74" rx="3"/>
+        <path class="boite" d="M20 124 H170"/>
+        <text x="95" y="115" text-anchor="middle" class="gras">Batiment</text>
+        <g font-size="13"><text x="28" y="142">nom</text><text x="28" y="162">…</text></g>
+        <rect class="boite" x="390" y="96" width="150" height="74" rx="3"/>
+        <path class="boite" d="M390 124 H540"/>
+        <text x="465" y="115" text-anchor="middle" class="gras">Salle</text>
+        <g font-size="13"><text x="398" y="142">nom</text><text x="398" y="162">…</text></g>
+        <path class="plein" d="M170 136 l10 -6 l10 6 l-10 6 z"/>
+        <path class="trait" d="M190 136 H390"/>
+        <text x="198" y="129" class="gras">1</text>
+        <text x="290" y="129" text-anchor="middle" font-size="13">contient ▸</text>
+        <text x="380" y="129" text-anchor="end" class="gras">1..*</text>
+      </svg>
+      <figcaption>Le losange plein est placé du côté du « tout » : la commande, le bâtiment.</figcaption>
+    </figure>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Commande et produit : attention au sens de « produit »</span></p>
+      <p>Pour que la composition <code>Commande — Produit</code> soit juste, « produit » doit s'entendre comme <em>ligne de commande</em> : tel article, en telle quantité, dans cette commande-là. Cette ligne n'existe pas sans sa commande, et disparaît avec elle.</p>
+      <p>Un produit du catalogue, lui, existe indépendamment des commandes et figure dans plusieurs d'entre elles : entre <code>Commande</code> et un tel produit, on a une association ordinaire <code>* — *</code>, pas une composition. Le test « supprimer le tout supprime-t-il les parties ? » tranche.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Vérifier le diagramme avant la traduction <span class="ref">diapos 22–30</span></h2>
+    <p>Un diagramme se traduit mécaniquement en modèle relationnel, mais seulement s'il est propre. On le vérifie donc en trois passes : la syntaxe, le sens, puis les formes normales.</p>
+
+    <h3>Vérifications syntaxiques <span class="ref">diapos 23–25</span></h3>
+    <ul>
+      <li>Les noms des classes, des associations et des attributs doivent être <strong>explicites</strong>.</li>
+      <li>Les types, les contraintes d'unicité et les multiplicités des <strong>attributs</strong> doivent être complétés.</li>
+      <li>Les attributs <strong>composites</strong> ou <strong>multivalués</strong> doivent être transformés.</li>
+    </ul>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 700 192" width="700" role="img" aria-labelledby="fig-syn-titre">
+        <title id="fig-syn-titre">Transformation de la classe Personne : l'attribut multivalué prénoms devient prénom 1 et prénom 2, l'attribut composite adresse devient une classe Adresse liée par l'association réside.</title>
+        <defs>
+          <marker id="fleche-syn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein-accent"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="10" y="10" width="200" height="174" rx="3"/>
+        <path class="boite" d="M10 38 H210"/>
+        <text x="110" y="29" text-anchor="middle" class="gras">Personne</text>
+        <g font-size="12.5">
+          <text x="18" y="56">nom : string [1]</text>
+          <text x="18" y="76" class="accent gras">prénoms : string [1..*]</text>
+          <text x="18" y="96">no sécu : string [1] {unique}</text>
+          <text x="18" y="116" class="accent gras">adresse : Adresse [1]</text>
+          <text x="18" y="136">salaire : float [0..1]</text>
+          <text x="18" y="156">permis B : bool [0..1]</text>
+          <text x="18" y="176">date naissance : Date [1]</text>
+        </g>
+        <path class="accent" d="M216 97 H248" marker-end="url(#fleche-syn)"/>
+
+        <rect class="boite" x="256" y="10" width="200" height="174" rx="3"/>
+        <path class="boite" d="M256 38 H456"/>
+        <text x="356" y="29" text-anchor="middle" class="gras">Personne</text>
+        <g font-size="12.5">
+          <text x="264" y="56">nom : string [1]</text>
+          <text x="264" y="76" class="accent">prénom 1 : string [1]</text>
+          <text x="264" y="96" class="accent">prénom 2 : string [0..1]</text>
+          <text x="264" y="116">no sécu : string [1] {unique}</text>
+          <text x="264" y="136">salaire : float [0..1]</text>
+          <text x="264" y="156">permis B : bool [0..1]</text>
+          <text x="264" y="176">date naissance : Date [1]</text>
+        </g>
+
+        <path class="trait" d="M456 97 H522"/>
+        <text x="464" y="90" class="gras">*</text>
+        <text x="514" y="90" text-anchor="end" class="gras">1</text>
+        <text x="489" y="113" text-anchor="middle" font-size="12.5">réside</text>
+
+        <rect class="boite-accent" x="522" y="40" width="170" height="114" rx="3"/>
+        <path class="boite-accent" d="M522 68 H692"/>
+        <text x="607" y="59" text-anchor="middle" class="gras accent">Adresse</text>
+        <g font-size="12.5">
+          <text x="530" y="86">numéro : string [1]</text>
+          <text x="530" y="106">voie : string [1]</text>
+          <text x="530" y="126">code postal : integer [1]</text>
+          <text x="530" y="146">commune : string [1]</text>
+        </g>
+      </svg>
+      <figcaption>À gauche, deux attributs à transformer (en couleur). À droite, le diagramme corrigé.</figcaption>
+    </figure>
+
+    <p>Les deux problèmes se règlent différemment :</p>
+    <ul>
+      <li><code>prénoms : string [1..*]</code> est <strong>multivalué</strong>. Il est remplacé par deux attributs monovalués, <code>prénom 1 [1]</code>, obligatoire, et <code>prénom 2 [0..1]</code>, facultatif.</li>
+      <li><code>adresse : Adresse [1]</code> est <strong>composite</strong> : son type est structuré. Il devient une classe <code>Adresse</code> (numéro, voie, code postal, commune), reliée à <code>Personne</code> par l'association « réside » : une personne réside à une adresse, et plusieurs personnes peuvent résider à la même.</li>
+    </ul>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Deux limites de cette correction</span></p>
+      <ul>
+        <li>Découper <code>prénoms</code> en deux attributs limite chaque personne à deux prénoms. Si le nombre de prénoms ne doit pas être borné, il faut une classe <code>Prénom</code> reliée à <code>Personne</code>, sur le même principe que <code>Adresse</code>.</li>
+        <li>Un code postal gagne à être une chaîne plutôt qu'un entier : stocké comme entier, <code>01000</code> (Bourg-en-Bresse) devient <code>1000</code>. Règle générale : un « numéro » sur lequel on ne fait pas de calcul (code postal, téléphone, no sécu) se stocke en chaîne.</li>
+      </ul>
+    </div>
+
+    <h3>Vérifications sémantiques <span class="ref">diapos 26–27</span></h3>
+    <ul>
+      <li><strong>Identifiant de chaque classe</strong>
+        <ul>
+          <li>S'il n'y a pas de clé primaire, on ajoute un identifiant unique à chaque instance.</li>
+          <li>Chaque attribut doit être en dépendance fonctionnelle avec la clé primaire de sa classe : c'est l'objet des formes normales (section 4.3).</li>
+        </ul>
+      </li>
+      <li><strong>Attributs</strong>
+        <ul>
+          <li>Chaque attribut d'une classe doit désigner une réalité différente.</li>
+          <li>Aucun attribut calculable ne doit apparaître, sauf si son calcul prend trop de temps.</li>
+        </ul>
+      </li>
+      <li><strong>Classes</strong> : factoriser quand c'est nécessaire et possible.</li>
+    </ul>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 690 204" width="690" role="img" aria-labelledby="fig-fact-titre">
+        <title id="fig-fact-titre">Factorisation : Musicien·ne et Chef·fe d'orchestre deviennent Personne ; Entomologiste, Ornithologue et Botaniste deviennent Biologiste avec un attribut Spécialité.</title>
+        <defs>
+          <marker id="fleche-fact" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein-accent"/>
+          </marker>
+        </defs>
+        <g font-size="13">
+          <rect class="boite" x="10" y="10" width="150" height="74" rx="3"/>
+          <path class="boite" d="M10 38 H160"/>
+          <text x="85" y="29" text-anchor="middle" class="gras">Musicien·ne</text>
+          <text x="18" y="56">Nom</text><text x="18" y="76">Prénom</text>
+          <rect class="boite" x="170" y="10" width="150" height="74" rx="3"/>
+          <path class="boite" d="M170 38 H320"/>
+          <text x="245" y="29" text-anchor="middle" class="gras">Chef·fe d'orchestre</text>
+          <text x="178" y="56">Nom</text><text x="178" y="76">Prénom</text>
+          <path class="accent" d="M330 47 H518" marker-end="url(#fleche-fact)"/>
+          <rect class="boite-accent" x="528" y="10" width="150" height="74" rx="3"/>
+          <path class="boite-accent" d="M528 38 H678"/>
+          <text x="603" y="29" text-anchor="middle" class="gras accent">Personne</text>
+          <text x="536" y="56">Nom</text><text x="536" y="76">Prénom</text>
+
+          <rect class="boite" x="10" y="104" width="150" height="74" rx="3"/>
+          <path class="boite" d="M10 132 H160"/>
+          <text x="85" y="123" text-anchor="middle" class="gras">Entomologiste</text>
+          <text x="18" y="150">Nom</text><text x="18" y="170">Prénom</text>
+          <rect class="boite" x="170" y="104" width="150" height="74" rx="3"/>
+          <path class="boite" d="M170 132 H320"/>
+          <text x="245" y="123" text-anchor="middle" class="gras">Ornithologue</text>
+          <text x="178" y="150">Nom</text><text x="178" y="170">Prénom</text>
+          <rect class="boite" x="330" y="104" width="150" height="74" rx="3"/>
+          <path class="boite" d="M330 132 H480"/>
+          <text x="405" y="123" text-anchor="middle" class="gras">Botaniste</text>
+          <text x="338" y="150">Nom</text><text x="338" y="170">Prénom</text>
+          <path class="accent" d="M488 141 H518" marker-end="url(#fleche-fact)"/>
+          <rect class="boite-accent" x="528" y="104" width="150" height="94" rx="3"/>
+          <path class="boite-accent" d="M528 132 H678"/>
+          <text x="603" y="123" text-anchor="middle" class="gras accent">Biologiste</text>
+          <text x="536" y="150">Nom</text><text x="536" y="170">Prénom</text><text x="536" y="190" class="accent">Spécialité</text>
+        </g>
+      </svg>
+      <figcaption>Des classes aux attributs identiques sont fusionnées. Quand elles ne diffèrent que par leur nom, ce nom devient un attribut (<code>Spécialité</code>).</figcaption>
+    </figure>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Dépendance fonctionnelle et attribut calculable</span></p>
+      <p>Le cours emploie la notion de <dfn>dépendance fonctionnelle</dfn> (<span class="en" lang="en">functional dependency</span>) sans la définir. On note \(A \to B\) et on lit « \(A\) détermine \(B\) » quand, à une valeur de \(A\), correspond toujours une seule valeur de \(B\). Par exemple <code>no sécu → nom</code> : connaître le numéro de sécurité sociale suffit à connaître le nom. L'inverse est faux, deux personnes pouvant porter le même nom.</p>
+      <p>Par définition, la clé primaire détermine tous les attributs de sa classe. Les formes normales vérifient qu'aucun attribut ne dépend d'<em>autre chose</em> que de la clé.</p>
+      <p>Un attribut calculable est un attribut dont la valeur se déduit des autres : l'âge se calcule à partir de la date de naissance. Le stocker, c'est garder une valeur qui devient fausse chaque année. On stocke donc la date de naissance, et on calcule l'âge à la demande.</p>
+    </div>
+
+    <h3>Les formes normales <span class="ref">diapos 28–30</span></h3>
+    <p>Les formes normales sont des critères successifs : une relation en 2NF est déjà en 1NF, une relation en 3NF est déjà en 2NF. Le cours les illustre sur une classe <code>Article</code>. Dans les schémas ci-dessous, la clé primaire est soulignée.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi normaliser ?</span></p>
+      <p>Une relation mal normalisée répète la même information sur plusieurs lignes. Dans la table suivante, l'adresse du fournisseur Informatix est écrite deux fois :</p>
+      <table>
+        <thead>
+          <tr><th>nom_produit</th><th>nom_fournisseur</th><th>adr_fournisseur</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Clavier K120</td><td>Informatix</td><td>12 rue des Lilas, Le Mans</td></tr>
+          <tr><td>Souris M90</td><td>Informatix</td><td>12 rue des Lilas, Le Mans</td></tr>
+          <tr><td>Écran E24</td><td>Visio SA</td><td>3 avenue du Port, Nantes</td></tr>
+        </tbody>
+      </table>
+      <p>Cette redondance provoque trois <dfn>anomalies</dfn> :</p>
+      <ul>
+        <li><strong>de mise à jour</strong> : si Informatix déménage, il faut modifier deux lignes, et en oublier une rend la base incohérente ;</li>
+        <li><strong>d'insertion</strong> : impossible d'enregistrer un fournisseur qui ne fournit encore aucun produit ;</li>
+        <li><strong>de suppression</strong> : supprimer l'écran E24 fait perdre l'adresse de Visio SA.</li>
+      </ul>
+    </div>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Première forme normale (1NF)</span></p>
+      <p>Une classe est en 1NF si tout attribut est <strong>atomique</strong>, c'est-à-dire non décomposable : ni multivalué, ni composite.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>L'attribut multivalué marques</span></p>
+      <p>Dans <code>Article</code>, l'attribut <code>marques [1..*]</code> contient une liste : la classe n'est pas en 1NF.</p>
+      <div class="relations">
+        <p><b>Article</b>(<u>nom_produit, nom_fournisseur</u>, adr_fournisseur, marques [1..*]) <i>pas en 1NF</i></p>
+      </div>
+      <p>On sort les marques dans une classe <code>Marque</code> (nom, pays), dont la clé est le couple (nom, pays), reliée à <code>Article</code> par l'association « possède » :</p>
+      <div class="relations">
+        <p><b>Article</b>(<u>nom_produit, nom_fournisseur</u>, adr_fournisseur)</p>
+        <p><b>Marque</b>(<u>nom, pays</u>) <i>reliée à Article par « possède » (* côté Article, 1 côté Marque)</i></p>
+      </div>
+      <p><span class="badge a-verifier">À vérifier</span> La diapo porte la multiplicité <code>1</code> côté <code>Marque</code>, ce qui donne une seule marque par article, alors que l'attribut de départ en autorisait plusieurs (<code>[1..*]</code>). Pour conserver plusieurs marques par article, il faudrait <code>1..*</code> de ce côté.</p>
+    </div>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Deuxième forme normale (2NF)</span></p>
+      <p>Une classe est en 2NF si elle est en 1NF et si tout attribut non-clé dépend de <strong>toute</strong> la clé, et pas seulement d'une partie de celle-ci.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>L'adresse du fournisseur</span></p>
+      <div class="relations">
+        <p><b>Article</b>(<u>nom_produit, nom_fournisseur</u>, adr_fournisseur) <i>pas en 2NF</i></p>
+      </div>
+      <p>La clé est le couple (nom_produit, nom_fournisseur). Or <code>adr_fournisseur</code> ne dépend que de <code>nom_fournisseur</code>, une partie de la clé : l'adresse d'un fournisseur ne change pas selon le produit. Le cours retire <code>nom_fournisseur</code> de la clé :</p>
+      <div class="relations">
+        <p><b>Article</b>(<u>nom_produit</u>, nom_fournisseur, adr_fournisseur) <i>en 2NF</i></p>
+      </div>
+      <p>La diapo demande alors : « Autre problème ? ». <span class="badge ajout">Ajout</span> Oui : <code>adr_fournisseur</code> dépend maintenant de <code>nom_fournisseur</code>, qui n'est pas une clé. C'est précisément ce qu'interdit la troisième forme normale.</p>
+    </div>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Troisième forme normale (3NF)</span></p>
+      <p>Une classe est en 3NF si elle est en 2NF et si aucun attribut non-clé ne dépend d'un <strong>autre attribut non-clé</strong>.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Le fournisseur devient une classe</span></p>
+      <p>La dépendance <code>nom_fournisseur → adr_fournisseur</code> entre deux attributs non-clés viole la 3NF. On crée la classe <code>Fournisseur</code>, dont <code>nom_fournisseur</code> devient l'identifiant, reliée à <code>Article</code> par l'association « fournit » :</p>
+      <div class="relations">
+        <p><b>Article</b>(<u>nom_produit</u>)</p>
+        <p><b>Fournisseur</b>(<u>nom_fournisseur</u>, adr_fournisseur) <i>fournit : 1..* côté Fournisseur, * côté Article</i></p>
+      </div>
+      <p><span class="badge ajout">Ajout</span> Chaque adresse n'est plus écrite qu'une fois, et les trois anomalies disparaissent.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Moyen mnémotechnique</span></p>
+      <p>Tout attribut non-clé doit dépendre <strong>de la clé</strong> (1NF : il y a une clé et des valeurs atomiques), <strong>de toute la clé</strong> (2NF) et <strong>de rien d'autre que la clé</strong> (3NF).</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Traduire en modèle relationnel <span class="ref">diapos 31–39</span></h2>
+    <p>Cette étape se fait <strong>après</strong> les vérifications précédentes. Elle consiste à appliquer quelques règles, comme un algorithme, pour obtenir le modèle relationnel (MR), c'est-à-dire la représentation logique de la base, indépendante de la façon dont elle est stockée.</p>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Notation</p>
+      <p>Une relation s'écrit <code>Nom(attribut1, attribut2, …)</code>. La <strong>clé primaire</strong> est soulignée, les <strong>clés étrangères</strong> sont précédées de <code>#</code>. Un attribut peut être les deux à la fois : <code>Eleve(<u>#id_personne</u>, age)</code>.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Clé étrangère</span></p>
+      <p>Une <dfn>clé étrangère</dfn> (<span class="en" lang="en">foreign key</span>, FK) est un attribut, ou un groupe d'attributs, qui fait référence à la clé primaire d'une autre relation, ou de la même. Sa valeur doit exister dans la relation référencée : c'est la <dfn>contrainte d'intégrité référentielle</dfn>. Une voiture ne peut pas appartenir à une personne absente de la table <code>Personne</code>.</p>
+      <p>C'est par les clés étrangères que le modèle relationnel représente les associations : là où le diagramme trace un trait entre deux classes, le MR recopie une clé.</p>
+    </div>
+
+    <h3>Règle 1 : les classes <span class="ref">diapo 32</span></h3>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Règle 1 <span>Classe</span></p>
+      <ul>
+        <li>Toute classe A devient une relation A.</li>
+        <li>Tout attribut de la classe A devient un attribut de la relation A.</li>
+        <li>L'identifiant de la classe A devient la clé primaire de la relation A. S'il n'y en a pas, on ajoute un numéro d'ordre, sauf en cas de lien hiérarchique.</li>
+      </ul>
+    </div>
+
+    <p>Appliquée aux classes <code>Passport</code>, <code>Personne</code> et <code>Critique</code> des figures précédentes, la règle 1 donne des relations encore incomplètes, que les règles suivantes vont terminer :</p>
+    <div class="relations">
+      <p><b>Passport</b>(<u>numéro</u>, nom, prénom, …</p>
+      <p><b>Personne</b>(<u>id_personne</u>, nom, prénom, …</p>
+      <p><b>Critique</b>(adresse, …</p>
+    </div>
+    <p><span class="badge ajout">Ajout</span> <code>Personne</code> n'avait pas d'identifiant : on lui ajoute <code>id_personne</code>. <code>Critique</code>, elle, n'en reçoit pas, car c'est une classe spécialisée (le « lien hiérarchique ») : sa clé viendra de <code>Personne</code>, par la règle 4.</p>
+
+    <h3>Règle 2 : les associations * — * <span class="ref">diapo 33</span></h3>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Règle 2 <span>Association plusieurs à plusieurs</span></p>
+      <ul>
+        <li>L'association A devient une relation A, appelée <dfn>table d'association</dfn>.</li>
+        <li>Tout attribut de l'association A devient un attribut de la relation A.</li>
+        <li>Les clés primaires des classes liées deviennent des clés étrangères de la relation A, et forment ensemble sa clé primaire.</li>
+      </ul>
+    </div>
+
+    <p>Pour l'association « joue » entre musicien·nes et orchestres (figure 5), avec sa classe d'association <code>Activité</code> :</p>
+    <div class="relations">
+      <p><b>Musicien·ne</b>(<u>id_mus</u>, nom, prenom)</p>
+      <p><b>Orchestre</b>(<u>id_orch</u>, type, adresse)</p>
+      <p><b>Activité</b>(<u>#id_mus, #id_orch</u>, date_debut, date_fin) <i>table d'association</i></p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi une table à part, et ce qu'implique sa clé</span></p>
+      <p>Une association <code>* — *</code> ne peut pas se ranger dans l'une des deux relations : un musicien joue dans plusieurs orchestres, il faudrait plusieurs <code>id_orch</code> dans une même ligne de <code>Musicien·ne</code>, ce qu'interdit la 1NF. Chaque ligne de <code>Activité</code> représente donc un lien, une instance d'association.</p>
+      <p>La clé (<code>id_mus</code>, <code>id_orch</code>) autorise une seule ligne par couple : un musicien qui quitte un orchestre puis y revient ne peut pas avoir deux périodes d'activité. Si ce cas doit être prévu, on ajoute <code>date_debut</code> à la clé.</p>
+    </div>
+
+    <h3>Règle 3 : les associations 0..1 — * <span class="ref">diapos 34–36</span></h3>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Règle 3 <span>Association un à plusieurs</span></p>
+      <ul>
+        <li>La clé primaire de la relation du côté <code>1</code> (ou <code>0..1</code>) devient une clé étrangère de la relation du côté <code>*</code>.</li>
+        <li>Les attributs de l'association sont ajoutés à la relation issue de la classe du côté <code>*</code>.</li>
+      </ul>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 600 166" width="600" role="img" aria-labelledby="fig-achat-titre">
+        <title id="fig-achat-titre">Association possède entre Voiture (étoile) et Personne (1), avec la classe d'association achat portant une date.</title>
+        <rect class="boite" x="10" y="10" width="220" height="74" rx="3"/>
+        <path class="boite" d="M10 38 H230"/>
+        <text x="120" y="29" text-anchor="middle" class="gras">Voiture</text>
+        <g font-size="12.5"><text x="18" y="56">immatriculation : string {PK}</text><text x="18" y="76">couleur : string</text></g>
+        <rect class="boite" x="400" y="10" width="190" height="74" rx="3"/>
+        <path class="boite" d="M400 38 H590"/>
+        <text x="495" y="29" text-anchor="middle" class="gras">Personne</text>
+        <g font-size="12.5"><text x="408" y="56">nom : string [1]</text><text x="408" y="76">prénom : string</text></g>
+        <path class="trait" d="M230 50 H400"/>
+        <text x="240" y="43" class="gras">*</text>
+        <text x="315" y="43" text-anchor="middle" font-size="13">◂ possède</text>
+        <text x="390" y="43" text-anchor="end" class="gras">1</text>
+        <path class="pointille" d="M315 50 V104"/>
+        <rect class="boite-accent" x="235" y="104" width="160" height="54" rx="3"/>
+        <path class="boite-accent" d="M235 132 H395"/>
+        <text x="315" y="123" text-anchor="middle" class="gras accent">achat</text>
+        <text x="243" y="150" font-size="12.5">date : date [1]</text>
+      </svg>
+      <figcaption>Une personne possède plusieurs voitures ; chaque voiture a un seul propriétaire et une date d'achat.</figcaption>
+    </figure>
+
+    <div class="relations">
+      <p><b>Personne</b>(<u>id_pers</u>, nom, prenom)</p>
+      <p><b>Voiture</b>(<u>immatriculation</u>, couleur, date_achat, #id_pers)</p>
+    </div>
+
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>Se poser la question : est-ce que ça a du sens dans la vie ?</span></p>
+      <p><span class="badge ajout">Ajout</span> Une voiture a <em>un</em> propriétaire : on peut écrire son identifiant dans la ligne de la voiture. Une personne a <em>plusieurs</em> voitures : on ne peut pas écrire leurs immatriculations dans la ligne de la personne, qui n'a qu'une case pour cela. La clé étrangère va donc toujours du côté <code>*</code>. De même, la date d'achat est celle d'<em>une</em> voiture : elle rejoint <code>Voiture</code>.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>1 ou 0..1 : la clé étrangère peut-elle être vide ?</span></p>
+      <p>Le minimum du côté <code>1</code> décide si la clé étrangère est obligatoire. Avec <code>1</code>, toute voiture a un propriétaire : <code>id_pers</code> est toujours rempli (<code>NOT NULL</code> en SQL). Avec <code>0..1</code>, une voiture peut n'avoir aucun propriétaire : <code>id_pers</code> peut rester vide (<code>NULL</code>).</p>
+    </div>
+
+    <h4>Cas de la composition <span class="ref">diapo 35</span></h4>
+    <p>Dans le cas d'une composition, la clé étrangère qui désigne le « tout » est ajoutée à la <strong>clé primaire</strong> de la relation issue de la partie. Pour le bâtiment et ses salles (figure 9) :</p>
+    <div class="relations">
+      <p><b>Batiment</b>(<u>id_bat</u>, nom, …)</p>
+      <p><b>Salle</b>(<u>id_salle, #id_bat</u>, nom, …)</p>
+    </div>
+    <p>Pourquoi ? Une salle n'existe pas sans le bâtiment qui la contient.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Ce que change cette clé composée</span></p>
+      <ul>
+        <li><code>id_salle</code> n'a besoin d'être unique qu'à l'intérieur d'un bâtiment : la salle 101 du bâtiment A et la salle 101 du bâtiment B sont deux lignes différentes.</li>
+        <li>« Supprimer le tout supprime ses parties » se traduira en SQL par une suppression en cascade (<code>ON DELETE CASCADE</code>) sur la clé étrangère.</li>
+      </ul>
+    </div>
+
+    <h4>Cas de l'association réflexive <span class="ref">diapo 36</span></h4>
+    <p>La clé primaire est ajoutée comme clé étrangère à la <strong>même</strong> relation, en changeant son nom. Pour la hiérarchie des employé·es (figure 8) :</p>
+    <div class="relations">
+      <p><b>Employe</b>(<u>id_employe</u>, nom, prenom, fonction, #id_chef)</p>
+    </div>
+    <p><span class="badge ajout">Ajout</span> <code>id_chef</code> fait référence à <code>id_employe</code> dans la même table. On le renomme parce qu'une relation ne peut pas avoir deux attributs du même nom, et pour que son rôle soit lisible. Il vaut <code>NULL</code> pour le ou la big chef·fe, qui n'a pas de supérieur : c'est le <code>0..1</code> du rôle « chef ».</p>
+
+    <h3>Règle 4 : l'héritage <span class="ref">diapo 37</span></h3>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Règle 4 <span>Spécialisation</span></p>
+      <p>La clé primaire de la relation pointée par la flèche (la classe générique) est à la fois <strong>clé primaire et clé étrangère</strong> dans l'autre relation (la classe spécialisée).</p>
+    </div>
+
+    <div class="relations">
+      <p><b>Personne</b>(<u>id_pers</u>, nom, prenom)</p>
+      <p><b>Critique</b>(<u>#id_pers</u>, adresse)</p>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Clé primaire, parce qu'un critique est identifié comme la personne qu'il est. Clé étrangère, parce que ce critique doit exister dans <code>Personne</code>, où se trouvent son nom et son prénom. On retrouve le schéma <code>Eleve</code> / <code>Professeur</code> de l'exemple d'introduction.</p>
+
+    <h3>Règle 5 : les associations sans * <span class="ref">diapo 38</span></h3>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Règle 5 <span>Association un à un</span></p>
+      <p>La clé primaire de l'une des relations est ajoutée comme clé étrangère de l'autre relation.</p>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 600 188" width="600" role="img" aria-labelledby="fig-r5-titre">
+        <title id="fig-r5-titre">Associations sans étoile : Personne (1) et Passport (0..1) ; Voiture (0..1) possédée par Employé (0..1).</title>
+        <rect class="boite" x="10" y="10" width="200" height="74" rx="3"/>
+        <path class="boite" d="M10 38 H210"/>
+        <text x="110" y="29" text-anchor="middle" class="gras">Personne</text>
+        <g font-size="12.5"><text x="18" y="56">nom : string [1]</text><text x="18" y="76">prénom : string</text></g>
+        <rect class="boite" x="400" y="10" width="190" height="74" rx="3"/>
+        <path class="boite" d="M400 38 H590"/>
+        <text x="495" y="29" text-anchor="middle" class="gras">Passport</text>
+        <g font-size="12.5"><text x="408" y="56">numéro : string {PK}</text><text x="408" y="76">préfecture : string</text></g>
+        <path class="trait" d="M210 50 H400"/>
+        <text x="220" y="43" class="gras">1</text>
+        <text x="390" y="43" text-anchor="end" class="gras">0..1</text>
+
+        <rect class="boite" x="10" y="106" width="200" height="74" rx="3"/>
+        <path class="boite" d="M10 134 H210"/>
+        <text x="110" y="125" text-anchor="middle" class="gras">Voiture</text>
+        <g font-size="12.5"><text x="18" y="152">immatriculation : string {PK}</text><text x="18" y="172">couleur : string</text></g>
+        <rect class="boite" x="400" y="106" width="190" height="74" rx="3"/>
+        <path class="boite" d="M400 134 H590"/>
+        <text x="495" y="125" text-anchor="middle" class="gras">Employé</text>
+        <g font-size="12.5"><text x="408" y="152">nom : string [1]</text><text x="408" y="172">prénom : string</text></g>
+        <path class="trait" d="M210 146 H400"/>
+        <text x="220" y="139" class="gras">0..1</text>
+        <text x="305" y="139" text-anchor="middle" font-size="13">◂ possède</text>
+        <text x="390" y="139" text-anchor="end" class="gras">0..1</text>
+      </svg>
+      <figcaption>En haut, une personne a au plus un passeport, et un passeport appartient à exactement une personne. En bas, une voiture de service est attribuée à au plus un employé, qui en a au plus une.</figcaption>
+    </figure>
+
+    <p>Pour la personne et son passeport, la clé étrangère va dans <code>Passport</code> :</p>
+    <div class="relations">
+      <p><b>Personne</b>(<u>id_pers</u>, nom, prenom)</p>
+      <p><b>Passport</b>(<u>numero</u>, prefecture, #id_pers)</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>« Pourquoi pas l'inverse ? »</span></p>
+      <p>La diapo pose la question sans y répondre. Placer <code>#numero</code> dans <code>Personne</code> serait correct, mais moins bon : beaucoup de personnes n'ont pas de passeport (<code>0..1</code>), et cette colonne serait souvent vide. À l'inverse, tout passeport a exactement un titulaire (<code>1</code>) : dans <code>Passport</code>, <code>id_pers</code> est toujours rempli.</p>
+      <p>Règle pratique : on place la clé étrangère dans la relation dont la participation est obligatoire, celle qui voit un <code>1</code> de l'autre côté.</p>
+      <p>Pour garantir qu'une personne n'a pas deux passeports, <code>id_pers</code> doit aussi être unique dans <code>Passport</code> (contrainte <code>UNIQUE</code> en SQL). Sans cela, rien n'empêcherait deux lignes avec le même <code>id_pers</code>, et l'on retomberait sur une association <code>1 — *</code>.</p>
+    </div>
+
+    <p>Quand les deux côtés sont facultatifs (<code>0..1 — 0..1</code>), comme pour la voiture de service, aucun côté n'est privilégié : les deux traductions sont valables.</p>
+    <div class="relations">
+      <p><b>Voiture</b>(<u>immatriculation</u>, couleur, #id_employé) <i>première possibilité</i></p>
+      <p><b>Employé</b>(<u>id_employé</u>, nom, prénom)</p>
+    </div>
+    <div class="relations">
+      <p><b>Voiture</b>(<u>immatriculation</u>, couleur) <i>seconde possibilité</i></p>
+      <p><b>Employé</b>(<u>id_employé</u>, nom, prénom, #immatriculation)</p>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo écrit <code>Employé(#id_employé, …)</code>, avec un <code>#</code> devant la clé primaire. Dans ces deux schémas, <code>id_employé</code> n'est la clé étrangère de rien : le <code>#</code> semble une coquille, et il est retiré ici.</p>
+
+    <h3>Vérifications finales <span class="ref">diapo 39</span></h3>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Contrôler le modèle relationnel obtenu</span></p>
+      <ul>
+        <li>Toutes les <strong>classes</strong> sont devenues des <strong>relations</strong>.</li>
+        <li>Toutes les associations sont devenues des relations <strong>ou</strong> des clés étrangères.</li>
+        <li>Toutes les relations ont une clé primaire.</li>
+        <li>Toutes les parenthèses sont fermées.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>S'entraîner <span class="badge ajout">Ajout</span></h2>
+    <p>Ces exercices ne figurent pas dans le support. Ils reprennent les méthodes du cours dans l'ordre : lecture des multiplicités, normalisation, traduction complète.</p>
+
+    <div class="bloc exercice" id="ex-1">
+      <p class="bloc-titre">Exercice 1 <span>Lire des multiplicités</span></p>
+      <p>Sur la figure 5 (musicien·nes et orchestres), écrire les deux phrases que traduisent les multiplicités de l'association « joue ».</p>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Une multiplicité se lit depuis l'autre classe : celle qui est écrite à côté d'<code>Orchestre</code> compte des orchestres.</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <ul>
+          <li><code>*</code> côté <code>Orchestre</code> : un·e musicien·ne joue dans 0, 1 ou plusieurs orchestres.</li>
+          <li><code>1..*</code> côté <code>Musicien·ne</code> : un orchestre compte au moins un·e musicien·ne.</li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="bloc exercice" id="ex-2">
+      <p class="bloc-titre">Exercice 2 <span>Normaliser une relation</span></p>
+      <p>Une scolarité enregistre les notes dans une seule relation, dont la clé est le couple (<code>num_etudiant</code>, <code>code_ue</code>) :</p>
+      <div class="relations">
+        <p><b>Inscription</b>(<u>num_etudiant, code_ue</u>, nom_etudiant, intitule_ue, note)</p>
+      </div>
+      <ol>
+        <li>Donner les dépendances fonctionnelles.</li>
+        <li>En quelle forme normale est cette relation ?</li>
+        <li>La décomposer pour obtenir des relations en 3NF.</li>
+      </ol>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Le nom d'un étudiant dépend-il de l'UE ? L'intitulé d'une UE dépend-il de l'étudiant ?</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <ol>
+          <li><code>num_etudiant → nom_etudiant</code> ; <code>code_ue → intitule_ue</code> ; (<code>num_etudiant</code>, <code>code_ue</code>) <code>→ note</code>.</li>
+          <li>Elle est en 1NF (attributs atomiques) mais pas en 2NF : <code>nom_etudiant</code> et <code>intitule_ue</code> ne dépendent chacun que d'une partie de la clé.</li>
+          <li>On sort chaque dépendance partielle dans sa propre relation :</li>
+        </ol>
+        <div class="relations">
+          <p><b>Etudiant</b>(<u>num_etudiant</u>, nom_etudiant)</p>
+          <p><b>UE</b>(<u>code_ue</u>, intitule_ue)</p>
+          <p><b>Inscription</b>(<u>#num_etudiant, #code_ue</u>, note)</p>
+        </div>
+        <p>Aucun attribut non-clé ne dépend plus d'un autre attribut non-clé : les trois relations sont en 3NF. On reconnaît au passage une table d'association (règle 2) entre <code>Etudiant</code> et <code>UE</code>.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice" id="ex-3">
+      <p class="bloc-titre">Exercice 3 <span>Traduire le diagramme d'une bibliothèque</span></p>
+      <p>Le diagramme de classes d'une bibliothèque comporte quatre classes, déjà vérifiées :</p>
+      <ul>
+        <li><code>Auteur</code> (<code>id_auteur {PK}</code>, nom) ;</li>
+        <li><code>Livre</code> (<code>isbn {PK}</code>, titre, année) ;</li>
+        <li><code>Exemplaire</code> (<code>code_barre {PK}</code>, état) ;</li>
+        <li><code>Adherent</code> (<code>num_adherent {PK}</code>, nom).</li>
+      </ul>
+      <p>et quatre associations :</p>
+      <ul>
+        <li><code>Auteur 1..* — écrit ▸ — * Livre</code> : un livre a au moins un auteur, un auteur écrit un nombre quelconque de livres ;</li>
+        <li><code>Livre 1 — possède ▸ — * Exemplaire</code> : chaque exemplaire est la copie d'un seul livre ;</li>
+        <li><code>Adherent 0..1 — emprunte ▸ — * Exemplaire</code>, avec une classe d'association <code>Emprunt</code> (date_emprunt) : un exemplaire est emprunté par au plus un adhérent à la fois ;</li>
+        <li><code>Adherent</code> réflexive « parraine », rôle <code>0..1 parrain</code> et rôle <code>* filleul</code>.</li>
+      </ul>
+      <p>Donner le modèle relationnel, en indiquant la règle appliquée pour chaque association.</p>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Une seule de ces associations est de type <code>* — *</code>. Les trois autres placent une clé étrangère du côté <code>*</code>, dont une dans la même relation.</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <div class="relations">
+          <p><b>Auteur</b>(<u>id_auteur</u>, nom)</p>
+          <p><b>Livre</b>(<u>isbn</u>, titre, annee)</p>
+          <p><b>Ecrit</b>(<u>#id_auteur, #isbn</u>) <i>règle 2</i></p>
+          <p><b>Adherent</b>(<u>num_adherent</u>, nom, #num_parrain) <i>règle 3, cas réflexif</i></p>
+          <p><b>Exemplaire</b>(<u>code_barre</u>, etat, #isbn, #num_adherent, date_emprunt) <i>règle 3, deux fois</i></p>
+        </div>
+        <ul>
+          <li>« écrit » est <code>* — *</code> : table d'association <code>Ecrit</code>, dont la clé réunit les deux clés étrangères.</li>
+          <li>« possède » est <code>1 — *</code> : <code>#isbn</code> va dans <code>Exemplaire</code>, et n'est jamais vide.</li>
+          <li>« emprunte » est <code>0..1 — *</code> : <code>#num_adherent</code> va dans <code>Exemplaire</code>, avec l'attribut d'association <code>date_emprunt</code>. Les deux restent vides quand l'exemplaire est en rayon.</li>
+          <li>« parraine » est réflexive : la clé d'<code>Adherent</code> revient, renommée <code>num_parrain</code>, dans <code>Adherent</code>.</li>
+        </ul>
+        <p>Vérifications finales : quatre classes, quatre relations ; une association devenue relation, trois devenues clés étrangères ; toutes les relations ont une clé primaire.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Vocabulaire</h2>
+    <dl class="glossaire">
+      <dt>SGBD <span class="en" lang="en">DBMS</span></dt>
+      <dd>Système de gestion de bases de données : le logiciel qui stocke les données et exécute les requêtes.</dd>
+      <dt>Classe <span class="en" lang="en">class</span></dt>
+      <dd>Regroupement nommé de choses de même nature ; devient une relation, puis une table.</dd>
+      <dt>Instance <span class="en" lang="en">instance</span></dt>
+      <dd>Une chose particulière d'une classe ; devient un tuple, une ligne de la table.</dd>
+      <dt>Attribut <span class="en" lang="en">attribute</span></dt>
+      <dd>Caractéristique d'une classe, avec un domaine de valeurs et une multiplicité.</dd>
+      <dt>Multiplicité <span class="en" lang="en">multiplicity</span></dt>
+      <dd>Nombre minimum et maximum de valeurs d'un attribut, ou de participations d'une instance à une association.</dd>
+      <dt>Identifiant, clé primaire <span class="en" lang="en">primary key</span></dt>
+      <dd>Ensemble minimal d'attributs, unique et invariant, qui distingue chaque instance.</dd>
+      <dt>Clé étrangère <span class="en" lang="en">foreign key</span></dt>
+      <dd>Attribut qui fait référence à la clé primaire d'une relation ; représente une association dans le MR.</dd>
+      <dt>Association <span class="en" lang="en">association</span></dt>
+      <dd>Ensemble nommé de liens entre instances de classes.</dd>
+      <dt>Classe d'association <span class="en" lang="en">association class</span></dt>
+      <dd>Classe qui porte les attributs dépendant de tous les participants d'une association.</dd>
+      <dt>Spécialisation <span class="en" lang="en">generalization</span></dt>
+      <dd>Lien « est un » entre une classe générique et une classe spécialisée ; dessiné par une flèche.</dd>
+      <dt>Composition <span class="en" lang="en">composition</span></dt>
+      <dd>Association de propriété exclusive : la partie n'existe pas sans son tout.</dd>
+      <dt>Table d'association</dt>
+      <dd>Relation issue d'une association <code>* — *</code>, dont la clé réunit les clés des classes liées.</dd>
+      <dt>Dépendance fonctionnelle <span class="en" lang="en">functional dependency</span></dt>
+      <dd>\(A \to B\) : une valeur de \(A\) détermine une seule valeur de \(B\).</dd>
+      <dt>Forme normale <span class="en" lang="en">normal form</span></dt>
+      <dd>Critère de qualité d'une relation (1NF, 2NF, 3NF) qui limite la redondance.</dd>
+    </dl>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Une base se conçoit en trois temps : diagramme de classes (conceptuel), modèle relationnel (logique), SGBD (physique).</li>
+        <li>Classe = table, instance = ligne, attribut = colonne. Ne jamais confondre une classe et une de ses instances.</li>
+        <li>L'identifiant <code>{PK}</code> est minimal, unique et invariant. À défaut, on crée un numéro.</li>
+        <li>Un attribut est <code>[1]</code> ou <code>[0..1]</code>. Un attribut multivalué ou composite devient une classe.</li>
+        <li>Les multiplicités d'association (<code>0..1</code>, <code>1</code>, <code>*</code>, <code>1..*</code>) sont obligatoires, et se lisent depuis l'autre classe.</li>
+        <li>Un attribut qui dépend de tous les participants d'une association va dans une classe d'association.</li>
+        <li>1NF : attributs atomiques. 2NF : dépendre de toute la clé. 3NF : ne dépendre que de la clé.</li>
+        <li>Traduction : classe → relation ; <code>* — *</code> → table d'association ; <code>1 — *</code> → clé étrangère côté <code>*</code> ; composition → clé étrangère dans la clé de la partie ; réflexive → clé étrangère renommée ; héritage → clé à la fois primaire et étrangère ; <code>1 — 0..1</code> → clé étrangère d'un côté.</li>
+        <li>À la fin : chaque classe est une relation, chaque association une relation ou une clé étrangère, chaque relation a une clé primaire.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Quelle est la différence entre une classe et une instance ?</summary>
+        <div><p>La classe est un regroupement nommé de choses de même nature (<code>Personne</code>), qui devient une table. L'instance est une de ces choses (Lili Boulanger), qui devient une ligne.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un attribut <code>téléphones : string [1..*]</code> peut-il rester tel quel ?</summary>
+        <div><p>Non : il est multivalué, la classe n'est donc pas en 1NF. Il faut le justifier, ou le transformer en classe <code>Téléphone</code> liée à la classe d'origine.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi le nom d'une personne fait-il un mauvais identifiant ?</summary>
+        <div><p>Il n'est pas unique (homonymes) et il n'est pas invariant (il peut changer, par mariage par exemple). Or un identifiant doit être les deux.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quand faut-il une classe d'association ?</summary>
+        <div><p>Quand un attribut dépend de tous les participants de l'association à la fois, comme la période d'activité d'un musicien dans un orchestre.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Association <code>1 — *</code> entre Personne et Voiture : où va la clé étrangère ?</summary>
+        <div><p>Dans <code>Voiture</code>, le côté <code>*</code> : <code>Voiture(<u>immatriculation</u>, couleur, #id_pers)</code>. Chaque voiture a un seul propriétaire, donc une seule valeur à stocker.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Une relation a pour clé (A, B), et son attribut C ne dépend que de B. Quelle forme normale est violée ?</summary>
+        <div><p>La 2NF : C dépend d'une partie seulement de la clé. On sort (B, C) dans une relation à part, de clé B.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi la clé de <code>Salle</code> contient-elle <code>#id_bat</code> ?</summary>
+        <div><p>Parce que la salle est une partie de la composition <code>Batiment ◆— Salle</code> : elle n'existe pas sans son bâtiment, et n'est identifiée qu'à l'intérieur de celui-ci.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle est la clé de <code>Critique</code>, spécialisation de <code>Personne</code> ?</summary>
+        <div><p><code>#id_pers</code>, qui est à la fois clé primaire de <code>Critique</code> et clé étrangère vers <code>Personne</code> (règle 4).</p></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Références</h2>
+    <ul>
+      <li>Sylvain Meigner et Nathalie Camelin, cours de bases de données 1 (L2).</li>
+      <li>Jérôme Darmont, <a href="https://eric.univ-lyon2.fr/jdarmont/docs/old/m1idsm-bda.pdf">support de cours de bases de données</a> (master 1, université Lyon 2).</li>
+    </ul>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="index.html"><small>← Matière</small>Bases de données</a>
+    <a class="suivant" href="cours-02-sql.html"><small>Suivant →</small>Le langage SQL : requêtes, tables et fonctions</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connexité et modèle d'Erdős–Rényi · Théorie des graphes L3</title>
+<meta name="description" content="Cours 2 de théorie des graphes (L3) : chemins et connexité, composantes connexes, parcours en profondeur et en largeur, forte et faible connexité, circuits, arbre de Trémaux et algorithme de Tarjan, modèle de graphe aléatoire d'Erdős–Rényi.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-02-connexite-erdos-renyi.html" title="Quiz · Cours 2">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-ci-2025-2026.html" title="Quiz · Annale CI 2025-2026">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-ct-2025-2026.html" title="Quiz · Annale CT 2025-2026">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-ci-2024-2025.html" title="Quiz · Annale CI 2024-2025">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-ct-2024-2025.html" title="Quiz · Annale CT 2024-2025">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-ci-2022-2023.html" title="Quiz · Annale CI 2022-2023">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-ct-2022-2023.html" title="Quiz · Annale CT 2022-2023">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">Théorie des graphes</a>
+    <span aria-current="page">Cours 2 · Connexité et Erdős–Rényi</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Théorie des graphes</span> Cours 2 · L3 S5</p>
+    <h1>Connexité et modèle d'Erdős–Rényi</h1>
+    <p class="chapeau">Les graphes qui modélisent des réseaux sociaux ou des corpus de textes sont presque toujours connexes : on peut aller de n'importe quel sommet à n'importe quel autre. Ce chapitre définit les chemins et la connexité, la teste par des parcours en profondeur et en largeur, l'étend aux graphes orientés avec la forte connexité et l'algorithme de Tarjan, puis explique son apparition grâce à un modèle de graphe aléatoire, celui d'Erdős et Rényi.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/_Graphes__Cours_de_graphes_A4__1_-4.pdf">Graphes et applications</a> (poly de 82 pages), chapitre 2, p. 16–27</dd></div>
+      <div><dt>Enseignant</dt><dd>Nicolas Dugué</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-01">1<sup>er</sup> nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Définir un chemin, un graphe connexe, un sous-graphe induit et une composante connexe.</li>
+        <li>Dérouler un parcours en profondeur (DFS) et un parcours en largeur (BFS), et s'en servir pour tester la connexité.</li>
+        <li>Distinguer faible et forte connexité dans un graphe orienté, repérer circuits et composantes fortement connexes.</li>
+        <li>Construire l'arbre de Trémaux d'un parcours en profondeur et comprendre l'idée de l'algorithme de Tarjan.</li>
+        <li>Décrire le modèle \(G(n, p)\) d'Erdős–Rényi : nombre d'arêtes, loi du degré, degré moyen, seuil de connexité \(\ln(n)/n\).</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-01-notions-de-base.html">Cours 1</a> : graphes orientés ou non, voisinage, degré, liste d'adjacence.</li>
+        <li>Probabilités : épreuve de Bernoulli, loi binomiale \(B(N, p)\), son espérance \(Np\), coefficient binomial \(C_N^k\).</li>
+        <li>Algorithmique : récursivité, pile et file.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc complement">
+    <p class="bloc-titre">Complément <span>À propos des sources</span></p>
+    <p>Cette page reprend le chapitre 2 du poly. Les notes de séance (Google Doc « Cours Graphes ») ne couvrent pour l'instant que le CM 1 : elles n'apportent rien ici. Les parcours, les composantes et le modèle d'Erdős–Rényi ont été recalculés avec NetworkX et de petits programmes Python, reproduits plus bas ; deux écarts avec le poly en sont ressortis, signalés par un badge « À vérifier » (l'algorithme de Tarjan tel qu'il est écrit, et la connexité « très certaine » pour \(p = 0{,}05\)).</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Pourquoi étudier la connexité ? <span class="ref">p. 16–17</span></h2>
+    <p>Le chapitre 1 caractérisait les sommets un par un, par leur degré. On s'intéresse maintenant à la structure du graphe tout entier, et d'abord à une propriété observée presque partout : la connexité.</p>
+    <p>Les physicien·nes et mathématicien·nes ont très vite cherché à caractériser les graphes qui modélisent des systèmes réels. On observe par exemple que les graphes des réseaux sociaux sont presque systématiquement <dfn>connexes</dfn> : il est toujours possible de trouver une suite d'arêtes qui forme un chemin entre deux sommets quelconques. Cette propriété n'a rien d'évident : rien ne garantit, a priori, que deux personnes tirées au hasard dans un réseau social soient reliées par un tel chemin.</p>
+    <p>Le chapitre définit donc formellement les chemins et la connexité, décrit les algorithmes qui la testent (parcours en largeur, en profondeur, algorithme de Tarjan), puis l'étudie par un modèle, celui d'Erdős–Rényi, dont l'un des objectifs est de comprendre pourquoi et comment la connexité émerge dans les graphes du réel.</p>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Un modèle des modèles</span> <span class="ref">p. 17</span></p>
+      <p>« <span lang="en">In a series of seminal papers in the 1950s and 1960s, Paul Erdős and Alfred Rényi proposed and studied one of the earliest theoretical models of a network, the random graph.</span> » Dans une série d'articles fondateurs des années 1950 et 1960, Paul Erdős et Alfred Rényi ont proposé et étudié l'un des premiers modèles théoriques de réseau, le graphe aléatoire. (M. E. J. Newman, <cite>Random graphs as models of networks</cite>, 2002)</p>
+      <p>Au chapitre 1, le graphe était un modèle d'un système réel. Ici, on monte d'un cran dans l'abstraction : le graphe aléatoire modélise les graphes qui modélisent le réel. C'est un méta-modèle, une version simplifiée et pratique à étudier de ces graphes.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Chemins et connexité <span class="ref">p. 18–19</span></h2>
+    <p>Pour dire que deux sommets sont reliés, il faut une suite d'arêtes qui s'enchaînent. C'est la notion de chemin, sur laquelle reposent toutes les définitions du chapitre.</p>
+
+    <h3>Chemin <span class="ref">p. 18</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 9 <span>Chemin</span></p>
+      <p>Soit \(G = (V, E)\) (resp. \(G = (V, A)\)) un graphe non orienté (resp. orienté). Un <dfn>chemin</dfn> (<span class="en" lang="en">path</span>) de longueur \(k\) est une suite ordonnée d'arêtes (resp. d'arcs) \((e_1, \dots, e_k)\) telle que \(\forall i \in \{1, \dots, k\}\), \(e_i = (e_{i,s}, e_{i,c}) \in E\), et \(\forall i \in \{1, \dots, k-1\}\), \(e_{i,c} = e_{i+1,s}\). Le chemin connecte alors les sommets \(e_{1,s}\) et \(e_{k,c}\) avec les \(k\) arêtes.</p>
+    </div>
+    <p>Autrement dit, la cible (indice \(c\)) de chaque arête est la source (indice \(s\)) de la suivante. Dans le graphe de la figure 2.1, B et D sont connectés par le chemin de longueur 5 \(((B, A), (A, F), (F, E), (E, C), (C, D))\) et par le chemin de longueur 1 \(((B, D))\).</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 320 200" width="320" role="img" aria-labelledby="fig-connexe-titre">
+      <title id="fig-connexe-titre">Le graphe connexe de la figure 2.1 : six sommets A à F et six arêtes, C–D, C–E, D–B, B–A, A–F et F–E. Il forme un cycle D, B, A, F, E, C, D.</title>
+      <path class="trait" d="M101 43 L70 86"/>
+      <path class="trait" d="M110 46 L110 153"/>
+      <path class="trait" d="M74 93 L195 37"/>
+      <path class="trait" d="M219 43 L250 86"/>
+      <path class="trait" d="M251 113 L220 156"/>
+      <path class="trait" d="M194 170 L127 170"/>
+      <g font-size="14">
+      <circle class="boite-accent" cx="110" cy="30" r="16"/>
+      <circle class="boite-accent" cx="210" cy="30" r="16"/>
+      <circle class="boite-accent" cx="260" cy="100" r="16"/>
+      <circle class="boite-accent" cx="210" cy="170" r="16"/>
+      <circle class="boite-accent" cx="110" cy="170" r="16"/>
+      <circle class="boite-accent" cx="60" cy="100" r="16"/>
+      <text x="110" y="35" text-anchor="middle" class="gras accent">C</text>
+      <text x="210" y="35" text-anchor="middle" class="gras accent">B</text>
+      <text x="260" y="105" text-anchor="middle" class="gras accent">A</text>
+      <text x="210" y="175" text-anchor="middle" class="gras accent">F</text>
+      <text x="110" y="175" text-anchor="middle" class="gras accent">E</text>
+      <text x="60" y="105" text-anchor="middle" class="gras accent">D</text>
+      </g>
+      </svg>
+      <figcaption>Figure 2.1 du poly : un graphe connexe.</figcaption>
+    </figure>
+    <p>Pour savoir si deux sommets sont connectés, on cherche donc un chemin : une suite d'arêtes où le sommet cible de chacune est le sommet source de la suivante.</p>
+    <p><span class="badge ajout">Ajout</span> Dans un graphe non orienté, \((u, v) = (v, u)\) : on peut lire chaque arête dans le sens qui convient au chemin. Le poly parle aussi de chemin « de taille 5 » ; c'est la même chose que sa longueur, le nombre d'arêtes.</p>
+
+    <h3>Graphe connexe <span class="ref">p. 18</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 10 <span>Graphe connexe</span></p>
+      <p>Un graphe \(G = (V, E)\) non orienté est <dfn>connexe</dfn> (<span class="en" lang="en">connected</span>) si, pour toute paire \((u, v) \in V \times V\), il existe un chemin constitué d'une suite d'arêtes de \(E\) qui connecte \(u\) à \(v\).</p>
+    </div>
+    <p>Le graphe de la figure 2.1 est connexe : il existe un chemin entre toutes les paires de sommets. Celui de la figure 2.2 ne l'est pas : aucun chemin ne relie C aux sommets A, B et E, et D n'est pas davantage connecté à A, B et E.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 320 200" width="320" role="img" aria-labelledby="fig-non-connexe-titre">
+      <title id="fig-non-connexe-titre">Le graphe non connexe de la figure 2.2 : une arête C–D d'un côté, un triangle A, B, E de l'autre, sans aucune arête entre les deux.</title>
+      <path class="trait" d="M60 66 L60 133"/>
+      <path class="trait" d="M211 41 L258 88"/>
+      <path class="trait" d="M259 111 L212 158"/>
+      <path class="trait" d="M200 46 L200 153"/>
+      <g font-size="14">
+      <circle class="boite-accent" cx="60" cy="50" r="16"/>
+      <circle class="boite-accent" cx="60" cy="150" r="16"/>
+      <circle class="boite-accent" cx="200" cy="30" r="16"/>
+      <circle class="boite-accent" cx="270" cy="100" r="16"/>
+      <circle class="boite-accent" cx="200" cy="170" r="16"/>
+      <text x="60" y="55" text-anchor="middle" class="gras accent">C</text>
+      <text x="60" y="155" text-anchor="middle" class="gras accent">D</text>
+      <text x="200" y="35" text-anchor="middle" class="gras accent">B</text>
+      <text x="270" y="105" text-anchor="middle" class="gras accent">A</text>
+      <text x="200" y="175" text-anchor="middle" class="gras accent">E</text>
+      </g>
+      </svg>
+      <figcaption>Figure 2.2 du poly : un graphe non connexe, en deux morceaux.</figcaption>
+    </figure>
+
+    <h3>Sous-graphe induit et composante connexe <span class="ref">p. 19</span></h3>
+    <p>Dans la figure 2.2, les deux morceaux, \(\{C, D\}\) d'une part et \(\{A, B, E\}\) d'autre part, sont eux-mêmes connexes : ce sont les deux composantes connexes du graphe. Pour le dire précisément, il faut deux définitions.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 11 <span>Sous-graphe induit</span></p>
+      <p>Le <dfn>sous-graphe</dfn> \(G'\) de \(G\) <dfn>induit</dfn> par les sommets \(V' \subset V\) a pour ensemble d'arêtes \(E'\) les arêtes de \(E\) dont les deux extrémités sont des sommets de \(V'\) :</p>
+      <div class="encadre">\[ E' = \{ (u, v) \in E \mid u \in V',\ v \in V' \} \]</div>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 12 <span>Composante connexe</span></p>
+      <p>Une <dfn>composante connexe</dfn> (<span class="en" lang="en">connected component</span>) d'un graphe \(G\) est un sous-graphe \(G'\) induit par \(V' \subset V\), connexe et maximal. Ce sous-graphe est maximal s'il n'existe aucun sous-ensemble \(V''\) tel que \(V' \subset V''\) et que le sous-graphe induit par \(V''\) soit connexe.</p>
+    </div>
+    <p>Si un graphe est connexe, il n'a qu'une seule composante connexe : lui-même. Pour savoir si un graphe est connexe, on utilise des algorithmes de parcours.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Maximal ne veut pas dire le plus grand</span> <span class="badge ajout">Ajout</span></p>
+      <p>Dans la figure 2.2, le sous-graphe induit par \(\{A, B\}\) est connexe, mais ce n'est pas une composante : on peut lui ajouter E sans perdre la connexité. En revanche, \(\{C, D\}\) est une composante, bien qu'elle soit plus petite que \(\{A, B, E\}\) : aucun sommet ne peut lui être ajouté. « Maximal » se juge par inclusion, pas par la taille.</p>
+    </div>
+    <div class="bloc exercice" id="ex-1">
+      <p class="bloc-titre">Exercice 1 <span>Composantes connexes</span> <span class="badge ajout">Ajout</span></p>
+      <p>Un graphe a pour sommets \(\{1, \dots, 8\}\) et pour arêtes \((1, 2), (2, 3), (1, 3), (4, 5), (6, 7), (7, 8), (5, 4)\). Quelles sont ses composantes connexes ? Combien d'arêtes faut-il ajouter, au minimum, pour le rendre connexe ?</p>
+      <details class="indice"><summary>Indice</summary><p>\((4, 5)\) et \((5, 4)\) sont la même arête. Une arête ajoutée entre deux composantes les fusionne.</p></details>
+      <details class="solution"><summary>Solution proposée</summary><p>Trois composantes : \(\{1, 2, 3\}\), \(\{4, 5\}\) et \(\{6, 7, 8\}\). Chaque arête ajoutée diminue d'au plus un le nombre de composantes : il en faut au moins deux, et deux suffisent, par exemple \((3, 4)\) et \((5, 6)\). De façon générale, \(c\) composantes demandent \(c - 1\) arêtes.</p></details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Parcourir un graphe <span class="ref">p. 19–20</span></h2>
+    <p>Il existe deux manières de parcourir un graphe pour en explorer les sommets : en profondeur et en largeur. Partis d'un sommet, les deux parcours découvrent exactement sa composante connexe ; ils permettent donc tous deux de vérifier la connexité.</p>
+
+    <h3>Parcours en profondeur (DFS) <span class="ref">p. 19</span></h3>
+    <p>Le <dfn>parcours en profondeur</dfn> (<span class="en" lang="en">depth first search</span>, DFS) part d'un sommet et s'enfonce aussi loin que possible avant de revenir en arrière.</p>
+<pre><code class="language-pseudo"><i># Prend en entrée un graphe et un sommet, et retourne la composante</i>
+<i># connexe dans laquelle se trouve ce sommet</i>
+<b>procedure</b> DFS(Graphe G, Sommet s, Ensemble E = {})
+    E = E ∪ {s}
+    <b>for</b> u ∈ N(s) <b>do</b>
+        <b>if</b> u ∉ E <b>then</b>
+            E = E ∪ DFS(G, u, E)
+        <b>end if</b>
+    <b>end for</b>
+    <b>return</b> E
+<b>end procedure</b></code></pre>
+
+    <h3>Parcours en largeur (BFS) <span class="ref">p. 19–20</span></h3>
+    <p>Le <dfn>parcours en largeur</dfn> (<span class="en" lang="en">breadth first search</span>, BFS) s'éloigne plus doucement du départ : il visite d'abord tous les voisins du sommet de départ, puis les voisins de ces voisins, et ainsi de suite. Il range les sommets à explorer dans une <dfn>file</dfn> : premier entré, premier sorti. L'appel initial est <code>BFS(G, File("A"), {})</code>.</p>
+<pre><code class="language-pseudo"><i># Prend en entrée un graphe et une file contenant le sommet de départ</i>
+<i># (puis les sommets à explorer), et retourne la composante connexe</i>
+<i># dans laquelle se trouve ce sommet</i>
+<b>procedure</b> BFS(Graphe G, File f, Ensemble E = {})
+    <b>if</b> f n'est pas vide <b>then</b>
+        Sommet s ← f.defiler()
+        E.add(s)
+        <b>for</b> u ∈ N(s) <b>do</b>
+            <b>if</b> u ∉ E <b>then</b>
+                f.enfiler(u)
+            <b>end if</b>
+        <b>end for</b>
+        <b>return</b> BFS(G, f, E)
+    <b>else</b>
+        <b>return</b> E
+    <b>end if</b>
+<b>end procedure</b></code></pre>
+
+    <h3>Les deux parcours sur un exemple <span class="ref">p. 19–20</span></h3>
+    <p>On parcourt le graphe de la figure 2.3 depuis A. Un appel <code>DFS(G, "A", {})</code> visite les sommets dans l'ordre A, B, C, D, E, F, G : on parle de parcours en profondeur parce qu'on explore B, C et D à la suite, en s'éloignant rapidement de A. Dans le parcours en largeur, on s'éloigne plus doucement de A, et l'on explore E juste après C : A, B, C, E, D, F, G.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 520 240" width="520" role="img" aria-labelledby="fig-parcours-titre">
+      <title id="fig-parcours-titre">Le graphe à parcourir (figure 2.3), dessiné deux fois. A est relié à B ; B à C et E ; C à D ; E à F et G. À gauche, en profondeur, les arêtes sont parcourues dans l'ordre A–B, B–C, C–D, B–E, E–F, E–G. À droite, en largeur : A–B, B–C, B–E, C–D, E–F, E–G.</title>
+      <path class="trait" d="M120 41 L120 63"/>
+      <text x="109" y="56" text-anchor="middle" font-size="12" class="accent gras">1</text>
+      <path class="trait" d="M109 92 L81 122"/>
+      <text x="87" y="104" text-anchor="middle" font-size="12" class="accent gras">2</text>
+      <path class="trait" d="M131 92 L159 122"/>
+      <text x="137" y="119" text-anchor="middle" font-size="12" class="accent gras">4</text>
+      <path class="trait" d="M61 148 L40 176"/>
+      <text x="41" y="160" text-anchor="middle" font-size="12" class="accent gras">3</text>
+      <path class="trait" d="M161 148 L140 176"/>
+      <text x="141" y="160" text-anchor="middle" font-size="12" class="accent gras">5</text>
+      <path class="trait" d="M179 148 L200 176"/>
+      <text x="181" y="173" text-anchor="middle" font-size="12" class="accent gras">6</text>
+      <g font-size="14">
+      <circle class="boite-accent" cx="120" cy="25" r="16"/>
+      <circle class="boite-accent" cx="120" cy="80" r="16"/>
+      <circle class="boite-accent" cx="70" cy="135" r="16"/>
+      <circle class="boite-accent" cx="170" cy="135" r="16"/>
+      <circle class="boite-accent" cx="30" cy="190" r="16"/>
+      <circle class="boite-accent" cx="130" cy="190" r="16"/>
+      <circle class="boite-accent" cx="210" cy="190" r="16"/>
+      <text x="120" y="30" text-anchor="middle" class="gras accent">A</text>
+      <text x="120" y="85" text-anchor="middle" class="gras accent">B</text>
+      <text x="70" y="140" text-anchor="middle" class="gras accent">C</text>
+      <text x="170" y="140" text-anchor="middle" class="gras accent">E</text>
+      <text x="30" y="195" text-anchor="middle" class="gras accent">D</text>
+      <text x="130" y="195" text-anchor="middle" class="gras accent">F</text>
+      <text x="210" y="195" text-anchor="middle" class="gras accent">G</text>
+      </g>
+      <path class="trait" d="M400 41 L400 63"/>
+      <text x="389" y="56" text-anchor="middle" font-size="12" class="accent gras">1</text>
+      <path class="trait" d="M389 92 L361 122"/>
+      <text x="367" y="104" text-anchor="middle" font-size="12" class="accent gras">2</text>
+      <path class="trait" d="M411 92 L439 122"/>
+      <text x="417" y="119" text-anchor="middle" font-size="12" class="accent gras">3</text>
+      <path class="trait" d="M341 148 L320 176"/>
+      <text x="321" y="160" text-anchor="middle" font-size="12" class="accent gras">4</text>
+      <path class="trait" d="M441 148 L420 176"/>
+      <text x="421" y="160" text-anchor="middle" font-size="12" class="accent gras">5</text>
+      <path class="trait" d="M459 148 L480 176"/>
+      <text x="461" y="173" text-anchor="middle" font-size="12" class="accent gras">6</text>
+      <g font-size="14">
+      <circle class="boite-accent" cx="400" cy="25" r="16"/>
+      <circle class="boite-accent" cx="400" cy="80" r="16"/>
+      <circle class="boite-accent" cx="350" cy="135" r="16"/>
+      <circle class="boite-accent" cx="450" cy="135" r="16"/>
+      <circle class="boite-accent" cx="310" cy="190" r="16"/>
+      <circle class="boite-accent" cx="410" cy="190" r="16"/>
+      <circle class="boite-accent" cx="490" cy="190" r="16"/>
+      <text x="400" y="30" text-anchor="middle" class="gras accent">A</text>
+      <text x="400" y="85" text-anchor="middle" class="gras accent">B</text>
+      <text x="350" y="140" text-anchor="middle" class="gras accent">C</text>
+      <text x="450" y="140" text-anchor="middle" class="gras accent">E</text>
+      <text x="310" y="195" text-anchor="middle" class="gras accent">D</text>
+      <text x="410" y="195" text-anchor="middle" class="gras accent">F</text>
+      <text x="490" y="195" text-anchor="middle" class="gras accent">G</text>
+      </g>
+      <text x="120" y="230" text-anchor="middle" font-size="13" class="t2">DFS : A, B, C, D, E, F, G</text>
+      <text x="400" y="230" text-anchor="middle" font-size="13" class="t2">BFS : A, B, C, E, D, F, G</text>
+      </svg>
+      <figcaption>Figures 2.3 et 2.4 du poly : le graphe à parcourir, avec sur chaque arête l'ordre dans lequel elle est parcourue, en profondeur à gauche, en largeur à droite.</figcaption>
+    </figure>
+    <p><span class="badge a-verifier">À vérifier</span> Le poly écrit « Prenons le graphe de l'Algorithme 1 et parcourons-le avec l'Algorithme 1 » : le graphe en question est celui de la figure 2.3, l'Algorithme 1 étant le DFS.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Tester la connexité, en Python</span></p>
+      <p>On lance un parcours depuis un sommet quelconque : le graphe est connexe si et seulement si le parcours atteint les \(n\) sommets. Chaque sommet et chaque arête n'étant examinés qu'un nombre borné de fois, le test est rapide, de l'ordre de \(n + m\) opérations avec une liste d'adjacence. Le BFS s'écrit d'ordinaire avec une boucle plutôt qu'en récursif, et marque un sommet dès qu'il entre dans la file, pour ne pas l'y mettre deux fois :</p>
+<pre data-fichier="parcours.py"><code class="language-python">from collections import deque
+
+G = {"A": ["B"], "B": ["A", "C", "E"], "C": ["B", "D"], "D": ["C"],
+     "E": ["B", "F", "G"], "F": ["E"], "G": ["E"]}
+
+def dfs(G, s, vus=None):
+    if vus is None:
+        vus = []
+    vus.append(s)
+    for u in G[s]:
+        if u not in vus:
+            dfs(G, u, vus)
+    return vus
+
+def bfs(G, s):
+    vus, file = [s], deque([s])
+    while file:
+        v = file.popleft()
+        for u in G[v]:
+            if u not in vus:
+                vus.append(u)
+                file.append(u)
+    return vus
+
+print("DFS :", dfs(G, "A"))
+print("BFS :", bfs(G, "A"))
+print("connexe :", len(dfs(G, "A")) == len(G))</code></pre>
+<pre class="terminal"><code>$ python parcours.py
+DFS : ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+BFS : ['A', 'B', 'C', 'E', 'D', 'F', 'G']
+connexe : True</code></pre>
+      <p>NetworkX fait de même avec <code>nx.is_connected(G)</code>, <code>nx.connected_components(G)</code>, <code>nx.dfs_preorder_nodes(G, "A")</code> et <code>nx.bfs_tree(G, "A")</code>.</p>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Le BFS du poly</span> <span class="badge ajout">Ajout</span></p>
+      <p>Dans la version du poly, un sommet n'entre dans \(E\) qu'au moment où il sort de la file : s'il est voisin de deux sommets déjà défilés, il peut être enfilé deux fois. Le résultat reste juste (\(E\) est un ensemble), mais la file s'allonge inutilement. La version ci-dessus évite ce doublon.</p>
+    </div>
+    <div class="bloc exercice" id="ex-2">
+      <p class="bloc-titre">Exercice 2 <span>Dérouler les deux parcours</span> <span class="badge ajout">Ajout</span></p>
+      <p>Dans le graphe de la figure 2.1, les voisins de chaque sommet sont examinés dans l'ordre alphabétique. Donner l'ordre de visite d'un DFS, puis d'un BFS, partis de A.</p>
+      <details class="indice"><summary>Indice</summary><p>\(N(A) = \{B, F\}\), \(N(B) = \{A, D\}\), \(N(C) = \{D, E\}\), \(N(D) = \{B, C\}\), \(N(E) = \{C, F\}\), \(N(F) = \{A, E\}\).</p></details>
+      <details class="solution"><summary>Solution proposée</summary><p>DFS : A, B, D, C, E, F. On descend A → B → D → C → E → F le long du cycle, sans jamais revenir en arrière avant la fin. BFS : A, puis ses voisins B et F, puis D (voisin de B) et E (voisin de F), enfin C : A, B, F, D, E, C. Les deux ordres ont été vérifiés avec NetworkX.</p></details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Faible et forte connexité <span class="ref">p. 20–21</span></h2>
+    <p>Dans un graphe orienté, un chemin doit suivre le sens des arcs. On peut aller de \(u\) à \(v\) sans pouvoir revenir. On distingue donc deux notions de connexité.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 13 <span>Faiblement connexe</span></p>
+      <p>Un graphe orienté \(G = (V, A)\) est <dfn>faiblement connexe</dfn> (<span class="en" lang="en">weakly connected</span>) si le graphe non orienté \(G_{\text{undirected}} = (V, E)\) correspondant à \(G\), obtenu en remplaçant les arcs de \(A\) par des arêtes non orientées \(E\), est connexe.</p>
+    </div>
+    <p>On oublie donc l'orientation des arcs, et l'on regarde s'il est possible de connecter toutes les paires de sommets par des chemins passant par les arêtes non orientées. La forte connexité, elle, tient compte de l'orientation.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définitions 14 et 15 <span>Fortement connectés, fortement connexe</span></p>
+      <p>Deux sommets \(u\) et \(v\) d'un graphe \(G = (V, A)\) sont <dfn>fortement connectés</dfn> s'il existe un chemin d'arcs de \(A\) qui va de \(u\) à \(v\), <strong>et</strong> un chemin de \(v\) à \(u\).</p>
+      <p>Un graphe orienté \(G = (V, A)\) est <dfn>fortement connexe</dfn> (<span class="en" lang="en">strongly connected</span>) si chaque paire de sommets \((u, v) \in V \times V\) est fortement connectée. \(V' \subset V\) est une <dfn>composante fortement connexe</dfn> (CFC) si le sous-graphe induit par \(V'\) est fortement connexe et qu'il n'existe aucun \(V'' \supset V'\) induisant un sous-graphe fortement connexe. Une CFC est donc un sous-graphe de taille maximale dont les sommets sont tous fortement connectés.</p>
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Proposition <span>Transitivité</span></p>
+      <p>Si \(u\) et \(v\) sont fortement connectés, et que \(v\) et \(w\) le sont aussi, alors \(u\) et \(w\) sont également fortement connectés.</p>
+      <details class="preuve">
+        <summary>Preuve</summary>
+        <p>Puisque \(u\) et \(v\) sont fortement connectés, il existe un chemin \(u L_1 v\) et un chemin \(v L_2 u\), où \(L_1\) et \(L_2\) sont des listes de sommets, éventuellement vides si \(u\) et \(v\) sont reliés directement par des arcs. De même, il existe \(L_3\) et \(L_4\) tels que \(v L_3 w\) et \(w L_4 v\). On obtient alors les chemins \(u L_1 v L_3 w\) et \(w L_4 v L_2 u\), qui connectent \(u\) à \(w\) et \(w\) à \(u\) : ils sont fortement connectés.</p>
+      </details>
+    </div>
+    <p>Pour détecter les composantes fortement connexes, il faut un algorithme plus compliqué que les parcours précédents. On peut savoir si un graphe est fortement connexe avec deux parcours en profondeur, l'un du graphe et l'autre de son <dfn>transposé</dfn>, où l'orientation de tous les arcs est inversée : c'est l'<dfn>algorithme de Kosaraju</dfn>. L'algorithme de Tarjan, présenté plus loin, s'exécute plus rapidement et est en général privilégié ; il liste très efficacement toutes les CFC d'un graphe. Avant d'y venir, il faut comprendre ce qu'est un circuit.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Fort implique faible</span></p>
+      <p>Un graphe fortement connexe est faiblement connexe : un chemin orienté reste un chemin quand on oublie l'orientation. La réciproque est fausse : le graphe à deux arcs \(A \to B \to C\) est faiblement connexe, mais on ne peut pas aller de C à A. Il a trois CFC, \(\{A\}\), \(\{B\}\) et \(\{C\}\) : un sommet seul forme toujours une CFC, puisqu'il est fortement connecté à lui-même par le chemin vide.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Circuits et composantes fortement connexes <span class="ref">p. 21–22</span></h2>
+    <p>Intuitivement, deux sommets fortement connectés sont sur une même boucle : on va de l'un à l'autre, puis on revient. Cette boucle s'appelle un circuit.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 16 <span>Circuit</span></p>
+      <p>Un <dfn>circuit</dfn> (<span class="en" lang="en">cycle</span>) est un chemin dont les sommets de départ et de fin sont identiques. Un circuit est dit <dfn>élémentaire</dfn> s'il ne passe pas deux fois par le même sommet.</p>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 400 230" width="400" role="img" aria-labelledby="fig-cfc-titre">
+      <title id="fig-cfc-titre">Le graphe orienté de la figure 2.5 : des arcs A→D et D→A ; A→B, B→C et C→A ; A→E ; E→F, F→G et G→E.</title>
+      <defs><marker id="fleche-cfc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="plein"/></marker></defs>
+      <path class="trait" d="M215 35 Q255 48 294 35" marker-end="url(#fleche-cfc)"/>
+      <path class="trait" d="M295 25 Q255 12 216 25" marker-end="url(#fleche-cfc)"/>
+      <path class="trait" d="M185 36 L111 68" marker-end="url(#fleche-cfc)"/>
+      <path class="trait" d="M90 90 L65 164" marker-end="url(#fleche-cfc)"/>
+      <path class="trait" d="M71 168 L188 42" marker-end="url(#fleche-cfc)"/>
+      <path class="trait" d="M210 43 L260 107" marker-end="url(#fleche-cfc)"/>
+      <path class="trait" d="M260 133 L220 186" marker-end="url(#fleche-cfc)"/>
+      <path class="trait" d="M226 200 L323 200" marker-end="url(#fleche-cfc)"/>
+      <path class="trait" d="M329 188 L281 133" marker-end="url(#fleche-cfc)"/>
+      <g font-size="14">
+      <circle class="boite-accent" cx="200" cy="30" r="16"/>
+      <circle class="boite-accent" cx="310" cy="30" r="16"/>
+      <circle class="boite-accent" cx="95" cy="75" r="16"/>
+      <circle class="boite-accent" cx="60" cy="180" r="16"/>
+      <circle class="boite-accent" cx="270" cy="120" r="16"/>
+      <circle class="boite-accent" cx="210" cy="200" r="16"/>
+      <circle class="boite-accent" cx="340" cy="200" r="16"/>
+      <text x="200" y="35" text-anchor="middle" class="gras accent">A</text>
+      <text x="310" y="35" text-anchor="middle" class="gras accent">D</text>
+      <text x="95" y="80" text-anchor="middle" class="gras accent">B</text>
+      <text x="60" y="185" text-anchor="middle" class="gras accent">C</text>
+      <text x="270" y="125" text-anchor="middle" class="gras accent">E</text>
+      <text x="210" y="205" text-anchor="middle" class="gras accent">F</text>
+      <text x="340" y="205" text-anchor="middle" class="gras accent">G</text>
+      </g>
+      </svg>
+      <figcaption>Figure 2.5 du poly : où sont les circuits ? les composantes fortement connexes ?</figcaption>
+    </figure>
+    <p>Dans le graphe de la figure 2.5, on dénombre :</p>
+    <ul>
+      <li>3 circuits élémentaires : ABCA, ADA et EFGE ;</li>
+      <li>2 composantes fortement connexes : ABCD et EFG.</li>
+    </ul>
+    <p>A et E ne sont pas fortement connectés : l'arc \((A, E)\) permet d'aller de A vers E, mais aucun chemin ne revient de E vers A. Le graphe est faiblement connexe, sans être fortement connexe.</p>
+    <p>Les notions de circuit et de CFC sont donc très liées. Les propositions suivantes formalisent ce lien.</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Proposition <span>D'une CFC à un circuit</span></p>
+      <p>Si les nœuds \(u\) et \(v\) font partie d'une même composante fortement connexe, alors ils font partie d'un même circuit, mais pas forcément d'un même circuit élémentaire.</p>
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Proposition <span>D'un circuit à une CFC</span></p>
+      <p>Si \(u\) et \(v\) appartiennent à un même circuit, alors ils font partie de la même composante fortement connexe.</p>
+    </div>
+    <p>Le poly laisse ces deux preuves pour le TD (« À faire en TD »). L'exercice 3 les propose, avec une solution cachée.</p>
+    <div class="bloc exercice" id="ex-3">
+      <p class="bloc-titre">Exercice 3 <span>Circuits et CFC</span> <span class="ref">p. 21–22</span></p>
+      <p>Démontrer les deux propositions précédentes. Dans la figure 2.5, donner un circuit qui passe par B et D ; pourquoi n'est-il pas élémentaire ?</p>
+      <details class="indice"><summary>Indice</summary><p>Mettre bout à bout un chemin de \(u\) à \(v\) et un chemin de \(v\) à \(u\). Dans l'autre sens, découper le circuit en deux morceaux à l'endroit où il passe par \(v\).</p></details>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>Si \(u\) et \(v\) sont dans une même CFC, ils sont fortement connectés : il existe un chemin \(u L_1 v\) et un chemin \(v L_2 u\). Leur concaténation \(u L_1 v L_2 u\) est un chemin qui part de \(u\) et y revient, donc un circuit qui passe par \(v\). Il peut repasser deux fois par un même sommet, s'il est commun à \(L_1\) et \(L_2\) : il n'est pas forcément élémentaire.</p>
+        <p>Si \(u\) et \(v\) sont sur un même circuit, on suit le circuit depuis \(u\) jusqu'à \(v\), ce qui donne un chemin de \(u\) à \(v\), puis de \(v\) jusqu'au retour en \(u\), ce qui donne un chemin de \(v\) à \(u\). Ils sont fortement connectés, donc dans la même CFC (par transitivité, tous les sommets fortement connectés à \(u\) sont dans la sienne).</p>
+        <p>Dans la figure 2.5, B, C, A, D, A, B est un circuit qui passe par B et D : il passe deux fois par A, donc il n'est pas élémentaire. Aucun circuit élémentaire ne contient à la fois B et D, puisque tout chemin de l'un à l'autre passe par A.</p>
+      </details>
+    </div>
+    <p>La proposition suivante éclaire la composition d'une CFC.</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Proposition <span>Les chemins restent dans la CFC</span></p>
+      <p>Soit deux sommets \(u\) et \(v\) d'une même composante fortement connexe. Alors tous les sommets des chemins qui mènent de \(u\) à \(v\) appartiennent aussi à cette composante.</p>
+      <details class="preuve">
+        <summary>Preuve</summary>
+        <p>Soit \(w\) un sommet d'un chemin de \(u\) à \(v\). La fin de ce chemin va de \(w\) à \(v\). Comme \(u\) et \(v\) sont dans la même CFC, il existe un chemin de \(v\) à \(u\), et le début du chemin initial va de \(u\) à \(w\) : il existe donc un chemin de \(v\) à \(w\). Ainsi \(v\) et \(w\) sont fortement connectés, et \(w\) est dans la composante de \(v\) par transitivité.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Arbre de Trémaux et algorithme de Tarjan <span class="ref">p. 22–23</span></h2>
+    <p>L'algorithme de Tarjan repose sur un parcours en profondeur, et sur l'arbre que ce parcours dessine. On commence par cet arbre et son vocabulaire.</p>
+
+    <h3>L'arbre de Trémaux <span class="ref">p. 22–23</span></h3>
+    <p>L'arborescence construite lors d'un parcours en profondeur s'appelle l'<dfn>arbre de Trémaux</dfn>. Sa <dfn>numérotation de Trémaux</dfn> donne à chaque sommet un rang : sa position dans l'ordre du parcours. Sur le graphe de la figure 2.5, supposons le parcours en profondeur suivant, depuis A :</p>
+    <ol class="etapes">
+      <li>on explore d'abord D par l'arc \((A, D)\) ;</li>
+      <li>D ne permet pas d'aller plus loin (son seul voisin sortant, A, est déjà visité) : on revient en arrière (<span class="en" lang="en">backtrack</span>) vers A, on explore E par l'arc \((A, E)\), puis on continue en profondeur avec \((E, F)\) et \((F, G)\) ;</li>
+      <li>G ne permet pas d'aller plus loin : on revient vers F, puis, pour la même raison, vers E et vers A ;</li>
+      <li>on explore B par l'arc \((A, B)\), puis C par \((B, C)\).</li>
+    </ol>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 400 255" width="400" role="img" aria-labelledby="fig-tremaux-titre">
+      <title id="fig-tremaux-titre">L'arbre de Trémaux du parcours en profondeur depuis A (figure 2.6) : A1 a pour enfants D2, E3 et B6 ; E3 a pour enfant F4, lui-même parent de G5 ; B6 a pour enfant C7. Le nombre suit le nom du sommet : c'est son rang dans le parcours.</title>
+      <path class="trait" d="M186 38 L95 87"/>
+      <path class="trait" d="M200 46 L200 78"/>
+      <path class="trait" d="M214 38 L305 87"/>
+      <path class="trait" d="M200 111 L200 143"/>
+      <path class="trait" d="M200 176 L200 208"/>
+      <path class="trait" d="M320 111 L320 143"/>
+      <g font-size="14">
+      <circle class="boite-accent" cx="200" cy="30" r="16"/>
+      <circle class="boite-accent" cx="80" cy="95" r="16"/>
+      <circle class="boite-accent" cx="200" cy="95" r="16"/>
+      <circle class="boite-accent" cx="320" cy="95" r="16"/>
+      <circle class="boite-accent" cx="200" cy="160" r="16"/>
+      <circle class="boite-accent" cx="320" cy="160" r="16"/>
+      <circle class="boite-accent" cx="200" cy="225" r="16"/>
+      <text x="200" y="35" text-anchor="middle" class="gras accent">A1</text>
+      <text x="80" y="100" text-anchor="middle" class="gras accent">D2</text>
+      <text x="200" y="100" text-anchor="middle" class="gras accent">E3</text>
+      <text x="320" y="100" text-anchor="middle" class="gras accent">B6</text>
+      <text x="200" y="165" text-anchor="middle" class="gras accent">F4</text>
+      <text x="320" y="165" text-anchor="middle" class="gras accent">C7</text>
+      <text x="200" y="230" text-anchor="middle" class="gras accent">G5</text>
+      </g>
+      </svg>
+      <figcaption>Figure 2.6 du poly : l'arbre de Trémaux de ce parcours en profondeur, avec la numérotation de chaque sommet.</figcaption>
+    </figure>
+    <p>Un peu de vocabulaire sur ces arbres :</p>
+    <dl class="glossaire">
+      <dt>Racine</dt><dd>le sommet de départ du parcours, ici A1.</dd>
+      <dt>Hauteur \(H(u)\)</dt><dd>la distance de \(u\) à la racine : \(H(D) = 1\), \(H(G) = 3\), \(H(C) = 2\).</dd>
+      <dt>Adjacents</dt><dd>deux sommets reliés par une arête de l'arbre : A et D, F et G, A et B…</dd>
+      <dt>Enfant, parent</dt><dd>\(u\) est l'enfant de \(v\), son parent, s'ils sont adjacents et que \(H(u) = H(v) + 1\) : D est l'enfant de A, F est le parent de G.</dd>
+      <dt>Descendant, ancêtre</dt><dd>\(u\) descend de \(v\), son ancêtre, s'il existe un chemin de parents à enfants qui mène de \(v\) à \(u\) : B et C descendent de A ; G descend de A, de E et de F.</dd>
+    </dl>
+    <p><span class="badge a-verifier">À vérifier</span> Le poly écrit « s'il existe un chemin de parents-enfants menant de \(u\) à \(v\) » pour \(u\) descendant de \(v\) : en descendant de parent en enfant, ce chemin va de l'ancêtre \(v\) au descendant \(u\).</p>
+
+    <h3>L'idée de l'algorithme de Tarjan <span class="ref">p. 23</span></h3>
+    <p>Question 2 du poly : à quoi l'arbre de Trémaux et sa numérotation servent-ils pour détecter les CFC ? L'algorithme de Tarjan définit la <dfn>racine d'une CFC</dfn> comme son sommet de plus petit numéro de Trémaux, et repose sur l'idée suivante.</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Proposition <span>Les CFC dans l'arbre de Trémaux</span></p>
+      <p>Tous les sommets d'une CFC sont des descendants de la racine de cette CFC dans l'arbre de Trémaux, et un descendant n'est dans la même CFC que s'il existe un chemin de lui vers cette racine.</p>
+    </div>
+    <p>L'algorithme calcule donc, pour chaque sommet, un attribut : le plus petit numéro de Trémaux auquel le sommet, ou l'un de ses descendants, donne accès dans le graphe. Dans la figure 2.6, C porte le numéro 7 ; mais, dans le graphe de la figure 2.5, C a un arc vers A : il a accès au sommet de numéro 1.</p>
+<pre><code class="language-pseudo"><b>procedure</b> Tarjan(Graphe G)
+    <b>global</b> Ensemble P ← {}
+    <b>global</b> i = 0
+    <b>for</b> u ∈ V <b>do</b>
+        <b>if</b> u ∉ P <b>then</b>
+            Tarjan_rec(u)
+        <b>end if</b>
+    <b>end for</b>
+    <b>procedure</b> Tarjan_rec(s)
+        P.add(s)
+        s.min_no_acces = i
+        i++
+        <b>for</b> u ∈ N(s) <b>do</b>
+            <b>if</b> u ∉ P <b>then</b>
+                Tarjan_rec(u)
+                s.min_no_acces = min(s.min_no_acces, u.min_no_acces)
+            <b>else</b>
+                s.min_no_acces = min(s.min_no_acces, u.min_no_acces)
+            <b>end if</b>
+        <b>end for</b>
+    <b>end procedure</b>
+<b>end procedure</b></code></pre>
+    <p>Ici, \(N(s)\) désigne les voisins sortants \(N^+(s)\), et la numérotation commence à 0 au lieu de 1. Sur la figure 2.5, avec le parcours de la figure 2.6, on obtient :</p>
+    <div class="tableau mono centre compact">
+      <table>
+        <caption>Numéros et attribut <code>min_no_acces</code> à la fin de l'algorithme (figure 2.5, parcours depuis A)</caption>
+        <thead><tr><th>Sommet</th><th>A</th><th>D</th><th>E</th><th>F</th><th>G</th><th>B</th><th>C</th></tr></thead>
+        <tbody>
+          <tr><th>Numéro</th><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td></tr>
+          <tr><th><code>min_no_acces</code></th><td>0</td><td>0</td><td>2</td><td>2</td><td>2</td><td>0</td><td>0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Les sommets de même attribut forment une CFC : \(\{A, D, B, C\}\), de racine A (numéro 0), et \(\{E, F, G\}\), de racine E (numéro 2). Une racine se reconnaît à ce que son attribut est égal à son propre numéro.</p>
+    <p><span class="badge a-verifier">À vérifier</span> Tel qu'il est écrit, l'algorithme ne marche pas toujours : dans la branche <code>else</code>, il prend l'attribut de tout voisin déjà visité, y compris d'un voisin dont la CFC est déjà terminée. Avec les arcs \(a \to b\) et \(c \to b\), parcourus depuis \(a\) puis depuis \(c\), on obtient \(a : 0\), \(b : 1\) et \(c : 1\) : \(c\) prend l'attribut de \(b\), alors que \(\{b\}\) et \(\{c\}\) sont deux CFC distinctes. L'algorithme complet ne tient compte d'un voisin déjà visité que s'il est encore dans une pile des sommets en cours, et prend alors son <em>numéro</em> ; il dépile une CFC chaque fois qu'il termine une racine (complément ci-dessous). Sur la figure 2.5, les deux versions donnent le même résultat. Le commentaire du poly, « retourne la composante connexe », est aussi repris par erreur du DFS : l'algorithme ne retourne rien, il annote les sommets. À confirmer en TD.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>L'algorithme de Tarjan complet, en Python</span></p>
+      <p>Chaque sommet reçoit un numéro (<code>num</code>, l'ordre du DFS) et un attribut (<code>acces</code>, le <code>min_no_acces</code> du poly). Les sommets visités sont empilés ; quand un sommet termine avec <code>acces == num</code>, c'est une racine, et l'on dépile jusqu'à lui : c'est sa CFC.</p>
+<pre data-fichier="tarjan.py"><code class="language-python">def tarjan(G):
+    num, acces, pile, dans_pile, cfc = {}, {}, [], set(), []
+    i = 0
+
+    def visiter(s):
+        nonlocal i
+        num[s] = acces[s] = i
+        i += 1
+        pile.append(s)
+        dans_pile.add(s)
+        for u in G[s]:
+            if u not in num:                  # u pas encore visité
+                visiter(u)
+                acces[s] = min(acces[s], acces[u])
+            elif u in dans_pile:              # u visité, CFC pas encore close
+                acces[s] = min(acces[s], num[u])
+        if acces[s] == num[s]:                # s est la racine d'une CFC
+            composante = []
+            while True:
+                u = pile.pop()
+                dans_pile.discard(u)
+                composante.append(u)
+                if u == s:
+                    break
+            cfc.append(composante)
+
+    for s in G:
+        if s not in num:
+            visiter(s)
+    return cfc
+
+G = {"A": ["D", "E", "B"], "B": ["C"], "C": ["A"], "D": ["A"],
+     "E": ["F"], "F": ["G"], "G": ["E"]}
+print(tarjan(G))
+print(tarjan({"a": ["b"], "b": [], "c": ["b"]}))</code></pre>
+<pre class="terminal"><code>$ python tarjan.py
+[['G', 'F', 'E'], ['C', 'B', 'D', 'A']]
+[['b'], ['a'], ['c']]</code></pre>
+      <p>Chaque sommet est empilé et dépilé une fois, chaque arc examiné une fois : l'algorithme fait un seul parcours, de l'ordre de \(n + m\) opérations, là où Kosaraju en fait deux. Avec NetworkX : <code>nx.strongly_connected_components(G)</code>, <code>nx.is_strongly_connected(G)</code> et <code>nx.is_weakly_connected(G)</code>.</p>
+    </div>
+    <div class="bloc exercice" id="ex-4">
+      <p class="bloc-titre">Exercice 4 <span>Composantes fortement connexes</span> <span class="badge ajout">Ajout</span></p>
+      <p>Soit le graphe orienté d'arcs \(1 \to 2\), \(2 \to 3\), \(3 \to 1\), \(3 \to 4\), \(4 \to 5\), \(5 \to 6\), \(6 \to 4\), \(6 \to 7\). Est-il faiblement connexe ? fortement connexe ? Donner ses CFC, puis son arbre de Trémaux depuis 1, les voisins étant pris dans l'ordre croissant.</p>
+      <details class="indice"><summary>Indice</summary><p>Chercher les circuits : chacun est contenu dans une CFC. Un sommet qui n'est sur aucun circuit forme une CFC à lui seul.</p></details>
+      <details class="solution"><summary>Solution proposée</summary><p>Le graphe est faiblement connexe (sans les orientations, tout est relié), mais pas fortement : rien ne revient de 4 vers 1. Trois CFC : \(\{1, 2, 3\}\) (circuit 1231), \(\{4, 5, 6\}\) (circuit 4564) et \(\{7\}\). Le DFS depuis 1 visite 1, 2, 3, 4, 5, 6, 7 : l'arbre de Trémaux est la chaîne 1 → 2 → 3 → 4 → 5 → 6 → 7, de numéros 1 à 7. Les racines des CFC sont 1, 4 et 7, leurs plus petits numéros. NetworkX donne les mêmes composantes.</p></details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le modèle d'Erdős–Rényi <span class="ref">p. 24–27</span></h2>
+    <p>Les graphes qui modélisent un corpus via les co-occurrences de mots sont en général connexes, comme ceux des amitiés sur les réseaux sociaux en ligne. Comment expliquer cette propriété ? Le modèle d'Erdős–Rényi (ER) modélise ces graphes eux-mêmes, pour mieux comprendre à quoi ressemblent les graphes issus de données réelles, et pourquoi la connexité y émerge.</p>
+
+    <h3>Le modèle G(n, p) <span class="ref">p. 24</span></h3>
+    <p>C'est un modèle de graphe non orienté, à deux paramètres. Dans un graphe à \(n\) sommets, on a au minimum 0 arête, et le graphe est complètement déconnecté, formé de \(n\) composantes connexes de taille 1 ; on a au maximum \(\frac{n(n-1)}{2}\) arêtes, et le graphe est complet : chaque sommet est relié à tous les autres. Le modèle tire chacune de ces arêtes au hasard, indépendamment des autres.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Modèle d'Erdős–Rényi</span></p>
+      <p>Le <dfn>graphe aléatoire</dfn> \(G(n, p)\) (<span class="en" lang="en">random graph</span>) a deux paramètres :</p>
+      <ul>
+        <li>\(n\), le nombre de sommets ;</li>
+        <li>\(p\), la probabilité pour chacune des \(\frac{n(n-1)}{2}\) arêtes possibles d'exister, indépendamment des autres.</li>
+      </ul>
+    </div>
+    <figure class="figure">
+      <img src="img/cours-02-connexite-erdos-renyi-1.png" width="900" height="205" alt="Trois graphes aléatoires de 100 sommets dessinés côte à côte. À gauche, p = 0,02 : un amas central et une dizaine de sommets isolés ou de petits morceaux à l'écart. Au centre, p = 0,05 : un seul amas, relié de partout. À droite, p = 0,5 : un amas noirci par la densité des arêtes.">
+      <figcaption>Figure 2.7 du poly : trois graphes avec \(n = 100\) et \(p = 0{,}02\) à gauche (environ 100 arêtes), \(0{,}05\) au centre (environ 270 arêtes), \(0{,}5\) à droite (environ 2430 arêtes).</figcaption>
+    </figure>
+    <p>Le graphe de gauche n'est pas connexe : un parcours en largeur ou en profondeur lancé depuis n'importe quel sommet ne les découvrirait pas tous. Il a même des sommets isolés, de degré 0, donc des composantes de taille 1. Avec \(p = 0{,}05\), le graphe est connexe. Avec \(p = 0{,}5\), il devient difficile de distinguer les arêtes tant il y en a.</p>
+
+    <h3>Le nombre d'arêtes <span class="ref">p. 24</span></h3>
+    <p>Chaque paire de sommets est une arête avec la probabilité \(p\) : c'est une <dfn>épreuve de Bernoulli</dfn>, de succès \(p\) et d'échec \(1 - p\). On répète ce tirage \(\frac{n(n-1)}{2}\) fois, de façon indépendante : le nombre d'arêtes suit donc une <dfn>loi binomiale</dfn> \(B\!\left(\frac{n(n-1)}{2}, p\right)\), dont l'espérance donne le nombre moyen d'arêtes :</p>
+    <div class="encadre">\[ \mathbb{E}(m) = \frac{n(n-1)}{2} \cdot p \]</div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>n = 100</span></p>
+      <p>Avec \(n = 100\), on a au plus \(\frac{100 \times 99}{2} = 4950\) arêtes. Pour \(p = 0{,}5\), l'espérance vaut 2475 ; le graphe de la figure 2.7 en compte 2430. <span class="badge ajout">Ajout</span> Pour \(p = 0{,}02\) et \(p = 0{,}05\), l'espérance vaut 99 et 247,5 : les « environ 100 » et « environ 270 » arêtes de la figure sont des tirages autour de ces valeurs.</p>
+    </div>
+
+    <h3>La loi du degré <span class="ref">p. 25</span></h3>
+    <p>Question 3 du poly : quelle est la probabilité pour un sommet tiré au hasard d'avoir un degré \(k\) ? Pour qu'un sommet \(u\) soit de degré \(k\), il faut :</p>
+    <ul>
+      <li>qu'il soit connecté à \(k\) sommets par \(k\) arêtes ;</li>
+      <li>qu'il ne soit pas connecté aux \(n - k - 1\) autres sommets : ces arêtes-là n'existent pas.</li>
+    </ul>
+    <p>Le degré de \(u\) est le nombre de succès parmi les \(n - 1\) arêtes dont il peut être l'extrémité (il peut se connecter aux \(n - 1\) autres sommets) : c'est une variable aléatoire de loi binomiale \(B(n - 1, p)\).</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Degré dans G(n, p)</span></p>
+      <div class="encadre">\[ P(d(u) = k) = C_{n-1}^{k} \cdot p^k \cdot (1-p)^{n-k-1} \qquad \mathbb{E}(d(u)) = (n-1) \cdot p \]</div>
+      <p>Les \(k\) voisins sont choisis parmi les \(n - 1\) autres sommets, d'où \(C_{n-1}^k\) ; \(p^k\) modélise les \(k\) succès, les \(k\) arêtes présentes ; \((1-p)^{n-k-1}\) modélise les échecs, les \(n - k - 1\) arêtes absentes. Le degré moyen vaut environ \((n - 1) \cdot p\).</p>
+    </div>
+    <p>Les probabilités permettent donc d'estimer la distribution des degrés et le degré moyen. Pour les graphes de la figure 2.7, la fonction de masse de la loi binomiale donne la distribution estimée du degré : en abscisse le degré, en ordonnée la probabilité qu'un sommet tiré au hasard ait ce degré, c'est-à-dire aussi la part estimée des sommets de ce degré.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 660 210" width="660" role="img" aria-labelledby="fig-binomiales-titre">
+      <title id="fig-binomiales-titre">Trois diagrammes en barres de la loi binomiale B(99, p) du degré, pour n = 100. Pour p = 0,02, le degré moyen vaut environ 2 : 13,5 % de sommets de degré 0, 27,3 % de degré 1 et autant de degré 2. Pour p = 0,05, le degré moyen vaut environ 5 et le maximum, 18 %, est atteint en 4 et 5. Pour p = 0,5, la loi est centrée sur 49,5, avec un maximum d’environ 8 % en 49 et 50.</title>
+      <path class="trait" d="M20 170 H210"/>
+      <rect class="plein-accent" x="23.6" y="106.8" width="16.6" height="63.2"/>
+      <text x="31.9" y="184" text-anchor="middle" font-size="10" class="t2">0</text>
+      <rect class="plein-accent" x="47.3" y="42.4" width="16.6" height="127.6"/>
+      <text x="55.6" y="184" text-anchor="middle" font-size="10" class="t2">1</text>
+      <rect class="plein-accent" x="71.1" y="42.4" width="16.6" height="127.6"/>
+      <text x="79.4" y="184" text-anchor="middle" font-size="10" class="t2">2</text>
+      <rect class="plein-accent" x="94.8" y="85.8" width="16.6" height="84.2"/>
+      <text x="103.1" y="184" text-anchor="middle" font-size="10" class="t2">3</text>
+      <rect class="plein-accent" x="118.6" y="128.8" width="16.6" height="41.2"/>
+      <text x="126.9" y="184" text-anchor="middle" font-size="10" class="t2">4</text>
+      <rect class="plein-accent" x="142.3" y="154.0" width="16.6" height="16.0"/>
+      <text x="150.6" y="184" text-anchor="middle" font-size="10" class="t2">5</text>
+      <rect class="plein-accent" x="166.1" y="164.9" width="16.6" height="5.1"/>
+      <text x="174.4" y="184" text-anchor="middle" font-size="10" class="t2">6</text>
+      <rect class="plein-accent" x="189.8" y="168.6" width="16.6" height="1.4"/>
+      <text x="198.1" y="184" text-anchor="middle" font-size="10" class="t2">7</text>
+      <text x="115.0" y="18" text-anchor="middle" font-size="12" class="gras">p = 0,02</text>
+      <text x="115.0" y="202" text-anchor="middle" font-size="11" class="t2">degré k · maximum 27,3 %</text>
+      <path class="trait" d="M240 170 H430"/>
+      <rect class="plein-accent" x="242.2" y="165.6" width="10.2" height="4.4"/>
+      <text x="247.3" y="184" text-anchor="middle" font-size="10" class="t2">0</text>
+      <rect class="plein-accent" x="256.8" y="147.3" width="10.2" height="22.7"/>
+      <text x="261.9" y="184" text-anchor="middle" font-size="10" class="t2">1</text>
+      <rect class="plein-accent" x="271.4" y="111.4" width="10.2" height="58.6"/>
+      <text x="276.5" y="184" text-anchor="middle" font-size="10" class="t2">2</text>
+      <rect class="plein-accent" x="286.0" y="70.2" width="10.2" height="99.8"/>
+      <text x="291.2" y="184" text-anchor="middle" font-size="10" class="t2">3</text>
+      <rect class="plein-accent" x="300.7" y="44.0" width="10.2" height="126.0"/>
+      <text x="305.8" y="184" text-anchor="middle" font-size="10" class="t2">4</text>
+      <rect class="plein-accent" x="315.3" y="44.0" width="10.2" height="126.0"/>
+      <text x="320.4" y="184" text-anchor="middle" font-size="10" class="t2">5</text>
+      <rect class="plein-accent" x="329.9" y="66.1" width="10.2" height="103.9"/>
+      <text x="335.0" y="184" text-anchor="middle" font-size="10" class="t2">6</text>
+      <rect class="plein-accent" x="344.5" y="97.3" width="10.2" height="72.7"/>
+      <text x="349.6" y="184" text-anchor="middle" font-size="10" class="t2">7</text>
+      <rect class="plein-accent" x="359.1" y="126.0" width="10.2" height="44.0"/>
+      <text x="364.2" y="184" text-anchor="middle" font-size="10" class="t2">8</text>
+      <rect class="plein-accent" x="373.7" y="146.6" width="10.2" height="23.4"/>
+      <text x="378.8" y="184" text-anchor="middle" font-size="10" class="t2">9</text>
+      <rect class="plein-accent" x="388.3" y="158.9" width="10.2" height="11.1"/>
+      <text x="393.5" y="184" text-anchor="middle" font-size="10" class="t2">10</text>
+      <rect class="plein-accent" x="403.0" y="165.3" width="10.2" height="4.7"/>
+      <text x="408.1" y="184" text-anchor="middle" font-size="10" class="t2">11</text>
+      <rect class="plein-accent" x="417.6" y="168.2" width="10.2" height="1.8"/>
+      <text x="422.7" y="184" text-anchor="middle" font-size="10" class="t2">12</text>
+      <text x="335.0" y="18" text-anchor="middle" font-size="12" class="gras">p = 0,05</text>
+      <text x="335.0" y="202" text-anchor="middle" font-size="11" class="t2">degré k · maximum 18,0 %</text>
+      <path class="trait" d="M460 170 H650"/>
+      <rect class="plein-accent" x="461.2" y="161.4" width="5.5" height="8.6"/>
+      <text x="464.0" y="184" text-anchor="middle" font-size="10" class="t2">38</text>
+      <rect class="plein-accent" x="469.1" y="156.5" width="5.5" height="13.5"/>
+      <rect class="plein-accent" x="477.0" y="149.8" width="5.5" height="20.2"/>
+      <rect class="plein-accent" x="484.9" y="140.9" width="5.5" height="29.1"/>
+      <rect class="plein-accent" x="492.9" y="129.8" width="5.5" height="40.2"/>
+      <text x="495.6" y="184" text-anchor="middle" font-size="10" class="t2">42</text>
+      <rect class="plein-accent" x="500.8" y="116.7" width="5.5" height="53.3"/>
+      <rect class="plein-accent" x="508.7" y="102.1" width="5.5" height="67.9"/>
+      <rect class="plein-accent" x="516.6" y="87.1" width="5.5" height="82.9"/>
+      <rect class="plein-accent" x="524.5" y="72.6" width="5.5" height="97.4"/>
+      <text x="527.3" y="184" text-anchor="middle" font-size="10" class="t2">46</text>
+      <rect class="plein-accent" x="532.4" y="60.2" width="5.5" height="109.8"/>
+      <rect class="plein-accent" x="540.4" y="51.0" width="5.5" height="119.0"/>
+      <rect class="plein-accent" x="548.3" y="46.2" width="5.5" height="123.8"/>
+      <rect class="plein-accent" x="556.2" y="46.2" width="5.5" height="123.8"/>
+      <text x="559.0" y="184" text-anchor="middle" font-size="10" class="t2">50</text>
+      <rect class="plein-accent" x="564.1" y="51.0" width="5.5" height="119.0"/>
+      <rect class="plein-accent" x="572.0" y="60.2" width="5.5" height="109.8"/>
+      <rect class="plein-accent" x="579.9" y="72.6" width="5.5" height="97.4"/>
+      <rect class="plein-accent" x="587.9" y="87.1" width="5.5" height="82.9"/>
+      <text x="590.6" y="184" text-anchor="middle" font-size="10" class="t2">54</text>
+      <rect class="plein-accent" x="595.8" y="102.1" width="5.5" height="67.9"/>
+      <rect class="plein-accent" x="603.7" y="116.7" width="5.5" height="53.3"/>
+      <rect class="plein-accent" x="611.6" y="129.8" width="5.5" height="40.2"/>
+      <rect class="plein-accent" x="619.5" y="140.9" width="5.5" height="29.1"/>
+      <text x="622.3" y="184" text-anchor="middle" font-size="10" class="t2">58</text>
+      <rect class="plein-accent" x="627.4" y="149.8" width="5.5" height="20.2"/>
+      <rect class="plein-accent" x="635.4" y="156.5" width="5.5" height="13.5"/>
+      <rect class="plein-accent" x="643.3" y="161.4" width="5.5" height="8.6"/>
+      <text x="555.0" y="18" text-anchor="middle" font-size="12" class="gras">p = 0,5</text>
+      <text x="555.0" y="202" text-anchor="middle" font-size="11" class="t2">degré k · maximum 8,0 %</text>
+      </svg>
+      <figcaption>Figure 2.8 du poly, recalculée : les lois binomiales \(B(99, p)\) du degré pour \(n = 100\), avec \((n - 1)p \approx 2\), \(5\) et \(50\).</figcaption>
+    </figure>
+    <p>Quand \(p = 0{,}02\), on estime à plus de 25 % les sommets de degré 1, et de même pour ceux de degré 2 (27,3 % chacun). On estime aussi qu'entre 10 et 15 % des sommets n'ont aucun voisin (13,5 %) : le graphe ne peut pas être connexe. Quand \(p = 0{,}5\), environ 8 % des sommets sont de degré 50.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Calculer une probabilité de degré</span></p>
+      <p>Pour \(n = 100\) et \(p = 0{,}02\) : \(P(d(u) = 0) = 0{,}98^{99} \approx 0{,}135\), et \(P(d(u) = 1) = 99 \times 0{,}02 \times 0{,}98^{98} \approx 0{,}273\). On attend donc environ 13 sommets isolés sur 100. En Python, <code>math.comb(99, k) * p**k * (1 - p)**(99 - k)</code> calcule chaque barre de la figure.</p>
+    </div>
+
+    <h3>Connexe ou pas connexe ? <span class="ref">p. 25–27</span></h3>
+    <p>La connexité, le fait qu'il n'existe qu'une composante connexe, de taille \(n\), dépend bien sûr de \(n\) et de \(p\). Plus \(p\) est grand, plus il y a d'arêtes, et plus le graphe a de chances d'être connexe. Mais le \(p\) nécessaire change avec \(n\) : un graphe de 3 sommets a besoin de deux arêtes sur les trois possibles pour être connexe, et avec \(p = 0{,}05\), on a de bonnes chances de n'en tirer aucune.</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Seuil de connexité d'Erdős–Rényi</span></p>
+      <ul>
+        <li>Le graphe est en général connexe dès qu'il n'a plus aucun sommet de degré 0.</li>
+        <li>Quand \(p \lt \dfrac{\ln(n)}{n}\), le graphe contient très certainement des sommets isolés : il n'est pas connexe.</li>
+        <li>Quand \(p \gt \dfrac{\ln(n)}{n}\), le graphe est très certainement connexe.</li>
+      </ul>
+    </div>
+    <p>Pour \(n = 100\), \(\frac{\ln(n)}{n} = 0{,}046\) : avec \(p = 0{,}05\), on avait toutes les chances d'obtenir un graphe connexe, mais pas avec \(p = 0{,}02\).</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 560 220" width="560" role="img" aria-labelledby="fig-seuil-titre">
+      <title id="fig-seuil-titre">La courbe de la fonction ln(x) / x pour x de 2 à 500 : elle vaut environ 0,35 en x = 2 et 0,37 en x = 3, puis décroît rapidement : 0,046 en x = 100, 0,012 en x = 500.</title>
+      <path class="trait" d="M50 20 V180 H530"/>
+      <text x="44" y="184.0" text-anchor="end" font-size="11" class="t2">0</text>
+      <text x="44" y="144.0" text-anchor="end" font-size="11" class="t2">0,1</text>
+      <text x="44" y="104.0" text-anchor="end" font-size="11" class="t2">0,2</text>
+      <text x="44" y="64.0" text-anchor="end" font-size="11" class="t2">0,3</text>
+      <text x="50.0" y="196" text-anchor="middle" font-size="11" class="t2">0</text>
+      <text x="146.0" y="196" text-anchor="middle" font-size="11" class="t2">100</text>
+      <text x="242.0" y="196" text-anchor="middle" font-size="11" class="t2">200</text>
+      <text x="338.0" y="196" text-anchor="middle" font-size="11" class="t2">300</text>
+      <text x="434.0" y="196" text-anchor="middle" font-size="11" class="t2">400</text>
+      <text x="530.0" y="196" text-anchor="middle" font-size="11" class="t2">500</text>
+      <path class="accent" d="M51.9 41.4 52.4 33.4 52.9 33.5 53.4 36.8 53.8 41.4 54.3 46.3 54.8 51.2 55.3 56.0 55.8 60.5 56.2 64.8 56.7 68.8 57.2 72.5 57.7 76.0 58.2 79.3 58.6 82.3 59.1 85.2 59.6 87.9 60.1 90.4 60.6 92.8 61.0 95.0 61.5 97.2 62.0 99.2 62.5 101.1 63.0 102.9 63.4 104.6 63.9 106.2 64.4 107.8 64.9 109.3 65.4 110.7 65.8 112.0 66.3 113.3 66.8 114.6 67.3 115.8 67.8 116.9 68.2 118.0 68.7 119.1 69.2 120.1 69.7 121.1 70.2 122.0 70.6 122.9 71.1 123.8 71.6 124.6 72.1 125.5 72.6 126.3 73.0 127.0 73.5 127.8 74.0 128.5 74.5 129.2 75.0 129.9 75.4 130.5 75.9 131.2 76.4 131.8 76.9 132.4 77.4 133.0 77.8 133.6 78.3 134.1 78.8 134.7 79.3 135.2 79.8 135.7 80.2 136.2 80.7 136.7 81.2 137.2 81.7 137.6 82.2 138.1 82.6 138.5 83.1 138.9 83.6 139.4 84.1 139.8 84.6 140.2 85.0 140.6 85.5 141.0 86.0 141.3 86.5 141.7 87.0 142.1 87.4 142.4 87.9 142.8 88.4 143.1 88.9 143.4 89.4 143.8 89.8 144.1 90.3 144.4 90.8 144.7 91.3 145.0 91.8 145.3 92.2 145.6 92.7 145.9 93.2 146.2 93.7 146.4 94.2 146.7 94.6 147.0 95.1 147.2 95.6 147.5 96.1 147.7 96.6 148.0 97.0 148.2 97.5 148.5 98.0 148.7 98.5 148.9 99.0 149.2 99.4 149.4 99.9 149.6 100.4 149.8 100.9 150.0 101.4 150.2 101.8 150.5 102.3 150.7 102.8 150.9 103.3 151.1 103.8 151.2 104.2 151.4 104.7 151.6 105.2 151.8 105.7 152.0 106.2 152.2 106.6 152.4 107.1 152.5 107.6 152.7 108.1 152.9 108.6 153.0 109.0 153.2 109.5 153.4 110.0 153.5 110.5 153.7 111.0 153.9 111.4 154.0 111.9 154.2 112.4 154.3 112.9 154.5 113.4 154.6 113.8 154.8 114.3 154.9 114.8 155.0 115.3 155.2 115.8 155.3 116.2 155.5 116.7 155.6 117.2 155.7 117.7 155.9 118.2 156.0 118.6 156.1 119.1 156.2 119.6 156.4 120.1 156.5 120.6 156.6 121.0 156.7 121.5 156.9 122.0 157.0 122.5 157.1 123.0 157.2 123.4 157.3 123.9 157.4 124.4 157.5 124.9 157.7 125.4 157.8 125.8 157.9 126.3 158.0 126.8 158.1 127.3 158.2 127.8 158.3 128.2 158.4 128.7 158.5 129.2 158.6 129.7 158.7 130.2 158.8 130.6 158.9 131.1 159.0 131.6 159.1 132.1 159.2 132.6 159.3 133.0 159.4 133.5 159.5 134.0 159.6 134.5 159.6 135.0 159.7 135.4 159.8 135.9 159.9 136.4 160.0 136.9 160.1 137.4 160.2 137.8 160.3 138.3 160.3 138.8 160.4 139.3 160.5 139.8 160.6 140.2 160.7 140.7 160.7 141.2 160.8 141.7 160.9 142.2 161.0 142.6 161.1 143.1 161.1 143.6 161.2 144.1 161.3 144.6 161.4 145.0 161.4 145.5 161.5 146.0 161.6 146.5 161.7 147.0 161.7 147.4 161.8 147.9 161.9 148.4 161.9 148.9 162.0 149.4 162.1 149.8 162.1 150.3 162.2 150.8 162.3 151.3 162.3 151.8 162.4 152.2 162.5 152.7 162.5 153.2 162.6 153.7 162.7 154.2 162.7 154.6 162.8 155.1 162.8 155.6 162.9 156.1 163.0 156.6 163.0 157.0 163.1 157.5 163.1 158.0 163.2 158.5 163.3 159.0 163.3 159.4 163.4 159.9 163.4 160.4 163.5 160.9 163.6 161.4 163.6 161.8 163.7 162.3 163.7 162.8 163.8 163.3 163.8 163.8 163.9 164.2 163.9 164.7 164.0 165.2 164.0 165.7 164.1 166.2 164.1 166.6 164.2 167.1 164.2 167.6 164.3 168.1 164.4 168.6 164.4 169.0 164.5 169.5 164.5 170.0 164.5 170.5 164.6 171.0 164.6 171.4 164.7 171.9 164.7 172.4 164.8 172.9 164.8 173.4 164.9 173.8 164.9 174.3 165.0 174.8 165.0 175.3 165.1 175.8 165.1 176.2 165.2 176.7 165.2 177.2 165.2 177.7 165.3 178.2 165.3 178.6 165.4 179.1 165.4 179.6 165.5 180.1 165.5 180.6 165.6 181.0 165.6 181.5 165.6 182.0 165.7 182.5 165.7 183.0 165.8 183.4 165.8 183.9 165.8 184.4 165.9 184.9 165.9 185.4 166.0 185.8 166.0 186.3 166.0 186.8 166.1 187.3 166.1 187.8 166.2 188.2 166.2 188.7 166.2 189.2 166.3 189.7 166.3 190.2 166.3 190.6 166.4 191.1 166.4 191.6 166.5 192.1 166.5 192.6 166.5 193.0 166.6 193.5 166.6 194.0 166.6 194.5 166.7 195.0 166.7 195.4 166.7 195.9 166.8 196.4 166.8 196.9 166.8 197.4 166.9 197.8 166.9 198.3 167.0 198.8 167.0 199.3 167.0 199.8 167.1 200.2 167.1 200.7 167.1 201.2 167.2 201.7 167.2 202.2 167.2 202.6 167.2 203.1 167.3 203.6 167.3 204.1 167.3 204.6 167.4 205.0 167.4 205.5 167.4 206.0 167.5 206.5 167.5 207.0 167.5 207.4 167.6 207.9 167.6 208.4 167.6 208.9 167.7 209.4 167.7 209.8 167.7 210.3 167.7 210.8 167.8 211.3 167.8 211.8 167.8 212.2 167.9 212.7 167.9 213.2 167.9 213.7 167.9 214.2 168.0 214.6 168.0 215.1 168.0 215.6 168.1 216.1 168.1 216.6 168.1 217.0 168.1 217.5 168.2 218.0 168.2 218.5 168.2 219.0 168.2 219.4 168.3 219.9 168.3 220.4 168.3 220.9 168.4 221.4 168.4 221.8 168.4 222.3 168.4 222.8 168.5 223.3 168.5 223.8 168.5 224.2 168.5 224.7 168.6 225.2 168.6 225.7 168.6 226.2 168.6 226.6 168.7 227.1 168.7 227.6 168.7 228.1 168.7 228.6 168.8 229.0 168.8 229.5 168.8 230.0 168.8 230.5 168.9 231.0 168.9 231.4 168.9 231.9 168.9 232.4 169.0 232.9 169.0 233.4 169.0 233.8 169.0 234.3 169.0 234.8 169.1 235.3 169.1 235.8 169.1 236.2 169.1 236.7 169.2 237.2 169.2 237.7 169.2 238.2 169.2 238.6 169.3 239.1 169.3 239.6 169.3 240.1 169.3 240.6 169.3 241.0 169.4 241.5 169.4 242.0 169.4 242.5 169.4 243.0 169.4 243.4 169.5 243.9 169.5 244.4 169.5 244.9 169.5 245.4 169.6 245.8 169.6 246.3 169.6 246.8 169.6 247.3 169.6 247.8 169.7 248.2 169.7 248.7 169.7 249.2 169.7 249.7 169.7 250.2 169.8 250.6 169.8 251.1 169.8 251.6 169.8 252.1 169.8 252.6 169.9 253.0 169.9 253.5 169.9 254.0 169.9 254.5 169.9 255.0 170.0 255.4 170.0 255.9 170.0 256.4 170.0 256.9 170.0 257.4 170.0 257.8 170.1 258.3 170.1 258.8 170.1 259.3 170.1 259.8 170.1 260.2 170.2 260.7 170.2 261.2 170.2 261.7 170.2 262.2 170.2 262.6 170.2 263.1 170.3 263.6 170.3 264.1 170.3 264.6 170.3 265.0 170.3 265.5 170.4 266.0 170.4 266.5 170.4 267.0 170.4 267.4 170.4 267.9 170.4 268.4 170.5 268.9 170.5 269.4 170.5 269.8 170.5 270.3 170.5 270.8 170.5 271.3 170.6 271.8 170.6 272.2 170.6 272.7 170.6 273.2 170.6 273.7 170.6 274.2 170.7 274.6 170.7 275.1 170.7 275.6 170.7 276.1 170.7 276.6 170.7 277.0 170.8 277.5 170.8 278.0 170.8 278.5 170.8 279.0 170.8 279.4 170.8 279.9 170.9 280.4 170.9 280.9 170.9 281.4 170.9 281.8 170.9 282.3 170.9 282.8 170.9 283.3 171.0 283.8 171.0 284.2 171.0 284.7 171.0 285.2 171.0 285.7 171.0 286.2 171.0 286.6 171.1 287.1 171.1 287.6 171.1 288.1 171.1 288.6 171.1 289.0 171.1 289.5 171.2 290.0 171.2 290.5 171.2 291.0 171.2 291.4 171.2 291.9 171.2 292.4 171.2 292.9 171.3 293.4 171.3 293.8 171.3 294.3 171.3 294.8 171.3 295.3 171.3 295.8 171.3 296.2 171.3 296.7 171.4 297.2 171.4 297.7 171.4 298.2 171.4 298.6 171.4 299.1 171.4 299.6 171.4 300.1 171.5 300.6 171.5 301.0 171.5 301.5 171.5 302.0 171.5 302.5 171.5 303.0 171.5 303.4 171.6 303.9 171.6 304.4 171.6 304.9 171.6 305.4 171.6 305.8 171.6 306.3 171.6 306.8 171.6 307.3 171.7 307.8 171.7 308.2 171.7 308.7 171.7 309.2 171.7 309.7 171.7 310.2 171.7 310.6 171.7 311.1 171.8 311.6 171.8 312.1 171.8 312.6 171.8 313.0 171.8 313.5 171.8 314.0 171.8 314.5 171.8 315.0 171.9 315.4 171.9 315.9 171.9 316.4 171.9 316.9 171.9 317.4 171.9 317.8 171.9 318.3 171.9 318.8 172.0 319.3 172.0 319.8 172.0 320.2 172.0 320.7 172.0 321.2 172.0 321.7 172.0 322.2 172.0 322.6 172.0 323.1 172.1 323.6 172.1 324.1 172.1 324.6 172.1 325.0 172.1 325.5 172.1 326.0 172.1 326.5 172.1 327.0 172.1 327.4 172.2 327.9 172.2 328.4 172.2 328.9 172.2 329.4 172.2 329.8 172.2 330.3 172.2 330.8 172.2 331.3 172.2 331.8 172.3 332.2 172.3 332.7 172.3 333.2 172.3 333.7 172.3 334.2 172.3 334.6 172.3 335.1 172.3 335.6 172.3 336.1 172.4 336.6 172.4 337.0 172.4 337.5 172.4 338.0 172.4 338.5 172.4 339.0 172.4 339.4 172.4 339.9 172.4 340.4 172.4 340.9 172.5 341.4 172.5 341.8 172.5 342.3 172.5 342.8 172.5 343.3 172.5 343.8 172.5 344.2 172.5 344.7 172.5 345.2 172.5 345.7 172.6 346.2 172.6 346.6 172.6 347.1 172.6 347.6 172.6 348.1 172.6 348.6 172.6 349.0 172.6 349.5 172.6 350.0 172.6 350.5 172.7 351.0 172.7 351.4 172.7 351.9 172.7 352.4 172.7 352.9 172.7 353.4 172.7 353.8 172.7 354.3 172.7 354.8 172.7 355.3 172.8 355.8 172.8 356.2 172.8 356.7 172.8 357.2 172.8 357.7 172.8 358.2 172.8 358.6 172.8 359.1 172.8 359.6 172.8 360.1 172.8 360.6 172.9 361.0 172.9 361.5 172.9 362.0 172.9 362.5 172.9 363.0 172.9 363.4 172.9 363.9 172.9 364.4 172.9 364.9 172.9 365.4 172.9 365.8 173.0 366.3 173.0 366.8 173.0 367.3 173.0 367.8 173.0 368.2 173.0 368.7 173.0 369.2 173.0 369.7 173.0 370.2 173.0 370.6 173.0 371.1 173.0 371.6 173.1 372.1 173.1 372.6 173.1 373.0 173.1 373.5 173.1 374.0 173.1 374.5 173.1 375.0 173.1 375.4 173.1 375.9 173.1 376.4 173.1 376.9 173.2 377.4 173.2 377.8 173.2 378.3 173.2 378.8 173.2 379.3 173.2 379.8 173.2 380.2 173.2 380.7 173.2 381.2 173.2 381.7 173.2 382.2 173.2 382.6 173.2 383.1 173.3 383.6 173.3 384.1 173.3 384.6 173.3 385.0 173.3 385.5 173.3 386.0 173.3 386.5 173.3 387.0 173.3 387.4 173.3 387.9 173.3 388.4 173.3 388.9 173.4 389.4 173.4 389.8 173.4 390.3 173.4 390.8 173.4 391.3 173.4 391.8 173.4 392.2 173.4 392.7 173.4 393.2 173.4 393.7 173.4 394.2 173.4 394.6 173.4 395.1 173.5 395.6 173.5 396.1 173.5 396.6 173.5 397.0 173.5 397.5 173.5 398.0 173.5 398.5 173.5 399.0 173.5 399.4 173.5 399.9 173.5 400.4 173.5 400.9 173.5 401.4 173.5 401.8 173.6 402.3 173.6 402.8 173.6 403.3 173.6 403.8 173.6 404.2 173.6 404.7 173.6 405.2 173.6 405.7 173.6 406.2 173.6 406.6 173.6 407.1 173.6 407.6 173.6 408.1 173.6 408.6 173.7 409.0 173.7 409.5 173.7 410.0 173.7 410.5 173.7 411.0 173.7 411.4 173.7 411.9 173.7 412.4 173.7 412.9 173.7 413.4 173.7 413.8 173.7 414.3 173.7 414.8 173.7 415.3 173.8 415.8 173.8 416.2 173.8 416.7 173.8 417.2 173.8 417.7 173.8 418.2 173.8 418.6 173.8 419.1 173.8 419.6 173.8 420.1 173.8 420.6 173.8 421.0 173.8 421.5 173.8 422.0 173.8 422.5 173.9 423.0 173.9 423.4 173.9 423.9 173.9 424.4 173.9 424.9 173.9 425.4 173.9 425.8 173.9 426.3 173.9 426.8 173.9 427.3 173.9 427.8 173.9 428.2 173.9 428.7 173.9 429.2 173.9 429.7 174.0 430.2 174.0 430.6 174.0 431.1 174.0 431.6 174.0 432.1 174.0 432.6 174.0 433.0 174.0 433.5 174.0 434.0 174.0 434.5 174.0 435.0 174.0 435.4 174.0 435.9 174.0 436.4 174.0 436.9 174.0 437.4 174.1 437.8 174.1 438.3 174.1 438.8 174.1 439.3 174.1 439.8 174.1 440.2 174.1 440.7 174.1 441.2 174.1 441.7 174.1 442.2 174.1 442.6 174.1 443.1 174.1 443.6 174.1 444.1 174.1 444.6 174.1 445.0 174.1 445.5 174.2 446.0 174.2 446.5 174.2 447.0 174.2 447.4 174.2 447.9 174.2 448.4 174.2 448.9 174.2 449.4 174.2 449.8 174.2 450.3 174.2 450.8 174.2 451.3 174.2 451.8 174.2 452.2 174.2 452.7 174.2 453.2 174.2 453.7 174.3 454.2 174.3 454.6 174.3 455.1 174.3 455.6 174.3 456.1 174.3 456.6 174.3 457.0 174.3 457.5 174.3 458.0 174.3 458.5 174.3 459.0 174.3 459.4 174.3 459.9 174.3 460.4 174.3 460.9 174.3 461.4 174.3 461.8 174.3 462.3 174.4 462.8 174.4 463.3 174.4 463.8 174.4 464.2 174.4 464.7 174.4 465.2 174.4 465.7 174.4 466.2 174.4 466.6 174.4 467.1 174.4 467.6 174.4 468.1 174.4 468.6 174.4 469.0 174.4 469.5 174.4 470.0 174.4 470.5 174.4 471.0 174.5 471.4 174.5 471.9 174.5 472.4 174.5 472.9 174.5 473.4 174.5 473.8 174.5 474.3 174.5 474.8 174.5 475.3 174.5 475.8 174.5 476.2 174.5 476.7 174.5 477.2 174.5 477.7 174.5 478.2 174.5 478.6 174.5 479.1 174.5 479.6 174.5 480.1 174.5 480.6 174.6 481.0 174.6 481.5 174.6 482.0 174.6 482.5 174.6 483.0 174.6 483.4 174.6 483.9 174.6 484.4 174.6 484.9 174.6 485.4 174.6 485.8 174.6 486.3 174.6 486.8 174.6 487.3 174.6 487.8 174.6 488.2 174.6 488.7 174.6 489.2 174.6 489.7 174.6 490.2 174.7 490.6 174.7 491.1 174.7 491.6 174.7 492.1 174.7 492.6 174.7 493.0 174.7 493.5 174.7 494.0 174.7 494.5 174.7 495.0 174.7 495.4 174.7 495.9 174.7 496.4 174.7 496.9 174.7 497.4 174.7 497.8 174.7 498.3 174.7 498.8 174.7 499.3 174.7 499.8 174.7 500.2 174.8 500.7 174.8 501.2 174.8 501.7 174.8 502.2 174.8 502.6 174.8 503.1 174.8 503.6 174.8 504.1 174.8 504.6 174.8 505.0 174.8 505.5 174.8 506.0 174.8 506.5 174.8 507.0 174.8 507.4 174.8 507.9 174.8 508.4 174.8 508.9 174.8 509.4 174.8 509.8 174.8 510.3 174.9 510.8 174.9 511.3 174.9 511.8 174.9 512.2 174.9 512.7 174.9 513.2 174.9 513.7 174.9 514.2 174.9 514.6 174.9 515.1 174.9 515.6 174.9 516.1 174.9 516.6 174.9 517.0 174.9 517.5 174.9 518.0 174.9 518.5 174.9 519.0 174.9 519.4 174.9 519.9 174.9 520.4 174.9 520.9 174.9 521.4 175.0 521.8 175.0 522.3 175.0 522.8 175.0 523.3 175.0 523.8 175.0 524.2 175.0 524.7 175.0 525.2 175.0 525.7 175.0 526.2 175.0 526.6 175.0 527.1 175.0 527.6 175.0 528.1 175.0 528.6 175.0 529.0 175.0 529.5 175.0 530.0 175.0"/>
+      <circle class="plein" cx="146.0" cy="161.6" r="4"/>
+      <text x="154.0" y="151.6" font-size="11">n = 100 : ln(n)/n ≈ 0,046</text>
+      <text x="290.0" y="214" text-anchor="middle" font-size="11" class="t2">nombre de sommets n</text>
+      </svg>
+      <figcaption>Figure 2.9 du poly, recalculée : la fonction \(f(x) = \ln(x)/x\), à partir de \(x = 2\).</figcaption>
+    </figure>
+    <p>La fonction \(\ln(n)/n\) décroît vers 0 : plus le graphe est grand, plus \(p\) peut être faible tout en conservant la connexité. C'est ce qui explique que dans les grands graphes du réel (plusieurs centaines de millions d'utilisateurs de Twitter, des dizaines voire des centaines de milliers de mots dans les grands corpus), la probabilité que deux sommets soient reliés est très faible, et que l'on observe pourtant des graphes connexes.</p>
+    <p><span class="badge a-verifier">À vérifier</span> « Très certainement » est à prendre au sens asymptotique : le seuil devient net quand \(n\) est très grand. Pour \(n = 100\), \(p = 0{,}05\) est encore très proche du seuil, et une simulation de 1000 graphes (ci-dessous) n'en trouve qu'un peu plus de la moitié connexes. Le graphe connexe de la figure 2.7 est donc un tirage favorable, pas une quasi-certitude.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Simuler le seuil avec NetworkX</span></p>
+<pre data-fichier="er.py"><code class="language-python">import networkx as nx
+
+n, essais = 100, 1000
+for p in (0.02, 0.03, 0.046, 0.05, 0.07):
+    connexes = sum(nx.is_connected(nx.gnp_random_graph(n, p, seed=s))
+                   for s in range(essais))
+    print(f"p = {p:&lt;5} : {connexes / essais:.0%} de graphes connexes")</code></pre>
+<pre class="terminal"><code>$ python er.py
+p = 0.02  : 0% de graphes connexes
+p = 0.03  : 1% de graphes connexes
+p = 0.046 : 38% de graphes connexes
+p = 0.05  : 54% de graphes connexes
+p = 0.07  : 93% de graphes connexes</code></pre>
+      <p>La proportion de graphes connexes bascule de presque 0 à presque 1 autour de \(\ln(n)/n\). Une estimation classique l'explique : le nombre moyen de sommets isolés vaut \(n(1-p)^{n-1} \approx n e^{-pn}\), soit environ 0,7 pour \(p = 0{,}05\) ; tant qu'il n'est pas très petit devant 1, la connexité reste incertaine. Avec \(n\) plus grand, la bascule se resserre autour du seuil. <span class="badge hors-programme">Hors programme</span></p>
+    </div>
+    <div class="bloc exercice" id="ex-5">
+      <p class="bloc-titre">Exercice 5 <span>Un graphe aléatoire de 1000 sommets</span> <span class="badge ajout">Ajout</span></p>
+      <p>On tire un graphe \(G(1000, 0{,}01)\). Donner le nombre moyen d'arêtes, le degré moyen et la probabilité qu'un sommet soit isolé. Le graphe est-il vraisemblablement connexe ?</p>
+      <details class="indice"><summary>Indice</summary><p>Comparer \(p\) à \(\ln(1000)/1000\).</p></details>
+      <details class="solution"><summary>Solution proposée</summary><p>\(\mathbb{E}(m) = \frac{1000 \times 999}{2} \times 0{,}01 = 4995\) arêtes ; degré moyen \(999 \times 0{,}01 = 9{,}99\). Un sommet est isolé avec la probabilité \(0{,}99^{999} \approx 4{,}4 \times 10^{-5}\), soit environ 0,04 sommet isolé en moyenne. Comme \(p = 0{,}01 \gt \ln(1000)/1000 \approx 0{,}0069\), le graphe est très vraisemblablement connexe.</p></details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Un chemin de longueur \(k\) est une suite de \(k\) arêtes (ou arcs) où la cible de chacune est la source de la suivante.</li>
+        <li>Un graphe non orienté est connexe si un chemin relie toute paire de sommets ; ses composantes connexes sont ses sous-graphes induits connexes et maximaux (au sens de l'inclusion).</li>
+        <li>Un parcours en profondeur (DFS, récursif ou avec une pile) ou en largeur (BFS, avec une file) depuis un sommet découvre sa composante : le graphe est connexe si le parcours atteint les \(n\) sommets.</li>
+        <li>Graphe orienté : faiblement connexe si le graphe sans orientation est connexe ; fortement connexe si, pour tout \(u\) et \(v\), il existe un chemin de \(u\) à \(v\) et un de \(v\) à \(u\). La forte connexité est transitive.</li>
+        <li>Deux sommets sont dans la même composante fortement connexe si et seulement s'ils sont sur un même circuit.</li>
+        <li>L'arbre de Trémaux est l'arbre d'un DFS, numéroté dans l'ordre de visite ; l'algorithme de Tarjan y repère la racine de chaque CFC, son sommet de plus petit numéro, en calculant le plus petit numéro accessible depuis chaque sommet.</li>
+        <li>Modèle d'Erdős–Rényi \(G(n, p)\) : chaque arête existe avec la probabilité \(p\). Nombre d'arêtes \(\sim B\!\left(\frac{n(n-1)}{2}, p\right)\), degré \(\sim B(n-1, p)\), degré moyen \((n-1)p\).</li>
+        <li>Seuil de connexité : le graphe est presque sûrement non connexe si \(p \lt \ln(n)/n\), connexe si \(p \gt \ln(n)/n\) ; ce seuil tend vers 0 quand \(n\) grandit, d'où la connexité des grands graphes réels.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Un graphe a 3 composantes connexes. Combien d'arêtes faut-il ajouter, au minimum, pour le rendre connexe ?</summary>
+        <div><p>Deux : chaque arête ajoutée fusionne au plus deux composantes.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle structure de données distingue un BFS d'un DFS ?</summary>
+        <div><p>Le BFS range les sommets à explorer dans une file (premier entré, premier sorti) ; le DFS dans une pile, explicite ou celle des appels récursifs.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Le graphe \(A \to B\), \(B \to C\), \(C \to B\) est-il fortement connexe ? Quelles sont ses CFC ?</summary>
+        <div><p>Non : rien ne revient vers A. Il est faiblement connexe, et a deux CFC : \(\{A\}\) et \(\{B, C\}\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Qu'est-ce que la racine d'une CFC pour l'algorithme de Tarjan ?</summary>
+        <div><p>Son sommet de plus petit numéro dans l'arbre de Trémaux, c'est-à-dire le premier visité par le DFS ; tous les autres sommets de la CFC en descendent.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi le degré d'un sommet de \(G(n, p)\) suit-il une loi \(B(n-1, p)\) ?</summary>
+        <div><p>Le sommet peut être relié à \(n - 1\) autres sommets, et chacune de ces arêtes existe avec la probabilité \(p\), indépendamment des autres : son degré compte les succès de \(n - 1\) épreuves de Bernoulli.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Degré moyen d'un graphe \(G(101, 0{,}1)\) ?</summary>
+        <div><p>\((n - 1) p = 100 \times 0{,}1 = 10\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi un très grand réseau social peut-il être connexe alors que chaque personne n'en connaît qu'une infime partie ?</summary>
+        <div><p>Le seuil de connexité \(\ln(n)/n\) tend vers 0 quand \(n\) grandit : plus le graphe est grand, plus la probabilité de lien suffisante pour être connexe est faible. Avec \(n = 10^6\), il suffit de \(p \approx 1{,}4 \times 10^{-5}\), soit environ 14 liens par personne.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Références</h2>
+    <ul>
+      <li>N. Dugué, <cite>Graphes et applications</cite>, poly du cours, Le Mans Université, 2026-2027 : <a href="../cours/_Graphes__Cours_de_graphes_A4__1_-4.pdf">chapitre 2</a>.</li>
+      <li>P. Erdős et A. Rényi, <cite>On random graphs I</cite>, 1959, et <cite>On the evolution of random graphs</cite>, 1960.</li>
+      <li>M. E. J. Newman, <cite>Random graphs as models of networks</cite>, 2002.</li>
+      <li>R. Tarjan, <cite>Depth-first search and linear graph algorithms</cite>, SIAM Journal on Computing, 1972.</li>
+      <li>La documentation de <a href="https://networkx.org/documentation/stable/">NetworkX</a> : composantes, parcours, <code>gnp_random_graph</code>.</li>
+    </ul>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-01-notions-de-base.html"><small>← Cours 1</small>Modéliser le réel avec des graphes</a>
+    <a class="suivant" href="cours-03-petit-monde.html"><small>Cours 3 →</small>Le monde est petit !</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Théorie des graphes · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Connexité et modèle d'Erdős–Rényi · Théorie des graphes L3</title>
+<meta name="description" content="Quiz interactif sur le cours 2 de théorie des graphes (L3) : chemins, connexité, parcours DFS et BFS, forte connexité, Tarjan, modèle d'Erdős–Rényi.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="../generated_courses/index.html">Théorie des graphes</a>
+    <span aria-current="page">Quiz · Cours 2</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Théorie des graphes</span> Quiz · L3</p>
+    <h1>Connexité et modèle d'Erdős–Rényi</h1>
+    <p class="chapeau">Vingt-quatre questions sur le chapitre 2 : chemins et composantes connexes, parcours en profondeur et en largeur, forte et faible connexité, arbre de Trémaux et Tarjan, modèle G(n, p) et son seuil de connexité. Un arbre à dessiner dans l'atelier et une fonction Python à écrire.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-02-connexite-erdos-renyi.html">Cours 2 · Connexité et modèle d'Erdős–Rényi</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-01">1<sup>er</sup> novembre 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Théorie des graphes · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "graphes-cours-02-connexite-erdos-renyi",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 2 · Connexité et modèle d'Erdős–Rényi",
+      "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html"
+    }
+  ],
+  "questions": [
+    {
+      "type": "qcm-multi",
+      "theme": "Chemins et connexité",
+      "difficulte": 1,
+      "enonce": "<p>Dans le graphe non orienté d'arêtes \\((C, D), (C, E), (D, B), (B, A), (A, F), (F, E)\\), cocher les suites qui sont des chemins de B à E.</p>",
+      "choix": [
+        "\\(((B, A), (A, F), (F, E))\\)",
+        "\\(((B, D), (D, C), (C, E))\\)",
+        "\\(((B, A), (F, E), (A, F))\\)",
+        "\\(((B, D), (D, E))\\)"
+      ],
+      "reponses": [
+        0,
+        1
+      ],
+      "explication": "<p>Dans un chemin, la cible de chaque arête est la source de la suivante. Les deux premières suites s'enchaînent (une arête non orientée se lit dans les deux sens). La troisième contient les bonnes arêtes dans le mauvais ordre : après \\((B, A)\\), il faut une arête qui part de A. La quatrième emprunte \\((D, E)\\), qui n'existe pas.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Chemin",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#chemin"
+      },
+      "id": "q01"
+    },
+    {
+      "type": "vrai-faux",
+      "theme": "Chemins et connexité",
+      "difficulte": 1,
+      "enonce": "<p>Un graphe non orienté connexe possède exactement une composante connexe.</p>",
+      "reponse": true,
+      "explication": "<p>Vrai : si tous les sommets sont reliés deux à deux par des chemins, le graphe entier est un sous-graphe connexe, et il est maximal. C'est son unique composante.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Sous-graphe induit et composante connexe",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#sous-graphe-induit-et-composante-connexe"
+      },
+      "id": "q02"
+    },
+    {
+      "type": "numerique",
+      "theme": "Chemins et connexité",
+      "difficulte": 1,
+      "enonce": "<p>Combien de composantes connexes a le graphe de sommets \\(\\{1, \\dots, 9\\}\\) et d'arêtes \\((1, 2), (2, 3), (4, 5), (5, 6), (6, 4), (7, 8)\\) ?</p>",
+      "reponse": 4,
+      "tolerance": 0,
+      "indices": [
+        "<p>Un sommet sans arête forme une composante à lui seul.</p>"
+      ],
+      "explication": "<p>\\(\\{1, 2, 3\\}\\), \\(\\{4, 5, 6\\}\\), \\(\\{7, 8\\}\\) et \\(\\{9\\}\\) : quatre composantes. Le sommet 9, isolé, est la plus oubliée.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Sous-graphe induit et composante connexe",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#sous-graphe-induit-et-composante-connexe"
+      },
+      "id": "q03"
+    },
+    {
+      "type": "numerique",
+      "theme": "Chemins et connexité",
+      "difficulte": 2,
+      "enonce": "<p>Pour ce même graphe (sommets \\(\\{1, \\dots, 9\\}\\), arêtes \\((1, 2), (2, 3), (4, 5), (5, 6), (6, 4), (7, 8)\\)), combien d'arêtes faut-il ajouter, au minimum, pour le rendre connexe ?</p>",
+      "reponse": 3,
+      "tolerance": 0,
+      "indices": [
+        "<p>Que fait une arête ajoutée entre deux composantes ?</p>"
+      ],
+      "explication": "<p>Une arête ajoutée fusionne au plus deux composantes : on passe de 4 composantes à 1 avec au moins 3 arêtes, et 3 suffisent, par exemple \\((3, 4)\\), \\((6, 7)\\) et \\((8, 9)\\). En général, \\(c\\) composantes demandent \\(c - 1\\) arêtes.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Sous-graphe induit et composante connexe",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#sous-graphe-induit-et-composante-connexe"
+      },
+      "id": "q04"
+    },
+    {
+      "type": "qcm",
+      "theme": "Chemins et connexité",
+      "difficulte": 2,
+      "enonce": "<p>Dans un graphe formé d'une arête C–D et d'un triangle A, B, E (sans lien entre les deux), pourquoi le sous-graphe induit par \\(\\{A, B\\}\\) n'est-il pas une composante connexe ?</p>",
+      "choix": [
+        "Il n'est pas maximal : on peut lui ajouter E en restant connexe",
+        "Il n'est pas connexe",
+        "Il est plus petit que la composante \\(\\{C, D\\}\\)",
+        "Une composante connexe doit contenir au moins trois sommets"
+      ],
+      "reponse": 0,
+      "explication": "<p>\\(\\{A, B\\}\\) est connexe (l'arête A–B), mais une composante doit être maximale au sens de l'inclusion : \\(\\{A, B, E\\}\\) le contient et reste connexe. La taille n'entre pas en jeu : \\(\\{C, D\\}\\), avec deux sommets, est bien une composante.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Sous-graphe induit et composante connexe",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#sous-graphe-induit-et-composante-connexe"
+      },
+      "id": "q05"
+    },
+    {
+      "type": "ordre",
+      "theme": "Parcours",
+      "difficulte": 2,
+      "enonce": "<p>On considère le graphe non orienté de listes d'adjacence suivantes (les voisins sont examinés dans cet ordre) :</p><pre><code class='language-plaintext'>A : B, C\nB : A, D\nC : A, D, E\nD : B, C, F\nE : C\nF : D</code></pre><p>Remettre les sommets dans l'ordre où les visite un parcours en <strong>profondeur</strong> (DFS) parti de A.</p>",
+      "elements": [
+        "A",
+        "B",
+        "D",
+        "C",
+        "E",
+        "F"
+      ],
+      "indices": [
+        "<p>Depuis chaque sommet, on part vers son premier voisin non visité, et l'on ne revient en arrière que lorsqu'il n'y en a plus.</p>"
+      ],
+      "explication": "<p>A → B (premier voisin de A) → D (premier voisin non visité de B) → C (B est déjà vu) → E ; E n'a plus de voisin neuf, on revient à C puis à D, qui mène à F. Ordre : A, B, D, C, E, F.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Parcours en profondeur (DFS)",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#parcours-en-profondeur-dfs"
+      },
+      "id": "q06"
+    },
+    {
+      "type": "qcm",
+      "theme": "Parcours",
+      "difficulte": 2,
+      "enonce": "<p>On considère le graphe non orienté de listes d'adjacence suivantes (les voisins sont examinés dans cet ordre) :</p><pre><code class='language-plaintext'>A : B, C\nB : A, D\nC : A, D, E\nD : B, C, F\nE : C\nF : D</code></pre><p>Dans quel ordre un parcours en <strong>largeur</strong> (BFS) parti de A visite-t-il les sommets ?</p>",
+      "choix": [
+        "A, B, C, D, E, F",
+        "A, B, D, C, E, F",
+        "A, B, C, E, D, F",
+        "A, C, B, E, D, F"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Les sommets sortent de la file dans l'ordre où ils y sont entrés.</p>"
+      ],
+      "explication": "<p>On défile A et l'on enfile B et C ; on défile B, qui ajoute D ; on défile C, qui ajoute E (D est déjà en file) ; puis D ajoute F. Ordre : A, B, C, D, E, F. D passe avant E parce que B, qui l'a découvert, est sorti avant C. A, B, D, C, E, F est l'ordre du DFS.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Parcours en largeur (BFS)",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#parcours-en-largeur-bfs"
+      },
+      "id": "q07"
+    },
+    {
+      "type": "association",
+      "theme": "Parcours",
+      "difficulte": 2,
+      "enonce": "<p>Associer chaque algorithme à ce qui le caractérise.</p>",
+      "paires": [
+        [
+          "Parcours en profondeur (DFS)",
+          "S'enfonce le plus loin possible, avec une pile ou des appels récursifs"
+        ],
+        [
+          "Parcours en largeur (BFS)",
+          "Visite les voisins avant les voisins des voisins, avec une file"
+        ],
+        [
+          "Algorithme de Kosaraju",
+          "Deux parcours en profondeur : le graphe, puis son transposé"
+        ],
+        [
+          "Algorithme de Tarjan",
+          "Toutes les CFC en un seul parcours en profondeur"
+        ]
+      ],
+      "explication": "<p>DFS et BFS diffèrent par la structure qui range les sommets à explorer : pile ou file. Pour la forte connexité, Kosaraju fait deux DFS (graphe puis transposé, aux arcs inversés) ; Tarjan n'en fait qu'un, d'où sa préférence.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Faible et forte connexité",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#faible-et-forte-connexite"
+      },
+      "id": "q08"
+    },
+    {
+      "type": "vrai-faux",
+      "theme": "Parcours",
+      "difficulte": 1,
+      "enonce": "<p>Pour savoir si un graphe non orienté est connexe, il suffit de lancer un seul parcours (en largeur ou en profondeur) depuis un sommet quelconque et de vérifier qu'il atteint tous les sommets.</p>",
+      "reponse": true,
+      "explication": "<p>Vrai : un parcours découvre exactement la composante connexe de son sommet de départ. Si elle contient les \\(n\\) sommets, le graphe est connexe ; sinon, il ne l'est pas. Inutile de partir de chaque sommet.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Parcourir un graphe",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#parcourir-un-graphe"
+      },
+      "id": "q09"
+    },
+    {
+      "type": "code",
+      "langage": "python",
+      "theme": "Parcours",
+      "difficulte": 3,
+      "enonce": "<p>Écrire la fonction <code>nb_composantes(G)</code> qui renvoie le nombre de composantes connexes d'un graphe non orienté. <code>G</code> est un dictionnaire de listes d'adjacence : chaque sommet (une chaîne) est une clé, associée à la liste de ses voisins ; chaque arête apparaît dans les deux listes, et un sommet isolé a une liste vide.</p>",
+      "depart": "def nb_composantes(G):\n    ",
+      "solution": "def nb_composantes(G):\n    vus = set()\n    nb = 0\n    for s in G:\n        if s not in vus:\n            nb += 1\n            pile = [s]\n            vus.add(s)\n            while pile:\n                v = pile.pop()\n                for u in G[v]:\n                    if u not in vus:\n                        vus.add(u)\n                        pile.append(u)\n    return nb",
+      "harnais": "import json\nprint(nb_composantes(json.loads(input())))",
+      "tests": [
+        {
+          "nom": "graphe connexe",
+          "entree": "{\"A\": [\"B\"], \"B\": [\"A\", \"C\"], \"C\": [\"B\"]}\n",
+          "sortie": "1\n"
+        },
+        {
+          "nom": "arête et triangle",
+          "entree": "{\"C\": [\"D\"], \"D\": [\"C\"], \"A\": [\"B\", \"E\"], \"B\": [\"A\", \"E\"], \"E\": [\"A\", \"B\"]}\n",
+          "sortie": "2\n"
+        },
+        {
+          "nom": "sommets isolés",
+          "entree": "{\"1\": [], \"2\": [], \"3\": []}\n",
+          "sortie": "3\n"
+        },
+        {
+          "nom": "graphe vide",
+          "entree": "{}\n",
+          "sortie": "0\n"
+        },
+        {
+          "nom": "quatre composantes",
+          "entree": "{\"1\": [\"2\"], \"2\": [\"1\", \"3\"], \"3\": [\"2\"], \"4\": [\"5\", \"6\"], \"5\": [\"4\", \"6\"], \"6\": [\"5\", \"4\"], \"7\": [\"8\"], \"8\": [\"7\"], \"9\": []}\n",
+          "sortie": "4\n"
+        }
+      ],
+      "indices": [
+        "<p>Parcourir les sommets un à un ; chaque fois qu'on en trouve un pas encore visité, c'est une nouvelle composante : on la parcourt entièrement pour marquer tous ses sommets.</p>",
+        "<p>Le parcours peut être un DFS avec une pile explicite : une liste, avec <code>append</code> et <code>pop</code>.</p>"
+      ],
+      "explication": "<p>On compte les départs de parcours : chaque sommet non encore visité ouvre une nouvelle composante, que le parcours (ici un DFS avec une pile) marque en entier. Chaque sommet et chaque liste de voisins n'étant traités qu'une fois, le calcul est en \\(O(n + m)\\). Penser au graphe vide et aux sommets isolés.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Parcourir un graphe",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#parcourir-un-graphe"
+      },
+      "id": "q10"
+    },
+    {
+      "type": "qcm",
+      "theme": "Forte connexité",
+      "difficulte": 1,
+      "enonce": "<p>Le graphe orienté d'arcs \\(A \\to B\\), \\(B \\to C\\), \\(C \\to A\\), \\(C \\to D\\) est :</p>",
+      "choix": [
+        "faiblement connexe, mais pas fortement connexe",
+        "fortement connexe",
+        "ni faiblement ni fortement connexe",
+        "fortement connexe, mais pas faiblement connexe"
+      ],
+      "reponse": 0,
+      "explication": "<p>Sans les orientations, tout est relié : il est faiblement connexe. Mais aucun arc ne sort de D, donc aucun chemin ne va de D vers A : il n'est pas fortement connexe. Ses CFC sont \\(\\{A, B, C\\}\\) (circuit ABCA) et \\(\\{D\\}\\). Un graphe fortement connexe est toujours faiblement connexe : la dernière réponse est impossible.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Faible et forte connexité",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#faible-et-forte-connexite"
+      },
+      "id": "q11"
+    },
+    {
+      "type": "numerique",
+      "theme": "Forte connexité",
+      "difficulte": 2,
+      "enonce": "<p>Combien de composantes fortement connexes a le graphe orienté d'arcs \\(1 \\to 2\\), \\(2 \\to 1\\), \\(2 \\to 3\\), \\(3 \\to 4\\), \\(4 \\to 5\\), \\(5 \\to 3\\), \\(6 \\to 5\\) ?</p>",
+      "reponse": 3,
+      "tolerance": 0,
+      "indices": [
+        "<p>Chercher les circuits ; un sommet qui n'est sur aucun circuit forme une CFC à lui seul.</p>"
+      ],
+      "explication": "<p>\\(\\{1, 2\\}\\) (circuit 121), \\(\\{3, 4, 5\\}\\) (circuit 3453) et \\(\\{6\\}\\), qui n'est sur aucun circuit. L'arc \\(2 \\to 3\\) ne fusionne pas les deux premières : rien ne revient de 3 vers 2.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Circuits et composantes fortement connexes",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#circuits-et-composantes-fortement-connexes"
+      },
+      "id": "q12"
+    },
+    {
+      "type": "vrai-faux",
+      "theme": "Forte connexité",
+      "difficulte": 2,
+      "enonce": "<p>Si deux sommets appartiennent à une même composante fortement connexe, ils appartiennent forcément à un même circuit <strong>élémentaire</strong>.</p>",
+      "reponse": false,
+      "indices": [
+        "<p>Penser à B et D dans le graphe de la figure 2.5 : circuits ABCA et ADA.</p>"
+      ],
+      "explication": "<p>Faux. Ils sont sur un même circuit, mais pas forcément élémentaire. Dans la figure 2.5, B et D sont dans la CFC ABCD, mais tout circuit qui les contient passe deux fois par A (B, C, A, D, A, B) : il n'est pas élémentaire.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Circuits et composantes fortement connexes",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#circuits-et-composantes-fortement-connexes"
+      },
+      "id": "q13"
+    },
+    {
+      "type": "qcm",
+      "theme": "Forte connexité",
+      "difficulte": 1,
+      "enonce": "<p>Qu'est-ce qu'un graphe <strong>faiblement</strong> connexe ?</p>",
+      "choix": [
+        "Un graphe orienté qui devient connexe quand on oublie l'orientation de ses arcs",
+        "Un graphe orienté où chaque sommet a au moins un arc sortant",
+        "Un graphe orienté où il existe un chemin de \\(u\\) à \\(v\\) pour toute paire \\((u, v)\\)",
+        "Un graphe non orienté qui a peu d'arêtes"
+      ],
+      "reponse": 0,
+      "explication": "<p>Faiblement connexe : le graphe non orienté obtenu en remplaçant les arcs par des arêtes est connexe. Un chemin orienté de \\(u\\) à \\(v\\) pour toute paire (donc aussi de \\(v\\) à \\(u\\)), c'est la forte connexité.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Faible et forte connexité",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#faible-et-forte-connexite"
+      },
+      "id": "q14"
+    },
+    {
+      "type": "atelier",
+      "editeur": "graphe",
+      "theme": "Trémaux et Tarjan",
+      "difficulte": 2,
+      "enonce": "<p>Soit le graphe orienté d'arcs \\(A \\to B\\), \\(A \\to C\\), \\(B \\to D\\), \\(C \\to D\\), \\(C \\to E\\), \\(D \\to A\\), \\(E \\to C\\). On le parcourt en profondeur depuis A, les voisins sortants étant pris dans l'ordre alphabétique. Dessiner son arbre de Trémaux, avec un arc de chaque parent vers son enfant.</p>",
+      "depart": [
+        "oriente"
+      ],
+      "solution": [
+        "oriente",
+        "A -> B",
+        "B -> D",
+        "A -> C",
+        "C -> E"
+      ],
+      "seuil": 1,
+      "indices": [
+        "<p>Seuls les arcs qui mènent à un sommet encore non visité entrent dans l'arbre.</p>"
+      ],
+      "explication": "<p>A → B → D ; D n'a qu'un voisin, A, déjà visité : retour à B puis à A. A → C ; C → D est ignoré (D est vu), C → E ; E → C est ignoré. L'arbre a 4 arcs pour 5 sommets : A–B, B–D, A–C, C–E, et les numéros de Trémaux sont A1, B2, D3, C4, E5.</p>",
+      "revoir": {
+        "texte": "Cours 2 · L'arbre de Trémaux",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#l-arbre-de-tremaux"
+      },
+      "id": "q15"
+    },
+    {
+      "type": "numerique",
+      "theme": "Trémaux et Tarjan",
+      "difficulte": 2,
+      "enonce": "<p>Pour le même graphe (arcs \\(A \\to B\\), \\(A \\to C\\), \\(B \\to D\\), \\(C \\to D\\), \\(C \\to E\\), \\(D \\to A\\), \\(E \\to C\\)), parcouru en profondeur depuis A dans l'ordre alphabétique, combien a-t-il de composantes fortement connexes ?</p>",
+      "reponse": 1,
+      "tolerance": 0,
+      "indices": [
+        "<p>Repérer les circuits ABDA, ACDA et CEC : ont-ils des sommets en commun ?</p>"
+      ],
+      "explication": "<p>ABDA et ACDA partagent A, ACDA et CEC partagent C : par transitivité, les cinq sommets sont fortement connectés deux à deux. Le graphe est fortement connexe, avec une seule CFC, de racine A (numéro 1).</p>",
+      "revoir": {
+        "texte": "Cours 2 · Circuits et composantes fortement connexes",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#circuits-et-composantes-fortement-connexes"
+      },
+      "id": "q16"
+    },
+    {
+      "type": "qcm",
+      "theme": "Trémaux et Tarjan",
+      "difficulte": 2,
+      "enonce": "<p>Pour l'algorithme de Tarjan, qu'appelle-t-on la racine d'une composante fortement connexe ?</p>",
+      "choix": [
+        "Son sommet de plus petit numéro dans l'arbre de Trémaux",
+        "Son sommet de plus grand degré sortant",
+        "La racine de l'arbre de Trémaux, quelle que soit la composante",
+        "Le dernier sommet visité de la composante"
+      ],
+      "reponse": 0,
+      "explication": "<p>La racine d'une CFC est son premier sommet visité par le DFS, donc de plus petit numéro de Trémaux ; tous les autres sommets de la CFC en descendent dans l'arbre. On la reconnaît à ce que le plus petit numéro qu'elle peut atteindre est le sien.</p>",
+      "revoir": {
+        "texte": "Cours 2 · L'idée de l'algorithme de Tarjan",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#l-idee-de-l-algorithme-de-tarjan"
+      },
+      "id": "q17"
+    },
+    {
+      "type": "qcm",
+      "theme": "Erdős–Rényi",
+      "difficulte": 1,
+      "enonce": "<p>Dans le modèle \\(G(n, p)\\) d'Erdős–Rényi, quelle loi suit le nombre d'arêtes ?</p>",
+      "choix": [
+        "\\(B\\left(\\frac{n(n-1)}{2}, p\\right)\\)",
+        "\\(B(n - 1, p)\\)",
+        "\\(B(n, p)\\)",
+        "La loi uniforme sur \\(\\left\\{0, \\dots, \\frac{n(n-1)}{2}\\right\\}\\)"
+      ],
+      "reponse": 0,
+      "explication": "<p>Chacune des \\(\\frac{n(n-1)}{2}\\) arêtes possibles est une épreuve de Bernoulli de paramètre \\(p\\), indépendante des autres : leur nombre de succès suit \\(B\\left(\\frac{n(n-1)}{2}, p\\right)\\). \\(B(n - 1, p)\\) est la loi du degré d'un sommet.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le nombre d'arêtes",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#le-nombre-d-aretes"
+      },
+      "id": "q18"
+    },
+    {
+      "type": "numerique",
+      "theme": "Erdős–Rényi",
+      "difficulte": 1,
+      "enonce": "<p>Combien d'arêtes compte en moyenne un graphe aléatoire \\(G(50; 0{,}1)\\) ?</p>",
+      "reponse": 122.5,
+      "tolerance": 0.01,
+      "explication": "<p>\\(\\mathbb{E}(m) = \\frac{n(n-1)}{2} \\cdot p = \\frac{50 \\times 49}{2} \\times 0{,}1 = 1225 \\times 0{,}1 = 122{,}5\\).</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le nombre d'arêtes",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#le-nombre-d-aretes"
+      },
+      "id": "q19"
+    },
+    {
+      "type": "numerique",
+      "theme": "Erdős–Rényi",
+      "difficulte": 1,
+      "enonce": "<p>Quel est le degré moyen d'un sommet dans \\(G(201; 0{,}05)\\) ?</p>",
+      "reponse": 10,
+      "tolerance": 0.01,
+      "explication": "<p>\\(\\mathbb{E}(d(u)) = (n - 1) \\cdot p = 200 \\times 0{,}05 = 10\\). Le piège : multiplier par \\(n = 201\\) au lieu de \\(n - 1\\), un sommet ne pouvant pas être son propre voisin.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La loi du degré",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#la-loi-du-degre"
+      },
+      "id": "q20"
+    },
+    {
+      "type": "numerique",
+      "theme": "Erdős–Rényi",
+      "difficulte": 2,
+      "enonce": "<p>Dans \\(G(11; 0{,}2)\\), quelle est la probabilité qu'un sommet donné soit isolé (de degré 0) ? Donner une valeur approchée à 0,001 près.</p>",
+      "reponse": 0.107,
+      "tolerance": 0.001,
+      "indices": [
+        "<p>\\(P(d(u) = k) = C_{n-1}^k \\, p^k (1-p)^{n-k-1}\\), avec \\(k = 0\\).</p>"
+      ],
+      "explication": "<p>\\(P(d(u) = 0) = C_{10}^0 \\cdot 0{,}2^0 \\cdot 0{,}8^{10} = 0{,}8^{10} \\approx 0{,}107\\) : les 10 arêtes possibles du sommet sont toutes absentes. On attend donc environ \\(11 \\times 0{,}107 \\approx 1{,}2\\) sommet isolé.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La loi du degré",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#la-loi-du-degre"
+      },
+      "id": "q21"
+    },
+    {
+      "type": "qcm",
+      "theme": "Erdős–Rényi",
+      "difficulte": 3,
+      "enonce": "<p>On tire un graphe \\(G(500; 0{,}005)\\). Que peut-on prévoir ?</p>",
+      "choix": [
+        "Il est très probablement non connexe, avec des sommets isolés, car \\(p \\lt \\ln(500)/500 \\approx 0{,}012\\)",
+        "Il est très probablement connexe, car \\(p \\gt 1/500\\)",
+        "Il est très probablement connexe, car son degré moyen dépasse 2",
+        "On ne peut rien prévoir : la connexité d'un graphe aléatoire est imprévisible"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Comparer \\(p\\) au seuil \\(\\ln(n)/n\\).</p>"
+      ],
+      "explication": "<p>\\(\\ln(500)/500 \\approx 0{,}0124\\) et \\(p = 0{,}005\\) est en dessous : le graphe contient très certainement des sommets isolés. En moyenne, \\(500 \\times 0{,}995^{499} \\approx 41\\) sommets sont isolés. Le degré moyen, \\(499 \\times 0{,}005 \\approx 2{,}5\\), ne suffit pas.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Connexe ou pas connexe ?",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#connexe-ou-pas-connexe"
+      },
+      "id": "q22"
+    },
+    {
+      "type": "numerique",
+      "theme": "Erdős–Rényi",
+      "difficulte": 2,
+      "enonce": "<p>Quel est le seuil de connexité \\(\\ln(n)/n\\) d'un graphe d'Erdős–Rényi à 1000 sommets ? Donner une valeur approchée à 0,0001 près.</p>",
+      "reponse": 0.0069,
+      "tolerance": 0.0001,
+      "explication": "<p>\\(\\ln(1000)/1000 \\approx 6{,}908/1000 \\approx 0{,}0069\\), contre 0,046 pour \\(n = 100\\). Plus le graphe est grand, plus la probabilité de lien nécessaire à la connexité est faible.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Connexe ou pas connexe ?",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#connexe-ou-pas-connexe"
+      },
+      "id": "q23"
+    },
+    {
+      "type": "ouverte",
+      "theme": "Erdős–Rényi",
+      "difficulte": 2,
+      "enonce": "<p>Expliquer, à l'aide du modèle d'Erdős–Rényi, pourquoi les très grands graphes du réel (réseaux sociaux, co-occurrences de mots) sont presque toujours connexes, alors que la probabilité que deux sommets donnés soient reliés y est très faible.</p>",
+      "reponse_modele": "<p>Dans le modèle \\(G(n, p)\\), chaque arête existe avec la probabilité \\(p\\). Erdős et Rényi montrent que le graphe est très certainement connexe quand \\(p \\gt \\ln(n)/n\\), et contient des sommets isolés quand \\(p \\lt \\ln(n)/n\\). Or \\(\\ln(n)/n\\) tend vers 0 quand \\(n\\) grandit : 0,046 pour 100 sommets, \\(1{,}4 \\times 10^{-5}\\) pour un million. Dans un graphe de centaines de millions de sommets, une probabilité de lien minuscule (quelques dizaines de liens par sommet) suffit donc à dépasser le seuil, et le graphe est connexe.</p>",
+      "criteres": [
+        "Le modèle G(n, p) est décrit : n sommets, chaque arête présente avec la probabilité p, indépendamment.",
+        "Le seuil ln(n)/n est énoncé, avec ce qui se passe de part et d'autre.",
+        "Il est dit que ce seuil décroît vers 0 quand n grandit.",
+        "La conclusion relie la grande taille des graphes réels à leur connexité malgré un p très faible."
+      ],
+      "revoir": {
+        "texte": "Cours 2 · Connexe ou pas connexe ?",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#connexe-ou-pas-connexe"
+      },
+      "id": "q24"
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

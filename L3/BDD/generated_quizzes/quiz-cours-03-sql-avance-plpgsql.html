@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · SQL avancé et PL/pgSQL · Bases de données L3</title>
+<meta name="description" content="Quiz interactif sur le cours 3 de bases de données (L3) : séquences et index, rôles et privilèges, CTE et CTE récursives, fonctions de fenêtrage, PL/pgSQL et triggers, avec huit questions de code exécutées sur la base Dingo Fringo.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/langues/pgsql.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="../generated_courses/index.html">Bases de données</a>
+    <span aria-current="page">Quiz · SQL avancé et PL/pgSQL</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> Quiz · L3 S5</p>
+    <h1>SQL avancé : droits, CTE, fenêtrage, PL/pgSQL et triggers</h1>
+    <p class="chapeau">Vingt-huit questions sur le cours 3 : séquences et index, rôles et privilèges, CTE et CTE récursives, fonctions de fenêtrage, PL/pgSQL et triggers. Huit d'entre elles demandent d'écrire du code, exécuté sur PostgreSQL et comparé à une solution, sur la base Dingo Fringo du cours : requêtes avec CTE et fenêtrage, une fonction PL/pgSQL et un trigger.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-03-sql-avance-plpgsql.html">Cours 3 · SQL avancé et PL/pgSQL</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-01">1<sup>er</sup> oct. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "bd-cours-03-sql-avance-plpgsql",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 3 · SQL avancé et PL/pgSQL",
+      "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html"
+    }
+  ],
+  "jeux": {
+    "dingo": {
+      "titre": "Dingo Fringo (base du cours 3)",
+      "description": "<p>La base d'exemple du cours 3 : <code>vendeurs(<u>id</u>, nom, #id_parrain)</code>, six vendeurs reliés par le parrainage, Julie au sommet, et <code>articles(<u>id</u>, nom, categorie, prix, #id_vendeur, date_vente)</code>, douze articles vendus de janvier à mars 2024 dans trois catégories (Vêtements, Chaussures, Accessoires).</p>",
+      "script": "CREATE TABLE vendeurs (\n    id          INT PRIMARY KEY,\n    nom         VARCHAR(50),\n    id_parrain  INT REFERENCES vendeurs (id)\n);\n\nCREATE TABLE articles (\n    id          INT PRIMARY KEY,\n    nom         VARCHAR(100),\n    categorie   VARCHAR(30),\n    prix        NUMERIC(6,2),\n    id_vendeur  INT REFERENCES vendeurs (id),\n    date_vente  DATE\n);\n\nINSERT INTO vendeurs VALUES\n    (1, 'Julie', NULL),\n    (2, 'Marc', 1),\n    (3, 'Sophie', 1),\n    (4, 'Karim', 2),\n    (5, 'Lea', 2),\n    (6, 'Nadia', 3);\n\nINSERT INTO articles VALUES\n    (1,  'Jean Levis',         'Vêtements',   25.00, 1, '2024-01-10'),\n    (2,  'Robe fleurie',       'Vêtements',   18.00, 2, '2024-01-15'),\n    (3,  'Manteau laine',      'Vêtements',   45.00, 3, '2024-02-05'),\n    (4,  'T-shirt Nike',       'Vêtements',   12.00, 4, '2024-02-20'),\n    (5,  'Pull col roulé',     'Vêtements',   18.00, 5, '2024-03-01'),\n    (6,  'Baskets Adidas',     'Chaussures',  30.00, 1, '2024-01-12'),\n    (7,  'Bottines cuir',      'Chaussures',  40.00, 2, '2024-02-08'),\n    (8,  'Sandales été',       'Chaussures',  15.00, 3, '2024-03-10'),\n    (9,  'Sac à main vintage', 'Accessoires', 22.00, 4, '2024-01-25'),\n    (10, 'Écharpe laine',      'Accessoires',  9.00, 5, '2024-02-14'),\n    (11, 'Ceinture cuir',      'Accessoires',  9.00, 6, '2024-03-05'),\n    (12, 'Chapeau feutre',     'Accessoires', 14.00, 1, '2024-03-20');\n"
+    }
+  },
+  "questions": [
+    {
+      "id": "q01",
+      "type": "numerique",
+      "theme": "Séquences et index",
+      "difficulte": 1,
+      "enonce": "<p>Que renvoie la dernière requête ?</p><pre><code class='language-sql'>CREATE SEQUENCE s START 10 INCREMENT BY 5;\nSELECT nextval('s');\nSELECT nextval('s');\nSELECT currval('s');</code></pre>",
+      "reponse": 15,
+      "explication": "<p>Le premier <code>nextval</code> renvoie la valeur de départ, 10 ; le second avance du pas, 15. <code>currval</code> n'avance pas la séquence : il redonne la dernière valeur obtenue par <code>nextval</code> dans la session, 15. Avant tout <code>nextval</code>, il aurait échoué.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Les séquences",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#les-sequences"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "numerique",
+      "theme": "Séquences et index",
+      "difficulte": 2,
+      "enonce": "<p>Quel identifiant reçoit la ligne <code>'b'</code> ?</p><pre><code class='language-sql'>CREATE TABLE t (id SERIAL PRIMARY KEY, nom varchar(10) NOT NULL);\nINSERT INTO t (nom) VALUES ('a');\nINSERT INTO t (nom) VALUES (NULL);   -- refusée : nom est NOT NULL\nINSERT INTO t (nom) VALUES ('b');</code></pre>",
+      "reponse": 3,
+      "indices": [
+        "<p>La valeur par défaut de <code>id</code>, <code>nextval()</code>, est calculée avant que la ligne ne soit contrôlée.</p>"
+      ],
+      "explication": "<p>L'insertion refusée a déjà appelé <code>nextval()</code> pour remplir <code>id</code> quand la contrainte <code>NOT NULL</code> la rejette, et <code>nextval()</code> n'est jamais annulé, même par un <code>ROLLBACK</code>. La valeur 2 est perdue : <code>'b'</code> reçoit 3. Un identifiant ne sert qu'à identifier : on ne compte pas sur lui pour numéroter sans trou.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Retour sur le type SERIAL",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#retour-sur-le-type-serial"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "qcm",
+      "theme": "Séquences et index",
+      "difficulte": 1,
+      "enonce": "<p>La table <code>commande</code> a pour clé primaire <code>id bigserial</code>. Quel type donner à la clé étrangère <code>id_commande</code> de la table <code>ligne_commande</code>, qui la référence ?</p>",
+      "choix": [
+        "<code>bigint</code>",
+        "<code>bigserial</code>",
+        "<code>serial</code>",
+        "<code>integer</code>"
+      ],
+      "reponse": 0,
+      "explication": "<p>Une clé étrangère reprend l'identifiant d'une ligne qui existe déjà : elle ne doit pas inventer sa valeur, comme le ferait une colonne <code>serial</code> ou <code>bigserial</code>, remplie automatiquement à chaque insertion. On prend le type entier correspondant : <code>bigint</code> en face d'un <code>bigserial</code> (8 octets), <code>integer</code> en face d'un <code>serial</code> (4 octets). Avec <code>integer</code> ici, une commande dont l'identifiant dépasse 2<sup>31</sup> − 1 ne pourrait pas être référencée.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Retour sur le type SERIAL",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#retour-sur-le-type-serial"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "qcm-multi",
+      "theme": "Séquences et index",
+      "difficulte": 1,
+      "enonce": "<p>Quelles affirmations sur les index sont justes ?</p>",
+      "choix": [
+        "Un index accélère la recherche des lignes qui vérifient une condition sélective",
+        "Un index ralentit les insertions, modifications et suppressions dans la table",
+        "PostgreSQL crée automatiquement un index sur chaque clé primaire",
+        "Un index de type <code>hash</code> sert aussi pour les conditions <code>&lt;</code> et <code>&gt;</code>",
+        "Une fois l'index créé, PostgreSQL s'en sert dans toutes les requêtes qui filtrent sur sa colonne"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "explication": "<p>Un index permet de retrouver des lignes sans parcourir la table, mais il est mis à jour à chaque modification : il coûte à l'écriture. PostgreSQL en crée un pour chaque clé primaire, et pour chaque contrainte <code>UNIQUE</code>. Un index de hachage ne sert que pour <code>=</code> ; le B-arbre, par défaut, sert aussi aux comparaisons et aux tris. Enfin, PostgreSQL ignore l'index quand la condition garde presque toutes les lignes : lire la table coûte alors moins cher, comme le montre <code>EXPLAIN</code>.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Les index",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#les-index"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "association",
+      "theme": "Rôles et privilèges",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque type d'objet à des privilèges qu'on peut accorder dessus :</p>",
+      "paires": [
+        [
+          "Table",
+          "<code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>"
+        ],
+        [
+          "Schéma",
+          "<code>USAGE</code>, <code>CREATE</code>"
+        ],
+        [
+          "Base de données",
+          "<code>CONNECT</code>, <code>CREATE</code>, <code>TEMPORARY</code>"
+        ],
+        [
+          "Fonction",
+          "<code>EXECUTE</code>"
+        ]
+      ],
+      "intrus": [
+        "<code>LOGIN</code>, <code>SUPERUSER</code>"
+      ],
+      "explication": "<p>Chaque type d'objet a ses propres privilèges : accorder <code>SELECT</code> sur une base de données n'a pas de sens. <code>LOGIN</code> et <code>SUPERUSER</code> ne sont pas des privilèges sur un objet, mais des attributs de rôle, donnés par <code>CREATE ROLE</code> ou <code>ALTER ROLE</code>.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Accorder des privilèges : GRANT",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#accorder-des-privileges-grant"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "qcm",
+      "theme": "Rôles et privilèges",
+      "difficulte": 2,
+      "enonce": "<p>Le rôle <code>lecteur</code> n'a encore aucun droit. On exécute <code>GRANT USAGE ON SCHEMA boutique TO lecteur;</code>, puis, sous ce rôle, <code>SELECT * FROM boutique.stock;</code>. Que se passe-t-il ?</p>",
+      "choix": [
+        "Une erreur : <code>permission denied for table stock</code>",
+        "Une erreur : <code>permission denied for schema boutique</code>",
+        "La requête affiche le contenu de la table",
+        "La requête réussit, mais ne renvoie aucune ligne"
+      ],
+      "reponse": 0,
+      "explication": "<p><code>USAGE</code> permet d'entrer dans le schéma, pas de lire ses tables : les droits sur un schéma ne donnent aucun droit sur ses objets. Il faut en plus <code>GRANT SELECT ON boutique.stock TO lecteur;</code>. À l'inverse, <code>SELECT</code> sur la table sans <code>USAGE</code> sur le schéma donne <code>permission denied for schema boutique</code>.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Accès aux schémas",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#acces-aux-schemas"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "vrai-faux",
+      "theme": "Rôles et privilèges",
+      "difficulte": 2,
+      "enonce": "<p>Après ces trois commandes, <code>compta</code> ne peut plus lire la table <code>articles</code>.</p><pre><code class='language-sql'>GRANT SELECT ON articles TO PUBLIC;\nGRANT SELECT ON articles TO compta;\nREVOKE SELECT ON articles FROM PUBLIC;</code></pre>",
+      "reponse": false,
+      "explication": "<p>Faux : retirer un droit à <code>PUBLIC</code> n'affecte pas ceux à qui on l'a accordé nommément. <code>compta</code> garde le <code>SELECT</code> qui lui a été donné ; seuls les rôles qui ne lisaient la table que grâce à <code>PUBLIC</code> perdent l'accès.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Retirer des privilèges : REVOKE",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#retirer-des-privileges-revoke"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "trous",
+      "theme": "Rôles et privilèges",
+      "difficulte": 1,
+      "enonce": "<p>Compléter les commandes : le groupe <code>stagiaires</code> peut lire et remplir la table <code>articles</code> ; on crée Lina, qui se connecte avec un mot de passe, on la place dans le groupe, puis on retire à tout le groupe le droit d'insertion.</p>",
+      "code": true,
+      "texte": "CREATE ROLE stagiaires;\nGRANT SELECT, INSERT ON articles TO stagiaires;\nCREATE ROLE lina {{0}} PASSWORD 'lina2026';\n{{1}} stagiaires TO lina;\n{{2}} INSERT ON articles {{3}} stagiaires;",
+      "trous": [
+        {
+          "reponses": [
+            "LOGIN",
+            "WITH LOGIN"
+          ]
+        },
+        {
+          "reponses": [
+            "GRANT"
+          ]
+        },
+        {
+          "reponses": [
+            "REVOKE"
+          ]
+        },
+        {
+          "reponses": [
+            "FROM"
+          ]
+        }
+      ],
+      "explication": "<p><code>LOGIN</code> fait du rôle un utilisateur, qui peut se connecter (<code>CREATE USER</code> le sous-entend). On place un rôle dans un groupe avec <code>GRANT groupe TO rôle</code>, comme on accorderait un privilège ; Lina hérite alors des droits du groupe. Un seul <code>REVOKE … FROM stagiaires</code> retire le droit à tous les membres : c'est l'intérêt d'un groupe.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Groupes d'utilisateurs",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#groupes-d-utilisateurs"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "qcm-multi",
+      "theme": "CTE",
+      "difficulte": 1,
+      "enonce": "<p>Quelles affirmations sur les expressions de table communes (<code>WITH</code>) sont justes ?</p>",
+      "choix": [
+        "Une CTE n'existe que le temps de l'exécution de la requête qui la définit",
+        "On peut chaîner plusieurs CTE derrière un seul <code>WITH</code>, chacune pouvant utiliser les précédentes",
+        "La requête principale peut utiliser plusieurs fois la même CTE",
+        "Une CTE est enregistrée dans le catalogue de la base, comme une vue",
+        "Le résultat d'une CTE se filtre avec <code>HAVING</code>, jamais avec <code>WHERE</code>"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "explication": "<p>Une CTE se comporte comme une table temporaire, mais n'est pas stockée : elle disparaît à la fin de la requête, alors qu'une vue reste dans le catalogue jusqu'au <code>DROP VIEW</code>. Les CTE se chaînent, séparées par des virgules, et chacune peut servir plusieurs fois : c'est ce qui évite d'écrire deux fois le même calcul. Comme son résultat est une table, on le filtre avec un simple <code>WHERE</code>.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Les CTE : WITH",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#les-cte-with"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "dingo",
+      "theme": "CTE",
+      "difficulte": 2,
+      "enonce": "<p>Afficher le nom et le chiffre d'affaires (somme des prix des articles vendus) des vendeurs dont le chiffre d'affaires dépasse le chiffre d'affaires moyen des vendeurs (deux colonnes). Écrire la requête avec deux CTE chaînées : l'une calcule le chiffre d'affaires de chaque vendeur, l'autre leur moyenne.</p>",
+      "depart": "WITH ",
+      "solution": "WITH ca_vendeur AS (\n    SELECT v.nom, SUM(a.prix) AS ca\n    FROM vendeurs v JOIN articles a ON a.id_vendeur = v.id\n    GROUP BY v.id, v.nom ),\nmoyenne AS (\n    SELECT AVG(ca) AS ca_moyen FROM ca_vendeur )\nSELECT c.nom, c.ca\nFROM ca_vendeur c, moyenne m\nWHERE c.ca > m.ca_moyen;",
+      "indices": [
+        "<p>Première CTE : une jointure entre <code>vendeurs</code> et <code>articles</code>, regroupée par vendeur. Seconde CTE : <code>AVG</code> sur la première ; elle ne renvoie qu'une ligne.</p>"
+      ],
+      "explication": "<p>La première CTE donne six chiffres d'affaires (de 9,00 pour Nadia à 69,00 pour Julie), la seconde leur moyenne, 257 / 6 ≈ 42,83. Celle-ci ne contient qu'une ligne : le produit cartésien <code>ca_vendeur c, moyenne m</code> la place en face de chaque vendeur, et un <code>WHERE</code> suffit. Trois vendeurs : Julie (69,00), Sophie (60,00) et Marc (58,00). On regroupe par <code>v.id</code> et non par le seul nom, que deux vendeurs pourraient partager.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Chaîner des CTE",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#chainer-des-cte"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "ordre",
+      "theme": "CTE",
+      "difficulte": 2,
+      "enonce": "<p>Remettre dans l'ordre les étapes de l'évaluation d'une CTE récursive par PostgreSQL :</p>",
+      "elements": [
+        "Exécuter le terme ancre, une seule fois",
+        "Prendre son résultat comme première table de travail",
+        "Exécuter le terme récursif sur la table de travail courante",
+        "Ajouter les lignes produites au résultat, et en faire la nouvelle table de travail",
+        "S'arrêter dès qu'un tour du terme récursif ne produit aucune ligne",
+        "Passer l'union de toutes les tables produites à la requête principale"
+      ],
+      "explication": "<p>Le terme ancre s'exécute une seule fois, sans référencer la CTE. Le terme récursif est ensuite répété : à chaque tour, il ne voit que les lignes produites au tour précédent (la table de travail), pas tout le résultat accumulé. La boucle s'arrête quand un tour ne renvoie rien ; la CTE vaut alors l'union de toutes les tables produites. Rien ne s'appelle soi-même : c'est une boucle, pas une fonction récursive.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Les CTE récursives",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#les-cte-recursives"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "numerique",
+      "theme": "CTE",
+      "difficulte": 2,
+      "enonce": "<p>Combien de lignes renvoie cette requête ?</p><pre><code class='language-sql'>WITH RECURSIVE compteur (n) AS (\n    SELECT 1\n    UNION ALL\n    SELECT n + 2 FROM compteur WHERE n &lt; 8\n)\nSELECT n FROM compteur;</code></pre>",
+      "reponse": 5,
+      "indices": [
+        "<p>Le <code>WHERE</code> du terme récursif porte sur la ligne de la table de travail, avant l'ajout de 2.</p>"
+      ],
+      "explication": "<p>L'ancre produit 1 ; les tours suivants produisent 3, 5, 7, puis 9, car la condition <code>n &lt; 8</code> est testée sur 7, la valeur du tour précédent. Au tour suivant, la table de travail ne contient que 9 : <code>9 &lt; 8</code> est faux, le tour ne renvoie rien et la boucle s'arrête. Cinq lignes : 1, 3, 5, 7 et 9, qui dépasse 8.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Les CTE récursives",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#les-cte-recursives"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "dingo",
+      "theme": "CTE",
+      "difficulte": 2,
+      "enonce": "<p>Afficher Karim et tous ses ascendants (son parrain, le parrain de son parrain, etc.), avec leur distance à Karim : 0 pour Karim, 1 pour son parrain… Deux colonnes, nom et distance, par distance croissante.</p>",
+      "depart": "WITH RECURSIVE ",
+      "solution": "WITH RECURSIVE ascendants AS (\n    SELECT id, nom, id_parrain, 0 AS distance\n    FROM vendeurs\n    WHERE nom = 'Karim'\n    UNION ALL\n    SELECT p.id, p.nom, p.id_parrain, a.distance + 1\n    FROM vendeurs p\n    JOIN ascendants a ON p.id = a.id_parrain\n)\nSELECT nom, distance FROM ascendants ORDER BY distance;",
+      "ordre": true,
+      "indices": [
+        "<p>Le cours descend l'arbre, de la racine vers les filleuls. Ici, on le remonte : l'ancre est Karim, et chaque tour cherche le parrain des lignes du tour précédent.</p>",
+        "<p>La condition de jointure du terme récursif devient <code>p.id = a.id_parrain</code>, au lieu de <code>v.id_parrain = r.id</code>.</p>"
+      ],
+      "explication": "<p>L'ancre sélectionne Karim, à la distance 0. Le terme récursif joint chaque ligne de la table de travail à son parrain, <code>p.id = a.id_parrain</code>, et ajoute 1 à la distance : Marc (1), puis Julie (2). Julie n'a pas de parrain (<code>id_parrain IS NULL</code>) : la jointure ne trouve rien, le tour est vide et la boucle s'arrête. Seul le sens de la jointure change par rapport au réseau de parrainage du cours.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Exemple : le réseau de parrainage",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#exemple-le-reseau-de-parrainage"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "dingo",
+      "theme": "CTE",
+      "difficulte": 3,
+      "enonce": "<p>Pour chaque vendeur qui a au moins un filleul, afficher son nom et la taille de son réseau : le nombre de ses filleuls, directs ou non (filleuls, filleuls de filleuls, etc.). Deux colonnes.</p>",
+      "depart": "WITH RECURSIVE ",
+      "solution": "WITH RECURSIVE lien AS (\n    SELECT id_parrain AS ancetre, id AS descendant\n    FROM vendeurs\n    WHERE id_parrain IS NOT NULL\n    UNION ALL\n    SELECT l.ancetre, v.id\n    FROM vendeurs v\n    JOIN lien l ON v.id_parrain = l.descendant\n)\nSELECT v.nom, COUNT(*) AS taille_reseau\nFROM lien l JOIN vendeurs v ON v.id = l.ancetre\nGROUP BY v.id, v.nom;",
+      "indices": [
+        "<p>Construire avec la CTE récursive tous les couples (ancêtre, descendant) : l'ancre contient les couples (parrain, filleul) directs, et chaque tour prolonge un couple d'une génération.</p>",
+        "<p>Il reste à compter les descendants de chaque ancêtre avec un <code>GROUP BY</code>, et à joindre <code>vendeurs</code> pour le nom.</p>"
+      ],
+      "explication": "<p>L'ancre donne les cinq couples directs : (Julie, Marc), (Julie, Sophie), (Marc, Karim), (Marc, Lea), (Sophie, Nadia). Le terme récursif garde l'ancêtre et descend d'une génération : (Julie, Karim), (Julie, Lea), (Julie, Nadia) ; le tour suivant est vide. On compte ensuite les descendants de chaque ancêtre : Julie 5, Marc 2, Sophie 1. Autre solution : partir de chaque vendeur dans l'ancre (<code>SELECT id AS racine, id FROM vendeurs</code>), descendre, puis compter sans la racine elle-même.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Exemple : le réseau de parrainage",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#exemple-le-reseau-de-parrainage"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "qcm-multi",
+      "theme": "CTE",
+      "difficulte": 3,
+      "enonce": "<p>Dans une table <code>vendeurs</code> mal remplie, A est le parrain de B, et B celui de A. Le parcours du réseau par une CTE récursive, en <code>UNION ALL</code> et avec une colonne <code>niveau</code>, ne s'arrête jamais. Quelles modifications l'arrêtent ?</p>",
+      "choix": [
+        "Ajouter <code>WHERE r.niveau &lt; 6</code> dans le terme récursif",
+        "Retirer la colonne <code>niveau</code> et remplacer <code>UNION ALL</code> par <code>UNION</code>",
+        "Remplacer <code>UNION ALL</code> par <code>UNION</code>, en gardant la colonne <code>niveau</code>",
+        "Ajouter une condition dans le <code>WHERE</code> du terme ancre",
+        "Ajouter <code>ORDER BY niveau</code> à la requête principale"
+      ],
+      "reponses": [
+        0,
+        1
+      ],
+      "explication": "<p>La boucle ne s'arrête que si un tour ne renvoie rien. Un <code>WHERE</code> sur la profondeur dans le terme récursif finit par tout filtrer. <code>UNION</code> élimine les lignes déjà produites : sans colonne qui change d'un tour à l'autre, A et B reviennent à l'identique, sont écartés, et le tour suivant est vide. Avec <code>niveau</code>, chaque ligne est nouvelle (A au niveau 3 n'est pas A au niveau 1) et <code>UNION</code> ne voit aucun doublon. L'ancre ne s'exécute qu'une fois, et un <code>ORDER BY</code> s'applique au résultat, qui n'est jamais complet.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Bilan et pièges",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#bilan-et-pieges"
+      }
+    },
+    {
+      "id": "q16",
+      "type": "association",
+      "theme": "Fenêtrage",
+      "difficulte": 1,
+      "enonce": "<p>Quatre articles coûtent 30, 25, 25 et 20 €. Associer chaque fonction aux numéros qu'elle leur donne, du plus cher au moins cher (<code>OVER (ORDER BY prix DESC)</code>) :</p>",
+      "paires": [
+        [
+          "<code>ROW_NUMBER()</code>",
+          "1, 2, 3, 4"
+        ],
+        [
+          "<code>RANK()</code>",
+          "1, 2, 2, 4"
+        ],
+        [
+          "<code>DENSE_RANK()</code>",
+          "1, 2, 2, 3"
+        ]
+      ],
+      "intrus": [
+        "1, 1, 2, 3",
+        "1, 2, 3, 3"
+      ],
+      "explication": "<p><code>ROW_NUMBER</code> numérote chaque ligne et départage les ex-aequo arbitrairement. <code>RANK</code> leur donne le même rang, puis saute (deux deuxièmes, pas de troisième) ; <code>DENSE_RANK</code> ne laisse pas de trou. Pour un top-N de N lignes exactement, on prend <code>ROW_NUMBER</code> ; pour ne pas écarter un ex-aequo, <code>RANK</code> ou <code>DENSE_RANK</code>.</p>",
+      "revoir": {
+        "texte": "Cours 3 · ROW_NUMBER, RANK et DENSE_RANK",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#row-number-rank-et-dense-rank"
+      }
+    },
+    {
+      "id": "q17",
+      "type": "qcm",
+      "theme": "Fenêtrage",
+      "difficulte": 2,
+      "enonce": "<p>Pourquoi cette requête échoue-t-elle avec <code>column \"rang\" does not exist</code> ?</p><pre><code class='language-sql'>SELECT nom, categorie, prix,\n    RANK() OVER (PARTITION BY categorie ORDER BY prix DESC) AS rang\nFROM articles\nWHERE rang &lt;= 2;</code></pre>",
+      "choix": [
+        "Le <code>WHERE</code> est évalué avant les fonctions de fenêtrage : <code>rang</code> n'existe pas encore",
+        "<code>RANK()</code> ne s'utilise qu'avec un <code>GROUP BY</code>",
+        "Il faudrait écrire <code>HAVING rang &lt;= 2</code> à la place du <code>WHERE</code>",
+        "<code>PARTITION BY</code> et <code>WHERE</code> ne peuvent pas figurer dans la même requête"
+      ],
+      "reponse": 0,
+      "explication": "<p>L'ordre logique d'exécution est <code>FROM</code>, <code>WHERE</code>, <code>GROUP BY</code>, <code>HAVING</code>, puis les fonctions de fenêtrage, <code>SELECT</code> et <code>ORDER BY</code>. Au moment du <code>WHERE</code>, le rang n'est pas calculé ; écrire l'expression entière n'aide pas (<code>window functions are not allowed in WHERE</code>), pas plus que <code>HAVING</code>, qui précède lui aussi le fenêtrage. On calcule le rang dans une CTE, et l'on filtre dans la requête principale.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Top-N par groupe",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#top-n-par-groupe"
+      }
+    },
+    {
+      "id": "q18",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "dingo",
+      "theme": "Fenêtrage",
+      "difficulte": 2,
+      "enonce": "<p>Pour chaque vendeur, afficher son nom, puis le nom et le prix de l'article le plus cher qu'il a vendu (trois colonnes, une ligne par vendeur). Utiliser une fonction de fenêtrage.</p>",
+      "depart": "WITH ",
+      "solution": "WITH classement AS (\n    SELECT v.nom AS vendeur, a.nom AS article, a.prix,\n        ROW_NUMBER() OVER (PARTITION BY a.id_vendeur ORDER BY a.prix DESC) AS rang\n    FROM articles a JOIN vendeurs v ON v.id = a.id_vendeur )\nSELECT vendeur, article, prix FROM classement WHERE rang = 1;",
+      "indices": [
+        "<p>Numéroter les articles de chaque vendeur du plus cher au moins cher (<code>PARTITION BY</code> le vendeur) dans une CTE, puis garder le numéro 1.</p>"
+      ],
+      "explication": "<p>La fenêtre est découpée par vendeur et ordonnée par prix décroissant : <code>ROW_NUMBER()</code> donne 1 à l'article le plus cher de chacun. Le filtre <code>rang = 1</code> se fait dans la requête principale, puisque le <code>WHERE</code> passe avant le fenêtrage. Aucun vendeur n'a deux articles à son prix maximal : <code>RANK()</code> donnerait le même résultat. Un <code>GROUP BY</code> avec <code>MAX(prix)</code> donnerait le prix, mais pas le nom de l'article.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Top-N par groupe",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#top-n-par-groupe"
+      }
+    },
+    {
+      "id": "q19",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "dingo",
+      "theme": "Fenêtrage",
+      "difficulte": 2,
+      "enonce": "<p>Afficher, mois par mois, le chiffre d'affaires du magasin et son cumul depuis le premier mois (trois colonnes : mois, chiffre d'affaires, cumul), par mois croissant. Le mois est donné par <code>DATE_TRUNC('month', date_vente)::date</code>.</p>",
+      "depart": "WITH ",
+      "solution": "WITH ca_mensuel AS (\n    SELECT DATE_TRUNC('month', date_vente)::date AS mois, SUM(prix) AS ca\n    FROM articles\n    GROUP BY DATE_TRUNC('month', date_vente)::date )\nSELECT mois, ca, SUM(ca) OVER (ORDER BY mois) AS ca_cumule\nFROM ca_mensuel\nORDER BY mois;",
+      "ordre": true,
+      "indices": [
+        "<p>Une CTE calcule le chiffre d'affaires de chaque mois avec un <code>GROUP BY</code> ; la requête principale y ajoute une somme cumulée, <code>SUM(ca) OVER (ORDER BY mois)</code>.</p>"
+      ],
+      "explication": "<p>La CTE ramène les douze ventes à trois mois : 95,00 en janvier, 106,00 en février, 56,00 en mars. Dans la requête principale, <code>ORDER BY mois</code> dans <code>OVER</code> limite la fenêtre aux lignes qui vont de la première à la ligne courante : la somme devient un cumul, 95,00, 201,00 puis 257,00. Sans cet <code>ORDER BY</code>, chaque ligne recevrait le total, 257,00. Le <code>::date</code> retire l'heure et le fuseau horaire que <code>DATE_TRUNC</code> ajoute.</p>",
+      "revoir": {
+        "texte": "Cours 3 · ORDER BY dans OVER : les cumuls",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#order-by-dans-over-les-cumuls"
+      }
+    },
+    {
+      "id": "q20",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "dingo",
+      "theme": "Fenêtrage",
+      "difficulte": 2,
+      "enonce": "<p>Pour chaque article, afficher son nom, sa catégorie, sa date de vente et le nombre de jours écoulés depuis la vente précédente de la même catégorie (vide pour la première vente de chaque catégorie). Quatre colonnes, triées par catégorie puis par date de vente.</p>",
+      "depart": "SELECT ",
+      "solution": "SELECT nom, categorie, date_vente,\n    date_vente - LAG(date_vente) OVER (PARTITION BY categorie ORDER BY date_vente) AS jours\nFROM articles\nORDER BY categorie, date_vente;",
+      "ordre": true,
+      "indices": [
+        "<p>La différence de deux valeurs de type <code>date</code> est un nombre de jours. La date de la vente précédente s'obtient avec <code>LAG</code>, sur une fenêtre découpée par catégorie et ordonnée par date.</p>"
+      ],
+      "explication": "<p><code>LAG(date_vente) OVER (PARTITION BY categorie ORDER BY date_vente)</code> renvoie la date de la ligne précédente dans la même catégorie, et <code>NULL</code> pour la première : la différence vaut alors <code>NULL</code> aussi. Sans <code>PARTITION BY</code>, la vente « précédente » pourrait être celle d'une autre catégorie. Entre le 8 février et le 10 mars, il y a 31 jours : 2024 est bissextile.</p>",
+      "revoir": {
+        "texte": "Cours 3 · LAG et LEAD",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#lag-et-lead"
+      }
+    },
+    {
+      "id": "q21",
+      "type": "vrai-faux",
+      "theme": "Fenêtrage",
+      "difficulte": 3,
+      "enonce": "<p>On exécute la requête ci-dessous. L'Écharpe laine et la Ceinture cuir, qui coûtent toutes deux 9,00 €, reçoivent le même cumul.</p><pre><code class='language-sql'>SELECT nom, prix, SUM(prix) OVER (ORDER BY prix) AS cumul\nFROM articles\nWHERE categorie = 'Accessoires';</code></pre>",
+      "reponse": true,
+      "explication": "<p>Vrai. Avec un <code>ORDER BY</code>, le cadre par défaut est <code>RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code> : les lignes qui ont la même valeur de tri que la ligne courante entrent toutes dans le calcul. Les deux articles à 9,00 reçoivent 18,00. Avec <code>ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code>, on compterait ligne par ligne : 9,00 puis 18,00.</p>",
+      "revoir": {
+        "texte": "Cours 3 · ORDER BY dans OVER : les cumuls",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#order-by-dans-over-les-cumuls"
+      }
+    },
+    {
+      "id": "q22",
+      "type": "trous",
+      "theme": "PL/pgSQL",
+      "difficulte": 1,
+      "enonce": "<p>Compléter la fonction, qui renvoie le nombre d'articles vendus par un vendeur et lève une exception si le vendeur n'existe pas :</p>",
+      "code": true,
+      "texte": "CREATE FUNCTION f_nb_ventes (p_id integer) RETURNS integer AS &#36;&#36;\nDECLARE\n    nb integer;\nBEGIN\n    {{0}} * FROM vendeurs WHERE id = p_id;\n    IF NOT {{1}} THEN\n        RAISE EXCEPTION 'Vendeur % inconnu', p_id;\n    END IF;\n    SELECT count(*) {{2}} nb FROM articles WHERE id_vendeur = p_id;\n    {{3}} nb;\nEND;\n&#36;&#36; {{4}} plpgsql;",
+      "trous": [
+        {
+          "reponses": [
+            "PERFORM"
+          ]
+        },
+        {
+          "reponses": [
+            "FOUND"
+          ]
+        },
+        {
+          "reponses": [
+            "INTO"
+          ]
+        },
+        {
+          "reponses": [
+            "RETURN"
+          ]
+        },
+        {
+          "reponses": [
+            "LANGUAGE"
+          ]
+        }
+      ],
+      "explication": "<p><code>PERFORM</code> exécute la requête sans garder son résultat (un <code>SELECT</code> sans destination provoquerait <code>query has no destination for result data</code>), et <code>FOUND</code> dit si elle a trouvé au moins une ligne. <code>SELECT … INTO</code> range le résultat d'une requête dans une variable, <code>RETURN</code> renvoie la valeur, et <code>LANGUAGE plpgsql</code> termine la définition, après le délimiteur <code>$$</code>.</p>",
+      "revoir": {
+        "texte": "Cours 3 · PERFORM et la variable FOUND",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#perform-et-la-variable-found"
+      }
+    },
+    {
+      "id": "q23",
+      "type": "qcm",
+      "theme": "PL/pgSQL",
+      "difficulte": 3,
+      "enonce": "<p>Cette fonction doit renvoyer 0 pour un vendeur qui n'a rien vendu. Que renvoie <code>f_prix_max(42)</code>, sachant qu'aucun article n'a <code>id_vendeur = 42</code> ?</p><pre><code class='language-pgsql'>CREATE FUNCTION f_prix_max (p_id integer) RETURNS numeric AS $$\nDECLARE m numeric;\nBEGIN\n    SELECT MAX(prix) INTO m FROM articles WHERE id_vendeur = p_id;\n    IF NOT FOUND THEN\n        RETURN 0;\n    END IF;\n    RETURN m;\nEND;\n$$ LANGUAGE plpgsql;</code></pre>",
+      "choix": [
+        "<code>NULL</code> : la requête renvoie une ligne, donc <code>FOUND</code> est vrai",
+        "0 : la requête ne trouve aucune ligne, donc <code>FOUND</code> est faux",
+        "Une erreur : <code>SELECT … INTO</code> exige exactement une ligne",
+        "Une erreur : un agrégat ne peut pas être rangé dans une variable"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Combien de lignes renvoie <code>SELECT MAX(prix) FROM articles WHERE id_vendeur = 42;</code> ?</p>"
+      ],
+      "explication": "<p>Une requête d'agrégation sans <code>GROUP BY</code> renvoie toujours une ligne, même quand aucune ligne ne vérifie le <code>WHERE</code> : ici, <code>MAX(prix)</code> y vaut <code>NULL</code>. <code>FOUND</code> est donc vrai, et la fonction renvoie <code>m</code>, c'est-à-dire <code>NULL</code>. On corrige avec <code>SELECT COALESCE(MAX(prix), 0) INTO m …</code>. <code>SELECT … INTO</code> n'exige pas une ligne exactement : il garde la première, ou met <code>NULL</code> s'il n'y en a aucune.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Exercice 8 : pourquoi NULL et pas 0 ?",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#ex-8"
+      }
+    },
+    {
+      "id": "q24",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "dingo",
+      "theme": "PL/pgSQL",
+      "difficulte": 2,
+      "enonce": "<p>Écrire la fonction PL/pgSQL <code>f_meilleure_vente(p_id integer)</code>, qui renvoie le nom de l'article le plus cher vendu par le vendeur <code>p_id</code>, ou <code>'aucune vente'</code> s'il n'a rien vendu (ou n'existe pas). Utiliser <code>SELECT … INTO</code> et <code>FOUND</code>. Le script se termine par l'appel fourni, dont le résultat est comparé à celui de la solution.</p>",
+      "depart": "CREATE FUNCTION f_meilleure_vente (p_id integer) RETURNS varchar AS $$\nDECLARE\n\nBEGIN\n\nEND;\n$$ LANGUAGE plpgsql;\n\nSELECT p AS id, f_meilleure_vente(p) AS meilleure_vente\nFROM generate_series(1, 7) AS p;",
+      "solution": "CREATE FUNCTION f_meilleure_vente (p_id integer) RETURNS varchar AS $$\nDECLARE\n    v_nom varchar;\nBEGIN\n    SELECT nom INTO v_nom FROM articles WHERE id_vendeur = p_id ORDER BY prix DESC;\n    IF NOT FOUND THEN\n        RETURN 'aucune vente';\n    END IF;\n    RETURN v_nom;\nEND;\n$$ LANGUAGE plpgsql;\n\nSELECT p AS id, f_meilleure_vente(p) AS meilleure_vente\nFROM generate_series(1, 7) AS p;",
+      "indices": [
+        "<p><code>SELECT nom INTO v_nom FROM articles WHERE … ORDER BY prix DESC;</code> range le nom du premier article dans <code>v_nom</code> ; s'il n'y a aucune ligne, <code>FOUND</code> est faux.</p>"
+      ],
+      "explication": "<p><code>SELECT … INTO</code> garde la première ligne du résultat, d'où le tri par prix décroissant (on peut ajouter <code>LIMIT 1</code>). Pour l'identifiant 7, la requête ne trouve aucune ligne : <code>FOUND</code> est faux, et la fonction renvoie <code>'aucune vente'</code>. Ici, <code>FOUND</code> fait ce qu'on attend de lui, contrairement au cas d'un agrégat (<code>MAX</code>, <code>SUM</code>), qui renvoie toujours une ligne.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Écrire une fonction PL/pgSQL",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#ecrire-une-fonction-pl-pgsql"
+      }
+    },
+    {
+      "id": "q25",
+      "type": "qcm",
+      "theme": "Triggers",
+      "difficulte": 2,
+      "enonce": "<p>Un trigger <code>BEFORE INSERT</code> par ligne sur la table <code>t</code> appelle la fonction ci-dessous. Que produit <code>INSERT INTO t VALUES (1), (-2), (3), (-4), (5);</code> ?</p><pre><code class='language-pgsql'>CREATE FUNCTION f_filtre() RETURNS trigger AS $$\nBEGIN\n    IF NEW.x &lt; 0 THEN\n        RETURN NULL;\n    END IF;\n    RETURN NEW;\nEND;\n$$ LANGUAGE plpgsql;</code></pre>",
+      "choix": [
+        "Trois lignes insérées (1, 3 et 5), sans message d'erreur",
+        "Une erreur, et aucune ligne insérée",
+        "Les cinq lignes insérées : la valeur de retour d'une fonction trigger est ignorée",
+        "Une seule ligne insérée (1) : le premier <code>NULL</code> arrête l'instruction"
+      ],
+      "reponse": 0,
+      "explication": "<p>Dans un trigger <code>BEFORE</code> par ligne, renvoyer <code>NULL</code> annule l'opération pour cette ligne seulement, sans erreur ; renvoyer <code>NEW</code> la laisse passer. Les lignes 1, 3 et 5 sont insérées, −2 et −4 ignorées en silence. La valeur de retour n'est ignorée que dans un trigger <code>AFTER</code> ou par instruction. Pour refuser avec un message, et annuler toute l'instruction, on lève une exception (<code>RAISE EXCEPTION</code>).</p>",
+      "revoir": {
+        "texte": "Cours 3 · La fonction trigger",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#la-fonction-trigger"
+      }
+    },
+    {
+      "id": "q26",
+      "type": "association",
+      "theme": "Triggers",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque variable spéciale d'une fonction trigger à son contenu :</p>",
+      "paires": [
+        [
+          "<code>NEW</code>",
+          "La nouvelle ligne, pour <code>INSERT</code> et <code>UPDATE</code>"
+        ],
+        [
+          "<code>OLD</code>",
+          "L'ancienne ligne, pour <code>UPDATE</code> et <code>DELETE</code>"
+        ],
+        [
+          "<code>TG_OP</code>",
+          "L'opération : <code>INSERT</code>, <code>UPDATE</code> ou <code>DELETE</code>"
+        ],
+        [
+          "<code>TG_WHEN</code>",
+          "Le moment : <code>BEFORE</code> ou <code>AFTER</code>"
+        ],
+        [
+          "<code>TG_LEVEL</code>",
+          "Le niveau : <code>ROW</code> ou <code>STATEMENT</code>"
+        ]
+      ],
+      "intrus": [
+        "Le nombre de lignes touchées par l'instruction"
+      ],
+      "explication": "<p>Ces variables sont créées automatiquement dans le bloc principal de la fonction trigger ; <code>TG_NAME</code> donne aussi le nom du trigger, et <code>TG_TABLE_NAME</code> celui de la table. <code>NEW</code> vaut <code>NULL</code> pour un <code>DELETE</code> : un trigger <code>BEFORE DELETE</code> renvoie donc <code>OLD</code> pour laisser passer la suppression.</p>",
+      "revoir": {
+        "texte": "Cours 3 · La fonction trigger",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#la-fonction-trigger"
+      }
+    },
+    {
+      "id": "q27",
+      "type": "numerique",
+      "theme": "Triggers",
+      "difficulte": 3,
+      "enonce": "<p>La table <code>t</code> contient trois lignes : 10, 20 et 30. Deux triggers <code>AFTER UPDATE</code> appellent la même fonction, l'un <code>FOR EACH ROW</code>, l'autre <code>FOR EACH STATEMENT</code>. On exécute :</p><pre><code class='language-sql'>UPDATE t SET x = x + 1 WHERE x &gt; 15;\nUPDATE t SET x = x + 1 WHERE x &gt; 1000;</code></pre><p>Combien de fois la fonction est-elle appelée en tout ?</p>",
+      "reponse": 4,
+      "indices": [
+        "<p>Un trigger par instruction se déclenche une fois par instruction, même si elle ne touche aucune ligne.</p>"
+      ],
+      "explication": "<p>Le premier <code>UPDATE</code> modifie deux lignes (20 et 30) : deux appels par ligne, et un par instruction. Le second ne touche aucune ligne : aucun appel par ligne, mais le trigger par instruction se déclenche quand même, puisque l'instruction a eu lieu. Total : 2 + 1 + 0 + 1 = 4.</p>",
+      "revoir": {
+        "texte": "Cours 3 · La fonction trigger",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#la-fonction-trigger"
+      }
+    },
+    {
+      "id": "q28",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "dingo",
+      "theme": "Triggers",
+      "difficulte": 2,
+      "enonce": "<p>Écrire une fonction trigger et un trigger qui, à chaque insertion dans <code>articles</code>, remplacent une catégorie absente (<code>NULL</code>) par <code>'Divers'</code> et arrondissent le prix à l'euro supérieur (<code>CEIL</code>). Le script se termine par les insertions et la requête fournies, dont le résultat est comparé à celui de la solution.</p>",
+      "depart": "-- fonction trigger\n\n\n-- trigger\n\n\nINSERT INTO articles (id, nom, categorie, prix, id_vendeur, date_vente) VALUES\n    (13, 'Gants', NULL, 11.40, 2, '2024-03-25'),\n    (14, 'Bonnet', 'Accessoires', 7.00, 3, '2024-03-28');\nSELECT id, nom, categorie, prix FROM articles WHERE id > 12 ORDER BY id;",
+      "solution": "CREATE FUNCTION f_complete_article() RETURNS trigger AS $$\nBEGIN\n    IF NEW.categorie IS NULL THEN\n        NEW.categorie := 'Divers';\n    END IF;\n    NEW.prix := CEIL(NEW.prix);\n    RETURN NEW;\nEND;\n$$ LANGUAGE plpgsql;\n\nCREATE TRIGGER tr_complete_article BEFORE INSERT ON articles\n    FOR EACH ROW EXECUTE FUNCTION f_complete_article();\n\nINSERT INTO articles (id, nom, categorie, prix, id_vendeur, date_vente) VALUES\n    (13, 'Gants', NULL, 11.40, 2, '2024-03-25'),\n    (14, 'Bonnet', 'Accessoires', 7.00, 3, '2024-03-28');\nSELECT id, nom, categorie, prix FROM articles WHERE id > 12 ORDER BY id;",
+      "ordre": true,
+      "indices": [
+        "<p>Pour modifier la ligne avant son écriture, il faut un trigger <code>BEFORE INSERT</code> par ligne : la fonction change <code>NEW.categorie</code> et <code>NEW.prix</code>, puis renvoie <code>NEW</code>.</p>"
+      ],
+      "explication": "<p>Seul un trigger <code>BEFORE</code> par ligne peut modifier ce qui sera écrit : la fonction affecte <code>NEW.categorie</code> et <code>NEW.prix</code>, puis renvoie <code>NEW</code>. En <code>AFTER</code>, la ligne serait déjà écrite, et modifier <code>NEW</code> n'aurait aucun effet ; renvoyer <code>NULL</code> en <code>BEFORE</code> annulerait l'insertion. Les gants passent à 12,00 dans la catégorie Divers, le bonnet reste à 7,00.</p>",
+      "revoir": {
+        "texte": "Cours 3 · La fonction trigger",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#la-fonction-trigger"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

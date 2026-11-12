@@ -1,0 +1,1666 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="poo">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ruby, panorama · POO L3</title>
+<meta name="description" content="Cours 2 d'introduction à la programmation objet (L3) : pourquoi Ruby, la factorielle en C, Java et Ruby, RDoc, transmission et interprétation des messages, catégories de variables et accesseurs, new et initialize, méthodes de création métier, chaînes, expressions régulières, nombres, conditionnelles et itérations.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-02-ruby-panorama.html" title="Quiz · Ruby, panorama">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">POO</a>
+    <span aria-current="page">Cours 2 · Ruby, panorama</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">POO</span> Cours 2 · L3 S5</p>
+    <h1>Ruby, panorama</h1>
+    <p class="chapeau">Ruby est le langage des TD et des TP du module : un langage où tout est objet, et où programmer revient à envoyer des messages à des objets. Ce cours en fait le tour : pourquoi Ruby, la transmission des messages, les catégories de variables, la création et l'initialisation des objets, puis les éléments de base du langage (chaînes, expressions régulières, nombres, conditionnelles et itérations).</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/02%20-%20Ruby,%20panorama.pdf">02 - Ruby, panorama.pdf</a> · 31 pages</dd></div>
+      <div><dt>Enseignant</dt><dd>Pierre Jacoboni (LIUM)</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-24">24 sept. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Décrire un envoi de message : receveur, sélecteur, arguments, recherche de la méthode dans la classe, résultat.</li>
+        <li>Distinguer les variables locales, d'instance (<code>@</code>), de classe (<code>@@</code>), globales (<code>$</code>) et les constantes ; générer les accesseurs.</li>
+        <li>Créer et initialiser un objet avec <code>new</code> et <code>initialize</code>, et savoir quand écrire une méthode de création « métier ».</li>
+        <li>Lire et écrire les bases de Ruby : chaînes, expressions régulières, nombres, <code>if</code>, <code>unless</code>, <code>case</code>, <code>while</code>, <code>until</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-01-concepts-principes.html">Cours 1</a> : objet, classe, instance, message, encapsulation.</li>
+        <li>Programmer dans un langage impératif (C ou Java) : variables, fonctions, boucles, récursivité.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc complement">
+    <p class="bloc-titre">Complément <span>Les exemples ont été exécutés</span></p>
+    <p>Tous les programmes Ruby de cette page ont été exécutés avec Ruby 3.4.1, les programmes Java avec Java 23 et le programme C avec gcc 10.3. Les sorties données par le cours sont reproduites telles quelles. Quand une version récente de Ruby affiche autre chose (formulation d'un message d'erreur, présentation d'un dictionnaire), la différence est signalée juste après.</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Pourquoi Ruby ? <span class="ref">p. 3–4</span></h2>
+    <p>Pour apprendre la programmation objet, il faut un langage qui en impose les concepts au lieu de permettre de les contourner. Cette partie explique le choix de Ruby pour le module et le situe par rapport aux autres langages.</p>
+
+    <h3>Motivations pédagogiques <span class="ref">p. 3</span></h3>
+    <table>
+      <caption>Quatre raisons de choisir Ruby</caption>
+      <thead><tr><th>Raison</th><th>Explication</th></tr></thead>
+      <tbody>
+        <tr><th>Un vrai langage objet</th><td>En Ruby, tout est objet : le langage ne permet pas de contourner le paradigme, ce qui aide à comprendre les concepts. La comparaison avec Java, plus tard dans le cursus, renforce cette compréhension.</td></tr>
+        <tr><th>Concepts et pratiques de programmation</th><td>Les langages ne sont pas équivalents : il y a des langages à typage statique (Caml, Pascal, C/C++) et des langages à typage dynamique (Lisp, Smalltalk, Ruby, Python), et il est important d'en comprendre les différences. C++, le plus répandu des langages objets, est souvent utilisé comme un « meilleur C », avec très peu de programmation objet.</td></tr>
+        <tr><th>Prototypage rapide</th><td>Apprentissage facile, langage cohérent, à jour et extensible (bases de données, réseau…).</td></tr>
+        <tr><th>Interfaces utilisateur</th><td>Initiation à la conception d'interfaces graphiques : Tcl/Tk, GTK, FOX.</td></tr>
+      </tbody>
+    </table>
+    <p>Ruby est aussi reconnu pour sa communauté active, son évolution constante, son efficacité pour le prototypage et des bonnes pratiques bien établies. Selon son créateur, Yukihiro Matsumoto : « <span lang="en">Ruby is made for developer happiness</span> ».</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Typage statique, typage dynamique</span></p>
+      <p>Dans un langage à <dfn>typage statique</dfn> (<span class="en" lang="en">static typing</span>), chaque variable a un type fixé dans le texte du programme, et le compilateur refuse d'y ranger une valeur d'un autre type. En C, <code>int x = 12;</code> suivi de <code>x = "titi";</code> ne compile pas.</p>
+      <p>Dans un langage à <dfn>typage dynamique</dfn> (<span class="en" lang="en">dynamic typing</span>), ce sont les valeurs qui ont un type, pas les variables. En Ruby, <code>x = 12</code> puis <code>x = "titi"</code> est accepté : la variable désigne simplement un autre objet. Les erreurs de type apparaissent à l'exécution, quand un objet reçoit un message qu'il ne comprend pas (section 4.8).</p>
+    </div>
+
+    <h3>Un langage utilisé et extensible <span class="ref">p. 3</span></h3>
+    <p>Ruby est « petit mais costaud » : tout ce que l'on peut faire avec un autre langage peut être fait en Ruby, rapidement, proprement et facilement. Il est utilisé dans des domaines variés.</p>
+    <table>
+      <caption>Quelques utilisations de Ruby</caption>
+      <thead><tr><th>Domaine</th><th>Exemples</th></tr></thead>
+      <tbody>
+        <tr><th>Simulation</th><td>NASA Langley Research Center ; simulateur Motorola</td></tr>
+        <tr><th>Modélisation 3D</th><td>Google SketchUp (API de macros)</td></tr>
+        <tr><th>Robotique</th><td>Projet MORPHA (robot Siemens)</td></tr>
+        <tr><th>Télécommunications</th><td>Lucent (téléphonie 3G)</td></tr>
+        <tr><th>Administration système</th><td>Level 3 Communications (plus de 1 700 serveurs Unix)</td></tr>
+        <tr><th>Applications web</th><td>Basecamp (37signals), A List Apart, avec le framework Ruby on Rails</td></tr>
+      </tbody>
+    </table>
+    <p>Le langage s'enrichit par des bibliothèques appelées <dfn>gems</dfn>. <a href="https://rubygems.org">RubyGems.org</a> est le service qui héberge les gems de la communauté, pour les trouver, les installer et les publier. <a href="https://www.ruby-toolbox.com">The Ruby Toolbox</a> est un catalogue de bibliothèques classées par catégories. <span class="badge ajout">Ajout</span> On installe une gem avec la commande <code>gem install nom</code>.</p>
+
+    <h3>Ruby et Smalltalk <span class="ref">p. 4</span></h3>
+    <p>Smalltalk aurait été une alternative pédagogique naturelle. Mais si Smalltalk est un petit langage, c'est aussi un gros système : il faut compter environ 9 mois pour être opérationnel et 18 mois pour devenir expert, contre 3 à 5 ans en C++. Ruby est plus petit et plus facile à apprendre.</p>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Ruby en une formule</p>
+      <p><strong>Ruby</strong> = Smalltalk − syntaxe inhabituelle + scripts à la Perl + gestion des erreurs + itérateurs (issus de CLU) + de nombreux autres outils.</p>
+      <p>Autrement dit : Ruby &gt; (Smalltalk + Perl) / 2.</p>
+    </div>
+
+    <p>Yukihiro « Matz » Matsumoto résume sa philosophie ainsi :</p>
+    <blockquote>Les langages « jouets » ne sont pas bons. Ils peuvent résoudre de petits problèmes, mais les langages réels résolvent les mêmes problèmes d'une meilleure façon.</blockquote>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les ancêtres cités dans la formule</span></p>
+      <ul>
+        <li><strong>Smalltalk</strong> (Xerox PARC, années 1970) est le langage qui a fixé le modèle repris par Ruby : tout est objet, et un programme s'exécute par envoi de messages entre objets.</li>
+        <li><strong>Perl</strong> est un langage de scripts conçu pour traiter du texte. Ruby lui emprunte les expressions régulières intégrées au langage (section 8.2) et les variables globales prédéfinies comme <code>$_</code> (section 5.6).</li>
+        <li><strong>CLU</strong> (MIT, années 1970) a introduit les itérateurs : une méthode qui fournit les éléments d'une collection un par un à un bloc de code. Le <code>each</code> de la section 2.1 en est un ; ils sont étudiés au cours 4.</li>
+      </ul>
+    </div>
+
+    <h3>Caractéristiques et ressources <span class="ref">p. 4</span></h3>
+    <div class="colonnes">
+      <div class="colonne">
+        <p class="colonne-titre">Caractéristiques</p>
+        <ul>
+          <li><strong>Vraiment objet</strong> : tout est objet.</li>
+          <li><strong>Productif</strong> : programmes courts et lisibles.</li>
+          <li><strong>Sans surprise</strong> : on se concentre sur la programmation, pas sur les pièges du langage.</li>
+          <li><strong>Libre</strong> : gratuit, modifiable, copiable ; on peut apprendre en lisant ses sources.</li>
+        </ul>
+      </div>
+      <div class="colonne">
+        <p class="colonne-titre">Ressources</p>
+        <ul>
+          <li><a href="https://www.ruby-lang.org/fr/">ruby-lang.org/fr</a> : site officiel.</li>
+          <li><a href="https://ruby-doc.org">ruby-doc.org</a> : documentation de référence.</li>
+          <li><a href="https://try.ruby-lang.org">tryruby.org</a> : essai en ligne.</li>
+          <li><code>comp.lang.ruby</code> : groupe de discussion.</li>
+          <li><cite>Programming Ruby — The Pragmatic Programmer's Guide</cite>, Addison-Wesley.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Étude de cas : la factorielle en C, Java et Ruby <span class="ref">p. 4–7</span></h2>
+    <p>Le même programme, qui calcule et affiche \(n!\) pour \(n\) de 1 à 39 avec une version récursive, révèle des différences profondes entre les trois langages.</p>
+
+    <h3>Trois versions du même programme <span class="ref">p. 5–6</span></h3>
+    <p>En C, la fonction <code>facto</code> travaille sur des entiers <code>long</code>. Le programme se compile avec <code>gcc</code>, puis s'exécute.</p>
+<pre data-fichier="facto.c"><code class="language-c">#include&lt;stdio.h&gt;
+
+/* Définition de la factorielle de n
+   Version récursive, condition d'arrêt 0 */
+long facto(long n) {
+    if (!n)
+        return 1;
+    else
+        return n * facto(n - 1);
+}
+
+/* Programme de test : factorielle des nombres de 1 à 39 */
+int main() {
+    for (int i = 1; i &lt; 40; i++)
+        printf("La Factorielle de %d est %ld\n", i, facto(i));
+}</code></pre>
+<pre class="terminal"><code>$ gcc -o facto facto.c
+$ ./facto</code></pre>
+
+    <p>La version Java a la même structure, dans une classe <code>Facto</code> dont les deux méthodes sont statiques. <span class="badge ajout">Ajout</span> On la compile avec <code>javac Facto.java</code> et on l'exécute avec <code>java Facto</code>.</p>
+<pre data-fichier="Facto.java"><code class="language-java">/* Définition de la factorielle de n
+ * Version récursive, condition d'arrêt 0
+ */
+public class Facto {
+
+    public static long facto(long n) {
+        if (n == 0) {
+            return 1;
+        } else {
+            return n * facto(n - 1);
+        }
+    }
+
+    /* Programme de test : factorielle des nombres de 1 à 39 */
+    public static void main(String[] args) {
+        for (int i = 1; i &lt; 40; i++) {
+            System.out.printf("La Factorielle de %d est %d%n", i, facto(i));
+        }
+    }
+}</code></pre>
+
+    <p>La version Ruby ne déclare aucun type et n'a pas besoin de <code>return</code>.</p>
+<pre data-fichier="facto.rb"><code class="language-ruby"># Définition de la factorielle de n
+# Version récursive, condition d'arrêt 0
+def facto(n)
+  if n == 0
+    1
+  else
+    n * facto(n - 1)
+  end
+end
+
+# Programme de test : factorielle des nombres de 1 à 39
+(1...40).each do |i|
+  puts "La Factorielle de #{i} est #{facto(i)}"
+end</code></pre>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Lire la version Ruby</span></p>
+      <ul>
+        <li><code>def facto(n) … end</code> définit une méthode. Le paramètre <code>n</code> n'a pas de type, et la méthode non plus.</li>
+        <li>Il n'y a pas de <code>return</code> : une méthode retourne la valeur de la dernière expression évaluée, ici <code>1</code> ou <code>n * facto(n - 1)</code> (section 4.6).</li>
+        <li><code>1...40</code> est un <dfn>intervalle</dfn> (<span class="en" lang="en">range</span>), un objet de la classe <code>Range</code>. Avec trois points, la borne supérieure est exclue (1 à 39) ; avec deux points, <code>1..40</code>, elle est incluse (1 à 40).</li>
+        <li><code>each</code> est un message envoyé à l'intervalle. Il exécute le bloc <code>do |i| … end</code> une fois par élément, en liant <code>i</code> à cet élément : c'est un itérateur, étudié au cours 4.</li>
+        <li>Dans une chaîne entre guillemets, <code>#{…}</code> insère la valeur d'une expression (section 8.1). <code>puts</code> affiche la chaîne suivie d'un retour à la ligne.</li>
+      </ul>
+    </div>
+
+    <h3>Comparaison des résultats <span class="ref">p. 6</span></h3>
+    <p>Les trois programmes donnent le même résultat jusqu'à 20! ; au-delà, C et Java produisent des valeurs aberrantes.</p>
+    <div class="tableau mono">
+      <table>
+        <caption>Valeurs affichées pour quelques \(n\)</caption>
+        <thead><tr><th>n</th><th>C et Java (<code>long</code>)</th><th>Ruby</th></tr></thead>
+        <tbody>
+          <tr><td>20</td><td>2432902008176640000</td><td>2432902008176640000</td></tr>
+          <tr><td>21</td><td>-4249290049419214848</td><td>51090942171709440000</td></tr>
+          <tr><td>22</td><td>-1250660718674968576</td><td>1124000727777607680000</td></tr>
+          <tr><td>25</td><td>7034535277573963776</td><td>15511210043330985984000000</td></tr>
+          <tr><td>39</td><td>2304077777655037952</td><td>20397882081197443358640281739902897356800000000</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Dépassement de capacité silencieux</span></p>
+      <p>En C comme en Java, le résultat dépasse la capacité d'un <code>long</code> : c'est un <dfn>dépassement de capacité</dfn> (<span class="en" lang="en">overflow</span>). Les nombres obtenus n'ont aucune signification, mais le programme ne plante pas et ne prévient pas. Dans un programme plus important, les conséquences peuvent être graves, et le bug difficile à détecter et à corriger.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi la limite est-elle 20! ?</span></p>
+      <p>Un <code>long</code> Java, comme un <code>long</code> C sous Linux ou macOS, occupe 64 bits en complément à deux. La plus grande valeur représentable est \(2^{63} - 1 \approx 9{,}22 \times 10^{18}\). Or \(20! \approx 2{,}43 \times 10^{18}\) tient, alors que \(21! \approx 5{,}11 \times 10^{19}\) ne tient plus.</p>
+      <p>Le calcul garde seulement les 64 bits de poids faible du vrai résultat, et les lit comme un nombre signé : \(21! - 3 \times 2^{64} = -4\,249\,290\,049\,419\,214\,848\), la valeur du tableau. Java garantit ce comportement « modulo \(2^{64}\) ». En C, le dépassement d'un entier signé est un <em>comportement indéfini</em> : la norme n'impose aucun résultat.</p>
+      <p>La taille d'un <code>long</code> C dépend en outre de la plate-forme. Sous Windows, il ne fait que 32 bits : compilé avec gcc 10.3 sous Windows, <code>facto.c</code> affiche 1932053504 pour 13!, qui vaut 6227020800, et 0 pour 39!. Les valeurs C du tableau sont celles d'un système 64 bits de type Unix.</p>
+    </div>
+
+    <h4>La solution en Java : des entiers « plus gros »</h4>
+    <p>Il faut d'abord penser au problème, puis utiliser des objets entiers de précision arbitraire, de la classe <code>BigInteger</code>. Ruby gère cette situation automatiquement.</p>
+<pre data-fichier="FactoBig.java"><code class="language-java">import java.math.BigInteger;
+
+public class FactoBig {
+
+    public static BigInteger facto(BigInteger n) {
+        if (n.equals(BigInteger.ZERO)) {
+            return BigInteger.ONE;
+        } else {
+            return n.multiply(facto(n.subtract(BigInteger.ONE)));
+        }
+    }
+
+    public static void main(String[] args) {
+        for (int i = 1; i &lt; 40; i++) {
+            System.out.printf("La Factorielle de %d est %s%n", i, facto(BigInteger.valueOf(i)));
+        }
+    }
+}</code></pre>
+    <p>Les résultats sont alors identiques à ceux de Ruby. On remarque le prix à payer en Java : chaque opération devient un envoi de message (<code>multiply</code>, <code>subtract</code>, <code>equals</code>), alors qu'en Ruby on continue d'écrire <code>n * facto(n - 1)</code>.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les entiers de Ruby</span></p>
+      <p>En Ruby, un entier est un objet de la classe <code>Integer</code>, de précision arbitraire : l'interpréteur passe tout seul d'une représentation machine à une représentation en grand nombre quand la valeur grandit. <code>2**100</code> vaut 1267650600228229401496703205376, et <code>(2**100).class</code> répond <code>Integer</code>.</p>
+    </div>
+
+    <h3>Limite de la pile d'exécution <span class="ref">p. 7</span></h3>
+    <p>Même sans dépassement arithmétique, une version <strong>récursive</strong> finit par échouer, en Ruby comme en Java, car la taille de la <dfn>pile d'exécution</dfn> (<span class="en" lang="en">call stack</span>) est toujours limitée. Chaque appel de <code>facto</code> y empile un cadre, qui n'est libéré qu'au retour de l'appel : 55000! demande 55 000 cadres empilés.</p>
+    <p>En Ruby, pour le calcul de 55000! :</p>
+<pre class="terminal"><code>$ ruby facto_arg.rb 55000
+facto_arg.rb:11:in 'Object#facto': stack level too deep (SystemStackError)
+        from facto_arg.rb:11:in 'Object#facto'
+         ... 10067 levels...
+        from facto_arg.rb:21:in '&lt;main&gt;'</code></pre>
+    <p>En Java, avec la version <code>BigInteger</code> qui lit <code>n</code> sur la ligne de commande :</p>
+<pre class="terminal"><code>$ java FactoBigArg 55000
+Exception in thread "main" java.lang.StackOverflowError
+        at java.base/java.math.BigInteger.subtract(BigInteger.java:1593)
+        at FactoBigArg.facto(FactoBigArg.java:15)
+        at FactoBigArg.facto(FactoBigArg.java:15)
+        ...</code></pre>
+    <table>
+      <caption>Deux façons de réagir</caption>
+      <thead><tr><th>Solution</th><th>Mise en œuvre</th><th>Évaluation</th></tr></thead>
+      <tbody>
+        <tr><th>Augmenter la taille de la pile</th><td><code>RUBY_THREAD_VM_STACK_SIZE=50000000 ruby facto_arg.rb 55000</code><br><code>java -Xss16m FactoBigArg 55000</code></td><td class="non">Mauvaise : ne fait que <strong>reporter</strong> le problème.</td></tr>
+        <tr><th>Passer en itératif</th><td>Remplacer la récursion par une boucle (voir la méthode <code>facto</code> de la <a href="#rdoc">section 3.2</a>).</td><td class="oui">Bonne : la pile n'est plus sollicitée.</td></tr>
+      </tbody>
+    </table>
+    <p><span class="badge ajout">Ajout</span> Vérification faite avec Ruby 3.4.1 : la version récursive lève <code>SystemStackError</code> pour 55000, alors que la version itérative de la section 3.2 calcule 55000! sans erreur, un nombre de 236 837 chiffres.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Documenter son code <span class="ref">p. 8–9</span></h2>
+    <p>Un programme est lu bien plus souvent qu'il n'est écrit. Ruby offre deux formes de commentaires, et un outil, RDoc, qui transforme les commentaires en documentation.</p>
+
+    <h3>Les commentaires <span class="ref">p. 8</span></h3>
+    <p>Un commentaire n'est pas une paraphrase du code. Un fichier source Ruby commence par des commentaires qui indiquent les classes définies, le copyright, les informations sur l'auteur, etc. Le commentaire de ligne commence par <code>#</code> et va jusqu'au bout de la ligne.</p>
+<pre><code class="language-ruby"># StringReplace
+# $Id: stringreplace.rb, v 1.0 10/15/01 20:05:17$
+# Copyright © 2001, Jason Wong
+# You can redistribute and/or modify it under ...</code></pre>
+    <p>Un bloc de commentaires sur plusieurs lignes s'écrit entre <code>=begin</code> et <code>=end</code>. <span class="badge ajout">Ajout</span> Ces deux marqueurs doivent être écrits au tout début de la ligne, sans indentation.</p>
+<pre><code class="language-ruby">=begin
+Bloc de commentaires
+sur plusieurs lignes
+=end</code></pre>
+
+    <h3 id="rdoc">RDoc <span class="ref">p. 8–9</span></h3>
+    <p>Mieux encore, <dfn>RDoc</dfn> exploite les commentaires placés avant chaque classe et chaque méthode pour générer automatiquement une documentation HTML navigable : titre, auteur, description des paramètres, exemples, lien vers le code source.</p>
+<pre data-fichier="fonctions_math.rb"><code class="language-ruby"># = Script de fonctions mathématiques simples
+#
+# Ce programme fournit des méthodes pour le calcul de factorielles,
+# de sommes d'entiers et de combinaisons.
+#
+# Auteur:: Pierre Jacoboni
+# Version:: 1.0
+
+# Calcule la factorielle d'un entier positif ou nul ($n!$).
+#
+# [n] Entier naturel positif ou nul (Integer).
+#
+# Retourne le résultat du calcul sous forme d'un grand entier (+Integer+).
+# Lève une +ArgumentError+ si +n+ est négatif.
+#
+# === Exemple
+#
+#   facto(0) # =&gt; 1
+#   facto(5) # =&gt; 120
+#
+def facto(n)
+  raise ArgumentError, "n doit être positif ou nul" if n &lt; 0
+  res = 1
+  for i in 2..n
+    res *= i
+  end
+  res
+end
+
+# Calcule la somme des entiers de 1 à +n+ ($1 + 2 + \dots + n$).
+#
+# [n] Borne supérieure (Integer positif).
+#
+# Retourne la somme calculée.
+#
+# === Exemple
+#
+#   somme(10) # =&gt; 55
+#
+def somme(n)
+  (1..n).sum
+end
+
+# Calcule le nombre de combinaisons de +k+ éléments parmi +n+ ($C_n^k$).
+#
+# Cette méthode réutilise #facto.
+#
+# [n] Nombre total d'éléments (Integer).
+# [k] Nombre d'éléments choisis (Integer).
+#
+# Retourne le coefficient binomial.
+# Lève une +ArgumentError+ si +k+ n'est pas dans l'intervalle [0, n].
+#
+# === Exemple
+#
+#   combinaison(5, 2) # =&gt; 10
+#
+def combinaison(n, k)
+  raise ArgumentError, "k doit être compris entre 0 et n" unless (0..n).include?(k)
+  facto(n) / (facto(k) * facto(n - k))
+end
+
+# Programme principal (exécuté si lancé en ligne de commande)
+if __FILE__ == $PROGRAM_NAME
+  val = (ARGV[0] || 5).to_i
+  puts "Factorielle de #{val} : #{facto(val)}"
+  puts "Somme jusqu'à #{val} : #{somme(val)}"
+end</code></pre>
+    <p>La commande <code>rdoc fonctions_math.rb</code> produit la documentation HTML dans le répertoire <code>doc/</code>. On notera que la méthode <code>facto</code> est ici itérative, ce qui la met à l'abri du problème de pile évoqué plus haut.</p>
+<pre class="terminal"><code>$ rdoc fonctions_math.rb
+$ ruby fonctions_math.rb
+Factorielle de 5 : 120
+Somme jusqu'à 5 : 15</code></pre>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Rappel</p>
+      <p>On programme pour d'autres programmeurs : la documentation fait partie intégrante du travail du concepteur.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le balisage RDoc et les nouveautés du programme</span></p>
+      <p>Les commentaires de <code>fonctions_math.rb</code> utilisent le balisage de RDoc :</p>
+      <ul>
+        <li><code>= Titre</code> et <code>=== Sous-titre</code> : titres de niveau 1 et 3 ;</li>
+        <li><code>+code+</code> : texte en police de code ; <code>*gras*</code> et <code>_italique_</code> existent aussi ;</li>
+        <li><code>[n] description</code> et <code>Auteur:: valeur</code> : listes à étiquettes, pour décrire les paramètres ou les informations du fichier ;</li>
+        <li>une ligne indentée : exemple de code, recopié tel quel ;</li>
+        <li><code>#facto</code> : lien vers la méthode <code>facto</code>. Les <code>$…$</code> ne sont pas interprétés : ils s'affichent tels quels.</li>
+      </ul>
+      <p>Le programme emploie aussi des constructions présentées plus loin :</p>
+      <ul>
+        <li><code>raise ArgumentError, "…" if n &lt; 0</code> lève une exception, sous la forme « modificatrice » du <code>if</code> (section 8.4) ;</li>
+        <li><code>for i in 2..n</code> parcourt l'intervalle de 2 à <code>n</code> inclus (section 8.5) ;</li>
+        <li><code>ARGV</code> est le tableau des arguments de la ligne de commande, et <code>ARGV[0] || 5</code> vaut le premier argument s'il existe, 5 sinon ;</li>
+        <li><code>if __FILE__ == $PROGRAM_NAME</code> n'est vrai que si le fichier est lancé directement (<code>ruby fonctions_math.rb</code>). Quand un autre programme le charge avec <code>load</code> ou <code>require</code> pour utiliser ses méthodes, le programme principal n'est pas exécuté.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Objets, classes et messages <span class="ref">p. 10–15</span></h2>
+    <p>Ruby applique à la lettre les principes de la programmation objet vus au cours 1. Cette partie les énonce, puis décrit l'opération de base du langage : la transmission d'un message à un objet.</p>
+
+    <h3>Caractéristiques de Ruby <span class="ref">p. 10</span></h3>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Principes <span>Ruby et la programmation objet</span></p>
+      <ul>
+        <li>Toutes les entités manipulées sont des objets.</li>
+        <li>Tout objet est instance d'une classe.</li>
+        <li>Toutes les classes sont des objets.</li>
+        <li>Un objet n'est accessible que par envoi de message.</li>
+        <li>Toutes les procédures sont des méthodes.</li>
+      </ul>
+      <p><span class="badge ajout">Ajout</span> On le vérifie en envoyant le message <code>class</code> : <code>3.class</code> répond <code>Integer</code>, <code>true.class</code> répond <code>TrueClass</code>, <code>nil.class</code> répond <code>NilClass</code>, et <code>Integer.class</code> répond <code>Class</code> : la classe <code>Integer</code> est elle-même un objet, instance de <code>Class</code>.</p>
+    </div>
+
+    <h3>Classes, instances et interface <span class="ref">p. 10</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Classe</span></p>
+      <p><strong>Tout objet est instance d'une classe.</strong> La <dfn>classe</dfn> spécifie la structure et le comportement de ses objets :</p>
+      <ul>
+        <li>le nom des variables d'état, ou champs : en Ruby et en Smalltalk, les <dfn>variables d'instance</dfn> ;</li>
+        <li>le texte des procédures qui définissent le comportement : les <dfn>méthodes</dfn>.</li>
+      </ul>
+    </div>
+    <p>L'objet est responsable des valeurs de ses variables d'état. De l'extérieur, on n'accède à son état que par un envoi de message, c'est-à-dire uniquement si l'objet autorise cet accès.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Interface</span></p>
+      <p>L'<dfn>interface</dfn> d'un objet est l'ensemble des messages qu'il sait traiter : on ne peut communiquer avec lui qu'au travers des services qu'il offre.</p>
+    </div>
+    <p>En Ruby, cela se traduit ainsi :</p>
+    <ul>
+      <li>l'interface d'un objet est donnée par (un sous-ensemble des) méthodes définies dans sa classe ;</li>
+      <li>les variables d'instance ne peuvent être manipulées de l'extérieur que par des messages adressés à l'objet ;</li>
+      <li>les données propres à un objet ne sont manipulées que par l'objet lui-même : <strong>l'unité d'encapsulation est l'objet</strong> ;</li>
+      <li>les opérations sur un objet ne dépendent pas des choix de réalisation, mais de son interface.</li>
+    </ul>
+
+    <h3>Exemple : la classe Compte <span class="ref">p. 10–11</span></h3>
+    <p>Un compte bancaire servira d'exemple dans toute la suite du cours.</p>
+    <table>
+      <caption>La classe <code>Compte</code></caption>
+      <thead><tr><th>Élément</th><th>Contenu</th></tr></thead>
+      <tbody>
+        <tr><th>Variables d'instance</th><td><code>@numero</code>, <code>@titulaire</code>, <code>@solde</code></td></tr>
+        <tr><th>Messages compris</th><td><code>donneTonSolde</code>, <code>depose</code>, <code>retire</code>, <code>afficheToi</code> : les méthodes de la classe en fournissent le code Ruby</td></tr>
+        <tr><th>Accès en consultation</th><td><code>donneTonSolde()</code> donne accès à la valeur de <code>@solde</code></td></tr>
+        <tr><th>Accès en modification</th><td><code>depose(uneSomme)</code> modifie le solde</td></tr>
+        <tr><th>Initialisation</th><td><code>initialize</code> : l'objet est toujours responsable de l'initialisation de ses variables d'instance</td></tr>
+      </tbody>
+    </table>
+<pre data-fichier="Squelette de la classe Compte"><code class="language-ruby"># La classe Compte de base
+class Compte
+  # Variables d'instance
+  # @solde      =&gt; le solde du compte
+  # @titulaire  =&gt; le titulaire du compte
+  # @numero     =&gt; le numéro du compte
+
+  def depose(uneSomme)
+    # code de la méthode
+  end
+
+  def retire(uneSomme)
+    # code de la méthode
+  end
+
+  # ...
+end</code></pre>
+
+    <h3>Transmission de message <span class="ref">p. 11</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Message, receveur, sélecteur</span></p>
+      <p>L'opération de base en Ruby est la transmission d'un <dfn>message</dfn> à un objet, appelé le <dfn>receveur</dfn> (<span class="en" lang="en">receiver</span>) du message. Un message est formé d'un <dfn>sélecteur</dfn>, le nom de la méthode demandée, et d'éventuels arguments. On l'écrit <code>receveur.sélecteur(arguments)</code>.</p>
+    </div>
+    <table>
+      <caption>Quelques envois de messages</caption>
+      <thead><tr><th>Envoi de message</th><th>Résultat</th><th>Explication</th></tr></thead>
+      <tbody>
+        <tr><td><code>"toto".size()</code></td><td><code>4</code></td><td>Le message de sélecteur <code>size</code> est envoyé à l'objet <code>"toto"</code>, instance de <code>String</code> ; la méthode <code>size</code> de <code>String</code> est exécutée et retourne l'objet <code>4</code>, instance de <code>Integer</code>.</td></tr>
+        <tr><td><code>"12.21".to_i()</code></td><td><code>12</code></td><td>Conversion en entier.</td></tr>
+        <tr><td><code>"12.21".to_s()</code></td><td><code>"12.21"</code></td><td>Conversion en chaîne.</td></tr>
+        <tr><td><code>"toto".reverse()</code></td><td><code>"otot"</code></td><td>Chaîne inversée.</td></tr>
+        <tr><td><code>3.between?(1, 5)</code></td><td><code>true</code></td><td>Le message <code>between?</code> est envoyé à l'objet <code>3</code> avec les arguments <code>1</code> et <code>5</code> ; la méthode retourne <code>true</code>, instance de <code>TrueClass</code>.</td></tr>
+        <tr><td><code>monCompte.depose(1000)</code></td><td>nouveau solde</td><td>Message avec argument envoyé à une instance de <code>Compte</code>.</td></tr>
+      </tbody>
+    </table>
+    <p>Un envoi de message retourne toujours un résultat, qui est un objet : c'est son caractère <dfn>fonctionnel</dfn>. Il peut en outre produire des effets de bord sur l'environnement, comme modifier le solde d'un compte ou afficher un texte : c'est son caractère <dfn>procédural</dfn>.</p>
+
+    <h3>Interprétation d'un message <span class="ref">p. 12</span></h3>
+    <p>Reprenons la classe <code>Compte</code> et deux de ses instances : <code>unCompte</code> (numéro 8765, solde 5000, titulaire Després) et <code>unAutreCompte</code> (numéro 2345, solde 3 milliards, titulaire Jacoboni).</p>
+    <div class="colonnes">
+<pre data-fichier="Méthode depose de la classe Compte"><code class="language-ruby">def depose(uneSomme)
+  @solde += uneSomme
+end</code></pre>
+<pre data-fichier="Envoi du message"><code class="language-ruby">unCompte.depose(2000)</code></pre>
+    </div>
+    <p>La méthode <code>depose</code> est exécutée <strong>dans le contexte de l'objet <code>unCompte</code></strong>, receveur du message. Le paramètre formel <code>uneSomme</code> est lié à la valeur <code>2000</code>. La variable <code>@solde</code> désigne le champ <code>solde</code> de l'objet <code>unCompte</code>, c'est-à-dire la variable d'instance du receveur. Le solde de <code>unAutreCompte</code> n'est pas touché.</p>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Mécanisme général <span>Interprétation d'un message</span></p>
+      <ol>
+        <li>Un message est envoyé à un objet ; il fournit le nom de la méthode à exécuter.</li>
+        <li>Le corps de la méthode est recherché dans le catalogue des méthodes de la classe du receveur.</li>
+        <li>Ce corps est exécuté dans l'environnement du receveur : chaque nom de variable d'instance désigne le champ correspondant de l'objet qui a reçu le message.</li>
+        <li>Le résultat est retourné à l'expéditeur du message.</li>
+      </ol>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 720 330" width="720" role="img" aria-labelledby="fig-message-titre">
+        <title id="fig-message-titre">Interprétation de unCompte.depose(2000) : l'expéditeur envoie le message à unCompte, la méthode depose est trouvée dans la classe Compte, elle s'exécute sur les champs de unCompte, puis le résultat 7000 revient à l'expéditeur. unAutreCompte partage les méthodes de Compte mais garde ses propres champs.</title>
+        <defs>
+          <marker id="fleche-message" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+          <marker id="fleche-message-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein-accent"/>
+          </marker>
+        </defs>
+
+        <rect class="boite" x="260" y="10" width="260" height="150" rx="8"/>
+        <text x="390" y="33" text-anchor="middle" class="gras">classe Compte</text>
+        <text x="390" y="52" text-anchor="middle" class="t2">catalogue des méthodes</text>
+        <path class="trait" d="M260 62 H520"/>
+        <text x="280" y="84" class="mono accent gras">depose(uneSomme)</text>
+        <text x="280" y="106" class="mono">retire(uneSomme)</text>
+        <text x="280" y="128" class="mono">donneTonSolde()</text>
+        <text x="280" y="150" class="mono">afficheToi()</text>
+
+        <rect class="boite" x="6" y="238" width="104" height="60" rx="8"/>
+        <text x="58" y="263" text-anchor="middle" class="gras">Expéditeur</text>
+        <text x="58" y="283" text-anchor="middle" class="t2">(programme)</text>
+
+        <rect class="boite-accent" x="250" y="220" width="220" height="100" rx="8"/>
+        <text x="360" y="242" text-anchor="middle" class="gras accent">unCompte</text>
+        <text x="262" y="266" class="mono">@numero = 8765</text>
+        <text x="262" y="286" class="mono">@titulaire = "Després"</text>
+        <text x="262" y="306" class="mono">@solde = 5000 → 7000</text>
+
+        <rect class="boite" x="490" y="220" width="220" height="100" rx="8"/>
+        <text x="600" y="242" text-anchor="middle" class="gras">unAutreCompte</text>
+        <text x="502" y="266" class="mono">@numero = 2345</text>
+        <text x="502" y="286" class="mono">@titulaire = "Jacoboni"</text>
+        <text x="502" y="306" class="mono">@solde = 3000000000</text>
+
+        <path class="accent" d="M110 258 H245" marker-end="url(#fleche-message-accent)"/>
+        <text x="178" y="249" text-anchor="middle">① <tspan class="mono">depose(2000)</tspan></text>
+
+        <path class="accent" d="M345 219 V165" marker-end="url(#fleche-message-accent)"/>
+        <text x="337" y="197" text-anchor="end">② recherche de depose</text>
+        <path class="accent" d="M375 161 V215" marker-end="url(#fleche-message-accent)"/>
+        <text x="383" y="197">③ exécution dans unCompte</text>
+
+        <path class="pointille" d="M250 290 H115" marker-end="url(#fleche-message)"/>
+        <text x="180" y="310" text-anchor="middle" class="t2">④ résultat : 7000</text>
+
+        <path class="pointille" d="M650 219 V110 H525" marker-end="url(#fleche-message)"/>
+        <text x="642" y="170" text-anchor="end" class="t2">instance de</text>
+      </svg>
+      <figcaption><span class="badge ajout">Ajout</span> Les quatre étapes de l'interprétation de <code>unCompte.depose(2000)</code>. Les méthodes sont rangées une seule fois, dans la classe ; chaque instance garde ses propres variables d'instance.</figcaption>
+    </figure>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>self, le receveur courant</span></p>
+      <p>Pendant l'exécution d'une méthode, le mot-clé <code>self</code> désigne le receveur du message, ici <code>unCompte</code>. <code>@solde</code> est donc le champ <code>solde</code> de <code>self</code>. Un message écrit sans receveur, comme <code>donneTonSolde()</code> à l'intérieur d'une autre méthode de <code>Compte</code>, est envoyé à <code>self</code>. On retrouve <code>self</code> à la section 4.8, pour ajouter une méthode à la classe <code>Integer</code>.</p>
+    </div>
+
+    <h3>Résultat d'un appel de méthode <span class="ref">p. 12–13</span></h3>
+    <p>Le mot-clé <code>return</code> termine la méthode et retourne la valeur de l'expression qui le suit.</p>
+<pre><code class="language-ruby">def donneTonSolde()
+  return @solde
+end</code></pre>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Important <span>Valeur de retour implicite</span></p>
+      <p>En l'absence de <code>return</code>, une méthode Ruby retourne <strong>le résultat de la dernière expression évaluée</strong>.</p>
+    </div>
+
+    <p>Dans l'exemple suivant, aucune des deux méthodes n'utilise <code>return</code>.</p>
+<pre data-fichier="Compte0.rb"><code class="language-ruby"># La classe Compte de base
+class Compte
+  # @solde      =&gt; le solde du compte
+  # @titulaire  =&gt; le titulaire du compte
+  # @numero     =&gt; le numéro du compte
+
+  def depose(uneSomme)
+    @solde += uneSomme
+  end
+
+  def initialiseToi(unNombre, unNom, uneSomme)
+    @numero, @titulaire, @solde = unNombre, unNom, uneSomme
+  end
+end
+
+x = Compte.new()
+print x.initialiseToi(12, "Pierre", 3000), "\n"
+print x.depose(2000), "\n"</code></pre>
+<pre class="terminal"><code>$ ruby Compte0.rb
+[12, "Pierre", 3000]
+5000</code></pre>
+    <p><code>initialiseToi</code> retourne la valeur de son <dfn>affectation multiple</dfn>, c'est-à-dire le tableau des trois valeurs affectées ; <code>depose</code> retourne le nouveau solde. <span class="badge ajout">Ajout</span> <code>@solde += uneSomme</code> est une abréviation de <code>@solde = @solde + uneSomme</code>, et une affectation a pour valeur la valeur affectée.</p>
+
+    <h3>Classification des messages <span class="ref">p. 13–14</span></h3>
+    <p>On classe les messages selon leur nombre d'arguments.</p>
+    <table>
+      <caption>Trois types de messages</caption>
+      <thead><tr><th>Type de message</th><th>Arguments</th><th>Exemple</th></tr></thead>
+      <tbody>
+        <tr><th>Unaire</th><td>Aucun</td><td><code>"hEllO".downcase</code> → <code>"hello"</code></td></tr>
+        <tr><th>Binaire</th><td>Un et un seul</td><td><code>21 + 3</code> → <code>24</code></td></tr>
+        <tr><th>N-aire</th><td>\(n - 1\) arguments</td><td><code>"d".between?("a", "f")</code> → <code>true</code></td></tr>
+      </tbody>
+    </table>
+    <p><span class="badge ajout">Ajout</span> L'arité compte le receveur avec les arguments : un message unaire ne met en jeu que le receveur, un message binaire le receveur et un argument, un message n-aire le receveur et \(n - 1\) arguments. <code>between?</code> est ternaire : le receveur <code>"d"</code> et deux arguments.</p>
+    <p>La syntaxe générale est <code>objetReceveur.sélecteur</code>. Si le receveur est une instance, le message est associé à une <dfn>méthode d'instance</dfn> ; si le receveur est une classe, il est associé à une <dfn>méthode de classe</dfn>.</p>
+
+    <h4>Messages unaires</h4>
+    <div class="colonnes">
+<pre data-fichier="Méthodes d'instance"><code class="language-ruby">"hEllO".downcase   # =&gt; "hello"
+1256.class         # =&gt; Integer
+"1256".class       # =&gt; String
+"1234".reverse     # =&gt; "4321"
+1234.reverse       # =&gt; NoMethodError</code></pre>
+<pre data-fichier="Méthodes de classe"><code class="language-ruby">Time.now     # =&gt; date et heure courantes
+String.new   # =&gt; ""</code></pre>
+    </div>
+
+    <h4>Messages binaires</h4>
+    <p>Un message binaire comporte un et un seul argument. Les opérateurs usuels sont en réalité des messages : l'écriture infixe n'est qu'un <dfn>sucre syntaxique</dfn>, une notation plus agréable pour la même chose.</p>
+    <div class="colonnes">
+<pre data-fichier="Utilisation"><code class="language-ruby"># Arithmétique
+21 + 3            # =&gt; 24
+61 / 20           # =&gt; 3
+# Comparaison
+"b" &gt; "a"         # =&gt; true
+'abc' == :abc     # =&gt; false
+# Concaténation
+'Une' + ' table'  # =&gt; "Une table"</code></pre>
+<pre data-fichier="Forme explicite équivalente"><code class="language-ruby">21.+(3)             # =&gt; 24
+'une'.+(' table')   # =&gt; "une table"</code></pre>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Ce que montrent ces exemples</span></p>
+      <ul>
+        <li><code>61 / 20</code> vaut 3 : la division de deux entiers est une division entière (section 8.3).</li>
+        <li><code>:abc</code> est un <dfn>symbole</dfn> (<span class="en" lang="en">symbol</span>), un objet de la classe <code>Symbol</code> : un nom unique et non modifiable, qui sert d'identifiant. Il n'est pas égal à la chaîne <code>'abc'</code>, d'où le <code>false</code>. On retrouve les symboles dans <code>attr_reader :solde</code> (section 5.5).</li>
+        <li><code>"b" &gt; "a"</code> compare les chaînes dans l'ordre lexicographique : le message <code>&gt;</code> est envoyé à <code>"b"</code> avec l'argument <code>"a"</code>.</li>
+      </ul>
+    </div>
+
+    <h4>Messages n-aires</h4>
+    <p>Le sélecteur est suivi de parenthèses contenant la liste des paramètres.</p>
+<pre data-fichier="MessagesNAires.rb"><code class="language-ruby">puts "d".between?("a", "f")
+puts "hello".gsub(/[aeiou]/, '*')
+puts "hello".gsub(/([aeiou])/, '&lt;\1&gt;')</code></pre>
+<pre class="terminal"><code>$ ruby MessagesNAires.rb
+true
+h*ll*
+h&lt;e&gt;ll&lt;o&gt;</code></pre>
+    <p><span class="badge ajout">Ajout</span> <code>gsub</code> remplace toutes les parties de la chaîne qui correspondent à l'expression régulière donnée en premier argument (section 8.2). Dans le texte de remplacement, <code>\1</code> désigne ce qu'a capturé la première paire de parenthèses, ici la voyelle trouvée. Il est écrit entre apostrophes pour que la barre oblique inverse soit conservée (section 8.1).</p>
+
+    <h3>Ouverture des classes <span class="ref">p. 14–15</span></h3>
+    <p>Pourquoi <code>1234.reverse</code> échoue-t-il ? Parce que <code>1234</code> est une instance de <code>Integer</code>, et que <code>reverse</code> est une méthode de <code>String</code>, pas de <code>Integer</code>. La recherche de la méthode dans la classe du receveur (étape 2 du mécanisme) échoue.</p>
+<pre class="terminal"><code>$ ruby Reverse.rb
+Reverse.rb:14:in `&lt;main&gt;': undefined method `reverse' for 1234:Integer (NoMethodError)</code></pre>
+    <p><span class="badge ajout">Ajout</span> Ruby 3.4 formule le même message ainsi : <code>undefined method 'reverse' for an instance of Integer (NoMethodError)</code>.</p>
+    <p>Ruby permet toutefois de rouvrir une classe existante, y compris une classe de base, pour lui ajouter des méthodes.</p>
+<pre data-fichier="Ajout d'une méthode à Integer"><code class="language-ruby">class Integer
+  # Il suffit d'ajouter la méthode à la classe
+  def reverse
+    return self.to_s.reverse.to_i
+  end
+end
+
+puts 1234.class     # =&gt; Integer
+puts 1234.reverse   # =&gt; 4321</code></pre>
+    <p><span class="badge ajout">Ajout</span> Dans la méthode, <code>self</code> est l'entier receveur : il est converti en chaîne, la chaîne est inversée, puis reconvertie en entier. Chaque étape est un message envoyé au résultat de la précédente. Conséquence : <code>1200.reverse</code> vaut 21, car les zéros de tête disparaissent à la conversion, et <code>(-45).reverse</code> vaut 54, car <code>"54-".to_i</code> s'arrête au signe.</p>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Modifier une classe de base</span></p>
+      <p>Cette souplesse est à manier avec prudence : rien n'empêche de redéfinir le comportement des classes de base, y compris les opérateurs les plus élémentaires. Modifier une classe de base affecte tout le programme.</p>
+    </div>
+<pre data-fichier="Redéfinition dangereuse"><code class="language-ruby">class Integer
+  def +(unNombre)
+    self - unNombre
+  end
+end
+
+print "1+1 = "
+puts 1+1   # =&gt; 0</code></pre>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les variables <span class="ref">p. 15–19</span></h2>
+    <p>Ruby ne déclare pas ses variables : c'est leur nom qui dit à quelle catégorie elles appartiennent, donc quelle est leur portée. Cette partie présente ces catégories, les conventions de nommage, les accesseurs et le typage dynamique.</p>
+
+    <h3>Catégories de variables <span class="ref">p. 15</span></h3>
+    <table>
+      <caption>Les cinq catégories de variables</caption>
+      <thead><tr><th>Catégorie</th><th>Syntaxe</th><th>Portée et rôle</th></tr></thead>
+      <tbody>
+        <tr><th>Locale</th><td>Commence par une minuscule ou <code>_</code></td><td>Définie par exemple dans une méthode ; inaccessible en dehors de la méthode où elle est définie.</td></tr>
+        <tr><th>D'instance</th><td>Préfixe <code>@</code></td><td>Représente un attribut. Accessible dans toutes les méthodes d'un objet ; propre à chaque objet et inaccessible en dehors de celui-ci.</td></tr>
+        <tr><th>De classe</th><td>Préfixe <code>@@</code></td><td>Partagée par toutes les instances de la classe ; utilisable sans créer d'instance ; non partagée entre classes différentes.</td></tr>
+        <tr><th>Globale</th><td>Préfixe <code>$</code></td><td>Non définie dans une classe ; accessible partout.</td></tr>
+        <tr><th>Constante</th><td>Commence par une majuscule</td><td>Par convention, écrite en majuscules.</td></tr>
+      </tbody>
+    </table>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les cinq catégories dans un même fichier</span></p>
+<pre><code class="language-ruby">TAUX = 0.02                # constante
+$journal = []              # variable globale
+
+class Compte               # Compte est aussi une constante : le nom de la classe
+  @@nbComptes = 0          # variable de classe, partagée par tous les comptes
+
+  def interets(annees)
+    base = @solde          # base : variable locale ; @solde : variable d'instance
+    base * TAUX * annees
+  end
+end</code></pre>
+      <p>Réaffecter une constante n'est pas interdit, mais Ruby affiche alors un avertissement (<code>already initialized constant</code>). La variable de classe <code>@@lecture</code> est utilisée dans l'exemple complet de la section 6.4.</p>
+    </div>
+
+    <h3>Variables locales <span class="ref">p. 16</span></h3>
+    <p>Les variables locales ne sont pas initialisées : la première affectation joue le rôle d'une déclaration. Une référence à une variable locale jamais affectée est interprétée comme une tentative d'appel d'une méthode de ce nom, d'où le message d'erreur :</p>
+<pre><code class="language-plaintext">ruby&gt; foo
+ERR: (eval):1: undefined local variable or method `foo' for main(Object)</code></pre>
+    <p><span class="badge ajout">Ajout</span> Ruby 3.4 écrit : <code>undefined local variable or method 'foo' for main (NameError)</code>.</p>
+    <p>La portée d'une variable locale est, en général, le bloc dans lequel elle apparaît : <code>proc { … }</code>, <code>loop { … }</code>, <code>def … end</code>, <code>class … end</code>, <code>module … end</code>, ou le programme entier si aucun de ces cas ne s'applique.</p>
+
+    <h3>Variables d'instance <span class="ref">p. 16–17</span></h3>
+    <p>En Ruby, les variables d'instance n'ont pas à être déclarées, ce qui rend la structure des objets très souple : chaque variable d'instance est ajoutée dynamiquement à l'objet lors de sa première affectation.</p>
+<pre data-fichier="vi.rb"><code class="language-ruby">class InstTest
+  def set_foo(n)
+    @foo = n      # une variable d'instance @foo
+  end
+
+  def set_bar(n)
+    @bar = n      # une autre variable d'instance @bar
+  end
+end
+
+a = InstTest.new()
+puts a.inspect()
+a.set_foo("titi")
+puts a.inspect()
+a.set_bar("toto")
+puts a.inspect()</code></pre>
+<pre class="terminal"><code>$ ruby vi.rb
+#&lt;InstTest:0x00007fe01c0dec70&gt;
+#&lt;InstTest:0x00007fe01c0dec70 @foo="titi"&gt;
+#&lt;InstTest:0x00007fe01c0dec70 @foo="titi", @bar="toto"&gt;</code></pre>
+
+    <div class="bloc astuce">
+      <p class="bloc-titre">Bonne pratique <span>Décrire les variables d'instance</span> <span class="badge examen">Exigé</span></p>
+      <p>Faute de déclaration, on décrit les variables d'instance en commentaire au début de la classe. Le gain de lisibilité est important ; dans le cadre du module, cette description est exigée.</p>
+<pre><code class="language-ruby">class Compte
+  # @numero     =&gt; le numéro du compte
+  # @titulaire  =&gt; le nom du titulaire
+  # @solde      =&gt; le solde du compte
+  # ...
+end</code></pre>
+    </div>
+
+    <h3>Conventions de nommage <span class="ref">p. 17</span></h3>
+    <table>
+      <caption>Trois conventions de nommage des méthodes</caption>
+      <thead><tr><th>Convention</th><th>Exemple</th></tr></thead>
+      <tbody>
+        <tr><td>Une méthode d'accès à une variable d'instance porte le nom de cette variable.</td><td><code>solde</code> (consultation), <code>solde=</code> (modification) pour <code>@solde</code></td></tr>
+        <tr><td>Le nom d'un <dfn>prédicat</dfn>, une méthode qui répond vrai ou faux, se termine par <code>?</code>.</td><td><code>between?</code>, <code>include?</code>, <code>eql?</code></td></tr>
+        <tr><td>Le nom d'une méthode <dfn>destructive</dfn>, qui modifie le receveur, se termine par <code>!</code>.</td><td><code>reverse!</code>, <code>downcase!</code></td></tr>
+      </tbody>
+    </table>
+    <p>Suivre la convention des accesseurs simplifie le codage et améliore la lisibilité par la standardisation, mais peut dérouter au début.</p>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Ne pas confondre</p>
+      <ul>
+        <li><code>@solde</code> : la variable d'instance ;</li>
+        <li><code>solde</code> ou <code>solde()</code> : la méthode de consultation ;</li>
+        <li><code>solde=</code> : la méthode de modification.</li>
+      </ul>
+    </div>
+<pre data-fichier="Accesseurs écrits à la main"><code class="language-ruby">class Compte
+  # @solde      =&gt; le solde du compte
+  # @titulaire  =&gt; le titulaire du compte
+  # @numero     =&gt; le numéro du compte
+
+  def solde
+    return @solde
+  end
+
+  def solde=(uneSomme)
+    @solde = uneSomme
+  end
+
+  def titulaire=(unGars)
+    @titulaire = unGars
+  end
+end</code></pre>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Appeler un modificateur, méthodes destructives</span></p>
+      <p>Le cours ne montre pas l'appel de <code>solde=</code>. Ruby accepte d'écrire <code>monCompte.solde = 500</code> : c'est un sucre syntaxique pour <code>monCompte.solde=(500)</code>, un envoi de message, et non une affectation de variable.</p>
+      <p>Piège classique : à l'intérieur d'une méthode de <code>Compte</code>, écrire <code>solde = 0</code> crée une variable locale <code>solde</code> et ne touche pas au compte. Il faut écrire <code>self.solde = 0</code> pour envoyer le message, ou <code>@solde = 0</code> pour affecter directement la variable d'instance.</p>
+      <p>Pour <code>!</code> : si <code>s = "Bonjour"</code>, <code>s.upcase</code> retourne une nouvelle chaîne <code>"BONJOUR"</code> et laisse <code>s</code> intact, alors que <code>s.upcase!</code> modifie <code>s</code> lui-même. Une méthode en <code>!</code> retourne <code>nil</code> quand elle n'a rien changé : <code>"ABC".upcase!</code> vaut <code>nil</code>.</p>
+    </div>
+
+    <h3>Génération des accesseurs <span class="ref">p. 17–18</span></h3>
+    <p>Ces méthodes d'accès étant triviales, Ruby fournit des directives pour les générer automatiquement, en lecture, en écriture ou les deux.</p>
+    <table>
+      <caption>Directives de génération des accesseurs</caption>
+      <thead><tr><th>Directive</th><th>Méthodes générées</th></tr></thead>
+      <tbody>
+        <tr><td><code>attr :attribut</code></td><td>Lecture seule (équivaut à <code>attr :attribut, false</code>)</td></tr>
+        <tr><td><code>attr :attribut, true</code></td><td>Lecture et écriture</td></tr>
+        <tr><td><code>attr_reader :a [, :b …]</code></td><td>Lecture (<span lang="en">getter</span>) pour chaque attribut</td></tr>
+        <tr><td><code>attr_writer :a [, :b …]</code></td><td>Écriture (<span lang="en">setter</span>) pour chaque attribut</td></tr>
+        <tr><td><code>attr_accessor :a [, :b …]</code></td><td>Lecture et écriture ; équivaut à <code>attr :attribut, true</code> pour chaque attribut</td></tr>
+      </tbody>
+    </table>
+
+    <div class="bloc astuce">
+      <p class="bloc-titre">En pratique</p>
+      <p>Préférer <code>attr_reader</code> pour un accès en lecture et <code>attr_accessor</code> pour un accès en lecture et écriture.</p>
+      <p><span class="badge ajout">Ajout</span> La forme <code>attr :attribut, true</code> fonctionne toujours en Ruby 3.4, mais elle est déclarée obsolète : lancé avec les avertissements (<code>ruby -w</code>), le programme affiche <code>warning: optional boolean argument is obsoleted</code>.</p>
+    </div>
+
+    <div class="colonnes">
+<pre data-fichier="Exemple dans la classe Compte"><code class="language-ruby"># numero : lecture seule
+attr :numero, false
+# titulaire : lecture seule
+attr :titulaire, false
+# solde : méthodes solde et solde=
+attr :solde, true</code></pre>
+<pre data-fichier="Équivalent de la version manuelle"><code class="language-ruby">class Compte
+  # @solde, @titulaire, @numero
+  attr :solde, true
+  attr_writer :titulaire
+end</code></pre>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Avec les directives recommandées, l'exemple de gauche s'écrit <code>attr_reader :numero, :titulaire</code> suivi de <code>attr_accessor :solde</code>. Celui de droite génère exactement les trois méthodes écrites à la main plus haut : <code>solde</code>, <code>solde=</code> et <code>titulaire=</code>.</p>
+
+    <h3>Variables globales prédéfinies <span class="ref">p. 18</span></h3>
+    <p>Ruby prédéfinit des variables globales, héritées de Perl, qui décrivent l'état de l'interpréteur.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Variables globales prédéfinies</caption>
+        <thead><tr><th>Variable</th><th>Signification</th></tr></thead>
+        <tbody>
+          <tr><td><code>$!</code></td><td>Dernier message d'erreur</td></tr>
+          <tr><td><code>$@</code></td><td>Lieu de l'erreur</td></tr>
+          <tr><td><code>$_</code></td><td>Dernière chaîne lue par <code>gets</code></td></tr>
+          <tr><td><code>$.</code></td><td>Numéro de la dernière ligne lue par l'interpréteur <span class="badge a-verifier">À vérifier</span></td></tr>
+          <tr><td><code>$&amp;</code></td><td>Dernière chaîne trouvée par une expression régulière</td></tr>
+          <tr><td><code>$~</code></td><td>Dernière correspondance, sous forme de tableau</td></tr>
+          <tr><td><code>$n</code></td><td>\(n\)-ième groupe capturé (équivaut à <code>$~[n]</code>)</td></tr>
+          <tr><td><code>$=</code></td><td>Sensibilité à la casse des recherches par expression régulière <span class="badge a-verifier">À vérifier</span></td></tr>
+          <tr><td><code>$/</code></td><td>Séparateur des enregistrements en entrée</td></tr>
+          <tr><td><code>$\</code></td><td>Séparateur des enregistrements en sortie</td></tr>
+          <tr><td><code>$0</code></td><td>Nom du script Ruby</td></tr>
+          <tr><td><code>$*</code></td><td>Arguments de la ligne de commande</td></tr>
+          <tr><td><code>$$</code></td><td>Identifiant du processus de l'interpréteur</td></tr>
+          <tr><td><code>$?</code></td><td>Code retour du dernier processus fils</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> Deux lignes du tableau d'origine ne correspondent plus au Ruby actuel. <code>$.</code> est le numéro de la dernière ligne lue <em>sur l'entrée</em>, par <code>gets</code> par exemple, et non une ligne du programme exécuté par l'interpréteur. <code>$=</code> n'a plus d'effet depuis Ruby 1.9 : l'affecter produit <code>warning: variable $= is no longer effective; ignored</code> (vérifié en Ruby 3.4). Pour ignorer la casse, on ajoute l'option <code>i</code> à l'expression régulière : <code>/ruby/i</code>. Enfin, <code>$*</code> est le même tableau que <code>ARGV</code>.</p>
+
+    <h3>Affectation et typage dynamique <span class="ref">p. 18–19</span></h3>
+    <p>On affecte un objet comme valeur d'une variable avec le symbole <code>=</code>. <strong>L'affectation n'est pas un envoi de message</strong> : elle associe à un nom de variable une valeur, c'est-à-dire un objet.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Typage dynamique</span></p>
+      <p>Les variables Ruby ne sont pas typées : c'est le <dfn>typage dynamique</dfn>. N'importe quel objet peut être affecté à n'importe quelle variable, à tout moment : <code>x = 12</code>, puis <code>x = 12.32</code>, puis <code>x = "titi"</code>.</p>
+    </div>
+    <p>L'exemple suivant utilise un <dfn>dictionnaire</dfn>, instance de la classe <code>Hash</code>, qui associe des valeurs à des clés : <code>h[clé] = valeur</code> ajoute un couple, <code>h[clé]</code> retrouve la valeur.</p>
+<pre data-fichier="Exemple avec un dictionnaire (Hash)"><code class="language-ruby">h = Hash.new()           # =&gt; {}        instance de Hash créée par new et affectée à h
+h.length                 # =&gt; 0
+h['chien'] = "canine"    # =&gt; "canine"  ajout d'un couple clé =&gt; valeur
+h['vache'] = 'bovine'    # =&gt; "bovine"
+h[12]      = 'coucou'    # =&gt; "coucou"
+h['chat']  = 99          # =&gt; 99        aucun type imposé, ni aux clés ni aux valeurs
+h                        # =&gt; {"chien"=&gt;"canine", "vache"=&gt;"bovine", 12=&gt;"coucou", "chat"=&gt;99}
+h.class()                # =&gt; Hash
+h = 12                   # =&gt; 12        on peut changer le « type » de h
+h.class()                # =&gt; Integer</code></pre>
+    <p><span class="badge ajout">Ajout</span> Depuis Ruby 3.4, un dictionnaire s'affiche avec des espaces autour de la flèche : <code>{"chien" =&gt; "canine", "vache" =&gt; "bovine", 12 =&gt; "coucou", "chat" =&gt; 99}</code>.</p>
+
+    <p>Pour vérifier l'état d'un objet, on lui envoie le message <code>inspect</code>, qui décrit sa classe et ses variables d'instance.</p>
+<pre data-fichier="Vérifier l'état d'un objet avec inspect"><code class="language-ruby">x = Compte.new()
+print x.inspect()
+# =&gt; #&lt;Compte:0x9db290 @solde=nil, @titulaire=nil, @numero=nil&gt;
+
+x.initialiseToi(12, "Pierre", 32)
+print x.inspect()
+# =&gt; #&lt;Compte:0x9db290 @solde=32, @titulaire="Pierre", @numero=12&gt;
+
+x = Compte.ouvrir(123, "Thierry", 12)
+print x.inspect()
+# =&gt; #&lt;Compte:0x9daac8 @solde=12, @titulaire="Thierry", @numero=123&gt;</code></pre>
+    <p><span class="badge a-verifier">À vérifier</span> Ces sorties viennent d'une ancienne version de Ruby. Avec la classe <code>Compte0.rb</code> de la section 4.6 et Ruby 3.4, un objet qui sort de <code>new</code> n'a encore aucune variable d'instance (comme dans <code>vi.rb</code>), et <code>inspect</code> les liste dans l'ordre de leur première affectation. On obtient donc <code>#&lt;Compte:0x…&gt;</code>, puis <code>#&lt;Compte:0x… @numero=12, @titulaire="Pierre", @solde=32&gt;</code>. Les trois <code>nil</code> n'apparaissent que si <code>initialize</code> affecte <code>nil</code> aux trois variables. La méthode <code>ouvrir</code>, elle, est présentée à la partie suivante.</p>
+
+    <div class="bloc astuce">
+      <p class="bloc-titre">Conseil</p>
+      <p>La grande majorité des erreurs proviennent d'une initialisation incorrecte. La méthode <code>inspect()</code> permet de vérifier que les objets sont correctement initialisés.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Instanciation et initialisation <span class="ref">p. 19–23</span></h2>
+    <p>Un objet doit être créé, puis ses variables d'instance doivent recevoir des valeurs cohérentes. Ruby sépare ces deux étapes, et laisse au concepteur de la classe le choix de la façon de créer ses objets.</p>
+
+    <h3>Création d'un objet en deux temps <span class="ref">p. 19</span></h3>
+    <ol class="etapes">
+      <li><strong>Allocation</strong> par le système d'une zone mémoire de taille connue : pour un langage non typé, le nombre d'attributs plus un pointeur vers la classe. En Ruby, cette allocation se fait en envoyant un message à la classe de l'objet à créer, c'est-à-dire en exécutant une <strong>méthode de classe</strong>.</li>
+      <li><strong>Initialisation</strong> des variables d'instance, par des messages adressés à l'objet ; les méthodes d'initialisation doivent être programmées.</li>
+    </ol>
+
+    <h3>Les méthodes new et initialize <span class="ref">p. 20–21</span></h3>
+    <p>Quatre situations montrent comment <code>new</code> et <code>initialize</code> collaborent.</p>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Cas 1 <span>Aucune initialisation prévue</span></p>
+      <p>Même sans rien prévoir pour la création et l'initialisation, on peut créer des objets.</p>
+<pre data-fichier="initialisation.rb"><code class="language-ruby">class MaClasse
+  def disBonjour
+    print "Bonjour les gens"
+  end
+end
+
+x = MaClasse.new()
+x.disBonjour()</code></pre>
+<pre class="terminal"><code>$ ruby initialisation.rb
+Bonjour les gens</code></pre>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Cas 2 <span>Redéfinition de initialize</span></p>
+<pre data-fichier="initialisation1.rb"><code class="language-ruby">class MaClasse
+  def disBonjour
+    print "Bonjour les gens"
+  end
+
+  # Méthode d'initialisation, appelée implicitement par new
+  def initialize()
+    puts "Coucou, je suis la méthode initialize"
+  end
+end
+
+x = MaClasse.new()
+x.disBonjour()</code></pre>
+<pre class="terminal"><code>$ ruby initialisation1.rb
+Coucou, je suis la méthode initialize
+Bonjour les gens</code></pre>
+    </div>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Règles <span>new et initialize</span></p>
+      <ul>
+        <li>La création des instances utilise une méthode de classe : <code>new</code> par défaut, ou une méthode écrite par le concepteur de la classe, qui appellera <code>new</code>.</li>
+        <li>L'initialisation des variables d'instance est réalisée par la méthode <code>initialize</code>, une méthode d'instance <strong>privée</strong>, appelée automatiquement par <code>new</code>.</li>
+        <li>La méthode <code>initialize</code> doit comporter le même nombre d'arguments que l'appel à <code>new</code>.</li>
+      </ul>
+      <p><span class="badge ajout">Ajout</span> Privée signifie qu'on ne peut pas l'appeler avec un receveur explicite : <code>x.initialize("Autre")</code> lève <code>NoMethodError</code> (<code>private method 'initialize' called for an instance of MaClasse</code>). Seul <code>new</code> l'appelle, sur l'objet qu'il vient d'allouer.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Cas 3 <span>Variable d'instance non initialisée</span></p>
+<pre data-fichier="initialisation2.rb"><code class="language-ruby">class MaClasse
+  attr_reader :leMonsieur
+
+  def disBonjour()
+    print "Bonjour #{@leMonsieur}"
+  end
+end
+
+x = MaClasse.new()
+x.disBonjour()</code></pre>
+<pre class="terminal"><code>$ ruby initialisation2.rb
+Bonjour</code></pre>
+      <p><code>@leMonsieur</code> n'ayant jamais été affectée, elle vaut <code>nil</code>, qui s'affiche comme une chaîne vide.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Cas 4 <span>Initialisation avec paramètre</span></p>
+<pre data-fichier="initialisation3.rb"><code class="language-ruby">class MaClasse
+  attr_reader :leMonsieur
+
+  def disBonjour()
+    print "Bonjour #{@leMonsieur}"
+  end
+
+  def initialize(unGars)
+    @leMonsieur = unGars
+  end
+end
+
+x = MaClasse.new()             # ArgumentError: wrong number of arguments (0 for 1)
+x = MaClasse.new("Jacoboni")   # correct
+x.disBonjour()                 # =&gt; Bonjour Jacoboni</code></pre>
+      <p><span class="badge ajout">Ajout</span> Ruby 3.4 formule l'erreur ainsi : <code>wrong number of arguments (given 0, expected 1) (ArgumentError)</code>.</p>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Règle <span>Paramètres de création</span></p>
+      <p>Si la méthode d'initialisation prend des paramètres, ils doivent obligatoirement être fournis lors de la création de l'objet.</p>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 720 170" width="720" role="img" aria-labelledby="fig-creation-titre">
+        <title id="fig-creation-titre">Création d'une chanson : la méthode de classe creer appelle new, qui alloue un objet vide lié à sa classe, puis lui envoie initialize avec les mêmes arguments ; l'objet initialisé est retourné.</title>
+        <defs>
+          <marker id="fleche-creation" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+
+        <rect class="boite" x="10" y="20" width="150" height="80" rx="8"/>
+        <text x="85" y="50" text-anchor="middle" class="mono">Chanson.creer(…)</text>
+        <text x="85" y="72" text-anchor="middle" class="t2">méthode de classe</text>
+        <text x="85" y="90" text-anchor="middle" class="t2">« métier »</text>
+
+        <rect class="boite" x="195" y="20" width="150" height="80" rx="8"/>
+        <text x="270" y="50" text-anchor="middle" class="mono">new(…)</text>
+        <text x="270" y="72" text-anchor="middle" class="t2">méthode de classe</text>
+        <text x="270" y="90" text-anchor="middle" class="t2">privée ici</text>
+
+        <rect class="boite" x="380" y="20" width="150" height="80" rx="8"/>
+        <text x="455" y="50" text-anchor="middle" class="gras">① allocation</text>
+        <text x="455" y="72" text-anchor="middle" class="t2">objet vide,</text>
+        <text x="455" y="90" text-anchor="middle" class="t2">lié à sa classe</text>
+
+        <rect class="boite-accent" x="565" y="20" width="150" height="80" rx="8"/>
+        <text x="640" y="50" text-anchor="middle" class="gras accent">② <tspan class="mono">initialize(…)</tspan></text>
+        <text x="640" y="72" text-anchor="middle" class="t2">méthode d'instance</text>
+        <text x="640" y="90" text-anchor="middle" class="t2">privée</text>
+
+        <path class="trait" d="M160 60 H190" marker-end="url(#fleche-creation)"/>
+        <path class="trait" d="M345 60 H375" marker-end="url(#fleche-creation)"/>
+        <path class="trait" d="M530 60 H560" marker-end="url(#fleche-creation)"/>
+
+        <path class="pointille" d="M640 100 V130 H85 V105" marker-end="url(#fleche-creation)"/>
+        <text x="362" y="152" text-anchor="middle" class="t2">l'objet initialisé est retourné à l'appelant</text>
+      </svg>
+      <figcaption><span class="badge ajout">Ajout</span> Les deux temps de la création, pour la classe <code>Chanson</code> de la section 6.4 : <code>new</code> alloue l'objet, puis lui envoie <code>initialize</code> avec les arguments qu'il a reçus.</figcaption>
+    </figure>
+
+    <h3>Bonne pratique : des méthodes de création « métier » <span class="ref">p. 21–22</span></h3>
+    <p>La méthode <code>new</code> existe toujours implicitement, et l'on pourrait s'en contenter. Mais cela a souvent peu de sens, surtout lorsque des arguments sont nécessaires à la fabrication des objets. La programmation objet étant une activité de simulation, on cherche à se rapprocher du vocabulaire métier pour donner du sens au code : on préfère par exemple créer un compte avec un message <code>ouvrir</code> plutôt qu'avec <code>new</code>.</p>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Algorithme <span>Faut-il définir une méthode de création ?</span></p>
+      <p>On se pose deux questions. Q1 : la création demande-t-elle des paramètres ? Q2 : y a-t-il des initialisations à effectuer ?</p>
+    </div>
+    <table>
+      <caption>Démarche selon les réponses à Q1 et Q2</caption>
+      <thead><tr><th>Q1. Paramètres à la création ?</th><th>Q2. Initialisations à effectuer ?</th><th>Démarche</th></tr></thead>
+      <tbody>
+        <tr><td>Non</td><td>Non</td><td>Utiliser <code>new</code> ; la méthode <code>initialize()</code> par défaut convient.</td></tr>
+        <tr><td>Non</td><td>Oui</td><td>Utiliser <code>new</code> et redéfinir <code>initialize()</code>, sans paramètre, pour effectuer ces initialisations.</td></tr>
+        <tr><td>Oui</td><td>Oui</td><td>
+          <ol>
+            <li>Interdire <code>new</code> à l'extérieur de la classe : <code>private_class_method :new</code>.</li>
+            <li>Écrire une méthode de classe au nom significatif, avec les paramètres nécessaires, qui se contente d'appeler <code>new</code> avec ces paramètres.</li>
+            <li>Redéfinir <code>initialize</code> avec le même nombre de paramètres que la méthode de création.</li>
+          </ol>
+        </td></tr>
+        <tr><td>Oui</td><td>Non</td><td>Situation incohérente : des paramètres de création qui ne servent à rien.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Définir une méthode de classe</span></p>
+      <p>Une méthode de classe se définit en préfixant son nom par celui de la classe : <code>def Chanson.creer(…)</code>. On rencontre plus souvent <code>def self.creer(…)</code>, qui est équivalent : entre <code>class Chanson</code> et <code>end</code>, en dehors de toute méthode, <code>self</code> désigne la classe elle-même.</p>
+      <p>Après <code>private_class_method :new</code>, <code>new</code> ne peut plus être envoyé avec un receveur explicite. <code>Chanson.new(…)</code> écrit dans le programme principal échoue, mais <code>new(…)</code> écrit sans receveur dans une méthode de classe fonctionne, car le receveur implicite est alors <code>self</code>, la classe.</p>
+    </div>
+
+    <h3>Exemple complet : statistiques d'un jukebox <span class="ref">p. 22–23</span></h3>
+    <p>Cet exemple combine variable de classe, variables d'instance, méthode de classe de création et méthode d'initialisation.</p>
+<pre data-fichier="Chanson.rb"><code class="language-ruby">class Chanson
+  @@lecture = 0   # variable de classe : total des lectures
+  # Variables d'instance : @nom, @artiste, @duree, @lecture
+
+  # Il y a des paramètres à la création d'une chanson, donc :
+  # 1) on n'utilise pas new, et on l'interdit
+  private_class_method :new
+
+  # 2) on fournit une méthode de classe pour l'instanciation
+  def Chanson.creer(nom, artiste, duree)
+    new(nom, artiste, duree)
+  end
+
+  # 3) on fournit une méthode d'initialisation
+  def initialize(nom, artiste, duree)
+    @nom, @artiste, @duree = nom, artiste, duree
+    @lecture = 0
+  end
+
+  # Méthode d'instance de l'interface : jouer la chanson
+  def play()
+    @lecture += 1
+    @@lecture += 1
+    puts "Cette chanson #@nom lecture : #@lecture fois, total des lectures : #@@lecture."
+  end
+end
+
+s1 = Chanson.creer("Louise", "Fersen", 140)
+s2 = Chanson.creer("Dracula", "Fersen", 237)
+s1.play() ; s2.play()
+s1.play() ; s1.play()
+s2.play()</code></pre>
+<pre class="terminal"><code>$ ruby Chanson.rb
+Cette chanson Louise lecture : 1 fois, total des lectures : 1.
+Cette chanson Dracula lecture : 1 fois, total des lectures : 2.
+Cette chanson Louise lecture : 2 fois, total des lectures : 3.
+Cette chanson Louise lecture : 3 fois, total des lectures : 4.
+Cette chanson Dracula lecture : 2 fois, total des lectures : 5.</code></pre>
+    <p><span class="badge ajout">Ajout</span> <code>@lecture</code> compte les lectures d'une chanson, et chaque chanson a le sien ; <code>@@lecture</code> compte toutes les lectures, et il est partagé par toutes les chansons. Dans une chaîne, <code>#@nom</code> est une abréviation de <code>#{@nom}</code>, valable pour les variables en <code>@</code>, <code>@@</code> et <code>$</code>. Le point-virgule sépare deux instructions écrites sur la même ligne.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Utiliser Ruby <span class="ref">p. 23–25</span></h2>
+    <p>Ruby est disponible gratuitement sur toutes les plates-formes : macOS, Unix, Linux, Windows. Il existe au moins trois façons de l'utiliser : la ligne de commande, le shell interactif IRB et un environnement de développement intégré.</p>
+
+    <h3>Ligne de commande <span class="ref">p. 24</span></h3>
+    <p>L'option <code>-e</code> exécute directement le programme écrit sur la ligne de commande.</p>
+<pre class="terminal"><code>$ ruby -e 'print "hello world\n"'
+hello world</code></pre>
+    <p>Le plus souvent, le programme est stocké dans un fichier, que l'on donne en argument à <code>ruby</code>. Ici, <code>cat</code> recopie la saisie dans <code>test.rb</code> jusqu'à <kbd>Ctrl</kbd> + <kbd>D</kbd>.</p>
+<pre class="terminal"><code>$ cat &gt; test.rb
+print "hello world\n"
+^D
+$ ruby test.rb
+hello world</code></pre>
+
+    <h3>Interactive Ruby Shell (IRB) <span class="ref">p. 24</span></h3>
+    <p>IRB évalue chaque expression saisie et affiche immédiatement son résultat, ce qui en fait un outil idéal pour expérimenter.</p>
+<pre class="terminal"><code>$ irb
+irb(main):001:0&gt; 3+4
+=&gt; 7
+irb(main):002:0&gt; x=5+2
+=&gt; 7
+irb(main):003:0&gt; x
+=&gt; 7
+irb(main):004:0&gt; x.class
+=&gt; Integer</code></pre>
+    <p><span class="badge ajout">Ajout</span> On quitte IRB avec <code>exit</code> ou <kbd>Ctrl</kbd> + <kbd>D</kbd>. C'est le moyen le plus rapide de vérifier une réponse de l'auto-évaluation.</p>
+
+    <h3>Environnements de développement <span class="ref">p. 24–25</span></h3>
+    <p>De nombreux environnements prennent Ruby en charge : FreeRIDE, NetBeans, Eclipse, SciTE… Dans le cadre du module, les travaux pratiques sont réalisés dans l'environnement Hop3x. Voici un exemple de programme de test d'une classe <code>Compte</code>.</p>
+<pre data-fichier="TestCompte.rb"><code class="language-ruby">load "CompteEpisode1.rb"
+
+# ============================== TESTS ==============================
+
+# new est privée : les deux appels suivants échouent
+# Compte.new()
+#   private method `new' called for Compte:Class (NoMethodError)
+# Compte.new(101232, 'toto', 2000)
+#   private method `new' called for Compte:Class (NoMethodError)
+
+monCompte = Compte.ouvrir(101232, 'toto', 2000)
+print(monCompte.inspect(), "\n")
+monCompte.depose(3000)
+print(monCompte.inspect(), "\n")
+monCompte.retire(15000)
+print(monCompte.inspect(), "\n")
+print monCompte.donneTonSolde()</code></pre>
+<pre class="terminal"><code>$ ruby TestCompte.rb
+#&lt;Compte:0x007f8c91856b58 @numero=101232, @titulaire="toto", @solde=2000&gt;
+#&lt;Compte:0x007f8c91856b58 @numero=101232, @titulaire="toto", @solde=5000&gt;
+#&lt;Compte:0x007f8c91856b58 @numero=101232, @titulaire="toto", @solde=-10000&gt;
+-10000</code></pre>
+    <p><span class="badge ajout">Ajout</span> <code>load</code> exécute le fichier nommé, ce qui définit la classe <code>Compte</code> avant les tests. Le cours ne donne pas le contenu de <code>CompteEpisode1.rb</code> : l'exercice suivant propose de l'écrire.</p>
+
+    <div class="bloc exercice" id="ex-compte">
+      <p class="bloc-titre">Exercice 1 <span>Écrire CompteEpisode1.rb</span></p>
+      <p><span class="badge ajout">Ajout</span> Écrire la classe <code>Compte</code> du fichier <code>CompteEpisode1.rb</code>, de sorte que <code>TestCompte.rb</code> produise la sortie ci-dessus, adresses mises à part. La classe comprend les messages <code>ouvrir</code> (méthode de classe), <code>depose</code>, <code>retire</code>, <code>donneTonSolde</code> et <code>afficheToi</code>, et elle interdit <code>new</code> à l'extérieur.</p>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Appliquer l'algorithme de la section 6.3 : il y a des paramètres à la création, et des initialisations à faire. S'inspirer de <code>Chanson.rb</code>. Pour obtenir un solde de −10000, <code>retire</code> ne fait aucun contrôle.</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+<pre data-fichier="CompteEpisode1.rb"><code class="language-ruby"># Classe Compte, épisode 1
+class Compte
+  # @numero     =&gt; le numéro du compte
+  # @titulaire  =&gt; le nom du titulaire
+  # @solde      =&gt; le solde du compte
+
+  # Paramètres obligatoires à la création : new est interdit à l'extérieur
+  private_class_method :new
+
+  # Méthode de création « métier »
+  def Compte.ouvrir(unNumero, unTitulaire, unSolde)
+    new(unNumero, unTitulaire, unSolde)
+  end
+
+  # Appelée par new, avec les mêmes paramètres
+  def initialize(unNumero, unTitulaire, unSolde)
+    @numero, @titulaire, @solde = unNumero, unTitulaire, unSolde
+  end
+
+  def donneTonSolde()
+    return @solde
+  end
+
+  def depose(uneSomme)
+    @solde += uneSomme
+  end
+
+  def retire(uneSomme)
+    @solde -= uneSomme
+  end
+
+  def afficheToi()
+    puts "Compte n° #{@numero} de #{@titulaire} : solde #{@solde}"
+  end
+end</code></pre>
+        <p>Exécuté avec Ruby 3.4, <code>TestCompte.rb</code> affiche bien les trois lignes <code>inspect</code> et <code>-10000</code>, avec les variables dans l'ordre <code>@numero</code>, <code>@titulaire</code>, <code>@solde</code> : celui de l'affectation multiple dans <code>initialize</code>. Les deux appels à <code>new</code> mis en commentaire lèvent <code>NoMethodError</code>, que Ruby 3.4 formule <code>private method 'new' called for class Compte</code>.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Bases du langage <span class="ref">p. 25–30</span></h2>
+    <p>Il reste à voir les éléments de base qu'emploie tout programme : les chaînes de caractères, les expressions régulières, les nombres, les conditionnelles et les boucles. En Ruby, ce sont eux aussi des objets et des messages.</p>
+
+    <h3>Chaînes de caractères <span class="ref">p. 25–26</span></h3>
+    <p>Les chaînes de caractères sont des « conteneurs » homogènes de caractères. Leur manipulation est bien plus intuitive qu'en C : on n'a pas à se soucier de la place occupée ni de la gestion de la mémoire. En C, concaténer deux chaînes impose de gérer explicitement l'allocation.</p>
+<pre data-fichier="Concaténation en C"><code class="language-c">char *s = malloc(strlen(s1) + strlen(s2) + 1);
+strcpy(s, s1);
+strcat(s, s2);
+/* ... */
+free(s);</code></pre>
+
+    <h4>Guillemets et apostrophes</h4>
+    <p>Une chaîne peut s'écrire entre guillemets (<code>"abc"</code>) ou entre apostrophes (<code>'abc'</code>). Les deux formes produisent la même chaîne, mais :</p>
+    <ul>
+      <li>entre guillemets, on peut utiliser des séquences d'échappement (une barre oblique inverse devant le caractère voulu, par exemple <code>\n</code>) et évaluer des expressions incluses dans <code>#{…}</code> ;</li>
+      <li>entre apostrophes, rien de tout cela : la chaîne ne dit que ce qu'elle montre.</li>
+    </ul>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>La même chaîne, deux délimiteurs</span> <span class="badge ajout">Ajout</span></p>
+<pre><code class="language-ruby">n = 3
+puts "a\tb #{n + 1}"   # affiche a, une tabulation, puis b 4
+puts 'a\tb #{n + 1}'   # affiche a\tb #{n + 1}, tel quel</code></pre>
+    </div>
+
+    <h4>Opérations courantes</h4>
+    <table>
+      <caption>Opérations sur les chaînes</caption>
+      <thead><tr><th>Opération</th><th>Expression</th><th>Résultat</th></tr></thead>
+      <tbody>
+        <tr><td>Concaténation</td><td><code>word = "fo" + "o"</code></td><td><code>"foo"</code></td></tr>
+        <tr><td>Répétition</td><td><code>word = word * 2</code></td><td><code>"foofoo"</code></td></tr>
+        <tr><td>Caractère (indice depuis le début)</td><td><code>word[0]</code></td><td><code>"f"</code></td></tr>
+        <tr><td>Caractère (indice négatif : depuis la fin)</td><td><code>word[-1]</code></td><td><code>"o"</code></td></tr>
+        <tr><td rowspan="2">Sous-chaîne (début, longueur)</td><td><code>herb = "parsley"; herb[0,1]</code></td><td><code>"p"</code></td></tr>
+        <tr><td><code>herb[-2,2]</code></td><td><code>"ey"</code></td></tr>
+        <tr><td rowspan="2">Sous-chaîne (intervalle)</td><td><code>herb[0..3]</code></td><td><code>"pars"</code></td></tr>
+        <tr><td><code>herb[-5..-2]</code></td><td><code>"rsle"</code></td></tr>
+        <tr><td rowspan="2">Égalité</td><td><code>"foo" == "foo"</code></td><td><code>true</code></td></tr>
+        <tr><td><code>"foo" == "bar"</code></td><td><code>false</code></td></tr>
+      </tbody>
+    </table>
+
+    <h4>Tests d'égalité</h4>
+    <p>Il faut être attentif à ce que l'on teste.</p>
+<pre><code class="language-ruby">"foo" == "foo"          # =&gt; true   même contenu
+"foo".eql?("foo")       # =&gt; true   même contenu et même type
+"foo".equal?("foo")     # =&gt; false  deux objets distincts (identité)</code></pre>
+    <p>La documentation de Ruby précise la différence entre <code>==</code>, <code>eql?</code> et <code>equal?</code>. <span class="badge ajout">Ajout</span> Sur les nombres, <code>1 == 1.0</code> vaut <code>true</code>, mais <code>1.eql?(1.0)</code> vaut <code>false</code>, car un <code>Integer</code> et un <code>Float</code> ne sont pas du même type. <code>equal?</code> teste l'identité : deux littéraux <code>"foo"</code> créent deux objets différents, de même contenu.</p>
+
+    <h4>Modification d'une partie de la chaîne</h4>
+    <p>La partie remplacée n'a pas besoin d'avoir la même longueur que le texte de remplacement.</p>
+<pre><code class="language-ruby">foo = "wishbone"
+foo[0,1] = "f"     # foo vaut "fishbone"
+foo[5,1] = "a"     # foo vaut "fishbane"
+foo[0,4] = "wolf"  # foo vaut "wolfbane"
+foo[1,5] = "i"     # foo vaut "wine"
+foo[1,2] = "edg"   # foo vaut "wedge"</code></pre>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Sucre syntaxique <span>[] et []=</span></p>
+      <p>Comme tout en Ruby, les chaînes sont des objets : <code>"foofoo".class</code> répond <code>String</code>. Les notations <code>[]</code> et <code>[]=</code> sont en réalité des messages envoyés à l'instance de <code>String</code> :</p>
+      <ul>
+        <li><code>foo[2]</code> ⇔ <code>foo.[](2)</code> ;</li>
+        <li><code>foo[2,1] = "d"</code> ⇔ <code>foo.[]=(2, 1, "d")</code>.</li>
+      </ul>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Chaînes littérales et Ruby 3.4</span> <span class="badge hors-programme">Hors programme</span></p>
+      <p>Les futures versions de Ruby rendront non modifiables les chaînes écrites littéralement dans le programme. Ruby 3.4 exécute encore <code>foo[0,1] = "f"</code> normalement, mais avec les avertissements activés il signale <code>literal string will be frozen in the future</code>. Pour obtenir à coup sûr une chaîne modifiable, on écrit <code>foo = String.new("wishbone")</code> ou <code>foo = "wishbone".dup</code>.</p>
+    </div>
+
+    <h3>Expressions régulières <span class="ref">p. 27–28</span></h3>
+    <p>Les <dfn>expressions régulières</dfn> (<span class="en" lang="en">regular expressions</span>) décrivent des motifs de chaînes à l'aide d'un vocabulaire spécialisé. En Ruby, comme en Perl, elles sont délimitées par des barres obliques : <code>/…/</code>. D'abord déroutantes, elles offrent un pouvoir d'expression très concis, qui évite de nombreuses lignes de code pour la reconnaissance de motifs, la recherche et la manipulation de chaînes.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Vocabulaire des expressions régulières</caption>
+        <thead><tr><th>Élément</th><th>Signification</th></tr></thead>
+        <tbody>
+          <tr><td><code>[ ]</code></td><td>Classe de caractères : <code>[a-z]</code> désigne une lettre de a à z</td></tr>
+          <tr><td><code>[^ ]</code></td><td>Classe complémentaire : <code>[^a-z]</code> désigne tout caractère qui n'est pas une minuscule</td></tr>
+          <tr><td><code>\w</code></td><td>Lettre, chiffre ou souligné ; équivaut à <code>[a-zA-Z0-9_]</code></td></tr>
+          <tr><td><code>\s</code></td><td>Caractère d'espacement ; équivaut à <code>[ \t\n\r\f]</code></td></tr>
+          <tr><td><code>\S</code></td><td>Caractère qui n'est pas un espacement</td></tr>
+          <tr><td><code>\d</code></td><td>Chiffre ; équivaut à <code>[0-9]</code></td></tr>
+          <tr><td><code>*</code></td><td>Zéro, une ou plusieurs occurrences de ce qui précède</td></tr>
+          <tr><td><code>+</code></td><td>Une ou plusieurs occurrences de ce qui précède</td></tr>
+          <tr><td><code>{m,n}</code></td><td>Au moins <code>m</code> et au plus <code>n</code> occurrences de ce qui précède</td></tr>
+          <tr><td><code>?</code></td><td>Au plus une occurrence de ce qui précède ; équivaut à <code>{0,1}</code></td></tr>
+          <tr><td><code>|</code></td><td>Alternative : ce qui précède ou ce qui suit</td></tr>
+          <tr><td><code>^</code> / <code>$</code></td><td>Début / fin de ligne</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Un motif en une ligne</span></p>
+      <p>Tester si une chaîne « commence par un f minuscule, suivi immédiatement d'exactement une majuscule, suivie de n'importe quoi sauf des minuscules » demanderait une douzaine de lignes en C. Avec une expression régulière :</p>
+<pre><code class="language-ruby">/^f[A-Z][^a-z]*$/</code></pre>
+      <p><span class="badge ajout">Ajout</span> <code>"fB12-"</code> correspond au motif ; <code>"fBa"</code> non (une minuscule après la majuscule) ; <code>"FB"</code> non plus (le f est majuscule).</p>
+    </div>
+
+    <p>Le programme suivant ajoute deux méthodes à la classe <code>String</code>, en rouvrant la classe comme à la section 4.8, pour savoir si une chaîne représente un entier ou un réel.</p>
+<pre data-fichier="isInteger.rb"><code class="language-ruby">class String
+  def isEntier?()
+    if self =~ /^[+-]?\d+$/
+      puts "#{self} est un entier"
+    else
+      puts "#{self} n'est pas un entier"
+    end
+  end
+
+  def isReel?()
+    if self =~ /^-?\d+(\.\d*)?$/
+      puts "#{self} est un réel"
+    else
+      puts "#{self} n'est pas un réel"
+    end
+  end
+end
+
+"12".isEntier?()
+"12.4".isEntier?()
+"abcd".isReel?()
+"12".isReel?()
+"12.24".isReel?()</code></pre>
+<pre class="terminal"><code>$ ruby isInteger.rb
+12 est un entier
+12.4 n'est pas un entier
+abcd n'est pas un réel
+12 est un réel
+12.24 est un réel</code></pre>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Lire et améliorer isInteger.rb</span></p>
+      <ul>
+        <li><code>chaîne =~ /motif/</code> retourne la position de la première correspondance, ou <code>nil</code> s'il n'y en a pas. Comme <code>nil</code> est faux et un entier vrai (section 8.4), le résultat s'utilise directement comme condition. Après une correspondance, <code>$~</code>, <code>$&amp;</code>, <code>$1</code>, <code>$2</code>… en décrivent le détail (section 5.6).</li>
+        <li><code>\.</code> désigne un vrai point : seul, <code>.</code> désigne n'importe quel caractère. <code>(\.\d*)?</code> rend facultative la partie décimale.</li>
+        <li>En Ruby, <code>^</code> et <code>$</code> marquent le début et la fin d'une <em>ligne</em>, pas de la chaîne. Une chaîne de deux lignes, <code>"12\nabc"</code>, est donc déclarée entière, car sa première ligne l'est. Pour ancrer sur toute la chaîne, on utilise <code>\A</code> et <code>\z</code>.</li>
+        <li>Ces deux méthodes affichent un texte et retournent <code>nil</code> : ce ne sont pas de vrais prédicats, malgré leur <code>?</code> (section 5.4). Une version conforme à la convention retourne un booléen :</li>
+      </ul>
+<pre><code class="language-ruby">class String
+  def entier?
+    match?(/\A[+-]?\d+\z/)
+  end
+end
+
+"12".entier?        # =&gt; true
+"12.4".entier?      # =&gt; false
+"12\nabc".entier?   # =&gt; false</code></pre>
+    </div>
+
+    <h3>Nombres <span class="ref">p. 28</span></h3>
+    <p>Ruby dispose de plusieurs classes pour représenter les nombres, toutes dérivées de <code>Numeric</code> : principalement <code>Integer</code>, pour les entiers de précision arbitraire, et <code>Float</code>, pour les nombres à virgule flottante. Chacune offre les services classiques appropriés ; voir la documentation, par exemple <a href="https://ruby-doc.org/3.2.2/Integer.html">ruby-doc.org/3.2.2/Integer.html</a>.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Quelques résultats à connaître</span></p>
+      <div class="tableau compact">
+        <table>
+          <caption>Opérations sur les nombres (vérifiées en Ruby 3.4)</caption>
+          <thead><tr><th>Expression</th><th>Résultat</th><th>Remarque</th></tr></thead>
+          <tbody>
+            <tr><td><code>7 / 2</code></td><td><code>3</code></td><td>Division entière entre deux <code>Integer</code></td></tr>
+            <tr><td><code>-7 / 2</code></td><td><code>-4</code></td><td>Arrondi vers le bas, et non vers zéro comme en C</td></tr>
+            <tr><td><code>7 % 3</code></td><td><code>1</code></td><td>Reste de la division entière</td></tr>
+            <tr><td><code>7.0 / 2</code></td><td><code>3.5</code></td><td>Un <code>Float</code> suffit pour une division réelle</td></tr>
+            <tr><td><code>2**100</code></td><td><code>1267650600228229401496703205376</code></td><td>Toujours un <code>Integer</code></td></tr>
+            <tr><td><code>0.1 + 0.2</code></td><td><code>0.30000000000000004</code></td><td>Arrondi des flottants binaires</td></tr>
+            <tr><td><code>"42".to_i + 1</code></td><td><code>43</code></td><td>Conversion explicite de la chaîne</td></tr>
+            <tr><td><code>42.to_s + "1"</code></td><td><code>"421"</code></td><td>Conversion explicite du nombre</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>"42" + 1</code> lève une erreur (<code>TypeError</code>) : Ruby ne convertit pas implicitement une chaîne en nombre ni un nombre en chaîne.</p>
+    </div>
+
+    <h3>Conditionnelles <span class="ref">p. 28–30</span></h3>
+    <p>Les structures de contrôle de Ruby sont des <strong>expressions</strong> : elles ont donc une valeur.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Ce qui est vrai, ce qui est faux</span></p>
+      <p><code>false</code> et <code>nil</code> sont considérés comme faux ; toute autre valeur est vraie.</p>
+      <p><span class="badge ajout">Ajout</span> Contrairement au C, <code>0</code> et la chaîne vide <code>""</code> sont donc <strong>vrais</strong> : <code>if 0</code> exécute sa branche.</p>
+    </div>
+
+    <h4>if</h4>
+    <div class="colonnes">
+<pre data-fichier="Forme classique"><code class="language-ruby">if expr [then]
+  expr...
+[elsif expr [then]
+  expr...]...
+[else
+  expr...]
+end</code></pre>
+<pre data-fichier="Forme modificatrice"><code class="language-ruby">expr if expr
+# exécute l'expression de gauche
+# si l'expression de droite est vraie</code></pre>
+    </div>
+    <p>Les crochets indiquent les parties facultatives. Ruby utilise <code>elsif</code>, et non <code>else if</code> ni <code>elif</code>.</p>
+<pre data-fichier="Exemples"><code class="language-ruby">if age &gt;= 12 then
+  print "adult fee\n"
+else
+  print "child fee\n"
+end
+
+# if est une expression : sa valeur peut être affectée
+gender = if foo.gender == "male" then "male" else "female" end
+
+# Forme modificatrice
+print "debug\n" if $debug</code></pre>
+    <p><span class="badge ajout">Ajout</span> Un <code>if</code> sans <code>else</code> dont la condition est fausse vaut <code>nil</code> : après <code>x = if false then 1 end</code>, <code>x</code> vaut <code>nil</code>.</p>
+
+    <h4>unless</h4>
+    <p><code>unless</code> renverse la condition : <code>unless cond … else … end</code> équivaut à <code>if !(cond) … else … end</code>.</p>
+    <div class="colonnes">
+<pre data-fichier="Forme classique"><code class="language-ruby">unless expr [then]
+  expr...
+[else
+  expr...]
+end</code></pre>
+<pre data-fichier="Forme modificatrice"><code class="language-ruby">expr unless expr
+# exécute l'expression de gauche
+# si l'expression de droite est fausse</code></pre>
+    </div>
+<pre data-fichier="Exemples"><code class="language-ruby">unless $baby
+  feed_meat
+else
+  feed_milk
+end
+
+print "stop\n" unless valid($passwd)</code></pre>
+
+    <h4>case</h4>
+<pre data-fichier="Syntaxe"><code class="language-ruby">case expr
+[when expr [, expr]... [then]
+  expr...]...
+[else
+  expr...]
+end</code></pre>
+<pre data-fichier="Exemple"><code class="language-ruby">age = 12
+case age
+when 0..2
+  print "baby"
+when 3..6
+  print "little child"
+when 7..12
+  print "child"
+when 12..18      # 12 est déjà traité par "child"
+  print "youth"
+else
+  print "adult"
+end
+# =&gt; affiche "child"</code></pre>
+    <p>L'expression <code>case</code> est elle aussi une conditionnelle. Les comparaisons sont réalisées avec l'opérateur d'égalité de cas <code>===</code>, dont la sémantique varie selon les objets considérés : appartenance pour un intervalle, correspondance pour une expression régulière, égalité pour une valeur simple, etc. Les branches sont essayées dans l'ordre, et seule la première qui convient est exécutée.</p>
+    <div class="colonnes">
+<pre data-fichier="Forme case"><code class="language-ruby">case expr0
+when expr1, expr2
+  stmt1
+when expr3, expr4
+  stmt2
+else
+  stmt3
+end</code></pre>
+<pre data-fichier="Forme if équivalente"><code class="language-ruby">_tmp = expr0
+if expr1 === _tmp || expr2 === _tmp
+  stmt1
+elsif expr3 === _tmp || expr4 === _tmp
+  stmt2
+else
+  stmt3
+end</code></pre>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>=== selon le receveur</span></p>
+      <p>C'est la valeur écrite après <code>when</code> qui reçoit le message <code>===</code>, avec la valeur testée en argument. Chaque classe lui donne son sens :</p>
+<pre><code class="language-ruby">(1..5) === 3        # =&gt; true   Range : appartenance à l'intervalle
+/ab/ === "cabane"   # =&gt; true   Regexp : correspondance du motif
+Integer === 3       # =&gt; true   classe : 3 est-il une instance de Integer ?
+String === 3        # =&gt; false
+3 === 3             # =&gt; true   valeur simple : égalité</code></pre>
+      <p>On peut donc écrire <code>when String</code> pour traiter à part les chaînes, ou <code>when /^h/</code> pour les chaînes qui commencent par h.</p>
+    </div>
+
+    <h3>Itérations <span class="ref">p. 30</span></h3>
+    <p>Ruby propose les formes classiques de répétition <code>while</code> et <code>until</code>. Il existe aussi une autre manière, plus idiomatique, de réaliser des itérations : les itérateurs sur les collections, présentés dans le cours 4.</p>
+    <div class="colonnes">
+      <div class="colonne">
+        <p class="colonne-titre"><code>while</code></p>
+<pre><code class="language-ruby">while expr [do]
+  ...
+end
+
+expr while expr</code></pre>
+        <p>Exécute le corps tant que la condition est vraie. La forme modificatrice répète l'évaluation de l'expression de gauche tant que celle de droite est vraie.</p>
+      </div>
+      <div class="colonne">
+        <p class="colonne-titre"><code>until</code></p>
+<pre><code class="language-ruby">until expr [do]
+  ...
+end
+
+expr until expr</code></pre>
+        <p>Exécute le corps jusqu'à ce que la condition soit vraie. La forme modificatrice répète l'évaluation de l'expression de gauche jusqu'à ce que celle de droite soit vraie.</p>
+      </div>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Les deux boucles et la forme modificatrice</span> <span class="badge ajout">Ajout</span></p>
+<pre><code class="language-ruby">i = 1
+while i &lt;= 3
+  print i, " "       # affiche 1 2 3
+  i += 1
+end
+
+until i == 0
+  print i, " "       # affiche 4 3 2 1
+  i -= 1
+end
+
+n = 1
+n *= 2 while n &lt; 100 # n vaut 128
+
+for k in 2..4        # boucle for sur un intervalle, comme dans facto
+  print k            # affiche 234
+end</code></pre>
+      <p>Ruby n'a pas de boucle <code>for (i = 0; i &lt; n; i++)</code> à la C. Le <code>for … in</code> de <code>fonctions_math.rb</code> parcourt un intervalle ; il repose en réalité sur l'itérateur <code>each</code> du cours 4.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Les trois principes de base de Ruby : <strong>tout est objet</strong> ; <strong>tout objet est instance d'une classe</strong> ; <strong>programmer, c'est envoyer des messages à des objets</strong>. Les classes elles-mêmes sont des objets.</li>
+        <li>Un message est formé d'un sélecteur et d'arguments. Il retourne toujours un objet et s'exécute dans le contexte du receveur : sa méthode est cherchée dans la classe du receveur, et <code>@x</code> y désigne le champ du receveur.</li>
+        <li>Sans <code>return</code>, une méthode retourne le résultat de la dernière expression évaluée.</li>
+        <li>Les opérateurs (<code>+</code>, <code>==</code>, <code>[]</code>, <code>[]=</code>) sont des messages : <code>21 + 3</code> est <code>21.+(3)</code>. Une classe, même de base, peut être rouverte pour ajouter ou redéfinir des méthodes, avec prudence.</li>
+        <li>Variables : locale (<code>nom</code>), d'instance (<code>@nom</code>), de classe (<code>@@nom</code>), globale (<code>$nom</code>), constante (<code>Nom</code>). Rien n'est déclaré, et le typage est dynamique.</li>
+        <li>Les accesseurs se génèrent avec <code>attr_reader</code>, <code>attr_writer</code> et <code>attr_accessor</code> ; pour <code>@solde</code>, ils s'appellent <code>solde</code> et <code>solde=</code>.</li>
+        <li>Conventions : prédicat en <code>?</code>, méthode destructive en <code>!</code>, variables d'instance décrites en commentaire en tête de classe (exigé dans le module).</li>
+        <li><code>new</code> alloue l'objet puis appelle <code>initialize</code>, méthode privée, avec les mêmes arguments. Avec des paramètres de création : <code>private_class_method :new</code> et une méthode de classe au nom métier (<code>ouvrir</code>, <code>creer</code>).</li>
+        <li>Chaînes : <code>"…"</code> interprète <code>\n</code> et <code>#{…}</code>, <code>'…'</code> non. <code>==</code> compare le contenu, <code>equal?</code> l'identité.</li>
+        <li>Seuls <code>false</code> et <code>nil</code> sont faux. <code>if</code>, <code>unless</code> et <code>case</code> sont des expressions ; <code>case</code> compare avec <code>===</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Dans <code>"toto".size</code>, quels sont le receveur, le sélecteur et le résultat ?</summary>
+        <div><p>Le receveur est la chaîne <code>"toto"</code>, instance de <code>String</code> ; le sélecteur est <code>size</code>, sans argument (message unaire). Le résultat est l'objet <code>4</code>, instance de <code>Integer</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Avec <code>def depose(s) @solde += s end</code> et un compte dont le solde vaut 5000, que retourne <code>unCompte.depose(2000)</code> ?</summary>
+        <div><p>7000. Il n'y a pas de <code>return</code> : la méthode retourne la valeur de la dernière expression, l'affectation <code>@solde += s</code>, qui vaut la nouvelle valeur de <code>@solde</code>, celle de <code>unCompte</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi <code>1234.reverse</code> lève-t-il <code>NoMethodError</code>, et comment le faire fonctionner ?</summary>
+        <div><p><code>1234</code> est un <code>Integer</code>, et <code>reverse</code> n'est pas dans le catalogue des méthodes de <code>Integer</code>, seulement dans celui de <code>String</code>. On peut rouvrir <code>Integer</code> et y définir <code>reverse</code>, par exemple <code>self.to_s.reverse.to_i</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que désignent <code>@solde</code>, <code>solde</code> et <code>solde=</code> ? Et que fait <code>solde = 0</code> écrit dans une méthode de <code>Compte</code> ?</summary>
+        <div><p>La variable d'instance, la méthode de consultation et la méthode de modification. <code>solde = 0</code> crée une variable <em>locale</em> <code>solde</code> et ne modifie pas le compte : il faut <code>self.solde = 0</code> ou <code>@solde = 0</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que valent <code>"foo" == "foo"</code>, <code>"foo".eql?("foo")</code> et <code>"foo".equal?("foo")</code> ?</summary>
+        <div><p><code>true</code>, <code>true</code>, <code>false</code>. Les deux premiers comparent le contenu (et le type pour <code>eql?</code>) ; <code>equal?</code> compare l'identité, et les deux littéraux sont deux objets distincts.</p></div>
+      </details>
+      <details class="carte">
+        <summary><code>Compte.new</code> lève <code>ArgumentError: wrong number of arguments (given 0, expected 3)</code>. Pourquoi ? Et quelle démarche adopter pour cette classe ?</summary>
+        <div><p><code>new</code> transmet ses arguments à <code>initialize</code>, qui en attend 3 : ils doivent être fournis à la création. Puisqu'il y a des paramètres de création et des initialisations, on interdit <code>new</code> (<code>private_class_method :new</code>), on écrit une méthode de classe métier comme <code>Compte.ouvrir(numero, titulaire, solde)</code> qui appelle <code>new</code>, et <code>initialize</code> prend les mêmes 3 paramètres.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que vaut <code>@@lecture</code> après trois appels à <code>play</code> sur <code>s1</code> et deux sur <code>s2</code> ? Et le <code>@lecture</code> de <code>s1</code> ?</summary>
+        <div><p><code>@@lecture</code> vaut 5 : c'est une variable de classe, partagée par toutes les chansons. Le <code>@lecture</code> de <code>s1</code> vaut 3 : c'est une variable d'instance, propre à <code>s1</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Qu'affiche <code>puts(if 0 then "vrai" else "faux" end)</code> ? Et pourquoi le C affiche-t-il un 21! négatif ?</summary>
+        <div><p><code>vrai</code> : en Ruby, seuls <code>false</code> et <code>nil</code> sont faux. En C (comme en Java), 21! dépasse la capacité d'un <code>long</code> de 64 bits (\(2^{63} - 1 \approx 9{,}22 \times 10^{18}\)) : seuls les 64 bits de poids faible sont gardés, lus comme un nombre négatif, sans aucun message d'erreur.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Références</h2>
+    <ul>
+      <li>Prendre en main RDoc, point d'entrée : <a href="https://blog.firsthand.ca/2010/09/ruby-rdoc-example.html">blog.firsthand.ca/2010/09/ruby-rdoc-example.html</a>.</li>
+      <li>Prendre en main la documentation Ruby : <a href="https://ruby-doc.org/3.2.2/">ruby-doc.org/3.2.2</a>.</li>
+      <li>Pratiquer Ruby : <a href="https://www.ruby-lang.org/fr/">www.ruby-lang.org/fr</a>.</li>
+      <li>David Thomas, Andrew Hunt, <cite>Programming Ruby — The Pragmatic Programmer's Guide</cite>, Addison-Wesley.</li>
+    </ul>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-01-concepts-principes.html"><small>← Précédent</small>Concepts et principes de la programmation objet</a>
+    <a class="suivant" href="cours-03-heritage.html"><small>Suivant →</small>L'héritage</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">POO · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

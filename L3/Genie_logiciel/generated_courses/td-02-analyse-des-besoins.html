@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="gl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TD 2 · Analyse des besoins · Génie logiciel L3</title>
+<meta name="description" content="TD 2 interactif de génie logiciel : analyse des besoins à partir des cahiers des charges SIVEX et PlanEditor (acteurs, rôles, processus métier, schéma des concepts métier, besoins d'IHM, contraintes techniques), à faire dans la page.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">Génie logiciel</a>
+    <span aria-current="page">TD 2 · Analyse des besoins</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Génie logiciel</span> TD 2 · L3 S5 · interactif</p>
+    <h1>TD 2 : analyse des besoins à partir d'un cahier des charges</h1>
+    <p class="chapeau">Deux extraits de cahiers des charges, SIVEX (messagerie de colis) et PlanEditor (planning des soutenances de stage), à analyser : acteurs, rôles, processus métier, schéma des concepts métier, puis besoins d'IHM et contraintes techniques de PlanEditor. Le TD met en œuvre le cours 3, et chaque réponse se construit dans la page.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TD/TD2/L3-175UD15-TD1_2.pdf">L3-175UD15-TD1_2.pdf</a> (fiche 2) ; annexes : <a href="../TD/TD2/L3-175EN002-TD2_part1-CDC.pdf">cas SIVEX</a>, <a href="../TD/TD2/L3-175UD05-TD1_part2-CDC.pdf">cas PlanEditor</a></dd></div>
+      <div><dt>Enseignante</dt><dd>C. Piau-Toffolon (sujet adapté de T. Lemeunier)</dd></div>
+      <div><dt>Cours</dt><dd><a href="cours-03-cahier-des-charges.html">Cours 3 · Cahier des charges</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-10">10 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Repérer dans un cahier des charges les acteurs d'un système, leurs rôles et leurs processus métier.</li>
+        <li>Dégager les concepts métier et leurs relations dans un schéma de synthèse.</li>
+        <li>Distinguer besoins fonctionnels, besoins d'IHM et contraintes techniques.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Notions utilisées</p>
+      <ul>
+        <li><a href="cours-03-cahier-des-charges.html">Cours 3</a> : analyse des besoins, acteurs, besoins fonctionnels et non fonctionnels, contraintes.</li>
+        <li><a href="cours-04-modeles-uml.html">Cours 4</a> : acteurs et diagramme de classes, pour le schéma des concepts.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Mode d'emploi</p>
+    <ul>
+      <li>Les réponses rédigées vont dans les zones de texte ; le schéma des concepts métier se dessine (une classe par concept, une association par relation) ou s'écrit dans la vue texte (« Les deux »).</li>
+      <li>« Vérifier » contrôle la forme du schéma, « Comparer » mesure l'écart avec une solution proposée, « Claude » répond aux questions et corrige.</li>
+      <li>Les solutions ne viennent pas de l'enseignante : elles restent cachées, et un écart n'est pas forcément une erreur, surtout dans le nom des concepts.</li>
+      <li>Le travail s'enregistre tout seul. Avec le serveur local (<code>studies/lancer.bat</code>), il va dans <code>td_results/</code> et Claude est disponible.</li>
+    </ul>
+  </div>
+
+  <div class="bloc exercice">
+    <p class="bloc-titre">Fiche 2 <span>Énoncé</span></p>
+    <p>Le but du TD est de faire l'analyse des besoins d'un système informatique à partir des extraits de cahier des charges des deux études de cas donnés en annexe (cas SIVEX et cas PlanEditor).</p>
+    <ol type="a">
+      <li>Donnez une liste complète des acteurs.</li>
+      <li>Pour chaque acteur, donnez son rôle métier décrit succinctement.</li>
+      <li>Pour chaque acteur, donnez l'ensemble des processus métier décrits en termes de concepts métiers.</li>
+      <li>Donnez un schéma de synthèse des concepts métiers et de leurs relations.</li>
+      <li>Donnez une liste complète des besoins en IHM (pour le cas PlanEditor).</li>
+      <li>Donnez une liste complète des contraintes techniques (pour le cas PlanEditor).</li>
+    </ol>
+    <p>Seuls seront acceptés des descriptions en langue naturelle et des schémas synthétiques.</p>
+  </div>
+  <p><span class="badge a-verifier">À vérifier</span> La fiche ne dit pas si les questions a à d portent sur les deux cas : la page les pose pour chacun, et les questions e et f pour PlanEditor seul, comme indiqué.</p>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Cas SIVEX <span class="ref">annexe 1</span></h2>
+    <p>Le texte du cahier des charges est repris dans le dépliant ci-dessous, pour l'avoir sous les yeux en répondant.</p>
+    <details class="depliant">
+      <summary>Étude de cas : le système SIVEX (texte du cahier des charges)</summary>
+      <div>
+        <p><small>Source : <a href="../TD/TD2/L3-175EN002-TD2_part1-CDC.pdf">L3-175EN002-TD2_part1-CDC.pdf</a>. Étude de cas tirée du livre de Pascal Roques et Franck Vallée, « UML en action, de l'analyse des besoins à la conception en Java », Eyrolles, 2001.</small></p>
+        <h3>1. Présentation du projet</h3>
+        <p>VExpress est une société dont l'activité principale est la messagerie. Cette activité consiste en l'enlèvement, le transport et la livraison de colis.</p>
+        <p>VExpress possède 800 véhicules répartis sur 70 agences. La société traite un volume moyen de 40 000 colis par jour (enlèvements et livraisons) et compte 3 000 employés.</p>
+        <p>VExpress souhaite se doter d'un système informatique performant afin de :</p>
+        <ul>
+          <li>maîtriser au plus près l'acheminement des colis par la connaissance de leur localisation et de leur état ;</li>
+          <li>suivre la réalisation des commandes ainsi que la gestion comptable des factures et des règlements ;</li>
+          <li>offrir aux clients la possibilité de suivre l'acheminement de leurs colis via une connexion Internet.</li>
+        </ul>
+        <p>La durée de vie du nouveau système, appelé SIVEX (Système d'Information de VExpress), est estimée à 6 ans.</p>
+        <h3>2. Grands choix techniques</h3>
+        <p>Afin de maîtriser les risques, VExpress souhaite utiliser une approche itérative et incrémentale, fondée sur le processus en Y.</p>
+        <p>Après une première étude menée par un cabinet-conseil, la direction générale de VExpress a officialisé le choix d'un certain nombre de techniques clés pour ce projet stratégique, et donné son feu vert à un vaste plan de formation des informaticiens de la société. Ces technologies clés sont principalement : UML ; les architectures 3-tiers ; Internet ; Java (avec RMI et JDBC) ; les SGBDR. (Une figure les situe : postes Java et Internet, logique métier reliée par RMI, SGBDR.)</p>
+        <h3>3. Recueil des besoins</h3>
+        <p>Un premier tour d'horizon des besoins exprimés par les employés de l'entreprise a permis d'établir le cahier des charges préliminaire suivant.</p>
+        <p><strong>3.1 Traitement des commandes.</strong> Les commandes sont saisies par un réceptionniste à partir des informations fournies par les clients. Lors de la prise de commande, le réceptionniste doit disposer du coût estimé de la prestation et des dates probables d'enlèvement et de livraison. Ces informations doivent pouvoir être éditées et envoyées directement par fax ou courrier électronique au client.</p>
+        <p>Lors d'une première prise de commande, le réceptionniste doit enregistrer les caractéristiques du nouveau client dans le système.</p>
+        <p>Une fois confirmées, les commandes sont mises à disposition immédiate du service administratif et des agences chargées du transport. Ces informations portent principalement sur l'adresse d'enlèvement, l'adresse de livraison et la description de chaque colis.</p>
+        <p>Un en-cours de commande est ensuite maintenu à jour par le système. Il précise la localisation des colis de la commande, ainsi que les dates d'enlèvement et de livraison. Le réceptionniste, ou le client lui-même via Internet, est par la suite à même de consulter ces informations de suivi.</p>
+        <p><strong>3.2 Administration.</strong> Les factures des commandes réalisées et leur consolidation journalière sont transmises en fin de journée à un progiciel de comptabilité.</p>
+        <p>Un comptable émet les factures des clients qui règlent leurs commandes en différé. Par ailleurs, il saisit les différents règlements reçus et les répartit sur les factures.</p>
+        <p>Le système peut éditer les lettres de relance pour les factures non payées en fonction de critères dépendant du client (délai et/ou découvert autorisé). Le système permet ainsi au comptable de suivre ses contentieux de paiement.</p>
+        <p><strong>3.3 Création de mission.</strong> Un répartiteur crée les missions d'acheminement pour son agence. Une mission traite un ensemble de commandes qui transitent par l'agence. À cet effet, le répartiteur définit l'ordre des étapes (points de passage pour enlever ou livrer les commandes), puis affecte à la mission un véhicule et un chauffeur.</p>
+        <p>Le répartiteur s'appuie sur les ressources (véhicules et chauffeurs) dont il dispose à son agence. Le cas échéant, il peut utiliser temporairement des ressources d'une autre agence déléguées par le responsable logistique.</p>
+        <p>On distingue trois types de missions : l'enlèvement de colis, leur livraison et le convoyage entre deux agences (traction).</p>
+        <p><strong>3.4 Suivi de mission.</strong> Un chauffeur part en tournée avec les bordereaux décrivant les commandes à livrer sur les différents sites de chaque étape de la mission. Il est équipé d'un terminal portable lui permettant d'indiquer en temps réel l'état de sa mission : les arrêts et les départs aux différentes étapes, les acquittements des clients, ainsi que les incidents occasionnels qu'il peut rencontrer (panne, retard, refus de règlement, absence du client…).</p>
+        <p>Dès qu'une mission se déroule de façon anormale, le système doit en avertir immédiatement le répartiteur.</p>
+        <p><strong>3.5 Traitement des colis.</strong> Au retour d'une mission d'enlèvement, un opérateur de quai identifie les colis à partir de la liste établie pour chaque commande. À l'aide d'une bascule reliée au système, les colis sont pesés afin de vérifier les dépassements tarifaires de charge. Une étiquette à code-barre, imprimée par le système, est alors collée sur le colis par l'opérateur de quai.</p>
+        <p>Chaque fois qu'un colis transite sur un quai (départ de livraison, départ ou arrivée de traction), un opérateur de quai pointe l'étiquette du colis afin de permettre sa localisation en temps réel.</p>
+        <p>Les opérateurs de quai doivent également disposer d'un mode « inventaire » qui leur permet de pointer tous les colis présents sur le quai et de détecter les colis oubliés (présents sur le quai depuis plus de 48 h).</p>
+        <p><strong>3.6 Logistique.</strong> Le responsable logistique doit effectuer les tâches suivantes :</p>
+        <ul>
+          <li>il définit la liste des agences et des ressources (véhicules et chauffeurs) ainsi que la répartition de ces ressources entre les agences ;</li>
+          <li>il définit différents plans de transport. Chacun de ces plans se compose des zones de redistribution et des zones terminales des agences, ainsi que des connexions à appliquer pour l'acheminement des commandes. Un seul plan de transport est applicable à un instant donné pour l'ensemble du réseau ;</li>
+          <li>enfin, le responsable logistique consulte régulièrement les statistiques de transport (fréquentations, accidents, retards, et ce par site, par agence et par région), afin d'optimiser ses plans de transport.</li>
+        </ul>
+        <h3>4. Recueil des besoins opérationnels</h3>
+        <p><strong>4.1 Sécurité.</strong> Lors de la connexion, chaque employé doit être reconnu du système par un nom, un mot de passe et la fonction qu'il occupe (par agence).</p>
+        <p>Un client connecté via Internet doit également être identifié par un mot de passe et n'accéder qu'aux informations d'en-cours de commande qui le concernent.</p>
+        <p>Un administrateur système est chargé de définir les profils des utilisateurs.</p>
+        <p><strong>4.2 Volume de données.</strong> Certaines données doivent être traitées en temps réel : le suivi de l'état courant des missions, celui des incidents, la création et la modification des commandes. D'autres données peuvent faire l'objet de traitement « batch » : édition journalière des factures, suivi statistique de l'activité.</p>
+        <p>Une première évaluation du volume de données a produit les résultats suivants.</p>
+        <div class="tableau compact">
+        <table>
+          <caption>Données d'exploitation</caption>
+          <thead><tr><th>Type de données</th><th>Volume unitaire (Ko)</th><th>Quantité (par mois)</th><th>Durée de rétention (mois)</th><th>Volume total (Mo)</th></tr></thead>
+          <tbody>
+            <tr><td>Bon de commande</td><td>0,5</td><td>300 000</td><td>6</td><td>9 000</td></tr>
+            <tr><td>Facture</td><td>0,5</td><td>200 000</td><td>6</td><td>6 000</td></tr>
+            <tr><td>Historique événements</td><td>0,1</td><td>900 000</td><td>6</td><td>540</td></tr>
+            <tr><td>Colis</td><td>0,2</td><td>1 200 000</td><td>6</td><td>1 440</td></tr>
+            <tr><td>Bordereau</td><td>1</td><td>46 000</td><td>6</td><td>276</td></tr>
+            <tr><td>Mission</td><td>0,5</td><td>46 000</td><td>6</td><td>138</td></tr>
+            <tr><td>Inventaire</td><td>4 000</td><td>100</td><td>6</td><td>2 400</td></tr>
+            <tr><td>Total</td><td></td><td></td><td></td><td>19 764</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <div class="tableau compact">
+        <table>
+          <caption>Données statistiques</caption>
+          <thead><tr><th>Type de données</th><th>Volume unitaire (Ko)</th><th>Quantité</th><th>Volume total (Mo)</th></tr></thead>
+          <tbody>
+            <tr><td>Client</td><td>1</td><td>30 000</td><td>30</td></tr>
+            <tr><td>Plan de transport</td><td>1 000</td><td>4</td><td>4</td></tr>
+            <tr><td>Véhicule</td><td>1</td><td>800</td><td>0,8</td></tr>
+            <tr><td>Employé</td><td>0,1</td><td>3 000</td><td>0,3</td></tr>
+            <tr><td>Total</td><td></td><td></td><td>35,1</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </details>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Fiche 2 <span>SIVEX, question a</span></p>
+      <p>Donnez une liste complète des acteurs.</p>
+    </div>
+    <div class="atelier" id="td2-sivex-a" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "SIVEX · a. Acteurs",
+  "options": {
+    "lignes": 5
+  },
+  "solution": "Acteurs humains : le réceptionniste, le client (via Internet), le comptable, le répartiteur, le chauffeur, l'opérateur de quai, le responsable logistique, l'administrateur système.\nActeur non humain : le progiciel de comptabilité, qui reçoit les factures et leur consolidation journalière.\nNe sont pas des acteurs : la bascule, le terminal portable et l'imprimante d'étiquettes (des périphériques reliés au système, dans sa frontière), le service administratif et les agences (des organisations, représentées par les rôles ci-dessus).",
+  "explication": "<p>Un acteur est un rôle extérieur au système qui interagit directement avec lui. Le client est un acteur parce qu'il consulte le suivi par Internet ; quand il passe commande par téléphone, c'est le réceptionniste qui saisit.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Fiche 2 <span>SIVEX, question b</span></p>
+      <p>Pour chaque acteur, donnez son rôle métier décrit succinctement.</p>
+    </div>
+    <div class="atelier" id="td2-sivex-b" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "SIVEX · b. Rôles métier",
+  "options": {
+    "lignes": 8
+  },
+  "solution": "Réceptionniste : prend les commandes des clients et les renseigne sur leur suivi.\nClient : commande des enlèvements et livraisons de colis, suit ses commandes.\nComptable : facture les clients en différé, enregistre les règlements, suit les impayés.\nRépartiteur : organise les missions d'acheminement de son agence.\nChauffeur : réalise les missions (enlèvements, livraisons, tractions) et en rend compte.\nOpérateur de quai : identifie, pèse, étiquette et pointe les colis sur les quais.\nResponsable logistique : organise le réseau (agences, ressources, plans de transport) et l'optimise.\nAdministrateur système : gère les utilisateurs et leurs profils.\nProgiciel de comptabilité : tient la comptabilité à partir des factures transmises."
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Fiche 2 <span>SIVEX, question c</span></p>
+      <p>Pour chaque acteur, donnez l'ensemble des processus métier décrits en termes de concepts métiers.</p>
+    </div>
+    <div class="atelier" id="td2-sivex-c" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "SIVEX · c. Processus métier",
+  "options": {
+    "lignes": 10
+  },
+  "solution": "Réceptionniste : saisir une commande (adresses d'enlèvement et de livraison, colis), avec son coût estimé et ses dates probables ; éditer et envoyer ces informations au client ; enregistrer un nouveau client ; consulter l'en-cours d'une commande.\nClient : consulter l'en-cours de ses commandes (localisation des colis, dates) par Internet.\nComptable : émettre les factures des clients en différé ; saisir les règlements et les répartir sur les factures ; éditer les lettres de relance ; suivre les contentieux de paiement.\nRépartiteur : créer une mission (enlèvement, livraison ou traction) à partir des commandes ; définir l'ordre des étapes ; affecter un véhicule et un chauffeur (au besoin des ressources déléguées) ; être averti des missions anormales.\nChauffeur : signaler les arrêts et départs aux étapes, les acquittements des clients et les incidents.\nOpérateur de quai : identifier et peser les colis d'une commande, imprimer et coller l'étiquette ; pointer les colis à chaque passage sur un quai ; faire l'inventaire du quai et détecter les colis oubliés.\nResponsable logistique : définir les agences et les ressources et leur répartition ; déléguer des ressources ; définir les plans de transport (zones, connexions) ; consulter les statistiques de transport.\nAdministrateur système : définir les profils des utilisateurs.\nProgiciel de comptabilité : recevoir les factures et leur consolidation journalière."
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Fiche 2 <span>SIVEX, question d</span></p>
+      <p>Donnez un schéma de synthèse des concepts métiers et de leurs relations.</p>
+    </div>
+    <div class="atelier" id="td2-sivex-d" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "SIVEX · d. Concepts métier",
+  "consigne": "<p>Une classe par concept métier, une association nommée par relation, sans attributs ; les noms sans espaces (<code>PlanDeTransport</code>).</p>",
+  "hauteur": 520,
+  "solution": [
+    "classe Client",
+    "classe Commande",
+    "classe Colis",
+    "classe Facture",
+    "classe Reglement",
+    "classe Agence",
+    "classe Mission",
+    "classe Enlevement",
+    "classe Livraison",
+    "classe Traction",
+    "classe Etape",
+    "classe Vehicule",
+    "classe Chauffeur",
+    "classe Incident",
+    "classe PlanDeTransport",
+    "classe Zone",
+    "Client \"1\" -- \"*\" Commande : passe >",
+    "Commande \"1\" *-- \"1..*\" Colis : comprend >",
+    "Commande \"1..*\" -- \"0..1\" Facture : est facturée par >",
+    "Reglement \"*\" -- \"*\" Facture : est réparti sur >",
+    "Agence \"1\" -- \"*\" Mission : organise >",
+    "Agence \"1\" -- \"*\" Vehicule : dispose de >",
+    "Agence \"1\" -- \"*\" Chauffeur : emploie >",
+    "Mission \"1\" *-- \"1..*\" Etape : suit >",
+    "Etape \"*\" -- \"*\" Commande : enlève ou livre >",
+    "Mission \"*\" -- \"1\" Vehicule : utilise >",
+    "Mission \"*\" -- \"1\" Chauffeur : est confiée à >",
+    "Mission \"1\" -- \"*\" Incident : signale >",
+    "Enlevement --|> Mission",
+    "Livraison --|> Mission",
+    "Traction --|> Mission",
+    "PlanDeTransport \"1\" *-- \"*\" Zone : se compose de >",
+    "Agence \"1\" -- \"*\" Zone : dessert >"
+  ],
+  "explication": "<p>Solution proposée, proche de celle du livre <em>UML en action</em> : les trois types de missions spécialisent <code>Mission</code>, une mission ordonne ses étapes, et le plan de transport regroupe les zones des agences. On peut aussi faire apparaître le bordereau, l'en-cours de commande, le site ou l'adresse, la connexion entre zones et l'employé. Le schéma attendu est « synthétique » : les attributs ne sont pas demandés.</p>"
+}
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Cas PlanEditor <span class="ref">annexe 2</span></h2>
+    <p>Même démarche sur le second cahier des charges, avec en plus les besoins d'IHM et les contraintes techniques.</p>
+    <details class="depliant">
+      <summary>Étude de cas : le système PlanEditor (texte du cahier des charges)</summary>
+      <div>
+        <p><small>Source : <a href="../TD/TD2/L3-175UD05-TD1_part2-CDC.pdf">L3-175UD05-TD1_part2-CDC.pdf</a>. Ce logiciel a fait l'objet d'un projet étudiant de M1 du département informatique de l'université du Maine en 2006-2007.</small></p>
+        <h3>1. Présentation du projet</h3>
+        <p>Le responsable des stages est chargé d'organiser le calendrier mis en place pour les soutenances des différents élèves du département informatique (toutes filières confondues). Cela représente en moyenne 100 soutenances à planifier. Il utilise un site web qui permet de manipuler les informations concernant les conventions de stages, les entreprises, les étudiants, les parrains, les promotions et les contacts dans les entreprises. Il planifie donc les soutenances sur papier en consultant les informations nécessaires sur le site web.</p>
+        <p>L'intérêt de la création de notre logiciel permettra un confort d'utilisation pour l'utilisateur ainsi qu'une optimisation de son activité. Tout d'abord, une mise à jour de la base de données utilisée par le site web sera effectuée. Elle sera plus souple, plus performante et contiendra plus d'informations. En effet, certaines informations sont manquantes en vue des exigences du client.</p>
+        <p>En ce qui concerne l'optimisation de l'activité, le client aura une nette amélioration de la productivité par rapport à sa planification actuelle. Il passera d'une organisation base de données/planification papier à une application intuitive, se chargeant elle-même de la vérification des différentes contraintes de planification.</p>
+        <p><strong>1.1 Description des parties prenantes et des responsabilités.</strong> Dans notre projet, le client (utilisateur principal) est M. Lemeunier, maître de conférences à l'université du Maine. Il est chargé de planifier les soutenances de l'ensemble des étudiants du département.</p>
+        <p>Le public ciblé est l'ensemble des personnes qui vont bénéficier directement ou indirectement du logiciel :</p>
+        <ul>
+          <li>les étudiants qui effectuent leur formation au sein de l'IUP et qui la finalisent par un stage. Ces étudiants ont différentes caractéristiques (nom, prénom) et sont en relation avec d'autres objets (promotion, conventions) ;</li>
+          <li>les parrains sont des enseignants du département. Ils sont affiliés à un étudiant dans le cadre de la convention, et peuvent être affectés en tant que deuxième membre du jury dans une soutenance ;</li>
+          <li>les contacts d'entreprise sont les personnes responsables de l'étudiant dans l'entreprise durant son stage. Ils possèdent des caractéristiques (nom, prénom, tél., fax, une entreprise) et sont affectés eux aussi à une convention ;</li>
+          <li>l'entreprise du contact possède diverses informations (nom, adresse, code postal, ville, pays, mail) et d'autres informations restituées par l'application, comme la liste noire (entreprise peu fiable) et la confidentialité (rend l'entreprise visible ou non) ;</li>
+          <li>le département informatique est le commanditaire principal du logiciel ;</li>
+          <li>l'équipe de développement est composée de 5 étudiants en master 1 spécialité CHM (communication homme-machine) : un chef de projet, un documentaliste et trois développeurs.</li>
+        </ul>
+        <p><strong>1.2 Schéma de l'application.</strong> La base de données existe déjà lors de la mise en place du projet. Il faut la modifier en créant de nouvelles tables afin de stocker des informations utiles pour « PlanEditor ». La base de données contient certaines informations utiles à la création d'un planning de soutenances avec les tables : Convention, Etudiant, Promotion, Parrain, Entreprise, Contact. La lecture des données qu'elle contient permettra de charger dans l'application « PlanEditor » les différentes conventions prêtes à engendrer une soutenance.</p>
+        <p>Le site web existe également avant la mise en place du projet. Il faudra le modifier pour permettre l'affichage de pages contenant un planning préalablement exporté de « PlanEditor ». « PlanEditor » permettra la création de plannings de soutenance à partir d'informations contenues dans la base de données et l'exportation de ces plannings sur le site des stages.</p>
+        <h3>2. Objectifs</h3>
+        <p><strong>2.1 Objectifs de haut niveau.</strong> Le but principal de l'application est de simplifier l'organisation du planning des soutenances. Elle permettra de s'assurer de la cohérence des créneaux et des lieux de soutenance (non-chevauchement, salles disponibles…) grâce à l'informatisation de l'ensemble des contraintes, aussi bien temporelles que personnelles.</p>
+        <p>Notre logiciel permettra de mettre à jour le site, principal outil de communication entre les différentes personnes concernées : les étudiants, les jurys, les entreprises et le responsable pédagogique des stages. La visualisation des soutenances sera facilitée grâce à l'exportation sur le site. L'ensemble des paramètres et contraintes de l'application sont modifiables par l'utilisateur.</p>
+        <p><strong>2.2 Objectifs de niveau utilisateur.</strong></p>
+        <ul>
+          <li><em>Modifier, supprimer une convention</em> : l'utilisateur doit pouvoir modifier les membres du jury d'une convention et également mettre la soutenance à huis clos.</li>
+          <li><em>Modifier les fiches perso</em> : l'utilisateur peut modifier les fiches perso de chaque parrain ou contact dans l'entreprise. Cette action permet de définir les disponibilités de chacun ainsi que la couleur et le nombre de soutenances pour le parrain.</li>
+          <li><em>Placer une soutenance</em> : l'utilisateur peut placer une soutenance sur le planning en effectuant un glisser-déposer de la convention sur le planning. On peut déplacer, modifier ou supprimer une soutenance déjà positionnée sur le planning.</li>
+          <li><em>Zoomer sur le planning</em> : afin d'obtenir une meilleure vue d'ensemble, l'utilisateur peut zoomer sur le planning. La vue passe donc de l'ensemble des jours à un jour en particulier.</li>
+          <li><em>Gérer les contraintes globales</em> : pour donner plus de souplesse à l'application, l'utilisateur peut modifier certains paramètres comme les dates des soutenances, la durée des pauses selon les promotions, la disponibilité des salles…</li>
+          <li><em>Services généraux</em> : la souplesse de l'application est également améliorée par l'ajout de services généraux comme défaire, refaire, sauver le travail en cours, charger un planning existant, créer un nouveau planning et créer de nouvelles contraintes.</li>
+        </ul>
+        <h3>3. Prototype de l'interface</h3>
+        <p>Sur la partie gauche, la liste des conventions apparaît sous forme d'arborescence ordonnée par filière. Sur la partie droite, les soutenances déjà planifiées sont visibles et colorées en fonction du parrain. (La capture d'écran du prototype est dans le PDF.)</p>
+        <h3>4. Besoins</h3>
+        <p><strong>4.1 Gestion des conventions.</strong> Charger : le système récupère les informations liées aux conventions à partir de la base de données. Afficher : le système affiche les conventions dans une arborescence (partie gauche de l'application) classées par filière puis par étudiant.</p>
+        <p><strong>4.2 Gestion des aides visuelles.</strong> Coloriser le planning : permet de mettre en surbrillance les créneaux disponibles pour une soutenance lorsqu'on sélectionne une convention. Si plusieurs étudiants effectuent leur stage dans une même entreprise, le système colorise en priorité les créneaux disponibles pour une même journée. Cette fonctionnalité permet de concentrer les soutenances d'une même entreprise sur une seule journée. Coloriser une soutenance : colorise une soutenance en fonction du parrain de l'étudiant. Déplacer une soutenance : le système permet l'utilisation du glisser-déposer pour placer les conventions sur le planning.</p>
+        <p><strong>4.3 Gestion des paramètres globaux.</strong> Le système met à disposition de l'utilisateur différents formulaires permettant de modifier les contraintes globales telles que : dates de soutenances de stages, durée des pauses entre deux séries de soutenances, disponibilités des salles.</p>
+        <p><strong>4.4 Gestion des fiches perso.</strong> Le système met à disposition différentes options suivant chaque acteur. Pour un parrain : couleur (visible sur le planning), nombre de soutenances par jour, disponibilités pendant les dates de soutenances. Pour un contact : ses disponibilités pendant les dates de soutenances.</p>
+        <p><strong>4.5 Gestion des plannings.</strong> Le système permet à l'utilisateur de créer, d'enregistrer et d'ouvrir un planning. Le système laisse également un droit à l'erreur en permettant de revenir en arrière (faire, défaire).</p>
+        <p><strong>4.6 Exporter.</strong> Le système permet à l'utilisateur d'exporter son planning sous forme de fichier HTML sous différentes formes :</p>
+        <ul>
+          <li>un planning par salle et par journée pour l'affichage des salles (affichage général dans le hall et affichage à l'entrée de chaque salle) ;</li>
+          <li>un planning par personne (parrain et/ou second membre du jury) pour l'ensemble des journées, pour gérer le planning des jurys ;</li>
+          <li>un planning par filière pour prévenir de la date et de l'heure de soutenance (une page par filière avec tous les étudiants classés par ordre alphabétique).</li>
+        </ul>
+        <h3>5. Contraintes liées au projet</h3>
+        <p><strong>5.1 Contraintes techniques.</strong></p>
+        <ul>
+          <li>Conception et développement objet en Java avec une interface graphique Swing. L'utilisation de Java permettra la portabilité de l'application sous différentes plateformes (Unix, Linux, Mac OS ou Windows).</li>
+          <li>Utilisation et application des règles d'ergonomie.</li>
+          <li>L'application sera mono-utilisateur : seul le responsable des stages aura la possibilité de manipuler le logiciel.</li>
+          <li>Utilisation du framework Hibernate pour manipuler la base de données à partir de l'application.</li>
+          <li>L'application ne fonctionne pas sans accès à la base de données existante.</li>
+        </ul>
+        <p><strong>5.2 Contraintes de documentation.</strong> La rédaction d'un cahier des charges est attendue. Il faudra mettre en place des réunions avec le client afin de spécifier les attentes de celui-ci. Utilisation de la modélisation UML afin de faire une analyse objet des informations contenues dans le cahier des charges. Définir des itérations de développement à partir du cahier des charges. Rédiger un cahier de conception détaillée.</p>
+        <p><strong>5.3 Contraintes temporelles.</strong> Le développement du projet se fera en quatre phases séquentielles : une phase d'initialisation qui doit permettre d'établir la vision du projet (4 séances) ; une phase d'élaboration qui doit permettre la mise en place progressive de l'architecture du système au travers des principaux scénarios simplifiés (8 séances) ; une phase de construction qui doit servir à développer et compléter successivement l'ensemble des fonctionnalités (8 séances) ; une phase de transition qui doit permettre l'achèvement du projet (maintenance corrective, documentation, installation, etc.) (4 séances). Le projet devra être terminé le mercredi 21 mars 2007, qui sera également le jour de la soutenance.</p>
+        <h3>6. Documentation sur les composants réutilisés ou externes</h3>
+        <p>Utilisation de la base MySQL intitulée <code>liumstages</code>, qui contient l'ensemble des informations qui permettront de réaliser notre planning.</p>
+        <p>Utilisation du framework Hibernate, qui nous permettra de relier la base MySQL à PlanEditor. Hibernate facilitera l'accès, l'ajout, la suppression et la modification du contenu de notre base (mapping objet-relationnel). Hibernate gère le transfert des classes Java dans les tables de la base de données (et des types de données Java dans les types de données SQL). Il permet de requêter les données et propose des moyens de les récupérer. Il peut donc réduire de manière drastique le temps de développement qui aurait été dépensé autrement dans une manipulation manuelle des données via MySQL et JDBC.</p>
+      </div>
+    </details>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Fiche 2 <span>PlanEditor, question a</span></p>
+      <p>Donnez une liste complète des acteurs.</p>
+    </div>
+    <div class="atelier" id="td2-plan-a" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "PlanEditor · a. Acteurs",
+  "options": {
+    "lignes": 6
+  },
+  "solution": "Acteur principal, et seul utilisateur : le responsable des stages (application mono-utilisateur).\nActeurs non humains : la base de données des stages (MySQL liumstages), d'où sont chargées les conventions ; le site web des stages, qui reçoit les plannings exportés.\nNe sont pas des acteurs : les étudiants, parrains, contacts d'entreprise, entreprises et le département. Ce sont des parties prenantes, qui profitent du logiciel sans l'utiliser ; les parrains et les contacts apparaissent dans le système comme des données (fiches perso), pas comme des utilisateurs.",
+  "explication": "<p>Piège du cas : le texte présente longuement le « public ciblé », mais la contrainte « mono-utilisateur » réserve l'usage du logiciel au responsable des stages.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Fiche 2 <span>PlanEditor, question b</span></p>
+      <p>Pour chaque acteur, donnez son rôle métier décrit succinctement.</p>
+    </div>
+    <div class="atelier" id="td2-plan-b" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "PlanEditor · b. Rôles métier",
+  "options": {
+    "lignes": 5
+  },
+  "solution": "Responsable des stages : planifie les soutenances de stage de tous les étudiants du département (environ 100) et diffuse le planning.\nBase de données des stages : fournit les informations sur les conventions, étudiants, promotions, parrains, entreprises et contacts, et conserve les nouvelles informations de planification.\nSite web des stages : publie les plannings exportés auprès des étudiants, des jurys, des entreprises et du responsable pédagogique."
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Fiche 2 <span>PlanEditor, question c</span></p>
+      <p>Pour chaque acteur, donnez l'ensemble des processus métier décrits en termes de concepts métiers.</p>
+    </div>
+    <div class="atelier" id="td2-plan-c" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "PlanEditor · c. Processus métier",
+  "options": {
+    "lignes": 10
+  },
+  "solution": "Responsable des stages :\n- charger les conventions depuis la base et les afficher par filière puis par étudiant ;\n- modifier ou supprimer une convention : membres du jury, huis clos ;\n- modifier la fiche perso d'un parrain (couleur, nombre de soutenances par jour, disponibilités) ou d'un contact (disponibilités) ;\n- placer une soutenance sur le planning à partir d'une convention, la déplacer, la modifier, la supprimer, en respectant les contraintes (créneaux, salles, disponibilités, soutenances d'une même entreprise le même jour) ;\n- gérer les contraintes globales : dates des soutenances, durée des pauses selon les promotions, disponibilité des salles, nouvelles contraintes ;\n- gérer les plannings : créer, enregistrer, ouvrir, défaire et refaire ;\n- exporter le planning en HTML : par salle et par journée, par personne (jury), par filière.\nBase de données : fournir les conventions et enregistrer les données de planification.\nSite web : afficher les plannings exportés."
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Fiche 2 <span>PlanEditor, question d</span></p>
+      <p>Donnez un schéma de synthèse des concepts métiers et de leurs relations.</p>
+    </div>
+    <div class="atelier" id="td2-plan-d" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "PlanEditor · d. Concepts métier",
+  "consigne": "<p>Une classe par concept métier, une association nommée par relation, sans attributs.</p>",
+  "hauteur": 480,
+  "solution": [
+    "classe Convention",
+    "classe Etudiant",
+    "classe Promotion",
+    "classe Parrain",
+    "classe Contact",
+    "classe Entreprise",
+    "classe Soutenance",
+    "classe Salle",
+    "classe Creneau",
+    "classe Planning",
+    "classe Disponibilite",
+    "classe Contrainte",
+    "Etudiant \"*\" -- \"1\" Promotion : appartient à >",
+    "Convention \"*\" -- \"1\" Etudiant : concerne >",
+    "Convention \"*\" -- \"1\" Parrain : est parrainée par >",
+    "Convention \"*\" -- \"1\" Contact : est suivie par >",
+    "Contact \"*\" -- \"1\" Entreprise : travaille pour >",
+    "Convention \"1\" -- \"0..1\" Soutenance : donne lieu à >",
+    "Soutenance \"*\" -- \"0..1\" Parrain : a pour second membre du jury >",
+    "Soutenance \"*\" -- \"1\" Salle : a lieu dans >",
+    "Soutenance \"*\" -- \"1\" Creneau : occupe >",
+    "Planning \"1\" *-- \"*\" Soutenance : contient >",
+    "Planning \"1\" -- \"*\" Contrainte : respecte >",
+    "Parrain \"1\" -- \"*\" Disponibilite : déclare >",
+    "Contact \"1\" -- \"*\" Disponibilite : déclare >"
+  ],
+  "explication": "<p>Solution proposée : la convention relie l'étudiant, son parrain (premier membre du jury) et le contact de l'entreprise ; elle donne lieu à une soutenance, placée dans une salle sur un créneau d'un planning. Les disponibilités des parrains et des contacts, et les contraintes globales (dates, pauses, salles) limitent le placement. On peut aussi faire apparaître la filière, le jury comme concept à part, ou l'export.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Fiche 2 <span>PlanEditor, question e</span></p>
+      <p>Donnez une liste complète des besoins en IHM (pour le cas PlanEditor).</p>
+    </div>
+    <div class="atelier" id="td2-plan-e" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "PlanEditor · e. Besoins d'IHM",
+  "options": {
+    "lignes": 9
+  },
+  "solution": "- Fenêtre en deux parties : à gauche, l'arborescence des conventions classées par filière puis par étudiant ; à droite, le planning.\n- Soutenances colorées selon le parrain de l'étudiant (couleur choisie dans la fiche du parrain).\n- Placement d'une soutenance par glisser-déposer d'une convention sur le planning ; déplacement de même ; modification et suppression d'une soutenance placée.\n- Mise en surbrillance des créneaux disponibles quand on sélectionne une convention, avec priorité aux créneaux d'une même journée pour les étudiants d'une même entreprise.\n- Zoom : passer de la vue de tous les jours à la vue d'un jour.\n- Formulaires de saisie des contraintes globales (dates, pauses, disponibilité des salles) et des fiches perso (parrains, contacts).\n- Commandes générales : nouveau, ouvrir, enregistrer, défaire, refaire, exporter.\n- Respect des règles d'ergonomie ; interface graphique en Swing."
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Fiche 2 <span>PlanEditor, question f</span></p>
+      <p>Donnez une liste complète des contraintes techniques (pour le cas PlanEditor).</p>
+    </div>
+    <div class="atelier" id="td2-plan-f" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "PlanEditor · f. Contraintes techniques",
+  "options": {
+    "lignes": 8
+  },
+  "solution": "- Conception et développement objet en Java, interface graphique Swing.\n- Portabilité sous Unix, Linux, Mac OS et Windows.\n- Application mono-utilisateur.\n- Accès à la base par le framework Hibernate (correspondance objet-relationnel).\n- Base MySQL existante (liumstages) à réutiliser et à compléter par de nouvelles tables ; l'application ne fonctionne pas sans accès à cette base.\n- Site web des stages existant, à modifier pour afficher les plannings exportés en HTML.\n- Respect des règles d'ergonomie.\nContraintes non techniques, à ne pas confondre : documentation (cahier des charges, UML, cahier de conception) et délais (quatre phases, fin le 21 mars 2007)."
+}
+      </script>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>Un acteur est un rôle qui interagit directement avec le système : une partie prenante qui en profite sans l'utiliser n'en est pas un.</li>
+        <li>Les systèmes externes avec lesquels le système échange (progiciel, base de données, site web) sont des acteurs non humains ; un périphérique du système n'en est pas un.</li>
+        <li>Un processus métier se décrit par un verbe et des concepts du métier (commande, mission, colis), pas par des écrans.</li>
+        <li>Le schéma des concepts métier part des noms qui reviennent dans le texte et des liens que le texte établit entre eux.</li>
+        <li>Les besoins d'IHM disent comment l'utilisateur travaille ; les contraintes techniques imposent des choix de réalisation.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi la bascule de SIVEX n'est-elle pas un acteur ?</summary>
+        <div><p>C'est un périphérique relié au système, à l'intérieur de sa frontière : c'est l'opérateur de quai qui l'utilise.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Les parrains sont-ils des acteurs de PlanEditor ?</summary>
+        <div><p>Non : l'application est mono-utilisateur. Les parrains sont des parties prenantes et des données (fiche perso), saisies par le responsable des stages.</p></div>
+      </details>
+      <details class="carte">
+        <summary>« Java avec Swing » est-il un besoin d'IHM ou une contrainte technique ?</summary>
+        <div><p>Une contrainte technique : c'est un choix de réalisation imposé. Le besoin d'IHM dit ce que l'interface doit permettre (glisser-déposer, zoom…).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Comment trouver les concepts métier dans un cahier des charges ?</summary>
+        <div><p>En relevant les noms du domaine qui reviennent (commande, colis, mission…) et les verbes qui les relient, puis en écartant les acteurs et les détails d'interface.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="td-01-crise-du-logiciel-processus.html"><small>← TD 1</small>Crise du logiciel et processus</a>
+    <a class="suivant" href="td-03-cas-utilisation.html"><small>TD 3 →</small>Cas d'utilisation et séquences</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Génie logiciel · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

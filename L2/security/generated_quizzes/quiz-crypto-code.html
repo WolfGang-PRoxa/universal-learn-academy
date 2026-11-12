@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="securite">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · XOR et RC4 en C · Sécurité informatique L2</title>
+<meta name="description" content="Quiz interactif sur le XOR et le chiffrement RC4 programmés en C (Sécurité informatique, L2).">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="../generated_courses/index.html">Sécurité informatique</a>
+    <span aria-current="page">Quiz · XOR et RC4 en C</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Sécurité informatique</span> Quiz · L2</p>
+    <h1>XOR et RC4 en C</h1>
+    <p class="chapeau">Écrire en C le XOR octet par octet, l'affichage en hexadécimal, les deux phases de RC4, puis exploiter une clé réutilisée : le code est compilé et testé sur les vecteurs de test classiques de RC4. Pour se préparer au TP 2. 10 questions.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-02-initiation-cryptographie.html">Cours 2 · Initiation à la cryptographie</a> · <a href="../generated_courses/tp-02-rc4.html">TP 2 · RC4</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 novembre 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Sécurité informatique · L2 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "securite-crypto-code",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 2 · Initiation à la cryptographie",
+      "lien": "../generated_courses/cours-02-initiation-cryptographie.html"
+    },
+    {
+      "titre": "TP 2 · Implémentation du chiffre RC4",
+      "lien": "../generated_courses/tp-02-rc4.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "code",
+      "langage": "c",
+      "theme": "XOR",
+      "difficulte": 1,
+      "enonce": "<p>Écrire <code>xor_octets</code>, qui calcule <code>out[i] = a[i] ^ b[i]</code> pour \\(0 \\le i \\lt n\\). Le programme de test lit deux lignes, applique la fonction sur la longueur de la plus courte, et affiche le résultat en hexadécimal.</p>",
+      "depart": "#include <stdio.h>\n#include <string.h>\n\nvoid xor_octets(const unsigned char *a, const unsigned char *b, unsigned char *out, int n)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <string.h>\n\nvoid xor_octets(const unsigned char *a, const unsigned char *b, unsigned char *out, int n)\n{\n    for (int i = 0; i < n; i++)\n        out[i] = a[i] ^ b[i];\n}\n",
+      "harnais": "\nstatic int lire_ligne(char *t, int taille)\n{\n    if (fgets(t, taille, stdin) == NULL) { t[0] = '\\0'; return 0; }\n    t[strcspn(t, \"\\r\\n\")] = '\\0';\n    return (int) strlen(t);\n}\n\nstatic void hexa_ref(const unsigned char *t, int n)\n{\n    for (int i = 0; i < n; i++)\n        printf(\"%02X\", t[i]);\n    printf(\"\\n\");\n}\n\nint main(void)\n{\n    char a[256], b[256];\n    unsigned char out[256];\n    int na = lire_ligne(a, sizeof a), nb = lire_ligne(b, sizeof b);\n    int n = na < nb ? na : nb;\n    memset(out, 0xAA, sizeof out);\n    xor_octets((unsigned char *) a, (unsigned char *) b, out, n);\n    hexa_ref(out, n);\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "un texte avec lui-même",
+          "entree": "Key\nKey\n",
+          "sortie": "000000\n"
+        },
+        {
+          "nom": "minuscules et majuscules",
+          "entree": "abc\nABC\n",
+          "sortie": "202020\n"
+        },
+        {
+          "nom": "deux mots",
+          "entree": "chat\nchien\n",
+          "sortie": "00000811\n"
+        },
+        {
+          "nom": "longueur nulle",
+          "entree": "secret\n\n",
+          "sortie": "\n"
+        }
+      ],
+      "explication": "<p>Le XOR d'un octet avec lui-même vaut 0, d'où <code>000000</code> ; une minuscule et sa majuscule ne diffèrent que du bit 0x20. C'est l'opération de base du masque jetable et de RC4 : \\(c_i = m_i \\xor k_i\\).</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le masque jetable de Vernam",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#le-masque-jetable-de-vernam"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "code",
+      "langage": "c",
+      "theme": "XOR",
+      "difficulte": 1,
+      "enonce": "<p>Écrire <code>afficher_hexa</code>, qui affiche les <code>n</code> octets de <code>t</code> en hexadécimal, deux chiffres majuscules par octet, sans séparateur, puis un saut de ligne (comme <code>print_hexa</code> du TP 2). Le programme de test lit un nombre <code>n</code>, puis <code>n</code> valeurs entre 0 et 255.</p>",
+      "depart": "#include <stdio.h>\n#include <string.h>\n\nvoid afficher_hexa(const unsigned char *t, int n)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <string.h>\n\nvoid afficher_hexa(const unsigned char *t, int n)\n{\n    for (int i = 0; i < n; i++)\n        printf(\"%02X\", t[i]);\n    printf(\"\\n\");\n}\n",
+      "harnais": "\nint main(void)\n{\n    unsigned char t[256];\n    int n, v;\n    if (scanf(\"%d\", &n) != 1) return 1;\n    for (int i = 0; i < n; i++) {\n        scanf(\"%d\", &v);\n        t[i] = (unsigned char) v;\n    }\n    afficher_hexa(t, n);\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "deux lettres",
+          "entree": "2\n65 90\n",
+          "sortie": "415A\n"
+        },
+        {
+          "nom": "petites valeurs et octet nul",
+          "entree": "4\n0 10 15 255\n",
+          "sortie": "000A0FFF\n"
+        },
+        {
+          "nom": "aucun octet",
+          "entree": "0\n",
+          "sortie": "\n"
+        }
+      ],
+      "indices": [
+        "<p>Le format <code>%02X</code> écrit un entier en hexadécimal majuscule, sur deux chiffres au moins, complété par des zéros.</p>"
+      ],
+      "explication": "<p>Sans le <code>02</code>, l'octet 10 s'afficherait <code>A</code> au lieu de <code>0A</code>, et l'on ne pourrait plus découper la sortie. On affiche un chiffré en hexadécimal parce qu'il contient des octets non imprimables, et parfois l'octet nul, qui arrêterait un <code>printf(\"%s\")</code>.</p>",
+      "revoir": {
+        "texte": "Cours 2 · RC4, un chiffrement symétrique par flot",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#rc4-un-chiffrement-symetrique-par-flot"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "trous",
+      "theme": "RC4",
+      "difficulte": 2,
+      "enonce": "<p>Compléter la boucle de chiffrement de RC4 (après l'initialisation, <code>i</code> et <code>j</code> valent 0) :</p>",
+      "code": true,
+      "texte": "for (k = 0; k &lt; n; k++) {\n    i = (i + {{0}}) % 256;\n    j = (j + {{1}}) % 256;\n    echanger(&amp;S[i], &amp;S[j]);\n    t = (S[i] + S[j]) % 256;\n    c[k] = m[k] {{2}} S[t];\n}",
+      "trous": [
+        {
+          "choix": [
+            "1",
+            "S[i]",
+            "S[j]",
+            "k"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "S[i]",
+            "1",
+            "S[j]",
+            "T[i]"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "^",
+            "+",
+            "&amp;",
+            "|"
+          ],
+          "reponse": 0
+        }
+      ],
+      "explication": "<p>C'est le pseudo-code du cours : \\(i\\) avance d'un rang, \\(j\\) de \\(S[i]\\), on échange, puis l'octet de flot \\(S[(S[i] + S[j]) \\bmod 256]\\) est combiné au message par XOR. Le tableau \\(T\\) ne sert qu'à l'initialisation.</p>",
+      "revoir": {
+        "texte": "Cours 2 · RC4, un chiffrement symétrique par flot",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#rc4-un-chiffrement-symetrique-par-flot"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "code",
+      "langage": "c",
+      "theme": "RC4",
+      "difficulte": 2,
+      "enonce": "<p>Écrire <code>ksa</code>, l'initialisation de RC4 : remplir <code>S</code> avec 0, 1, …, 255, puis faire la première permutation avec la clé <code>cle</code> de <code>lg</code> octets (\\(j = (j + S[i] + K[i \\bmod \\mathit{lg}]) \\bmod 256\\), puis échanger \\(S[i]\\) et \\(S[j]\\)). Le programme de test lit une clé et affiche les 16 premiers octets de <code>S</code>, puis le dernier.</p>",
+      "depart": "#include <stdio.h>\n#include <string.h>\n\nvoid ksa(unsigned char S[256], const unsigned char *cle, int lg)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <string.h>\n\nvoid ksa(unsigned char S[256], const unsigned char *cle, int lg)\n{\n    int i, j = 0;\n    unsigned char tmp;\n    for (i = 0; i < 256; i++)\n        S[i] = (unsigned char) i;\n    for (i = 0; i < 256; i++) {\n        j = (j + S[i] + cle[i % lg]) % 256;\n        tmp = S[i];\n        S[i] = S[j];\n        S[j] = tmp;\n    }\n}\n",
+      "harnais": "\nstatic int lire_ligne(char *t, int taille)\n{\n    if (fgets(t, taille, stdin) == NULL) { t[0] = '\\0'; return 0; }\n    t[strcspn(t, \"\\r\\n\")] = '\\0';\n    return (int) strlen(t);\n}\n\nstatic void hexa_ref(const unsigned char *t, int n)\n{\n    for (int i = 0; i < n; i++)\n        printf(\"%02X\", t[i]);\n    printf(\"\\n\");\n}\n\nint main(void)\n{\n    char cle[256];\n    unsigned char S[256];\n    int lg = lire_ligne(cle, sizeof cle);\n    memset(S, 0, sizeof S);\n    ksa(S, (unsigned char *) cle, lg);\n    hexa_ref(S, 16);\n    hexa_ref(S + 255, 1);\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "clé Key",
+          "entree": "Key\n",
+          "sortie": "4B33849DC0C81DA84AF383E412708290\n93\n"
+        },
+        {
+          "nom": "clé Secret",
+          "entree": "Secret\n",
+          "sortie": "2EB51E93263FB871A5207A0E285B4DC3\n9B\n"
+        },
+        {
+          "nom": "clé d'un octet",
+          "entree": "A\n",
+          "sortie": "4083C6F16208DC246DB03E4794E267D7\n0E\n"
+        }
+      ],
+      "indices": [
+        "<p>Le tableau \\(T\\) du pseudo-code n'est pas indispensable : \\(T[i] = K[i \\bmod \\mathit{lg}]\\) se lit directement dans la clé.</p>",
+        "<p>Attention au type : <code>j</code> doit être un <code>int</code>, car \\(j + S[i] + K[\\dots]\\) peut dépasser 255 avant le modulo.</p>"
+      ],
+      "explication": "<p>Deux boucles de 256 tours : l'identité, puis 256 échanges guidés par la clé. Le résultat ne dépend que de la clé, pas du message : deux messages chiffrés avec la même clé partent du même \\(S\\), donc reçoivent le même flot.</p>",
+      "revoir": {
+        "texte": "Cours 2 · RC4, un chiffrement symétrique par flot",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#rc4-un-chiffrement-symetrique-par-flot"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "code",
+      "langage": "c",
+      "theme": "RC4",
+      "difficulte": 2,
+      "enonce": "<p>Écrire <code>prga</code>, la génération de RC4 : à partir de <code>S</code> déjà initialisé (les indices \\(i\\) et \\(j\\) partent de 0), produire <code>n</code> octets de flot dans <code>flot</code>. Le programme de test initialise \\(S\\) avec une clé, appelle <code>prga</code>, fait le XOR avec le message et affiche le chiffré en hexadécimal.</p>",
+      "depart": "#include <stdio.h>\n#include <string.h>\n\nvoid prga(unsigned char S[256], unsigned char *flot, int n)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <string.h>\n\nvoid prga(unsigned char S[256], unsigned char *flot, int n)\n{\n    int i = 0, j = 0;\n    unsigned char tmp;\n    for (int k = 0; k < n; k++) {\n        i = (i + 1) % 256;\n        j = (j + S[i]) % 256;\n        tmp = S[i];\n        S[i] = S[j];\n        S[j] = tmp;\n        flot[k] = S[(S[i] + S[j]) % 256];\n    }\n}\n",
+      "harnais": "\nstatic int lire_ligne(char *t, int taille)\n{\n    if (fgets(t, taille, stdin) == NULL) { t[0] = '\\0'; return 0; }\n    t[strcspn(t, \"\\r\\n\")] = '\\0';\n    return (int) strlen(t);\n}\n\nstatic void hexa_ref(const unsigned char *t, int n)\n{\n    for (int i = 0; i < n; i++)\n        printf(\"%02X\", t[i]);\n    printf(\"\\n\");\n}\n\nstatic void ksa_ref(unsigned char S[256], const unsigned char *cle, int lg)\n{\n    int i, j = 0;\n    unsigned char tmp;\n    for (i = 0; i < 256; i++) S[i] = (unsigned char) i;\n    for (i = 0; i < 256; i++) {\n        j = (j + S[i] + cle[i % lg]) % 256;\n        tmp = S[i]; S[i] = S[j]; S[j] = tmp;\n    }\n}\n\nint main(void)\n{\n    char cle[256], m[256];\n    unsigned char S[256], flot[256], c[256];\n    int lg = lire_ligne(cle, sizeof cle), n = lire_ligne(m, sizeof m);\n    ksa_ref(S, (unsigned char *) cle, lg);\n    prga(S, flot, n);\n    for (int k = 0; k < n; k++)\n        c[k] = (unsigned char) m[k] ^ flot[k];\n    hexa_ref(c, n);\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "Key, Plaintext",
+          "entree": "Key\nPlaintext\n",
+          "sortie": "BBF316E8D940AF0AD3\n"
+        },
+        {
+          "nom": "Wiki, pedia",
+          "entree": "Wiki\npedia\n",
+          "sortie": "1021BF0420\n"
+        },
+        {
+          "nom": "Secret, Attack at dawn",
+          "entree": "Secret\nAttack at dawn\n",
+          "sortie": "45A01F645FC35B383552544B9BF5\n"
+        }
+      ],
+      "indices": [
+        "<p>Suivre la boucle « TantQue » du cours, en remplaçant le XOR final par <code>flot[k] = S[t]</code>.</p>"
+      ],
+      "explication": "<p>On retrouve les vecteurs de test classiques de RC4 : <code>BBF316E8D940AF0AD3</code>, <code>1021BF0420</code> et <code>45A01F645FC35B383552544B9BF5</code>. Le flot ne dépend que de la clé : le message n'intervient qu'au XOR final.</p>",
+      "revoir": {
+        "texte": "Cours 2 · RC4, un chiffrement symétrique par flot",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#rc4-un-chiffrement-symetrique-par-flot"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "code",
+      "langage": "c",
+      "theme": "RC4",
+      "difficulte": 3,
+      "enonce": "<p>Écrire <code>rc4</code>, qui chiffre les <code>n</code> octets de <code>m</code> dans <code>c</code> avec la clé <code>cle</code> de <code>lg</code> octets : initialisation, puis génération et XOR, dans une seule fonction. Le programme de test lit une clé et un message et affiche le chiffré en hexadécimal ; si une troisième ligne contient <code>D</code>, il applique <code>rc4</code> une seconde fois au chiffré, avec la même clé, et affiche le résultat comme du texte.</p>",
+      "depart": "#include <stdio.h>\n#include <string.h>\n\nvoid rc4(const unsigned char *cle, int lg, const unsigned char *m, unsigned char *c, int n)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <string.h>\n\nvoid rc4(const unsigned char *cle, int lg, const unsigned char *m, unsigned char *c, int n)\n{\n    unsigned char S[256], tmp;\n    int i, j = 0, k;\n    for (i = 0; i < 256; i++)\n        S[i] = (unsigned char) i;\n    for (i = 0; i < 256; i++) {\n        j = (j + S[i] + cle[i % lg]) % 256;\n        tmp = S[i]; S[i] = S[j]; S[j] = tmp;\n    }\n    i = 0;\n    j = 0;\n    for (k = 0; k < n; k++) {\n        i = (i + 1) % 256;\n        j = (j + S[i]) % 256;\n        tmp = S[i]; S[i] = S[j]; S[j] = tmp;\n        c[k] = m[k] ^ S[(S[i] + S[j]) % 256];\n    }\n}\n",
+      "harnais": "\nstatic int lire_ligne(char *t, int taille)\n{\n    if (fgets(t, taille, stdin) == NULL) { t[0] = '\\0'; return 0; }\n    t[strcspn(t, \"\\r\\n\")] = '\\0';\n    return (int) strlen(t);\n}\n\nstatic void hexa_ref(const unsigned char *t, int n)\n{\n    for (int i = 0; i < n; i++)\n        printf(\"%02X\", t[i]);\n    printf(\"\\n\");\n}\n\nint main(void)\n{\n    char cle[256], m[256], mode[16];\n    unsigned char c[256], d[257];\n    int lg = lire_ligne(cle, sizeof cle), n = lire_ligne(m, sizeof m);\n    lire_ligne(mode, sizeof mode);\n    rc4((unsigned char *) cle, lg, (unsigned char *) m, c, n);\n    if (mode[0] == 'D') {\n        rc4((unsigned char *) cle, lg, c, d, n);\n        d[n] = '\\0';\n        printf(\"%s\\n\", (char *) d);\n    } else {\n        hexa_ref(c, n);\n    }\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "Key, Plaintext",
+          "entree": "Key\nPlaintext\n",
+          "sortie": "BBF316E8D940AF0AD3\n"
+        },
+        {
+          "nom": "Wika, pedia (TP 2)",
+          "entree": "Wika\npedia\n",
+          "sortie": "55F48FBC22\n"
+        },
+        {
+          "nom": "Secret, Attack at dawn",
+          "entree": "Secret\nAttack at dawn\n",
+          "sortie": "45A01F645FC35B383552544B9BF5\n"
+        },
+        {
+          "nom": "déchiffrer = rechiffrer",
+          "entree": "Secret\nAttack at dawn\nD\n",
+          "sortie": "Attack at dawn\n"
+        }
+      ],
+      "indices": [
+        "<p>Les variables <code>i</code> et <code>j</code> repartent de 0 au début de la génération.</p>",
+        "<p>Le tableau <code>S</code> est local : chaque appel repart de l'initialisation, ce qui permet de déchiffrer en rappelant la même fonction.</p>"
+      ],
+      "explication": "<p>Comme le chiffré vaut \\(m \\xor \\text{flot}\\) et que le flot ne dépend que de la clé, appliquer <code>rc4</code> au chiffré donne \\(m \\xor \\text{flot} \\xor \\text{flot} = m\\) : le déchiffrement est la même fonction. Il faut seulement repartir d'un \\(S\\) fraîchement initialisé, que la génération a modifié.</p>",
+      "revoir": {
+        "texte": "Cours 2 · RC4, un chiffrement symétrique par flot",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#rc4-un-chiffrement-symetrique-par-flot"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "qcm",
+      "theme": "RC4",
+      "difficulte": 3,
+      "enonce": "<p>Le programme de test du TP 2 affiche le chiffré avec <code>print_hexa(chiffre, strlen((const char*)chiffre))</code>. Dans quel cas cet affichage est-il faux ?</p>",
+      "choix": [
+        "Quand un octet du chiffré vaut 0 : <code>strlen</code> s'arrête avant la fin",
+        "Quand le message contient des espaces",
+        "Quand la clé est plus longue que le message",
+        "Jamais, car <code>rc4_crypt</code> ajoute un <code>'\\0'</code> à la fin"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Que mesure <code>strlen</code>, exactement ?</p>"
+      ],
+      "explication": "<p><code>strlen</code> compte les octets jusqu'au premier octet nul. Le <code>'\\0'</code> ajouté par <code>rc4_crypt</code> marque bien la fin, mais un octet chiffré peut lui-même valoir 0 (une chance sur 256 par octet) : l'affichage est alors tronqué. Il vaut mieux transmettre la longueur du message.</p>",
+      "revoir": {
+        "texte": "Cours 2 · RC4, un chiffrement symétrique par flot",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#rc4-un-chiffrement-symetrique-par-flot"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "vrai-faux",
+      "theme": "RC4",
+      "difficulte": 2,
+      "enonce": "<p>Pour déchiffrer avec la même structure <code>RC4_CTX</code>, juste après avoir chiffré, on peut rappeler directement <code>rc4_crypt</code> sur le chiffré, sans refaire <code>rc4_init</code>.</p>",
+      "reponse": false,
+      "explication": "<p>La génération échange des cases de \\(S\\) à chaque octet : après le chiffrement, \\(S\\) n'est plus celui qu'avait laissé l'initialisation, et le flot produit serait différent. Il faut rappeler <code>rc4_init</code> avec la même clé avant de déchiffrer.</p>",
+      "revoir": {
+        "texte": "Cours 2 · RC4, un chiffrement symétrique par flot",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#rc4-un-chiffrement-symetrique-par-flot"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "code",
+      "langage": "c",
+      "theme": "Clé réutilisée",
+      "difficulte": 3,
+      "enonce": "<p>Deux messages de même longueur ont été chiffrés par RC4 avec la <strong>même</strong> clé, inconnue. On connaît les deux chiffrés <code>c1</code> et <code>c2</code>, et le premier message clair <code>m1</code>. Écrire <code>retrouver</code>, qui calcule le second message clair dans <code>m2</code>. Le programme de test chiffre lui-même deux messages avec une clé secrète, appelle <code>retrouver</code> et affiche <code>m2</code> comme du texte.</p>",
+      "depart": "#include <stdio.h>\n#include <string.h>\n\nvoid retrouver(const unsigned char *c1, const unsigned char *c2,\n               const unsigned char *m1, unsigned char *m2, int n)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <string.h>\n\nvoid retrouver(const unsigned char *c1, const unsigned char *c2,\n               const unsigned char *m1, unsigned char *m2, int n)\n{\n    for (int i = 0; i < n; i++)\n        m2[i] = c1[i] ^ c2[i] ^ m1[i];\n}\n",
+      "harnais": "\nstatic int lire_ligne(char *t, int taille)\n{\n    if (fgets(t, taille, stdin) == NULL) { t[0] = '\\0'; return 0; }\n    t[strcspn(t, \"\\r\\n\")] = '\\0';\n    return (int) strlen(t);\n}\n\nstatic void rc4_ref(const unsigned char *cle, int lg, const unsigned char *m, unsigned char *c, int n)\n{\n    unsigned char S[256], tmp;\n    int i, j = 0, k, t;\n    for (i = 0; i < 256; i++) S[i] = (unsigned char) i;\n    for (i = 0; i < 256; i++) {\n        j = (j + S[i] + cle[i % lg]) % 256;\n        tmp = S[i]; S[i] = S[j]; S[j] = tmp;\n    }\n    i = 0; j = 0;\n    for (k = 0; k < n; k++) {\n        i = (i + 1) % 256;\n        j = (j + S[i]) % 256;\n        tmp = S[i]; S[i] = S[j]; S[j] = tmp;\n        t = (S[i] + S[j]) % 256;\n        c[k] = m[k] ^ S[t];\n    }\n}\n\nint main(void)\n{\n    char m1[256], m2[256];\n    unsigned char c1[256], c2[256], r[257];\n    const unsigned char cle[] = \"cle-tres-secrete\";\n    int n1 = lire_ligne(m1, sizeof m1), n2 = lire_ligne(m2, sizeof m2);\n    int n = n1 < n2 ? n1 : n2;\n    rc4_ref(cle, 16, (unsigned char *) m1, c1, n);\n    rc4_ref(cle, 16, (unsigned char *) m2, c2, n);\n    memset(m2, 0, sizeof m2);\n    memset(r, 0, sizeof r);\n    retrouver(c1, c2, (unsigned char *) m1, r, n);\n    r[n] = '\\0';\n    printf(\"%s\\n\", (char *) r);\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "deux ordres",
+          "entree": "Attack at dawn\nRetreat at six\n",
+          "sortie": "Retreat at six\n"
+        },
+        {
+          "nom": "salutations",
+          "entree": "Bonjour\nBonsoir\n",
+          "sortie": "Bonsoir\n"
+        },
+        {
+          "nom": "montants",
+          "entree": "Payer 100 euros\nPayer 999 euros\n",
+          "sortie": "Payer 999 euros\n"
+        }
+      ],
+      "indices": [
+        "<p>\\(c_1 \\xor c_2 = (m_1 \\xor f) \\xor (m_2 \\xor f)\\), où \\(f\\) est le flot, le même pour les deux messages.</p>",
+        "<p>Une fois \\(m_1 \\xor m_2\\) connu, un XOR avec \\(m_1\\) suffit.</p>"
+      ],
+      "explication": "<p>Le flot est le même pour les deux messages, donc \\(c_1 \\xor c_2 = m_1 \\xor m_2\\) : la clé disparaît. Avec \\(m_1\\), on obtient \\(m_2 = c_1 \\xor c_2 \\xor m_1\\), sans jamais connaître la clé. Même sans \\(m_1\\), le XOR des deux clairs révèle beaucoup : c'est pourquoi une clé de flot ne sert qu'une fois.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le masque jetable de Vernam",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#le-masque-jetable-de-vernam"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "qcm",
+      "theme": "Clé réutilisée",
+      "difficulte": 2,
+      "enonce": "<p>Deux messages de 20 octets, chiffrés par RC4 avec la même clé, ont des chiffrés identiques sur leurs 4 premiers octets. Que peut-on en conclure ?</p>",
+      "choix": [
+        "Les 4 premiers octets des deux messages clairs sont identiques",
+        "La clé fait 4 octets",
+        "Les deux messages sont identiques",
+        "Rien : le chiffré ne dépend pas du message"
+      ],
+      "reponse": 0,
+      "explication": "<p>Avec le même flot \\(f\\), \\(c_i = c'_i\\) équivaut à \\(m_i \\xor f_i = m'_i \\xor f_i\\), donc à \\(m_i = m'_i\\). Un observateur voit où deux messages coïncident, sans connaître la clé ; avec deux clés différentes, les chiffrés n'auraient aucun rapport.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le masque jetable de Vernam",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#le-masque-jetable-de-vernam"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

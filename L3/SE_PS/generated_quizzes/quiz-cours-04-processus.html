@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="se">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Les processus · Programmation système L3</title>
+<meta name="description" content="Quiz interactif sur le cours 4 de programmation système (L3) : identifiants des processus, mise en sommeil, fork et ce que le fils hérite, nombre de processus créés, wait, zombies et orphelins, statut de fin et fichier core, recouvrement par exec, avec une fonction C exécutée.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="../generated_courses/index.html">Programmation système</a>
+    <span aria-current="page">Quiz · Les processus</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Programmation système</span> Quiz · L3 S5</p>
+    <h1>Les processus</h1>
+    <p class="chapeau">Vingt-cinq questions sur le cours 4 : identifiants, mise en sommeil, <code>fork</code> et ce que le fils hérite, nombre de processus créés, sorties à prédire, <code>wait</code>, zombies et orphelins, statut de fin, <code>exec</code>. Les sorties à prédire ont été vérifiées en exécutant les programmes sous Linux. Le compilateur de Windows n'ayant pas <code>fork</code>, la fonction C à écrire décode un statut de fin.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-04-processus.html">Cours 4 · Les processus</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-31">31 oct. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Programmation système · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "se-cours-04-processus",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 4 · Les processus",
+      "lien": "../generated_courses/cours-04-processus.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "qcm",
+      "theme": "Processus et identifiants",
+      "difficulte": 1,
+      "enonce": "<p>On tape <code>./prog</code> dans un terminal, où tourne le shell <code>bash</code>. Dans <code>prog</code>, que renvoie <code>getppid()</code> ?</p>",
+      "choix": [
+        "Le pid du shell <code>bash</code>, qui a créé le processus de <code>prog</code>",
+        "Le pid de <code>prog</code> lui-même",
+        "1, le pid de la racine des processus",
+        "0, puisque <code>prog</code> n'a pas appelé <code>fork</code>"
+      ],
+      "reponse": 0,
+      "explication": "<p><code>getppid</code> renvoie le pid du père, le processus qui a créé l'appelant. Une commande lancée depuis un shell est un fils de ce shell : c'est donc le pid de <code>bash</code>. <code>getpid</code> donnerait celui de <code>prog</code>. On n'obtient 1 que si le père s'est terminé entre-temps, le processus orphelin ayant été adopté par la racine.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Identifiant et père : getpid, getppid",
+        "lien": "../generated_courses/cours-04-processus.html#identifiant-et-pere-getpid-getppid"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "vrai-faux",
+      "theme": "Processus et identifiants",
+      "difficulte": 1,
+      "enonce": "<p>Un même programme, lancé deux fois en même temps dans deux terminaux, donne un seul processus.</p>",
+      "reponse": false,
+      "explication": "<p>Faux : un processus est un programme <em>en cours d'exécution</em>. Deux lancements donnent deux processus, avec deux pid, deux jeux de variables et deux positions dans le code, même si le programme est le même.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Les processus et leur arborescence",
+        "lien": "../generated_courses/cours-04-processus.html#les-processus-et-leur-arborescence"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "association",
+      "theme": "fork",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque situation à la valeur que renvoie <code>fork</code> :</p>",
+      "paires": [
+        [
+          "Dans le fils",
+          "0"
+        ],
+        [
+          "Dans le père, si la création a réussi",
+          "Le pid du fils"
+        ],
+        [
+          "Dans le père, si la création a échoué",
+          "−1, et la cause dans errno"
+        ]
+      ],
+      "intrus": [
+        "Le pid du père"
+      ],
+      "explication": "<p>Après <code>fork</code>, le père et le fils reprennent juste après l'appel ; seule la valeur renvoyée les distingue. Le fils reçoit 0, et retrouve son père avec <code>getppid</code> ; le père reçoit le pid de son fils, seul moyen pour lui de le connaître. En cas d'échec, aucun fils n'est créé, et le père reçoit −1.</p>",
+      "revoir": {
+        "texte": "Cours 4 · La primitive fork",
+        "lien": "../generated_courses/cours-04-processus.html#la-primitive-fork"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "numerique",
+      "theme": "fork",
+      "difficulte": 2,
+      "enonce": "<p>Combien de lignes ce programme affiche-t-il ?</p><pre><code class='language-c'>int main(void)\n{\n    fork();\n    fork();\n    printf(\"x\\n\");\n    return 0;\n}</code></pre>",
+      "reponse": 4,
+      "explication": "<p>Le premier <code>fork</code> donne deux processus ; chacun exécute le second, ce qui en donne quatre, et chacun affiche sa ligne. Exécuté et compté (<code>./prog | wc -l</code>) : 4. En général, \\(n\\) <code>fork</code> à la suite donnent \\(2^n\\) processus.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Ce que le fils reçoit de son père",
+        "lien": "../generated_courses/cours-04-processus.html#ce-que-le-fils-recoit-de-son-pere"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "numerique",
+      "theme": "fork",
+      "difficulte": 3,
+      "enonce": "<p>Combien de lignes ce programme affiche-t-il ?</p><pre><code class='language-c'>int main(void)\n{\n    if (fork() == 0)\n        fork();\n    printf(\"x\\n\");\n    return 0;\n}</code></pre>",
+      "reponse": 3,
+      "indices": [
+        "<p>Seul le processus pour lequel <code>fork()</code> vaut 0 exécute le second <code>fork</code>.</p>"
+      ],
+      "explication": "<p>Le premier <code>fork</code> crée un fils. Dans le père, il renvoie le pid du fils : la condition est fausse, il passe au <code>printf</code>. Dans le fils, il renvoie 0 : le fils exécute le second <code>fork</code>, et crée un petit-fils. Trois processus, donc trois lignes ; exécuté et compté : 3.</p>",
+      "revoir": {
+        "texte": "Cours 4 · La primitive fork",
+        "lien": "../generated_courses/cours-04-processus.html#la-primitive-fork"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "qcm",
+      "theme": "fork",
+      "difficulte": 2,
+      "enonce": "<p>Qu'affiche le père ?</p><pre><code class='language-c'>int n = 10;\nif (fork() == 0) {\n    n = 20;\n    exit(0);\n}\nwait(NULL);\nprintf(\"%d\\n\", n);</code></pre>",
+      "choix": [
+        "10",
+        "20",
+        "30",
+        "Une valeur imprévisible"
+      ],
+      "reponse": 0,
+      "explication": "<p>10 : le fils travaille sur une copie de la mémoire du père. Il modifie sa propre variable <code>n</code>, à la même adresse que celle du père, mais dans un autre espace d'adressage ; celle du père vaut toujours 10. Pour transmettre une valeur au père, il faut un autre moyen : le code de <code>exit</code>, un fichier, un tube…</p>",
+      "revoir": {
+        "texte": "Cours 4 · Ce que le fils reçoit de son père",
+        "lien": "../generated_courses/cours-04-processus.html#ce-que-le-fils-recoit-de-son-pere"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "qcm",
+      "theme": "fork",
+      "difficulte": 3,
+      "enonce": "<p>Qu'affiche ce programme ?</p><pre><code class='language-c'>printf(\"A\");\nif (fork() != 0)\n    wait(NULL);\nprintf(\"B\\n\");</code></pre>",
+      "choix": [
+        "Deux lignes <code>AB</code>",
+        "Une ligne <code>A</code>, puis deux lignes <code>B</code>",
+        "Une ligne <code>AB</code>, puis une ligne <code>B</code>",
+        "Une seule ligne <code>AB</code>"
+      ],
+      "reponse": 0,
+      "explication": "<p>Sans saut de ligne, <code>printf(\"A\")</code> reste dans le tampon de <code>stdout</code>. <code>fork</code> copie ce tampon dans le fils : chacun des deux processus y ajoute <code>B</code> et le saut de ligne, puis le vide. On obtient deux lignes <code>AB</code>, ce que confirme l'exécution. Un <code>fflush(stdout)</code> juste avant <code>fork</code> donnerait <code>AB</code> puis <code>B</code>.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Ce que le fils reçoit de son père",
+        "lien": "../generated_courses/cours-04-processus.html#ce-que-le-fils-recoit-de-son-pere"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "vrai-faux",
+      "theme": "fork",
+      "difficulte": 1,
+      "enonce": "<p>Après <code>fork</code>, le père s'exécute toujours avant le fils.</p>",
+      "reponse": false,
+      "explication": "<p>Faux : le père et le fils sont deux processus indépendants, que le système ordonnance comme il l'entend. Dans les exemples du cours, le père a affiché le premier, mais rien ne le garantit, et un programme ne doit jamais compter sur cet ordre. Pour qu'une action du père suive la fin du fils, le père l'attend avec <code>wait</code>.</p>",
+      "revoir": {
+        "texte": "Cours 4 · La primitive fork",
+        "lien": "../generated_courses/cours-04-processus.html#la-primitive-fork"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "qcm",
+      "theme": "fork",
+      "difficulte": 2,
+      "enonce": "<p>Dans l'exemple du CM 4, on retire le <code>exit(EXIT_SUCCESS)</code> de la branche <code>case 0</code> du <code>switch</code>, qui n'a pas de <code>break</code>. Que fait alors le fils ?</p>",
+      "choix": [
+        "Il passe dans la branche <code>default</code> et affiche à son tour le message du père, avec un « fils » de pid 0",
+        "Il s'arrête à la fin de la branche <code>case 0</code>",
+        "Il devient un zombie, puisqu'il ne s'est pas terminé par <code>exit</code>",
+        "Il crée un nouveau fils, car il réexécute <code>fork</code>"
+      ],
+      "reponse": 0,
+      "explication": "<p>Sans <code>break</code> ni <code>exit</code>, l'exécution du fils continue dans la branche suivante, <code>default</code> : il affiche « PÈRE : Je suis le père », avec pour pid du fils la valeur de <code>pid</code>, c'est-à-dire 0, ce que confirme l'exécution du cours. Il ne réexécute pas <code>fork</code>, puisqu'il reprend après l'appel. D'où la règle : la branche du fils se termine par <code>exit</code>.</p>",
+      "revoir": {
+        "texte": "Cours 4 · La primitive fork",
+        "lien": "../generated_courses/cours-04-processus.html#la-primitive-fork"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "qcm",
+      "theme": "wait et zombies",
+      "difficulte": 2,
+      "enonce": "<p>Qu'est-ce qu'un processus zombie ?</p>",
+      "choix": [
+        "Un processus terminé dont le père n'a pas encore récupéré le statut avec <code>wait</code>",
+        "Un processus dont le père s'est terminé avant lui",
+        "Un processus bloqué indéfiniment sur un verrou",
+        "Un processus qui continue de tourner après la fin du programme principal"
+      ],
+      "reponse": 0,
+      "explication": "<p>Un zombie est terminé : sa mémoire est libérée, mais le système garde son entrée dans la table des processus (pid, statut de fin) jusqu'à ce que son père appelle <code>wait</code> ; <code>ps</code> le montre dans l'état <code>Z</code>. Un processus dont le père s'est terminé avant lui est un <strong>orphelin</strong>, adopté par la racine des processus.</p>",
+      "revoir": {
+        "texte": "Cours 4 · wait et les processus zombies",
+        "lien": "../generated_courses/cours-04-processus.html#wait-et-les-processus-zombies"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "qcm-multi",
+      "theme": "wait et zombies",
+      "difficulte": 2,
+      "enonce": "<p>Quelles affirmations sur <code>wait(&amp;statut)</code> sont justes ?</p>",
+      "choix": [
+        "Elle bloque le père jusqu'à la fin de l'un de ses fils",
+        "Elle renvoie le pid du fils qui s'est terminé",
+        "Elle revient tout de suite si un fils est déjà terminé",
+        "Elle renvoie −1 si le processus n'a aucun fils",
+        "Elle attend la fin de tous les fils à la fois",
+        "Elle tue le fils s'il n'est pas terminé"
+      ],
+      "reponses": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "explication": "<p><code>wait</code> attend la fin d'<em>un</em> fils, n'importe lequel, renvoie son pid et range son statut ; un fils déjà terminé (un zombie) est récupéré tout de suite. Sans fils, elle renvoie −1. Pour attendre tous ses fils, un père appelle <code>wait</code> autant de fois qu'il en a ; elle ne tue personne : c'est le rôle de <code>kill</code>.</p>",
+      "revoir": {
+        "texte": "Cours 4 · wait et les processus zombies",
+        "lien": "../generated_courses/cours-04-processus.html#wait-et-les-processus-zombies"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "numerique",
+      "theme": "Statut de fin",
+      "difficulte": 2,
+      "enonce": "<p>Un fils se termine par <code>exit(5)</code>. Quelle valeur entière son père lit-il dans <code>statut</code>, après <code>wait(&amp;statut)</code> ?</p>",
+      "reponse": 1280,
+      "explication": "<p>Le code de <code>exit</code> va dans l'octet de poids fort, et l'octet de poids faible vaut 0 pour une fin normale : \\(5 \\times 256 = 1280\\), soit <code>0x0500</code>. L'exécution le confirme. On le relit avec <code>WEXITSTATUS(statut)</code>, qui donne 5.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Le statut de fin",
+        "lien": "../generated_courses/cours-04-processus.html#le-statut-de-fin"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "qcm",
+      "theme": "Statut de fin",
+      "difficulte": 2,
+      "enonce": "<p>Un père lit dans <code>statut</code> la valeur <code>0x0009</code>. Comment son fils s'est-il terminé ?</p>",
+      "choix": [
+        "Il a été tué par le signal 9, <code>SIGKILL</code>",
+        "Il s'est terminé par <code>exit(9)</code>",
+        "Il s'est terminé par <code>exit(0)</code> après avoir reçu 9 signaux",
+        "Il est encore en cours d'exécution"
+      ],
+      "reponse": 0,
+      "explication": "<p>L'octet de poids faible n'est pas nul : le fils a été tué par un signal, dont il donne le numéro, 9 (<code>SIGKILL</code>, par exemple envoyé par <code>kill -9</code>). <code>exit(9)</code> aurait donné <code>0x0900</code>, le code étant dans l'octet de poids fort. <code>WIFSIGNALED</code> et <code>WTERMSIG</code> font cette lecture.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Le statut de fin",
+        "lien": "../generated_courses/cours-04-processus.html#le-statut-de-fin"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "numerique",
+      "theme": "Statut de fin",
+      "difficulte": 3,
+      "enonce": "<p>Un fils se termine par <code>exit(300)</code>. Que vaut <code>WEXITSTATUS(statut)</code> dans son père ?</p>",
+      "reponse": 44,
+      "indices": [
+        "<p>Seuls les 8 bits de poids faible de la valeur passée à <code>exit</code> sont transmis.</p>"
+      ],
+      "explication": "<p>Seuls les 8 bits de poids faible de 300 sont transmis : \\(300 \\bmod 256 = 44\\) (300 s'écrit <code>0x12C</code>, dont l'octet de poids faible est <code>0x2C</code>, soit 44). L'exécution le confirme : le statut vaut 11 264, soit <code>0x2C00</code>. Un code de sortie se choisit donc entre 0 et 255.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Le statut de fin",
+        "lien": "../generated_courses/cours-04-processus.html#le-statut-de-fin"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "code",
+      "langage": "c",
+      "theme": "Statut de fin",
+      "difficulte": 2,
+      "enonce": "<p>Le statut rapporté par <code>wait</code> se lit ainsi : si ses 7 bits de poids faible sont nuls, le fils s'est terminé par <code>exit</code>, et son code est dans l'octet de poids fort ; sinon, il a été tué par un signal, dont le numéro est dans ces 7 bits (le bit 7, lui, signale qu'un fichier <code>core</code> a été écrit). Écrire, sans les macros de <code>&lt;sys/wait.h&gt;</code>, la fonction <code>decrire</code>, qui affiche <code>exit N</code> ou <code>signal N</code>, suivi d'un saut de ligne. Le programme de test lit des statuts en décimal.</p>",
+      "depart": "#include <stdio.h>\n\n/* Affiche \"exit N\" si le fils s'est terminé par exit(N), \"signal N\" s'il a été tué par le signal N */\nvoid decrire(int statut)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n\n/* Affiche \"exit N\" si le fils s'est terminé par exit(N), \"signal N\" s'il a été tué par le signal N */\nvoid decrire(int statut)\n{\n    if ((statut & 0x7F) == 0)\n        printf(\"exit %d\\n\", (statut >> 8) & 0xFF);   /* code de exit : l'octet de poids fort */\n    else\n        printf(\"signal %d\\n\", statut & 0x7F);        /* numéro du signal : le poids faible */\n}\n",
+      "harnais": "\nint main(void)\n{\n    int statut;\n    while (scanf(\"%d\", &statut) == 1)\n        decrire(statut);\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "exit(3)",
+          "entree": "768\n",
+          "sortie": "exit 3\n"
+        },
+        {
+          "nom": "tué par SIGTERM",
+          "entree": "15\n",
+          "sortie": "signal 15\n"
+        },
+        {
+          "nom": "exit(0)",
+          "entree": "0\n",
+          "sortie": "exit 0\n"
+        },
+        {
+          "nom": "tué par SIGKILL",
+          "entree": "9\n",
+          "sortie": "signal 9\n"
+        },
+        {
+          "nom": "exit(-1)",
+          "entree": "65280\n",
+          "sortie": "exit 255\n"
+        },
+        {
+          "nom": "exit(11)",
+          "entree": "2816\n",
+          "sortie": "exit 11\n"
+        },
+        {
+          "nom": "tué par SIGSEGV",
+          "entree": "11\n",
+          "sortie": "signal 11\n"
+        },
+        {
+          "nom": "exit(5)",
+          "entree": "1280\n",
+          "sortie": "exit 5\n"
+        },
+        {
+          "nom": "tué par SIGSEGV, fichier core écrit",
+          "entree": "139\n",
+          "sortie": "signal 11\n"
+        }
+      ],
+      "indices": [
+        "<p><code>statut &amp; 0x7F</code> isole les 7 bits de poids faible ; <code>(statut &gt;&gt; 8) &amp; 0xFF</code> donne l'octet de poids fort.</p>"
+      ],
+      "explication": "<p>On teste d'abord le poids faible : nul, c'est une fin par <code>exit</code>, dont le code se lit en décalant de 8 bits vers la droite, puis en masquant par <code>0xFF</code> ; sinon, c'est le numéro du signal. C'est ce que font <code>WIFEXITED</code>, <code>WEXITSTATUS</code> et <code>WTERMSIG</code>, que le compilateur de Windows ne fournit pas. Les tests <code>exit(11)</code> et <code>signal 11</code> vérifient que le même nombre est lu au bon endroit. Le masque <code>0x7F</code>, et non <code>0xFF</code>, écarte le bit du fichier <code>core</code> : 139 = 128 + 11 donne bien le signal 11.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Le statut de fin",
+        "lien": "../generated_courses/cours-04-processus.html#le-statut-de-fin"
+      }
+    },
+    {
+      "id": "q16",
+      "type": "association",
+      "theme": "Sommeil",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque appel à son effet :</p>",
+      "paires": [
+        [
+          "<code>sleep(5)</code>",
+          "suspend le processus pendant 5 secondes"
+        ],
+        [
+          "<code>alarm(5)</code>",
+          "envoie SIGALRM dans 5 secondes, sans suspendre"
+        ],
+        [
+          "<code>pause()</code>",
+          "suspend le processus jusqu'à un signal"
+        ],
+        [
+          "<code>kill(getpid(), SIGSTOP)</code>",
+          "suspend le processus jusqu'à un SIGCONT"
+        ]
+      ],
+      "explication": "<p>Le piège est <code>alarm</code> : il programme un signal et rend la main tout de suite. Pour attendre ce signal, on appelle ensuite <code>pause</code>.</p>",
+      "revoir": {
+        "texte": "Cours 4 · sleep, alarm et pause",
+        "lien": "../generated_courses/cours-04-processus.html#sleep-alarm-et-pause"
+      }
+    },
+    {
+      "id": "q17",
+      "type": "qcm",
+      "theme": "Sommeil",
+      "difficulte": 2,
+      "enonce": "<p>Ce programme n'installe aucun gestionnaire. Que se passe-t-il ?</p><pre><code class='language-c'>printf(\"avant\\n\");\nalarm(1);\npause();\nprintf(\"apres\\n\");</code></pre>",
+      "choix": [
+        "Au bout d'une seconde, SIGALRM tue le processus : « apres » ne s'affiche pas.",
+        "Au bout d'une seconde, pause revient et « apres » s'affiche.",
+        "pause dort pour toujours : SIGALRM est ignoré par défaut.",
+        "alarm échoue, car aucun gestionnaire n'est installé."
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Quel est le traitement par défaut de <code>SIGALRM</code> ?</p>"
+      ],
+      "explication": "<p>Le traitement par défaut de <code>SIGALRM</code> est la terminaison. Exécuté, le programme s'arrête sans afficher « apres », et le shell rapporte le code 142, soit 128 + 14. <code>pause</code> ne revient que si un gestionnaire a capté le signal.</p>",
+      "revoir": {
+        "texte": "Cours 4 · sleep, alarm et pause",
+        "lien": "../generated_courses/cours-04-processus.html#sleep-alarm-et-pause"
+      }
+    },
+    {
+      "id": "q18",
+      "type": "qcm",
+      "theme": "Sommeil",
+      "difficulte": 2,
+      "enonce": "<p>Un processus exécute <code>kill(getpid(), SIGSTOP);</code>. Que faut-il pour qu'il reparte ?</p>",
+      "choix": [
+        "Qu'un autre processus lui envoie SIGCONT.",
+        "Rien : il repart seul au bout d'un moment.",
+        "Qu'il appelle lui-même kill(getpid(), SIGCONT).",
+        "Qu'un autre processus lui envoie SIGALRM."
+      ],
+      "reponse": 0,
+      "explication": "<p>Un processus stoppé n'exécute plus rien : il ne peut donc pas s'envoyer <code>SIGCONT</code> lui-même. <code>ps</code> le montre dans l'état <code>T</code>, jusqu'à un <code>kill -CONT</code> venu d'ailleurs. <code>SIGALRM</code> ne le réveille pas : le signal reste en attente.</p>",
+      "revoir": {
+        "texte": "Cours 4 · SIGSTOP et SIGCONT",
+        "lien": "../generated_courses/cours-04-processus.html#sigstop-et-sigcont"
+      }
+    },
+    {
+      "id": "q19",
+      "type": "numerique",
+      "theme": "Statut de fin",
+      "difficulte": 2,
+      "enonce": "<p>Un fils est tué par <code>SIGQUIT</code> (signal 3), et le système crée un fichier core. Quelle valeur le père lit-il dans le statut, tel quel, sans macro ?</p>",
+      "reponse": 131,
+      "tolerance": 0,
+      "explication": "<p>Le numéro du signal va dans l'octet de poids faible, et on y ajoute 128 quand un fichier core est créé : 128 + 3 = 131, soit <code>1000 0011</code> en binaire. Si la limite <code>ulimit -c</code> vaut 0, aucun core n'est créé, et le père lit 3.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Le statut de fin",
+        "lien": "../generated_courses/cours-04-processus.html#le-statut-de-fin"
+      }
+    },
+    {
+      "id": "q20",
+      "type": "qcm",
+      "theme": "exec",
+      "difficulte": 1,
+      "enonce": "<p>Que renvoie un appel de <code>execvp</code> qui réussit ?</p>",
+      "choix": [
+        "Rien : il ne revient pas.",
+        "0",
+        "Le pid du programme lancé.",
+        "Le code de sortie du programme lancé."
+      ],
+      "reponse": 0,
+      "explication": "<p><code>exec</code> remplace le code du processus : l'instruction qui l'a appelé n'existe plus. Il ne revient qu'en cas d'échec, avec −1. Le code de sortie du programme lancé, c'est <code>wait</code> qui le donne, dans le père.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Le recouvrement",
+        "lien": "../generated_courses/cours-04-processus.html#le-recouvrement"
+      }
+    },
+    {
+      "id": "q21",
+      "type": "association",
+      "theme": "exec",
+      "difficulte": 2,
+      "enonce": "<p>Associer chaque fonction à sa situation :</p>",
+      "paires": [
+        [
+          "<code>execl</code>",
+          "paramètres connus, chemin complet du programme"
+        ],
+        [
+          "<code>execv</code>",
+          "paramètres dans un tableau, chemin complet du programme"
+        ],
+        [
+          "<code>execlp</code>",
+          "paramètres connus, programme cherché dans $PATH"
+        ],
+        [
+          "<code>execvp</code>",
+          "paramètres dans un tableau, programme cherché dans $PATH"
+        ],
+        [
+          "<code>execve</code>",
+          "paramètres dans un tableau, environnement fourni par le programme"
+        ]
+      ],
+      "explication": "<p>Le nom se lit lettre par lettre : <code>l</code> pour une liste, <code>v</code> pour un tableau, <code>p</code> pour la recherche dans <code>$PATH</code>, <code>e</code> pour un tableau d'environnement.</p>",
+      "revoir": {
+        "texte": "Cours 4 · La famille exec",
+        "lien": "../generated_courses/cours-04-processus.html#la-famille-exec"
+      }
+    },
+    {
+      "id": "q22",
+      "type": "trous",
+      "theme": "exec",
+      "difficulte": 2,
+      "code": true,
+      "enonce": "<p>Compléter cet appel, qui lance <code>ls -l</code> sans donner son chemin :</p>",
+      "texte": "{{0}}(\"ls\", {{1}}, \"-l\", {{2}});",
+      "trous": [
+        {
+          "choix": [
+            "execlp",
+            "execl",
+            "execvp",
+            "execv"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "\"ls\"",
+            "\"-l\"",
+            "NULL",
+            "argv"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "(char *) NULL",
+            "0L",
+            "\"\"",
+            "rien"
+          ],
+          "reponse": 0
+        }
+      ],
+      "indices": [
+        "<p>Dans un programme lancé, <code>argv[0]</code> contient quoi ?</p>"
+      ],
+      "explication": "<p>Sans chemin, il faut la recherche dans <code>$PATH</code>, et les paramètres sont connus : <code>execlp</code>. Le premier paramètre après le fichier est <code>arg0</code>, le nom du programme : on écrit donc deux fois <code>\"ls\"</code>. La liste se termine par <code>NULL</code>, converti en <code>char *</code>.</p>",
+      "revoir": {
+        "texte": "Cours 4 · La famille exec",
+        "lien": "../generated_courses/cours-04-processus.html#la-famille-exec"
+      }
+    },
+    {
+      "id": "q23",
+      "type": "qcm",
+      "theme": "exec",
+      "difficulte": 2,
+      "enonce": "<p>Qu'affiche ce programme sur un terminal ?</p><pre><code class='language-c'>printf(\"debut\\n\");\nexeclp(\"echo\", \"echo\", \"milieu\", (char *) NULL);\nprintf(\"fin\\n\");</code></pre>",
+      "choix": [
+        "debut, puis milieu",
+        "debut, milieu, puis fin",
+        "milieu, puis fin",
+        "debut, puis fin"
+      ],
+      "reponse": 0,
+      "explication": "<p><code>exec</code> réussit et ne revient pas : le code du dernier <code>printf</code> n'existe plus. Résultat vérifié à l'exécution. Si le programme lancé n'existait pas, <code>exec</code> renverrait −1, et on verrait « debut » puis « fin ».</p>",
+      "revoir": {
+        "texte": "Cours 4 · Le recouvrement",
+        "lien": "../generated_courses/cours-04-processus.html#le-recouvrement"
+      }
+    },
+    {
+      "id": "q24",
+      "type": "qcm-multi",
+      "theme": "exec",
+      "difficulte": 3,
+      "enonce": "<p>Un processus appelle <code>exec</code>, qui réussit. Que conserve-t-il ?</p>",
+      "choix": [
+        "son pid",
+        "ses descripteurs de fichiers ouverts",
+        "un signal mis à SIG_IGN, qui reste ignoré",
+        "ses gestionnaires de signaux",
+        "le contenu du tampon de printf"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "explication": "<p>Aucun processus n'est créé : le pid ne change pas, et les descripteurs restent ouverts. Un signal ignoré le reste, car cela ne dépend pas du code. Un gestionnaire, lui, disparaît avec le code, et le signal repasse à son traitement par défaut. Le tampon de <code>printf</code> est dans la mémoire remplacée : il est perdu. Ces points ont été vérifiés à l'exécution.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Ce qui traverse exec",
+        "lien": "../generated_courses/cours-04-processus.html#ce-qui-traverse-exec"
+      }
+    },
+    {
+      "id": "q25",
+      "type": "ordre",
+      "theme": "exec",
+      "difficulte": 1,
+      "enonce": "<p>Un shell exécute une commande. Remettre ses opérations dans l'ordre :</p>",
+      "elements": [
+        "le shell appelle fork",
+        "le fils se recouvre par exec",
+        "le programme lancé s'exécute et appelle exit",
+        "le shell récupère son statut avec wait"
+      ],
+      "explication": "<p>La création se fait en deux temps : la copie par <code>fork</code>, puis le recouvrement de cette copie par <code>exec</code>. Le shell, resté lui-même, attend la fin de son fils avec <code>wait</code>.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Utilisation : fork, puis exec",
+        "lien": "../generated_courses/cours-04-processus.html#utilisation-fork-puis-exec"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

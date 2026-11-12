@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="poo">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Concepts et principes de la programmation objet · POO L3</title>
+<meta name="description" content="Cours 1 d'introduction à la programmation objet (L3) : qualités du logiciel, langages objets, de la programmation procédurale à l'objet, abstraction et encapsulation, objets et messages, classes et instances.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-01-concepts-principes.html" title="Quiz · Concepts et principes">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">POO</a>
+    <span aria-current="page">Cours 1 · Concepts et principes</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">POO</span> Cours 1 · L3 S5</p>
+    <h1>Concepts et principes de la programmation objet</h1>
+    <p class="chapeau">Ce cours situe la programmation objet par rapport à la programmation procédurale, présente les langages objets, puis introduit les concepts fondateurs du paradigme : objet, message, méthode, classe, instance, abstraction et encapsulation. Il pose le vocabulaire et les deux premiers principes sur lesquels s'appuie tout le reste du module.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/01%20-%20Concepts%20et%20principes%20de%20la%20POO.pdf">01 - Concepts et principes de la POO.pdf</a> · 19 pages</dd></div>
+      <div><dt>Enseignant</dt><dd>Pierre Jacoboni (LIUM)</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-24">24 sept. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Citer les qualités attendues d'un logiciel, et celles que vise la programmation objet.</li>
+        <li>Expliquer ce que la programmation objet change par rapport à la programmation procédurale.</li>
+        <li>Définir abstraction, encapsulation, interface et implémentation.</li>
+        <li>Énoncer les principes « objets et messages » et « classes et instances ».</li>
+        <li>Distinguer identité, état et comportement d'un objet ; classe et instance ; méthode d'instance et méthode de classe.</li>
+        <li>Lire un envoi de message en Smalltalk, en C++ et en Ruby.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Programmation en C : fonctions, structures, pointeurs.</li>
+        <li>Notion de type abstrait de données (pile, liste).</li>
+        <li>Listes chaînées.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Enjeux de la programmation objet <span class="ref">p. 3–5</span></h2>
+    <p>Bien qu'il s'agisse d'un cours de programmation, les préoccupations du génie logiciel sont omniprésentes : la programmation objet est avant tout une réponse aux exigences de qualité, d'évolution et de réutilisation du logiciel.</p>
+
+    <h3>Qualités d'un logiciel <span class="ref">p. 3</span></h3>
+    <table>
+      <caption>Les qualités d'un logiciel</caption>
+      <thead><tr><th>Qualité</th><th>Définition</th></tr></thead>
+      <tbody>
+        <tr><th><dfn>Validité</dfn></th><td>Le logiciel réalise exactement les tâches définies par la spécification.</td></tr>
+        <tr><th><dfn>Robustesse</dfn></th><td>Le logiciel fonctionne même dans des conditions anormales.</td></tr>
+        <tr><th><dfn>Fiabilité</dfn></th><td>Validité + robustesse.</td></tr>
+        <tr><th><dfn>Extensibilité</dfn></th><td>Le logiciel s'adapte facilement aux changements de spécification.</td></tr>
+        <tr><th><dfn>Réutilisabilité</dfn></th><td>Le logiciel peut être réutilisé, en tout ou partie, dans de nouvelles applications.</td></tr>
+        <tr><th><dfn>Compatibilité</dfn></th><td>Le logiciel peut être combiné avec d'autres logiciels.</td></tr>
+        <tr><th>Autres</th><td>Efficacité, portabilité…</td></tr>
+      </tbody>
+    </table>
+
+    <div class="bloc note">
+      <p class="bloc-titre">À retenir <span class="ref">p. 3</span></p>
+      <p><strong>Extensibilité, réutilisabilité et compatibilité</strong> sont les préoccupations centrales de la programmation objet.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Ce que la suite du cours apporte à chaque qualité</span></p>
+      <ul>
+        <li><strong>Extensibilité</strong> : ajouter un nouveau type de porte revient à écrire une nouvelle classe, sans modifier le code qui envoie le message <code>ouvreToi</code> (exemple de la porte, partie 5).</li>
+        <li><strong>Réutilisabilité</strong> : une classe regroupe données et traitements ; on la reprend d'un bloc dans une autre application, ou on la spécialise par héritage (cours 3).</li>
+        <li><strong>Compatibilité</strong> : un objet ne se manipule qu'à travers son interface ; deux composants qui respectent la même interface s'assemblent.</li>
+      </ul>
+      <p>Cette liste de qualités (validité, robustesse, extensibilité, réutilisabilité, compatibilité) est celle de B. Meyer, qui ouvre ainsi son ouvrage <em>Conception et programmation orientées objet</em>.</p>
+    </div>
+
+    <h3>La maintenance, partie immergée de l'iceberg <span class="ref">p. 3</span></h3>
+    <p>Le développement initial ne représente qu'une faible part du coût d'un logiciel : l'essentiel de l'effort se situe dans la <dfn>maintenance</dfn> (<span class="en" lang="en">maintenance</span>). Les estimations suivantes donnent un ordre de grandeur de la répartition du temps de maintenance ; il ne s'agit pas d'une hiérarchie d'importance.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Répartition du temps de maintenance</caption>
+        <thead><tr><th>Activité de maintenance</th><th>Part</th></tr></thead>
+        <tbody>
+          <tr><td>Adaptation à l'évolution des besoins</td><td>42 %</td></tr>
+          <tr><td>Modification des formats de données</td><td>17 %</td></tr>
+          <tr><td>Corrections d'erreurs urgentes</td><td>12 %</td></tr>
+          <tr><td>Corrections d'erreurs mineures</td><td>9 %</td></tr>
+          <tr><td>Modifications liées au matériel</td><td>6 %</td></tr>
+          <tr><td>Documentation</td><td>5 %</td></tr>
+          <tr><td>Amélioration de l'efficacité</td><td>4 %</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Lire ce tableau</span></p>
+      <p>Ces chiffres viennent d'une enquête de Lientz et Swanson (1980), que B. Meyer reprend dans son ouvrage. Les parts arrondies totalisent 95 % ; le reste regroupe des activités diverses.</p>
+      <p>La leçon : près de 60 % de l'effort (besoins et formats de données) vient de changements de spécification, contre moins d'un quart pour les corrections d'erreurs. Un logiciel doit donc d'abord être facile à <em>modifier</em>, ce que visent l'extensibilité et l'encapsulation.</p>
+    </div>
+
+    <h3>Efficacité et règle des 90-10 <span class="ref">p. 4</span></h3>
+    <p>L'<dfn>efficacité</dfn>, c'est-à-dire un temps d'exécution minimal, est primordiale dans certains domaines comme le temps réel. Elle n'est pourtant pas la préoccupation principale de ce module ni du génie logiciel : d'autres problèmes sont plus importants dans cette perspective. On s'intéresse à l'<strong>efficacité théorique des algorithmes</strong> (complexités en \(O(n)\), \(O(n \log n)\)…), et non aux optimisations et astuces propres à un système hôte.</p>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Règle <span>Règle des 90-10</span> <span class="ref">p. 4</span></p>
+      <p>Un programme passe environ <strong>90 % de son temps</strong> d'exécution dans <strong>10 % de son code</strong>.</p>
+      <ul>
+        <li>Pour ces 10 %, l'efficacité est cruciale : on peut s'intéresser à la représentation interne des données.</li>
+        <li>Pour le reste du code, la lisibilité et la maintenabilité priment : on programme à un niveau d'abstraction élevé.</li>
+      </ul>
+    </div>
+
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>Mesurer avant d'optimiser</span></p>
+      <p><span class="badge ajout">Ajout</span> On ne devine pas où se trouvent les 10 % : on les mesure avec un <dfn>profileur</dfn> (<span class="en" lang="en">profiler</span>), qui compte le temps passé dans chaque fonction. Optimiser ailleurs complique le code sans rien gagner, d'où la formule de D. Knuth : « l'optimisation prématurée est la source de tous les maux ».</p>
+    </div>
+
+    <h3>Programmer à un haut niveau d'abstraction <span class="ref">p. 4</span></h3>
+    <p>Se placer à un niveau d'abstraction élevé permet d'éviter les erreurs de conception. Concrètement :</p>
+    <ul>
+      <li><strong>programmer avec des opérations de haut niveau</strong>, qui ne dépendent pas de la représentation interne des données, qui permettent d'en changer, et qui laissent l'utilisateur se concentrer sur la conception en ignorant les détails de réalisation ;</li>
+      <li><strong>encapsuler les données</strong> : on n'accède aux données qu'au travers de fonctions formant une interface ; l'utilisateur voit les services offerts, jamais la représentation interne.</li>
+    </ul>
+    <p>Les entiers en sont un exemple familier : on les manipule par les opérations <code>+</code>, <code>-</code>, <code>/</code>, <code>%</code>, <code>&lt;</code>, <code>&gt;</code>, <code>=</code>, et seulement de manière exceptionnelle (les fameux 10 %) par leur représentation binaire.</p>
+
+    <h3>Le programmeur et son utilisateur <span class="ref">p. 4–5</span></h3>
+    <p>Dans ce cours, l'<dfn>utilisateur</dfn> est le programmeur qui utilisera les outils développés par le <dfn>concepteur</dfn>. On programme donc pour d'autres programmeurs, ce qui impose de documenter son travail.</p>
+    <p>Le programmeur d'aujourd'hui est membre d'une équipe. Il doit :</p>
+    <ul>
+      <li>maintenir et faire évoluer du code écrit par d'autres ;</li>
+      <li>s'adapter aux besoins des utilisateurs ;</li>
+      <li>choisir et utiliser, sur de gros projets, des bibliothèques de code existant, des ateliers de génie logiciel, des normes de qualité, des guides de style et des <span lang="en">design patterns</span>.</li>
+    </ul>
+    <p>Le travail isolé, en marge des normes de l'équipe, est rarement compatible avec ces exigences.</p>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Question <span>Pourquoi apprendre à programmer si « le meilleur code est déjà écrit » ?</span></p>
+      <ul>
+        <li>Pour choisir un composant, il faut savoir comment il est construit.</li>
+        <li>Tous les développeurs ne travaillent pas sur de gros projets outillés.</li>
+        <li>Les ateliers de génie logiciel sont lourds et complexes ; le code généré n'est pas toujours efficace et doit souvent être repris.</li>
+        <li>Pour obtenir d'un assistant IA le résultat voulu, il faut être capable de discuter avec lui en connaissance de cause.</li>
+      </ul>
+    </div>
+
+    <div class="bloc exercice" id="ex-1">
+      <p class="bloc-titre">Exercice 1 <span>Reconnaître une qualité</span></p>
+      <p><span class="badge ajout">Ajout</span> Pour chaque situation, indiquer la qualité du logiciel qu'elle illustre : validité, robustesse, extensibilité, réutilisabilité ou compatibilité.</p>
+      <details class="indice"><summary>Indice</summary><p>Se demander si l'on parle de respecter la spécification, de résister à l'imprévu, de changer la spécification, de reprendre du code, ou de travailler avec un autre logiciel.</p></details>
+    </div>
+    <div class="atelier" id="poo1-ex1-qualites" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "Qualités d'un logiciel",
+        "consigne": "<p>Remplir la colonne « Qualité » avec l'un des cinq mots proposés.</p>",
+        "options": { "verrou": "depart", "lignes": false, "ordre": true },
+        "depart": ["| Situation | Qualité |", "|---|---|", "| Le calcul des intérêts donne exactement les montants prévus par le cahier des charges. |  |", "| Si l'on saisit un âge négatif, le programme affiche un message au lieu de s'arrêter brutalement. |  |", "| Une nouvelle règle de remise s'ajoute en écrivant une classe, sans modifier le code existant. |  |", "| La classe Date écrite pour la paie sert telle quelle dans l'application de planning. |  |", "| Le logiciel enregistre ses résultats au format CSV, qu'un tableur ouvre directement. |  |"],
+        "solution": ["| Situation | Qualité |", "|---|---|", "| Le calcul des intérêts donne exactement les montants prévus par le cahier des charges. | validité |", "| Si l'on saisit un âge négatif, le programme affiche un message au lieu de s'arrêter brutalement. | robustesse |", "| Une nouvelle règle de remise s'ajoute en écrivant une classe, sans modifier le code existant. | extensibilité |", "| La classe Date écrite pour la paie sert telle quelle dans l'application de planning. | réutilisabilité |", "| Le logiciel enregistre ses résultats au format CSV, qu'un tableur ouvre directement. | compatibilité |"],
+        "explication": "<p>La validité concerne ce que prévoit la spécification ; la robustesse, les conditions anormales qu'elle ne prévoit pas (une saisie absurde). L'extensibilité mesure la facilité d'un changement de spécification, la réutilisabilité la reprise du code dans une autre application, la compatibilité la combinaison avec d'autres logiciels. Un programme à la fois valide et robuste est fiable.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le module et les langages objets <span class="ref">p. 5–6</span></h2>
+    <p>Le module vise à la fois des concepts et la pratique d'un langage. Il faut donc situer les langages objets les uns par rapport aux autres : ils partagent les mêmes principes, mais pas les mêmes choix.</p>
+
+    <h3>Objectifs du module <span class="ref">p. 5</span></h3>
+    <table>
+      <caption>Objectifs du module</caption>
+      <thead><tr><th>Axe</th><th>Objectifs</th></tr></thead>
+      <tbody>
+        <tr><th>Programmation objet</th><td>Comprendre les concepts ; s'initier à la pratique sur des exemples simples : concevoir et mettre en œuvre des classes et des hiérarchies de classes.</td></tr>
+        <tr><th>Langage</th><td>Découvrir, pratiquer, puis maîtriser un langage objet et le comparer à d'autres : syntaxe, environnement, bibliothèques standard.</td></tr>
+      </tbody>
+    </table>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span class="ref">p. 5</span></p>
+      <p><span class="badge examen">Examen</span> L'évaluation porte sur la compréhension des concepts et sur leur mise en œuvre, et pas seulement sur le fait qu'un programme fonctionne.</p>
+    </div>
+
+    <h3>Classification des langages objets <span class="ref">p. 5</span></h3>
+    <p>On distingue deux grandes familles ; la seconde se divise selon la nature des attributs.</p>
+    <table>
+      <caption>Familles de langages objets</caption>
+      <thead><tr><th>Famille</th><th>Caractéristiques</th><th>Exemples</th><th>Domaines</th></tr></thead>
+      <tbody>
+        <tr><th>Langages orientés objets</th><td>Coexistence de types objets et de types simples ; pas de métaclasses accessibles au programmeur.</td><td>Simula, C++, Objective-C, Eiffel, Java</td><td>Génie logiciel industriel, applications à forte maintenabilité, client/serveur</td></tr>
+        <tr><th>Langages objets, attributs simples</th><td rowspan="2">Tout est objet ; liaison dynamique ; métaclasses.</td><td>Smalltalk, CLOS, Ruby</td><td>Prototypage, génération d'applications, simulation</td></tr>
+        <tr><th>Langages objets, attributs complexes</th><td>KEE, ART, Kool, Smeci, CRL</td><td>Représentation des connaissances</td></tr>
+      </tbody>
+    </table>
+    <p>Une <dfn>métaclasse</dfn> (<span class="en" lang="en">metaclass</span>) est une classe dont les instances sont des classes.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>« Tout est objet », liaison dynamique</span></p>
+      <p>En Java, <code>int</code> ou <code>double</code> sont des types simples : une valeur <code>3</code> n'est pas un objet et ne reçoit pas de messages. En Ruby, tout est objet, y compris les nombres et les classes elles-mêmes :</p>
+<pre data-fichier="tout_objet.rb"><code class="language-ruby">puts 3.class         # la classe de l'objet 3
+puts 3.succ          # message succ envoyé à 3
+puts Integer.class   # une classe est elle-même un objet</code></pre>
+<pre class="terminal"><code>$ ruby tout_objet.rb
+Integer
+4
+Class</code></pre>
+      <p>Le dernier résultat montre qu'<code>Integer</code> est une instance de <code>Class</code> : c'est la métaclasse dont parle le tableau. La <dfn>liaison dynamique</dfn> (<span class="en" lang="en">dynamic binding</span>) signifie que la méthode exécutée pour un message est choisie à l'exécution, d'après la classe de l'objet receveur.</p>
+      <p><span class="badge hors-programme">Hors programme</span> Les attributs « complexes » ou « actifs » des langages de représentation des connaissances portent des procédures déclenchées automatiquement quand on lit ou modifie leur valeur.</p>
+    </div>
+
+    <h3>Principaux langages <span class="ref">p. 6</span></h3>
+    <table>
+      <caption>Principaux langages objets</caption>
+      <thead><tr><th>Langage</th><th>Année</th><th>Auteurs</th><th>Caractéristiques</th></tr></thead>
+      <tbody>
+        <tr><th>Simula</th><td>1967</td><td>O.-J. Dahl, K. Nygaard</td><td>Premier langage orienté objet ; compilé ; syntaxe héritée d'Algol 60.</td></tr>
+        <tr><th>Smalltalk</th><td>1972</td><td>A. Kay, D. Ingalls, A. Goldberg</td><td>Tout est objet (nombres, chaînes, booléens, classes). Environnement interactif : le code s'exécute dans une « image » contenant tous les objets, que l'on peut inspecter et modifier à la volée sans arrêter ni recompiler le programme.</td></tr>
+        <tr><th>C++</th><td>1980</td><td>B. Stroustrup</td><td>Sur-ensemble de C.</td></tr>
+        <tr><th>Objective-C</th><td>1983</td><td>B. Cox, T. Love</td><td>Extension de C inspirée de Smalltalk-80 ; adopté par NeXT puis Apple.</td></tr>
+        <tr><th>Eiffel</th><td>1985</td><td>B. Meyer</td><td>Héritage multiple ; conception par contrat.</td></tr>
+        <tr><th>Java</th><td>1995</td><td>J. Gosling, P. Naughton (Sun)</td><td>« Écrire une fois, exécuter partout ». Étudié au second semestre.</td></tr>
+        <tr><th>Ruby</th><td>1995</td><td>Y. Matsumoto</td><td>Modèle objet pur et flexible : tout est objet ; classes et objets modifiables à l'exécution, y compris les classes de base. Pas d'héritage multiple direct, mais des modules et <span lang="en">mixins</span>, plus sûrs et plus puissants.</td></tr>
+      </tbody>
+    </table>
+
+    <p>Filiation des langages :</p>
+    <ul>
+      <li><strong>Lisp</strong> → Flavors → Loops → CLOS → Allegro CL ;</li>
+      <li><strong>Algol</strong> → Simula, Pascal, C ;</li>
+      <li><strong>Simula</strong> → Smalltalk, Eiffel, Flavors ; <strong>Smalltalk</strong> → Self, Distributed Smalltalk, Eiffel, Java ;</li>
+      <li><strong>Pascal</strong> → Modula, Object Pascal, Ada ; <strong>C</strong> → Objective-C, C++ ; <strong>C++</strong> et <strong>Ada</strong> → Java ;</li>
+      <li><strong>Ruby</strong> est influencé par Smalltalk, Eiffel, Ada, Algol, Perl et les langages de script.</li>
+    </ul>
+
+    <h3>Organisation du module <span class="ref">p. 6</span></h3>
+    <table>
+      <caption>Plan des cours</caption>
+      <thead><tr><th>Séance</th><th>Contenu</th></tr></thead>
+      <tbody>
+        <tr><th>Cours 1 – 2</th><td>Introduction, le monde des objets, le langage Ruby</td></tr>
+        <tr><th>Cours 3</th><td>L'héritage</td></tr>
+        <tr><th>Cours 4</th><td>Organisation et utilisation des données ; organisation du code</td></tr>
+        <tr><th>Cours 5</th><td>Introspection, programmation dynamique, extension</td></tr>
+        <tr><th>Cours 6</th><td>Programmation événementielle</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>De la programmation procédurale à la programmation objet <span class="ref">p. 7–9</span></h2>
+    <p>La programmation objet ne remplace pas les instructions et les fonctions : elle change la façon d'organiser un programme. On compare les deux approches, puis on les confronte sur un exemple minuscule, le calcul de la surface d'un rectangle.</p>
+
+    <h3>Programmation procédurale <span class="ref">p. 7</span></h3>
+    <ul>
+      <li>Un programme est une suite d'instructions exécutées par une machine ; son exécution consiste à faire agir ces instructions sur des données.</li>
+      <li>Les fonctions et procédures travaillent « à distance » sur les données. L'accent est mis sur les actions : <em>que veut-on faire ?</em></li>
+      <li>La dissociation entre données et fonctions pose problème dès que l'on modifie les structures de données.</li>
+      <li>Les procédures s'appellent entre elles et modifient les mêmes données : modifier une procédure oblige à retrouver comment et où elle est appelée. On aboutit à une conception en « plat de spaghettis ».</li>
+    </ul>
+    <p>L'idée de la programmation objet est de <strong>responsabiliser</strong> les portions de programme.</p>
+
+    <h3>Programmation objet <span class="ref">p. 7</span></h3>
+    <ul>
+      <li>Un programme est une <strong>société d'entités</strong>.</li>
+      <li>Lors de l'exécution, ces entités collaborent pour résoudre le problème en <strong>s'envoyant des messages</strong>.</li>
+      <li>Chaque entité est un <strong>objet responsable</strong> qui prend en charge sa propre gestion.</li>
+    </ul>
+    <p>Il en découle une liaison inévitable entre les données et les procédures qui opèrent sur ces données.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 250" width="640" role="img" aria-labelledby="fig-paradigmes-titre">
+        <title id="fig-paradigmes-titre">À gauche, trois fonctions agissent sur des données communes ; à droite, trois objets regroupant chacun données et méthodes s'envoient des messages</title>
+        <defs>
+          <marker id="fleche-paradigmes" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="160" y="18" text-anchor="middle" class="gras">Programmation procédurale</text>
+        <rect class="boite" x="20" y="40" width="110" height="32" rx="6"/>
+        <text x="75" y="61" text-anchor="middle">Fonction 1</text>
+        <rect class="boite" x="190" y="40" width="110" height="32" rx="6"/>
+        <text x="245" y="61" text-anchor="middle">Fonction 2</text>
+        <rect class="boite-accent" x="95" y="110" width="130" height="40" rx="6"/>
+        <text x="160" y="135" text-anchor="middle" class="gras accent">Données</text>
+        <rect class="boite" x="105" y="195" width="110" height="32" rx="6"/>
+        <text x="160" y="216" text-anchor="middle">Fonction 3</text>
+        <path class="pointille" d="M130 56 H188" marker-end="url(#fleche-paradigmes)"/>
+        <path class="trait" d="M75 72 L128 108" marker-end="url(#fleche-paradigmes)"/>
+        <path class="trait" d="M245 72 L192 108" marker-end="url(#fleche-paradigmes)"/>
+        <path class="trait" d="M160 195 V152" marker-end="url(#fleche-paradigmes)"/>
+        <path class="pointille" d="M325 30 V240"/>
+        <text x="490" y="18" text-anchor="middle" class="gras">Programmation objet</text>
+        <rect class="boite-accent" x="345" y="40" width="120" height="64" rx="6"/>
+        <path class="trait" d="M345 72 H465"/>
+        <text x="405" y="61" text-anchor="middle">Données</text>
+        <text x="405" y="93" text-anchor="middle" class="t2">Méthodes</text>
+        <rect class="boite-accent" x="515" y="40" width="120" height="64" rx="6"/>
+        <path class="trait" d="M515 72 H635"/>
+        <text x="575" y="61" text-anchor="middle">Données</text>
+        <text x="575" y="93" text-anchor="middle" class="t2">Méthodes</text>
+        <rect class="boite-accent" x="430" y="160" width="120" height="64" rx="6"/>
+        <path class="trait" d="M430 192 H550"/>
+        <text x="490" y="181" text-anchor="middle">Données</text>
+        <text x="490" y="213" text-anchor="middle" class="t2">Méthodes</text>
+        <path class="accent" d="M465 56 H513" marker-end="url(#fleche-paradigmes)"/>
+        <text x="489" y="34" text-anchor="middle" class="t2">message</text>
+        <path class="accent" d="M575 104 L535 158" marker-end="url(#fleche-paradigmes)"/>
+        <text x="590" y="138" text-anchor="middle" class="t2">message</text>
+        <path class="accent" d="M445 160 L405 106" marker-end="url(#fleche-paradigmes)"/>
+        <text x="385" y="138" text-anchor="middle" class="t2">message</text>
+      </svg>
+      <figcaption>Données et traitements séparés (à gauche) ; objets regroupant données et méthodes, communiquant par messages (à droite). Figure 1 du support, redessinée.</figcaption>
+    </figure>
+
+    <h3>Exemple introductif : le rectangle <span class="ref">p. 7–8</span></h3>
+    <p>Cet exemple est inspiré de l'introduction à la programmation objet de l'EPFL (Coursera). On souhaite écrire un programme qui manipule des rectangles, définis par une largeur et une hauteur, et calculer leur surface.</p>
+<pre data-fichier="rectangle.c"><code class="language-c">#include&lt;stdio.h&gt;
+
+double surface(double, double);
+
+int main() {
+    double largeur = 3.0;
+    double hauteur = 4.0;
+    printf("Surface du rectangle : %lf", surface(largeur, hauteur));
+}
+
+double surface(double largeur, double hauteur) {
+    return (largeur * hauteur);
+}</code></pre>
+<pre class="terminal"><code>$ gcc -Wall -o rectangle rectangle.c
+$ ./rectangle
+Surface du rectangle : 12.000000</code></pre>
+    <p>Les données et les traitements s'expriment <strong>séparément</strong> : les variables stockent les données, la fonction <code>surface</code> réalise le traitement, et le seul lien entre les deux est le passage d'arguments.</p>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Critique fondamentale <span class="ref">p. 8</span></p>
+      <p>Il n'existe <strong>aucun lien sémantique</strong> explicite entre les éléments du programme :</p>
+      <ul>
+        <li>le lien entre <code>largeur</code> et <code>hauteur</code> n'est pas visible : il repose sur le nommage, qui peut être obscur ou dans une autre langue ;</li>
+        <li>le lien entre les données et le traitement est difficile à établir.</li>
+      </ul>
+    </div>
+
+    <p>Il suffit de renommer les éléments pour que l'intention disparaisse totalement :</p>
+<pre data-fichier="produit.c"><code class="language-c">double produit(double, double);
+
+int main() {
+    double k = 3.0;
+    double p = 4.0;
+    printf("Résultat : %lf", produit(k, p));
+}
+
+double produit(double l, double h) {
+    return (l * h);
+}</code></pre>
+    <p>Rien n'indique plus qu'il s'agit du calcul de la surface d'un rectangle.</p>
+
+    <h3>L'abstraction <span class="ref">p. 8–9</span></h3>
+    <p>Travailler avec plusieurs rectangles aggrave le problème : chacun nécessite son couple de variables, et rien n'empêche de mélanger les données de deux rectangles différents.</p>
+<pre data-fichier="Perte de cohérence"><code class="language-c">double hauteur1 = 2.0, largeur1 = 1.0;
+double hauteur2 = 4.5, largeur2 = 2.5;
+
+surface(hauteur1, largeur2);   /* erreur silencieuse : données incohérentes */</code></pre>
+    <p>Le <strong>processus d'abstraction</strong> consiste à remarquer que tous les rectangles partagent :</p>
+    <ul>
+      <li>des <strong>caractéristiques communes</strong> : une même représentation générique (largeur, hauteur) ;</li>
+      <li>des <strong>mécanismes communs</strong> : un même calcul de surface.</li>
+    </ul>
+    <p>On peut alors raisonner sur une notion plus abstraite, le <em>rectangle</em>, dont <code>rect1</code> et <code>rect2</code> sont des représentants. On se focalise sur l'essentiel et on cache les détails : on écrit <code>rect1.surface()</code>. Du rectangle, on ne voit plus que son <strong>interface d'utilisation</strong>, c'est-à-dire les fonctionnalités offertes pour le manipuler.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Abstraction</span> <span class="ref">p. 9</span></p>
+      <p>L'<dfn>abstraction</dfn> (<span class="en" lang="en">abstraction</span>) se concentre sur la <strong>vue extérieure</strong> d'un objet : elle fournit une interface simple et masque les détails d'implémentation. Pour utiliser un objet, il n'est pas nécessaire de savoir comment il fonctionne à l'intérieur ; il suffit de savoir ce que l'on peut faire avec.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le rectangle en Ruby</span></p>
+      <p>Le support s'arrête à <code>rect1.surface()</code>. Voici le programme objet complet, en Ruby, le langage du module ; la syntaxe (<code>class</code>, <code>initialize</code>, <code>new</code>, variables <code>@…</code>) est détaillée au cours 2.</p>
+<pre data-fichier="rectangle.rb"><code class="language-ruby">class Rectangle
+  def initialize(largeur, hauteur)
+    @largeur = largeur
+    @hauteur = hauteur
+  end
+
+  def surface()
+    return @largeur * @hauteur
+  end
+end
+
+rect1 = Rectangle.new(1.0, 2.0)
+rect2 = Rectangle.new(2.5, 4.5)
+puts "Surface de rect1 : #{rect1.surface()}"
+puts "Surface de rect2 : #{rect2.surface()}"</code></pre>
+<pre class="terminal"><code>$ ruby rectangle.rb
+Surface de rect1 : 2.0
+Surface de rect2 : 11.25</code></pre>
+      <p>Chaque rectangle garde sa largeur et sa hauteur ensemble : on ne peut plus calculer la surface avec la hauteur de l'un et la largeur de l'autre. Et le nom de la classe dit ce que l'on manipule.</p>
+    </div>
+
+    <h3>L'encapsulation <span class="ref">p. 9</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Encapsulation</span></p>
+      <p>L'<dfn>encapsulation</dfn> (<span class="en" lang="en">encapsulation</span>) est le mécanisme technique qui permet, entre autres, de réaliser l'abstraction. Elle consiste à :</p>
+      <ul>
+        <li><strong>regrouper</strong> : lier, dans une <em>classe</em>, les données et les services qui opèrent sur ces données ;</li>
+        <li><strong>protéger</strong> : restreindre l'accès aux données, qui ne peuvent être modifiées qu'au travers des services proposés. L'intégrité de l'objet est ainsi garantie. L'accès à certains services peut lui aussi être restreint.</li>
+      </ul>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La protection, observée</span></p>
+      <p>Avec la classe <code>Rectangle</code> ci-dessus, on tente de lire la largeur depuis l'extérieur de l'objet :</p>
+<pre data-fichier="rectangle.rb (suite)"><code class="language-ruby">puts rect1.largeur</code></pre>
+<pre class="terminal"><code>$ ruby rectangle.rb
+Surface de rect1 : 2.0
+Surface de rect2 : 11.25
+rectangle.rb:16:in '&lt;main&gt;': undefined method 'largeur' for an instance of Rectangle (NoMethodError)</code></pre>
+      <p>Ruby refuse : <code>@largeur</code> n'est accessible qu'à l'objet lui-même, et aucune méthode <code>largeur</code> n'a été prévue dans l'interface. Pour l'autoriser, le concepteur doit ajouter une méthode d'accès (cours 2).</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-2">
+      <p class="bloc-titre">Exercice 2 <span>Du procédural au message</span></p>
+      <p><span class="badge ajout">Ajout</span> Chaque appel procédural ci-dessous devient un envoi de message dans le style du cours (<code>receveur.message(paramètres)</code>). Pour chacun, donner le receveur, le nom du message (celui du cours) et les paramètres (« aucun » s'il n'y en a pas).</p>
+      <details class="indice"><summary>Indice</summary><p>Le receveur est l'objet que la procédure manipulait, souvent son premier paramètre. Les noms de messages du cours sont <code>empile</code>, <code>afficheToi</code>, <code>ouvreToi</code> et <code>retire</code>.</p></details>
+    </div>
+    <div class="atelier" id="poo1-ex2-messages" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "Appels procéduraux et envois de messages",
+        "consigne": "<p>Remplir les trois dernières colonnes.</p>",
+        "options": { "verrou": "depart", "lignes": false, "ordre": true, "mono": true },
+        "depart": ["| Appel procédural | Receveur | Message | Paramètres |", "|---|---|---|---|", "| empiler(unePile, unTruc) |  |  |  |", "| ListeAfficher(L) |  |  |  |", "| ouvrir(maPorte) |  |  |  |", "| retirer(monCompte, 1200) |  |  |  |"],
+        "solution": ["| Appel procédural | Receveur | Message | Paramètres |", "|---|---|---|---|", "| empiler(unePile, unTruc) | unePile | empile | unTruc |", "| ListeAfficher(L) | L | afficheToi | aucun |", "| ouvrir(maPorte) | maPorte | ouvreToi | aucun |", "| retirer(monCompte, 1200) | monCompte | retire | 1200 |"],
+        "explication": "<p>Dans chaque cas, l'objet que la procédure manipulait « de l'extérieur » devient le receveur, et il perd sa place parmi les paramètres : unePile.empile(unTruc), L.afficheToi(), maPorte.ouvreToi(), monCompte.retire(1200). C'est désormais l'objet qui est responsable de l'action ; la procédure globale disparaît.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Concepts et principes de base <span class="ref">p. 10</span></h2>
+    <p>Tous les langages objets reposent sur un petit nombre de concepts, et sur trois principes qui les organisent. Ce cours traite les deux premiers principes ; le troisième, l'héritage, fera l'objet du cours 3.</p>
+
+    <h3>Cinq concepts, trois principes <span class="ref">p. 10</span></h3>
+    <div class="colonnes">
+      <div>
+        <p><strong>Les cinq concepts de base</strong></p>
+        <ol>
+          <li>Les objets</li>
+          <li>L'envoi de messages</li>
+          <li>Les classes et l'instanciation</li>
+          <li>Les méthodes</li>
+          <li>L'héritage</li>
+        </ol>
+      </div>
+      <div>
+        <table>
+          <caption>Les trois principes fondateurs</caption>
+          <thead><tr><th>Principe</th><th>Concepts associés</th></tr></thead>
+          <tbody>
+            <tr><td>P1 — Approche simulatoire de la programmation</td><td>Objets et messages</td></tr>
+            <tr><td>P2 — Distinction entre concept et représentant du concept</td><td>Classes et instances</td></tr>
+            <tr><td>P3 — Classification des concepts</td><td>Héritage</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> Les listes de concepts varient d'un document à l'autre. La synthèse (p. 18) cite comme cinq concepts « objets, classes et instances, messages et méthodes, héritage, encapsulation » ; la présentation du module range l'abstraction, l'encapsulation, le polymorphisme et la généricité parmi les concepts, et les objets, messages, classes, méthodes et l'héritage parmi les principes. Le fond ne change pas ; seul le découpage diffère.</p>
+
+    <h3>Uniformité des principes, diversité des langages <span class="ref">p. 10</span></h3>
+    <p>Tous les langages objets reposent sur ces mêmes concepts et principes, simples et uniformes. Les langages et systèmes sont pourtant très divers, selon leur orientation : génie logiciel, intelligence artificielle, bases de données, systèmes répartis, interfaces homme-machine. Les principaux points de divergence sont :</p>
+    <ul>
+      <li><strong>la vérification de type</strong>, et donc la généricité et les métaclasses : utile en génie logiciel, elle devient une gêne pour le prototypage et la conception ;</li>
+      <li><strong>la gestion de la mémoire</strong> : présence ou non d'un <dfn>ramasse-miettes</dfn> (<span class="en" lang="en">garbage collector</span>) ;</li>
+      <li><strong>les attributs actifs</strong> (complexes) : utiles en représentation des connaissances.</li>
+    </ul>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Vérification de type : Java et Ruby</span></p>
+      <p>Java vérifie les types à la compilation : envoyer <code>surface()</code> à une variable dont le type ne prévoit pas cette méthode est refusé avant toute exécution. Ruby ne vérifie qu'à l'exécution, au moment où le message arrive : on l'a vu avec <code>NoMethodError</code>. La vérification à la compilation attrape des erreurs tôt, ce qui compte sur un gros logiciel ; son absence rend le code plus court et plus souple, ce qui aide à prototyper.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Principe 1 : objets et messages <span class="ref">p. 10–15</span></h2>
+    <p>Le premier principe dit comment un programme objet s'exécute : des objets, et des messages qu'ils s'envoient. On le découvre sur plusieurs exemples, puis on voit comment un objet est réalisé en mémoire.</p>
+
+    <h3>Approche simulatoire <span class="ref">p. 10</span></h3>
+    <ul>
+      <li>On raisonne sur les <strong>objets</strong>, et non sur les traitements.</li>
+      <li>Le fonctionnement d'un programme objet est l'animation d'un modèle réduit d'objets qui réagissent à nos actions et interagissent entre eux.</li>
+      <li>Programmer, c'est construire une simulation : on envoie des messages à des objets qui réagissent.</li>
+      <li>On pense en termes d'<strong>objets et d'envois de messages</strong>, et non de fonctions et de procédures.</li>
+    </ul>
+
+    <h3>Exemple : empiler un élément sur une pile <span class="ref">p. 11</span></h3>
+    <div class="colonnes">
+      <div class="colonne contre">
+        <p class="colonne-titre">Approche procédurale</p>
+        <p>On appelle une procédure à deux paramètres, <code>empiler(unePile, unTruc)</code>. C'est la procédure qui manipule la pile.</p>
+      </div>
+      <div class="colonne pour">
+        <p class="colonne-titre">Approche objet</p>
+        <p>On envoie à <code>unePile</code> le message <code>empile</code> avec le paramètre <code>unTruc</code>. La pile est responsable de la manière de réaliser l'action : elle ne se laisse pas manipuler par une fonction globale, on lui <em>demande</em> d'empiler.</p>
+      </div>
+    </div>
+    <div class="tableau compact">
+      <table>
+        <caption>L'envoi du message dans trois langages</caption>
+        <thead><tr><th>Langage</th><th>Envoi du message</th></tr></thead>
+        <tbody>
+          <tr><td>Smalltalk</td><td><code>unePile empile: unTruc</code></td></tr>
+          <tr><td>C++</td><td><code>unePile.empile(unTruc)</code></td></tr>
+          <tr><td>Ruby</td><td><code>unePile.empile(unTruc)</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Dans les trois cas, on écrit d'abord le <dfn>receveur</dfn> (<span class="en" lang="en">receiver</span>), puis le message et ses paramètres. En Smalltalk, le nom du message se termine par deux-points devant chaque paramètre.</p>
+
+    <h3>Définitions fondamentales <span class="ref">p. 11</span></h3>
+    <p>Prenons l'exemple d'une personne : elle possède un prénom, un nom et un âge ; elle sait se présenter, lire et courir.</p>
+    <dl class="glossaire">
+      <dt>Modularisation</dt>
+      <dd>Le logiciel est développé sous forme de petits modules appelés <strong>objets</strong>, qui regroupent des structures de données et les opérations autorisées sur ces données. C'est la définition même d'un <dfn>type abstrait de données</dfn> (TAD).</dd>
+      <dt>Identité</dt>
+      <dd>Les données sont regroupées en entités discrètes et identifiables : les objets.</dd>
+      <dt>Classification</dt>
+      <dd>Les objets ayant la même structure de données et les mêmes services sont regroupés dans une même <strong>classe</strong>. Une classe est un type abstrait de données.</dd>
+      <dt>Abstraction</dt>
+      <dd>Vue générique d'une entité, qui permet de ne pas être limité par des contraintes d'ordre technique ou matériel.</dd>
+      <dt>Encapsulation</dt>
+      <dd>L'objet est indépendant et protégé parce qu'il gère lui-même ses données internes : il est seul à pouvoir accéder à ces données vitales.</dd>
+    </dl>
+    <table>
+      <caption>La personne : un objet et sa classe</caption>
+      <thead><tr><th>Objet (instance de <em>Personne</em>)</th><th>Classe <em>Personne</em> — données</th><th>Classe <em>Personne</em> — services</th></tr></thead>
+      <tbody>
+        <tr><td>Lazare · Garcin · 30</td><td>prénom, nom, âge</td><td>sePrésenter, lire, courir</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Interface et implémentation <span class="ref">p. 11–12</span></h3>
+    <p>L'encapsulation induit deux niveaux de perception d'un objet :</p>
+    <ul>
+      <li><strong>le niveau externe</strong>, partie visible par les programmeurs-utilisateurs : l'<dfn>interface</dfn> (<span class="en" lang="en">interface</span>), constituée des en-têtes de quelques méthodes bien choisies. Elle est le résultat du processus d'abstraction ;</li>
+      <li><strong>le niveau interne</strong>, les détails d'<dfn>implémentation</dfn> (<span class="en" lang="en">implementation</span>) : attributs et méthodes accessibles uniquement depuis l'intérieur de l'objet.</li>
+    </ul>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Analogie <span>La voiture</span> <span class="ref">p. 12</span></p>
+      <p>Le volant, l'accélérateur et la pédale de frein constituent l'interface d'une voiture : c'est tout ce qu'il faut connaître pour la conduire, et non pour la réparer ou comprendre son fonctionnement. Nul besoin de savoir comment sont fabriqués le moteur ou la direction. L'interface reste la même si l'on change de moteur, voire de voiture (dans une certaine mesure) : c'est l'abstraction de la notion de voiture en tant qu'objet à conduire.</p>
+    </div>
+
+    <p>Séparer interne et externe offre un cadre plus rigoureux : les objets n'étant utilisés qu'au travers de leur interface, les modifications internes restent invisibles. Par exemple, si le concepteur de <code>Rectangle</code> remplace les attributs <code>largeur</code> et <code>hauteur</code> par un tableau <code>double[] dims</code>, le code utilisateur <code>rect.surface()</code> continue de fonctionner.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 230" width="640" role="img" aria-labelledby="fig-interface-titre">
+        <title id="fig-interface-titre">Le programmeur utilisateur n'utilise que l'interface de Rectangle, la méthode surface ; le programmeur concepteur écrit la classe, avec son implémentation cachée faite de largeur et hauteur</title>
+        <defs>
+          <marker id="fleche-interface" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="85" y="18" text-anchor="middle" class="gras">Programmeur utilisateur</text>
+        <rect class="boite" x="5" y="35" width="160" height="56" rx="6"/>
+        <text x="18" y="58" class="mono" font-size="13">Rectangle rect;</text>
+        <text x="18" y="79" class="mono" font-size="13">rect.surface();</text>
+        <text x="85" y="112" text-anchor="middle" class="t2">utilise le type</text>
+        <rect class="boite-accent" x="225" y="30" width="195" height="180" rx="10"/>
+        <text x="322" y="52" text-anchor="middle" class="accent">Interface (partie visible)</text>
+        <text x="322" y="75" text-anchor="middle" class="mono">surface()</text>
+        <rect class="pointille" x="250" y="92" width="145" height="102" rx="6"/>
+        <text x="322" y="114" text-anchor="middle">Implémentation</text>
+        <text x="322" y="131" text-anchor="middle" class="t2" font-size="12">(partie cachée)</text>
+        <text x="322" y="158" text-anchor="middle" class="mono">largeur</text>
+        <text x="322" y="178" text-anchor="middle" class="mono">hauteur</text>
+        <text x="555" y="18" text-anchor="middle" class="gras">Programmeur concepteur</text>
+        <rect class="boite" x="475" y="35" width="160" height="78" rx="6"/>
+        <text x="488" y="58" class="mono" font-size="13">class Rectangle</text>
+        <text x="504" y="79" class="mono" font-size="13">largeur, hauteur</text>
+        <text x="504" y="100" class="mono" font-size="13">surface()</text>
+        <text x="555" y="134" text-anchor="middle" class="t2">définit la classe</text>
+        <text x="555" y="152" text-anchor="middle" class="t2">et décide de l'interface</text>
+        <path class="trait" d="M165 70 L262 70" marker-end="url(#fleche-interface)"/>
+        <path class="trait" d="M475 90 L397 140" marker-end="url(#fleche-interface)"/>
+      </svg>
+      <figcaption>L'utilisateur ne connaît que l'interface ; le concepteur définit l'implémentation et décide de l'interface (figure 2 du support, redessinée).</figcaption>
+    </figure>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Règle <span>Attributs inaccessibles</span> <span class="ref">p. 12</span></p>
+      <p>Les attributs d'un objet ne doivent pas être accessibles depuis l'extérieur : on n'y accède qu'au travers de méthodes, et uniquement pour ce qui est nécessaire.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Changer l'implémentation, garder l'interface</span></p>
+      <p>Le support donne l'exemple en Java (<code>double[] dims</code>). En Ruby, on remplace les deux variables par un tableau ; seul l'intérieur de la classe change :</p>
+<pre data-fichier="rectangle2.rb"><code class="language-ruby">class Rectangle
+  def initialize(largeur, hauteur)
+    @dims = [largeur, hauteur]    # nouvelle représentation interne
+  end
+
+  def surface()
+    return @dims[0] * @dims[1]
+  end
+end
+
+rect1 = Rectangle.new(1.0, 2.0)
+puts "Surface de rect1 : #{rect1.surface()}"</code></pre>
+<pre class="terminal"><code>$ ruby rectangle2.rb
+Surface de rect1 : 2.0</code></pre>
+      <p>Le code utilisateur (<code>Rectangle.new(1.0, 2.0)</code>, <code>rect1.surface()</code>) est identique à celui de la première version : il n'a pas à être modifié. Il n'en irait pas de même si l'utilisateur avait lu <code>largeur</code> directement.</p>
+    </div>
+
+    <h3>Exemple : ouvrir une porte <span class="ref">p. 12</span></h3>
+    <div class="colonnes">
+      <div class="colonne contre">
+        <p class="colonne-titre">Approche procédurale</p>
+<pre><code class="language-pseudo">ouvrir(maPorte)
+   <b>si</b> un seul battant <b>alors</b>
+      ouvrirPorteUnSeulBattant(maPorte)
+   <b>sinon si</b> deux battants <b>alors</b>
+      ouvrirPorteDeuxBattants(maPorte)
+   <b>sinon si</b> ...
+   <b>fin</b></code></pre>
+        <p>L'utilisateur doit connaître le code à exécuter pour tous les types de portes : source d'erreurs, et maintenance difficile, puisque l'ajout d'un nouveau type de porte impose de modifier tous les appels.</p>
+      </div>
+      <div class="colonne pour">
+        <p class="colonne-titre">Approche objet</p>
+<pre><code class="language-plaintext">maPorte ouvreToi</code></pre>
+        <p>La porte est responsable de sa procédure d'ouverture (plus précisément, c'est le <em>type</em> de porte qui porte cette responsabilité). Le concepteur de la porte sait comment l'ouvrir ; l'utilisateur ne retient que le message.</p>
+        <p>Résultat : moins d'erreurs, une maintenance plus facile et une conception plus claire.</p>
+      </div>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les portes en Ruby</span></p>
+      <p>Chaque type de porte devient une classe qui sait répondre à <code>ouvreToi</code>. Le code utilisateur envoie le même message à toutes les portes, sans jamais tester leur type :</p>
+<pre data-fichier="porte.rb"><code class="language-ruby">class PorteUnBattant
+  def ouvreToi()
+    puts "Je pousse mon battant."
+  end
+end
+
+class PorteDeuxBattants
+  def ouvreToi()
+    puts "J'ouvre mes deux battants."
+  end
+end
+
+class PorteCoulissante    # nouveau type de porte : aucun appel à modifier
+  def ouvreToi()
+    puts "Je glisse sur mon rail."
+  end
+end
+
+portes = [PorteUnBattant.new(), PorteDeuxBattants.new(), PorteCoulissante.new()]
+for maPorte in portes
+  maPorte.ouvreToi()
+end</code></pre>
+<pre class="terminal"><code>$ ruby porte.rb
+Je pousse mon battant.
+J'ouvre mes deux battants.
+Je glisse sur mon rail.</code></pre>
+      <p>Ajouter la porte coulissante n'a demandé qu'une nouvelle classe : la boucle n'a pas changé. C'est l'extensibilité promise en partie 1, et un premier exemple de polymorphisme.</p>
+    </div>
+
+    <h3>La métaphore du « monde enchanté » <span class="ref">p. 13</span></h3>
+    <p>Tout traitement se déroule pas à pas, par envoi de messages d'un objet à un autre, <strong>sans contrôle global</strong>. Il n'y a plus de programme principal qui contrôle tout, mais des objets responsables qui savent ce qu'ils ont à faire et à qui confier la tâche suivante.</p>
+    <p>Ce style de programmation demande une conversion intellectuelle aux programmeurs habitués au procédural, mais il facilite la maintenance et diminue la complexité.</p>
+
+    <div class="bloc note">
+      <p class="bloc-titre">À retenir <span>Autonomie des objets</span> <span class="ref">p. 13</span></p>
+      <ul>
+        <li>Les objets sont responsables des actions qu'ils savent effectuer.</li>
+        <li>Un même message peut déclencher des traitements différents selon la nature de l'objet receveur : c'est le <dfn>polymorphisme</dfn> (<span class="en" lang="en">polymorphism</span>).</li>
+        <li>On n'écrit plus <code>ListeCreer</code>, <code>PileCreer</code>, <code>ArbreCreer</code>, mais <code>maListe.creer(…)</code>, <code>maPile.creer(…)</code>, <code>monArbre.creer(…)</code>.</li>
+      </ul>
+    </div>
+
+    <h3>Exemple : afficher une liste chaînée <span class="ref">p. 13–14</span></h3>
+    <p>En programmation procédurale, la liste est parcourue et manipulée « de l'extérieur » :</p>
+<pre data-fichier="Affichage procédural (C)"><code class="language-c">void ListeAfficher(LISTE L) {
+    POSITION p = ListePremier(L), fin = ListeSentinelle(L);
+    printf("\n(");
+    while (p != fin) {
+        ElementAfficher(ListeAcceder(p, L));
+        p = ListeSuivant(p, L);
+    }
+    printf(")\n");
+}</code></pre>
+    <p>En programmation objet, on procède en deux temps.</p>
+    <ol class="etapes">
+      <li><strong>Modélisation.</strong> Chaque <em>cellule</em> connaît son contenu et sa suivante, et sait répondre au message <code>afficheToi</code> : elle affiche son contenu puis envoie <code>afficheToi</code> à sa suivante. La <em>liste</em> connaît sa première cellule et sait, elle aussi, répondre à <code>afficheToi</code>.</li>
+      <li><strong>Activation.</strong> On envoie <code>afficheToi</code> à la liste, qui le transmet à sa première cellule ; celle-ci s'affiche et transmet le message à la suivante, et ainsi de suite.</li>
+    </ol>
+    <div class="colonnes">
+<pre data-fichier="Classe Cellule — méthode afficheToi"><code class="language-ruby">def afficheToi()
+  print @contenu
+  if (@suivante != nil)
+    print " - "
+    @suivante.afficheToi()
+  end
+end</code></pre>
+<pre data-fichier="Classe Liste — méthode afficheToi"><code class="language-ruby">def afficheToi()
+  @premiereCellule.afficheToi()
+end</code></pre>
+    </div>
+
+    <p>Remarques :</p>
+    <ol>
+      <li><strong>Itération ou délégation.</strong> Au lieu de manipuler la liste de loin (itération), on délègue le travail aux cellules : le contrôle appartient aux objets et non au programme principal. La <dfn>délégation</dfn> est plus naturelle.</li>
+      <li><strong>Complexité réduite.</strong> Le client n'a plus à connaître ni à tester la fin de liste : la dernière cellule sait qu'elle est la dernière.</li>
+      <li><strong>Efficacité.</strong> Sur un exemple aussi simple, la cascade de messages est moins efficace qu'une itération. Sur un programme de taille réelle, ce n'est plus vrai si l'on tient compte des temps de conception, de mise au point et de maintenance (règle des 90-10).</li>
+    </ol>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le programme complet</span></p>
+      <p>Le support ne donne que les deux méthodes. Avec les classes et la construction d'une liste de trois cellules :</p>
+<pre data-fichier="liste.rb"><code class="language-ruby">class Cellule
+  def initialize(contenu, suivante)
+    @contenu = contenu
+    @suivante = suivante
+  end
+
+  def afficheToi()
+    print @contenu
+    if (@suivante != nil)
+      print " - "
+      @suivante.afficheToi()
+    end
+  end
+end
+
+class Liste
+  def initialize(premiereCellule)
+    @premiereCellule = premiereCellule
+  end
+
+  def afficheToi()
+    @premiereCellule.afficheToi()
+  end
+end
+
+c3 = Cellule.new(3, nil)
+c2 = Cellule.new(2, c3)
+c1 = Cellule.new(1, c2)
+laListe = Liste.new(c1)
+laListe.afficheToi()
+puts</code></pre>
+<pre class="terminal"><code>$ ruby liste.rb
+1 - 2 - 3</code></pre>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>La liste vide</span></p>
+      <p><span class="badge ajout">Ajout</span> La méthode <code>afficheToi</code> de <code>Liste</code> suppose une liste non vide. Avec <code>Liste.new(nil).afficheToi()</code>, le message part vers <code>nil</code>, qui ne le comprend pas : <code>undefined method 'afficheToi' for nil (NoMethodError)</code>. C'est la liste qui est responsable de ce cas : elle doit tester <code>@premiereCellule != nil</code> avant de déléguer.</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-3">
+      <p class="bloc-titre">Exercice 3 <span>La cascade de messages</span></p>
+      <p><span class="badge ajout">Ajout</span> Le programme principal envoie <code>afficheToi</code> à <code>laListe</code>, liste des trois cellules <code>c1</code>, <code>c2</code>, <code>c3</code> du programme complet. Tracer le diagramme de séquence des messages <code>afficheToi</code> échangés, dans l'ordre. Qu'affiche le programme ?</p>
+      <details class="indice"><summary>Indice</summary><p>Chaque objet transmet le message au suivant ; la dernière cellule ne transmet rien, puisque sa suivante vaut <code>nil</code>.</p></details>
+    </div>
+    <div class="atelier" id="poo1-ex3-sequence" data-editeur="sequence">
+      <script type="application/json">
+      {
+        "titre": "Envoi de afficheToi à une liste de trois cellules",
+        "consigne": "<p>Les participants sont déjà placés. Ajouter les messages <code>afficheToi()</code>, dans l'ordre où ils sont envoyés ; les retours et les <code>print</code> ne sont pas demandés.</p>",
+        "depart": ["acteur Programme", "objet laListe : Liste", "objet c1 : Cellule", "objet c2 : Cellule", "objet c3 : Cellule"],
+        "solution": ["acteur Programme", "objet laListe : Liste", "objet c1 : Cellule", "objet c2 : Cellule", "objet c3 : Cellule", "Programme -> laListe : afficheToi()", "laListe -> c1 : afficheToi()", "c1 -> c2 : afficheToi()", "c2 -> c3 : afficheToi()"],
+        "explication": "<p>Le programme n'envoie qu'un seul message, à la liste. La liste le délègue à sa première cellule ; chaque cellule s'affiche puis délègue à sa suivante ; c3, dont la suivante vaut nil, s'affiche et s'arrête. Aucun objet ne parcourt la liste : le contrôle passe d'objet en objet. Le programme affiche « 1 - 2 - 3 ». Les messages sont imbriqués : c1 n'a fini de répondre qu'une fois que c2 et c3 ont répondu.</p>"
+      }
+      </script>
+    </div>
+
+    <h3>Réalisation informatique d'un objet <span class="ref">p. 14–15</span></h3>
+    <p>Un objet du monde réel est une entité permanente dotée d'une identité, définie par :</p>
+    <ul>
+      <li>sa <strong>structure</strong> (« il est fait comme ça ») : un ensemble de champs dont les valeurs, qui peuvent elles-mêmes être des objets, définissent son <dfn>état</dfn>, variable dans le temps ;</li>
+      <li>son <strong>comportement</strong> (« il sait faire ça ») : un ensemble d'actions exécutables à la demande, qui dépendent de l'état au moment de la demande.</li>
+    </ul>
+    <table>
+      <caption>Réalisation informatique d'un objet</caption>
+      <thead><tr><th>Notion</th><th>Réalisation informatique</th></tr></thead>
+      <tbody>
+        <tr><th>Identité</th><td>Une adresse : pointeur ou référence vers une zone mémoire.</td></tr>
+        <tr><th>État</th><td>Un enregistrement (structure) : un ensemble de champs, chacun connu par son nom et contenant une valeur (un autre objet). L'adresse de l'objet est celle de cet enregistrement, qui constitue la mémoire privée de l'objet.</td></tr>
+        <tr><th>Comportement</th><td>Une batterie de procédures, les <strong>méthodes</strong>, que l'objet exécute lorsqu'il reçoit un message.</td></tr>
+      </tbody>
+    </table>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 240" width="640" role="img" aria-labelledby="fig-reseau-titre">
+        <title id="fig-reseau-titre">L'objet unCompteEnBanque a trois champs : numéro référence l'entier 732, solde le réel 2025.54, titulaire l'objet unePersonne, dont les champs nom et adresse référencent deux chaînes</title>
+        <defs>
+          <marker id="fleche-reseau" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite-accent" x="5" y="10" width="190" height="215" rx="8"/>
+        <text x="100" y="32" text-anchor="middle" class="gras accent">unCompteEnBanque</text>
+        <path class="trait" d="M5 44 H195"/>
+        <text x="20" y="68">numéro</text>
+        <text x="20" y="94">solde</text>
+        <text x="20" y="120">titulaire</text>
+        <path class="trait" d="M5 136 H195"/>
+        <text x="20" y="158" class="mono" font-size="12">donneTonSolde()</text>
+        <text x="20" y="176" class="mono" font-size="12">depose(uneSomme)</text>
+        <text x="20" y="194" class="mono" font-size="12">retire(uneSomme)</text>
+        <text x="20" y="212" class="mono" font-size="12">afficheToi()</text>
+        <rect class="boite" x="255" y="50" width="150" height="28" rx="6"/>
+        <text x="330" y="69" text-anchor="middle">un Entier : 732</text>
+        <rect class="boite" x="255" y="84" width="150" height="28" rx="6"/>
+        <text x="330" y="103" text-anchor="middle">un Réel : 2025.54</text>
+        <rect class="boite-accent" x="255" y="122" width="170" height="108" rx="8"/>
+        <text x="340" y="142" text-anchor="middle" class="gras accent">unePersonne</text>
+        <path class="trait" d="M255 152 H425"/>
+        <text x="270" y="174">nom</text>
+        <text x="270" y="198">adresse</text>
+        <path class="trait" d="M255 206 H425"/>
+        <text x="270" y="223" class="mono" font-size="12">afficheToi()</text>
+        <rect class="boite" x="470" y="156" width="165" height="28" rx="6"/>
+        <text x="552" y="175" text-anchor="middle">une Chaîne : "Léo"</text>
+        <rect class="boite" x="470" y="190" width="165" height="28" rx="6"/>
+        <text x="552" y="209" text-anchor="middle">une Chaîne : l'adresse</text>
+        <path class="trait" d="M85 63 H253" marker-end="url(#fleche-reseau)"/>
+        <path class="trait" d="M70 89 L150 89 L253 98" marker-end="url(#fleche-reseau)"/>
+        <path class="trait" d="M90 115 L200 115 L253 138" marker-end="url(#fleche-reseau)"/>
+        <path class="trait" d="M305 169 H468" marker-end="url(#fleche-reseau)"/>
+        <path class="trait" d="M330 193 L400 193 L468 203" marker-end="url(#fleche-reseau)"/>
+      </svg>
+      <figcaption>Réseau d'objets : les champs d'un objet référencent d'autres objets (figure 3 du support, redessinée).</figcaption>
+    </figure>
+
+    <p>Deux points sont essentiels :</p>
+    <ol>
+      <li><strong>Distinguer un objet de son état.</strong> L'objet est une adresse (<code>unCompteEnBanque</code>) ; son état est défini par la valeur de ses attributs (732, <code>unePersonne</code>, 2025.54). 732 est la valeur du champ <code>numéro</code>.</li>
+      <li><strong>Donner vie à un objet.</strong> Un objet réagit lorsqu'on le sollicite, c'est-à-dire lorsqu'on lui envoie un message : <code>unCompteEnBanque.donneTonSolde()</code>, <code>unCompteEnBanque.depose(2000)</code>. L'objet exécute alors la méthode correspondante, dont le résultat dépend de son état.</li>
+    </ol>
+
+    <div class="colonnes">
+<pre data-fichier="Smalltalk"><code class="language-plaintext">donneTonSolde
+    ^solde
+
+depose: uneSomme
+    solde := solde + uneSomme</code></pre>
+<pre data-fichier="Ruby"><code class="language-ruby">def donneTonSolde()
+  return @solde
+end
+
+def depose(uneSomme)
+  @solde += uneSomme
+end</code></pre>
+    </div>
+    <p><code>solde</code> est une variable d'état (un attribut) de l'objet receveur ; en Ruby et en Smalltalk, on parle de <dfn>variable d'instance</dfn> (<span class="en" lang="en">instance variable</span>), notée <code>@solde</code> en Ruby. <span class="badge ajout">Ajout</span> En Smalltalk, <code>^</code> renvoie une valeur et <code>:=</code> est l'affectation.</p>
+
+    <div class="bloc exercice" id="ex-4">
+      <p class="bloc-titre">Exercice 4 <span>Identité, état, comportement</span></p>
+      <p><span class="badge ajout">Ajout</span> Pour l'objet <code>unCompteEnBanque</code> de la figure : a) qu'est-ce qui réalise son identité ? b) Quel est son état ? c) Quel est son comportement ? d) Après <code>unCompteEnBanque.depose(2000)</code>, qu'est-ce qui a changé, et qu'est-ce qui n'a pas changé ?</p>
+      <details class="indice"><summary>Indice</summary><p>Reprendre le tableau « Réalisation informatique d'un objet » ligne par ligne.</p></details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>a) Son adresse en mémoire, désignée ici par la référence <code>unCompteEnBanque</code>.</p>
+        <p>b) La valeur de ses trois champs : <code>numéro</code> vaut 732, <code>solde</code> vaut 2025.54, <code>titulaire</code> référence l'objet <code>unePersonne</code>.</p>
+        <p>c) Les messages qu'il comprend : <code>donneTonSolde()</code>, <code>depose(uneSomme)</code>, <code>retire(uneSomme)</code>, <code>afficheToi()</code>.</p>
+        <p>d) Seul l'état a changé : le solde vaut maintenant 4025.54. L'identité est la même (c'est le même compte, à la même adresse), le numéro et le titulaire aussi ; <code>unePersonne</code> n'a pas été touchée.</p>
+      </details>
+    </div>
+
+    <h3>Terminologie <span class="ref">p. 15</span></h3>
+    <table>
+      <caption>Termes équivalents selon les langages</caption>
+      <thead><tr><th>Notion</th><th>Termes équivalents</th></tr></thead>
+      <tbody>
+        <tr><th>Variables d'état</th><td>Attributs, champs, données membres (C++), variables d'instance (Ruby, Smalltalk)</td></tr>
+        <tr><th>Comportement</th><td>Procédures, opérations, fonctions membres (C++), méthodes (Ruby, Smalltalk)</td></tr>
+        <tr><th>Message</th><td>Mécanisme de base qui, envoyé à un objet (le <em>receveur</em>), active l'une de ses méthodes</td></tr>
+      </tbody>
+    </table>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Principe 1 <span>Synthèse : objets et messages</span> <span class="ref">p. 15</span></p>
+      <p>Programmer objet, c'est construire un <strong>modèle composé d'objets qui réagissent à des messages</strong>. Appliqué au langage :</p>
+      <ul>
+        <li>un système est composé d'objets ;</li>
+        <li>les objets interagissent en s'envoyant des messages ;</li>
+        <li>l'envoi d'un message provoque l'exécution d'une méthode dans le contexte de l'objet receveur.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Principe 2 : classes et instances <span class="ref">p. 15–17</span></h2>
+    <p>Le second principe sépare ce qui est commun à des objets de ce qui est propre à chacun. On écrit une fois la description commune, la classe, et l'on fabrique autant d'objets qu'il faut.</p>
+
+    <h3>Concept abstrait et objet concret <span class="ref">p. 15–16</span></h3>
+    <p>Le principe 2 distingue le <strong>concept</strong> (abstrait) de ses <strong>représentants</strong> (concrets). Une classe est l'analogue d'un type abstrait de données : le texte qui spécifie un objet définit en réalité une infinité d'objets isomorphes, ayant la même structure d'état et le même comportement (ils partagent l'ensemble des procédures). Ce texte devient une <dfn>classe</dfn> (<span class="en" lang="en">class</span>), objet abstrait qui définit une infinité d'<dfn>instances</dfn> (<span class="en" lang="en">instances</span>).</p>
+    <p>Le processus d'abstraction identifie les caractéristiques et les mécanismes communs à un ensemble d'éléments. Une classe est ainsi un <strong>moule</strong> qui permet de générer une infinité d'objets.</p>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Le compte en banque</span> <span class="ref">p. 15–16</span></p>
+      <p>Un compte en banque « connaît » (état) un numéro, un titulaire et un solde, et « sait » (comportement) donner son solde, recevoir un dépôt et subir un retrait. Ce texte ne décrit pas <em>mon</em> compte ou <em>ton</em> compte : il définit la classe <code>Compte</code>.</p>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 275" width="640" role="img" aria-labelledby="fig-classe-titre">
+        <title id="fig-classe-titre">La classe Compte, avec sa structure numéro, solde, titulaire et son comportement, et deux instances, unCompte et unAutreCompte ; le message depose(2000) est envoyé à unCompte</title>
+        <defs>
+          <marker id="fleche-classe" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+          <marker id="fleche-classe-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein-accent"/>
+          </marker>
+        </defs>
+        <text x="0" y="40" class="gras t2" font-size="12">CONCEPT ABSTRAIT</text>
+        <text x="0" y="57" class="t2" font-size="12">(classe)</text>
+        <rect class="boite-accent" x="220" y="10" width="290" height="132" rx="8"/>
+        <text x="365" y="31" text-anchor="middle" class="gras accent">Classe Compte</text>
+        <path class="trait" d="M220 41 H510 M365 41 V142"/>
+        <text x="235" y="58" class="t2" font-size="12">structure</text>
+        <text x="235" y="80" class="mono" font-size="13">numéro</text>
+        <text x="235" y="98" class="mono" font-size="13">solde</text>
+        <text x="235" y="116" class="mono" font-size="13">titulaire</text>
+        <text x="378" y="58" class="t2" font-size="12">comportement</text>
+        <text x="378" y="76" class="mono" font-size="13">donneTonSolde</text>
+        <text x="378" y="93" class="mono" font-size="13">depose</text>
+        <text x="378" y="110" class="mono" font-size="13">retire</text>
+        <text x="378" y="127" class="mono" font-size="13">afficheToi</text>
+        <text x="0" y="200" class="gras t2" font-size="12">OBJETS CONCRETS</text>
+        <text x="0" y="217" class="t2" font-size="12">(instances)</text>
+        <ellipse class="boite" cx="255" cy="208" rx="100" ry="38"/>
+        <text x="255" y="195" text-anchor="middle" class="mono" font-size="13">numéro 8765</text>
+        <text x="255" y="212" text-anchor="middle" class="mono" font-size="13">solde 5000</text>
+        <text x="255" y="229" text-anchor="middle" class="mono" font-size="13">titulaire Després</text>
+        <text x="255" y="266" text-anchor="middle" class="gras">unCompte</text>
+        <ellipse class="boite" cx="515" cy="208" rx="110" ry="38"/>
+        <text x="515" y="195" text-anchor="middle" class="mono" font-size="13">numéro 2345</text>
+        <text x="515" y="212" text-anchor="middle" class="mono" font-size="13">solde 3 milliards</text>
+        <text x="515" y="229" text-anchor="middle" class="mono" font-size="13">titulaire Jacoboni</text>
+        <text x="515" y="266" text-anchor="middle" class="gras">unAutreCompte</text>
+        <path class="pointille" d="M275 170 L320 145" marker-end="url(#fleche-classe)"/>
+        <text x="258" y="160" text-anchor="end" class="t2" font-size="12">instance de</text>
+        <path class="pointille" d="M495 170 L455 145" marker-end="url(#fleche-classe)"/>
+        <text x="515" y="160" class="t2" font-size="12">instance de</text>
+        <text x="60" y="152" class="mono accent" font-size="13">depose(2000)</text>
+        <path class="accent" d="M95 160 L152 192" marker-end="url(#fleche-classe-accent)"/>
+      </svg>
+      <figcaption>La classe <code>Compte</code> et deux de ses instances ; le message <code>depose(2000)</code> est envoyé à <code>unCompte</code> (figure 4 du support, redessinée).</figcaption>
+    </figure>
+    <p><code>unCompte</code> est un représentant concret du concept abstrait <code>Compte</code>.</p>
+
+    <h3>Réalisation <span class="ref">p. 16</span></h3>
+    <ul>
+      <li>Une <strong>classe</strong> est un texte structuré qui rassemble une liste de noms de champs (les variables d'instance) et un catalogue de procédures (les méthodes), chacune avec son nom et son code. Elle définit un <strong>nouveau type</strong> utilisateur.</li>
+      <li>Une <strong>instance</strong> est un objet constitué des champs listés par sa classe, dont le comportement est défini par les procédures de cette classe.</li>
+    </ul>
+
+    <h3>Programmer avec des classes <span class="ref">p. 16</span></h3>
+    <p>La réalisation d'un programme se fait en deux étapes, suivies de son activation :</p>
+    <ol class="etapes">
+      <li><strong>définition</strong> (écriture) des classes ;</li>
+      <li><strong>création des instances</strong> qui composent le modèle ;</li>
+      <li><strong>activation</strong> : envoi d'un message à un objet du modèle.</li>
+    </ol>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Le compte, étape par étape</span> <span class="ref">p. 16</span></p>
+      <ol>
+        <li>On définit la classe <code>Compte</code> ; le résultat est un texte.</li>
+        <li>On crée l'instance <code>monCompte</code> et on l'initialise. <strong>On crée un objet en envoyant un message à sa classe</strong> : <code>monCompte = Compte.ouvrir(101232, 'toto', 2000)</code>. Le message <code>ouvrir</code> est envoyé à la classe <code>Compte</code> avec trois paramètres (numéro, titulaire, solde). <code>Compte</code> exécute la méthode correspondante et retourne une instance correctement initialisée, mémorisée dans la variable <code>monCompte</code>.</li>
+        <li>On envoie des messages à l'instance : <code>monCompte.retire(1200)</code>. L'objet exécute la méthode <code>retire</code>, qui modifie sa variable d'instance <code>solde</code>.</li>
+      </ol>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La classe Compte complète</span></p>
+      <p>Voici une classe <code>Compte</code> qui rend possibles les trois étapes. Elle suit la démarche que présente le cours 2 : on interdit <code>new</code> depuis l'extérieur, on fournit une méthode de classe au nom métier, <code>ouvrir</code>, qui appelle <code>new</code>, et <code>initialize</code> range les valeurs dans les variables d'instance.</p>
+<pre data-fichier="compte.rb"><code class="language-ruby">class Compte
+  private_class_method :new
+
+  def Compte.ouvrir(numero, titulaire, solde)    # méthode de classe
+    new(numero, titulaire, solde)
+  end
+
+  def initialize(numero, titulaire, solde)
+    @numero = numero
+    @titulaire = titulaire
+    @solde = solde
+  end
+
+  def donneTonSolde()
+    return @solde
+  end
+
+  def depose(uneSomme)
+    @solde += uneSomme
+  end
+
+  def retire(uneSomme)
+    @solde -= uneSomme
+  end
+
+  def afficheToi()
+    puts "Compte #{@numero} de #{@titulaire} : solde #{@solde}"
+  end
+end
+
+monCompte = Compte.ouvrir(101232, 'toto', 2000)    # message à la classe
+monCompte.retire(1200)                             # message à l'instance
+monCompte.afficheToi()
+puts monCompte.donneTonSolde()</code></pre>
+<pre class="terminal"><code>$ ruby compte.rb
+Compte 101232 de toto : solde 800
+800</code></pre>
+      <p>Un <code>Compte.new(1, 'titi', 0)</code> écrit hors de la classe échoue (<code>private method 'new' called for class Compte</code>) : on ne crée un compte qu'en l'ouvrant.</p>
+    </div>
+
+    <h3>Méthodes d'instance et méthodes de classe <span class="ref">p. 17</span></h3>
+    <table>
+      <caption>Le destinataire du message détermine le type de méthode</caption>
+      <thead><tr><th>Destinataire du message</th><th>Type de méthode</th><th>Exemple</th></tr></thead>
+      <tbody>
+        <tr><td>Un objet (une instance)</td><td><dfn>Méthode d'instance</dfn></td><td><code>monCompte.retire(1200)</code></td></tr>
+        <tr><td>Une classe</td><td><dfn>Méthode de classe</dfn></td><td><code>Compte.ouvrir(101232, 'toto', 2000)</code></td></tr>
+      </tbody>
+    </table>
+
+    <div class="bloc exercice" id="ex-5">
+      <p class="bloc-titre">Exercice 5 <span>Instance ou classe ?</span></p>
+      <p><span class="badge ajout">Ajout</span> Pour chaque envoi de message, donner le receveur et dire si la méthode exécutée est une méthode d'instance ou une méthode de classe.</p>
+      <details class="indice"><summary>Indice</summary><p>Regarder ce qui précède le point. Par convention, un nom de classe commence par une majuscule ; et en Ruby, un nombre est un objet.</p></details>
+    </div>
+    <div class="atelier" id="poo1-ex5-instance-classe" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "Méthodes d'instance et méthodes de classe",
+        "consigne": "<p>Colonne « Méthode » : écrire « instance » ou « classe ».</p>",
+        "options": { "verrou": "depart", "lignes": false, "ordre": true, "mono": true },
+        "depart": ["| Envoi de message | Receveur | Méthode |", "|---|---|---|", "| monCompte.retire(1200) |  |  |", "| Compte.ouvrir(101232, 'toto', 2000) |  |  |", "| Rectangle.new(3.0, 4.0) |  |  |", "| rect1.surface() |  |  |", "| laListe.afficheToi() |  |  |", "| 3.succ |  |  |"],
+        "solution": ["| Envoi de message | Receveur | Méthode |", "|---|---|---|", "| monCompte.retire(1200) | monCompte | instance |", "| Compte.ouvrir(101232, 'toto', 2000) | Compte | classe |", "| Rectangle.new(3.0, 4.0) | Rectangle | classe |", "| rect1.surface() | rect1 | instance |", "| laListe.afficheToi() | laListe | instance |", "| 3.succ | 3 | instance |"],
+        "explication": "<p>Les messages de création (ouvrir, new) sont envoyés à une classe : ce sont des méthodes de classe. Les autres s'adressent à un objet particulier, dont ils utilisent ou modifient l'état : méthodes d'instance. Le dernier cas est un piège : en Ruby, 3 est un objet, instance de la classe Integer, et succ est une méthode d'instance de cette classe.</p>"
+      }
+      </script>
+    </div>
+
+    <h3>Encapsulation : Java et Ruby <span class="ref">p. 17</span></h3>
+    <p>Un objet possède des données internes, spécifiées dans sa classe : tous les objets d'une même classe ont le même catalogue d'attributs. L'unité d'encapsulation diffère toutefois selon les langages.</p>
+    <table>
+      <caption>Unité d'encapsulation</caption>
+      <thead><tr><th>Langage</th><th>Unité d'encapsulation</th><th>Conséquences</th></tr></thead>
+      <tbody>
+        <tr><th>Java</th><td>La <strong>classe</strong></td><td>Les objets d'une même classe ont accès aux données internes de tous les objets de cette classe. L'accès depuis l'extérieur est possible, voire autorisé par défaut, et se règle par les qualificateurs <code>public</code>, <code>private</code> et <code>protected</code> : le programmeur doit être vigilant sur les autorisations qu'il accorde.</td></tr>
+        <tr><th>Ruby</th><td>L'<strong>objet</strong></td><td>Par défaut, les données d'un objet sont privées pour tout ce qui n'est pas l'objet lui-même. Ce choix favorise la sécurité et la maintenance.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Comparer deux comptes</span></p>
+      <p>On veut savoir si un compte est plus riche qu'un autre. En Java, une méthode de <code>Compte</code> lit directement le solde privé d'un <em>autre</em> compte, puisque l'unité d'encapsulation est la classe :</p>
+<pre data-fichier="Compte.java"><code class="language-java">public class Compte {
+    private double solde;
+
+    public Compte(double solde) {
+        this.solde = solde;
+    }
+
+    public boolean plusRicheQue(Compte autre) {
+        return this.solde > autre.solde;    // autorisé : autre est de la même classe
+    }
+
+    public static void main(String[] args) {
+        Compte a = new Compte(5000);
+        Compte b = new Compte(3000);
+        System.out.println(a.plusRicheQue(b));
+    }
+}</code></pre>
+<pre class="terminal"><code>$ javac Compte.java &amp;&amp; java Compte
+true</code></pre>
+      <p>En Ruby, <code>@solde</code> n'est visible que de l'objet lui-même ; un compte doit <em>demander</em> son solde à l'autre. Sans méthode <code>solde</code>, <code>autre.solde</code> échoue avec <code>undefined method 'solde' for an instance of Compte</code>. Pour autoriser la lecture entre comptes sans l'ouvrir au reste du programme, on déclare la méthode d'accès <code>protected</code> :</p>
+<pre data-fichier="compte_riche.rb"><code class="language-ruby">class Compte
+  def initialize(solde)
+    @solde = solde
+  end
+
+  def plusRicheQue(autre)
+    return @solde > autre.solde
+  end
+
+  protected
+  attr_reader :solde    # lisible par les autres comptes, pas depuis l'extérieur
+end
+
+a = Compte.new(5000)
+b = Compte.new(3000)
+puts a.plusRicheQue(b)
+puts b.solde</code></pre>
+<pre class="terminal"><code>$ ruby compte_riche.rb
+true
+compte_riche.rb:17:in '&lt;main&gt;': protected method 'solde' called for an instance of Compte (NoMethodError)</code></pre>
+      <p>La comparaison fonctionne, mais la dernière ligne, écrite hors de la classe, est refusée. <code>attr_reader</code> et les niveaux d'accès sont détaillés au cours 2.</p>
+    </div>
+
+    <h3>Accès aux variables d'état <span class="ref">p. 17</span></h3>
+    <p>Une fois la structure (l'état) d'une classe définie, il faut <strong>toujours</strong> s'interroger sur les accès accordés à chaque variable d'état. Un bon découpage doit permettre de :</p>
+    <ul>
+      <li>faire tout ce que l'on doit pouvoir faire ;</li>
+      <li>ne pas pouvoir faire ce que l'on ne doit pas pouvoir faire.</li>
+    </ul>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Principe <span>« Tu n'en auras pas besoin »</span> <span class="ref">p. 17</span></p>
+      <p>Dans le doute, on ne donne pas accès. Une erreur fréquente chez les débutants consiste à tout rendre accessible.</p>
+      <p><span class="badge ajout">Ajout</span> En anglais, <span lang="en">YAGNI</span> (<span class="en" lang="en">You Aren't Gonna Need It</span>).</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-6">
+      <p class="bloc-titre">Exercice 6 <span>Quels accès pour un compte ?</span></p>
+      <p><span class="badge ajout">Ajout</span> Pour chacune des variables d'état <code>numero</code>, <code>titulaire</code> et <code>solde</code> de la classe <code>Compte</code>, dire si l'on doit pouvoir la lire, la modifier, ou ni l'un ni l'autre depuis l'extérieur, et par quels messages. Pourquoi ne pas fournir une méthode <code>changeSolde(x)</code> ?</p>
+      <details class="indice"><summary>Indice</summary><p>Se demander, pour chaque variable, ce qu'un client de la banque ou un autre programme a réellement besoin de faire, et ce qui pourrait mal tourner.</p></details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <ul>
+          <li><code>numero</code> : lecture seule. Il identifie le compte et ne change jamais.</li>
+          <li><code>titulaire</code> : lecture. Un changement de titulaire, s'il existe, passe par une opération métier dédiée qui fait les vérifications nécessaires, pas par une affectation libre.</li>
+          <li><code>solde</code> : lecture par <code>donneTonSolde()</code> ; modification uniquement par <code>depose</code> et <code>retire</code>.</li>
+        </ul>
+        <p>Une méthode <code>changeSolde(x)</code> permettrait de donner n'importe quelle valeur au solde, sans trace d'opération, sans contrôle d'un découvert : l'intégrité de l'objet ne serait plus garantie. Les messages <code>depose</code> et <code>retire</code> suffisent (« tu n'en auras pas besoin »), et c'est dans <code>retire</code> que l'on vérifiera, par exemple, que le solde reste suffisant.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Synthèse <span class="ref">p. 18–19</span></h2>
+    <p>La dernière partie du support rassemble les deux principes vus dans ce cours, le vocabulaire du module et la démarche à suivre pour écrire un programme objet.</p>
+
+    <h3>Principes 1 et 2 <span class="ref">p. 18</span></h3>
+    <div class="colonnes">
+      <div class="colonne">
+        <p class="colonne-titre">Principe 1 — objets et messages</p>
+        <p>Un objet = une <strong>identité</strong> + un <strong>état</strong> + un <strong>comportement</strong>.</p>
+        <p>En réponse à un message, l'objet destinataire déclenche un comportement (une méthode, ou fonction membre).</p>
+      </div>
+      <div class="colonne">
+        <p class="colonne-titre">Principe 2 — classes et instances</p>
+        <p>Une classe est un <strong>moule</strong> pour fabriquer des objets. Elle regroupe ce qui est commun aux objets d'un même type et définit :</p>
+        <ul>
+          <li>les attributs (structure de l'état) ;</li>
+          <li>le comportement.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Le cours en bref <span class="ref">p. 18</span></h3>
+    <table>
+      <caption>Le cours en bref</caption>
+      <thead><tr><th>Élément</th><th>Contenu</th></tr></thead>
+      <tbody>
+        <tr><th>3 principes fondateurs de la POO</th><td>Objets et messages · classes et instances · héritage</td></tr>
+        <tr><th>5 concepts fondateurs de la POO</th><td>Objets · classes et instances · messages et méthodes · héritage · encapsulation</td></tr>
+        <tr><th>3 principes de base de Ruby</th><td>Tout est objet · tout objet est instance d'une classe · programmer, c'est envoyer des messages à des objets</td></tr>
+      </tbody>
+    </table>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Programmer objet</span> <span class="ref">p. 18</span></p>
+      <p>Programmer objet consiste à :</p>
+      <ol>
+        <li>concevoir les classes ;</li>
+        <li>coder les classes, souvent en réutilisant des classes existantes ;</li>
+        <li>créer des instances ;</li>
+        <li>prévoir des séquences de messages entre ces instances.</li>
+      </ol>
+    </div>
+
+    <h3>Glossaire <span class="ref">p. 18–19</span></h3>
+    <dl class="glossaire">
+      <dt>Objet <span class="en" lang="en">object</span></dt>
+      <dd>Entité dotée d'une identité, d'un état et d'un comportement.</dd>
+      <dt>Classe <span class="en" lang="en">class</span></dt>
+      <dd>Moule décrivant la structure (attributs) et le comportement (méthodes) communs à un ensemble d'objets.</dd>
+      <dt>Instance <span class="en" lang="en">instance</span></dt>
+      <dd>Objet concret créé à partir d'une classe.</dd>
+      <dt>Message <span class="en" lang="en">message</span></dt>
+      <dd>Requête envoyée à un objet, qui déclenche l'exécution de l'une de ses méthodes.</dd>
+      <dt>Receveur <span class="en" lang="en">receiver</span></dt>
+      <dd>Objet destinataire d'un message.</dd>
+      <dt>Interface <span class="en" lang="en">interface</span></dt>
+      <dd>Ensemble des services accessibles depuis l'extérieur d'un objet.</dd>
+      <dt>Identité <span class="en" lang="en">identity</span></dt>
+      <dd>Propriété qui distingue un objet de tous les autres, indépendamment de son état ; réalisée par une adresse ou une référence.</dd>
+      <dt>Abstraction <span class="en" lang="en">abstraction</span></dt>
+      <dd>Vue générique d'une entité qui retient l'essentiel et masque les détails d'implémentation.</dd>
+      <dt>Classification <span class="en" lang="en">classification</span></dt>
+      <dd>Regroupement dans une même classe des objets ayant la même structure et le même comportement.</dd>
+      <dt>Encapsulation <span class="en" lang="en">encapsulation</span></dt>
+      <dd>Regroupement des données et des traitements, et protection des données, accessibles uniquement au travers de l'interface.</dd>
+      <dt>Polymorphisme <span class="en" lang="en">polymorphism</span></dt>
+      <dd>Capacité d'un même message à déclencher des traitements différents selon la nature de l'objet receveur.</dd>
+      <dt>Variable d'instance <span class="en" lang="en">instance variable</span></dt>
+      <dd>Attribut propre à chaque objet ; l'ensemble des variables d'instance constitue l'état de l'objet.</dd>
+      <dt>Méthode d'instance <span class="en" lang="en">instance method</span></dt>
+      <dd>Méthode exécutée en réponse à un message envoyé à une instance.</dd>
+      <dt>Méthode de classe <span class="en" lang="en">class method</span></dt>
+      <dd>Méthode exécutée en réponse à un message envoyé à une classe, par exemple pour créer des instances.</dd>
+    </dl>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>La maintenance, surtout l'adaptation aux besoins, coûte bien plus que le développement initial : la POO vise d'abord l'extensibilité, la réutilisabilité et la compatibilité.</li>
+        <li>Règle des 90-10 : 90 % du temps d'exécution dans 10 % du code ; ailleurs, lisibilité et abstraction priment sur l'efficacité.</li>
+        <li>Procédural : des fonctions agissent « à distance » sur des données séparées. Objet : des objets responsables, regroupant données et méthodes, s'envoient des messages.</li>
+        <li>Abstraction : ne voir d'un objet que son interface, ce qu'on peut faire avec. Encapsulation : regrouper données et services dans une classe, et protéger les données.</li>
+        <li>Interface (partie visible, en-têtes de méthodes) et implémentation (partie cachée) : on peut changer l'implémentation sans toucher au code utilisateur. Les attributs ne sont jamais accessibles de l'extérieur.</li>
+        <li>Principe 1 : un programme est un modèle d'objets ; un message envoyé à un receveur déclenche l'une de ses méthodes. Un même message peut produire des traitements différents : polymorphisme.</li>
+        <li>Un objet = identité (une adresse) + état (valeurs des variables d'instance) + comportement (méthodes).</li>
+        <li>Principe 2 : une classe est un moule (attributs + méthodes) ; une instance est un objet fabriqué par ce moule. On crée un objet en envoyant un message à sa classe.</li>
+        <li>Méthode de classe si le receveur est une classe (<code>Compte.ouvrir(…)</code>), méthode d'instance si c'est un objet (<code>monCompte.retire(1200)</code>).</li>
+        <li>Unité d'encapsulation : la classe en Java, l'objet en Ruby. Dans le doute, ne pas donner accès (« tu n'en auras pas besoin »).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Quelles sont les trois qualités du logiciel au centre de la programmation objet ?</summary>
+        <div><p>L'extensibilité, la réutilisabilité et la compatibilité.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Qu'est-ce qui ne va pas dans <code>surface(hauteur1, largeur2)</code> ?</summary>
+        <div><p>On mélange les données de deux rectangles, et rien ne l'empêche : il n'y a aucun lien sémantique entre les variables ni entre données et traitement. Avec des objets, <code>rect1.surface()</code> utilise forcément la largeur et la hauteur de <code>rect1</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Abstraction et encapsulation : quelle différence ?</summary>
+        <div><p>L'abstraction est une façon de voir un objet : par sa vue extérieure, son interface. L'encapsulation est le mécanisme technique qui la réalise : regrouper données et services dans une classe, et protéger les données.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Dans <code>unePile empile: unTruc</code>, quel est le receveur, le message, le paramètre ?</summary>
+        <div><p>Receveur <code>unePile</code>, message <code>empile:</code>, paramètre <code>unTruc</code>. C'est la syntaxe Smalltalk de <code>unePile.empile(unTruc)</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi l'approche objet facilite-t-elle l'ajout d'un nouveau type de porte ?</summary>
+        <div><p>Chaque type de porte sait répondre à <code>ouvreToi</code>. On ajoute une classe ; le code qui envoie le message ne change pas. En procédural, il faudrait modifier chaque <code>si … sinon si</code> qui teste le type de porte.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Qu'est-ce qui distingue un objet de son état ?</summary>
+        <div><p>L'objet est une identité, réalisée par une adresse ; son état est la valeur de ses attributs à un moment donné. L'état change (un dépôt modifie le solde), l'identité reste.</p></div>
+      </details>
+      <details class="carte">
+        <summary><code>Compte.ouvrir(101232, 'toto', 2000)</code> : quel type de méthode, et que renvoie-t-elle ?</summary>
+        <div><p>Une méthode de classe, puisque le receveur est la classe <code>Compte</code>. Elle renvoie une nouvelle instance de <code>Compte</code> correctement initialisée.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Une méthode Java peut-elle lire l'attribut privé d'un autre objet de sa classe ? Et en Ruby ?</summary>
+        <div><p>Oui en Java, où l'unité d'encapsulation est la classe. Non en Ruby, où c'est l'objet : il faut passer par une méthode, éventuellement déclarée <code>protected</code>.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Références</h2>
+    <ul>
+      <li>Cours de programmation objet et Smalltalk de Jean-François Perrot et Alexis Drogoul (Paris 6) et d'Élisabeth Delozanne (Paris 5), dont s'inspire le cours de Pierre Jacoboni.</li>
+      <li>Introduction à la programmation orientée objet, EPFL (Coursera) : source de l'exemple du rectangle.</li>
+      <li><span class="badge ajout">Ajout</span> B. Meyer, <em>Conception et programmation orientées objet</em>, Eyrolles : qualités du logiciel et chiffres de la maintenance (d'après B. Lientz et E. Swanson, 1980).</li>
+    </ul>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="index.html"><small>← Matière</small>POO</a>
+    <a class="suivant" href="cours-02-ruby-panorama.html"><small>Suivant →</small>Ruby, panorama</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">POO · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

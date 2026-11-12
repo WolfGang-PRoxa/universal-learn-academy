@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Python numérique · Analyse et algèbre 2 L2</title>
+<meta name="description" content="Quiz interactif sur les méthodes numériques des TP en Python : algèbre linéaire, intégration numérique, recherche de zéros (Analyse et algèbre 2, L2).">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="../generated_courses/index.html">Analyse et algèbre 2</a>
+    <span aria-current="page">Quiz · Python numérique</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Analyse et algèbre 2</span> Quiz · L2</p>
+    <h1>Python numérique</h1>
+    <p class="chapeau">Autour des TP 1 à 4 : produit scalaire, déterminant, système triangulaire, numpy, méthodes du point milieu, des trapèzes et de Monte-Carlo, dichotomie, Newton. 14 questions, dont 5 où l'on écrit du Python exécuté et testé (serveur local nécessaire). Les fonctions demandées ne sont pas celles des TP, qui restent à faire dans les notebooks.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-00-rappels.html">Fiche de rappels</a> · TP 1 à 4</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 novembre 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Analyse et algèbre 2 · L2 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "aa2-python-numerique",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Fiche de rappels",
+      "lien": "../generated_courses/cours-00-rappels.html"
+    }
+  ],
+  "questions": [
+    {
+      "type": "code",
+      "langage": "python",
+      "theme": "Algèbre linéaire",
+      "difficulte": 1,
+      "enonce": "<p>Écrire <code>produit_scalaire(u, v)</code>, qui renvoie le produit scalaire de deux vecteurs donnés sous forme de listes de même longueur, sans numpy.</p><p>Exemple : <code>produit_scalaire([1, 2, -1], [3, -1, 1])</code> vaut <code>0</code>.</p>",
+      "depart": "def produit_scalaire(u, v):\n    ",
+      "solution": "def produit_scalaire(u, v):\n    s = 0\n    for i in range(len(u)):\n        s += u[i] * v[i]\n    return s",
+      "harnais": "import sys\nfor ligne in sys.stdin:\n    a, b = ligne.split(';')\n    u = [float(x) for x in a.split()]\n    v = [float(x) for x in b.split()]\n    print(round(produit_scalaire(u, v), 6))",
+      "tests": [
+        {
+          "nom": "orthogonaux",
+          "entree": "1 2 -1;3 -1 1\n",
+          "sortie": "0.0\n"
+        },
+        {
+          "nom": "dans le plan",
+          "entree": "1 1;0 2\n",
+          "sortie": "2.0\n"
+        },
+        {
+          "nom": "carré de la norme",
+          "entree": "2 -3 6;2 -3 6\n",
+          "sortie": "49.0\n"
+        },
+        {
+          "nom": "dimension 4",
+          "entree": "1 0 2 1;-1 5 0.5 2\n",
+          "sortie": "2.0\n"
+        }
+      ],
+      "explication": "<p>On additionne les produits coordonnée par coordonnée : \\(\\sum_i u_i v_i\\). En une ligne : <code>sum(a * b for a, b in zip(u, v))</code>. Avec numpy, ce serait <code>np.dot(u, v)</code>.</p>",
+      "revoir": {
+        "texte": "Fiche de rappels · Produit scalaire",
+        "lien": "../generated_courses/cours-00-rappels.html#produit-scalaire"
+      },
+      "id": "q01"
+    },
+    {
+      "type": "code",
+      "langage": "python",
+      "theme": "Algèbre linéaire",
+      "difficulte": 2,
+      "enonce": "<p>Écrire <code>det3(m)</code>, qui renvoie le déterminant d'une matrice 3 × 3 donnée sous forme de liste de trois lignes, en développant selon la première ligne (sans récursivité ni numpy).</p><p>Exemple : <code>det3([[1, 0, 1], [1, 1, 0], [0, 1, 1]])</code> vaut <code>2</code>.</p>",
+      "depart": "def det3(m):\n    ",
+      "solution": "def det3(m):\n    a, b, c = m[0]\n    d, e, f = m[1]\n    g, h, i = m[2]\n    return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g)",
+      "harnais": "import sys\nl = [[int(x) for x in ligne.split()] for ligne in sys.stdin if ligne.strip()]\nfor k in range(0, len(l), 3):\n    print(det3(l[k:k + 3]))",
+      "tests": [
+        {
+          "nom": "exemple",
+          "entree": "1 0 1\n1 1 0\n0 1 1\n",
+          "sortie": "2\n"
+        },
+        {
+          "nom": "identité",
+          "entree": "1 0 0\n0 1 0\n0 0 1\n",
+          "sortie": "1\n"
+        },
+        {
+          "nom": "famille liée",
+          "entree": "1 2 0\n0 1 1\n-1 0 2\n",
+          "sortie": "0\n"
+        },
+        {
+          "nom": "signe négatif",
+          "entree": "1 0 1\n0 1 1\n2 1 0\n",
+          "sortie": "-3\n"
+        },
+        {
+          "nom": "deux matrices",
+          "entree": "2 0 0\n0 3 0\n0 0 4\n0 1 0\n1 0 0\n0 0 1\n",
+          "sortie": "24\n-1\n"
+        }
+      ],
+      "indices": [
+        "<p>\\(a_{11}(a_{22}a_{33} - a_{23}a_{32}) - a_{12}(\\dots) + a_{13}(\\dots)\\) : les signes alternent.</p>"
+      ],
+      "explication": "<p>Chaque coefficient de la première ligne est multiplié par le déterminant 2 × 2 obtenu en barrant sa ligne et sa colonne, avec les signes \\(+, -, +\\). Le dernier test (permutation de deux lignes de l'identité) vérifie le signe : échanger deux lignes change le signe du déterminant.</p>",
+      "revoir": {
+        "texte": "Fiche de rappels · Déterminant",
+        "lien": "../generated_courses/cours-00-rappels.html#determinant"
+      },
+      "id": "q02"
+    },
+    {
+      "type": "code",
+      "langage": "python",
+      "theme": "Algèbre linéaire",
+      "difficulte": 3,
+      "enonce": "<p>Un système \\(TX = b\\) est <dfn>triangulaire supérieur</dfn> quand tous les coefficients de \\(T\\) sous la diagonale sont nuls, et ceux de la diagonale non nuls. Écrire <code>remonter(T, b)</code>, qui renvoie la liste des solutions en partant de la dernière équation (<em>remontée</em>). <code>T</code> est une liste de lignes, <code>b</code> une liste.</p><p>Exemple : \\(\\begin{cases} 2x + y - z = 3 \\\\ \\phantom{2x +{}} 3y + z = 5 \\\\ \\phantom{2x + 3y +{}} 2z = 4 \\end{cases}\\) donne \\(z = 2\\), \\(y = 1\\), \\(x = 2\\).</p>",
+      "depart": "def remonter(T, b):\n    ",
+      "solution": "def remonter(T, b):\n    n = len(b)\n    x = [0.0] * n\n    for i in range(n - 1, -1, -1):\n        s = b[i]\n        for j in range(i + 1, n):\n            s -= T[i][j] * x[j]\n        x[i] = s / T[i][i]\n    return x",
+      "harnais": "import sys\nl = [ligne.split() for ligne in sys.stdin if ligne.strip()]\nn = int(l[0][0])\nT = [[float(v) for v in l[1 + i]] for i in range(n)]\nb = [float(v) for v in l[1 + n]]\nprint(' '.join(f'{v:.4f}' for v in remonter(T, b)))",
+      "tests": [
+        {
+          "nom": "exemple",
+          "entree": "3\n2 1 -1\n0 3 1\n0 0 2\n3 5 4\n",
+          "sortie": "2.0000 1.0000 2.0000\n"
+        },
+        {
+          "nom": "une équation",
+          "entree": "1\n4\n10\n",
+          "sortie": "2.5000\n"
+        },
+        {
+          "nom": "diagonale",
+          "entree": "2\n2 0\n0 5\n4 10\n",
+          "sortie": "2.0000 2.0000\n"
+        },
+        {
+          "nom": "4 inconnues",
+          "entree": "4\n1 2 0 -1\n0 1 1 1\n0 0 2 1\n0 0 0 4\n1 3 5 8\n",
+          "sortie": "4.0000 -0.5000 1.5000 2.0000\n"
+        }
+      ],
+      "indices": [
+        "<p>La dernière équation donne directement \\(x_{n-1} = \\frac{b_{n-1}}{T_{n-1,n-1}}\\).</p>",
+        "<p>Pour la ligne \\(i\\), retrancher de \\(b_i\\) les termes \\(T_{ij} x_j\\) déjà connus (\\(j \\gt i\\)), puis diviser par \\(T_{ii}\\).</p>"
+      ],
+      "explication": "<p>On parcourt les lignes de bas en haut : \\(x_i = \\frac{1}{T_{ii}}\\left(b_i - \\sum_{j \\gt i} T_{ij} x_j\\right)\\). C'est la seconde moitié de la méthode de Gauss « classique » (élimination en dessous des pivots, puis remontée) ; le TP 1, lui, élimine aussi au-dessus des pivots (Gauss-Jordan) et n'a pas besoin de remonter.</p>",
+      "revoir": {
+        "texte": "Fiche de rappels · Pivot de Gauss",
+        "lien": "../generated_courses/cours-00-rappels.html#pivot-de-gauss"
+      },
+      "id": "q03"
+    },
+    {
+      "type": "qcm",
+      "theme": "Python et numpy",
+      "difficulte": 1,
+      "enonce": "<p>On exécute le code suivant. Que vaut ensuite <code>A[0, 0]</code> ?</p><pre><code class='language-python'>import numpy as np\nA = np.array([[1.0, 2.0], [3.0, 4.0]])\nB = A\nB[0, 0] = 9</code></pre>",
+      "choix": [
+        "9.0",
+        "1.0",
+        "Une erreur est levée",
+        "0.0"
+      ],
+      "reponse": 0,
+      "explication": "<p><code>B = A</code> ne copie pas le tableau : <code>A</code> et <code>B</code> désignent le même objet. Modifier <code>B</code> modifie donc <code>A</code>. Pour travailler sur une copie, comme le demande le TP 1 avant le pivot, il faut <code>B = A.copy()</code>.</p>",
+      "revoir": {
+        "texte": "Fiche de rappels · Pivot de Gauss",
+        "lien": "../generated_courses/cours-00-rappels.html#pivot-de-gauss"
+      },
+      "id": "q04"
+    },
+    {
+      "type": "qcm",
+      "theme": "Python et numpy",
+      "difficulte": 1,
+      "enonce": "<p>Pour un tableau numpy <code>A</code> à deux dimensions, que désigne <code>A[:, 1]</code> ?</p>",
+      "choix": [
+        "La colonne d'indice 1",
+        "La ligne d'indice 1",
+        "Le coefficient de la ligne 0 et de la colonne 1",
+        "Les lignes à partir de l'indice 1"
+      ],
+      "reponse": 0,
+      "explication": "<p>Le premier indice désigne les lignes, le second les colonnes ; <code>:</code> veut dire « toutes ». <code>A[1]</code> (ou <code>A[1, :]</code>) serait la ligne d'indice 1, et <code>A[1:]</code> les lignes à partir de l'indice 1.</p>",
+      "revoir": {
+        "texte": "Fiche de rappels · Pivot de Gauss",
+        "lien": "../generated_courses/cours-00-rappels.html#pivot-de-gauss"
+      },
+      "id": "q05"
+    },
+    {
+      "type": "vrai-faux",
+      "theme": "Python et numpy",
+      "difficulte": 1,
+      "enonce": "<p>En Python, <code>0.1 + 0.2 == 0.3</code> vaut <code>True</code>.</p>",
+      "reponse": false,
+      "explication": "<p>0,1 et 0,2 n'ont pas d'écriture binaire finie : <code>0.1 + 0.2</code> vaut <code>0.30000000000000004</code>. On compare donc des flottants avec une tolérance, <code>abs(a - b) &lt; 1e-9</code>, comme la fonction <code>estNul</code> du TP 1 le fait pour 0.</p><pre data-executer='python'><code class='language-python'>print(0.1 + 0.2)\nprint(abs((0.1 + 0.2) - 0.3) &lt; 1e-9)</code></pre>",
+      "revoir": {
+        "texte": "Fiche de rappels · Pivot de Gauss",
+        "lien": "../generated_courses/cours-00-rappels.html#pivot-de-gauss"
+      },
+      "id": "q06"
+    },
+    {
+      "type": "qcm",
+      "theme": "Algèbre linéaire",
+      "difficulte": 2,
+      "enonce": "<p>Pourquoi le calcul récursif du déterminant (développement selon la première ligne, TP 2) devient-il inutilisable dès \\(n \\approx 10\\), alors que le pivot de Gauss reste rapide ?</p>",
+      "choix": [
+        "Son coût croît comme \\(n!\\), celui du pivot comme \\(n^3\\)",
+        "Son coût croît comme \\(n^3\\), celui du pivot comme \\(n^2\\)",
+        "La récursivité est interdite au-delà de 10 appels en Python",
+        "Il fait des erreurs d'arrondi que le pivot n'a pas"
+      ],
+      "reponse": 0,
+      "explication": "<p>Un déterminant d'ordre \\(n\\) appelle \\(n\\) déterminants d'ordre \\(n - 1\\) : \\(n \\times (n-1) \\times \\dots\\), soit \\(n!\\) produits. \\(10! \\approx 3{,}6 \\times 10^6\\) contre \\(10^3\\) pour le pivot. La profondeur de récursion n'est que \\(n\\), bien en dessous de la limite de Python.</p>",
+      "revoir": {
+        "texte": "Fiche de rappels · Déterminant et comatrice",
+        "lien": "../generated_courses/cours-00-rappels.html#determinant-et-comatrice"
+      },
+      "id": "q07"
+    },
+    {
+      "type": "code",
+      "langage": "python",
+      "theme": "Intégration numérique",
+      "difficulte": 2,
+      "enonce": "<p>La <dfn>méthode du point milieu</dfn> prend pour hauteur de chaque rectangle la valeur de \\(f\\) au milieu de l'intervalle : avec \\(h = \\frac{b - a}{n}\\), \\(\\int_a^b f \\approx h \\sum_{k=0}^{n-1} f\\left(a + \\left(k + \\frac{1}{2}\\right)h\\right)\\). Écrire <code>point_milieu(f, a, b, n)</code>, qui renvoie cette approximation.</p>",
+      "depart": "def point_milieu(f, a, b, n):\n    ",
+      "solution": "def point_milieu(f, a, b, n):\n    h = (b - a) / n\n    s = 0\n    for k in range(n):\n        s += f(a + (k + 0.5) * h)\n    return h * s",
+      "harnais": "import sys, math\nF = {'carre': lambda x: x * x, 'cube': lambda x: x ** 3, 'sin': math.sin, 'inv': lambda x: 1 / x, 'un': lambda x: 1.0}\nfor ligne in sys.stdin:\n    nom, a, b, n = ligne.split()\n    print(f'{point_milieu(F[nom], float(a), float(b), int(n)):.6f}')",
+      "tests": [
+        {
+          "nom": "x² sur [0, 1], n = 1",
+          "entree": "carre 0 1 1\n",
+          "sortie": "0.250000\n"
+        },
+        {
+          "nom": "x² sur [0, 1], n = 4",
+          "entree": "carre 0 1 4\n",
+          "sortie": "0.328125\n"
+        },
+        {
+          "nom": "constante",
+          "entree": "un 2 5 3\n",
+          "sortie": "3.000000\n"
+        },
+        {
+          "nom": "sin sur [0, π], n = 100",
+          "entree": "sin 0 3.141592653589793 100\n",
+          "sortie": "2.000082\n"
+        },
+        {
+          "nom": "1/x sur [1, 2], n = 10",
+          "entree": "inv 1 2 10\n",
+          "sortie": "0.692835\n"
+        }
+      ],
+      "indices": [
+        "<p>Le milieu du \\(k\\)-ième intervalle \\([a + kh, a + (k+1)h]\\) est \\(a + (k + 0{,}5)h\\), pour \\(k\\) de 0 à \\(n - 1\\).</p>"
+      ],
+      "explication": "<p>Avec la hauteur prise au milieu, les excès et les défauts se compensent en partie : l'erreur décroît en \\(\\frac{1}{n^2}\\), comme pour les trapèzes (2,000082 pour une valeur exacte de 2 avec 100 rectangles), alors que la hauteur prise à droite (TP 3) ne donne qu'une erreur en \\(\\frac{1}{n}\\).</p>",
+      "revoir": {
+        "texte": "Fiche de rappels · Rectangles, trapèzes et Monte-Carlo",
+        "lien": "../generated_courses/cours-00-rappels.html#rectangles-trapezes-et-monte-carlo"
+      },
+      "id": "q08"
+    },
+    {
+      "type": "qcm",
+      "theme": "Intégration numérique",
+      "difficulte": 2,
+      "enonce": "<p>Avec 50 trapèzes, l'erreur d'approximation d'une intégrale vaut environ 0,08. Que devient-elle, environ, avec 100 trapèzes ?</p>",
+      "choix": [
+        "0,02",
+        "0,04",
+        "0,08",
+        "0,008"
+      ],
+      "reponse": 0,
+      "explication": "<p>L'erreur des trapèzes est en \\(\\frac{1}{n^2}\\) : doubler \\(n\\) la divise par \\(2^2 = 4\\). Avec des rectangles (hauteur prise à droite), en \\(\\frac{1}{n}\\), elle serait seulement divisée par 2, soit 0,04.</p>",
+      "revoir": {
+        "texte": "Fiche de rappels · Rectangles, trapèzes et Monte-Carlo",
+        "lien": "../generated_courses/cours-00-rappels.html#rectangles-trapezes-et-monte-carlo"
+      },
+      "id": "q09"
+    },
+    {
+      "type": "numerique",
+      "theme": "Intégration numérique",
+      "difficulte": 1,
+      "enonce": "<p>Pour estimer \\(\\int_0^4 f\\) par Monte-Carlo, on tire 1 000 points uniformément dans le rectangle \\([0, 4] \\times [0, 3]\\), qui contient la courbe. 300 tombent sous la courbe. Quelle est l'estimation de l'intégrale ?</p>",
+      "reponse": 3.6,
+      "tolerance": 0.001,
+      "explication": "<p>La proportion de points sous la courbe, \\(\\frac{300}{1000} = 0{,}3\\), estime \\(\\frac{A}{R}\\), avec \\(R = 4 \\times 3 = 12\\) : \\(A \\approx 0{,}3 \\times 12 = 3{,}6\\). L'erreur d'une telle estimation est de l'ordre de \\(\\frac{1}{\\sqrt N}\\) en proportion.</p>",
+      "revoir": {
+        "texte": "Fiche de rappels · Rectangles, trapèzes et Monte-Carlo",
+        "lien": "../generated_courses/cours-00-rappels.html#rectangles-trapezes-et-monte-carlo"
+      },
+      "id": "q10"
+    },
+    {
+      "type": "numerique",
+      "theme": "Recherche de zéros",
+      "difficulte": 2,
+      "enonce": "<p>On cherche un zéro de \\(f\\) par dichotomie sur \\([1, 2]\\). Quelle est la largeur de l'intervalle de recherche après 10 itérations ? (Valeur décimale à \\(10^{-6}\\) près.)</p>",
+      "reponse": 0.000977,
+      "tolerance": 2e-06,
+      "explication": "<p>Chaque itération divise la largeur par 2 : \\(\\frac{2 - 1}{2^{10}} = \\frac{1}{1024} \\approx 0{,}000977\\). Le milieu de cet intervalle est à moins de \\(\\frac{1}{2048}\\) du zéro : trois chiffres décimaux exacts en 10 itérations.</p>",
+      "revoir": {
+        "texte": "Fiche de rappels · Dichotomie et méthode de Newton",
+        "lien": "../generated_courses/cours-00-rappels.html#dichotomie-et-methode-de-newton"
+      },
+      "id": "q11"
+    },
+    {
+      "type": "numerique",
+      "theme": "Recherche de zéros",
+      "difficulte": 2,
+      "enonce": "<p>On applique la méthode de Newton à \\(f(x) = x^2 - 2\\) en partant de \\(x_0 = 1\\). Calculer \\(x_2\\), à \\(10^{-4}\\) près.</p>",
+      "reponse": 1.41667,
+      "tolerance": 0.0001,
+      "indices": [
+        "<p>\\(x_{k+1} = x_k - \\frac{f(x_k)}{f'(x_k)}\\), avec \\(f'(x) = 2x\\).</p>"
+      ],
+      "explication": "<p>\\(x_1 = 1 - \\frac{-1}{2} = 1{,}5\\), puis \\(x_2 = 1{,}5 - \\frac{0{,}25}{3} \\approx 1{,}41667\\), déjà à \\(2{,}5 \\times 10^{-3}\\) de \\(\\sqrt 2 \\approx 1{,}41421\\). La dichotomie sur \\([1, 2]\\) en serait encore à un intervalle de largeur 0,25.</p>",
+      "revoir": {
+        "texte": "Fiche de rappels · Dichotomie et méthode de Newton",
+        "lien": "../generated_courses/cours-00-rappels.html#dichotomie-et-methode-de-newton"
+      },
+      "id": "q12"
+    },
+    {
+      "type": "code",
+      "langage": "python",
+      "theme": "Recherche de zéros",
+      "difficulte": 2,
+      "enonce": "<p>Pour \\(f(x) = x^2 - c\\) (avec \\(c \\gt 0\\)), la méthode de Newton s'écrit \\(x_{k+1} = \\frac{1}{2}\\left(x_k + \\frac{c}{x_k}\\right)\\) : c'est la <dfn>méthode de Héron</dfn> pour calculer \\(\\sqrt c\\). Écrire <code>heron(c, x0, n)</code>, qui renvoie \\(x_n\\) après \\(n\\) itérations depuis \\(x_0\\).</p>",
+      "depart": "def heron(c, x0, n):\n    ",
+      "solution": "def heron(c, x0, n):\n    x = x0\n    for _ in range(n):\n        x = (x + c / x) / 2\n    return x",
+      "harnais": "import sys\nfor ligne in sys.stdin:\n    c, x0, n = ligne.split()\n    print(f'{heron(float(c), float(x0), int(n)):.10f}')",
+      "tests": [
+        {
+          "nom": "aucune itération",
+          "entree": "2 1 0\n",
+          "sortie": "1.0000000000\n"
+        },
+        {
+          "nom": "√2, deux itérations",
+          "entree": "2 1 2\n",
+          "sortie": "1.4166666667\n"
+        },
+        {
+          "nom": "√2, cinq itérations",
+          "entree": "2 1 5\n",
+          "sortie": "1.4142135624\n"
+        },
+        {
+          "nom": "√9 depuis 1",
+          "entree": "9 1 6\n",
+          "sortie": "3.0000000000\n"
+        }
+      ],
+      "indices": [
+        "<p>Vérifier la formule : \\(x - \\frac{x^2 - c}{2x} = \\frac{2x^2 - x^2 + c}{2x} = \\frac{1}{2}\\left(x + \\frac{c}{x}\\right)\\).</p>"
+      ],
+      "explication": "<p>Une boucle de \\(n\\) itérations suffit. Cinq itérations donnent déjà \\(\\sqrt 2\\) à \\(10^{-10}\\) près : le nombre de chiffres exacts double à chaque itération (convergence quadratique de Newton), là où la dichotomie en gagne un tous les 3 ou 4 tours.</p>",
+      "revoir": {
+        "texte": "Fiche de rappels · Dichotomie et méthode de Newton",
+        "lien": "../generated_courses/cours-00-rappels.html#dichotomie-et-methode-de-newton"
+      },
+      "id": "q13"
+    },
+    {
+      "type": "qcm-multi",
+      "theme": "Recherche de zéros",
+      "difficulte": 3,
+      "enonce": "<p>Dans quelles situations la méthode de Newton peut-elle échouer ?</p>",
+      "choix": [
+        "La dérivée s'annule en un point \\(x_k\\) de la suite",
+        "Le point de départ est loin du zéro",
+        "\\(f(x) = \\sqrt[3]{x}\\), en partant de \\(x_0 = 1\\)",
+        "La fonction est un polynôme de degré 2 qui s'annule, en partant juste à côté du zéro"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "explication": "<p>Une tangente horizontale ne coupe pas l'axe (division par 0) ; loin du zéro, la tangente peut renvoyer n'importe où ; pour \\(\\sqrt[3]{x}\\), \\(x_{k+1} = -2x_k\\) : la suite s'éloigne en alternant. Près d'un zéro simple d'un polynôme, en revanche, Newton converge très vite.</p>",
+      "revoir": {
+        "texte": "Fiche de rappels · Dichotomie et méthode de Newton",
+        "lien": "../generated_courses/cours-00-rappels.html#dichotomie-et-methode-de-newton"
+      },
+      "id": "q14"
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TP 3 · Le cursus universitaire · Bases de données L2</title>
+<meta name="description" content="TP 3 de bases de données (L2) : la base Univ (personnes, profs, promos, scolarité, modules, enseignements), implémentation avec contraintes CHECK et SIMILAR TO, modification des clés, insertions, puis requêtes avec jointures, sous-requêtes, fonctions et regroupements ; sujet complet et console SQL pour travailler chez soi.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+<script type="application/json" id="atelier-jeux">
+{
+  "fac": {
+    "titre": "Base neuve (comme univ_… au début du TP)",
+    "description": "<p>Base PostgreSQL neuve et vide : le compte rendu crée les tables, puis les remplit. Seul réglage : les dates s'écrivent jour-mois-année (<code>DateStyle</code>), comme sur le serveur de la fac.</p>",
+    "script": "SET datestyle TO 'ISO, DMY';"
+  }
+}
+</script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="index.html">Bases de données</a>
+    <span aria-current="page">TP 3 · Le cursus universitaire</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> TP 3 · L2 S3</p>
+    <h1>TP 3 : le cursus universitaire</h1>
+    <p class="chapeau">La base Univ de l'exercice 1 du TD 3 : on l'implémente avec ses contraintes, on assouplit deux de ses clés, on la remplit, puis on l'interroge avec des jointures, des fonctions et des regroupements. Pour travailler chez soi, une console SQL rejoue le compte rendu sur une base PostgreSQL neuve.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TP/TP3/TP3_Univ-2025.pdf">TP3_Univ-2025.pdf</a> · 5 pages · script fourni <a href="../TP/TP3/script_2.txt">script_2.txt</a> (question 6f). Le <code>script_1.txt</code> du même dossier est une copie du script des licences du TP 2, sans rapport avec ce TP.</dd></div>
+      <div><dt>Module</dt><dd>173UD04</dd></div>
+      <div><dt>TD</dt><dd><a href="td-03-universite-cd-jazz.html">TD 3 · Université et CD de jazz</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Implémenter un modèle avec ses contraintes : clés, <code>CHECK</code>, <code>SIMILAR TO</code>, longueur des chaînes.</li>
+        <li>Modifier des clés primaires et renommer des tables et des colonnes.</li>
+        <li>Interroger la base avec des jointures, des sous-requêtes, des fonctions sur les chaînes et les dates, et des regroupements.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">À rendre</p>
+      <ul>
+        <li>Un compte rendu <code>TP3_NOM_PRENOM.txt</code>, avec les réponses à toutes les questions numérotées, déposé sur UMTICE dans la semaine qui suit la séance.</li>
+        <li>Cours à revoir : <a href="cours-03-cles-sous-requetes-jointures.html">cours 3</a> et <a href="cours-04-fonctions-regroupements.html">cours 4</a>, et la documentation PostgreSQL (<a href="https://docs.postgresql.fr/14/">docs.postgresql.fr/14</a>).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Consignes <span class="ref">p. 1</span></h2>
+    <p>En fin de séance, vous devrez rendre un <strong>compte rendu</strong> contenant toutes les réponses aux questions numérotées. Ce compte rendu sera nommé : <code>TP3_NOM_PRENOM.txt</code> et sera <strong>déposé</strong> sur la plateforme <strong>UMTICE</strong> dans le dossier correspondant à votre groupe. Vous avez une semaine pour finir votre TP après la séance et le déposer sur UMTICE. Le dépôt est horodaté, aucun compte rendu ne sera accepté s'il est déposé après la date limite.</p>
+    <p>Pour travailler efficacement, vous avez ouvert : un terminal, un éditeur de texte, un navigateur (UMTICE + doc postgre <a href="https://docs.postgresql.fr/14/">https://docs.postgresql.fr/14/</a>).</p>
+    <p>Connectez-vous sur votre base de données : <code>univ_XXXXX</code>, avec XXXX votre numéro étudiant (voir précédents TP). Par exemple, l'étudiant s2401007 se connectera ainsi :</p>
+    <pre class="terminal"><code>$ psql -U etu_s2401007 -h erebor -d univ_s2401007</code></pre>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Base de données Univ <span class="ref">p. 1–2</span></h2>
+    <h3>Rappel du modèle (diagramme de classes)</h3>
+    <div class="atelier" id="tp3-mea" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "Diagramme de classes de la base Univ (rappel)",
+        "mode": "lecture",
+        "vue": "dessin",
+        "hauteur": 520,
+        "disposition": {
+          "Promo": [
+            330,
+            10
+          ],
+          "Enseignement": [
+            60,
+            200
+          ],
+          "Personne": [
+            470,
+            270
+          ],
+          "Module": [
+            10,
+            400
+          ],
+          "Prof": [
+            330,
+            440
+          ]
+        },
+        "depart": [
+          "classe Promo",
+          "  id_promo {PK}",
+          "  nom_niveau",
+          "  nom_filiere",
+          "  nom_ufr",
+          "classe Enseignement",
+          "  id_enseignement {PK}",
+          "  annee",
+          "classe Personne",
+          "  id_pers {PK}",
+          "  nom",
+          "  prenom",
+          "classe Module",
+          "  id_module {PK}",
+          "  nom_module",
+          "  dsc_module",
+          "classe Prof",
+          "  date_arr",
+          "classe Etre_inscrit",
+          "  annee",
+          "  moyenne",
+          "Promo \"1..1\" -- \"1..*\" Enseignement : Suivre",
+          "Personne \"1..*\" -- \"0..*\" Promo : Être inscrit [Etre_inscrit]",
+          "Enseignement \"1..*\" -- \"1..1\" Module : Être enseigné",
+          "Enseignement \"1..*\" -- \"1..1\" Prof : donner",
+          "Prof \"0..1\" -- \"1..1\" Personne : être une"
+        ]
+      }
+      </script>
+    </div>
+    <p>Modèle relationnel (MR) correspondant :</p>
+    <div class="relations">
+      <p><b>PERS</b> (<u>id_pers</u>, prenom, nom)</p>
+      <p><b>PROF</b> (<u>#id_prof</u>(id_pers), date_arr)</p>
+      <p><b>PROMO</b> (<u>id_promo</u>, nom_niveau, nom_filiere, nom_ufr)</p>
+      <p><b>SCOLARITE</b> (#id_promo, <u>annee</u>, <u>#id_etudiant</u>(id_pers), moyenne)</p>
+      <p><b>MODULE</b> (<u>id_module</u>, nom_module, dsc_module)</p>
+      <p><b>ENSEIGNEMENT</b> (<u>#id_promo</u>, <u>#id_prof</u>(id_pers), <u>annee</u>, #id_module)</p>
+    </div>
+    <p>Les attributs soulignés forment la clé primaire de chaque relation.</p>
+
+    <h3>Implémentation</h3>
+    <ol>
+      <li>Implémentez la base de données Univ en suivant les conseils et indications :
+        <ol type="a">
+          <li>Suivez bien les noms et ordres des attributs du MR (contrôlez le script d'insertion des données).</li>
+          <li>Vous penserez bien évidemment aux clés primaires et clés étrangères.</li>
+          <li>N'ayez pas la main trop lourde sur les <code>not null</code>…</li>
+          <li>Module, Promo et Pers doivent avoir des clés primaires de type <code>SERIAL</code>.</li>
+          <li>Limitez le descriptif du module à 200 caractères.</li>
+          <li>L'année est un entier qui doit être compris entre 2000 et 2150.</li>
+          <li>Le niveau de la promo doit commencer par « L », « M » ou « D » suivi de « 1 », « 2 » ou « 3 ».
+            <p><b>Aide</b> : vous vous rendez compte qu'avec des <code>LIKE</code>, ceci entraîne 6 tests ! Pourquoi ne pas essayer le <code>SIMILAR TO</code> qui est très bien expliqué sur la doc postgre ?</p>
+          </li>
+        </ol>
+      </li>
+    </ol>
+
+    <h3>Modification</h3>
+    <p>Vous vous êtes rendu compte que 2 faits ne sont pas modifiables dans votre base :</p>
+    <ol start="2">
+      <li>Un étudiant ne peut pas être AJAC, c'est-à-dire avoir 2 moyennes pour une année donnée.</li>
+      <li>Un prof ne peut pas enseigner plusieurs modules à une promo la même année.</li>
+    </ol>
+    <p>Modifiez votre base pour que ces deux phénomènes soient possibles.</p>
+    <ol start="4">
+      <li>La table enseignement a un nom trop long… modifiez-le en <code>ens</code>.</li>
+      <li>L'attribut moyenne a un nom trop long… modifiez-le en <code>moy</code>.</li>
+    </ol>
+
+    <h3>Insertion de données</h3>
+    <ol start="6">
+      <li>Insérez les données suivantes :
+        <ol type="a">
+          <li>Trois modules sont enseignés : « Programmation C », « Bases de données » « Fouille de données », « IA – Methodo et Données ».</li>
+          <li>Quatre personnes sont connues (nom, prenom) : « Cooper Sheldon », « Hofstadter Leonard », « Koothrappali Rajesh » et « Wolowitz Howard ».</li>
+          <li>Deux promos sont connues et font partie de l'UFR Sciences : les « L2 » et « M2 » de la filière informatique « Info » de l'ufr « Sciences ».</li>
+          <li>« Cooper Sheldon » et « Wolowitz Howard » sont des profs !</li>
+          <li>Depuis 2021, Cooper Sheldon enseigne en L2 Info des bases de données et depuis 2022 la fouille de données aux M2 Info.</li>
+          <li>Insérez le reste des données grâce au script sur UMTICE (ici <a href="../TP/TP3/script_2.txt">script_2.txt</a>).</li>
+        </ol>
+      </li>
+      <li>Mise à jour des données des professeurs :
+        <ol type="a">
+          <li>Howard Wolowitz est arrivé le 1<sup>er</sup> septembre 2015.</li>
+          <li>Cooper Sheldon est, lui, arrivé le 1<sup>er</sup> octobre 2018.</li>
+        </ol>
+      </li>
+    </ol>
+    <div class="bloc attention">
+      <p class="bloc-titre"><span class="badge a-verifier">À vérifier</span> Le nom des modules</p>
+      <p>La question 6a annonce trois modules et en cite quatre. Le script fourni cherche le quatrième sous le nom <code>'IA-Méthodo et Données'</code> (trait d'union sans espaces, accent sur le « é »), que reprennent aussi les affichages attendus des questions 14 et 20 : une sous-requête <code>where nom_module='IA-Méthodo et Données'</code> ne trouve rien si le module a été inséré sous un autre nom.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Requêtes d'exploitation <span class="ref">p. 2–4</span></h2>
+    <p>Les quelques enregistrements précédemment insérés ne suffiront pas à tester toutes les requêtes. N'hésitez pas à rajouter des enregistrements si besoin.</p>
+    <ol start="8">
+      <li>Quelle heure est-il ?</li>
+      <li>À l'aide de jointures et sans sous-requêtes, quels sont les noms et prénoms des <u>étudiants</u> ? Chaque étudiant ne doit apparaître qu'une seule fois et <u>par ordre alphabétique</u> sur le nom puis le prénom.
+        <p><b>Aide</b> : un étudiant est une personne qui apparaît dans la table scolarité. Même si elle apparaît plusieurs fois, elle ne doit compter qu'une seule fois.</p></li>
+      <li>Combien y a-t-il d'étudiants au total dans votre base ?
+        <p><b>Note</b> : pas besoin de jointure ou autre, votre requête doit retourner le nombre (pas de lecture sur le nombre de lignes retournées !).</p></li>
+      <li>Sans aucune jointure, indiquez les noms et prénoms des personnes n'étant ni enseignants, ni étudiants ? (Mais que font-ils dans cette base ???)</li>
+      <li>Quel est l'enseignant qui a le plus d'ancienneté ?</li>
+      <li>En quelle promo était « Leonard Hofstadter » en 2017 ? Le résultat devra être affiché dans une seule colonne composée du niveau et de la filière qui sera nommée « Promo 2017 Hofstader ». Ex :
+        <pre class="terminal"><code> promo 2017 Hofstader
+----------------------
+ L2 Info
+(1 ligne)</code></pre>
+      </li>
+      <li>À l'aide de jointures et sans sous-requêtes, ordonnez par année depuis 2018 la liste « annee - module - enseignant » des M2 informatique. <em>Exemple de résultat attendu</em> :
+        <pre class="terminal"><code> annee |      nom_module       |   nom
+-------+-----------------------+----------
+  2018 | Fouille de données    | Wolowitz
+  2018 | IA-Méthodo et Données | Wolowitz
+  2019 | IA-Méthodo et Données | Wolowitz
+  2020 | Fouille de données    | Wolowitz
+  2020 | IA-Méthodo et Données | Wolowitz
+  2021 | IA-Méthodo et Données | Wolowitz
+  2022 | Fouille de données    | Cooper
+  2022 | IA-Méthodo et Données | Wolowitz
+  2023 | Fouille de données    | Cooper
+  2024 | Fouille de données    | Cooper
+  2025 | Fouille de données    | Cooper
+(11 lignes)</code></pre>
+      </li>
+      <li>Rajoutez le descriptif manquant pour le module « Bases de données » : Descriptif « Le module le plus fun du monde ».</li>
+      <li>Combien d'étudiants ont un jour eu la chance de suivre le module de Fouille de données enseigné par Howard Wolowitz ?</li>
+      <li>Combien d'étudiants y a-t-il eu par promo ? <em>Exemple de résultat attendu</em> :
+        <pre class="terminal"><code> annee | id_promo | Nb etudiants
+-------+----------+--------------
+  2016 |        1 |            1
+  2017 |        1 |            4
+  2017 |        3 |            1
+  2018 |        3 |            2
+  2018 |        4 |            1
+  2019 |        4 |            3
+  2020 |        2 |            3
+  2021 |        2 |            2
+(8 lignes)</code></pre>
+      </li>
+      <li>Quelle est la moyenne maximale qui a été obtenue pour chaque promo de chaque année ?
+        <pre class="terminal"><code> annee | id_promo |  max
+-------+----------+-------
+  2016 |        1 | 11.39
+  2017 |        1 | 15.39
+  2020 |        2 | 15.32
+  2021 |        2 | 14.32
+  2017 |        3 | 10.32
+  2018 |        3 | 15.32
+  2018 |        4 |  9.87
+  2019 |        4 | 14.87
+(8 lignes)</code></pre>
+      </li>
+    </ol>
+    <p>Les identifiants des promos de ces affichages suivent l'ordre d'insertion : 1 pour L2 et 2 pour M2 (question 6c), 3 pour L3 et 4 pour M1 (script).</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Partie avancée <span class="ref">p. 4–5</span></h2>
+    <ol start="19">
+      <li>À quelle promo appartient l'élève qui a eu la meilleure moyenne générale en 2021 ?</li>
+      <li>Quels sont les noms et descriptifs des matières qu'a suivies Rhaenyra Targaryen pendant sa scolarité ? Indiquez également l'année et la promo.
+        <pre class="terminal"><code> annee | nom_niveau | nom_filiere |       nom_module        |         dsc_module
+-------+------------+-------------+-------------------------+-----------------------------
+  2017 | L2         | Info        | Bases de données        | Module le plus fun du monde
+  2020 | M2         | Info        | Fouille de données      |
+  2020 | M2         | Info        | IA - Méthodo et Données |
+(3 lignes)</code></pre>
+      </li>
+      <li>Quelle est la moyenne générale de la promo des L2 info de 2017 ? La moyenne devra être arrondie au dixième.</li>
+      <li>Lister les noms, prénoms, surnoms et nombre de lettres du nom de vos enseignants. Le surnom est obtenu en supprimant les 3 dernières lettres du prénom puis en y ajoutant « ie ». L'affichage attendu est indiqué ci-dessous.
+        <p><b>Aide</b> : la doc postgre sur les fonctions et opérateurs sur les chaînes de caractères est indispensable !</p>
+        <pre class="terminal"><code>    nom(nb)    | prenom  | surnom
+---------------+---------+--------
+ Wolowitz (8)  | Howard  | Howie
+ Cooper (6)    | Sheldon | Shelie
+(2 lignes)</code></pre>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Partie bonus <span class="ref">p. 5</span></h2>
+    <ol start="23">
+      <li>Parmi les modules qu'a enseignés Wolowitz Howard en 2018, quel est celui qui comporte le plus grand nombre de lettres ?</li>
+      <li>Quels sont les identifiants des promos qui ont eu au moins 2 étudiants ?</li>
+      <li>Quel est l'identifiant de la promo qui a eu le plus d'étudiants ?</li>
+      <li>Quel est le nom de la promo qui a eu le plus d'étudiants ?</li>
+      <li>Quel est le nom du module qui a été suivi par le plus grand nombre d'étudiants (toute promo, toutes années confondues mais chaque étudiant ne compte qu'une seule fois même s'il a suivi le module plusieurs fois à cause de redoublements) ?</li>
+    </ol>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Chez soi : la console SQL du TP</h2>
+    <p>La console ci-dessous exécute le compte rendu entier sur une base PostgreSQL neuve (PGlite), par le serveur local : <code>studies/lancer.bat</code>, puis cette page ouverte depuis le portail. Sans le serveur, on peut écrire, mais pas exécuter.</p>
+    <ol class="etapes">
+      <li>Les réponses s'écrivent dans l'ordre des questions ; le script fourni est déjà en place, à la question 6f.</li>
+      <li><b>Exécuter</b> (ou <kbd>Ctrl</kbd> + <kbd>Entrée</kbd>) rejoue tout, depuis le début, sur une base neuve, et affiche le résultat de la <strong>dernière</strong> requête qui renvoie des lignes, ou la première erreur. Pour voir le résultat d'une question, on la met en dernier, ou on met en commentaire (<code>--</code>) les requêtes qui suivent.</li>
+      <li>Le travail s'enregistre tout seul : dans le navigateur, et, avec le serveur, dans <code>L2/BDD/td_results/</code>. Le menu ⋯ copie le texte, à coller dans <code>TP3_NOM_PRENOM.txt</code>.</li>
+    </ol>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Ce qui change par rapport à la fac</span></p>
+      <ul>
+        <li>Le script fourni n'est inséré qu'une fois les tables créées, renommées (questions 4 et 5 : il écrit dans <code>ens</code>) et les premières données en place (6a à 6e) : tant que ces questions sont vides, l'exécution s'arrête sur lui.</li>
+        <li>L'heure (question 8) est celle de l'ordinateur ; tout est rejoué à chaque exécution, donc les insertions ajoutées pour tester valent pour toutes les requêtes qui les suivent.</li>
+      </ul>
+    </div>
+    <div class="atelier" id="tp3-compte-rendu" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Compte rendu du TP 3",
+        "consigne": "<p>Les réponses à la suite, dans l'ordre des questions, le script fourni à la question 6f. <b>Exécuter</b> rejoue tout, depuis le début, sur une base neuve, et affiche le résultat de la dernière requête qui renvoie des lignes, ou la première erreur.</p>",
+        "options": {
+          "jeu": "fac",
+          "lignes": 28
+        },
+        "depart": "-- ===== Implémentation =====\n-- 1.\n\n-- ===== Modification =====\n-- 2.\n\n-- 3.\n\n-- 4.\n\n-- 5.\n\n-- ===== Insertion de données =====\n-- 6a.\n\n-- 6b.\n\n-- 6c.\n\n-- 6d.\n\n-- 6e.\n\n-- 6f. Script fourni (TP/TP3/script_2.txt)\ninsert into pers (id_pers, prenom, nom) values (default,'Rhaenyra','Targaryen');\ninsert into pers (id_pers, prenom, nom) values (default,'Alicent','Hightower');\ninsert into pers (id_pers, prenom, nom) values (default,'Daemon','Targaryen');\ninsert into pers (id_pers, prenom, nom) values (default,'Criston','Cole');\n\ninsert into promo values (default, 'L3', 'Info' , 'Sciences');\ninsert into promo values (default, 'M1', 'Info' , 'Sciences');\n\ninsert into ens values ((select id_promo from promo where nom_niveau = 'L2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2015,(select id_module from module where nom_module='Bases de données'));\ninsert into ens values ((select id_promo from promo where nom_niveau = 'L2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2016,(select id_module from module where nom_module='Bases de données'));\ninsert into ens values ((select id_promo from promo where nom_niveau = 'L2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2017,(select id_module from module where nom_module='Bases de données'));\ninsert into ens values ((select id_promo from promo where nom_niveau = 'L2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2018,(select id_module from module where nom_module='Bases de données'));\ninsert into ens values ((select id_promo from promo where nom_niveau = 'L2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2019,(select id_module from module where nom_module='Bases de données'));\ninsert into ens values ((select id_promo from promo where nom_niveau = 'L2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2020,(select id_module from module where nom_module='Bases de données'));\ninsert into ens values ((select id_promo from promo where nom_niveau = 'L2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2021,(select id_module from module where nom_module='Bases de données'));\n\ninsert into ens values ((select id_promo from promo where nom_niveau = 'L2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2018,(select id_module from module where nom_module='Programmation C'));\ninsert into ens values ((select id_promo from promo where nom_niveau = 'L2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2019,(select id_module from module where nom_module='Programmation C'));\ninsert into ens values ((select id_promo from promo where nom_niveau = 'L2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2020,(select id_module from module where nom_module='Programmation C'));\ninsert into ens values ((select id_promo from promo where nom_niveau = 'L2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2021,(select id_module from module where nom_module='Programmation C'));\n\ninsert into ens values ((select id_promo from promo where nom_niveau = 'M2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2015,(select id_module from module where nom_module='IA-Méthodo et Données'));\ninsert into ens values ((select id_promo from promo where nom_niveau = 'M2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2016,(select id_module from module where nom_module='IA-Méthodo et Données'));\ninsert into ens values ((select id_promo from promo where nom_niveau = 'M2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2017,(select id_module from module where nom_module='IA-Méthodo et Données'));\ninsert into ens values ((select id_promo from promo where nom_niveau = 'M2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2018,(select id_module from module where nom_module='IA-Méthodo et Données'));\n\ninsert into ens values ((select id_promo from promo where nom_niveau = 'M2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2019,(select id_module from module where nom_module='IA-Méthodo et Données'));\ninsert into ens values ((select id_promo from promo where nom_niveau = 'M2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2020,(select id_module from module where nom_module='IA-Méthodo et Données'));\ninsert into ens values ((select id_promo from promo where nom_niveau = 'M2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2021,(select id_module from module where nom_module='IA-Méthodo et Données'));\ninsert into ens values ((select id_promo from promo where nom_niveau = 'M2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2022,(select id_module from module where nom_module='IA-Méthodo et Données'));\n\ninsert into ens values ((select id_promo from promo where nom_niveau = 'M2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2015,(select id_module from module where nom_module='Fouille de données'));\ninsert into ens values ((select id_promo from promo where nom_niveau = 'M2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2016,(select id_module from module where nom_module='Fouille de données'));\ninsert into ens values ((select id_promo from promo where nom_niveau = 'M2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2017,(select id_module from module where nom_module='Fouille de données'));\ninsert into ens values ((select id_promo from promo where nom_niveau = 'M2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2018,(select id_module from module where nom_module='Fouille de données'));\ninsert into ens values ((select id_promo from promo where nom_niveau = 'M2' and nom_filiere='Info'),(select id_pers from pers where nom='Wolowitz' and prenom='Howard'),2020,(select id_module from module where nom_module='Fouille de données'));\n\ninsert into scolarite values ((select id_promo from promo where nom_niveau = 'L2' and nom_filiere='Info'),2017,(select id_pers from pers where nom='Hofstadter' and prenom='Leonard'),14.79);\ninsert into scolarite values ((select id_promo from promo where nom_niveau = 'M2' and nom_filiere='Info'),2021,(select id_pers from pers where nom='Hofstadter' and prenom='Leonard'),14.32);\n\ninsert into scolarite values ((select id_promo from promo where nom_niveau = 'L2' and nom_filiere='Info'),2017,(select id_pers from pers where nom='Targaryen' and prenom='Rhaenyra'),15.39);\ninsert into scolarite values ((select id_promo from promo where nom_niveau = 'L3' and nom_filiere='Info'),2018,(select id_pers from pers where nom='Targaryen' and prenom='Rhaenyra'),15.32);\ninsert into scolarite values ((select id_promo from promo where nom_niveau = 'M1' and nom_filiere='Info'),2019,(select id_pers from pers where nom='Targaryen' and prenom='Rhaenyra'),14.87);\ninsert into scolarite values ((select id_promo from promo where nom_niveau = 'M2' and nom_filiere='Info'),2020,(select id_pers from pers where nom='Targaryen' and prenom='Rhaenyra'),15.32);\n\ninsert into scolarite values ((select id_promo from promo where nom_niveau = 'L2' and nom_filiere='Info'),2017,(select id_pers from pers where nom='Hightower' and prenom='Alicent'),12.39);\ninsert into scolarite values ((select id_promo from promo where nom_niveau = 'L3' and nom_filiere='Info'),2018,(select id_pers from pers where nom='Hightower' and prenom='Alicent'),11.32);\ninsert into scolarite values ((select id_promo from promo where nom_niveau = 'M1' and nom_filiere='Info'),2019,(select id_pers from pers where nom='Hightower' and prenom='Alicent'),13.87);\ninsert into scolarite values ((select id_promo from promo where nom_niveau = 'M2' and nom_filiere='Info'),2020,(select id_pers from pers where nom='Hightower' and prenom='Alicent'),10.32);\n\ninsert into scolarite values ((select id_promo from promo where nom_niveau = 'L2' and nom_filiere='Info'),2016,(select id_pers from pers where nom='Cole' and prenom='Criston'),11.39);\ninsert into scolarite values ((select id_promo from promo where nom_niveau = 'L3' and nom_filiere='Info'),2017,(select id_pers from pers where nom='Cole' and prenom='Criston'),10.32);\ninsert into scolarite values ((select id_promo from promo where nom_niveau = 'M1' and nom_filiere='Info'),2018,(select id_pers from pers where nom='Cole' and prenom='Criston'),9.87);\ninsert into scolarite values ((select id_promo from promo where nom_niveau = 'M1' and nom_filiere='Info'),2019,(select id_pers from pers where nom='Cole' and prenom='Criston'),10.07);\ninsert into scolarite values ((select id_promo from promo where nom_niveau = 'M2' and nom_filiere='Info'),2020,(select id_pers from pers where nom='Cole' and prenom='Criston'),5.32);\ninsert into scolarite values ((select id_promo from promo where nom_niveau = 'M2' and nom_filiere='Info'),2021,(select id_pers from pers where nom='Cole' and prenom='Criston'),8.32);\n\ninsert into scolarite values ((select id_promo from promo where nom_niveau = 'L2' and nom_filiere='Info'),2017,(select id_pers from pers where nom='Targaryen' and prenom='Daemon'),14.52);\n\n-- 7.\n\n-- ===== Requêtes d'exploitation =====\n-- 8.\n\n-- 9.\n\n-- 10.\n\n-- 11.\n\n-- 12.\n\n-- 13.\n\n-- 14.\n\n-- 15.\n\n-- 16.\n\n-- 17.\n\n-- 18.\n\n-- ===== Partie avancée =====\n-- 19.\n\n-- 20.\n\n-- 21.\n\n-- 22.\n\n-- ===== Partie bonus =====\n-- 23.\n\n-- 24.\n\n-- 25.\n\n-- 26.\n\n-- 27.\n"
+      }
+      </script>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>L'ordre et les noms des attributs sont imposés par le MR et par le script fourni : le relire avant de créer les tables.</li>
+        <li>Une contrainte de domaine (intervalle, motif, longueur) se déclare avec la table : le SGBD refuse ensuite toute valeur hors domaine.</li>
+        <li>Une clé primaire traduit une règle de gestion : la changer change ce que la base accepte (questions 2 et 3).</li>
+        <li>Le script fourni retrouve les identifiants par des sous-requêtes sur les noms : les noms insérés doivent être exactement ceux qu'il cherche.</li>
+        <li>Un étudiant figure une fois par année dans la scolarité : compter des étudiants n'est pas compter des lignes.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi l'ordre des attributs compte-t-il ici ?</summary>
+        <div><p>Le script fourni insère avec <code>VALUES</code> sans nommer les colonnes (sauf pour <code>pers</code>) : les valeurs vont dans les colonnes dans l'ordre de la table.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi une sous-requête du script peut-elle insérer <code>NULL</code> sans erreur ?</summary>
+        <div><p>Une sous-requête qui ne trouve aucune ligne vaut <code>NULL</code> : l'insertion passe si la colonne l'accepte, et la ligne est fausse sans qu'on le voie.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que faut-il compter pour « le nombre d'étudiants » ?</summary>
+        <div><p>Les personnes distinctes de la scolarité, pas ses lignes : un étudiant y figure une fois par année.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle différence entre <code>WHERE</code> et <code>HAVING</code> ?</summary>
+        <div><p><code>WHERE</code> filtre les lignes avant le regroupement, <code>HAVING</code> filtre les groupes, après.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="tp-02-avions.html"><small>← TP 2</small>Les avions</a>
+    <a class="suivant" href="tp-04-cd-theque.html"><small>TP 4 →</small>La CD-thèque de jazz</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

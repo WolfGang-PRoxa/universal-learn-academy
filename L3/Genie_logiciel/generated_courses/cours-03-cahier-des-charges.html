@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="gl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cahier des charges, acteurs, rôles et concepts métiers · Génie logiciel L3</title>
+<meta name="description" content="Cours 3 de génie logiciel (L3) : le cahier des charges (contenu, intérêts, plan type), puis l'analyse des besoins sur deux études de cas, un système de contrôle d'accès à un bâtiment et un système de vente : acteurs et rôles métiers, frontière du système, besoins fonctionnels, processus et concepts métiers, visions statique et dynamique, besoins et contraintes non fonctionnels, traitements, données et volumes.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+<link rel="quiz" href="../generated_quizzes/quiz-cours-03-cahier-des-charges.html" title="Quiz · Cahier des charges et concepts métiers">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">Génie logiciel 1</a>
+    <span aria-current="page">Cours 3 · Cahier des charges</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Génie logiciel 1</span> Cours 3 · L3 S5</p>
+    <h1>Cahier des charges, acteurs, rôles et concepts métiers</h1>
+    <p class="chapeau">Comment passer d'un texte où le client décrit ce qu'il veut à une analyse structurée : qui utilise le système, pour quoi faire, où il s'arrête, quelles informations il manipule et sous quelles contraintes. Le cours suit deux études de cas, un système de contrôle d'accès à un bâtiment et un système de vente au détail, jusqu'au calcul des volumes de données.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/L3-175UD15_C3-EtuPrint.pdf">L3-175UD15_C3-EtuPrint.pdf</a> · 26 diapos ; annexes <a href="../cours/Annexes%20C3-20261016/L3-175UD05-C3-EC-01-P1.pdf">C3-1</a>, <a href="../cours/Annexes%20C3-20261016/L3-175UD05-C3-EC-01-P2.pdf">C3-2</a>, <a href="../cours/Annexes%20C3-20261016/L3-175UD05-C3-EC-01-P3.pdf">C3-3</a> (contrôle d'accès), <a href="../cours/Annexes%20C3-20261016/L3-175UD05-C3-EC-02-P1.pdf">C3-4</a>, <a href="../cours/Annexes%20C3-20261016/L3-175UD05-C3-EC-02-P2.pdf">C3-5</a> (système de vente)</dd></div>
+      <div><dt>Enseignante</dt><dd>C. Piau-Toffolon</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-16">16 oct. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Dire ce qu'est un cahier des charges, ce qu'il contient et à quoi il sert.</li>
+        <li>Identifier les acteurs d'un système, leurs rôles métiers et la frontière du système.</li>
+        <li>Dégager d'un texte les besoins fonctionnels, les processus métiers et les concepts métiers.</li>
+        <li>Distinguer vision statique et vision dynamique, besoins fonctionnels et non fonctionnels.</li>
+        <li>Estimer le volume des données à stocker et choisir où les stocker.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-02-activites-cycle-de-vie.html#les-phases-une-a-une">Cours 2</a> : l'avant-projet et la phase d'analyse et de spécification des besoins.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Remarque <span>Une version étudiant à compléter</span></p>
+    <p>Les diapos fournies sont la version « étudiant » : plusieurs sont vides ou s'arrêtent sur un intitulé, à compléter en cours (contenu et plan type du cahier des charges, exemples d'acteurs, exemples de besoins non fonctionnels, types de stockage). Ces parties sont complétées ici, dans des blocs Complément, à partir des annexes et des exemples de cahiers des charges fournis avec le TD 2.</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le cahier des charges <span class="ref">diapos 3–6</span></h2>
+    <p>Le cahier des charges est le premier document du projet : produit pendant l'avant-projet (cours 2), il fixe ce que le client attend, avant toute conception.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Cahier des charges (CDC)</span></p>
+      <p>Le <dfn>cahier des charges</dfn> est un document présentant les spécifications de base d'un produit ou d'un service à réaliser pour un client. Il prend des formes variables selon le type d'activité (production ou service récurrent, projet ponctuel…), selon le domaine d'activité concerné et selon la culture d'entreprise. C'est un document issu d'une négociation entre le client et la maîtrise d'ouvrage, et qui n'a pas valeur juridique.</p>
+    </div>
+    <p>Ses intérêts :</p>
+    <ul>
+      <li>décrire les besoins et les expliquer aux différents acteurs, pour s'assurer que tout le monde est d'accord ;</li>
+      <li>cadrer la ou les missions des acteurs impliqués ;</li>
+      <li>servir de référentiel partagé par le prestataire et l'équipe interne, décliné dans les documents contractuels ;</li>
+      <li>remplir l'obligation générale d'information du vendeur ou du prestataire vis-à-vis de son client.</li>
+    </ul>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Contenu et plan type d'un cahier des charges</span> <span class="ref">diapos 4 et 6, vides</span></p>
+      <p>Un cahier des charges répond à quatre questions : pourquoi (le contexte et les objectifs), quoi (les besoins), avec quelles limites (le périmètre et les contraintes), et comment on livrera (les livrables, les délais, le budget). Les deux exemples fournis avec le TD 2 (AOOS, une application web de l'IRD, et IGPP, un projet d'étudiants) suivent tous deux ce schéma, qu'on peut résumer en un plan type :</p>
+      <ol>
+        <li><strong>Contexte</strong> : l'organisation, l'existant, les raisons du projet.</li>
+        <li><strong>Objectifs</strong> : le but général du système et ce que la prestation doit apporter.</li>
+        <li><strong>Périmètre</strong> : ce que le système fait, et ce qu'il ne fait pas ; ses utilisateurs.</li>
+        <li><strong>Expression des besoins fonctionnels</strong> : les fonctionnalités attendues, par acteur.</li>
+        <li><strong>Besoins non fonctionnels et contraintes</strong> : ergonomie, performances, fiabilité, sécurité, contraintes techniques et de réalisation (matériel existant, langages, normes).</li>
+        <li><strong>Livrables</strong> : logiciel, documentation, formation.</li>
+        <li><strong>Organisation, planning et budget</strong> : étapes, jalons, délais, coûts, critères de recette.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Deux études de cas <span class="ref">diapos 7–8 · annexes C3-1 et C3-4</span></h2>
+    <p>Le cours applique chaque notion à deux systèmes décrits dans les annexes. On commence par les lire en se posant toujours les mêmes questions : quel est le but du système ? De quoi est-il composé ? Qui l'utilise, et pourquoi ? Quelles sont ses limites : les fonctionnalités, les utilisateurs et les éléments physiques non prévus ?</p>
+
+    <h3>Le système de contrôle d'accès à un bâtiment</h3>
+    <p>Un bâtiment universitaire de quatre niveaux et 5 000 m² environ, divisé en cinq zones (deux ailes de recherche, une aile de travaux pratiques, une aile administrative et un corps central avec les salles de cours et deux amphithéâtres), accueille environ 500 personnes par jour. Après la disparition d'objets, on restreint l'accès à certaines salles par des portes à fermeture automatique, chacune commandée par un lecteur de badges placé à proximité (annexe C3-1).</p>
+    <ul>
+      <li>Les badges ne sont délivrés qu'aux personnes qui doivent accéder aux locaux protégés pour leur activité.</li>
+      <li>Les droits d'accès sont définis pour des <strong>groupes de portes</strong> et alloués à des <strong>groupes de personnes</strong> ; une personne ou une porte est toujours au moins dans un groupe. Une porte n'appartient qu'à un seul groupe de portes ; une personne peut appartenir à plusieurs groupes de personnes, et ses droits sont l'union des droits de ses groupes.</li>
+      <li>Les droits sont inscrits dans un calendrier annuel, semaine par semaine, initialisé à partir de <strong>semaines types</strong> ; une modification d'une semaine type se propage dans tous les calendriers qui l'utilisent, sauf pour les changements faits directement dans un calendrier (un jour férié, par exemple).</li>
+      <li>Un <strong>superviseur</strong> configure le système ; un <strong>gardien</strong> dispose d'un écran de contrôle et est informé des tentatives de passage infructueuses, avec une mise à jour toutes les minutes.</li>
+    </ul>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Lire l'annexe C3-1</span> <span class="ref">diapo 7</span></p>
+      <p>Quel est le but du système en question ? Quelle est sa composition ? Qui l'utilise ? Pourquoi l'utilisent-ils ? Quelles sont ses limites : fonctionnalités non prévues, utilisateurs non prévus, éléments physiques extérieurs au système ?</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <div>
+          <ul>
+            <li><strong>But</strong> : restreindre l'accès à certaines salles aux personnes autorisées, selon des plages horaires, pour limiter les vols.</li>
+            <li><strong>Composition</strong> : des portes à fermeture automatique, un lecteur de badges par porte, des badges, les postes du superviseur et du gardien, et le logiciel de contrôle qui stocke les droits.</li>
+            <li><strong>Utilisateurs</strong> : le superviseur (configurer les personnes, portes, groupes et droits), le gardien (surveiller, être alerté, intervenir), les porteurs de badge (demander l'accès à une porte).</li>
+            <li><strong>Limites</strong> : les chemins et les déplacements ne sont pas contrôlés, seulement le passage d'une porte ; les visiteurs sans badge ne sont pas pris en charge ; les portes, les serrures et les lecteurs sont des éléments physiques avec lesquels le système communique, pas des parties du logiciel.</li>
+          </ul>
+        </div>
+      </details>
+    </div>
+
+    <h3>Le système de vente au détail</h3>
+    <p>Un système de vente pour détaillants enregistre les ventes et traite les paiements (annexe C3-4). Il est fait de matériel (ordinateur, lecteur de codes-barres, lecteur de carte bancaire) et de logiciel, et il est connecté à d'autres applications : calcul des taxes, gestion des stocks… Il doit tolérer les pannes : si un service distant est défaillant, il continue de saisir les ventes et de gérer au moins les paiements en espèces. Il doit gérer des terminaux variés (navigateur web, PC avec interface Java, tablettes, smartphones), et chaque client détaillant a ses propres règles de gestion commerciale, exécutables à des points prévus d'une vente.</p>
+    <p>Son cas typique d'utilisation : un client arrive à la caisse avec ses articles ; le caissier enregistre chaque article ; le système présente le détail et le total ; le client paie (espèces avec rendu de monnaie, chèque, carte bancaire vérifiée par un service distant d'autorisation, bons de réduction), le système valide et enregistre le paiement, met à jour l'inventaire, imprime un reçu. À chaque vente, il informe le service des stocks (réapprovisionnement), le service des ventes (analyse quasi en temps réel) et la comptabilité ; chaque caissier s'authentifie, ses données d'authentification sont gérées par un administrateur système, et le service des ressources humaines peut être averti de chaque connexion et déconnexion.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Acteurs et rôles métiers <span class="ref">diapo 9</span></h2>
+    <p>Tout système informatique fournit un support aux activités d'acteurs : avant de dire ce que fait le système, on dit pour qui il le fait.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Acteur</span></p>
+      <p>Un <dfn>acteur</dfn> est une entité, humaine ou non, externe au système, douée d'un rôle ou d'une intention métier. Il interagit avec le système : il lui fournit des informations, et le système supporte son métier par le biais de ses fonctionnalités. Une personne ou un système peut jouer plusieurs rôles du point de vue du système spécifié : il y a autant d'acteurs que de rôles.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les acteurs des deux études de cas</span> <span class="ref">diapo 9, à compléter</span></p>
+      <div class="tableau compact">
+        <table>
+          <caption>Acteurs et rôles métiers</caption>
+          <thead><tr><th>Système</th><th>Acteur</th><th>Rôle métier</th></tr></thead>
+          <tbody>
+            <tr><th rowspan="3">Contrôle d'accès</th><td>Superviseur</td><td>configurer le système et gérer les droits d'accès</td></tr>
+            <tr><td>Gardien</td><td>surveiller le bâtiment et assurer la sécurité</td></tr>
+            <tr><td>Porteur de badge</td><td>demander l'accès à une porte</td></tr>
+            <tr><th rowspan="4">Système de vente</th><td>Caissier</td><td>enregistrer les ventes et les paiements</td></tr>
+            <tr><td>Administrateur système</td><td>gérer les comptes et les droits des caissiers</td></tr>
+            <tr><td>Systèmes externes (non humains)</td><td>autorisation bancaire, comptabilité, stocks, service des ventes, ressources humaines, calcul des taxes : recevoir ou fournir des informations</td></tr>
+            <tr><td>Client</td><td>acheter et payer ; il n'agit pas directement sur le système, mais passe par le caissier et le lecteur de carte</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Le superviseur et le gardien ont aussi un badge : la même personne joue alors deux rôles, donc compte pour deux acteurs.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>La frontière d'un système <span class="ref">diapo 10</span></h2>
+    <p>Les limites d'un système doivent être clairement spécifiées. Il est délimité par les éléments physiques internes et externes, par ce qu'il fait (ses fonctionnalités) et ce qu'il ne fait pas (les fonctionnalités inutiles ou non prévues), et par les acteurs qui interagissent avec lui.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 620 270" width="620" role="img" aria-labelledby="fig-frontiere-titre">
+        <title id="fig-frontiere-titre">Les limites du système de vente : dans l'entreprise de vente, le système de vente (la caisse) échange avec le caissier, l'administrateur système et les systèmes de comptabilité, des ventes, des ressources humaines, des stocks et de calcul des taxes ; hors de l'entreprise, le client passe par le caissier, et le système d'autorisation bancaire est extérieur.</title>
+        <defs>
+          <marker id="fleche-frontiere" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="100" y="10" width="400" height="250" rx="18"/>
+        <text x="115" y="32" class="gras">Entreprise de vente</text>
+        <g class="t2">
+          <rect class="boite" x="112" y="48" width="58" height="40" rx="6"/><text x="141" y="64" text-anchor="middle">Compta-</text><text x="141" y="80" text-anchor="middle">bilité</text>
+          <rect class="boite" x="176" y="48" width="58" height="40" rx="6"/><text x="205" y="64" text-anchor="middle">Admin.</text><text x="205" y="80" text-anchor="middle">système</text>
+          <rect class="boite" x="240" y="48" width="58" height="40" rx="6"/><text x="269" y="64" text-anchor="middle">Service</text><text x="269" y="80" text-anchor="middle">ventes</text>
+          <rect class="boite" x="304" y="48" width="58" height="40" rx="6"/><text x="333" y="64" text-anchor="middle">Ress.</text><text x="333" y="80" text-anchor="middle">humaines</text>
+          <rect class="boite" x="368" y="48" width="58" height="40" rx="6"/><text x="397" y="72" text-anchor="middle">Stocks</text>
+          <rect class="boite" x="432" y="48" width="58" height="40" rx="6"/><text x="461" y="64" text-anchor="middle">Calcul</text><text x="461" y="80" text-anchor="middle">taxes</text>
+          <rect class="boite" x="130" y="200" width="80" height="34" rx="6"/><text x="170" y="222" text-anchor="middle">Caissier</text>
+        </g>
+        <rect class="boite-accent" x="300" y="180" width="130" height="60" rx="10"/>
+        <text x="365" y="204" text-anchor="middle" class="gras accent">Système de vente</text>
+        <text x="365" y="222" text-anchor="middle" class="accent">(caisse)</text>
+        <path class="pointille" d="M141 88 C 160 140, 300 150, 330 176" marker-end="url(#fleche-frontiere)"/>
+        <path class="pointille" d="M205 88 C 220 140, 310 150, 342 176" marker-end="url(#fleche-frontiere)"/>
+        <path class="pointille" d="M269 88 L 352 176" marker-end="url(#fleche-frontiere)"/>
+        <path class="pointille" d="M333 88 L 362 176" marker-end="url(#fleche-frontiere)"/>
+        <path class="pointille" d="M397 88 L 375 176" marker-end="url(#fleche-frontiere)"/>
+        <path class="pointille" d="M461 88 C 450 140, 410 150, 392 176" marker-end="url(#fleche-frontiere)"/>
+        <path class="pointille" d="M210 217 H296" marker-end="url(#fleche-frontiere)"/>
+        <rect class="boite" x="10" y="140" width="70" height="34" rx="6"/><text x="45" y="162" text-anchor="middle">Client</text>
+        <path class="pointille" d="M45 174 C 60 210, 100 215, 126 215" marker-end="url(#fleche-frontiere)"/>
+        <rect class="boite" x="520" y="140" width="92" height="44" rx="6"/><text x="566" y="158" text-anchor="middle" class="t2">Autorisation</text><text x="566" y="174" text-anchor="middle" class="t2">bancaire</text>
+        <path class="pointille" d="M566 184 C 560 225, 480 225, 434 215" marker-end="url(#fleche-frontiere)"/>
+      </svg>
+      <figcaption>Exemple des limites dans le système de vente (diapo 10) : les acteurs, humains ou non, entourent le système ; le client et l'autorisation bancaire sont hors de l'entreprise.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Des besoins fonctionnels aux concepts métiers <span class="ref">diapos 11–15 · annexe C3-2</span></h2>
+    <p>Une fois les acteurs connus, on analyse acteur par acteur ses <dfn>besoins fonctionnels</dfn> (BF) : ce qu'il doit pouvoir faire avec le système. Puis, pour chaque besoin, on cherche les éléments d'information qui entrent en jeu.</p>
+
+    <h3>Les besoins fonctionnels du contrôle d'accès</h3>
+    <p>L'annexe C3-2 décrit ce que chaque acteur fait avec le système. En les numérotant comme le cours (BF1 à BF18) :</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Besoins fonctionnels par acteur (annexe C3-2)</caption>
+        <thead><tr><th>Acteur</th><th>Besoins fonctionnels</th></tr></thead>
+        <tbody>
+          <tr><th>Superviseur</th><td>s'identifier (login et mot de passe) ; modifier ou créer une porte (état activé ou désactivé, temporisation, nom) ; modifier ou créer une personne porteuse de badge (nom, prénom, téléphone, numéro de badge, groupes) ; modifier ou créer un groupe de personnes (nom, membres, accès) ; modifier ou créer un groupe de portes (nom, portes, accès alloués) ; rechercher une personne par son badge ; rechercher les portes franchissables par une personne ; rechercher les groupes d'une personne ; rechercher les personnes d'un groupe ; modifier les droits d'accès d'un groupe de personnes à un groupe de portes (calendrier, plages horaires, semaine type) ; modifier une semaine type ; rechercher les droits d'accès pour une porte</td></tr>
+          <tr><th>Gardien</th><td>s'identifier ; demander un rapport des événements sur une période (avec niveau de détail) ; purger les événements d'une période ; demander un rapport des alarmes (rafraîchi toutes les 1 à 60 minutes) ; ouvrir une porte à distance ; déclencher l'alerte incendie (toutes les portes s'ouvrent)</td></tr>
+          <tr><th>Porteur de badge</th><td>demander l'accès à une porte : le système autorise ou non, ouvre ou non, enregistre l'événement et, en cas de refus, déclenche une alarme</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>L'annexe ajoute des <strong>contrôles de cohérence</strong> : chaque lecteur de badges a une adresse unique ; un lecteur est associé à une seule porte ; une porte est toujours dans un unique groupe de portes ; une personne est toujours au moins dans un groupe de personnes ; un badge n'est alloué qu'à une seule personne.</p>
+
+    <h3>Les éléments qui entrent en jeu</h3>
+    <p>Pour chaque besoin fonctionnel, on se demande ce qu'il faut stocker :</p>
+    <ul>
+      <li><strong>BF1, identification</strong> (du superviseur ou du gardien) : il faut stocker le login et le mot de passe, d'où <strong>E1</strong>, l'élément qui représente le superviseur et le gardien.</li>
+      <li><strong>BF2, modifier une porte</strong> : il faut stocker les informations de chaque porte (nom, état, temporisation), d'où <strong>E2</strong>, l'élément qui représente chaque porte.</li>
+      <li><strong>BF3, modifier une personne</strong> : il faut stocker les informations de chaque personne (nom, prénom…) et de chaque badge (numéro, validité…), d'où <strong>E3</strong>, l'élément qui représente toute personne utilisant le système, et <strong>E4</strong>, l'élément qui représente un badge, avec la relation <strong>R1</strong> : chaque E3 est en relation avec un E4.</li>
+      <li>Faut-il fusionner E1 et E3 ? Oui, car le superviseur et le gardien ont des badges : ce sont des personnes.</li>
+    </ul>
+    <p>On continue ainsi pour tous les besoins : la diapo 13 montre la relation <strong>R2</strong> entre <strong>E3 : Personne</strong> (nom, prénom, n° de téléphone) et <strong>E5 : Groupe de personnes</strong> (nom).</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le schéma complet des éléments</span></p>
+      <p>En menant l'analyse jusqu'au bout sur l'annexe C3-2, on obtient le schéma ci-dessous, écrit en diagramme de classes (cours 4) : chaque élément devient une classe, chaque relation une association, et les contrôles de cohérence de l'annexe fixent les multiplicités. C'est une solution proposée, pas celle du cours.</p>
+    </div>
+    <div class="atelier" id="c3-concepts-controle" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Concepts métiers du contrôle d'accès (solution proposée)",
+  "mode": "lecture",
+  "vue": "dessin",
+  "hauteur": 600,
+  "depart": [
+    "classe Personne",
+    "  nom",
+    "  prenom",
+    "  telephone",
+    "  login [0..1]",
+    "  mot_de_passe [0..1]",
+    "classe Badge",
+    "  numero {PK}",
+    "  valide",
+    "classe GroupePersonnes",
+    "  nom",
+    "classe Porte",
+    "  nom",
+    "  etat",
+    "  temporisation",
+    "classe GroupePortes",
+    "  nom",
+    "classe LecteurBadges",
+    "  adresse {PK}",
+    "classe Acces",
+    "classe Calendrier",
+    "  annee",
+    "classe SemaineType",
+    "  nom",
+    "  description",
+    "classe Evenement",
+    "  date",
+    "  type",
+    "  tete",
+    "Personne \"1\" -- \"0..1\" Badge : possède (R1)",
+    "Personne \"1..*\" -- \"1..*\" GroupePersonnes : appartient à (R2)",
+    "Porte \"1..*\" -- \"1\" GroupePortes : appartient à",
+    "LecteurBadges \"1\" -- \"1\" Porte : commande",
+    "GroupePersonnes \"*\" -- \"*\" GroupePortes : a accès à [Acces]",
+    "Acces \"*\" -- \"1\" Calendrier : défini par",
+    "Calendrier \"*\" -- \"*\" SemaineType : initialisé avec",
+    "Evenement \"*\" -- \"1\" LecteurBadges : enregistré par",
+    "Evenement \"*\" -- \"0..1\" Badge : concerne"
+  ],
+  "disposition": {
+    "Personne": [20, 30],
+    "Badge": [20, 300],
+    "GroupePersonnes": [300, 30],
+    "GroupePortes": [620, 30],
+    "Porte": [620, 260],
+    "LecteurBadges": [620, 500],
+    "Evenement": [330, 500],
+    "Calendrier": [400, 270],
+    "SemaineType": [300, 380]
+  }
+}
+      </script>
+    </div>
+    <p>Le login et le mot de passe sont facultatifs ([0..1]) : seuls le superviseur et le gardien en ont. Le droit d'accès est une classe d'association entre groupes de personnes et groupes de portes, puisqu'il porte un calendrier ; les événements viennent des lecteurs, et la plupart concernent un badge.</p>
+
+    <h3>Processus métiers et concepts métiers</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Processus métier</span></p>
+      <p>Chaque acteur a un rôle métier qui l'amène à suivre des processus métiers. Un <dfn>processus métier</dfn> est une activité d'un acteur, définie pour chaque rôle métier : une suite d'actions qui modifie le contexte de l'acteur. Les besoins fonctionnels identifiés en analyse permettent d'effectuer, ou de supporter, les processus métiers : un processus peut utiliser une ou plusieurs fonctionnalités, et faire interagir plusieurs acteurs via les fonctionnalités.</p>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Le superviseur</span></p>
+      <p>Acteur : le superviseur. Rôle métier : gérer les données relatives aux droits d'accès. Processus métiers : modifier les informations relatives à une porte ; modifier les informations relatives à une personne ; etc. Chacun se décrit par la suite d'actions de l'annexe C3-2 (afficher la liste, choisir, éditer, enregistrer).</p>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Concept métier</span></p>
+      <p>Un processus métier manipule des instances de concepts métiers. Un <dfn>concept métier</dfn> est un élément, réel ou virtuel, du domaine, utilisé ou modifié au cours de processus métiers : la représentation abstraite d'un ensemble d'occurrences. Il est défini par un nom représentatif, des informations dont les valeurs permettent de différencier les occurrences, des relations avec d'autres concepts métiers (les liens entre occurrences), et les processus métiers qui le manipulent.</p>
+    </div>
+    <p>Exemple, incomplet, du concept métier E5 : le groupe de personnes, défini par son nom, en relation (R2) avec les personnes (E3) qui le composent, et manipulé par les processus « modifier un groupe de personnes » et « modifier les droits d'accès ».</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Vision statique et vision dynamique <span class="ref">diapo 16</span></h2>
+    <p>L'analyse et la spécification d'un système se font selon deux points de vue complémentaires.</p>
+    <div class="colonnes">
+      <div class="colonne">
+        <p><strong>Point de vue statique</strong> : identifier et définir les éléments du domaine. La spécification statique décrit les acteurs et leurs rôles métiers, les concepts métiers et leurs relations.</p>
+      </div>
+      <div class="colonne">
+        <p><strong>Point de vue dynamique</strong> : décrire les interactions et les modifications des éléments du domaine. La spécification dynamique décrit les processus métiers de chaque acteur, et leurs actions en termes de manipulation des occurrences de concepts métiers : création d'une occurrence, modification de ses informations, modification des liens entre occurrences, destruction. C'est une collaboration de concepts métiers.</p>
+      </div>
+    </div>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>La démarche d'analyse</span> <span class="badge examen">Test</span></p>
+      <p>Le corrigé du test de 2022-23 (question 4) résume la démarche, que l'analyste suit de façon rigoureuse et reproductible :</p>
+      <ol>
+        <li>Définir le but général du système.</li>
+        <li>Définir la frontière du système : identifier les acteurs et leurs rôles métiers, les processus métiers et les besoins fonctionnels, les parties matérielles et logicielles.</li>
+        <li>Définir chaque processus métier de chaque acteur : le décrire en termes de concepts métiers, et faire un schéma synthétique des concepts métiers.</li>
+        <li>Décrire les besoins et les contraintes non fonctionnels : les besoins en interfaces logicielles et les besoins techniques.</li>
+      </ol>
+      <p>Le même corrigé décrit la phase de spécification : étudier et comprendre les besoins des utilisateurs, définir leur domaine métier, définir les contraintes fonctionnelles et techniques, rédiger le dossier de définition des besoins et les tests de validation, réaliser les IHM et les diagrammes de cas d'utilisation, avec des techniques de recueil des besoins (outils informels, semi-formels et formels) et l'aide d'ergonomes.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Besoins et contraintes non fonctionnels <span class="ref">diapos 17–21 · annexes C3-3 et C3-5</span></h2>
+    <p>En plus des besoins fonctionnels de chaque acteur, un système peut avoir d'autres besoins, et être soumis à des contraintes. L'analyse doit recenser l'ensemble de ces besoins et contraintes non fonctionnels.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Exemples</span> <span class="ref">diapo 17, à compléter</span></p>
+      <ul>
+        <li><strong>Besoins d'IHM</strong> : un texte lisible à un mètre et des signaux sonores plutôt que visuels pour la caisse ; des listes de valeurs correctes pour aider le superviseur à formuler des requêtes justes (annexe C3-1).</li>
+        <li><strong>Contraintes techniques</strong> : réutiliser les lecteurs de badges existants ; la technologie Java imposée pour le système de vente ; une réponse de l'autorisation bancaire en moins d'une minute dans 90 % des cas.</li>
+      </ul>
+    </div>
+
+    <h3>Le contrôle d'accès : les lecteurs de badges existants</h3>
+    <p>Le client veut réutiliser ses lecteurs de badges (annexe C3-3). Il faut donc étudier leurs caractéristiques, et discuter des conditions de conception du système de contrôle selon elles.</p>
+    <ul>
+      <li><strong>Caractéristiques logicielles</strong> : mémorisation de 4 000 badges, avec chacun une plage horaire parmi 8 (les 7 premières configurées par le superviseur, la dernière « passe tout temps », chacune avec 3 sous-plages par jour) ; opérations intégrées (valider ou invalider un badge ou un groupe de badges numérotés) ; mémorisation des 100 derniers événements dans un tampon circulaire, effacés après chaque interrogation ; différents types de messages ; lecteur <dfn>esclave</dfn>, jamais à l'origine d'une interaction.</li>
+      <li><strong>Caractéristiques matérielles</strong> : de la mémoire vive, une gâche électrique avec commande électronique, une adresse réseau (jusqu'à 64 lecteurs sur le réseau), un port série, une trame réseau (début 01H, adresse 00H à 3FH, somme de contrôle sur 2 octets, données, fin F1H-F2H).</li>
+      <li>En cas de coupure de courant, le lecteur enregistre un événement spécial et ne gère plus les plages horaires, jusqu'à ce que le système de contrôle remette son horloge à l'heure.</li>
+    </ul>
+    <p>Comment le système sera-t-il utilisé ? Par des <strong>interfaces logicielles</strong>, des interfaces graphiques donnant accès à leurs fonctionnalités métiers pour le superviseur et pour le gardien (il faut en proposer des maquettes), et par des <strong>interfaces matérielles</strong> : le porteur de badge utilise les lecteurs, reliés par un réseau série.</p>
+
+    <h3>Le système de vente : le document des spécifications complémentaires</h3>
+    <p>L'annexe C3-5 est le référentiel de toutes les spécifications du système de vente qui n'ont pas été capturées dans les cas d'utilisation. Les exigences du client :</p>
+    <ul>
+      <li><strong>Fonctionnalités</strong> : journalisation et traitement des erreurs (consignées en mémoire persistante) ; possibilité de définir des règles de gestion, exécutées à différents points du scénario ; traitement des paiements par débit et par crédit, avec un virement différé la nuit ; plusieurs identificateurs d'article (UPC, EAN, SKU, et JAN).</li>
+      <li><strong>Fonctionnement</strong> : texte de l'afficheur lisible à un mètre, signaux sonores plutôt que visuels ; vente réalisée même en cas de perte des connexions aux acteurs non humains (stockage local provisoire) ; réponse de l'autorisation bancaire en moins d'une minute dans 90 % des cas.</li>
+      <li><strong>Conception et implémentation</strong> : différentes règles de gestion (adaptabilité, par exemple 20 % de réduction pour les employés, 10 % le lundi…), configurabilité élevée de l'architecture (clients « légers » ou « lourds », deux niveaux ou N niveaux), technologies Java, composants libres si possible (et si leurs licences permettent la revente), une calculatrice de taxes acquise.</li>
+    </ul>
+    <p>Comment le système sera-t-il utilisé ? <strong>Interfaces logicielles</strong> : pour l'administrateur système, des interfaces graphiques (gestion des droits d'accès des caissiers) ; pour le caissier, un écran tactile ; pour les acteurs non humains (comptabilité, ventes, ressources humaines, stocks, calcul des taxes, autorisation bancaire), des protocoles de communication. <strong>Interfaces matérielles</strong>, que la diapo 21 laisse en questions : réseau Ethernet pour les acteurs non humains, USB pour le lecteur de carte bancaire, le lecteur de codes-barres et le clavier, bus I2C pour l'imprimante de reçus et le grand afficheur à cristaux liquides.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Traitements, données et volumes <span class="ref">diapos 22–26</span></h2>
+    <p>Dernière étape avant la modélisation : dire comment le système prend en charge chaque besoin fonctionnel, quelles informations il manipule, où il les stocke et en quelle quantité. On reprend le contrôle d'accès.</p>
+
+    <h3>Les opérations</h3>
+    <p>Chaque besoin fonctionnel devient une ou plusieurs opérations du système :</p>
+    <ul>
+      <li>BF1, s'identifier : l'opération O1, traitée sur le poste du superviseur, compare le login et le mot de passe saisis à ceux stockés ; le login donne accès aux opérations du superviseur, O2 à O12.</li>
+      <li>BF2, modifier une porte : l'opération O2, sur le poste du superviseur, donne accès à la liste des portes connues, puis permet de modifier les informations stockées (nom, état, temporisation) ou de créer une nouvelle porte.</li>
+      <li>BF13 à BF17, les besoins du gardien : les opérations O13 à O17, sur le poste du gardien.</li>
+      <li>BF18, demander l'accès à une porte : l'opération O18, intégrée aux lecteurs de badges et programmée à distance par le superviseur.</li>
+    </ul>
+
+    <h3>Les informations manipulées et leur stockage</h3>
+    <p>Les informations manipulées sont une version informatisée des concepts métiers. Leurs relations doivent être respectées : par exemple, si une porte est supprimée, il faut supprimer la serrure électronique liée. C'est le début de la spécification par modélisation (cours 4).</p>
+    <p>Où stocker les informations ? Pas dans l'ordinateur du gardien ou dans celui du superviseur, mais dans un <strong>stockage centralisé commun</strong>, accessible depuis les deux. Une partie est aussi copiée dans chaque lecteur de badges : ces informations sont « volatiles » par rapport aux informations centralisées.</p>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo 23 ajoute « (non perdues en cas de coupure de courant) » après « volatiles », ce qui se contredit : d'après l'annexe C3-3, c'est le lecteur qui perd la gestion des plages horaires à la coupure, et les données centralisées qui sont persistantes. Les numéros des diapos 22 à 25 sont aussi dans le désordre (1/4, 3/4, 2/4, 4/4) : l'ordre suivi ici est celui de leur numérotation.</p>
+
+    <h3>Le volume des informations dans le pire des cas</h3>
+    <div class="tableau compact">
+      <table>
+        <caption>Volume des informations du contrôle d'accès (diapo 25)</caption>
+        <thead><tr><th>Lieu</th><th>Information</th><th>Taille unitaire</th><th>Volume total</th></tr></thead>
+        <tbody>
+          <tr><th rowspan="3">Lecteur de badges (≈ 200 ko de mémoire vive par lecteur)</th><td>4 000 badges</td><td>2 o</td><td>7,9 ko</td></tr>
+          <tr><td>100 événements</td><td>4 o</td><td>400 o</td></tr>
+          <tr><td>8 plages horaires par badge</td><td>48 o</td><td>188 ko</td></tr>
+          <tr><th rowspan="9">Stockage centralisé (≈ 6,6 Go de disque selon la diapo)</th><td>500 badges</td><td>2 o</td><td>1 ko</td></tr>
+          <tr><td>500 personnes</td><td>80 o</td><td>40 ko</td></tr>
+          <tr><td>100 portes</td><td>25 o</td><td>2,5 ko</td></tr>
+          <tr><td>100 lecteurs de badges</td><td>1 o</td><td>100 o</td></tr>
+          <tr><td>500 groupes de personnes</td><td>30 o</td><td>14,7 ko</td></tr>
+          <tr><td>100 groupes de portes</td><td>30 o</td><td>3 ko</td></tr>
+          <tr><td>50 000 événements par jour, gardés une semaine</td><td>10 o</td><td>3,33 Go</td></tr>
+          <tr><td>500 000 calendriers</td><td>6,8 ko</td><td>3,24 Go</td></tr>
+          <tr><td>dont 52 semaines par calendrier, à 21 plages horaires de 4 o par semaine</td><td>50 o + 84 o par semaine</td><td>6,8 ko</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><span class="badge ajout">Ajout</span> La méthode : volume total = nombre d'occurrences × taille unitaire, dans le pire des cas. Par exemple, 4 000 badges × 48 o = 192 000 o ≈ 188 Kio pour les plages horaires d'un lecteur, et un calendrier pèse 52 × (50 + 84) = 6 968 o ≈ 6,8 Kio.</p>
+    <p><span class="badge a-verifier">À vérifier</span> La ligne des événements ne tombe pas juste : 50 000 événements × 7 jours × 10 o = 3 500 000 o, soit environ 3,3 Mio, et non 3,33 Go. Le stockage centralisé serait alors d'environ 3,3 Go, presque tout entier occupé par les calendriers. Le nombre de 500 000 calendriers paraît aussi très élevé pour 500 groupes de personnes et 100 groupes de portes (au plus 50 000 couples).</p>
+
+    <h3>Traitements et données</h3>
+    <p>On sépare les <dfn>traitements</dfn>, les opérations, des <dfn>données</dfn>, les informations manipulées par les opérations, qui les créent, les suppriment et les modifient. Le type de stockage des données est choisi en fonction de leur volume et de leur « volatilité ».</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les deux types de stockage</span> <span class="ref">diapo 26, à compléter</span></p>
+      <ul>
+        <li><strong>Le stockage volatil</strong>, en mémoire vive : rapide, mais limité en taille et perdu à l'arrêt ou à la coupure de courant. Il convient aux données de travail, ou recopiées depuis une source sûre, comme les badges et les plages horaires programmés dans chaque lecteur.</li>
+        <li><strong>Le stockage persistant</strong>, sur disque, dans des fichiers ou une base de données : plus lent, mais durable et de grande capacité. Il convient aux données de référence, comme les personnes, les groupes, les droits et l'historique des événements, dans le stockage centralisé.</li>
+      </ul>
+      <p>Remarque : les volumes calculés guident ce choix. 200 Ko par lecteur tiennent en mémoire vive ; plusieurs gigaoctets de calendriers et d'événements demandent une base de données, et posent la question de la durée de conservation (purge des événements par le gardien).</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Le cahier des charges présente les spécifications de base du produit à réaliser ; issu d'une négociation, sans valeur juridique, il sert de référentiel partagé et de base aux documents contractuels.</li>
+        <li>Un acteur est une entité externe, humaine ou non, douée d'un rôle métier : autant d'acteurs que de rôles.</li>
+        <li>La frontière d'un système se définit par ses éléments physiques, ce qu'il fait et ne fait pas, et les acteurs qui interagissent avec lui.</li>
+        <li>Pour chaque acteur, on liste ses besoins fonctionnels ; pour chaque besoin, les éléments à stocker et leurs relations.</li>
+        <li>Un processus métier est une suite d'actions d'un acteur pour un rôle métier ; il manipule des instances de concepts métiers.</li>
+        <li>Un concept métier a un nom, des informations, des relations avec d'autres concepts, et des processus qui le manipulent.</li>
+        <li>Vision statique : acteurs, concepts et relations ; vision dynamique : processus métiers, en termes de créations, modifications et destructions d'occurrences.</li>
+        <li>L'analyse recense aussi les besoins et contraintes non fonctionnels : ergonomie, performances, fiabilité, matériel imposé, technologies.</li>
+        <li>On sépare traitements et données, et l'on choisit le stockage (volatil ou persistant) selon le volume et la volatilité des données.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Le cahier des charges a-t-il une valeur juridique ?</summary>
+        <div><p>Non : c'est un document issu d'une négociation entre le client et la maîtrise d'ouvrage. Il est décliné ensuite dans les documents contractuels, qui, eux, engagent les parties.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Le système d'autorisation bancaire est-il un acteur du système de vente ?</summary>
+        <div><p>Oui : c'est une entité non humaine, externe au système, qui interagit avec lui (elle répond aux demandes d'autorisation) et joue un rôle métier.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi le superviseur du contrôle d'accès compte-t-il pour deux acteurs ?</summary>
+        <div><p>Parce qu'il joue deux rôles : superviseur, quand il configure le système depuis son poste, et porteur de badge, quand il demande à franchir une porte. Il y a autant d'acteurs que de rôles.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi fusionne-t-on les éléments E1 (superviseur, gardien) et E3 (personne) ?</summary>
+        <div><p>Le superviseur et le gardien ont eux aussi des badges : ce sont des personnes du système, qui ont en plus un login et un mot de passe.</p></div>
+      </details>
+      <details class="carte">
+        <summary>« La réponse de l'autorisation bancaire doit arriver en moins d'une minute dans 90 % des cas » : besoin fonctionnel ou non fonctionnel ?</summary>
+        <div><p>Non fonctionnel : c'est une exigence de performance, qui porte sur la façon dont une fonctionnalité est rendue, pas sur ce que le système fait.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Qu'est-ce qui relève de la vision dynamique ?</summary>
+        <div><p>Les processus métiers de chaque acteur, décrits comme des créations, modifications et destructions d'occurrences de concepts métiers, et des modifications de leurs liens.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Comment calculer le volume d'une information à stocker ?</summary>
+        <div><p>Nombre d'occurrences dans le pire des cas × taille unitaire d'une occurrence, puis on additionne toutes les informations d'un même lieu de stockage.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-02-activites-cycle-de-vie.html"><small>← Cours 2</small>Activités et cycle de vie</a>
+    <a class="suivant" href="cours-04-modeles-uml.html"><small>Cours 4 →</small>Modèles et UML</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Génie logiciel 1 · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

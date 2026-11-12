@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="c">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compiler un TP en C sous Windows et sous Linux · Environnements</title>
+<meta name="description" content="Compiler et lancer un TP en C sous Windows et sous Linux : C standard avec MinGW, mingw32-make et le sh de Git for Windows, C POSIX avec WSL, lanceurs run.bat et run.sh, installation de gcc et make dans WSL, accès au lecteur G:, erreurs fréquentes. État du PC vérifié le 31 octobre 2026.">
+<link rel="stylesheet" href="../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../_outils/charte/assets/cours.css">
+<script defer src="../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script defer src="../../_outils/charte/vendor/highlight/langues/dos.min.js"></script>
+<script src="../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../index.html">studies</a>
+    <span>Environnements</span>
+    <span aria-current="page">Compiler un TP en C</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Environnement</span> Langage C · L2 et L3</p>
+    <h1>Compiler un TP en C sous Windows et sous Linux</h1>
+    <p class="chapeau">Les TP de C se font sous Linux à la fac et sous Windows à la maison. Un programme en C standard se compile des deux côtés avec les mêmes Makefile ; un programme POSIX (processus, verrous, signaux, threads) demande un vrai Linux, que Windows fournit avec WSL. Cette page fait le point sur ce qui est installé sur le PC, sur ce qui manque, et donne les commandes de chaque système.</p>
+    <dl class="meta">
+      <div><dt>Sert aux</dt><dd><a href="../../L3/Codage/generated_courses/index.html">TP de codage</a> (C standard), <a href="../../L3/SE_PS/generated_courses/index.html">TD et TP de programmation système</a> (C POSIX)</dd></div>
+      <div><dt>État du PC</dt><dd>vérifié le <time datetime="2026-09-30">30 sept. 2026</time></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-01">1<sup>er</sup> oct. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Savoir si un TP est en C standard ou en C POSIX, et donc où il se compile.</li>
+        <li>Compiler et lancer un TP avec <code>run.bat</code> (Windows) ou <code>run.sh</code> (Linux), ou à la main avec <code>make</code>.</li>
+        <li>Installer gcc et make dans WSL, et y ouvrir le dossier du Drive.</li>
+        <li>Reconnaître les erreurs d'environnement les plus fréquentes, et les corriger.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Ouvrir un terminal : cmd ou PowerShell sous Windows, bash sous Linux.</li>
+        <li>Compiler un fichier C avec <code>gcc</code> ; savoir à quoi sert un Makefile.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Deux familles de programmes C</h2>
+    <p>Avant de compiler, il faut savoir de quelle bibliothèque dépend le programme : c'est elle, et non le langage, qui décide des systèmes où il fonctionne.</p>
+
+    <dl class="glossaire">
+      <dt>C standard</dt>
+      <dd>Le programme n'utilise que la bibliothèque de la norme ISO : <code>stdio.h</code>, <code>stdlib.h</code>, <code>string.h</code>, <code>math.h</code>… Il se compile sur tout système qui a un compilateur C. Ce sont les TP de codage.</dd>
+      <dt>C POSIX</dt>
+      <dd>Le programme appelle aussi les services d'un système Unix : processus (<code>fork</code>, <code>wait</code>), verrous (<code>fcntl</code>), signaux (<code>sigaction</code>, <code>kill</code>), threads et sémaphores (<code>pthread.h</code>, <code>semaphore.h</code>), files de messages (<code>sys/msg.h</code>). Ce sont les TD et TP de programmation système.</dd>
+    </dl>
+
+    <div class="tableau">
+      <table>
+        <caption>Où chaque famille se compile</caption>
+        <thead><tr><th></th><th>Linux (fac)</th><th>Windows : MinGW</th><th>Windows : WSL</th></tr></thead>
+        <tbody>
+          <tr><th>C standard</th><td class="oui">oui</td><td class="oui">oui</td><td class="oui">oui, après installation</td></tr>
+          <tr><th>C POSIX</th><td class="oui">oui</td><td class="non">non</td><td class="oui">oui, après installation</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>MinGW produit des programmes Windows natifs : il n'offre que ce que Windows sait faire. Sur le PC, <code>sys/wait.h</code>, <code>pthread.h</code>, <code>semaphore.h</code> et <code>sys/msg.h</code> sont absents. <code>unistd.h</code>, <code>fcntl.h</code> et <code>signal.h</code> existent, mais sans <code>struct flock</code>, <code>F_SETLKW</code> ni <code>SIGQUIT</code>, et <code>fork</code> n'est pas déclaré : l'édition de liens échoue sur <code>undefined reference to `fork'</code>. WSL, au contraire, fait tourner un vrai noyau Linux : un programme s'y comporte comme sur les machines de la fac.</p>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Un programme juste sous Windows peut se tromper sous Linux</span></p>
+      <p>Le gcc de MinGW compile pour Windows 32 bits, alors que Linux, à la fac comme dans WSL, travaille en 64 bits. Mesuré sur le PC le 30 septembre : <code>int</code> fait 4 octets des deux côtés, mais <code>long</code>, les pointeurs et <code>size_t</code> font 4 octets avec MinGW et 8 sous Linux. Un calcul qui déborde un <code>long</code> sous Windows passe sous Linux, un pointeur rangé dans un <code>int</code> est tronqué sous Linux, un format <code>printf</code> qui convient d'un côté provoque un avertissement de l'autre. Avant de rendre un TP, on le compile et on le lance à la fac, ou dans WSL.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Ce qui est installé sur le PC</h2>
+    <p>Relevé fait le 30 septembre 2026, mis à jour le 31 octobre pour WSL, avec les commandes <code>where</code> et <code>--version</code> sous Windows, et <code>command -v</code> dans WSL.</p>
+    <div class="tableau">
+      <table>
+        <caption>Outils de compilation présents</caption>
+        <thead><tr><th>Outil</th><th>Emplacement</th><th>Version</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><th><code>gcc</code></th><td><code>C:\MinGW\bin</code></td><td>MinGW.org 6.3.0, cible Windows 32 bits</td><td>compilateur C (pas de <code>g++</code>)</td></tr>
+          <tr><th><code>mingw32-make</code></th><td><code>C:\MinGW\bin</code></td><td>GNU Make 3.82.90</td><td><code>make</code>, sous un autre nom : il n'y a pas de <code>make.exe</code></td></tr>
+          <tr><th><code>gdb</code></th><td><code>C:\MinGW\bin</code></td><td>7.6.1</td><td>débogueur</td></tr>
+          <tr><th><code>sh</code></th><td><code>C:\Program Files\Git\usr\bin</code></td><td>bash 5.2 (Git for Windows 2.53)</td><td>shell des recettes des Makefile</td></tr>
+          <tr><th>WSL 2</th><td>distribution Ubuntu</td><td>Ubuntu 26.04 LTS</td><td>vrai Linux, sans outils de compilation</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Le PATH de Windows contient <code>C:\MinGW\bin</code> (gcc, mingw32-make, gdb) et <code>C:\Program Files\Git\cmd</code> (git), mais pas <code>C:\Program Files\Git\usr\bin</code>, où se trouve <code>sh.exe</code> : c'est <code>run.bat</code> qui l'ajoute.</p>
+    <p>Ce qui manque :</p>
+    <ul>
+      <li>dans WSL, <strong>gcc, make, gdb et ncurses</strong> : installés le 31 octobre (gcc 15.2, make 4.4, gdb 17.1, sur Ubuntu 26.04) ;</li>
+      <li>dans WSL, l'accès à <code>studies</code> : WSL voit <code>C:</code> sous <code>/mnt/c</code>, où se trouve le dossier depuis le 12 novembre (un autre lecteur se monte, partie 4) ;</li>
+      <li>pour MinGW, les threads POSIX (<code>pthread.h</code>, <code>semaphore.h</code>) : inutile de les ajouter, un programme POSIX se compile dans WSL.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Compiler un TP en C standard</h2>
+    <p>Les TP de codage suivent tous la même organisation : un Makefile principal, trois fichiers inclus, et deux lanceurs qui compilent puis exécutent. Les mêmes fichiers servent sous Windows et sous Linux.</p>
+
+    <h3>L'organisation d'un dossier de TP</h3>
+    <dl class="glossaire">
+      <dt><code>Makefile</code></dt>
+      <dd>Les cibles : <code>all</code> compile tout, <code>clean</code> efface les fichiers produits.</dd>
+      <dt><code>Makefile.dir</code></dt>
+      <dd>Le seul endroit où l'on déclare les dossiers du projet : <code>build_dir</code>, puis les dossiers des modules à mesure qu'ils sont créés.</dd>
+      <dt><code>Makefile.compilation</code></dt>
+      <dd>Le compilateur et ses options : <code>-Wall -g -D_DEBUG_</code> tant que <code>DEBUG=yes</code>.</dd>
+      <dt><code>Makefile.depend</code></dt>
+      <dd>Les dépendances entre dossiers : un Makefile ne compile que les fichiers de son dossier, et demande les autres <code>.o</code> au Makefile de leur dossier.</dd>
+      <dt><code>build/</code></dt>
+      <dd>Les fichiers objets et l'exécutable, recréés par <code>make all</code> et effacés par <code>make clean</code>.</dd>
+      <dt><code>run.bat</code>, <code>run.sh</code></dt>
+      <dd>Les lanceurs, pour Windows et pour Linux : ils compilent tout, puis lancent l'exécutable.</dd>
+    </dl>
+
+    <h3>Sous Windows : run.bat</h3>
+    <p>Dans l'Explorateur, taper <code>cmd</code> dans la barre d'adresse du dossier du TP ouvre un terminal au bon endroit ; on y lance <code>run.bat</code>. Un double-clic sur <code>run.bat</code> marche aussi, mais la fenêtre se ferme dès la fin du programme, avant qu'on ait pu lire ses messages.</p>
+<pre data-fichier="cmd"><code class="language-dos">cd /d "C:\Users\piaur\Prog\studies\L3\Codage\TP\TP2"
+run.bat</code></pre>
+    <p>Le lanceur fait, dans l'ordre :</p>
+    <ol class="etapes">
+      <li>il se place dans le dossier du TP, d'où qu'on le lance ;</li>
+      <li>il ajoute <code>C:\Program Files\Git\usr\bin</code> au PATH si <code>sh.exe</code> est introuvable : les recettes des Makefile emploient <code>mkdir -p</code> et <code>rm -rf</code>, et sans <code>sh</code>, mingw32-make les confie à cmd, qui ne les comprend pas ;</li>
+      <li>il prend <code>make</code> s'il existe, sinon <code>mingw32-make</code> ;</li>
+      <li>il passe la console en UTF-8 (<code>chcp 65001</code>), pour les accents ;</li>
+      <li>il compile avec <code>make all</code>, s'arrête si la compilation échoue, puis lance <code>build\&lt;programme&gt;.exe</code>.</li>
+    </ol>
+
+    <h3>Sous Linux : run.sh</h3>
+    <p>À la fac, dans un terminal ouvert dans le dossier du TP :</p>
+<pre class="terminal"><code>$ ./run.sh
+mkdir -p ./build
+gcc -c -Wall -g -D_DEBUG_ -Wno-misleading-indentation generateur.c -o ./build/generateur.o -I./
+gcc  ./build/generateur.o -Wall -g -D_DEBUG_ -Wno-misleading-indentation -o ./build/generateur -lm</code></pre>
+    <p>make affiche chaque commande qu'il lance, puis vient la sortie du programme. <code>run.sh</code> fonctionne aussi sous Windows, dans Git Bash : il y trouve <code>mingw32-make</code> tout seul.</p>
+
+    <h3>Sans lanceur</h3>
+    <p>Les lanceurs ne font que deux commandes, que l'on peut taper soi-même : compiler, puis lancer. <code>make clean</code> efface <code>build/</code>, pour tout recompiler.</p>
+    <div class="colonnes">
+<pre data-fichier="cmd (Windows)"><code class="language-dos">set PATH=%PATH%;C:\Program Files\Git\usr\bin
+mingw32-make all
+build\generateur.exe
+mingw32-make clean</code></pre>
+<pre class="terminal"><code>$ make all
+$ ./build/generateur
+$ make clean</code></pre>
+    </div>
+    <p>Pour un fichier isolé, sans Makefile : <code>gcc -Wall -g -o prog prog.c</code>, puis <code>./prog</code> sous Linux ou <code>prog.exe</code> sous Windows.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Compiler un programme POSIX sous Windows : WSL</h2>
+    <p>WSL (<span class="en" lang="en">Windows Subsystem for Linux</span>) fait tourner Ubuntu à côté de Windows. On y retrouve les commandes de la fac, à condition d'installer les outils une fois, et de monter le lecteur du Drive à chaque démarrage.</p>
+
+    <h3>Installer gcc, make et gdb (une fois)</h3>
+    <p>La commande <code>wsl</code>, tapée dans un terminal Windows, ouvre le shell d'Ubuntu. On y installe le paquet <code>build-essential</code> (gcc, make et les en-têtes de la bibliothèque C), et gdb :</p>
+<pre class="terminal"><code>$ sudo apt update
+$ sudo apt install build-essential gdb
+$ gcc --version</code></pre>
+    <p>Le <a href="../../L3/SE_PS/generated_courses/tp-02-transports.html">TP Transports</a> affiche son écran avec ncurses : il lui faut aussi <code>sudo apt install libncurses-dev</code>.</p>
+    <p><code>sudo</code> demande le mot de passe choisi à l'installation d'Ubuntu, celui de l'utilisateur <code>piaur</code>.</p>
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>Mot de passe oublié</span></p>
+      <p>Depuis un terminal Windows, <code>wsl -u root</code> ouvre une session d'administrateur sans mot de passe : <code>wsl -u root passwd piaur</code> en définit un nouveau.</p>
+    </div>
+
+    <h3>Ouvrir le dossier studies</h3>
+    <p>Depuis le 12 novembre 2026, <code>studies</code> est sur le disque <code>C:</code> (<code>C:\Users\piaur\Prog\studies</code>), que WSL voit sous <code>/mnt/c</code> sans rien faire :</p>
+<pre class="terminal"><code>$ cd "/mnt/c/Users/piaur/Prog/studies/L3/SE_PS/TP"</code></pre>
+    <p>Un dossier sur un autre lecteur, comme l'ancien <code>G:</code> de Google Drive, doit d'abord être monté :</p>
+<pre class="terminal"><code>$ sudo mkdir -p /mnt/g
+$ sudo mount -t drvfs G: /mnt/g</code></pre>
+    <p>Le montage a été essayé sur le PC le 30 septembre : le dossier <code>studies</code> s'y lit normalement. Il ne survit pas à un redémarrage de WSL : on le refait à chaque fois. Le <code>run.bat</code> du <a href="../../L3/SE_PS/generated_courses/tp-01-route.html">TP Route</a> fait ce montage lui-même, sans mot de passe (<code>wsl -u root</code>), avant de lancer <code>run.sh</code> dans WSL.</p>
+
+    <h3>Compiler et lancer</h3>
+    <p>Dans le dossier du TP, on procède exactement comme à la fac : <code>./run.sh</code>, ou <code>make all</code> puis l'exécutable. Les fichiers sont ceux du PC : ce que l'on modifie sous Windows se retrouve dans WSL, et inversement.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Erreurs fréquentes</h2>
+    <p>Les messages ci-dessous ont été obtenus sur le PC, en reproduisant chaque situation.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Messages, causes et remèdes</caption>
+        <thead><tr><th>Message</th><th>Cause</th><th>Remède</th></tr></thead>
+        <tbody>
+          <tr><td><code>'make' n'est pas reconnu en tant que commande interne ou externe…</code></td><td>le make de MinGW s'appelle <code>mingw32-make</code></td><td>lancer <code>run.bat</code>, ou taper <code>mingw32-make</code></td></tr>
+          <tr><td><code>mkdir -p ./build</code>, puis <code>La syntaxe de la commande n'est pas correcte.</code></td><td><code>sh.exe</code> absent du PATH : mingw32-make passe les recettes à cmd</td><td>lancer <code>run.bat</code>, ou ajouter <code>C:\Program Files\Git\usr\bin</code> au PATH</td></tr>
+          <tr><td><code>fatal error: sys/wait.h: No such file or directory</code> (ou <code>pthread.h</code>, <code>semaphore.h</code>), <code>'SIGQUIT' undeclared</code>, <code>undefined reference to `fork'</code></td><td>programme POSIX compilé avec MinGW</td><td>compiler dans WSL, ou à la fac</td></tr>
+          <tr><td><code>Command 'gcc' not found, but can be installed with…</code> (dans WSL)</td><td>outils de compilation absents</td><td><code>sudo apt install build-essential gdb</code></td></tr>
+          <tr><td><code>wsl: Failed to translate 'G:\…'</code></td><td>WSL lancé depuis un dossier du lecteur <code>G:</code>, qu'il ne voit pas</td><td>monter <code>G:</code> dans WSL (partie 4)</td></tr>
+          <tr><td><code>/bin/bash^M: bad interpreter: No such file or directory</code>, ou <code>set: -: invalid option</code></td><td><code>run.sh</code> enregistré avec des fins de ligne Windows (CRLF) : Linux et WSL les refusent, Git Bash les tolère</td><td><code>sed -i 's/\r$//' run.sh</code></td></tr>
+          <tr><td><code>bash: ./run.sh: Permission denied</code></td><td><code>run.sh</code> n'est pas marqué exécutable</td><td><code>chmod +x run.sh</code>, ou <code>bash run.sh</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Un TP en C standard (codage) se compile sous Windows avec MinGW comme sous Linux, avec les mêmes Makefile : <code>run.bat</code> d'un côté, <code>run.sh</code> de l'autre.</li>
+        <li>Un programme POSIX (processus, verrous, signaux, threads, files de messages) ne se compile pas avec MinGW : sous Windows, il passe par WSL.</li>
+        <li>Sur le PC, make s'appelle <code>mingw32-make</code>, et le <code>sh</code> de Git for Windows n'est pas dans le PATH : <code>run.bat</code> règle les deux.</li>
+        <li>MinGW compile en 32 bits : <code>long</code> et pointeurs font 4 octets, contre 8 sous Linux. On vérifie un TP à la fac, ou dans WSL, avant de le rendre.</li>
+        <li>Dans un WSL neuf, gcc et make s'installent une fois pour toutes : <code>sudo apt install build-essential gdb libncurses-dev</code>. C'est fait sur ce PC.</li>
+        <li>WSL ne voit pas un autre lecteur que <code>C:</code> (l'ancien <code>G:</code> du Drive, par exemple) : <code>sudo mount -t drvfs G: /mnt/g</code>, à chaque démarrage.</li>
+        <li>Un <code>run.sh</code> en CRLF ne tourne pas sous Linux : <code>sed -i 's/\r$//' run.sh</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Un TP utilise <code>fork</code> et <code>wait</code>. Peut-on le compiler avec le gcc de MinGW ?</summary>
+        <div><p>Non : <code>sys/wait.h</code> n'existe pas dans MinGW, et <code>fork</code> n'y est pas défini. On le compile dans WSL, ou sur les machines Linux de la fac.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi <code>run.bat</code> ajoute-t-il <code>C:\Program Files\Git\usr\bin</code> au PATH ?</summary>
+        <div><p>Pour que mingw32-make trouve <code>sh.exe</code>. Sans lui, make exécute les recettes avec cmd, qui ne comprend ni <code>mkdir -p</code> ni <code>rm -rf</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un programme affiche <code>sizeof(long)</code> : 4 sous Windows, 8 à la fac. Pourquoi ?</summary>
+        <div><p>Le gcc de MinGW produit des programmes Windows 32 bits ; Linux travaille en 64 bits, où <code>long</code> et les pointeurs font 8 octets. C'est pourquoi on vérifie un TP sous Linux avant de le rendre.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Dans WSL, <code>./run.sh</code> répond <code>/bin/bash^M: bad interpreter</code>. Que s'est-il passé ?</summary>
+        <div><p>Le script a des fins de ligne Windows (CRLF) : Linux lit l'interpréteur <code>/bin/bash</code> suivi d'un retour chariot, qui n'existe pas. <code>sed -i 's/\r$//' run.sh</code> remet des fins de ligne Unix.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Où se trouve <code>C:\Users\piaur\Prog\studies</code> dans WSL ?</summary>
+        <div><p>Dans <code>/mnt/c/Users/piaur/Prog/studies</code> : WSL voit le disque <code>C:</code> sous <code>/mnt/c</code>. Un autre lecteur (l'ancien <code>G:</code> du Drive, par exemple) n'y apparaît qu'une fois monté avec <code>sudo mount -t drvfs G: /mnt/g</code>.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Pages">
+    <a class="precedent" href="../../index.html"><small>← Accueil</small>studies</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Environnements · <a href="../../index.html">accueil général</a></footer>
+
+</body>
+</html>

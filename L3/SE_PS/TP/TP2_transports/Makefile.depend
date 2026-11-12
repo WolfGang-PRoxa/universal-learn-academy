@@ -1,0 +1,68 @@
+#
+#-------- Commun -------------
+#
+
+$(commun_dir)/commun.o : $(commun_dir)/commun.c $(commun_dir)/commun.h 
+	cd $(commun_dir) ; make -f Makefile commun.o
+
+#
+#-------- Ecran -------------
+#
+
+$(ecran_dir)/ecran.o : $(ecran_dir)/ecran.c $(ecran_dir)/ecran.h
+	cd $(ecran_dir) ; make -f Makefile ecran.o
+
+$(ecran_dir)/ecran.h : $(commun_dir)/commun.h
+	cd $(ecran_dir) ; make -f Makefile ecran.h
+
+
+#
+#-------- Pid -------------
+#
+
+$(pid_dir)/pidlst.o : $(pid_dir)/pidlst.c $(pid_dir)/pidlst.h  
+	cd $(pid_dir) ; make -f Makefile pidlst.o 
+
+$(pid_dir)/pidlst.h : $(commun_dir)/commun.h
+	cd $(pid_dir) ; make -f Makefile pidlst.h
+
+#
+#-------- Stockage -------------
+#
+
+$(stock_dir)/stock.o : $(stock_dir)/stock.c $(stock_dir)/stock.h 
+	cd $(stock_dir) ; make -f Makefile stock.o
+
+$(stock_dir)/stock_stdout.o : $(stock_dir)/stock_stdout.c $(stock_dir)/stock_stdout.h 
+	cd $(stock_dir) ; make -f Makefile stock_stdout.o
+
+$(stock_dir)/stock_ecran.o : $(stock_dir)/stock_ecran.c $(stock_dir)/stock_ecran.h 
+	cd $(stock_dir) ; make -f Makefile stock_ecran.o
+
+$(stock_dir)/stock.h : $(commun_dir)/commun.h
+	cd $(stock_dir) ; make -f Makefile stock.h
+
+$(stock_dir)/stock_stdout.h : $(stock_dir)/stock.h
+	cd $(stock_dir) ; make -f Makefile stock_stdout.h
+
+$(stock_dir)/stock_ecran.h : $(stock_dir)/stock.h $(ecran_dir)/ecran.h
+	cd $(stock_dir) ; make -f Makefile stock_ecran.h
+
+#
+#-------- Trajets -------------
+#
+
+$(trajets_dir)/trajets_stdout.o : $(trajets_dir)/trajets_stdout.c $(trajets_dir)/trajets_stdout.h 
+	cd $(trajets_dir) ; make -f Makefile trajets_stdout.o 
+
+$(trajets_dir)/trajets_ecran.o : $(trajets_dir)/trajets_ecran.c $(trajets_dir)/trajets_ecran.h 
+	cd $(trajets_dir) ; make -f Makefile trajets_ecran.o
+
+$(trajets_dir)/trajets.h : $(commun_dir)/commun.h
+	cd $(trajets_dir) ; make -f Makefile trajets.h
+
+$(trajets_dir)/trajets_stdout.h : $(trajets_dir)/trajets.h
+	cd $(trajets_dir) ; make -f Makefile trajets_stdout.h
+
+$(trajets_dir)/trajets_ecran.h : $(trajets_dir)/trajets.h $(ecran_dir)/ecran.h
+	cd $(trajets_dir) ; make -f Makefile trajets_ecran.h

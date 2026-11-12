@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Centralité et diffusion · Théorie des graphes L3</title>
+<meta name="description" content="Cours 5 de théorie des graphes (L3) : expérience de Bavelas, Smith et Leavitt, centralité de Bavelas, closeness, betweenness, k-cores et core index, simulation d'épidémie avec le modèle SIR.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-05-centralite-diffusion.html" title="Quiz · Cours 5">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-ct-2025-2026.html" title="Quiz · Annale CT 2025-2026">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-ct-2024-2025.html" title="Quiz · Annale CT 2024-2025">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">Théorie des graphes</a>
+    <span aria-current="page">Cours 5 · Centralité et diffusion</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Théorie des graphes</span> Cours 5 · L3 S5</p>
+    <h1>Centralité et diffusion</h1>
+    <p class="chapeau">Comment une information, ou une épidémie, se propage-t-elle sur un graphe ? Cela dépend de la structure du graphe et de l'endroit où la diffusion commence. Ce dernier chapitre part d'une expérience de sociologie des années 1950, qui a fait naître la notion de centralité, définit trois mesures (closeness, betweenness, core index), puis simule une épidémie avec le modèle SIR.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/_Graphes__Cours_de_graphes_A4__1_-4.pdf">Graphes et applications</a> (poly de 82 pages), chapitre 5, p. 54–64</dd></div>
+      <div><dt>Enseignant</dt><dd>Nicolas Dugué</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-02">2 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Raconter l'expérience de Smith, Leavitt et Bavelas et ce qu'elle dit des organisations centralisées.</li>
+        <li>Calculer la centralité de Bavelas et la closeness d'un sommet à partir de la table des distances.</li>
+        <li>Calculer la betweenness d'un sommet en comptant les plus courts chemins qui passent par lui.</li>
+        <li>Trouver les k-cores d'un graphe et le core index de chaque sommet, à la main et avec l'algorithme de Batagelj et Zaversnik.</li>
+        <li>Décrire le modèle SIR, ses paramètres et son algorithme de simulation, et expliquer l'effet du choix du foyer.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-01-notions-de-base.html">Cours 1</a> : voisinage, degré, sous-graphe induit.</li>
+        <li><a href="cours-03-petit-monde.html">Cours 3</a> : plus courts chemins par parcours en largeur, distance.</li>
+        <li>Probabilités élémentaires : événements indépendants, tirage avec <code>random</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc complement">
+    <p class="bloc-titre">Complément <span>À propos des sources</span></p>
+    <p>Cette page reprend le chapitre 5 du poly ; les notes de séance ne le couvrent pas encore. Les distances, les centralités des quatre motifs et les core index ont été recalculés avec NetworkX. Le graphe de la figure 5.2 a été relevé sur la figure et redessiné avec le core index de chaque sommet. Les figures 5.3 et 5.4 sont refaites sur le graphe des <cite>Misérables</cite> fourni par NetworkX : la figure 5.4 du poly montre une seule simulation, celle d'ici la moyenne de 2000 simulations, pour deux foyers différents.</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Diffusion et influenceurs <span class="ref">p. 54–55</span></h2>
+    <p>Les graphes du réel sont en général connexes, de diamètre et de largeur moyenne faibles, et leurs sommets s'organisent en communautés. Pour terminer, le cours aborde un problème applicatif classique : la <dfn>diffusion</dfn>, d'une information ou d'une infection. Comment l'information se propage-t-elle sur un réseau comme Twitter ? Comment une épidémie se diffuse-t-elle dans une population ? Comment optimiser une diffusion, ou freiner une épidémie ? Les épidémiologistes utilisent pour cela un système de simulation, le modèle SIR. La progression de l'épidémie y dépend directement des foyers d'infection et de la structure du graphe : d'où la notion de <dfn>centralité</dfn> d'un sommet, imaginée au début des années 1950 et toujours d'actualité.</p>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Influenceurs</span> <span class="ref">p. 55</span></p>
+      <blockquote><p>« Les réseaux dépeignent une multitude d'interactions à travers lesquelles les gens se rencontrent, les idées se diffusent et les épidémies se propagent dans la société. Identifier les “diffuseurs” les plus efficaces d'un réseau est une étape importante. »</p></blockquote>
+      <p>M. Kitsak et al., <cite lang="en">Identification of influential spreaders in complex networks</cite>, 2010. La notion de diffuseur rejoint celle d'influenceur, au sens actuel, pour les idées, l'information ou les modes : sur un réseau social, il s'agit de détecter les comptes influents.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les origines de la centralité <span class="ref">p. 56–58</span></h2>
+    <p>La centralité vient des sciences sociales. Les sociologues se sont intéressés les premiers à la façon dont se structurent les relations entre individus, en particulier dans les organisations comme les entreprises. Alex Bavelas, psychosociologue au <abbr title="Massachusetts Institute of Technology">MIT</abbr>, est l'un des premiers à modéliser les structures de communication des groupes sous forme de réseau, et à étudier l'effet de cette structure sur l'efficacité du groupe à résoudre des problèmes. Les expériences de Sidney Smith et Harold J. Leavitt lui inspirent la notion de centralité, que formalisera et développera considérablement un autre sociologue, Linton Freeman, dans les années 1970.</p>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Une science pluridisciplinaire</span> <span class="ref">p. 56</span></p>
+      <p>Les graphes ne sont pas l'apanage des informaticiens. Les sociologues (Watts en est un) y ont énormément contribué et continuent de le faire (le Médialab de Sciences Po, le Centre Marc Bloch à Berlin). Mark Newman, l'inventeur de la modularité, est physicien ; Erdős, Rényi et Strogatz sont mathématiciens, comme le Français Claude Berge, l'un des fondateurs de la théorie des graphes. Biologistes (réseaux de neurones, interactions entre protéines), économistes (réseaux d'entreprises) et géographes (réseaux routiers) contribuent aussi. L'<a href="https://iscpif.fr/">Institut des systèmes complexes de Paris</a> illustre cette diversité.</p>
+    </div>
+
+    <h3>Quelle communication pour quel groupe ? <span class="ref">p. 56–57</span></h3>
+    <p>Dans <cite lang="en">Communication Patterns in Task-Oriented Groups</cite> (1950), Bavelas décrit une expérience menée par Smith, puis par Leavitt, sous forme de jeu. On forme des groupes de 5 joueurs. Chaque joueur reçoit une carte portant cinq symboles, choisis parmi six (○, *, +, □, △, ◇) ; un seul symbole figure sur les cinq cartes, et les joueurs doivent trouver lequel. Cela paraît simple, mais la communication est très contrainte :</p>
+    <ul>
+      <li>les joueurs ne se voient pas : ils sont dans des box aux parois opaques ;</li>
+      <li>chacun est identifié par une couleur ;</li>
+      <li>ils ne communiquent que par des messages écrits sur une carte de leur couleur, qu'ils passent aux autres par des fentes dans les box ;</li>
+      <li>ils sont disposés selon l'un des quatre motifs de la figure 5.1, sans savoir lequel.</li>
+    </ul>
+    <p>Pour gagner, tous les joueurs doivent actionner dans leur box l'interrupteur du symbole commun aux cinq cartes.</p>
+    <figure class="figure">
+<svg class="schema" viewBox="0 0 500 360" width="500" role="img" aria-labelledby="fig-motifs-titre">
+<title id="fig-motifs-titre">Figure 5.1 : les quatre dispositions des cinq joueurs A à E. (a) En cercle : A–B, B–C, C–D, D–E, E–A. (b) En ligne : A–B, B–C, C–D, D–E. (c) En fusée : A–B, B–C, puis C relié à D et à E. (d) En croix : B relié à A, C, D et E. Le sommet le plus central est en couleur.</title>
+<path class="trait" d="M132 56 L108 39"/>
+<path class="trait" d="M82 39 L58 56"/>
+<path class="trait" d="M50 80 L60 110"/>
+<path class="trait" d="M81 125 L109 125"/>
+<path class="trait" d="M130 110 L140 80"/>
+<g font-size="14">
+<circle class="boite" cx="95" cy="30" r="16"/>
+<circle class="boite" cx="145" cy="65" r="16"/>
+<circle class="boite" cx="125" cy="125" r="16"/>
+<circle class="boite" cx="65" cy="125" r="16"/>
+<circle class="boite" cx="45" cy="65" r="16"/>
+<text x="95" y="35" text-anchor="middle" class="gras">B</text>
+<text x="145" y="70" text-anchor="middle" class="gras">A</text>
+<text x="125" y="130" text-anchor="middle" class="gras">E</text>
+<text x="65" y="130" text-anchor="middle" class="gras">D</text>
+<text x="45" y="70" text-anchor="middle" class="gras">C</text>
+</g>
+<text x="95" y="165" text-anchor="middle" font-size="13" class="t2">(a) motif 1 : en cercle</text>
+<path class="trait" d="M256 80 L284 80"/>
+<path class="trait" d="M316 80 L344 80"/>
+<path class="trait" d="M376 80 L404 80"/>
+<path class="trait" d="M436 80 L464 80"/>
+<g font-size="14">
+<circle class="boite" cx="240" cy="80" r="16"/>
+<circle class="boite" cx="300" cy="80" r="16"/>
+<circle class="boite-accent" cx="360" cy="80" r="16"/>
+<circle class="boite" cx="420" cy="80" r="16"/>
+<circle class="boite" cx="480" cy="80" r="16"/>
+<text x="240" y="85" text-anchor="middle" class="gras">A</text>
+<text x="300" y="85" text-anchor="middle" class="gras">B</text>
+<text x="360" y="85" text-anchor="middle" class="gras accent">C</text>
+<text x="420" y="85" text-anchor="middle" class="gras">D</text>
+<text x="480" y="85" text-anchor="middle" class="gras">E</text>
+</g>
+<text x="360" y="165" text-anchor="middle" font-size="13" class="t2">(b) motif 2 : en ligne</text>
+<path class="trait" d="M56 260 L84 260"/>
+<path class="trait" d="M116 260 L144 260"/>
+<path class="trait" d="M171 271 L199 299"/>
+<path class="trait" d="M171 249 L199 221"/>
+<g font-size="14">
+<circle class="boite" cx="40" cy="260" r="16"/>
+<circle class="boite" cx="100" cy="260" r="16"/>
+<circle class="boite-accent" cx="160" cy="260" r="16"/>
+<circle class="boite" cx="210" cy="210" r="16"/>
+<circle class="boite" cx="210" cy="310" r="16"/>
+<text x="40" y="265" text-anchor="middle" class="gras">A</text>
+<text x="100" y="265" text-anchor="middle" class="gras">B</text>
+<text x="160" y="265" text-anchor="middle" class="gras accent">C</text>
+<text x="210" y="215" text-anchor="middle" class="gras">E</text>
+<text x="210" y="315" text-anchor="middle" class="gras">D</text>
+</g>
+<text x="125" y="350" text-anchor="middle" font-size="13" class="t2">(c) motif 3 : en fusée</text>
+<path class="trait" d="M316 260 L344 260"/>
+<path class="trait" d="M376 260 L404 260"/>
+<path class="trait" d="M360 276 L360 304"/>
+<path class="trait" d="M360 244 L360 216"/>
+<g font-size="14">
+<circle class="boite" cx="300" cy="260" r="16"/>
+<circle class="boite-accent" cx="360" cy="260" r="16"/>
+<circle class="boite" cx="420" cy="260" r="16"/>
+<circle class="boite" cx="360" cy="200" r="16"/>
+<circle class="boite" cx="360" cy="320" r="16"/>
+<text x="300" y="265" text-anchor="middle" class="gras">A</text>
+<text x="360" y="265" text-anchor="middle" class="gras accent">B</text>
+<text x="420" y="265" text-anchor="middle" class="gras">C</text>
+<text x="360" y="205" text-anchor="middle" class="gras">E</text>
+<text x="360" y="325" text-anchor="middle" class="gras">D</text>
+</g>
+<text x="360" y="350" text-anchor="middle" font-size="13" class="t2">(d) motif 4 : en croix</text>
+</svg>
+      <figcaption>Figure 5.1 du poly : les quatre dispositions possibles des cinq joueurs. Les sommets sont les joueurs, les arêtes les fentes par lesquelles ils se passent des messages. En couleur, le sommet le plus central de chaque motif (aucun dans le cercle).</figcaption>
+    </figure>
+    <p>Wayne Marshall distingue deux types de messages :</p>
+    <ul>
+      <li>les messages <strong>organisationnels</strong> : « Je peux communiquer avec Rouge et Vert », « Envoie mes informations à Jaune », « Envoie-moi la réponse pour que j'actionne mon interrupteur » ;</li>
+      <li>les messages liés à <strong>l'identification du symbole</strong> : « Mes symboles sont ○, *, +, □, △ », « Les symboles de Violet sont *, +, □, △, ◇ », « La réponse est + ».</li>
+    </ul>
+    <p>L'étude cherche si la structure influe sur le nombre de messages nécessaires, sur le nombre d'erreurs (mauvais interrupteur actionné), sur la satisfaction des joueurs et leur plaisir d'avoir participé, et sur leur perception d'un leader dans le groupe.</p>
+
+    <h3>Les résultats <span class="ref">p. 57–58</span></h3>
+    <p>Les motifs vont du moins au plus centralisé. Dans le cercle (motif 1), toutes les positions sont équivalentes : chaque joueur communique avec deux autres. Dans la ligne (motif 2), A et E, en bout de ligne, ne communiquent qu'avec un seul joueur. Dans la fusée (motif 3), c'est le cas de A, D et E, et C fait le pont entre D, E d'un côté et A, B de l'autre. Dans la croix (motif 4), B est indispensable à toute communication. Intuitivement, B est absolument central dans le motif 4, C l'est aussi dans le motif 3, dans une moindre mesure, et dans le motif 2, A et E sont moins centraux que les autres.</p>
+    <p>Bien que les joueurs ignorent leur disposition, les groupes des motifs les plus centralisés (3 et 4) font moins d'erreurs. Les joueurs y identifient clairement un leader, celui qui occupe la position centrale : C dans le motif 3, B dans le motif 4 (dans le motif 2, C apparaît aussi souvent comme leader, mais moins nettement). La stratégie devient vite de passer les informations au joueur central, sans pourtant savoir qui il est, pour qu'il les rediffuse avec des consignes ; elle reste stable, et favorise l'absence d'erreurs. En revanche, d'après un questionnaire rempli en fin de partie, c'est le cercle, le moins centralisé, qui l'emporte pour la satisfaction et le plaisir de jouer : dans les motifs centralisés, les joueurs en position <dfn>périphérique</dfn> (le contraire de central) sont nettement plus insatisfaits.</p>
+
+    <h3>Et la centralité dans tout ça ? <span class="ref">p. 58</span></h3>
+    <p>Bavelas tente de formaliser cette notion intuitive ; ses intuitions sont à l'origine des mesures de centralité de Freeman, devenues très populaires. Dans un graphe non pondéré, aller d'un sommet à un voisin coûte une distance de 1. La table 5.1 donne les distances entre sommets pour le cercle et pour la ligne.</p>
+    <div class="colonnes">
+      <div class="tableau mono centre compact">
+        <table>
+          <caption>Table 5.1 du poly, motif 1 (cercle)</caption>
+          <thead><tr><th></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>Tot.</th></tr></thead>
+          <tbody>
+            <tr><th>A</th><td>0</td><td>1</td><td>2</td><td>2</td><td>1</td><td>6</td></tr>
+            <tr><th>B</th><td>1</td><td>0</td><td>1</td><td>2</td><td>2</td><td>6</td></tr>
+            <tr><th>C</th><td>2</td><td>1</td><td>0</td><td>1</td><td>2</td><td>6</td></tr>
+            <tr><th>D</th><td>2</td><td>2</td><td>1</td><td>0</td><td>1</td><td>6</td></tr>
+            <tr><th>E</th><td>1</td><td>2</td><td>2</td><td>1</td><td>0</td><td>6</td></tr>
+            <tr><th>Tot.</th><td></td><td></td><td></td><td></td><td></td><td>30</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tableau mono centre compact">
+        <table>
+          <caption>Table 5.1 du poly, motif 2 (ligne)</caption>
+          <thead><tr><th></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>Tot.</th></tr></thead>
+          <tbody>
+            <tr><th>A</th><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>10</td></tr>
+            <tr><th>B</th><td>1</td><td>0</td><td>1</td><td>2</td><td>3</td><td>7</td></tr>
+            <tr><th>C</th><td>2</td><td>1</td><td>0</td><td>1</td><td>2</td><td>6</td></tr>
+            <tr><th>D</th><td>3</td><td>2</td><td>1</td><td>0</td><td>1</td><td>7</td></tr>
+            <tr><th>E</th><td>4</td><td>3</td><td>2</td><td>1</td><td>0</td><td>10</td></tr>
+            <tr><th>Tot.</th><td></td><td></td><td></td><td></td><td></td><td>40</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p>Dans la ligne, A et E ont une distance totale aux autres sommets plus grande que les autres, et C est en moyenne le plus proche de tous. Dans le cercle, tous les sommets sont à égalité. Le total des distances est plus grand pour la ligne, ce qui pourrait annoncer une communication plus difficile ; les expériences l'infirment pourtant, la présence de leaders centraux semblant faciliter la communication.</p>
+    <p>Pour comparer la centralité de sommets de graphes différents, Bavelas propose de diviser le total des distances du graphe par la distance totale du sommet aux autres :</p>
+    <div class="encadre">\[ \text{centralite}(u) = \frac{\sum_{v \in V,\, w \in V} \text{dist}(v, w)}{\sum_{v \in V} \text{dist}(u, v)} \]</div>
+    <p>avec \(\text{dist}(u, v)\) la distance du plus court chemin entre \(u\) et \(v\). Dans le cercle, tous les sommets ont une centralité de \(30/6 = 5\). Dans la ligne, A et E ont \(40/10 = 4\), et C obtient \(40/6 \approx 6{,}7\).</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Quelle somme au numérateur ?</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>Le poly écrit le numérateur \(\sum_{v, w \in V,\ w \gt v} \text{dist}(v, w)\), sur les paires non ordonnées, ce qui donnerait 15 pour le cercle et 20 pour la ligne. Mais ses exemples utilisent les totaux de la table 5.1, 30 et 40, qui comptent chaque paire deux fois \((v, w)\) et \((w, v)\) : c'est la somme sur tous les couples, comme dans l'indice de Bavelas. La formule ci-dessus suit les exemples. Avec la condition \(w \gt v\), toutes les valeurs seraient divisées par 2, sans changer le classement.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Centralités : définitions <span class="ref">p. 59–61</span></h2>
+    <p>Depuis Bavelas, d'autres définitions de la centralité sont apparues. En voici trois, dont on verra l'intérêt dans les simulations d'épidémie.</p>
+
+    <h3>Closeness centrality <span class="ref">p. 59</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 32 <span>Closeness centrality</span></p>
+      <p>La <dfn>centralité de proximité</dfn> (<span lang="en">closeness centrality</span>) d'un sommet \(u\) est :</p>
+      <div class="encadre">\[ C_C(u) = \frac{n - 1}{\sum_{v \in V} \text{dist}(u, v)} \]</div>
+      <p>avec \(n = |V|\) et \(\text{dist}(u, v)\) la distance du plus court chemin entre \(u\) et \(v\).</p>
+    </div>
+    <p>C'est la façon la plus directe de prolonger l'idée de Bavelas : l'inverse de la distance moyenne de \(u\) aux autres sommets. Elle vaut 1 quand le sommet est à distance 1 des \(n - 1\) autres, parfaitement central ; plus elle s'approche de 0, plus il est éloigné du reste du graphe, périphérique. Dans la ligne, d'après la table 5.1 : \(C_C(C) = 4/6 \approx 0{,}67\), alors que \(C_C(A) = C_C(E) = 4/10 = 0{,}4\).</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Et si le graphe n'est pas connexe ?</span></p>
+      <p>Une distance infinie rendrait la closeness nulle pour tous les sommets. NetworkX (<code>nx.closeness_centrality</code>) calcule alors la closeness dans la composante connexe du sommet, puis la multiplie par la part du graphe que cette composante représente, pour qu'un sommet d'une petite composante ne paraisse pas central. <span class="badge hors-programme">Hors programme</span></p>
+    </div>
+
+    <h3>Betweenness centrality <span class="ref">p. 59</span></h3>
+    <p>La <dfn>betweenness centrality</dfn>, ou centralité d'<dfn>intermédiarité</dfn>, repose sur une autre idée : si, pour aller efficacement d'un sommet à un autre, il faut souvent passer par \(u\), alors \(u\) est important. Dans les motifs 2 et 3, par exemple, C est la passerelle qui fait passer les messages de A et B vers D et E. On note \(\sigma_{vw}\) le nombre de plus courts chemins de \(v\) à \(w\), et \(\sigma_{vw}(u)\) le nombre de ceux qui passent par \(u\).</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 33 <span>Betweenness centrality</span></p>
+      <div class="encadre">\[ C_B(u) = \sum_{v \in V,\, w \in V,\, w \gt v} \frac{\sigma_{vw}(u)}{\sigma_{vw}} \]</div>
+      <p>Chaque paire \(\{v, w\}\) apporte la part de ses plus courts chemins qui passent par \(u\) ; on ne compte que les paires dont \(u\) n'est pas une extrémité (\(v \neq u\), \(w \neq u\)).</p>
+    </div>
+    <p>Dans la ligne, il n'y a chaque fois qu'un plus court chemin entre deux sommets, et \(\frac{n(n-1)}{2} = 10\) paires. Combien de ces chemins passent par A ? Aucun : A est parfois une extrémité, mais jamais au milieu (<span lang="en">between</span>). Par C, il en passe 4 : les chemins de A à D et à E, et de B à D et à E. Donc \(C_B(A) = 0\) et \(C_B(C) = 4\).</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Les extrémités des chemins</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>Le poly conclut \(C_B(A) = 6 \cdot \frac{0}{1} + 4 \cdot \frac{1}{1} = 4\) et \(C_B(C) = 2 \cdot \frac{0}{1} + 8 \cdot \frac{1}{1} = 8\) : ces valeurs comptent aussi les chemins dont le sommet est une <em>extrémité</em> (4 pour A ; 4 plus 4 pour C). Elles contredisent le texte juste avant, « A […] jamais au milieu » et « il en passe 4 » par C. La définition de Freeman, et NetworkX, excluent les extrémités : \(C_B(A) = 0\), \(C_B(C) = 4\). Compter les extrémités ajoute \(n - 1 = 4\) à chaque sommet, sans changer le classement.</p>
+    </div>
+    <div class="tableau centre compact">
+      <table>
+        <caption>Les centralités des quatre motifs, recalculées <span class="badge ajout">Ajout</span></caption>
+        <thead><tr><th>Motif</th><th>Sommet</th><th>Distance totale</th><th>Bavelas</th><th>\(C_C\)</th><th>\(C_B\)</th></tr></thead>
+        <tbody>
+          <tr><td>1 · cercle</td><td>tous</td><td>6</td><td>5</td><td>0,67</td><td>1</td></tr>
+          <tr><td rowspan="3">2 · ligne</td><td>A, E</td><td>10</td><td>4</td><td>0,4</td><td>0</td></tr>
+          <tr><td>B, D</td><td>7</td><td>5,71</td><td>0,57</td><td>3</td></tr>
+          <tr><td>C</td><td>6</td><td>6,67</td><td>0,67</td><td>4</td></tr>
+          <tr><td rowspan="4">3 · fusée</td><td>A</td><td>9</td><td>4</td><td>0,44</td><td>0</td></tr>
+          <tr><td>B</td><td>6</td><td>6</td><td>0,67</td><td>3</td></tr>
+          <tr><td>C</td><td>5</td><td>7,2</td><td>0,8</td><td>5</td></tr>
+          <tr><td>D, E</td><td>8</td><td>4,5</td><td>0,5</td><td>0</td></tr>
+          <tr><td rowspan="2">4 · croix</td><td>B</td><td>4</td><td>8</td><td>1</td><td>6</td></tr>
+          <tr><td>A, C, D, E</td><td>7</td><td>4,57</td><td>0,57</td><td>0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Les trois mesures confirment l'intuition : B dans la croix est le plus central de tous (il est sur tous les chemins entre les autres), puis C dans la fusée. Dans le cercle, chaque sommet est au milieu d'une seule paire, celle de ses deux voisins. Le total des distances du graphe vaut 30 pour le cercle, 40 pour la ligne, 36 pour la fusée et 32 pour la croix.</p>
+    <div class="bloc exercice" id="ex-1">
+      <p class="bloc-titre">Exercice 1 <span>La fusée</span> <span class="badge ajout">Ajout</span></p>
+      <p>Pour le motif 3 (arêtes A–B, B–C, C–D, C–E), écrire la table des distances, puis calculer la closeness et la betweenness de C et de B.</p>
+      <details class="indice"><summary>Indice</summary><p>Pour la betweenness de C, lister les paires dont le seul plus court chemin passe par C : il y en a une qui ne contient ni A ni B.</p></details>
+      <details class="solution"><summary>Solution proposée</summary><p>Distances depuis C : A 2, B 1, D 1, E 1, total 5 ; depuis B : A 1, C 1, D 2, E 2, total 6. \(C_C(C) = 4/5 = 0{,}8\) et \(C_C(B) = 4/6 \approx 0{,}67\). Par C passent les chemins A–D, A–E, B–D, B–E et D–E : \(C_B(C) = 5\). Par B passent A–C, A–D et A–E : \(C_B(B) = 3\). Valeurs vérifiées avec NetworkX.</p></details>
+    </div>
+
+    <h3>Core index <span class="ref">p. 59–60</span></h3>
+    <p>Le core index n'est pas à proprement parler une mesure de centralité, mais il est très corrélé aux centralités, et c'est un indice important dans les simulations de propagation d'information. Pour l'expliquer, le plus simple est de définir les k-cores (<span lang="en">core</span> : cœur, noyau).</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 34 <span>k-core</span></p>
+      <p>Le sous-graphe induit par \(V' \subset V\) est un <dfn>k-core</dfn> si et seulement si tous les sommets de \(V'\) ont un degré supérieur ou égal à \(k\) dans ce sous-graphe, et si ce sous-graphe est maximal : aucun \(V'' \supset V'\) ne respecte la condition.</p>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 35 <span>Core index</span></p>
+      <p>Si un sommet \(u\) appartient à un k-core mais à aucun \((k+1)\)-core, son <dfn>core index</dfn> vaut \(C_I(u) = k\).</p>
+    </div>
+    <p>Les k-cores sont emboîtés : le 3-core est contenu dans le 2-core, lui-même contenu dans le 1-core. Plus le core index est élevé, plus le sommet semble central, au cœur du graphe.</p>
+    <figure class="figure">
+<svg class="schema" viewBox="0 0 500 315" width="500" role="img" aria-labelledby="fig-kcore-titre">
+<title id="fig-kcore-titre">Figure 5.2 redessinée : un graphe de 21 sommets dont chaque sommet porte son core index. Deux cliques de 4 sommets reliées par une arête forment le 3-core ; autour, des sommets de core index 2 (dont un carré à part) ; quatre sommets pendants de core index 1 ; un sommet isolé de core index 0.</title>
+<path class="trait" d="M188 24 L226 58"/>
+<path class="trait" d="M264 24 L226 58"/>
+<path class="trait" d="M226 58 L188 92"/>
+<path class="trait" d="M226 58 L264 92"/>
+<path class="trait" d="M188 92 L118 92"/>
+<path class="trait" d="M188 92 L264 92"/>
+<path class="trait" d="M118 92 L38 140"/>
+<path class="trait" d="M118 92 L91 140"/>
+<path class="trait" d="M118 92 L118 186"/>
+<path class="trait" d="M38 140 L91 140"/>
+<path class="trait" d="M38 140 L118 186"/>
+<path class="trait" d="M91 140 L118 186"/>
+<path class="trait" d="M118 186 L210 186"/>
+<path class="trait" d="M118 186 L165 255"/>
+<path class="trait" d="M210 186 L165 255"/>
+<path class="trait" d="M210 186 L257 255"/>
+<path class="trait" d="M165 255 L257 255"/>
+<path class="trait" d="M165 255 L118 301"/>
+<path class="trait" d="M264 92 L264 155"/>
+<path class="trait" d="M264 92 L210 186"/>
+<path class="trait" d="M264 92 L318 186"/>
+<path class="trait" d="M264 155 L210 186"/>
+<path class="trait" d="M264 155 L318 186"/>
+<path class="trait" d="M210 186 L318 186"/>
+<path class="trait" d="M350 47 L396 92"/>
+<path class="trait" d="M396 92 L466 92"/>
+<path class="trait" d="M396 92 L396 162"/>
+<path class="trait" d="M466 92 L466 162"/>
+<path class="trait" d="M396 162 L466 162"/>
+<g font-size="12">
+<circle class="boite" cx="188" cy="24" r="11"/>
+<circle class="boite" cx="264" cy="24" r="11"/>
+<circle class="boite" cx="226" cy="58" r="11"/>
+<circle class="boite" cx="188" cy="92" r="11"/>
+<circle class="boite-accent" cx="264" cy="92" r="11"/>
+<circle class="boite-accent" cx="118" cy="92" r="11"/>
+<circle class="boite-accent" cx="38" cy="140" r="11"/>
+<circle class="boite-accent" cx="91" cy="140" r="11"/>
+<circle class="boite-accent" cx="118" cy="186" r="11"/>
+<circle class="boite-accent" cx="210" cy="186" r="11"/>
+<circle class="boite-accent" cx="264" cy="155" r="11"/>
+<circle class="boite-accent" cx="318" cy="186" r="11"/>
+<circle class="boite" cx="165" cy="255" r="11"/>
+<circle class="boite" cx="257" cy="255" r="11"/>
+<circle class="boite" cx="118" cy="301" r="11"/>
+<circle class="boite" cx="350" cy="47" r="11"/>
+<circle class="boite" cx="396" cy="92" r="11"/>
+<circle class="boite" cx="466" cy="92" r="11"/>
+<circle class="boite" cx="396" cy="162" r="11"/>
+<circle class="boite" cx="466" cy="162" r="11"/>
+<circle class="boite" cx="420" cy="278" r="11"/>
+<text x="188" y="28" text-anchor="middle" class="t2">1</text>
+<text x="264" y="28" text-anchor="middle" class="t2">1</text>
+<text x="226" y="62" text-anchor="middle" class="gras">2</text>
+<text x="188" y="96" text-anchor="middle" class="gras">2</text>
+<text x="264" y="96" text-anchor="middle" class="gras accent">3</text>
+<text x="118" y="96" text-anchor="middle" class="gras accent">3</text>
+<text x="38" y="144" text-anchor="middle" class="gras accent">3</text>
+<text x="91" y="144" text-anchor="middle" class="gras accent">3</text>
+<text x="118" y="190" text-anchor="middle" class="gras accent">3</text>
+<text x="210" y="190" text-anchor="middle" class="gras accent">3</text>
+<text x="264" y="159" text-anchor="middle" class="gras accent">3</text>
+<text x="318" y="190" text-anchor="middle" class="gras accent">3</text>
+<text x="165" y="259" text-anchor="middle" class="gras">2</text>
+<text x="257" y="259" text-anchor="middle" class="gras">2</text>
+<text x="118" y="305" text-anchor="middle" class="t2">1</text>
+<text x="350" y="51" text-anchor="middle" class="t2">1</text>
+<text x="396" y="96" text-anchor="middle" class="gras">2</text>
+<text x="466" y="96" text-anchor="middle" class="gras">2</text>
+<text x="396" y="166" text-anchor="middle" class="gras">2</text>
+<text x="466" y="166" text-anchor="middle" class="gras">2</text>
+<text x="420" y="282" text-anchor="middle" class="t2">0</text>
+</g>
+</svg>
+      <figcaption>Figure 5.2 du poly, d'après Batagelj et Zaversnik, redessinée : chaque sommet porte son core index. Le 3-core (en couleur) est formé de deux cliques de 4 sommets reliées par une arête ; le 2-core lui ajoute les sommets de core index 2, dont le carré de droite ; le 1-core, les sommets pendants ; le 0-core est le graphe entier, avec le sommet isolé.</figcaption>
+    </figure>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Trouver les k-cores à la main</span> <span class="badge ajout">Ajout</span></p>
+      <p>Pour obtenir le k-core, on retire tous les sommets de degré inférieur à \(k\), puis on recommence, car chaque retrait fait baisser le degré des voisins, jusqu'à ce qu'il n'y ait plus rien à retirer. Ce qui reste est le k-core (éventuellement vide, ou formé de plusieurs morceaux). Sur la figure 5.2, pour \(k = 3\), on retire d'abord les sommets de degré 1 et 2 ; les sommets du haut, qui avaient un degré 3 grâce à des sommets pendants, tombent à leur tour ; il reste les deux cliques de 4.</p>
+    </div>
+    <p>Un grand avantage du core index est qu'il se calcule très vite, avec l'algorithme de Batagelj et Zaversnik :</p>
+<pre><code class="language-pseudo"><i># Algorithme 8 : prend en entrée un graphe et retourne le core index de tous les sommets</i>
+<b>procedure</b> K-core(Graphe G)
+    Calculer le degré des sommets de V
+    Trier les sommets de V par degré croissant
+    <b>for all</b> v ∈ V <b>do</b>                <i># dans l'ordre du tri</i>
+        core[v] ← degre[v]
+        <b>for all</b> u ∈ N(v) <b>do</b>
+            <b>if</b> degre[u] &gt; degre[v] <b>then</b>
+                degre[u] ← degre[u] − 1
+            <b>end if</b>
+        <b>end for</b>
+        Retrier V si le degré de certains sommets a été modifié
+    <b>end for</b>
+<b>end procedure</b></code></pre>
+    <p><span class="badge ajout">Ajout</span> On traite à chaque fois le sommet restant de plus petit degré, comme si on le retirait du graphe : ses voisins de degré plus grand perdent un voisin. La condition <code>degre[u] &gt; degre[v]</code> empêche un degré de descendre sous le core index déjà atteint, et ne touche pas aux sommets déjà traités. Avec un tri par paquets (un paquet par valeur de degré), l'algorithme tourne en \(O(n + m)\).</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>L'algorithme 8 en Python</span></p>
+<pre data-fichier="kcore.py"><code class="language-python">import networkx as nx
+
+def core_index(G):
+    degre = dict(G.degree())
+    core, restants = {}, set(G)
+    while restants:
+        v = min(restants, key=degre.get)     # sommet restant de plus petit degré
+        restants.remove(v)
+        core[v] = degre[v]
+        for u in G[v]:
+            if u in restants and degre[u] &gt; degre[v]:
+                degre[u] -= 1
+    return core
+
+aretes = "ac bc cd ce df de fg fh fi gh gi hi ij im jm jn mn mo ek ej el kj kl jl pq qr qs rt st"
+G = nx.Graph([tuple(a) for a in aretes.split()])
+G.add_node("u")
+core = core_index(G)
+print(core == nx.core_number(G))
+for k in range(4):
+    print(k, "".join(sorted(u for u in G if core[u] == k)))</code></pre>
+<pre class="terminal"><code>$ python kcore.py
+True
+0 u
+1 abop
+2 cdmnqrst
+3 efghijkl</code></pre>
+      <p>Les sommets de la figure 5.2 y sont nommés de a à u, de haut en bas puis de gauche à droite à peu près. La recherche du minimum à chaque tour rend cette version quadratique ; <code>nx.core_number</code> fait le tri par paquets.</p>
+    </div>
+    <div class="bloc exercice" id="ex-2">
+      <p class="bloc-titre">Exercice 2 <span>Core index d'un petit graphe</span> <span class="badge ajout">Ajout</span></p>
+      <p>Un graphe a pour arêtes A–B, A–C, A–D, B–C, B–D, C–D, E–A, E–B et E–F. Donner son 1-core, son 2-core, son 3-core, puis le core index de chaque sommet.</p>
+      <details class="solution"><summary>Solution proposée</summary><p>Le 1-core est le graphe entier (aucun sommet isolé). Pour le 2-core, on retire F (degré 1) ; E passe à 2 et reste : le 2-core est \(\{A, B, C, D, E\}\). Pour le 3-core, on retire E (degré 2), puis A, B, C, D ont chacun 3 voisins : le 3-core est la clique \(\{A, B, C, D\}\). Il n'y a pas de 4-core. Core index : F 1, E 2, A, B, C, D 3.</p></details>
+    </div>
+
+    <h3>Trois centralités sur un vrai graphe <span class="ref">p. 61</span></h3>
+    <figure class="figure">
+<svg class="schema" viewBox="0 0 780 250" width="780" role="img" aria-labelledby="fig-miserables-titre">
+<title id="fig-miserables-titre">Figure 5.3 recalculée : trois fois le graphe de co-apparition des 77 personnages des Misérables, avec la taille des sommets proportionnelle à leur closeness (à gauche), à leur betweenness (au milieu) et à leur core index (à droite). Valjean est le plus gros sommet pour les deux premières mesures ; pour le core index, ce sont les membres du groupe des Amis de l'ABC, très liés entre eux, qui ont la valeur maximale, 9.</title>
+<g class="trait" opacity="0.45">
+<path d="M186 15 L187 74"/>
+<path d="M187 74 L174 87"/>
+<path d="M187 74 L180 88"/>
+<path d="M187 74 L199 15"/>
+<path d="M187 74 L229 36"/>
+<path d="M187 74 L211 19"/>
+<path d="M187 74 L235 49"/>
+<path d="M187 74 L203 41"/>
+<path d="M187 74 L221 26"/>
+<path d="M187 74 L159 131"/>
+<path d="M174 87 L180 88"/>
+<path d="M174 87 L159 131"/>
+<path d="M180 88 L159 131"/>
+<path d="M159 131 L164 197"/>
+<path d="M159 131 L192 169"/>
+<path d="M159 131 L181 194"/>
+<path d="M159 131 L192 189"/>
+<path d="M159 131 L150 197"/>
+<path d="M159 131 L185 146"/>
+<path d="M159 131 L145 147"/>
+<path d="M159 131 L135 140"/>
+<path d="M159 131 L148 135"/>
+<path d="M159 131 L151 130"/>
+<path d="M159 131 L162 162"/>
+<path d="M159 131 L181 123"/>
+<path d="M159 131 L182 157"/>
+<path d="M159 131 L215 106"/>
+<path d="M159 131 L169 154"/>
+<path d="M159 131 L183 114"/>
+<path d="M159 131 L178 109"/>
+<path d="M159 131 L191 107"/>
+<path d="M159 131 L192 115"/>
+<path d="M159 131 L185 103"/>
+<path d="M159 131 L170 135"/>
+<path d="M159 131 L166 181"/>
+<path d="M159 131 L107 107"/>
+<path d="M159 131 L133 150"/>
+<path d="M159 131 L127 158"/>
+<path d="M159 131 L133 128"/>
+<path d="M159 131 L125 110"/>
+<path d="M159 131 L120 103"/>
+<path d="M159 131 L123 135"/>
+<path d="M159 131 L126 140"/>
+<path d="M159 131 L129 133"/>
+<path d="M159 131 L120 127"/>
+<path d="M159 131 L154 105"/>
+<path d="M192 169 L185 146"/>
+<path d="M217 148 L198 148"/>
+<path d="M217 148 L214 159"/>
+<path d="M217 148 L217 154"/>
+<path d="M217 148 L209 152"/>
+<path d="M217 148 L211 146"/>
+<path d="M217 148 L208 159"/>
+<path d="M217 148 L185 146"/>
+<path d="M198 148 L214 159"/>
+<path d="M198 148 L217 154"/>
+<path d="M198 148 L209 152"/>
+<path d="M198 148 L211 146"/>
+<path d="M198 148 L208 159"/>
+<path d="M198 148 L185 146"/>
+<path d="M198 148 L148 135"/>
+<path d="M198 148 L133 128"/>
+<path d="M214 159 L217 154"/>
+<path d="M214 159 L209 152"/>
+<path d="M214 159 L211 146"/>
+<path d="M214 159 L208 159"/>
+<path d="M214 159 L185 146"/>
+<path d="M217 154 L209 152"/>
+<path d="M217 154 L211 146"/>
+<path d="M217 154 L208 159"/>
+<path d="M217 154 L185 146"/>
+<path d="M209 152 L211 146"/>
+<path d="M209 152 L208 159"/>
+<path d="M209 152 L185 146"/>
+<path d="M211 146 L208 159"/>
+<path d="M211 146 L185 146"/>
+<path d="M208 159 L185 146"/>
+<path d="M185 146 L145 147"/>
+<path d="M185 146 L135 140"/>
+<path d="M185 146 L151 130"/>
+<path d="M185 146 L181 123"/>
+<path d="M185 146 L209 183"/>
+<path d="M185 146 L182 157"/>
+<path d="M145 147 L135 140"/>
+<path d="M145 147 L148 135"/>
+<path d="M145 147 L151 130"/>
+<path d="M145 147 L117 140"/>
+<path d="M145 147 L113 163"/>
+<path d="M145 147 L126 194"/>
+<path d="M145 147 L123 135"/>
+<path d="M145 147 L126 140"/>
+<path d="M145 147 L129 133"/>
+<path d="M135 140 L148 135"/>
+<path d="M135 140 L151 130"/>
+<path d="M135 140 L95 163"/>
+<path d="M135 140 L79 168"/>
+<path d="M135 140 L117 140"/>
+<path d="M135 140 L113 163"/>
+<path d="M135 140 L107 107"/>
+<path d="M135 140 L133 128"/>
+<path d="M135 140 L123 135"/>
+<path d="M135 140 L126 140"/>
+<path d="M135 140 L129 133"/>
+<path d="M135 140 L120 127"/>
+<path d="M135 140 L109 139"/>
+<path d="M148 135 L151 130"/>
+<path d="M148 135 L170 135"/>
+<path d="M148 135 L133 150"/>
+<path d="M148 135 L127 158"/>
+<path d="M148 135 L128 171"/>
+<path d="M148 135 L133 128"/>
+<path d="M148 135 L154 105"/>
+<path d="M151 130 L162 162"/>
+<path d="M151 130 L181 123"/>
+<path d="M151 130 L182 157"/>
+<path d="M151 130 L169 154"/>
+<path d="M151 130 L170 135"/>
+<path d="M151 130 L107 107"/>
+<path d="M151 130 L125 110"/>
+<path d="M151 130 L123 135"/>
+<path d="M151 130 L126 140"/>
+<path d="M151 130 L129 133"/>
+<path d="M151 130 L120 127"/>
+<path d="M151 130 L154 105"/>
+<path d="M162 162 L166 181"/>
+<path d="M162 162 L171 212"/>
+<path d="M181 123 L183 114"/>
+<path d="M181 123 L178 109"/>
+<path d="M181 123 L191 107"/>
+<path d="M181 123 L192 115"/>
+<path d="M181 123 L185 103"/>
+<path d="M209 183 L182 157"/>
+<path d="M183 114 L178 109"/>
+<path d="M183 114 L191 107"/>
+<path d="M183 114 L192 115"/>
+<path d="M183 114 L185 103"/>
+<path d="M178 109 L191 107"/>
+<path d="M178 109 L192 115"/>
+<path d="M178 109 L185 103"/>
+<path d="M191 107 L192 115"/>
+<path d="M191 107 L185 103"/>
+<path d="M192 115 L185 103"/>
+<path d="M95 163 L84 193"/>
+<path d="M95 163 L133 128"/>
+<path d="M117 140 L113 163"/>
+<path d="M117 140 L133 128"/>
+<path d="M117 140 L94 109"/>
+<path d="M117 140 L117 109"/>
+<path d="M117 140 L123 135"/>
+<path d="M117 140 L126 140"/>
+<path d="M117 140 L129 133"/>
+<path d="M117 140 L120 127"/>
+<path d="M117 140 L109 139"/>
+<path d="M59 79 L15 54"/>
+<path d="M59 79 L107 107"/>
+<path d="M107 107 L133 128"/>
+<path d="M107 107 L94 109"/>
+<path d="M107 107 L125 110"/>
+<path d="M107 107 L115 106"/>
+<path d="M107 107 L109 90"/>
+<path d="M107 107 L112 99"/>
+<path d="M107 107 L117 109"/>
+<path d="M107 107 L107 100"/>
+<path d="M107 107 L120 103"/>
+<path d="M107 107 L116 97"/>
+<path d="M107 107 L115 85"/>
+<path d="M107 107 L123 135"/>
+<path d="M107 107 L126 140"/>
+<path d="M107 107 L120 127"/>
+<path d="M107 107 L72 86"/>
+<path d="M107 107 L76 76"/>
+<path d="M107 107 L109 139"/>
+<path d="M107 107 L102 79"/>
+<path d="M133 150 L126 194"/>
+<path d="M133 150 L127 158"/>
+<path d="M133 150 L128 171"/>
+<path d="M133 150 L133 128"/>
+<path d="M133 150 L105 175"/>
+<path d="M127 158 L84 193"/>
+<path d="M127 158 L98 215"/>
+<path d="M127 158 L128 171"/>
+<path d="M127 158 L133 128"/>
+<path d="M128 171 L133 128"/>
+<path d="M133 128 L105 175"/>
+<path d="M133 128 L94 109"/>
+<path d="M133 128 L125 110"/>
+<path d="M133 128 L115 106"/>
+<path d="M133 128 L112 99"/>
+<path d="M133 128 L117 109"/>
+<path d="M133 128 L107 100"/>
+<path d="M133 128 L120 103"/>
+<path d="M133 128 L116 97"/>
+<path d="M94 109 L125 110"/>
+<path d="M94 109 L115 106"/>
+<path d="M94 109 L112 99"/>
+<path d="M94 109 L117 109"/>
+<path d="M94 109 L107 100"/>
+<path d="M94 109 L120 103"/>
+<path d="M94 109 L116 97"/>
+<path d="M94 109 L60 107"/>
+<path d="M125 110 L115 106"/>
+<path d="M125 110 L109 90"/>
+<path d="M125 110 L112 99"/>
+<path d="M125 110 L117 109"/>
+<path d="M125 110 L107 100"/>
+<path d="M125 110 L120 103"/>
+<path d="M125 110 L116 97"/>
+<path d="M125 110 L115 85"/>
+<path d="M125 110 L129 133"/>
+<path d="M125 110 L102 79"/>
+<path d="M115 106 L109 90"/>
+<path d="M115 106 L112 99"/>
+<path d="M115 106 L117 109"/>
+<path d="M115 106 L107 100"/>
+<path d="M115 106 L120 103"/>
+<path d="M115 106 L116 97"/>
+<path d="M115 106 L115 85"/>
+<path d="M109 90 L112 99"/>
+<path d="M109 90 L117 109"/>
+<path d="M109 90 L107 100"/>
+<path d="M109 90 L120 103"/>
+<path d="M109 90 L116 97"/>
+<path d="M109 90 L115 85"/>
+<path d="M112 99 L117 109"/>
+<path d="M112 99 L107 100"/>
+<path d="M112 99 L120 103"/>
+<path d="M112 99 L116 97"/>
+<path d="M112 99 L115 85"/>
+<path d="M117 109 L107 100"/>
+<path d="M117 109 L120 103"/>
+<path d="M117 109 L116 97"/>
+<path d="M117 109 L115 85"/>
+<path d="M117 109 L102 79"/>
+<path d="M107 100 L120 103"/>
+<path d="M107 100 L116 97"/>
+<path d="M107 100 L115 85"/>
+<path d="M107 100 L102 79"/>
+<path d="M120 103 L116 97"/>
+<path d="M120 103 L115 85"/>
+<path d="M120 103 L102 79"/>
+<path d="M116 97 L115 85"/>
+<path d="M116 97 L102 79"/>
+<path d="M115 85 L102 79"/>
+<path d="M123 135 L126 140"/>
+<path d="M123 135 L129 133"/>
+<path d="M123 135 L120 127"/>
+<path d="M123 135 L109 139"/>
+<path d="M126 140 L129 133"/>
+<path d="M126 140 L120 127"/>
+<path d="M126 140 L109 139"/>
+<path d="M129 133 L120 127"/>
+<path d="M129 133 L109 139"/>
+<path d="M120 127 L109 139"/>
+<path d="M72 86 L76 76"/>
+</g>
+<circle class="plein-accent" cx="15" cy="54" r="1.5"/>
+<circle class="plein-accent" cx="60" cy="107" r="2.1"/>
+<circle class="plein-accent" cx="171" cy="212" r="2.1"/>
+<circle class="plein-accent" cx="186" cy="15" r="2.4"/>
+<circle class="plein-accent" cx="199" cy="15" r="2.4"/>
+<circle class="plein-accent" cx="229" cy="36" r="2.4"/>
+<circle class="plein-accent" cx="211" cy="19" r="2.4"/>
+<circle class="plein-accent" cx="235" cy="49" r="2.4"/>
+<circle class="plein-accent" cx="203" cy="41" r="2.4"/>
+<circle class="plein-accent" cx="221" cy="26" r="2.4"/>
+<circle class="plein-accent" cx="98" cy="215" r="2.6"/>
+<circle class="plein-accent" cx="84" cy="193" r="2.7"/>
+<circle class="plein-accent" cx="209" cy="183" r="2.8"/>
+<circle class="plein-accent" cx="126" cy="194" r="3.1"/>
+<circle class="plein-accent" cx="217" cy="148" r="3.2"/>
+<circle class="plein-accent" cx="214" cy="159" r="3.2"/>
+<circle class="plein-accent" cx="217" cy="154" r="3.2"/>
+<circle class="plein-accent" cx="209" cy="152" r="3.2"/>
+<circle class="plein-accent" cx="211" cy="146" r="3.2"/>
+<circle class="plein-accent" cx="208" cy="159" r="3.2"/>
+<circle class="plein-accent" cx="79" cy="168" r="3.3"/>
+<circle class="plein-accent" cx="72" cy="86" r="3.3"/>
+<circle class="plein-accent" cx="76" cy="76" r="3.3"/>
+<circle class="plein-accent" cx="59" cy="79" r="3.3"/>
+<circle class="plein-accent" cx="113" cy="163" r="3.5"/>
+<circle class="plein-accent" cx="105" cy="175" r="3.5"/>
+<circle class="plein-accent" cx="102" cy="79" r="3.5"/>
+<circle class="plein-accent" cx="109" cy="90" r="3.6"/>
+<circle class="plein-accent" cx="115" cy="85" r="3.6"/>
+<circle class="plein-accent" cx="128" cy="171" r="3.7"/>
+<circle class="plein-accent" cx="95" cy="163" r="3.9"/>
+<circle class="plein-accent" cx="109" cy="139" r="4.0"/>
+<circle class="plein-accent" cx="198" cy="148" r="4.3"/>
+<circle class="plein-accent" cx="115" cy="106" r="4.3"/>
+<circle class="plein-accent" cx="112" cy="99" r="4.3"/>
+<circle class="plein-accent" cx="164" cy="197" r="4.3"/>
+<circle class="plein-accent" cx="181" cy="194" r="4.3"/>
+<circle class="plein-accent" cx="192" cy="189" r="4.3"/>
+<circle class="plein-accent" cx="150" cy="197" r="4.3"/>
+<circle class="plein-accent" cx="215" cy="106" r="4.3"/>
+<circle class="plein-accent" cx="107" cy="100" r="4.3"/>
+<circle class="plein-accent" cx="116" cy="97" r="4.3"/>
+<circle class="plein-accent" cx="169" cy="154" r="4.4"/>
+<circle class="plein-accent" cx="117" cy="140" r="4.4"/>
+<circle class="plein-accent" cx="94" cy="109" r="4.4"/>
+<circle class="plein-accent" cx="166" cy="181" r="4.4"/>
+<circle class="plein-accent" cx="117" cy="109" r="4.5"/>
+<circle class="plein-accent" cx="162" cy="162" r="4.5"/>
+<circle class="plein-accent" cx="170" cy="135" r="4.5"/>
+<circle class="plein-accent" cx="154" cy="105" r="4.5"/>
+<circle class="plein-accent" cx="183" cy="114" r="4.5"/>
+<circle class="plein-accent" cx="178" cy="109" r="4.5"/>
+<circle class="plein-accent" cx="191" cy="107" r="4.5"/>
+<circle class="plein-accent" cx="192" cy="115" r="4.5"/>
+<circle class="plein-accent" cx="185" cy="103" r="4.5"/>
+<circle class="plein-accent" cx="174" cy="87" r="4.7"/>
+<circle class="plein-accent" cx="180" cy="88" r="4.7"/>
+<circle class="plein-accent" cx="192" cy="169" r="4.7"/>
+<circle class="plein-accent" cx="182" cy="157" r="4.8"/>
+<circle class="plein-accent" cx="181" cy="123" r="5.0"/>
+<circle class="plein-accent" cx="187" cy="74" r="5.1"/>
+<circle class="plein-accent" cx="133" cy="150" r="5.3"/>
+<circle class="plein-accent" cx="127" cy="158" r="5.3"/>
+<circle class="plein-accent" cx="129" cy="133" r="5.5"/>
+<circle class="plein-accent" cx="120" cy="127" r="5.7"/>
+<circle class="plein-accent" cx="185" cy="146" r="5.7"/>
+<circle class="plein-accent" cx="145" cy="147" r="5.7"/>
+<circle class="plein-accent" cx="123" cy="135" r="5.8"/>
+<circle class="plein-accent" cx="126" cy="140" r="5.8"/>
+<circle class="plein-accent" cx="120" cy="103" r="6.0"/>
+<circle class="plein-accent" cx="148" cy="135" r="6.1"/>
+<circle class="plein-accent" cx="125" cy="110" r="6.1"/>
+<circle class="plein-accent" cx="107" cy="107" r="6.8"/>
+<circle class="plein-accent" cx="135" cy="140" r="6.9"/>
+<circle class="plein-accent" cx="151" cy="130" r="6.9"/>
+<circle class="plein-accent" cx="133" cy="128" r="7.2"/>
+<circle class="plein-accent" cx="159" cy="131" r="9.5"/>
+<text x="167" y="123" font-size="11" class="gras">Valjean</text>
+<text x="125" y="240" text-anchor="middle" font-size="13" class="t2">closeness</text>
+<g class="trait" opacity="0.45">
+<path d="M446 15 L447 74"/>
+<path d="M447 74 L434 87"/>
+<path d="M447 74 L440 88"/>
+<path d="M447 74 L459 15"/>
+<path d="M447 74 L489 36"/>
+<path d="M447 74 L471 19"/>
+<path d="M447 74 L495 49"/>
+<path d="M447 74 L463 41"/>
+<path d="M447 74 L481 26"/>
+<path d="M447 74 L419 131"/>
+<path d="M434 87 L440 88"/>
+<path d="M434 87 L419 131"/>
+<path d="M440 88 L419 131"/>
+<path d="M419 131 L424 197"/>
+<path d="M419 131 L452 169"/>
+<path d="M419 131 L441 194"/>
+<path d="M419 131 L452 189"/>
+<path d="M419 131 L410 197"/>
+<path d="M419 131 L445 146"/>
+<path d="M419 131 L405 147"/>
+<path d="M419 131 L395 140"/>
+<path d="M419 131 L408 135"/>
+<path d="M419 131 L411 130"/>
+<path d="M419 131 L422 162"/>
+<path d="M419 131 L441 123"/>
+<path d="M419 131 L442 157"/>
+<path d="M419 131 L475 106"/>
+<path d="M419 131 L429 154"/>
+<path d="M419 131 L443 114"/>
+<path d="M419 131 L438 109"/>
+<path d="M419 131 L451 107"/>
+<path d="M419 131 L452 115"/>
+<path d="M419 131 L445 103"/>
+<path d="M419 131 L430 135"/>
+<path d="M419 131 L426 181"/>
+<path d="M419 131 L367 107"/>
+<path d="M419 131 L393 150"/>
+<path d="M419 131 L387 158"/>
+<path d="M419 131 L393 128"/>
+<path d="M419 131 L385 110"/>
+<path d="M419 131 L380 103"/>
+<path d="M419 131 L383 135"/>
+<path d="M419 131 L386 140"/>
+<path d="M419 131 L389 133"/>
+<path d="M419 131 L380 127"/>
+<path d="M419 131 L414 105"/>
+<path d="M452 169 L445 146"/>
+<path d="M477 148 L458 148"/>
+<path d="M477 148 L474 159"/>
+<path d="M477 148 L477 154"/>
+<path d="M477 148 L469 152"/>
+<path d="M477 148 L471 146"/>
+<path d="M477 148 L468 159"/>
+<path d="M477 148 L445 146"/>
+<path d="M458 148 L474 159"/>
+<path d="M458 148 L477 154"/>
+<path d="M458 148 L469 152"/>
+<path d="M458 148 L471 146"/>
+<path d="M458 148 L468 159"/>
+<path d="M458 148 L445 146"/>
+<path d="M458 148 L408 135"/>
+<path d="M458 148 L393 128"/>
+<path d="M474 159 L477 154"/>
+<path d="M474 159 L469 152"/>
+<path d="M474 159 L471 146"/>
+<path d="M474 159 L468 159"/>
+<path d="M474 159 L445 146"/>
+<path d="M477 154 L469 152"/>
+<path d="M477 154 L471 146"/>
+<path d="M477 154 L468 159"/>
+<path d="M477 154 L445 146"/>
+<path d="M469 152 L471 146"/>
+<path d="M469 152 L468 159"/>
+<path d="M469 152 L445 146"/>
+<path d="M471 146 L468 159"/>
+<path d="M471 146 L445 146"/>
+<path d="M468 159 L445 146"/>
+<path d="M445 146 L405 147"/>
+<path d="M445 146 L395 140"/>
+<path d="M445 146 L411 130"/>
+<path d="M445 146 L441 123"/>
+<path d="M445 146 L469 183"/>
+<path d="M445 146 L442 157"/>
+<path d="M405 147 L395 140"/>
+<path d="M405 147 L408 135"/>
+<path d="M405 147 L411 130"/>
+<path d="M405 147 L377 140"/>
+<path d="M405 147 L373 163"/>
+<path d="M405 147 L386 194"/>
+<path d="M405 147 L383 135"/>
+<path d="M405 147 L386 140"/>
+<path d="M405 147 L389 133"/>
+<path d="M395 140 L408 135"/>
+<path d="M395 140 L411 130"/>
+<path d="M395 140 L355 163"/>
+<path d="M395 140 L339 168"/>
+<path d="M395 140 L377 140"/>
+<path d="M395 140 L373 163"/>
+<path d="M395 140 L367 107"/>
+<path d="M395 140 L393 128"/>
+<path d="M395 140 L383 135"/>
+<path d="M395 140 L386 140"/>
+<path d="M395 140 L389 133"/>
+<path d="M395 140 L380 127"/>
+<path d="M395 140 L369 139"/>
+<path d="M408 135 L411 130"/>
+<path d="M408 135 L430 135"/>
+<path d="M408 135 L393 150"/>
+<path d="M408 135 L387 158"/>
+<path d="M408 135 L388 171"/>
+<path d="M408 135 L393 128"/>
+<path d="M408 135 L414 105"/>
+<path d="M411 130 L422 162"/>
+<path d="M411 130 L441 123"/>
+<path d="M411 130 L442 157"/>
+<path d="M411 130 L429 154"/>
+<path d="M411 130 L430 135"/>
+<path d="M411 130 L367 107"/>
+<path d="M411 130 L385 110"/>
+<path d="M411 130 L383 135"/>
+<path d="M411 130 L386 140"/>
+<path d="M411 130 L389 133"/>
+<path d="M411 130 L380 127"/>
+<path d="M411 130 L414 105"/>
+<path d="M422 162 L426 181"/>
+<path d="M422 162 L431 212"/>
+<path d="M441 123 L443 114"/>
+<path d="M441 123 L438 109"/>
+<path d="M441 123 L451 107"/>
+<path d="M441 123 L452 115"/>
+<path d="M441 123 L445 103"/>
+<path d="M469 183 L442 157"/>
+<path d="M443 114 L438 109"/>
+<path d="M443 114 L451 107"/>
+<path d="M443 114 L452 115"/>
+<path d="M443 114 L445 103"/>
+<path d="M438 109 L451 107"/>
+<path d="M438 109 L452 115"/>
+<path d="M438 109 L445 103"/>
+<path d="M451 107 L452 115"/>
+<path d="M451 107 L445 103"/>
+<path d="M452 115 L445 103"/>
+<path d="M355 163 L344 193"/>
+<path d="M355 163 L393 128"/>
+<path d="M377 140 L373 163"/>
+<path d="M377 140 L393 128"/>
+<path d="M377 140 L354 109"/>
+<path d="M377 140 L377 109"/>
+<path d="M377 140 L383 135"/>
+<path d="M377 140 L386 140"/>
+<path d="M377 140 L389 133"/>
+<path d="M377 140 L380 127"/>
+<path d="M377 140 L369 139"/>
+<path d="M319 79 L275 54"/>
+<path d="M319 79 L367 107"/>
+<path d="M367 107 L393 128"/>
+<path d="M367 107 L354 109"/>
+<path d="M367 107 L385 110"/>
+<path d="M367 107 L375 106"/>
+<path d="M367 107 L369 90"/>
+<path d="M367 107 L372 99"/>
+<path d="M367 107 L377 109"/>
+<path d="M367 107 L367 100"/>
+<path d="M367 107 L380 103"/>
+<path d="M367 107 L376 97"/>
+<path d="M367 107 L375 85"/>
+<path d="M367 107 L383 135"/>
+<path d="M367 107 L386 140"/>
+<path d="M367 107 L380 127"/>
+<path d="M367 107 L332 86"/>
+<path d="M367 107 L336 76"/>
+<path d="M367 107 L369 139"/>
+<path d="M367 107 L362 79"/>
+<path d="M393 150 L386 194"/>
+<path d="M393 150 L387 158"/>
+<path d="M393 150 L388 171"/>
+<path d="M393 150 L393 128"/>
+<path d="M393 150 L365 175"/>
+<path d="M387 158 L344 193"/>
+<path d="M387 158 L358 215"/>
+<path d="M387 158 L388 171"/>
+<path d="M387 158 L393 128"/>
+<path d="M388 171 L393 128"/>
+<path d="M393 128 L365 175"/>
+<path d="M393 128 L354 109"/>
+<path d="M393 128 L385 110"/>
+<path d="M393 128 L375 106"/>
+<path d="M393 128 L372 99"/>
+<path d="M393 128 L377 109"/>
+<path d="M393 128 L367 100"/>
+<path d="M393 128 L380 103"/>
+<path d="M393 128 L376 97"/>
+<path d="M354 109 L385 110"/>
+<path d="M354 109 L375 106"/>
+<path d="M354 109 L372 99"/>
+<path d="M354 109 L377 109"/>
+<path d="M354 109 L367 100"/>
+<path d="M354 109 L380 103"/>
+<path d="M354 109 L376 97"/>
+<path d="M354 109 L320 107"/>
+<path d="M385 110 L375 106"/>
+<path d="M385 110 L369 90"/>
+<path d="M385 110 L372 99"/>
+<path d="M385 110 L377 109"/>
+<path d="M385 110 L367 100"/>
+<path d="M385 110 L380 103"/>
+<path d="M385 110 L376 97"/>
+<path d="M385 110 L375 85"/>
+<path d="M385 110 L389 133"/>
+<path d="M385 110 L362 79"/>
+<path d="M375 106 L369 90"/>
+<path d="M375 106 L372 99"/>
+<path d="M375 106 L377 109"/>
+<path d="M375 106 L367 100"/>
+<path d="M375 106 L380 103"/>
+<path d="M375 106 L376 97"/>
+<path d="M375 106 L375 85"/>
+<path d="M369 90 L372 99"/>
+<path d="M369 90 L377 109"/>
+<path d="M369 90 L367 100"/>
+<path d="M369 90 L380 103"/>
+<path d="M369 90 L376 97"/>
+<path d="M369 90 L375 85"/>
+<path d="M372 99 L377 109"/>
+<path d="M372 99 L367 100"/>
+<path d="M372 99 L380 103"/>
+<path d="M372 99 L376 97"/>
+<path d="M372 99 L375 85"/>
+<path d="M377 109 L367 100"/>
+<path d="M377 109 L380 103"/>
+<path d="M377 109 L376 97"/>
+<path d="M377 109 L375 85"/>
+<path d="M377 109 L362 79"/>
+<path d="M367 100 L380 103"/>
+<path d="M367 100 L376 97"/>
+<path d="M367 100 L375 85"/>
+<path d="M367 100 L362 79"/>
+<path d="M380 103 L376 97"/>
+<path d="M380 103 L375 85"/>
+<path d="M380 103 L362 79"/>
+<path d="M376 97 L375 85"/>
+<path d="M376 97 L362 79"/>
+<path d="M375 85 L362 79"/>
+<path d="M383 135 L386 140"/>
+<path d="M383 135 L389 133"/>
+<path d="M383 135 L380 127"/>
+<path d="M383 135 L369 139"/>
+<path d="M386 140 L389 133"/>
+<path d="M386 140 L380 127"/>
+<path d="M386 140 L369 139"/>
+<path d="M389 133 L380 127"/>
+<path d="M389 133 L369 139"/>
+<path d="M380 127 L369 139"/>
+<path d="M332 86 L336 76"/>
+</g>
+<circle class="plein-accent" cx="446" cy="15" r="1.5"/>
+<circle class="plein-accent" cx="434" cy="87" r="1.5"/>
+<circle class="plein-accent" cx="440" cy="88" r="1.5"/>
+<circle class="plein-accent" cx="459" cy="15" r="1.5"/>
+<circle class="plein-accent" cx="489" cy="36" r="1.5"/>
+<circle class="plein-accent" cx="471" cy="19" r="1.5"/>
+<circle class="plein-accent" cx="495" cy="49" r="1.5"/>
+<circle class="plein-accent" cx="463" cy="41" r="1.5"/>
+<circle class="plein-accent" cx="481" cy="26" r="1.5"/>
+<circle class="plein-accent" cx="424" cy="197" r="1.5"/>
+<circle class="plein-accent" cx="452" cy="169" r="1.5"/>
+<circle class="plein-accent" cx="441" cy="194" r="1.5"/>
+<circle class="plein-accent" cx="452" cy="189" r="1.5"/>
+<circle class="plein-accent" cx="410" cy="197" r="1.5"/>
+<circle class="plein-accent" cx="477" cy="148" r="1.5"/>
+<circle class="plein-accent" cx="474" cy="159" r="1.5"/>
+<circle class="plein-accent" cx="477" cy="154" r="1.5"/>
+<circle class="plein-accent" cx="469" cy="152" r="1.5"/>
+<circle class="plein-accent" cx="471" cy="146" r="1.5"/>
+<circle class="plein-accent" cx="468" cy="159" r="1.5"/>
+<circle class="plein-accent" cx="469" cy="183" r="1.5"/>
+<circle class="plein-accent" cx="475" cy="106" r="1.5"/>
+<circle class="plein-accent" cx="429" cy="154" r="1.5"/>
+<circle class="plein-accent" cx="443" cy="114" r="1.5"/>
+<circle class="plein-accent" cx="438" cy="109" r="1.5"/>
+<circle class="plein-accent" cx="451" cy="107" r="1.5"/>
+<circle class="plein-accent" cx="452" cy="115" r="1.5"/>
+<circle class="plein-accent" cx="445" cy="103" r="1.5"/>
+<circle class="plein-accent" cx="339" cy="168" r="1.5"/>
+<circle class="plein-accent" cx="373" cy="163" r="1.5"/>
+<circle class="plein-accent" cx="430" cy="135" r="1.5"/>
+<circle class="plein-accent" cx="426" cy="181" r="1.5"/>
+<circle class="plein-accent" cx="431" cy="212" r="1.5"/>
+<circle class="plein-accent" cx="275" cy="54" r="1.5"/>
+<circle class="plein-accent" cx="358" cy="215" r="1.5"/>
+<circle class="plein-accent" cx="388" cy="171" r="1.5"/>
+<circle class="plein-accent" cx="365" cy="175" r="1.5"/>
+<circle class="plein-accent" cx="369" cy="90" r="1.5"/>
+<circle class="plein-accent" cx="320" cy="107" r="1.5"/>
+<circle class="plein-accent" cx="414" cy="105" r="1.5"/>
+<circle class="plein-accent" cx="332" cy="86" r="1.5"/>
+<circle class="plein-accent" cx="336" cy="76" r="1.5"/>
+<circle class="plein-accent" cx="362" cy="79" r="1.5"/>
+<circle class="plein-accent" cx="375" cy="85" r="1.6"/>
+<circle class="plein-accent" cx="386" cy="194" r="1.7"/>
+<circle class="plein-accent" cx="344" cy="193" r="1.7"/>
+<circle class="plein-accent" cx="369" cy="139" r="1.7"/>
+<circle class="plein-accent" cx="375" cy="106" r="1.9"/>
+<circle class="plein-accent" cx="372" cy="99" r="1.9"/>
+<circle class="plein-accent" cx="367" cy="100" r="2.0"/>
+<circle class="plein-accent" cx="376" cy="97" r="2.0"/>
+<circle class="plein-accent" cx="380" cy="127" r="2.2"/>
+<circle class="plein-accent" cx="389" cy="133" r="2.2"/>
+<circle class="plein-accent" cx="383" cy="135" r="2.2"/>
+<circle class="plein-accent" cx="386" cy="140" r="2.2"/>
+<circle class="plein-accent" cx="377" cy="109" r="2.3"/>
+<circle class="plein-accent" cx="355" cy="163" r="2.4"/>
+<circle class="plein-accent" cx="441" cy="123" r="2.5"/>
+<circle class="plein-accent" cx="442" cy="157" r="2.5"/>
+<circle class="plein-accent" cx="377" cy="140" r="2.6"/>
+<circle class="plein-accent" cx="393" cy="150" r="3.0"/>
+<circle class="plein-accent" cx="408" cy="135" r="3.1"/>
+<circle class="plein-accent" cx="319" cy="79" r="3.2"/>
+<circle class="plein-accent" cx="422" cy="162" r="3.2"/>
+<circle class="plein-accent" cx="354" cy="109" r="3.3"/>
+<circle class="plein-accent" cx="405" cy="147" r="3.3"/>
+<circle class="plein-accent" cx="380" cy="103" r="3.4"/>
+<circle class="plein-accent" cx="458" cy="148" r="3.6"/>
+<circle class="plein-accent" cx="385" cy="110" r="3.7"/>
+<circle class="plein-accent" cx="387" cy="158" r="3.8"/>
+<circle class="plein-accent" cx="411" cy="130" r="4.0"/>
+<circle class="plein-accent" cx="395" cy="140" r="4.4"/>
+<circle class="plein-accent" cx="445" cy="146" r="5.3"/>
+<circle class="plein-accent" cx="393" cy="128" r="5.4"/>
+<circle class="plein-accent" cx="367" cy="107" r="5.8"/>
+<circle class="plein-accent" cx="447" cy="74" r="6.0"/>
+<circle class="plein-accent" cx="419" cy="131" r="9.5"/>
+<text x="427" y="123" font-size="11" class="gras">Valjean</text>
+<text x="385" y="240" text-anchor="middle" font-size="13" class="t2">betweenness</text>
+<g class="trait" opacity="0.45">
+<path d="M706 15 L707 74"/>
+<path d="M707 74 L694 87"/>
+<path d="M707 74 L700 88"/>
+<path d="M707 74 L719 15"/>
+<path d="M707 74 L749 36"/>
+<path d="M707 74 L731 19"/>
+<path d="M707 74 L755 49"/>
+<path d="M707 74 L723 41"/>
+<path d="M707 74 L741 26"/>
+<path d="M707 74 L679 131"/>
+<path d="M694 87 L700 88"/>
+<path d="M694 87 L679 131"/>
+<path d="M700 88 L679 131"/>
+<path d="M679 131 L684 197"/>
+<path d="M679 131 L712 169"/>
+<path d="M679 131 L701 194"/>
+<path d="M679 131 L712 189"/>
+<path d="M679 131 L670 197"/>
+<path d="M679 131 L705 146"/>
+<path d="M679 131 L665 147"/>
+<path d="M679 131 L655 140"/>
+<path d="M679 131 L668 135"/>
+<path d="M679 131 L671 130"/>
+<path d="M679 131 L682 162"/>
+<path d="M679 131 L701 123"/>
+<path d="M679 131 L702 157"/>
+<path d="M679 131 L735 106"/>
+<path d="M679 131 L689 154"/>
+<path d="M679 131 L703 114"/>
+<path d="M679 131 L698 109"/>
+<path d="M679 131 L711 107"/>
+<path d="M679 131 L712 115"/>
+<path d="M679 131 L705 103"/>
+<path d="M679 131 L690 135"/>
+<path d="M679 131 L686 181"/>
+<path d="M679 131 L627 107"/>
+<path d="M679 131 L653 150"/>
+<path d="M679 131 L647 158"/>
+<path d="M679 131 L653 128"/>
+<path d="M679 131 L645 110"/>
+<path d="M679 131 L640 103"/>
+<path d="M679 131 L643 135"/>
+<path d="M679 131 L646 140"/>
+<path d="M679 131 L649 133"/>
+<path d="M679 131 L640 127"/>
+<path d="M679 131 L674 105"/>
+<path d="M712 169 L705 146"/>
+<path d="M737 148 L718 148"/>
+<path d="M737 148 L734 159"/>
+<path d="M737 148 L737 154"/>
+<path d="M737 148 L729 152"/>
+<path d="M737 148 L731 146"/>
+<path d="M737 148 L728 159"/>
+<path d="M737 148 L705 146"/>
+<path d="M718 148 L734 159"/>
+<path d="M718 148 L737 154"/>
+<path d="M718 148 L729 152"/>
+<path d="M718 148 L731 146"/>
+<path d="M718 148 L728 159"/>
+<path d="M718 148 L705 146"/>
+<path d="M718 148 L668 135"/>
+<path d="M718 148 L653 128"/>
+<path d="M734 159 L737 154"/>
+<path d="M734 159 L729 152"/>
+<path d="M734 159 L731 146"/>
+<path d="M734 159 L728 159"/>
+<path d="M734 159 L705 146"/>
+<path d="M737 154 L729 152"/>
+<path d="M737 154 L731 146"/>
+<path d="M737 154 L728 159"/>
+<path d="M737 154 L705 146"/>
+<path d="M729 152 L731 146"/>
+<path d="M729 152 L728 159"/>
+<path d="M729 152 L705 146"/>
+<path d="M731 146 L728 159"/>
+<path d="M731 146 L705 146"/>
+<path d="M728 159 L705 146"/>
+<path d="M705 146 L665 147"/>
+<path d="M705 146 L655 140"/>
+<path d="M705 146 L671 130"/>
+<path d="M705 146 L701 123"/>
+<path d="M705 146 L729 183"/>
+<path d="M705 146 L702 157"/>
+<path d="M665 147 L655 140"/>
+<path d="M665 147 L668 135"/>
+<path d="M665 147 L671 130"/>
+<path d="M665 147 L637 140"/>
+<path d="M665 147 L633 163"/>
+<path d="M665 147 L646 194"/>
+<path d="M665 147 L643 135"/>
+<path d="M665 147 L646 140"/>
+<path d="M665 147 L649 133"/>
+<path d="M655 140 L668 135"/>
+<path d="M655 140 L671 130"/>
+<path d="M655 140 L615 163"/>
+<path d="M655 140 L599 168"/>
+<path d="M655 140 L637 140"/>
+<path d="M655 140 L633 163"/>
+<path d="M655 140 L627 107"/>
+<path d="M655 140 L653 128"/>
+<path d="M655 140 L643 135"/>
+<path d="M655 140 L646 140"/>
+<path d="M655 140 L649 133"/>
+<path d="M655 140 L640 127"/>
+<path d="M655 140 L629 139"/>
+<path d="M668 135 L671 130"/>
+<path d="M668 135 L690 135"/>
+<path d="M668 135 L653 150"/>
+<path d="M668 135 L647 158"/>
+<path d="M668 135 L648 171"/>
+<path d="M668 135 L653 128"/>
+<path d="M668 135 L674 105"/>
+<path d="M671 130 L682 162"/>
+<path d="M671 130 L701 123"/>
+<path d="M671 130 L702 157"/>
+<path d="M671 130 L689 154"/>
+<path d="M671 130 L690 135"/>
+<path d="M671 130 L627 107"/>
+<path d="M671 130 L645 110"/>
+<path d="M671 130 L643 135"/>
+<path d="M671 130 L646 140"/>
+<path d="M671 130 L649 133"/>
+<path d="M671 130 L640 127"/>
+<path d="M671 130 L674 105"/>
+<path d="M682 162 L686 181"/>
+<path d="M682 162 L691 212"/>
+<path d="M701 123 L703 114"/>
+<path d="M701 123 L698 109"/>
+<path d="M701 123 L711 107"/>
+<path d="M701 123 L712 115"/>
+<path d="M701 123 L705 103"/>
+<path d="M729 183 L702 157"/>
+<path d="M703 114 L698 109"/>
+<path d="M703 114 L711 107"/>
+<path d="M703 114 L712 115"/>
+<path d="M703 114 L705 103"/>
+<path d="M698 109 L711 107"/>
+<path d="M698 109 L712 115"/>
+<path d="M698 109 L705 103"/>
+<path d="M711 107 L712 115"/>
+<path d="M711 107 L705 103"/>
+<path d="M712 115 L705 103"/>
+<path d="M615 163 L604 193"/>
+<path d="M615 163 L653 128"/>
+<path d="M637 140 L633 163"/>
+<path d="M637 140 L653 128"/>
+<path d="M637 140 L614 109"/>
+<path d="M637 140 L637 109"/>
+<path d="M637 140 L643 135"/>
+<path d="M637 140 L646 140"/>
+<path d="M637 140 L649 133"/>
+<path d="M637 140 L640 127"/>
+<path d="M637 140 L629 139"/>
+<path d="M579 79 L535 54"/>
+<path d="M579 79 L627 107"/>
+<path d="M627 107 L653 128"/>
+<path d="M627 107 L614 109"/>
+<path d="M627 107 L645 110"/>
+<path d="M627 107 L635 106"/>
+<path d="M627 107 L629 90"/>
+<path d="M627 107 L632 99"/>
+<path d="M627 107 L637 109"/>
+<path d="M627 107 L627 100"/>
+<path d="M627 107 L640 103"/>
+<path d="M627 107 L636 97"/>
+<path d="M627 107 L635 85"/>
+<path d="M627 107 L643 135"/>
+<path d="M627 107 L646 140"/>
+<path d="M627 107 L640 127"/>
+<path d="M627 107 L592 86"/>
+<path d="M627 107 L596 76"/>
+<path d="M627 107 L629 139"/>
+<path d="M627 107 L622 79"/>
+<path d="M653 150 L646 194"/>
+<path d="M653 150 L647 158"/>
+<path d="M653 150 L648 171"/>
+<path d="M653 150 L653 128"/>
+<path d="M653 150 L625 175"/>
+<path d="M647 158 L604 193"/>
+<path d="M647 158 L618 215"/>
+<path d="M647 158 L648 171"/>
+<path d="M647 158 L653 128"/>
+<path d="M648 171 L653 128"/>
+<path d="M653 128 L625 175"/>
+<path d="M653 128 L614 109"/>
+<path d="M653 128 L645 110"/>
+<path d="M653 128 L635 106"/>
+<path d="M653 128 L632 99"/>
+<path d="M653 128 L637 109"/>
+<path d="M653 128 L627 100"/>
+<path d="M653 128 L640 103"/>
+<path d="M653 128 L636 97"/>
+<path d="M614 109 L645 110"/>
+<path d="M614 109 L635 106"/>
+<path d="M614 109 L632 99"/>
+<path d="M614 109 L637 109"/>
+<path d="M614 109 L627 100"/>
+<path d="M614 109 L640 103"/>
+<path d="M614 109 L636 97"/>
+<path d="M614 109 L580 107"/>
+<path d="M645 110 L635 106"/>
+<path d="M645 110 L629 90"/>
+<path d="M645 110 L632 99"/>
+<path d="M645 110 L637 109"/>
+<path d="M645 110 L627 100"/>
+<path d="M645 110 L640 103"/>
+<path d="M645 110 L636 97"/>
+<path d="M645 110 L635 85"/>
+<path d="M645 110 L649 133"/>
+<path d="M645 110 L622 79"/>
+<path d="M635 106 L629 90"/>
+<path d="M635 106 L632 99"/>
+<path d="M635 106 L637 109"/>
+<path d="M635 106 L627 100"/>
+<path d="M635 106 L640 103"/>
+<path d="M635 106 L636 97"/>
+<path d="M635 106 L635 85"/>
+<path d="M629 90 L632 99"/>
+<path d="M629 90 L637 109"/>
+<path d="M629 90 L627 100"/>
+<path d="M629 90 L640 103"/>
+<path d="M629 90 L636 97"/>
+<path d="M629 90 L635 85"/>
+<path d="M632 99 L637 109"/>
+<path d="M632 99 L627 100"/>
+<path d="M632 99 L640 103"/>
+<path d="M632 99 L636 97"/>
+<path d="M632 99 L635 85"/>
+<path d="M637 109 L627 100"/>
+<path d="M637 109 L640 103"/>
+<path d="M637 109 L636 97"/>
+<path d="M637 109 L635 85"/>
+<path d="M637 109 L622 79"/>
+<path d="M627 100 L640 103"/>
+<path d="M627 100 L636 97"/>
+<path d="M627 100 L635 85"/>
+<path d="M627 100 L622 79"/>
+<path d="M640 103 L636 97"/>
+<path d="M640 103 L635 85"/>
+<path d="M640 103 L622 79"/>
+<path d="M636 97 L635 85"/>
+<path d="M636 97 L622 79"/>
+<path d="M635 85 L622 79"/>
+<path d="M643 135 L646 140"/>
+<path d="M643 135 L649 133"/>
+<path d="M643 135 L640 127"/>
+<path d="M643 135 L629 139"/>
+<path d="M646 140 L649 133"/>
+<path d="M646 140 L640 127"/>
+<path d="M646 140 L629 139"/>
+<path d="M649 133 L640 127"/>
+<path d="M649 133 L629 139"/>
+<path d="M640 127 L629 139"/>
+<path d="M592 86 L596 76"/>
+</g>
+<circle class="plein-accent" cx="706" cy="15" r="1.5"/>
+<circle class="plein-accent" cx="719" cy="15" r="1.5"/>
+<circle class="plein-accent" cx="749" cy="36" r="1.5"/>
+<circle class="plein-accent" cx="731" cy="19" r="1.5"/>
+<circle class="plein-accent" cx="755" cy="49" r="1.5"/>
+<circle class="plein-accent" cx="723" cy="41" r="1.5"/>
+<circle class="plein-accent" cx="741" cy="26" r="1.5"/>
+<circle class="plein-accent" cx="684" cy="197" r="1.5"/>
+<circle class="plein-accent" cx="701" cy="194" r="1.5"/>
+<circle class="plein-accent" cx="712" cy="189" r="1.5"/>
+<circle class="plein-accent" cx="670" cy="197" r="1.5"/>
+<circle class="plein-accent" cx="735" cy="106" r="1.5"/>
+<circle class="plein-accent" cx="599" cy="168" r="1.5"/>
+<circle class="plein-accent" cx="691" cy="212" r="1.5"/>
+<circle class="plein-accent" cx="579" cy="79" r="1.5"/>
+<circle class="plein-accent" cx="535" cy="54" r="1.5"/>
+<circle class="plein-accent" cx="618" cy="215" r="1.5"/>
+<circle class="plein-accent" cx="580" cy="107" r="1.5"/>
+<circle class="plein-accent" cx="712" cy="169" r="2.5"/>
+<circle class="plein-accent" cx="682" cy="162" r="2.5"/>
+<circle class="plein-accent" cx="729" cy="183" r="2.5"/>
+<circle class="plein-accent" cx="689" cy="154" r="2.5"/>
+<circle class="plein-accent" cx="615" cy="163" r="2.5"/>
+<circle class="plein-accent" cx="686" cy="181" r="2.5"/>
+<circle class="plein-accent" cx="646" cy="194" r="2.5"/>
+<circle class="plein-accent" cx="604" cy="193" r="2.5"/>
+<circle class="plein-accent" cx="625" cy="175" r="2.5"/>
+<circle class="plein-accent" cx="592" cy="86" r="2.5"/>
+<circle class="plein-accent" cx="596" cy="76" r="2.5"/>
+<circle class="plein-accent" cx="707" cy="74" r="3.5"/>
+<circle class="plein-accent" cx="694" cy="87" r="3.5"/>
+<circle class="plein-accent" cx="700" cy="88" r="3.5"/>
+<circle class="plein-accent" cx="702" cy="157" r="3.5"/>
+<circle class="plein-accent" cx="633" cy="163" r="3.5"/>
+<circle class="plein-accent" cx="690" cy="135" r="3.5"/>
+<circle class="plein-accent" cx="674" cy="105" r="3.5"/>
+<circle class="plein-accent" cx="653" cy="150" r="4.5"/>
+<circle class="plein-accent" cx="647" cy="158" r="4.5"/>
+<circle class="plein-accent" cx="648" cy="171" r="4.5"/>
+<circle class="plein-accent" cx="668" cy="135" r="6.5"/>
+<circle class="plein-accent" cx="701" cy="123" r="6.5"/>
+<circle class="plein-accent" cx="703" cy="114" r="6.5"/>
+<circle class="plein-accent" cx="698" cy="109" r="6.5"/>
+<circle class="plein-accent" cx="711" cy="107" r="6.5"/>
+<circle class="plein-accent" cx="712" cy="115" r="6.5"/>
+<circle class="plein-accent" cx="705" cy="103" r="6.5"/>
+<circle class="plein-accent" cx="737" cy="148" r="7.5"/>
+<circle class="plein-accent" cx="718" cy="148" r="7.5"/>
+<circle class="plein-accent" cx="734" cy="159" r="7.5"/>
+<circle class="plein-accent" cx="737" cy="154" r="7.5"/>
+<circle class="plein-accent" cx="729" cy="152" r="7.5"/>
+<circle class="plein-accent" cx="731" cy="146" r="7.5"/>
+<circle class="plein-accent" cx="728" cy="159" r="7.5"/>
+<circle class="plein-accent" cx="705" cy="146" r="7.5"/>
+<circle class="plein-accent" cx="665" cy="147" r="7.5"/>
+<circle class="plein-accent" cx="629" cy="139" r="7.5"/>
+<circle class="plein-accent" cx="622" cy="79" r="7.5"/>
+<circle class="plein-accent" cx="679" cy="131" r="8.5"/>
+<circle class="plein-accent" cx="655" cy="140" r="8.5"/>
+<circle class="plein-accent" cx="671" cy="130" r="8.5"/>
+<circle class="plein-accent" cx="637" cy="140" r="8.5"/>
+<circle class="plein-accent" cx="643" cy="135" r="8.5"/>
+<circle class="plein-accent" cx="646" cy="140" r="8.5"/>
+<circle class="plein-accent" cx="649" cy="133" r="8.5"/>
+<circle class="plein-accent" cx="640" cy="127" r="8.5"/>
+<circle class="plein-accent" cx="627" cy="107" r="9.5"/>
+<circle class="plein-accent" cx="653" cy="128" r="9.5"/>
+<circle class="plein-accent" cx="614" cy="109" r="9.5"/>
+<circle class="plein-accent" cx="645" cy="110" r="9.5"/>
+<circle class="plein-accent" cx="635" cy="106" r="9.5"/>
+<circle class="plein-accent" cx="629" cy="90" r="9.5"/>
+<circle class="plein-accent" cx="632" cy="99" r="9.5"/>
+<circle class="plein-accent" cx="637" cy="109" r="9.5"/>
+<circle class="plein-accent" cx="627" cy="100" r="9.5"/>
+<circle class="plein-accent" cx="640" cy="103" r="9.5"/>
+<circle class="plein-accent" cx="636" cy="97" r="9.5"/>
+<circle class="plein-accent" cx="635" cy="85" r="9.5"/>
+<text x="687" y="123" font-size="11" class="gras">Valjean</text>
+<text x="645" y="240" text-anchor="middle" font-size="13" class="t2">core index</text>
+</svg>
+      <figcaption>Figure 5.3 du poly, recalculée : le graphe de co-apparition des personnages des <cite>Misérables</cite> de Victor Hugo (un lien relie deux personnages qui apparaissent dans un même chapitre). La taille des sommets dépend de leur closeness, de leur betweenness, puis de leur core index.</figcaption>
+    </figure>
+    <div class="tableau centre compact">
+      <table>
+        <caption>Les personnages les plus centraux, selon chaque mesure <span class="badge ajout">Ajout</span></caption>
+        <thead><tr><th>Rang</th><th>Closeness</th><th>Betweenness</th><th>Core index</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Valjean (0,64)</td><td>Valjean (1624)</td><td rowspan="5">12 personnages à 9 : Marius, Gavroche, Enjolras, Courfeyrac, Combeferre, Mabeuf et les autres Amis de l'ABC</td></tr>
+          <tr><td>2</td><td>Marius (0,53)</td><td>Myriel (504)</td></tr>
+          <tr><td>3</td><td>Thénardier (0,52)</td><td>Gavroche (471)</td></tr>
+          <tr><td>4</td><td>Javert (0,52)</td><td>Marius (376)</td></tr>
+          <tr><td>5</td><td>Gavroche (0,51)</td><td>Fantine (369)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Valjean, le héros, est à la fois le plus proche de tous et le plus intermédiaire. Myriel arrive deuxième en betweenness alors que sa closeness est moyenne : il est le seul lien de sept personnages secondaires du début du roman (Napoléon, la comtesse de Lô…), qui ne communiquent avec le reste que par lui. Le core index, lui, met en avant un groupe très dense, les Amis de l'ABC et leurs proches, dont Valjean ne fait pas partie (son core index vaut 8). Les trois mesures ne disent donc pas la même chose : être proche de tous, être un passage obligé, appartenir au noyau dense.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les centralités avec NetworkX</span></p>
+<pre data-fichier="centralites.py"><code class="language-python">import networkx as nx
+
+G = nx.les_miserables_graph()            # 77 personnages, 254 liens
+print(G.number_of_nodes(), G.number_of_edges())
+mesures = {
+    "closeness": nx.closeness_centrality(G),
+    "betweenness": nx.betweenness_centrality(G, normalized=False),
+    "core index": nx.core_number(G),
+}
+for nom, valeurs in mesures.items():
+    top = sorted(valeurs, key=valeurs.get, reverse=True)[:5]
+    print(nom, [(u, round(valeurs[u], 2)) for u in top])</code></pre>
+<pre class="terminal"><code>$ python centralites.py
+77 254
+closeness [('Valjean', 0.64), ('Marius', 0.53), ('Thenardier', 0.52), ('Javert', 0.52), ('Gavroche', 0.51)]
+betweenness [('Valjean', 1624.47), ('Myriel', 504.0), ('Gavroche', 470.57), ('Marius', 376.29), ('Fantine', 369.49)]
+core index [('Gavroche', 9), ('Marius', 9), ('Mabeuf', 9), ('Enjolras', 9), ('Combeferre', 9)]</code></pre>
+      <p>Par défaut, <code>betweenness_centrality</code> normalise en divisant par le nombre de paires \(\frac{(n-1)(n-2)}{2}\) qui ne contiennent pas le sommet ; <code>normalized=False</code> donne la valeur de la définition 33. Le graphe fourni par NetworkX est pondéré par le nombre de co-apparitions ; ces calculs ignorent les poids.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Simulations : le modèle SIR <span class="ref">p. 62–64</span></h2>
+    <p>On veut un modèle de propagation d'une infection pour y observer des propriétés émergentes, comme la vitesse de propagation selon les paramètres du modèle, par exemple le choix des foyers initiaux. SIR est un modèle, donc une simplification : reconstituer le réseau des contacts quotidiens de toute une population n'est pas traitable. La simplification permet néanmoins de comprendre les mécanismes en jeu et de prendre des décisions éclairées. Ces modèles remontent aux travaux de mathématiciens des années 1920, qui les ont fait évoluer peu à peu.</p>
+
+    <h3>Le modèle <span class="ref">p. 62</span></h3>
+    <p>SIR, l'un des modèles les plus simples, répartit la population en trois ensembles :</p>
+    <ul>
+      <li><strong>S</strong> (<span lang="en">Susceptible</span>) : les individus non immunisés, qui peuvent être contaminés par leurs voisins dans le graphe ;</li>
+      <li><strong>I</strong> (<span lang="en">Infected</span>) : les individus contaminés, qui peuvent infecter leurs voisins ;</li>
+      <li><strong>R</strong> (<span lang="en">Recovered</span>) : les individus guéris, considérés comme immunisés.</li>
+    </ul>
+    <p>Il prend en entrée quatre paramètres :</p>
+    <ul>
+      <li>le graphe des individus, tous <span lang="en">Susceptible</span> au départ sauf \(k\) individus <span lang="en">Infected</span>, les foyers de l'infection ;</li>
+      <li>les \(k\) foyers \(F = \{f_1, f_2, \dots, f_k\}\) ;</li>
+      <li>la probabilité \(\beta\) qu'un individu <span lang="en">Susceptible</span> soit contaminé par un voisin <span lang="en">Infected</span> ;</li>
+      <li>la probabilité \(\gamma\) qu'un individu infecté guérisse, c'est-à-dire passe de I à R.</li>
+    </ul>
+    <p>Le temps est discret, avec un nombre d'étapes \(t_{end}\) fixé, lui aussi paramètre du modèle : \(T = \{t_0, t_1, \dots, t_{end}\}\). On note \(S^{t_i}\), \(I^{t_i}\), \(R^{t_i}\) les trois populations à l'étape \(t_i\). À l'initialisation, \(I^{t_0} = F\), \(S^{t_0} = V \setminus F\) et \(R^{t_0} = \emptyset\).</p>
+    <p>À chaque étape \(t_i\), on simule la propagation pour connaître les infectés de \(t_{i+1}\). Pour un sommet <span lang="en">Susceptible</span>, cela dépend de son nombre de voisins infectés. On note \(N_I^{t_i}(u) = \{v \in I^{t_i} \mid (u, v) \in E\}\) les voisins infectés de \(u\) à l'étape \(t_i\), et \(d_I^{t_i}(u) = |N_I^{t_i}(u)|\) leur nombre. Un individu \(u \in S^{t_i}\) est infecté en \(t_{i+1}\) avec la probabilité :</p>
+    <div class="encadre">\[ p(u \in I^{t_{i+1}}) = \beta \cdot d_I^{t_i}(u) \qquad (5.1) \]</div>
+    <p>et chaque individu infecté guérit avec la probabilité :</p>
+    <div class="encadre">\[ p(u \in R^{t_{i+1}} \mid u \in I^{t_i}) = \gamma \qquad (5.2) \]</div>
+<pre><code class="language-pseudo"><i># Algorithme 9 : SIR</i>
+Initialisation : I ← F, S ← V \ F, R ← ∅
+Répéter jusqu'à l'étape t_end :
+    1. Propager l'infection : mettre à jour I et S avec l'équation (5.1)
+    2. Simuler les guérisons : mettre à jour I et R avec l'équation (5.2)</code></pre>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Une probabilité qui peut dépasser 1</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>Avec \(\beta = 0{,}5\), valeur de la figure 5.4, un sommet qui a 3 voisins infectés obtient \(\beta \cdot d_I = 1{,}5\) : l'équation (5.1) n'est une probabilité que si on la plafonne à 1. Le modèle usuel suppose que chaque voisin infecté transmet indépendamment, avec la probabilité \(\beta\) ; le sommet échappe à tous avec la probabilité \((1 - \beta)^{d_I}\), d'où :</p>
+      <div class="encadre">\[ p(u \in I^{t_{i+1}}) = 1 - (1 - \beta)^{d_I^{t_i}(u)} \]</div>
+      <p>Pour \(\beta\) petit, les deux formules sont très proches (\(1 - (1 - \beta)^d \approx \beta d\)). Sur le graphe des <cite>Misérables</cite>, les courbes moyennes diffèrent de quelques points au plus.</p>
+    </div>
+    <p><span class="badge ajout">Ajout</span> L'algorithme laisse un choix : les sommets infectés à l'étape \(t_{i+1}\) peuvent-ils guérir dans la même étape ? Dans la simulation ci-dessous, seuls les infectés de \(t_i\) peuvent guérir : un nouvel infecté reste au moins une étape contagieux.</p>
+
+    <h3>Le choix du foyer <span class="ref">p. 62–63</span></h3>
+    <p>Pendant la simulation, on suit les effectifs de S, I et R selon les paramètres, en particulier selon les foyers choisis. La figure 5.4 du poly montre une simulation de 10 étapes sur le graphe des <cite>Misérables</cite>, avec \(\beta = \gamma = 0{,}5\) et pour foyer le sommet de plus grande betweenness, Valjean : la part de <span lang="en">Susceptible</span> s'effondre en quelques étapes, celle d'<span lang="en">Infected</span> monte puis redescend, celle de <span lang="en">Recovered</span> grimpe.</p>
+    <figure class="figure">
+<svg class="schema" viewBox="0 0 760 215" width="760" role="img" aria-labelledby="fig-sir-titre">
+<title id="fig-sir-titre">Moyenne de 2000 simulations SIR de 9 étapes sur le graphe des Misérables, avec bêta = gamma = 0,5. À gauche, foyer Valjean : la part de Susceptible tombe de 99 % à environ 10 %, celle d'Infected culmine à 53 % à l'étape 2 puis retombe vers 1 %, celle de Recovered monte jusqu'à 88 %. À droite, la part d'Infected selon le foyer : avec Valjean, le pic de 53 % est atteint à l'étape 2 ; avec Napoleon, personnage relié au seul Myriel, il n'est que de 25 %, à l'étape 5.</title>
+<path class="trait" d="M40 25 V175 H300"/>
+<text x="34" y="179" text-anchor="end" font-size="11" class="t2">0</text>
+<text x="34" y="142" text-anchor="end" font-size="11" class="t2">25</text>
+<text x="34" y="104" text-anchor="end" font-size="11" class="t2">50</text>
+<text x="34" y="66" text-anchor="end" font-size="11" class="t2">75</text>
+<text x="34" y="29" text-anchor="end" font-size="11" class="t2">100</text>
+<text x="40" y="191" text-anchor="middle" font-size="11" class="t2">0</text>
+<text x="68" y="191" text-anchor="middle" font-size="11" class="t2">1</text>
+<text x="96" y="191" text-anchor="middle" font-size="11" class="t2">2</text>
+<text x="124" y="191" text-anchor="middle" font-size="11" class="t2">3</text>
+<text x="152" y="191" text-anchor="middle" font-size="11" class="t2">4</text>
+<text x="180" y="191" text-anchor="middle" font-size="11" class="t2">5</text>
+<text x="208" y="191" text-anchor="middle" font-size="11" class="t2">6</text>
+<text x="236" y="191" text-anchor="middle" font-size="11" class="t2">7</text>
+<text x="264" y="191" text-anchor="middle" font-size="11" class="t2">8</text>
+<text x="292" y="191" text-anchor="middle" font-size="11" class="t2">9</text>
+<path class="trait" d="M40 26.9 L68 61.8 L96 122.9 L124 151.4 L152 157.6 L180 158.8 L208 159.1 L236 159.1 L264 159.2 L292 159.2"/>
+<text x="298" y="163" font-size="11" class="t2">S</text>
+<path class="accent" d="M40 173.1 L68 139.2 L96 96.0 L124 106.8 L152 134.9 L180 153.8 L208 163.9 L236 169.3 L264 172.2 L292 173.7"/>
+<text x="102" y="90" font-size="11" class="accent gras">I</text>
+<path class="pointille" d="M40 175.0 L68 173.9 L96 156.1 L124 116.8 L152 82.5 L180 62.5 L208 52.0 L236 46.4 L264 43.6 L292 42.2"/>
+<text x="298" y="46" font-size="11" class="t2">R</text>
+<text x="170" y="14" text-anchor="middle" font-size="12" class="gras">Foyer Valjean : S, I et R (en %)</text>
+<text x="170" y="207" text-anchor="middle" font-size="11" class="t2">étape t</text>
+<path class="trait" d="M420 25 V175 H680"/>
+<text x="414" y="179" text-anchor="end" font-size="11" class="t2">0</text>
+<text x="414" y="142" text-anchor="end" font-size="11" class="t2">25</text>
+<text x="414" y="104" text-anchor="end" font-size="11" class="t2">50</text>
+<text x="414" y="66" text-anchor="end" font-size="11" class="t2">75</text>
+<text x="414" y="29" text-anchor="end" font-size="11" class="t2">100</text>
+<text x="420" y="191" text-anchor="middle" font-size="11" class="t2">0</text>
+<text x="448" y="191" text-anchor="middle" font-size="11" class="t2">1</text>
+<text x="476" y="191" text-anchor="middle" font-size="11" class="t2">2</text>
+<text x="504" y="191" text-anchor="middle" font-size="11" class="t2">3</text>
+<text x="532" y="191" text-anchor="middle" font-size="11" class="t2">4</text>
+<text x="560" y="191" text-anchor="middle" font-size="11" class="t2">5</text>
+<text x="588" y="191" text-anchor="middle" font-size="11" class="t2">6</text>
+<text x="616" y="191" text-anchor="middle" font-size="11" class="t2">7</text>
+<text x="644" y="191" text-anchor="middle" font-size="11" class="t2">8</text>
+<text x="672" y="191" text-anchor="middle" font-size="11" class="t2">9</text>
+<path class="accent" d="M420 173.1 L448 139.2 L476 96.0 L504 106.8 L532 134.9 L560 153.8 L588 163.9 L616 169.3 L644 172.2 L672 173.7"/>
+<text x="484" y="92" font-size="11" class="accent gras">Valjean</text>
+<path class="pointille" d="M420 173.1 L448 173.1 L476 169.4 L504 161.8 L532 146.2 L560 138.2 L588 143.8 L616 154.2 L644 162.6 L672 167.9"/>
+<text x="564" y="130" font-size="11" class="t2">Napoleon</text>
+<text x="550" y="14" text-anchor="middle" font-size="12" class="gras">Infectés (en %) selon le foyer</text>
+<text x="550" y="207" text-anchor="middle" font-size="11" class="t2">étape t</text>
+</svg>
+      <figcaption>D'après la figure 5.4 du poly : moyenne de 2000 simulations SIR sur le graphe des <cite>Misérables</cite>, avec \(\beta = \gamma = 0{,}5\) (équation 5.1 plafonnée à 1). À gauche, foyer Valjean ; à droite, la part d'infectés pour deux foyers, Valjean (plus grande betweenness) et Napoleon (relié au seul Myriel).</figcaption>
+    </figure>
+    <p><span class="badge ajout">Ajout</span> Le foyer change tout. Depuis Valjean, relié à 36 personnages, plus de la moitié du graphe est infectée dès l'étape 2, et 88 % des personnages ont été touchés à l'étape 9. Depuis Napoleon, l'épidémie doit d'abord passer par Myriel, avec une chance sur deux à chaque étape tant que Napoleon n'a pas guéri : souvent elle s'éteint avant, et en moyenne le pic n'atteint que 25 %, à l'étape 5, pour 51 % de personnages touchés. Pour freiner une épidémie, on cherchera donc à isoler ou à vacciner les sommets centraux ; pour diffuser une information, à la confier à eux. Kitsak et al. montrent même que le core index prédit mieux la portée d'une diffusion que le degré ou la betweenness. <span class="badge hors-programme">Hors programme</span></p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Une simulation SIR en Python</span></p>
+<pre data-fichier="sir.py"><code class="language-python">import random
+import networkx as nx
+
+def sir(G, foyers, beta, gamma, etapes):
+    I, R = set(foyers), set()
+    S = set(G) - I
+    historique = [(len(S), len(I), len(R))]
+    for _ in range(etapes):
+        # 1. propagation : p = beta × nombre de voisins infectés (au plus 1)
+        nouveaux = {u for u in S
+                    if random.random() &lt; min(1, beta * sum(v in I for v in G[u]))}
+        # 2. guérisons, parmi les infectés de l'étape précédente
+        gueris = {u for u in I if random.random() &lt; gamma}
+        S -= nouveaux
+        I = (I - gueris) | nouveaux
+        R |= gueris
+        historique.append((len(S), len(I), len(R)))
+    return historique
+
+random.seed(1)
+G = nx.les_miserables_graph()
+n, essais = G.number_of_nodes(), 1000
+for foyer in ("Valjean", "Napoleon"):
+    moyenne = [[0, 0, 0] for _ in range(10)]
+    for _ in range(essais):
+        for t, effectifs in enumerate(sir(G, [foyer], 0.5, 0.5, 9)):
+            for k in range(3):
+                moyenne[t][k] += effectifs[k] / essais
+    print(foyer, "I % :", [round(100 * I / n) for _, I, _ in moyenne])
+    print(foyer, "R % à t = 9 :", round(100 * moyenne[9][2] / n))</code></pre>
+<pre class="terminal"><code>$ python sir.py
+Valjean I % : [1, 24, 53, 45, 27, 14, 7, 4, 2, 1]
+Valjean R % à t = 9 : 89
+Napoleon I % : [1, 1, 4, 9, 19, 25, 21, 14, 9, 5]
+Napoleon R % à t = 9 : 51</code></pre>
+      <p>Les nouveaux infectés sont calculés à partir de l'ensemble I de l'étape courante, avant toute mise à jour : tous les sommets évoluent « en même temps ». Remplacer <code>min(1, beta * d)</code> par <code>1 - (1 - beta) ** d</code> donne le modèle usuel. NetworkX ne fournit pas de simulation SIR ; la bibliothèque <code>ndlib</code> en propose.</p>
+    </div>
+    <div class="bloc exercice" id="ex-3">
+      <p class="bloc-titre">Exercice 3 <span>Une étape à la main</span> <span class="badge ajout">Ajout</span></p>
+      <p>Avec \(\beta = 0{,}2\), un sommet <span lang="en">Susceptible</span> a 2 voisins infectés. Quelle est sa probabilité d'être infecté à l'étape suivante selon l'équation (5.1) ? Selon le modèle à transmissions indépendantes ? Et avec 6 voisins infectés ?</p>
+      <details class="solution"><summary>Solution proposée</summary><p>Avec 2 voisins : \(0{,}2 \times 2 = 0{,}4\) selon (5.1), et \(1 - 0{,}8^2 = 0{,}36\) avec des transmissions indépendantes. Avec 6 voisins : \(0{,}2 \times 6 = 1{,}2\), à plafonner à 1, contre \(1 - 0{,}8^6 \approx 0{,}74\). L'écart grandit avec le nombre de voisins infectés.</p></details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Expérience de Smith, Leavitt et Bavelas : les groupes organisés autour d'une position centrale (fusée, croix) font moins d'erreurs et voient émerger un leader ; le cercle, sans centre, satisfait davantage les joueurs.</li>
+        <li>Centralité de Bavelas : total des distances du graphe divisé par la distance totale du sommet aux autres.</li>
+        <li>Closeness : \(C_C(u) = \frac{n-1}{\sum_v \text{dist}(u, v)}\), entre 0 (périphérique) et 1 (voisin de tous).</li>
+        <li>Betweenness : \(C_B(u) = \sum_{\{v, w\}} \frac{\sigma_{vw}(u)}{\sigma_{vw}}\), la part des plus courts chemins qui passent par \(u\), extrémités exclues.</li>
+        <li>k-core : sous-graphe induit maximal où tout sommet a au moins \(k\) voisins ; on l'obtient en retirant les sommets de degré inférieur à \(k\) jusqu'à stabilité. Core index : le plus grand \(k\) dont le k-core contient le sommet ; calcul en temps linéaire (Batagelj et Zaversnik).</li>
+        <li>SIR : populations Susceptible, Infected, Recovered ; paramètres graphe, foyers, \(\beta\) (contamination), \(\gamma\) (guérison) ; à chaque étape, propagation puis guérisons.</li>
+        <li>La vitesse et l'ampleur d'une épidémie simulée dépendent fortement de la centralité des foyers.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Dans quel motif de l'expérience les joueurs étaient-ils les plus satisfaits ?</summary>
+        <div><p>Le cercle, le moins centralisé : personne n'y est en périphérie. Les motifs centralisés font moins d'erreurs mais frustrent les joueurs périphériques.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un sommet est à distance 1, 1, 2 et 3 des quatre autres. Sa closeness ?</summary>
+        <div><p>\(4 / 7 \approx 0{,}57\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle est la betweenness du centre d'une étoile à 5 sommets ?</summary>
+        <div><p>6 : les \(C_4^2 = 6\) paires de feuilles n'ont qu'un plus court chemin, qui passe par le centre.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quel est le core index d'un sommet d'un cycle ? d'une clique de 5 sommets ?</summary>
+        <div><p>2 pour le cycle (chaque sommet a 2 voisins dans le cycle) ; 4 pour la clique de 5.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que représentent \(\beta\) et \(\gamma\) dans le modèle SIR ?</summary>
+        <div><p>\(\beta\) : la probabilité d'être contaminé par un voisin infecté ; \(\gamma\) : la probabilité, pour un infecté, de guérir à chaque étape.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi un sommet de forte betweenness est-il un bon foyer pour une diffusion rapide ?</summary>
+        <div><p>Beaucoup de plus courts chemins passent par lui : depuis lui, l'infection atteint vite toutes les régions du graphe, sans dépendre d'un passage étroit.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Références</h2>
+    <ul>
+      <li>N. Dugué, <cite>Graphes et applications</cite>, poly du cours, Le Mans Université, 2026-2027 : <a href="../cours/_Graphes__Cours_de_graphes_A4__1_-4.pdf">chapitre 5</a>.</li>
+      <li>A. Bavelas, <cite>Communication Patterns in Task-Oriented Groups</cite>, Journal of the Acoustical Society of America, 1950.</li>
+      <li>H. J. Leavitt, <cite>Some effects of certain communication patterns on group performance</cite>, Journal of Abnormal and Social Psychology, 1951.</li>
+      <li>L. C. Freeman, <cite>Centrality in social networks: conceptual clarification</cite>, Social Networks, 1978.</li>
+      <li>V. Batagelj et M. Zaversnik, <cite>An O(m) Algorithm for Cores Decomposition of Networks</cite>, 2003.</li>
+      <li>M. Kitsak et al., <cite>Identification of influential spreaders in complex networks</cite>, Nature Physics, 2010.</li>
+      <li>W. O. Kermack et A. G. McKendrick, <cite>A contribution to the mathematical theory of epidemics</cite>, 1927.</li>
+      <li>Documentation NetworkX : <a href="https://networkx.org/documentation/stable/reference/algorithms/centrality.html">centralités</a> et <a href="https://networkx.org/documentation/stable/reference/algorithms/core.html">cores</a>.</li>
+    </ul>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-04-communautes.html"><small>← Cours 4</small>Structure de communautés</a>
+    <a class="suivant" href="index.html"><small>Matière →</small>Théorie des graphes</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Théorie des graphes · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

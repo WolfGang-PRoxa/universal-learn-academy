@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="se">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TP Transports : synchroniser par signaux · Programmation système L3</title>
+<meta name="description" content="TP Transports de programmation système (L3) : chariots, wagons et camions, processus Unix, transportent des produits entre l'atelier et l'entrepôt d'une fabrique, et se synchronisent par des signaux. Sujet des quatre versions repris de la documentation de l'archive, organisation des fichiers, commandes pour compiler et lancer le TP sous Linux et sous Windows (WSL), lanceurs run.sh et run.bat.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/langues/dos.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">Programmation système</a>
+    <span aria-current="page">TP 2 · Transports</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Programmation système</span> TP 2 · L3 S5</p>
+    <h1>TP Transports : synchroniser par signaux</h1>
+    <p class="chapeau">Dans une fabrique, un chariot porte les produits de l'ouvrier à l'atelier, un wagon de l'atelier à l'entrepôt, un camion de l'entrepôt au magasin. Chaque moyen de transport et chaque lieu de stockage est un processus Unix, et ils se coordonnent uniquement par des signaux. Cette page reprend la présentation de l'archive fournie, puis donne les commandes pour compiler et lancer le TP à la fac et sous Windows.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TP/TP2_transports/">TP/TP2_transports/</a>, l'archive fournie · présentation dans sa <a href="../TP/TP2_transports/Documentation/html/index.html">documentation Doxygen</a></dd></div>
+      <div><dt>Enseignant</dt><dd>B. Jacob</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-16">16 oct. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Manipuler le mécanisme des signaux vu en cours : des processus qui demandent, accordent ou font attendre par signaux.</li>
+        <li>Version 1 : un transport de chaque type, affichage sur la sortie standard.</li>
+        <li>Version 2 : la même chose, affichée en temps réel sur un seul écran par <code>vision.c</code>.</li>
+        <li>Versions 3 et 4 : plusieurs transports de chaque type, avec des files d'attente.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">À rendre</p>
+      <ul>
+        <li>Sur la zone de dépôt UMTICE du TP : un synopsis de votre système, qui explicite les signaux échangés entre les processus, et une archive <code>TP_Transport.tar.gz</code> avec les différentes versions.</li>
+        <li>Cours à revoir : <a href="cours-03-signaux.html">les signaux Unix</a> et <a href="cours-04-processus.html">les processus</a>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le sujet <span class="ref">documentation de l'archive</span></h2>
+    <p>La présentation qui suit est celle de la page d'accueil de la documentation Doxygen de l'archive, rédigée par B. Jacob.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Présentation <span>Le TP Transports</span></p>
+      <p>L'objectif de ce TP est de synchroniser différents moyens de transport entre les lieux de stockage d'une fabrique avec des interruptions logicielles (signaux Unix).</p>
+    </div>
+    <figure class="figure">
+      <img src="../TP/TP2_transports/Documentation/html/presentation.jpg" width="1451" height="243" alt="La chaîne de la fabrique, de gauche à droite : l'ouvrier, le chariot sur un trajet de longueur DISTANCE_FABRIQUE_ATELIER, l'atelier, le wagon sur DISTANCE_ATELIER_ENTREPOT, l'entrepôt, le camion sur DISTANCE_ENTREPOT_MAGASIN, et les magasins ; chaque trajet avance d'un pas à la fois.">
+      <figcaption>La fabrique, de l'ouvrier aux magasins (documentation de l'archive).</figcaption>
+    </figure>
+    <ul>
+      <li>Un <strong>ouvrier</strong> fabrique un produit qu'il met tout de suite dans un chariot.</li>
+      <li>Quand le <strong>chariot</strong> est plein (quand il contient <code>CHARIOT_CAPACITE</code> produits), il se déplace automatiquement vers l'atelier. La distance pour aller à l'atelier est <code>DISTANCE_FABRIQUE_ATELIER</code>, et sa vitesse est réglée par une pause <code>CHARIOT_DELAI</code> entre deux pas. Le chariot revient à son point de départ lorsque l'atelier lui a donné la confirmation (<code>ACK</code>) que son dépôt a été réalisé.</li>
+      <li>L'<strong>atelier</strong> gère son stock, de capacité <code>ATELIER_CAPACITE</code>. Quand il n'y a pas assez de produits pour charger un wagon, il met celui-ci en attente (il ne lui envoie pas d'<code>ACK</code>). De même, quand il n'y a pas assez de place pour stocker le chargement d'un chariot, il met celui-ci en attente.</li>
+      <li>Un <strong>wagon</strong> attend à la sortie de l'atelier pour charger des produits et les transporter à l'entrepôt. Quand il est plein (<code>WAGON_CAPACITE</code> produits), il se déplace automatiquement vers l'entrepôt, sur la distance <code>DISTANCE_ATELIER_ENTREPOT</code>, avec une pause <code>WAGON_DELAI</code> entre deux pas. Il revient à son point de départ lorsque l'entrepôt lui a confirmé (<code>ACK</code>) son dépôt.</li>
+      <li>L'<strong>entrepôt</strong> gère son stock, de capacité <code>ENTREPOT_CAPACITE</code>. Quand il n'y a pas assez de produits pour charger un camion, il met celui-ci en attente ; quand il n'y a pas assez de place pour le chargement d'un wagon, il met celui-ci en attente (sans <code>ACK</code> dans les deux cas).</li>
+      <li>Un <strong>camion</strong> attend à la sortie de l'entrepôt pour charger des produits et les transporter à un magasin. Quand il est plein (<code>CAMION_CAPACITE</code> produits), le chauffeur le conduit vers le magasin, sur la distance <code>DISTANCE_ENTREPOT_MAGASIN</code>, avec une pause <code>CAMION_DELAI</code> entre deux pas. Il revient plus ou moins sans attendre à son point de départ lorsqu'il a déchargé sa livraison.</li>
+    </ul>
+    <p>Les <strong>lieux de stockage</strong> sont matérialisés par des fichiers : l'atelier, dont les lectures et écritures sont réalisées par un seul processus, <code>atelier.c</code>, et l'entrepôt, par un seul processus, <code>entrepot.c</code>. Les <strong>moyens de transport</strong> sont matérialisés par des processus : <code>chariot.c</code>, <code>wagon.c</code> et <code>camion.c</code>.</p>
+
+    <p><span class="badge ajout">Ajout</span> Les constantes sont définies dans <code>Commun/commun.h</code>, avec ces valeurs :</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Constantes de <code>Commun/commun.h</code></caption>
+        <thead><tr><th>Transport ou lieu</th><th>Capacité (produits)</th><th>Distance (pas)</th><th>Pause entre deux pas</th><th>Déchargement</th></tr></thead>
+        <tbody>
+          <tr><th>Chariot</th><td><code>CHARIOT_CAPACITE</code> = 1</td><td><code>DISTANCE_FABRIQUE_ATELIER</code> = 20</td><td><code>CHARIOT_DELAI</code> = 200 000 µs</td><td><code>CHARIOT_DECHARGEMENT</code> = 2 s</td></tr>
+          <tr><th>Atelier</th><td><code>ATELIER_CAPACITE</code> = 10</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><th>Wagon</th><td><code>WAGON_CAPACITE</code> = 5</td><td><code>DISTANCE_ATELIER_ENTREPOT</code> = 40</td><td><code>WAGON_DELAI</code> = 250 000 µs</td><td><code>WAGON_DECHARGEMENT</code> = 3 s</td></tr>
+          <tr><th>Entrepôt</th><td><code>ENTREPOT_CAPACITE</code> = 20</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><th>Camion</th><td><code>CAMION_CAPACITE</code> = 10</td><td><code>DISTANCE_ENTREPOT_MAGASIN</code> = 80</td><td><code>CAMION_DELAI</code> = 300 000 µs</td><td><code>CAMION_DECHARGEMENT</code> = 4 s</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Le même fichier limite le nombre de transports de chaque type pour les versions 3 et 4 : <code>CHARIOTS_MAX</code> = 3, <code>WAGONS_MAX</code> = 4, <code>CAMIONS_MAX</code> = 5.</p>
+
+    <h3>Les exemples</h3>
+    <p>Afin d'aider à réaliser les programmes des moyens de transport, on peut s'inspirer des programmes du dossier <code>Exemples</code> :</p>
+    <dl class="glossaire">
+      <dt><code>ex_trajets.c</code></dt>
+      <dd>visualisation sur la sortie standard du déplacement des moyens de transport ;</dd>
+      <dt><code>ex_stockage.c</code></dt>
+      <dd>visualisation sur la sortie standard du nombre de produits dans les lieux de stockage ;</dd>
+      <dt><code>ex_trajets_1_ecran.c</code></dt>
+      <dd>visualisation sur écran du déplacement des moyens de transport, avec un chariot, un wagon et un camion ;</dd>
+      <dt><code>ex_trajets_N_ecran.c</code></dt>
+      <dd>visualisation sur écran du déplacement avec N chariots, N wagons et N camions ;</dd>
+      <dt><code>ex_stockage_ecran.c</code></dt>
+      <dd>visualisation sur écran du nombre de produits dans les lieux de stockage ;</dd>
+      <dt><code>ex_liste_pids.c</code></dt>
+      <dd>utilisation des fonctions de gestion du type <code>pidlst_t</code>, la file de pid des versions 3 et 4.</dd>
+    </dl>
+    <p><span class="badge ajout">Ajout</span> Ces exemples s'exécutent seuls, dans un seul processus, sans signaux : <code>./run.sh exemple ex_trajets_1_ecran</code> en montre un (voir plus bas).</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les quatre versions <span class="ref">documentation de l'archive</span></h2>
+
+    <h3>Version 1 : un transport par type, affichage sur stdout</h3>
+    <p>Un seul processus de chacun des programmes suivants sera lancé.</p>
+    <dl class="glossaire">
+      <dt><code>chariot.c</code></dt>
+      <dd>fonctionne selon deux modes : <strong>manuel</strong>, il lit un caractère au clavier pour indiquer la fabrication d'un produit ; <strong>automatique</strong>, un produit est fabriqué toutes les N secondes. Dans les deux cas, il transporte <code>CHARIOT_CAPACITE</code> produits vers l'atelier, et attend de décharger s'il n'y a pas assez de place dans l'atelier. Exemple de visualisation de ses trajets sur stdout : <code>ex_trajets.c</code>.</dd>
+      <dt><code>wagon.c</code></dt>
+      <dd>transporte <code>WAGON_CAPACITE</code> produits de l'atelier à l'entrepôt ; attend de décharger s'il n'y a pas assez de place dans l'entrepôt, et de charger s'il n'y a pas assez de produits dans l'atelier. Visualisation : <code>ex_trajets.c</code>.</dd>
+      <dt><code>camion.c</code></dt>
+      <dd>fonctionne selon deux modes : <strong>manuel</strong>, il lit un caractère au clavier pour indiquer le déchargement du camion ; <strong>automatique</strong>, attente aléatoire pour le déchargement. Visualisation : <code>ex_trajets.c</code>.</dd>
+      <dt><code>atelier.c</code></dt>
+      <dd>gère les demandes de stockage et de déstockage du fichier atelier ; c'est, dans cette version, le seul processus à lire et écrire ce fichier. Les demandes de stockage viennent de <code>chariot.c</code>, et ne doivent pas être acceptées si l'atelier est plein ; les demandes de déstockage viennent de <code>wagon.c</code>, et ne doivent pas être acceptées s'il demande plus de produits qu'il n'y en a dans l'atelier. Visualisation du nombre de produits sur stdout : <code>ex_stockage.c</code>.</dd>
+      <dt><code>entrepot.c</code></dt>
+      <dd>gère de même le fichier entrepôt : les demandes de stockage viennent de <code>wagon.c</code>, refusées si le déchargement du wagon fait dépasser la capacité de l'entrepôt ; les demandes de déstockage viennent de <code>camion.c</code>, refusées si le camion demande plus de produits qu'il n'y en a. Visualisation : <code>ex_stockage.c</code>.</dd>
+    </dl>
+    <figure class="figure">
+      <img src="../TP/TP2_transports/Documentation/html/synopsis_stdio.jpg" width="1247" height="608" alt="Synopsis de la version 1 : Chariot.c envoie une demande de stockage à l'Atelier, qui lui renvoie un accusé de réception ; Wagon.c envoie une demande de déstockage à l'Atelier et une demande de stockage à l'Entrepôt, chacun lui renvoyant un accusé de réception ; Camion.c envoie une demande de déstockage à l'Entrepôt, qui lui renvoie un accusé de réception. Ces échanges sont des signaux. L'Atelier et l'Entrepôt lisent et écrivent leur fichier ; chaque processus affiche dans son propre terminal ses déplacements ou l'état de son stock.">
+      <figcaption>Synopsis de la version 1 (stdio) : en pointillés, les signaux ; en traits pleins, les lectures et écritures.</figcaption>
+    </figure>
+
+    <h3>Version 2 : un transport par type, affichage sur un écran ncurses</h3>
+    <p>Le sujet est le même que dans la version précédente avec, en plus, une visualisation en temps réel des trajets des moyens de transport et de l'état des lieux de stockage, sur un seul écran. Cet écran est géré par le processus <code>vision.c</code> : tous les autres processus doivent donc signaler à <code>vision.c</code> chaque changement dans l'affichage du système.</p>
+    <ul>
+      <li><code>chariot.c</code> signale, sur son trajet entre la fabrique et l'atelier, chaque avance d'un pas et chaque recul d'un pas ; <code>wagon.c</code> fait de même entre l'atelier et l'entrepôt, et <code>camion.c</code> entre l'entrepôt et le magasin. Exemple de visualisation de leurs trajets : <code>ex_trajets_1_ecran.c</code>.</li>
+      <li><code>atelier.c</code> et <code>entrepot.c</code> signalent tout changement dans l'état de leur stock. Exemple de visualisation du nombre de produits : <code>ex_stockage_ecran.c</code>.</li>
+      <li><code>vision.c</code> reçoit les demandes d'affichage : des trois moyens de transport, il affiche alors un pas en avant ou en arrière sur leur trajet ; des lieux de stockage, il met à jour l'affichage du nombre de produits.</li>
+    </ul>
+    <figure class="figure">
+      <img src="../TP/TP2_transports/Documentation/html/synopsis_ncurses.jpg" width="1179" height="685" alt="Synopsis de la version 2 : les mêmes échanges de signaux que dans la version 1 entre chariot, atelier, wagon, entrepôt et camion ; en plus, chacun des cinq processus envoie des signaux d'affichage à Vision.c, qui affiche seul, dans un terminal ncurses, les déplacements et les états des stocks.">
+      <figcaption>Synopsis de la version 2 (ncurses) : un seul écran, tenu par <code>vision.c</code>.</figcaption>
+    </figure>
+
+    <h3>Version 3 : N transports par type, affichage sur stdout</h3>
+    <p>Les changements se situent dans la gestion des moyens de transport en attente. Là où auparavant il était possible de la réaliser avec une simple variable, il faut maintenant utiliser une file d'attente. Plusieurs exécutions de <code>chariot.c</code>, <code>wagon.c</code> et <code>camion.c</code> pourront être lancées ; ils restent identiques à la version 1.</p>
+    <p>C'est donc dans le code des deux lieux de stockage qu'intervient la file d'attente ; on peut utiliser pour cela le TDA <code>pidlst_t</code> déjà défini (exemple : <code>ex_liste_pids.c</code>).</p>
+    <ul>
+      <li><code>atelier.c</code> : idem que dans la version 1, mais gère en plus les files d'attente des chariots, pour les demandes de stockage qui ne peuvent être satisfaites, et des wagons, pour les demandes de déstockage qui ne peuvent être satisfaites.</li>
+      <li><code>entrepot.c</code> : idem, avec les files d'attente des wagons (stockage) et des camions (déstockage).</li>
+    </ul>
+    <figure class="figure">
+      <img src="../TP/TP2_transports/Documentation/html/synopsis_N_stdio.jpg" width="1386" height="651" alt="Synopsis de la version 3 : plusieurs chariots, plusieurs wagons et plusieurs camions échangent des signaux de stockage et de déstockage avec l'atelier et l'entrepôt ; chaque processus affiche dans son propre terminal.">
+      <figcaption>Synopsis de la version 3 : plusieurs transports de chaque type.</figcaption>
+    </figure>
+
+    <h3>Version 4 : N transports par type, affichage sur un écran ncurses</h3>
+    <p>Les changements se situent dans la gestion de l'affichage, où il faut gérer les signaux d'affichage de plusieurs moyens de transport du même type (exemple : <code>ex_trajets_N_ecran.c</code>). <code>chariot.c</code>, <code>wagon.c</code> et <code>camion.c</code> sont ceux de la version 2, avec en plus un numéro. Ils pourront soit utiliser un signal différent pour l'affichage de chaque moyen de transport (le numéro aidant à distinguer les signaux à utiliser), soit utiliser les mêmes signaux pour tous les transports d'un même type ; ce sera alors à <code>vision.c</code> de déterminer l'expéditeur du signal. <code>atelier.c</code> et <code>entrepot.c</code> sont ceux de la version 3.</p>
+    <p>Pour que <code>vision.c</code> identifie les demandes des différents transports d'un même type, on peut utiliser des signaux différents pour chaque transport (il y a en principe assez de signaux sur la machine pour tous les transports du TP), ou le champ <code>sa_sigaction</code> d'une <code>struct sigaction</code>, avec l'option <code>SA_SIGINFO</code> (<code>man sigaction</code>).</p>
+    <figure class="figure">
+      <img src="../TP/TP2_transports/Documentation/html/synopsis_N_ncurses.jpg" width="1448" height="852" alt="Synopsis de la version 4 : plusieurs chariots, wagons et camions échangent des signaux de stockage et de déstockage avec l'atelier et l'entrepôt ; tous les processus envoient leurs signaux d'affichage à Vision.c, qui affiche dans un terminal ncurses les déplacements et les états des stocks.">
+      <figcaption>Synopsis de la version 4 : plusieurs transports de chaque type, un seul écran.</figcaption>
+    </figure>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Note <span>Connaître le pid de l'émetteur d'un signal</span></p>
+      <p>Quand on reçoit un signal et qu'on a besoin du pid du processus qui l'a envoyé, on le capture avec <code>sigaction</code>. La <code>struct sigaction</code> a deux champs pour l'adresse du gestionnaire (l'implémentation varie selon le système) : <code>void (*sa_handler)(int)</code>, celui utilisé en TD, dont le gestionnaire reçoit seulement le numéro du signal ; et <code>void (*sa_sigaction)(int, siginfo_t *, void *)</code>, dont le gestionnaire reçoit en deuxième paramètre une structure d'informations sur l'émetteur, en particulier le champ <code>si_pid</code>. L'option <code>SA_SIGINFO</code> demande de remplir cette structure à la réception du signal.</p>
+<pre><code class="language-c">void mon_handler( int sig , siginfo_t * siginfo , void * contexte )
+{
+  ... siginfo-&gt;si_pid ...   /* pid du processus émetteur ;
+                               0 s'il s'est envoyé le signal lui-même (à vérifier sur votre machine) */
+}
+
+/* dans le main */
+struct sigaction action ;
+action.sa_flags = SA_SIGINFO ;
+action.sa_sigaction = mon_handler ;
+sigaction( NOM_DU_SIGNAL , &amp;action , NULL );</code></pre>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>L'archive</h2>
+    <p>Les sources sont réparties en dossiers, un par type de données ; on programme dans les quatre dossiers <code>Signaux_V1</code> à <code>Signaux_V4</code>, un par version du sujet.</p>
+    <dl class="glossaire">
+      <dt><code>Signaux_V1</code> … <code>Signaux_V4</code></dt>
+      <dd>les dossiers de vos programmes : <code>atelier.c</code>, <code>entrepot.c</code>, <code>chariot.c</code>, <code>wagon.c</code>, <code>camion.c</code>, et <code>vision.c</code> pour les versions 2 et 4. Ces deux versions ont aussi un lanceur de l'enseignant, <code>lance_transport_V2.sh</code> et <code>lance_transport_V4.sh</code>.</dd>
+      <dt><code>Commun</code></dt>
+      <dd>fonctions et constantes communes à tous les TDA (types de données abstraits) ;</dd>
+      <dt><code>Stockage</code></dt>
+      <dd>TDA des lieux de stockage, fonctions qui gèrent les écritures et lectures dans ces fichiers (<a href="../TP/TP2_transports/Documentation/html/stock_8h.html"><code>stock.h</code></a>) ;</dd>
+      <dt><code>Trajets</code></dt>
+      <dd>TDA des trajets effectués par les moyens de transport ;</dd>
+      <dt><code>Ecran</code></dt>
+      <dd>TDA de l'écran géré par ncurses, qui visualise tout le système de transport de la fabrique ; utile dans la version 2 (<a href="../TP/TP2_transports/Documentation/html/ecran_8h.html"><code>ecran.h</code></a>) ;</dd>
+      <dt><code>Pid</code></dt>
+      <dd>le TDA <code>pidlst_t</code>, une liste de pid, pour les files d'attente des versions 3 et 4 (<a href="../TP/TP2_transports/Documentation/html/pidlst_8h.html"><code>pidlst.h</code></a>) ;</dd>
+      <dt><code>Exemples</code></dt>
+      <dd>les programmes d'exemple ;</dd>
+      <dt><code>Fichiers</code></dt>
+      <dd>les fichiers utilisés par le TP, comme les lieux de stockage ;</dd>
+      <dt><code>Makefile*</code></dt>
+      <dd>la compilation avec make ;</dd>
+      <dt><code>Documentation</code></dt>
+      <dd>la documentation Doxygen de toutes les fonctions : <a href="../TP/TP2_transports/Documentation/html/index.html">page d'accueil</a>, <a href="../TP/TP2_transports/Documentation/html/files.html">liste des fichiers</a>.</dd>
+    </dl>
+    <p>La documentation cite aussi un fichier <code>TRANSPORTS.TAGS</code> (index des fonctions et des constantes pour emacs), absent de l'archive.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Compiler et lancer à la fac</h2>
+    <p>Sur les machines Linux de la fac, tout fonctionne directement, avec les commandes de la documentation ou avec le lanceur <code>run.sh</code>.</p>
+
+    <h3>Les commandes de la documentation</h3>
+    <p>On compile tout le TP depuis son dossier racine, puis on va dans le dossier de la version, où <code>make all</code> recompile ses programmes après chaque modification. Pour les versions 2, 3 et 4, la documentation propose de partir d'une copie des programmes de la version précédente.</p>
+<pre class="terminal"><code>$ make -f Makefile all
+$ cd Signaux_V1
+$ make all</code></pre>
+    <p>Les squelettes fournis fixent les paramètres de chaque programme (message <code>Usage</code> de leur <code>main</code>) :</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Paramètres des programmes, d'après les squelettes de l'archive</caption>
+        <thead><tr><th>Programme</th><th>Versions 1 et 3</th><th>Version 2</th><th>Version 4</th></tr></thead>
+        <tbody>
+          <tr><th><code>atelier</code></th><td><code>&lt;fichier atelier&gt;</code></td><td><code>&lt;pid vision&gt; &lt;fichier atelier&gt;</code></td><td>comme en version 2</td></tr>
+          <tr><th><code>entrepot</code></th><td><code>&lt;fichier entrepot&gt;</code></td><td><code>&lt;pid vision&gt; &lt;fichier entrepot&gt;</code></td><td>comme en version 2</td></tr>
+          <tr><th><code>chariot</code></th><td><code>&lt;pid atelier&gt; &lt;mode (M/A)&gt;</code></td><td><code>&lt;pid vision&gt; &lt;pid atelier&gt; &lt;mode (M/A)&gt;</code></td><td><code>&lt;numero chariot&gt;</code> puis comme en version 2</td></tr>
+          <tr><th><code>wagon</code></th><td><code>&lt;pid atelier&gt; &lt;pid entrepot&gt;</code></td><td><code>&lt;pid vision&gt; &lt;pid atelier&gt; &lt;pid entrepot&gt;</code></td><td><code>&lt;numero wagon&gt;</code> puis comme en version 2</td></tr>
+          <tr><th><code>camion</code></th><td><code>&lt;pid entrepot&gt; &lt;mode (M/A)&gt;</code></td><td><code>&lt;pid vision&gt; &lt;pid entrepot&gt; &lt;mode (M/A)&gt;</code></td><td><code>&lt;numero camion&gt;</code> puis comme en version 2</td></tr>
+          <tr><th><code>vision</code></th><td>—</td><td><code>&lt;nom atelier&gt; &lt;nom entrepot&gt;</code></td><td>comme en version 2</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Versions 1 et 3 : un terminal par processus</h3>
+    <p>Chaque processus affiche ses déplacements ou son stock sur sa sortie standard (synopsis de la version 1) : on lance donc chacun dans son propre terminal, les lieux de stockage d'abord, puisque les transports ont besoin de leur pid. L'archive ne fournit pas de lanceur pour ces deux versions.</p>
+<pre class="terminal"><code>$ ./atelier ../Fichiers/atelier.bin          # terminal 1 : noter son pid
+$ ./entrepot ../Fichiers/entrepot.bin        # terminal 2 : noter son pid
+$ ./chariot &lt;pid atelier&gt; A                  # terminal 3
+$ ./wagon &lt;pid atelier&gt; &lt;pid entrepot&gt;       # terminal 4
+$ ./camion &lt;pid entrepot&gt; A                  # terminal 5</code></pre>
+    <p><span class="badge ajout">Ajout</span> Pour retrouver un pid depuis un autre terminal : <code>pgrep -x atelier</code>. Les fichiers <code>atelier.bin</code> et <code>entrepot.bin</code> sont les noms que le lanceur de l'enseignant donne aux lieux de stockage, dans <code>Fichiers</code>.</p>
+
+    <h3>Versions 2 et 4 : vision, puis le lanceur de l'enseignant</h3>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>La taille de la fenêtre</span></p>
+      <p><span class="badge ajout">Ajout</span> <code>vision</code> demande une console d'au moins 146 colonnes sur 23 lignes. Sinon, il s'arrête sur « Erreur creation Ecran ». Une fenêtre du Terminal Windows s'ouvre en 120 colonnes : il faut l'agrandir ou la passer en plein écran. <code>./run.sh v2</code> et <code>./run.sh v4</code> vérifient la taille avant de lancer quoi que ce soit.</p>
+    </div>
+    <p>Le lanceur de chaque version prend le pid de <code>vision</code>, lance l'atelier et l'entrepôt sur <code>../Fichiers/atelier.bin</code> et <code>../Fichiers/entrepot.bin</code>, puis, deux ou trois secondes plus tard, les transports en mode automatique ; <kbd>Ctrl</kbd> + <kbd>C</kbd> les arrête tous. On lance <code>vision</code> dans un premier terminal, et le lanceur dans un second :</p>
+<pre class="terminal"><code>$ ./vision ../Fichiers/atelier.bin ../Fichiers/entrepot.bin     # terminal 1
+$ pgrep -x vision                                              # terminal 2
+$ ./lance_transport_V2.sh &lt;pid vision&gt;
+$ ./lance_transport_V4.sh &lt;pid vision&gt; 3 2 2     # 3 chariots, 2 wagons, 2 camions</code></pre>
+    <p><span class="badge a-verifier">À vérifier</span> Le commentaire des lanceurs dit de lancer <code>./vision</code> sans paramètre, mais le squelette de <code>vision.c</code> attend le nom des deux lieux de stockage : la page suit le squelette, avec les fichiers que le lanceur donne à l'atelier et à l'entrepôt.</p>
+
+    <h3>Avec le lanceur run.sh</h3>
+    <p><span class="badge ajout">Ajout</span> <code>run.sh</code>, à la racine du TP, regroupe ces commandes :</p>
+<pre class="terminal"><code>$ ./run.sh                         # compile tout le TP
+$ ./run.sh v2                      # version 2
+$ ./run.sh v4 3 2 2                # version 4 : 3 chariots, 2 wagons, 2 camions (défaut 2 2 2)
+$ ./run.sh exemple ex_trajets_N_ecran 3 3 3 50
+$ ./run.sh arreter</code></pre>
+    <ul>
+      <li>Sans argument, il compile tout le TP par le Makefile de l'enseignant, comme la documentation.</li>
+      <li><code>v2</code> et <code>v4</code> compilent la version, arrêtent les processus d'un lancement précédent, lancent <code>vision</code> au premier plan puis, une seconde après son démarrage, le lanceur de l'enseignant avec son pid ; les traces des transports vont dans <code>Fichiers/transports_V2.log</code> (ou <code>V4</code>), pour ne pas se mêler à l'écran. Quand on quitte <code>vision</code>, tous les processus du TP sont arrêtés.</li>
+      <li><code>exemple</code> compile et lance un programme du dossier <code>Exemples</code>, avec ses paramètres ; sans nom, il donne la liste.</li>
+      <li><code>arreter</code> arrête tous les processus du TP qui tourneraient encore (<code>pkill</code>), y compris ceux lancés à la main.</li>
+    </ul>
+    <p>Pour les versions 1 et 3, <code>run.sh</code> compile ; les programmes se lancent ensuite à la main, comme ci-dessus.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Chez soi, sous Windows</h2>
+    <p>Le TP repose sur des primitives POSIX (signaux, plusieurs processus) et sur ncurses, qui n'existent pas sous Windows : il se compile et s'exécute dans WSL, qui fait tourner Ubuntu à côté de Windows. La page <a href="../../../_outils/environnements/c.html">Compiler un TP en C sous Windows et sous Linux</a> détaille l'installation.</p>
+
+    <h3>Une fois : installer WSL, gcc, make et ncurses</h3>
+    <p>C'est déjà fait sur ce PC (31 octobre 2026 : Ubuntu 26.04, gcc 15.2, make 4.4, gdb 17.1, ncurses). Sur un autre PC, <code>wsl --install -d Ubuntu</code>, dans un terminal Windows ouvert en administrateur, installe WSL.</p>
+    <p>Ensuite, dans le shell d'Ubuntu (<code>wsl</code>), on installe gcc, make, gdb et la bibliothèque ncurses, dont ont besoin <code>vision</code> et les exemples à l'écran :</p>
+<pre class="terminal"><code>$ sudo apt update
+$ sudo apt install build-essential gdb libncurses-dev</code></pre>
+
+    <h3>À chaque séance : run.bat</h3>
+    <p><code>run.bat</code>, à la racine du TP, prend les mêmes arguments que <code>run.sh</code>. Il monte au besoin le lecteur <code>G:</code> du Drive dans WSL (sous <code>/mnt/g</code>, en administrateur, sans mot de passe), puis lance <code>run.sh</code> dans WSL, depuis le dossier du TP.</p>
+<pre data-fichier="cmd"><code class="language-dos">cd /d "C:\Users\piaur\Prog\studies\L3\SE_PS\TP\TP2_transports"
+run.bat
+run.bat v2
+run.bat v4 3 2 2
+run.bat arreter</code></pre>
+    <p>Pour les versions 1 et 3, qui demandent un terminal par processus, <code>run.bat terminal</code> ouvre une nouvelle fenêtre avec le shell d'Ubuntu, dans le dossier demandé ; on en ouvre une par programme :</p>
+<pre data-fichier="cmd"><code class="language-dos">run.bat terminal Signaux_V1</code></pre>
+    <p>Les fichiers sont ceux du Drive : on les modifie sous Windows avec son éditeur habituel, et WSL les compile tels quels. Les exécutables compilés à la fac tournent aussi dans WSL (même système, même processeur) ; <code>make</code> les refait dès qu'une source a changé.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Les scripts restent en LF</span></p>
+      <p>Le fichier <code>.gitattributes</code> du dépôt impose les fins de ligne Unix (LF) à tous les <code>.sh</code>, dont les lanceurs de l'enseignant. Si un script refuse de tourner dans WSL avec <code>$'\r': command not found</code>, <code>sed -i 's/\r$//' script.sh</code> le répare.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Chaque transport (chariot, wagon, camion) et chaque lieu de stockage (atelier, entrepôt) est un processus ; ils se coordonnent par des signaux : demandes de stockage et de déstockage, accusés de réception, et, à partir de la version 2, demandes d'affichage à <code>vision</code>.</li>
+        <li>Un seul processus lit et écrit chaque fichier de stockage : l'atelier pour le fichier atelier, l'entrepôt pour le fichier entrepôt.</li>
+        <li>Version 1 : un transport par type, stdout ; version 2 : un écran ncurses ; version 3 : N transports et des files d'attente (<code>pidlst_t</code>) ; version 4 : N transports à l'écran.</li>
+        <li>À la fac : <code>make -f Makefile all</code> à la racine, puis <code>make all</code> dans le dossier de la version ; les versions 2 et 4 se lancent par <code>vision</code> puis le lanceur de l'enseignant.</li>
+        <li><code>./run.sh</code> compile, <code>./run.sh v2</code> et <code>./run.sh v4</code> lancent tout, <code>./run.sh arreter</code> arrête tout ; sous Windows, <code>run.bat</code> fait de même dans WSL, à réinstaller une fois.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi lance-t-on <code>vision</code> avant les autres processus, dans les versions 2 et 4 ?</summary>
+        <div><p>Les autres processus lui envoient des signaux : ils ont besoin de son pid, qu'ils reçoivent en paramètre. Et <code>vision</code> doit avoir installé ses gestionnaires avant de recevoir le premier signal, sans quoi l'action par défaut s'applique, qui, pour <code>SIGUSR1</code> ou <code>SIGUSR2</code>, termine le processus.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi l'atelier et l'entrepôt sont-ils lancés avant les transports ?</summary>
+        <div><p>Chaque transport s'adresse, par signaux, au lieu de stockage d'où il part ou où il va : il prend son pid en paramètre, qui n'existe qu'une fois le lieu de stockage lancé.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Qu'est-ce qui change entre la version 1 et la version 3 ?</summary>
+        <div><p>Plusieurs transports d'un même type peuvent attendre en même temps : là où une variable suffisait pour retenir le transport en attente, l'atelier et l'entrepôt ont besoin d'une file d'attente de pid, par exemple le TDA <code>pidlst_t</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Comment un processus peut-il connaître le pid de celui qui lui a envoyé un signal ?</summary>
+        <div><p>En capturant le signal avec <code>sigaction</code>, l'option <code>SA_SIGINFO</code> et un gestionnaire à trois paramètres placé dans <code>sa_sigaction</code> : son deuxième paramètre, un <code>siginfo_t *</code>, contient le pid de l'émetteur dans <code>si_pid</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi ce TP ne se compile-t-il pas avec le gcc de Windows (MinGW) ?</summary>
+        <div><p>Il repose sur des primitives POSIX, comme <code>sigaction</code>, <code>kill</code> entre processus et <code>SIGUSR1</code>, et sur ncurses : MinGW produit des programmes Windows natifs, sans ces primitives. Il faut un vrai Linux, la fac ou WSL.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="tp-01-route.html"><small>← TP précédent</small>Route</a>
+    <a class="suivant" href="tp-03-tron.html"><small>TP suivant →</small>Tron</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Programmation système · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

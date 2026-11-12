@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="se">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les files de messages · Programmation système L3</title>
+<meta name="description" content="Cours 6 de programmation système (L3) : files de messages System V, boîtes aux lettres typées, msgget, msgsnd, msgrcv, msgctl, ipcs et ipcrm, exemple client et serveurs d'encodage et de décodage.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-06-files-de-messages.html" title="Quiz · Les files de messages">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-ct-2025.html" title="Annale · Examen de décembre 2024">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">Programmation système</a>
+    <span aria-current="page">Cours 6 · Les files de messages</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Programmation système</span> Cours 6 · L3 S5</p>
+    <h1>Communiquer par messages : les files de messages</h1>
+    <p class="chapeau">Un tube transporte un flot d'octets sans repères, entre des processus qui ont un ancêtre commun ou qui connaissent un nom de fichier. La file de messages, l'un des trois mécanismes IPC d'Unix System V, transporte des messages entiers, chacun muni d'un type, que chaque lecteur peut trier. Ce cours présente ses quatre primitives, <code>msgget</code>, <code>msgsnd</code>, <code>msgrcv</code> et <code>msgctl</code>, puis un exemple complet : un client et deux serveurs qui partagent une seule file.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd>polycopié <a href="../cours/cours_files_messages.pdf">Notes sur la gestion des files de messages</a> (10 p.)</dd></div>
+      <div><dt>Enseignant</dt><dd>B. Jacob</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Expliquer ce qu'est une boîte aux lettres typée, et ce qui la distingue d'un tube.</li>
+        <li>Créer une file ou retrouver une file existante avec <code>msgget</code>.</li>
+        <li>Déclarer une structure de message et l'envoyer avec <code>msgsnd</code>.</li>
+        <li>Choisir le message à extraire avec le paramètre <code>type</code> de <code>msgrcv</code>.</li>
+        <li>Prévoir le comportement des primitives quand la file est pleine, vide, ou supprimée.</li>
+        <li>Organiser un dialogue client-serveur sur une seule file.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-05-tubes.html">Cours 5</a> : les tubes, communication par flot.</li>
+        <li><a href="cours-04-processus.html">Cours 4</a> : <code>fork</code>, <code>getpid</code>, <code>wait</code>.</li>
+        <li><a href="cours-03-signaux.html">Cours 3</a> : handlers, appels système interrompus, <code>SA_RESTART</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc complement">
+    <p class="bloc-titre">Complément <span>D'où vient cette page</span></p>
+    <p>La page suit le polycopié de l'enseignant, dont le programme d'exemple est reproduit en entier. Le polycopié ne donne pas de notes de séance : les explications, le tableau de comparaison avec les tubes, l'exemple d'un père et de son fils et les exercices sont des ajouts, signalés comme tels.</p>
+    <p>Tous les programmes, ceux du polycopié compris, ont été compilés et exécutés sous Linux (noyau 6.18, gcc 13.3). Les sorties reproduites sont celles obtenues. Trois affirmations du polycopié ne correspondent pas à ce que fait Linux : elles portent le badge « À vérifier ».</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le principe de la boîte aux lettres <span class="ref">p. 1–2</span></h2>
+    <p>Avec un tube, ce qu'un processus écrit est lu par le premier lecteur venu, dans l'ordre d'arrivée. Pour que plusieurs processus se partagent un même canal et que chacun n'y prenne que ce qui le concerne, il faut des messages identifiables.</p>
+
+    <h3>Des messages typés</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>File de messages</span></p>
+      <p>Une <dfn>file de messages</dfn> (<span class="en" lang="en">message queue</span>) implémente le concept de <dfn>boîte aux lettres</dfn> (BAL) : un processus peut y déposer des lettres, les messages, pour qu'ils soient lus par d'autres processus, et il peut en extraire les lettres qui lui sont destinées. À chaque message est accolé un <dfn>type</dfn>, un entier strictement positif, qui permet aux processus qui extraient les messages de distinguer ceux qui les intéressent.</p>
+    </div>
+    <p>Une structure de message commence donc par son type, suivi du corps du message, que le programmeur définit librement. Le polycopié donne ce modèle :</p>
+    <pre><code class="language-c">struct exemple_msg
+{
+   int type ;   /* entier &gt; 0 */
+   /*
+    * corps du message
+    */
+} ;</code></pre>
+    <p><span class="badge a-verifier">À vérifier</span> Le type est déclaré <code>int</code>, mais les primitives attendent un <code>long</code> en tête de la zone (voir <code>msgbuf</code> ci-dessous) : sur une machine 64 bits, où un <code>long</code> fait 8 octets et un <code>int</code> 4, le corps serait décalé. Dans ses propres programmes (p. 5), l'enseignant écrit bien <code>long type</code>, et c'est la forme à retenir.</p>
+    <p>Les primitives manipulent les messages à travers un type générique :</p>
+    <pre><code class="language-c">struct msgbuf
+{
+   long  mtype ;      /* message type */
+   char  mtext[1] ;   /* message text */
+};</code></pre>
+    <p>Ce type ne peut pas être utilisé tel quel.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi on ne se sert pas de <code>msgbuf</code></span></p>
+      <p>Son corps ne fait qu'un caractère : <code>msgbuf</code> sert seulement à décrire la forme attendue, un <code>long</code> suivi d'octets. Chaque programme déclare sa propre structure, dont le premier champ est un <code>long</code> et dont le reste est aussi grand qu'il le faut. Les primitives reçoivent un <code>void *</code>, et c'est la longueur passée en paramètre qui leur dit combien d'octets lire après le type.</p>
+    </div>
+
+    <h3>Un des trois mécanismes IPC</h3>
+    <p>Les files de messages sont l'un des trois mécanismes de communication et de synchronisation entre processus d'un même système, les <dfn>IPC</dfn> (<span class="en" lang="en">Inter-Process Communication</span>). Les deux autres sont la mémoire partagée et les sémaphores. Tous les objets IPC créés peuvent être manipulés par deux commandes du shell :</p>
+    <dl class="glossaire">
+      <dt><code>ipcs</code></dt>
+      <dd>Consulte tous les objets IPC. Le polycopié indique que l'option <code>-m</code> affiche toutes les files de messages actives. <span class="badge a-verifier">À vérifier</span> Sous Linux, c'est <code>-q</code> (<span class="en" lang="en">queues</span>) qui liste les files de messages ; <code>-m</code> liste les segments de mémoire partagée, et <code>-s</code> les sémaphores.</dd>
+      <dt><code>ipcrm</code></dt>
+      <dd>Supprime un objet IPC. Avec l'option <code>-q msgid</code>, on supprime la file de messages d'identifiant <code>msgid</code>, donné dans la deuxième colonne de <code>ipcs</code>.</dd>
+    </dl>
+    <pre class="terminal"><code>$ ipcs -q
+
+------ Message Queues --------
+key        msqid      owner      perms      used-bytes   messages
+0x000010e1 1          root       666        0            0
+
+$ ipcrm -q 1</code></pre>
+
+    <h3>Des messages indivisibles, dans l'ordre d'arrivée</h3>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Indivisibilité d'un message</span></p>
+      <p>Un message est un objet indivisible : quand un message est déposé dans une BAL, il en est obligatoirement extrait dans sa totalité.</p>
+    </div>
+    <p>C'est la différence essentielle avec les tubes, qui transfèrent des flots de caractères sans repères : plusieurs caractères peuvent être écrits en un seul <code>write</code> et lus par une suite de <code>read</code>, ou l'inverse. Enfin, une file de messages est gérée comme une file FIFO : parmi les messages qu'un lecteur accepte, il reçoit le plus ancien.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Tubes et files de messages</span></p>
+      <div class="tableau compact">
+        <table>
+          <caption>Ce qui distingue une file de messages d'un tube</caption>
+          <thead><tr><th></th><th>Tube (cours 5)</th><th>File de messages</th></tr></thead>
+          <tbody>
+            <tr><th>Données</th><td>flot d'octets sans repères</td><td>messages entiers, chacun avec un type</td></tr>
+            <tr><th>Lecture</th><td>dans l'ordre d'écriture, par le premier lecteur</td><td>FIFO, mais chaque lecteur choisit un type</td></tr>
+            <tr><th>Désignation</th><td>héritage après <code>fork</code>, ou nom de fichier (tube nommé)</td><td>clé numérique connue des processus</td></tr>
+            <tr><th>Accès</th><td>descripteurs, <code>read</code> et <code>write</code></td><td>identifiant, <code>msgsnd</code> et <code>msgrcv</code></td></tr>
+            <tr><th>Sens</th><td>un seul : il faut deux tubes pour dialoguer</td><td>une seule file suffit dans les deux sens</td></tr>
+            <tr><th>Durée de vie</th><td>jusqu'à la dernière fermeture</td><td>jusqu'à sa suppression explicite (<code>msgctl</code> ou <code>ipcrm</code>), même si plus aucun processus ne s'en sert</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>La dernière ligne explique la présence d'<code>ipcrm</code> : une file que son programme a oublié de supprimer reste dans le système, avec ses messages, jusqu'au redémarrage.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Créer ou retrouver une file : <code>msgget</code> <span class="ref">p. 2</span></h2>
+    <p>Pour que deux processus utilisent la même file, il faut qu'ils puissent la désigner. Comme tout objet IPC, une file de messages est repérée par un <dfn>identifiant</dfn> géré par le système, et éventuellement par une <dfn>clé</dfn> gérée par l'utilisateur. Des primitives permettent d'obtenir l'identifiant à partir de la clé.</p>
+    <pre><code class="language-c">#include &lt;sys/msg.h&gt;
+int msgget( key_t cle ,      /* Cle de file de messages */
+            int   option ) ; /* Option de creation */</code></pre>
+    <p><code>msgget</code> renvoie l'identifiant de la file de messages associée à <code>cle</code>, ou −1 en cas d'échec. Elle crée une nouvelle file si l'une des conditions suivantes est vérifiée :</p>
+    <ul>
+      <li><code>cle</code> vaut <code>IPC_PRIVATE</code> ;</li>
+      <li><code>cle</code> n'a pas de file de messages associée, et <code>option &amp; IPC_CREAT</code> est vrai.</li>
+    </ul>
+    <p>Sinon, elle renvoie l'identifiant de la file qui existe déjà pour cette clé.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Ce que contient <code>option</code></span></p>
+      <ul>
+        <li>Les neuf bits de poids faible sont les droits d'accès de la file, comme pour un fichier : <code>0666</code> pour tous en lecture et en écriture, <code>0600</code> pour le seul propriétaire. Ils ne servent qu'à la création.</li>
+        <li><code>IPC_CREAT</code> crée la file si la clé n'en a pas.</li>
+        <li><code>IPC_CREAT | IPC_EXCL</code> exige la création : si la file existe déjà, <code>msgget</code> échoue avec <code>errno = EEXIST</code>. C'est ainsi que le serveur de l'exemple s'assure qu'il est le premier.</li>
+        <li><code>0</code> (ni l'un ni l'autre) retrouve une file existante, et échoue avec <code>ENOENT</code> si la clé n'a pas de file.</li>
+      </ul>
+      <p>Avec <code>IPC_PRIVATE</code>, la file n'a pas de clé : seuls le créateur et ses descendants, qui héritent de la variable contenant l'identifiant, peuvent s'en servir.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Choisir une clé : <code>ftok</code></span></p>
+      <p>Le polycopié passe la clé en paramètre des programmes, sous forme d'entier. Pour éviter que deux applications choisissent la même, on la calcule souvent avec <code>ftok</code>, à partir d'un fichier qui existe et d'un caractère :</p>
+      <pre><code class="language-c">#include &lt;sys/ipc.h&gt;
+key_t cle = ftok("/home/moi/projet", 'A') ;</code></pre>
+      <p>Tous les processus qui appellent <code>ftok</code> avec le même fichier et le même caractère obtiennent la même clé.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Envoyer un message : <code>msgsnd</code> <span class="ref">p. 2–3</span></h2>
+    <p>Une fois la file désignée, un processus y dépose un message en donnant l'adresse d'une zone qui commence par le type.</p>
+    <pre><code class="language-c">#include &lt;sys/msg.h&gt;
+int msgsnd( int          fileid , /* Identifiant de file */
+            const void * p_mess , /* Pt sur message a envoyer */
+            size_t       lg ,     /* Longueur du message */
+            int          option ) ; /* Option d'emission */</code></pre>
+    <p>Cette primitive envoie dans la file identifiée par <code>fileid</code> le message contenu dans la zone mémoire pointée par <code>p_mess</code>. Cette zone doit contenir :</p>
+    <ul>
+      <li>le type du message, un entier strictement positif ;</li>
+      <li>le corps du message.</li>
+    </ul>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>La longueur ne compte pas le type</span></p>
+      <p>Le paramètre <code>lg</code> contient la longueur du corps du message, sans la place occupée par le type. Avec la structure <code>requete_t</code> de l'exemple, on passe <code>sizeof(req_corps_t)</code>, et non <code>sizeof(requete_t)</code>.</p>
+    </div>
+
+    <h3>Quand la file est pleine</h3>
+    <p>Une file a une capacité limitée. Quand elle est pleine :</p>
+    <ul>
+      <li>si <code>option</code> vaut 0, <code>msgsnd</code> est bloquant : le processus est mis en sommeil, et il sera réveillé quand l'écriture dans la file sera rendue possible. Si un signal interrompt cet appel bloquant et que l'on ne reprend pas les appels système (c'est-à-dire si <code>sa_flags</code> de <code>sigaction</code> ne contient pas <code>SA_RESTART</code>), <code>msgsnd</code> renvoie −1 et <code>errno</code> vaut <code>EINTR</code> ;</li>
+      <li>si <code>option</code> vaut <code>IPC_NOWAIT</code>, <code>msgsnd</code> n'est pas bloquant : la primitive renvoie −1 et positionne <code>errno</code>. Le polycopié indique <code>ENOMSG</code>. <span class="badge a-verifier">À vérifier</span> Sous Linux, <code>msgsnd</code> renvoie <code>EAGAIN</code> dans ce cas, comme le prévoit POSIX ; <code>ENOMSG</code> est l'erreur de <code>msgrcv</code> sur une file sans message du type voulu. L'essai ci-dessous le confirme.</li>
+    </ul>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Limites et erreurs</span></p>
+      <ul>
+        <li>Un type nul ou négatif est refusé : <code>msgsnd</code> renvoie −1 avec <code>EINVAL</code>.</li>
+        <li>Sous Linux, un message ne dépasse pas 8 192 octets (<code>/proc/sys/kernel/msgmax</code>), et une file contient au plus 16 384 octets (<code>msg_qbytes</code>, par défaut <code>/proc/sys/kernel/msgmnb</code>). La file est « pleine » quand le nouveau message ferait dépasser cette limite.</li>
+        <li>Si la file est supprimée pendant que l'émetteur attend, il est réveillé avec <code>EIDRM</code>.</li>
+      </ul>
+      <p>L'essai suivant réduit la capacité d'une file à 100 octets, puis y dépose des corps de 60 octets avec <code>IPC_NOWAIT</code> :</p>
+      <pre class="terminal"><code>$ ./essais
+msg_qbytes = 16384
+…
+msgsnd type 0 : -1, errno EINVAL
+pleine apres 1 messages : errno EAGAIN</code></pre>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Recevoir un message : <code>msgrcv</code> <span class="ref">p. 3–4</span></h2>
+    <p>Le lecteur dit quel type de message il attend et quelle place il lui réserve. C'est ce choix du type qui permet à plusieurs processus de partager une seule file.</p>
+    <pre><code class="language-c">#include &lt;sys/msg.h&gt;
+ssize_t msgrcv( int      fileid , /* Identifiant de la file */
+                void   * p_mess , /* Pt sur zone reception */
+                size_t   lgmax ,  /* Longueur max prevue */
+                long int type ,   /* Type de message attendu */
+                int      option ) ; /* Option de reception */</code></pre>
+    <p>La primitive <code>msgrcv</code> extrait de la file identifiée par <code>fileid</code> un message de type <code>type</code>, et le range dans la zone pointée par <code>p_mess</code>.</p>
+
+    <h3>Un message trop long</h3>
+    <p><code>lgmax</code> donne la taille maximale du corps du message que l'on peut extraire.</p>
+    <ul>
+      <li>Si le message que l'on veut extraire est trop long :
+        <ul>
+          <li>si <code>option</code> contient <code>MSG_NOERROR</code>, le message est extrait dans sa totalité, mais il est tronqué à <code>lgmax</code> octets dans la zone de réception : le reste est perdu ;</li>
+          <li>sinon, <code>msgrcv</code> échoue, avec <code>errno = E2BIG</code>, et le message reste dans la file.</li>
+        </ul>
+      </li>
+      <li>Sinon, tout va bien : le message est stocké dans la zone mémoire pointée par <code>p_mess</code>.</li>
+    </ul>
+
+    <h3>Une file sans message du type voulu</h3>
+    <p>Quand la file ne contient pas de message du type souhaité :</p>
+    <ul>
+      <li>si <code>option</code> vaut 0, <code>msgrcv</code> est bloquant : le processus est mis en sommeil jusqu'à ce qu'un message du bon type arrive. Si l'appel bloquant est interrompu, <code>msgrcv</code> renvoie −1 et <code>errno</code> vaut <code>EINTR</code> ;</li>
+      <li>si <code>option</code> vaut <code>IPC_NOWAIT</code>, <code>msgrcv</code> n'est pas bloquant : la primitive renvoie −1 et positionne <code>errno</code> à <code>ENOMSG</code>.</li>
+    </ul>
+    <p>Si le message est extrait de la BAL, <code>msgrcv</code> renvoie la longueur du corps du message stocké. Si le message a été tronqué, on ne sait donc pas combien d'octets ont été perdus.</p>
+
+    <h3>Choisir le message à extraire</h3>
+    <p>Le paramètre <code>type</code> indique quel message on souhaite extraire :</p>
+    <ol>
+      <li><code>type = 0</code> : le premier message de la file est extrait, quel que soit son type ;</li>
+      <li><code>type &gt; 0</code> : le premier message de type <code>type</code> est extrait ;</li>
+      <li><code>type &lt; 0</code> : le polycopié indique que le premier message de type \( \le |\mathtt{type}| \) est extrait. <span class="badge a-verifier">À vérifier</span> Linux et POSIX sont plus précis : c'est le premier message <em>du plus petit type</em> parmi ceux de type \( \le |\mathtt{type}| \). Les deux lectures diffèrent quand un message de type 2 précède un message de type 1 (essai ci-dessous). Un type négatif sert ainsi de priorité : les petits types passent d'abord.</li>
+    </ol>
+    <p>Dans les cas 1 et 3, le champ <code>mtype</code> de la zone de réception contient au retour le type du message extrait, ce qui permet de savoir ce que l'on a reçu.</p>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span class="badge ajout">Ajout</span> <span>Les trois façons de choisir, à l'essai</span></p>
+      <p>Un programme dépose dans une file vide des messages de types 2, 1 et 3, dans cet ordre, puis appelle deux fois <code>msgrcv</code> avec le type −2 :</p>
+      <pre class="terminal"><code>$ ./neg
+msgrcv(..., -2, ...) : m1
+msgrcv(..., -2, ...) : m2</code></pre>
+      <p>Le premier appel extrait le message de type 1, bien qu'il soit arrivé après celui de type 2 : c'est le plus petit type \( \le 2 \). Le second extrait celui de type 2. Le message de type 3 reste dans la file.</p>
+      <p>Sur une autre file qui contient des messages de types 3, 1 et 2, les autres cas donnent :</p>
+      <pre class="terminal"><code>$ ./essais
+…
+msg_qnum = 3, msg_cbytes = 9
+type -2 : m1 (type 1, 3 octets)
+lgmax 2 : -1, Argument list too long
+lgmax 2 + MSG_NOERROR : 2, type 3, m3
+type 0 : m2 (type 2)
+vide + IPC_NOWAIT : -1, errno ENOMSG</code></pre>
+      <p>« Argument list too long » est le texte de <code>E2BIG</code> : le message <code>m3</code>, de 3 octets avec son <code>'\0'</code>, ne tient pas dans 2 octets. Avec <code>MSG_NOERROR</code>, il est extrait, et <code>msgrcv</code> renvoie 2 : le <code>'\0'</code> final est perdu.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Contrôler et supprimer une file : <code>msgctl</code> <span class="ref">p. 4</span></h2>
+    <p>Une file survit aux processus qui l'ont créée. Il faut donc une primitive pour la supprimer, et pour consulter ou modifier ses caractéristiques.</p>
+    <pre><code class="language-c">#include &lt;sys/msg.h&gt;
+int msgctl( int               fileid , /* Identifiant de la file */
+            int               cmd ,    /* Operation a effectuer */
+            struct msqid_ds * p_buf ) ; /* Arguments de l'operation */</code></pre>
+    <p>Cette primitive réalise sur la file d'identifiant <code>fileid</code> l'opération <code>cmd</code>, avec les paramètres <code>p_buf</code>. Les opérations possibles sont :</p>
+    <dl class="glossaire">
+      <dt><code>IPC_RMID</code></dt>
+      <dd>Suppression de la file <code>fileid</code> (<code>p_buf = NULL</code>).</dd>
+      <dt><code>IPC_STAT</code></dt>
+      <dd>Copie dans la zone pointée par <code>p_buf</code> l'entrée de <code>fileid</code> dans la table des files de messages.</dd>
+      <dt><code>IPC_SET</code></dt>
+      <dd>Modifie l'entrée de la file <code>fileid</code> dans la table des files de messages avec la structure pointée par <code>p_buf</code>. Les seuls champs modifiables par un utilisateur ordinaire sont <code>msg_perm.uid</code>, <code>msg_perm.gid</code> et <code>msg_perm.mode</code>.</dd>
+    </dl>
+    <p>Une entrée de la table des files de messages a la structure suivante :</p>
+    <pre><code class="language-c">struct msqid_ds {
+    struct ipc_perm  msg_perm ;   /* structure des droits d'acces */
+    struct msg     * msg_first ;  /* ptr sur le 1er message */
+    struct msg     * msg_last ;   /* ptr sur le dernier message */
+    msglen_t         msg_cbytes ; /* nb total d'octets dans la file */
+    msgqnum_t        msg_qnum ;   /* nb de messages dans la file */
+    msglen_t         msg_qbytes ; /* nb max d'octets */
+    pid_t            msg_lspid ;  /* pid du dernier processus emetteur */
+    pid_t            msg_lrpid ;  /* pid du dernier processus recepteur */
+    time_t           msg_stime ;  /* date du dernier envoi */
+    time_t           msg_rtime ;  /* date de la derniere reception */
+    time_t           msg_ctime ;  /* date dernier changement par msgctl */
+};</code></pre>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span class="badge ajout">Ajout</span> <span>La structure vue par un programme Linux</span></p>
+      <p>Les pointeurs <code>msg_first</code> et <code>msg_last</code> appartiennent à la table interne du noyau : la structure <code>msqid_ds</code> que voit un programme sous Linux ne les contient pas. Les autres champs y sont, et le nombre de messages en attente se lit dans <code>msg_qnum</code>. Sous Linux, un utilisateur ordinaire peut aussi baisser <code>msg_qbytes</code> avec <code>IPC_SET</code> ; seul l'administrateur peut le relever au-delà de la limite du système.</p>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span class="badge ajout">Ajout</span> <span>Supprimer une file que d'autres utilisent</span></p>
+      <p><code>IPC_RMID</code> supprime la file immédiatement, avec les messages qu'elle contient. Les processus bloqués dans <code>msgsnd</code> ou <code>msgrcv</code> sur cette file sont réveillés, et la primitive renvoie −1 avec <code>errno = EIDRM</code> ; les appels suivants échouent avec <code>EINVAL</code>. C'est ce qui arrive au serveur de décodage de l'exemple quand le serveur d'encodage s'arrête.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exemple : un client et deux serveurs <span class="ref">p. 4–10</span></h2>
+    <p>L'exemple du polycopié est un client-serveur sur une seule machine. Un serveur encode des chaînes de caractères, un autre les décode, et des clients leur envoient des chaînes. Tous partagent une seule file : ce sont les types qui aiguillent les messages.</p>
+
+    <h3>Les messages échangés</h3>
+    <p>Les requêtes portent le type du serveur visé, <code>SERVEUR_ENCODAGE</code> (1) ou <code>SERVEUR_DECODAGE</code> (2). Leur corps contient le pid du client et la chaîne. Les réponses portent pour type le pid du client qui a fait la requête : chaque client ne lit ainsi que ses propres réponses.</p>
+    <pre data-fichier="messages.h"><code class="language-c">#ifndef _MESSAGES_H_
+#define _MESSAGES_H_
+
+#include &lt;unistd.h&gt;
+
+#define SERVEUR_ENCODAGE 1
+#define SERVEUR_DECODAGE 2
+
+typedef struct req_corps
+{
+     pid_t pid_client ;
+     char msg[256] ;
+} req_corps_t ;
+
+typedef struct requete
+{
+     long type ;
+     req_corps_t corps ;
+} requete_t ;
+
+typedef struct reponse
+{
+     long type ;
+     char msg[256] ;
+} reponse_t ;
+
+#endif</code></pre>
+    <pre data-fichier="serveurs.h"><code class="language-c">#ifndef _SERVEURS_H_
+#define _SERVEURS_H_
+
+#define CLE_INTERNE 10
+
+#endif</code></pre>
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span class="badge ajout">Ajout</span> <span>Pourquoi le pid fait un bon type de réponse</span></p>
+      <p>Un pid est strictement positif, comme un type doit l'être, et il est unique parmi les processus vivants : deux clients ne peuvent pas attendre le même type. Il ne doit pas non plus valoir 1 ou 2, les types des requêtes : c'est le cas en pratique, car le pid 1 est <code>init</code> et le pid 2 un processus du noyau. Le polycopié appelle <code>serveurs.h</code> « Types des messages échangés », mais ce fichier ne contient que la constante de l'encodage, <code>CLE_INTERNE</code> ; les types sont dans <code>messages.h</code>.</p>
+    </div>
+
+    <h3>Le serveur d'encodage</h3>
+    <p>Le serveur encode les chaînes envoyées par les clients. Il reçoit les messages de type <code>SERVEUR_ENCODAGE</code>, et répond par des messages dont le type a pour valeur le pid du client. C'est lui qui crée la file, avec <code>IPC_CREAT | IPC_EXCL</code>, et qui la supprime quand on l'arrête par <code>SIGINT</code> ou <code>SIGQUIT</code>.</p>
+    <pre data-fichier="serveur_encodage.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/msg.h&gt;
+#include &lt;string.h&gt;
+#include &lt;signal.h&gt;
+#include &lt;messages.h&gt;
+#include &lt;serveurs.h&gt;
+
+/* variable globales */
+int fileid ;
+
+/* Handler pour Arret du serveur */
+void hand_arret( int sig )
+{
+     msgctl( fileid , IPC_RMID , 0 ) ;
+     printf("Terminaison du serveur\n");
+     exit(0);
+}
+
+/* On suppose que c'est le serveur d'encodage qui doit creer la BAL */
+int
+main( int nb_arg , char * tab_arg[] )
+{
+     int filecle ;
+     int i , p ;
+     requete_t requete ;
+     reponse_t reponse ;
+     /*-----*/
+
+     if( nb_arg != 2 )
+     {
+          fprintf( stderr , "usage : %s &lt;cle de file&gt;\n" , tab_arg[0] );
+          exit(-1);
+     }
+
+     if( sscanf( tab_arg[1] , "%d" , &amp;filecle) != 1 )
+     {
+          fprintf( stderr , "%s : erreur , mauvaise cle de file (%s)\n" ,
+                   tab_arg[0] , tab_arg[1] ) ;
+          exit(-2);
+     }
+
+     signal( SIGINT , hand_arret ) ;
+     signal( SIGQUIT , hand_arret ) ;
+
+     /* Creation de la file de messages */
+     if( ( fileid = msgget( filecle , IPC_CREAT | IPC_EXCL | 0666 ) ) == -1 )
+     {
+          perror("pb creation file ") ;
+          exit(-3);
+     }
+
+     while(1)
+     {
+          /* Attente requete d'un client */
+          if( msgrcv( fileid ,
+                      &amp;requete , sizeof(req_corps_t) ,
+                      SERVEUR_ENCODAGE ,
+                      0 ) == -1 )
+          {
+               perror("Pb msgrcv ") ;
+               exit(-4);
+          }
+
+          printf("%s : message recu = %s\n" , tab_arg[0] , requete.corps.msg ) ;
+          /* Encodage du message de la requete */
+          p = ( requete.corps.pid_client * CLE_INTERNE ) % 26 ;
+          for( i=0 ; i &lt; strlen(requete.corps.msg) ; i++ )
+               requete.corps.msg[i] = ( requete.corps.msg[i] + p ) ;
+
+          /* Envoi du message crypte au client */
+          reponse.type = requete.corps.pid_client ;
+          strcpy( reponse.msg , requete.corps.msg ) ;
+
+          if( ( msgsnd( fileid ,
+                        &amp;reponse , strlen(reponse.msg)+1 ,
+                        0 ) ) == -1 )
+          {
+               perror("Pb msgsnd ") ;
+               exit(-5);
+          }
+          printf("%s : message envoye = %s\n" , tab_arg[0] , requete.corps.msg ) ;
+     }
+}</code></pre>
+    <p>L'encodage est un décalage de César : chaque caractère est augmenté de \( p = (10 \times \mathit{pid}) \bmod 26 \), qui dépend du client. La réponse n'envoie que les octets utiles de la chaîne, <code>'\0'</code> compris (<code>strlen + 1</code>), alors que la requête envoie tout le corps.</p>
+
+    <h3>Le serveur de décodage</h3>
+    <p>Le serveur de décodage fait l'inverse : il reçoit les messages de type <code>SERVEUR_DECODAGE</code>, retranche le même décalage, et répond au client par le même procédé. Il ne crée pas la file : il retrouve celle du serveur d'encodage, avec <code>msgget(filecle, 0)</code>, et doit donc être lancé après lui.</p>
+    <details class="depliant">
+      <summary>Le programme complet du serveur de décodage</summary>
+      <pre data-fichier="serveur_decodage.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/msg.h&gt;
+#include &lt;string.h&gt;
+#include &lt;signal.h&gt;
+#include &lt;messages.h&gt;
+#include &lt;serveurs.h&gt;
+
+/* variable globales */
+int fileid ;
+
+/* Handler pour Arret du serveur */
+void hand_arret( int sig )
+{
+     msgctl( fileid , IPC_RMID , 0 ) ;
+     printf("Terminaison du serveur\n");
+     exit(0);
+}
+
+int
+main( int nb_arg , char * tab_arg[] )
+{
+     int filecle ;
+     int i , p ;
+     requete_t requete ;
+     reponse_t reponse ;
+     /*-----*/
+
+     if( nb_arg != 2 )
+     {
+          fprintf( stderr , "usage : %s &lt;cle de file&gt;\n" , tab_arg[0] );
+          exit(-1);
+     }
+
+     if( sscanf( tab_arg[1] , "%d" , &amp;filecle) != 1 )
+     {
+          fprintf( stderr , "%s : erreur , mauvaise cle de file (%s)\n" ,
+                   tab_arg[0] , tab_arg[1] ) ;
+          exit(-2);
+     }
+
+     signal( SIGINT , hand_arret ) ;
+     signal( SIGQUIT , hand_arret ) ;
+
+     /* Creation de la file de messages */
+     if( ( fileid = msgget( filecle , 0 ) ) == -1 )
+     {
+          perror("pb recherhe file ") ;
+          exit(-3);
+     }
+
+     while(1)
+     {
+          /* Attente requete d'un client */
+          if( msgrcv( fileid ,
+                      &amp;requete , sizeof(req_corps_t) ,
+                      SERVEUR_DECODAGE ,
+                      0 ) == -1 )
+          {
+               perror("Pb msgrcv ") ;
+               exit(-4);
+          }
+          printf("%s : message recu = %s\n" , tab_arg[0] , requete.corps.msg ) ;
+
+          /* Decodage du message de la requete */
+          p = ( requete.corps.pid_client * CLE_INTERNE ) % 26 ;
+          for( i=0 ; i &lt; strlen(requete.corps.msg) ; i++ )
+               requete.corps.msg[i] = ( requete.corps.msg[i] - p ) ;
+
+          /* Envoi du message crypte au client */
+          reponse.type = requete.corps.pid_client ;
+          strcpy( reponse.msg , requete.corps.msg ) ;
+
+          if( ( msgsnd( fileid ,
+                        &amp;reponse , strlen(reponse.msg)+1 ,
+                        0 ) ) == -1 )
+          {
+               perror("Pb msgsnd ") ;
+               exit(-5);
+          }
+          printf("%s : message envoye = %s\n" , tab_arg[0] , requete.corps.msg ) ;
+     }
+}</code></pre>
+      <p>Les commentaires « Creation de la file de messages » et « Envoi du message crypte » et le message « pb recherhe file » sont ceux du polycopié, recopiés tels quels : ici, la file est seulement recherchée, et le message envoyé est décodé.</p>
+    </details>
+
+    <h3>Le client</h3>
+    <p>Le client retrouve la file, envoie une chaîne au serveur d'encodage, attend la réponse dont le type est son pid, puis renvoie la chaîne encodée au serveur de décodage et attend de nouveau sa réponse.</p>
+    <pre data-fichier="client.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/msg.h&gt;
+#include &lt;string.h&gt;
+#include &lt;messages.h&gt;
+
+int
+main( int nb_arg , char * tab_arg[] )
+{
+     int filecle ;
+     requete_t requete ;
+     reponse_t reponse ;
+     int fileid ;
+     /*-----*/
+
+     if( nb_arg != 2 )
+     {
+          fprintf( stderr , "usage : %s &lt;cle de file&gt;\n" , tab_arg[0] );
+          exit(-1);
+     }
+
+     if( sscanf( tab_arg[1] , "%d" , &amp;filecle) != 1 )
+     {
+          fprintf( stderr , "%s : erreur , mauvaise cle de file (%s)\n" ,
+                   tab_arg[0] , tab_arg[1] ) ;
+          exit(-2);
+     }
+
+     /* Recherche de la file de messages */
+     if( ( fileid = msgget( filecle , 0 ) ) == -1 )
+     {
+          perror("pb recherche file ") ;
+          exit(-3);
+     }
+
+     /* Saisie d'un message */
+     requete.type = SERVEUR_ENCODAGE ;
+     requete.corps.pid_client = getpid() ;
+     printf("Saisissez le message a encoder\n") ;
+     scanf( "%s" , requete.corps.msg ) ;
+
+     /* Envoi du message en clair au serveur */
+     if( ( msgsnd( fileid ,
+                   &amp;requete , sizeof(req_corps_t) ,
+                   0 ) ) == -1 )
+     {
+          perror("Pb msgsnd ") ;
+          exit(-4);
+     }
+
+     /* Attente reponse du serveur */
+     if( msgrcv( fileid ,
+                 &amp;reponse , sizeof(reponse.msg) ,
+                 requete.corps.pid_client ,
+                 0 ) == -1 )
+     {
+          perror("Pb msgrcv ") ;
+          exit(-5);
+     }
+
+     printf("Message encode = %s\n" , reponse.msg ) ;
+
+     /* Envoi du message encode au serveur decodage */
+     requete.type = SERVEUR_DECODAGE ;
+     requete.corps.pid_client = getpid() ;
+     strcpy( requete.corps.msg , reponse.msg ) ;
+
+     if( ( msgsnd( fileid ,
+                   &amp;requete , sizeof(req_corps_t) ,
+                   0 ) ) == -1 )
+     {
+          perror("Pb msgsnd ") ;
+          exit(-4);
+     }
+
+     /* Attente reponse du serveur */
+     if( msgrcv( fileid ,
+                 &amp;reponse , sizeof(reponse.msg) ,
+                 requete.corps.pid_client ,
+                 0 ) == -1 )
+     {
+          perror("Pb msgrcv ") ;
+          exit(-5);
+     }
+     printf("Message decode = %s\n" , reponse.msg ) ;
+
+     exit(0);
+}</code></pre>
+
+    <h3>Compilation et exécution</h3>
+    <p><span class="badge ajout">Ajout</span> Les programmes incluent <code>&lt;messages.h&gt;</code> et <code>&lt;serveurs.h&gt;</code> entre chevrons : ces fichiers ne sont pas dans les répertoires du système, et il faut ajouter le répertoire courant à la recherche avec <code>-I.</code>. On lance le serveur d'encodage, puis celui de décodage, en arrière-plan, avec la même clé (ici 4321), puis un client. <code>cat -v</code> rend visibles les caractères que l'encodage a rendus non imprimables.</p>
+    <pre class="terminal"><code>$ gcc -I. serveur_encodage.c -o serveur_encodage
+$ gcc -I. serveur_decodage.c -o serveur_decodage
+$ gcc -I. client.c -o client
+$ ./client 4321
+pb recherche file : No such file or directory
+$ ./serveur_encodage 4321 &gt; enc.log &amp;
+$ ./serveur_decodage 4321 &gt; dec.log &amp;
+$ ipcs -q
+------ Message Queues --------
+key        msqid      owner      perms      used-bytes   messages
+0x000010e1 5          root       666        0            0
+$ echo bonjour | ./client 4321 | cat -v
+Saisissez le message a encoder
+Message encode = tM-^AM-^@|M-^AM-^GM-^D
+Message decode = bonjour
+$ ./serveur_encodage 4321
+pb creation file : File exists
+$ kill -INT %1
+$ cat -v enc.log dec.log
+./serveur_encodage : message recu = bonjour
+./serveur_encodage : message envoye = tM-^AM-^@|M-^AM-^GM-^D
+Terminaison du serveur
+./serveur_decodage : message recu = tM-^AM-^@|M-^AM-^GM-^D
+./serveur_decodage : message envoye = bonjour
+Pb msgrcv : Identifier removed</code></pre>
+    <p>La clé 4321 s'affiche en hexadécimal dans <code>ipcs</code> (<code>0x10e1</code>). Un client lancé avant les serveurs ne trouve pas la file (<code>ENOENT</code>), et un second serveur d'encodage est refusé par <code>IPC_EXCL</code> (<code>EEXIST</code>). Quand le serveur d'encodage supprime la file, le serveur de décodage, bloqué dans <code>msgrcv</code>, s'arrête sur <code>EIDRM</code> (« Identifier removed »).</p>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span class="badge ajout">Ajout</span> <span>Ce que l'exemple simplifie</span></p>
+      <ul>
+        <li><strong>Le décalage déborde.</strong> Pour ce client, \( p = 18 \) : <code>'b'</code> devient <code>'t'</code>, mais <code>'o'</code> (111) devient 129, au-delà des caractères ASCII. Le texte encodé n'est pas lisible, ce qui n'empêche pas le décodage de retrouver la chaîne. Un octet qui deviendrait nul couperait en revanche la chaîne au décodage.</li>
+        <li><strong>Le handler n'est pas sûr.</strong> <code>printf</code> et <code>exit</code> ne font pas partie des fonctions que l'on peut appeler sans risque dans un handler (<a href="cours-03-signaux.html">cours 3</a>). On préfère y positionner un indicateur, ou appeler <code>write</code> puis <code>_exit</code>.</li>
+        <li><strong>La saisie n'est pas bornée.</strong> <code>scanf("%s", …)</code> écrit au-delà des 256 caractères de <code>msg</code> si la chaîne est plus longue ; <code>"%255s"</code> l'évite.</li>
+        <li><strong>Le serveur de décodage ne supprime rien en temps normal</strong> : seul le serveur d'encodage crée et détruit la file. Si un serveur meurt sans passer par son handler (par <code>SIGKILL</code>), la file reste : on la retire avec <code>ipcrm -q</code>.</li>
+      </ul>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span class="badge ajout">Ajout</span> <span>Un père et son fils</span></p>
+      <p>Un exemple plus court montre le tri par type. Le père dépose un message de type 1, puis un de type 2 ; le fils demande d'abord le type 2, puis le type 1. La clé vient de <code>ftok</code>.</p>
+      <pre data-fichier="pere_fils.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;sys/msg.h&gt;
+
+typedef struct
+{
+     long type ;            /* &gt; 0 */
+     char texte[64] ;       /* corps du message */
+} message_t ;
+
+int main(void)
+{
+     key_t cle = ftok(".", 'A') ;          /* cle calculee a partir d'un fichier existant */
+     int fileid = msgget(cle, IPC_CREAT | 0600) ;
+     message_t m ;
+
+     if (fileid == -1) { perror("msgget") ; exit(1) ; }
+
+     if (fork() == 0)
+     {
+          /* Fils : lit les messages de type 2, puis de type 1 */
+          msgrcv(fileid, &amp;m, sizeof(m.texte), 2, 0) ;
+          printf("fils : type %ld, %s\n", m.type, m.texte) ;
+          msgrcv(fileid, &amp;m, sizeof(m.texte), 1, 0) ;
+          printf("fils : type %ld, %s\n", m.type, m.texte) ;
+          exit(0) ;
+     }
+
+     /* Pere : depose un message de type 1, puis un de type 2 */
+     m.type = 1 ; strcpy(m.texte, "premier depose") ;
+     msgsnd(fileid, &amp;m, strlen(m.texte) + 1, 0) ;
+     m.type = 2 ; strcpy(m.texte, "second depose") ;
+     msgsnd(fileid, &amp;m, strlen(m.texte) + 1, 0) ;
+
+     wait(NULL) ;
+     msgctl(fileid, IPC_RMID, NULL) ;      /* sinon la file survit au programme */
+     return 0 ;
+}</code></pre>
+      <pre class="terminal"><code>$ ./pere_fils
+fils : type 2, second depose
+fils : type 1, premier depose</code></pre>
+      <p>Le fils reçoit les messages dans l'ordre de ses demandes, et non dans l'ordre des dépôts. S'il démarre avant que le père ait déposé le message de type 2, il attend dans <code>msgrcv</code>, même si le message de type 1 est déjà là.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exercices <span class="badge ajout">Ajout</span></h2>
+    <p>Ces exercices vérifient la lecture du cours. Le TD sur les files de messages (<a href="../TD/td_rpc_file_messages.pdf">td_rpc_file_messages.pdf</a>, une bibliothèque de fonctions partagée à la manière des RPC) les prolonge, sur papier.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Quel message sort ?</span></p>
+      <p>Une file contient, dans l'ordre d'arrivée, des messages de types 5, 3, 7, 3 et 1. Pour chacun des appels suivants, faits chacun sur cette file intacte, quel message est extrait ? On note les messages par leur rang d'arrivée (1<sup>er</sup> à 5<sup>e</sup>).</p>
+      <ol>
+        <li><code>msgrcv(id, &amp;m, lg, 0, 0)</code></li>
+        <li><code>msgrcv(id, &amp;m, lg, 3, 0)</code></li>
+        <li><code>msgrcv(id, &amp;m, lg, -4, 0)</code></li>
+        <li><code>msgrcv(id, &amp;m, lg, 4, IPC_NOWAIT)</code></li>
+      </ol>
+      <details class="indice"><summary>Indice</summary><p>Avec un type négatif, on cherche le plus petit type qui ne dépasse pas la valeur absolue, puis le premier message de ce type.</p></details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <ol>
+          <li>Le 1<sup>er</sup> message (type 5) : avec 0, on prend le plus ancien.</li>
+          <li>Le 2<sup>e</sup> (le premier de type 3).</li>
+          <li>Le 5<sup>e</sup> : parmi les types \( \le 4 \) (3, 3 et 1), le plus petit est 1. Avec la lecture du polycopié (« le premier de type \( \le 4 \) »), on aurait répondu le 2<sup>e</sup>.</li>
+          <li>Aucun : il n'y a pas de message de type 4. <code>msgrcv</code> renvoie −1 avec <code>ENOMSG</code> ; sans <code>IPC_NOWAIT</code>, le processus attendrait.</li>
+        </ol>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Longueurs</span></p>
+      <p>Dans l'exemple, le client envoie sa requête avec la longueur <code>sizeof(req_corps_t)</code>, et le serveur d'encodage répond avec <code>strlen(reponse.msg)+1</code>. Le client reçoit la réponse avec <code>lgmax = sizeof(reponse.msg)</code>.</p>
+      <ol>
+        <li>Que se passerait-il si le client envoyait sa requête avec <code>sizeof(requete_t)</code> ?</li>
+        <li>Pour une chaîne de 7 caractères, quelle valeur <code>msgrcv</code> renvoie-t-elle au client ?</li>
+        <li>Pourquoi le client n'a-t-il pas besoin de <code>MSG_NOERROR</code> ?</li>
+      </ol>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <ol>
+          <li><code>sizeof(requete_t)</code> compte aussi le <code>long</code> du type : <code>msgsnd</code> lirait 8 octets au-delà de la structure, et le serveur, qui ne prévoit que <code>sizeof(req_corps_t)</code> octets, échouerait avec <code>E2BIG</code>.</li>
+          <li>8 : les 7 caractères et le <code>'\0'</code> final, la longueur du corps reçu.</li>
+          <li>Le serveur n'envoie jamais plus que <code>strlen + 1</code> octets d'une chaîne qui tient dans 256 octets : la réponse tient toujours dans <code>reponse.msg</code>.</li>
+        </ol>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Vider une file</span></p>
+      <p>Écrire une fonction <code>int vider(int fileid)</code> qui extrait tous les messages présents dans une file, sans jamais rester bloquée, et renvoie le nombre de messages extraits. Les corps font au plus 256 octets.</p>
+      <details class="indice"><summary>Indice</summary><p>Type 0 pour accepter tout message, <code>IPC_NOWAIT</code> pour ne pas attendre, et <code>MSG_NOERROR</code> au cas où un message serait plus long que prévu.</p></details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <pre><code class="language-c">#include &lt;sys/msg.h&gt;
+
+int vider(int fileid)
+{
+     struct { long type ; char corps[256] ; } m ;
+     int n = 0 ;
+     while (msgrcv(fileid, &amp;m, sizeof(m.corps), 0, IPC_NOWAIT | MSG_NOERROR) != -1)
+          n++ ;
+     return n ;   /* la boucle s'arrete sur ENOMSG : la file est vide */
+}</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Une file de messages est une boîte aux lettres : on y dépose des messages, chacun muni d'un type entier strictement positif.</li>
+        <li>Un message commence par un <code>long</code> (le type), suivi d'un corps défini par le programme ; <code>msgbuf</code> n'en décrit que la forme.</li>
+        <li>Un message est indivisible, à la différence du flot d'un tube, et la file est gérée en FIFO.</li>
+        <li><code>msgget(cle, option)</code> crée la file (<code>IPC_PRIVATE</code>, ou <code>IPC_CREAT</code> sur une clé libre) ou retrouve celle de la clé ; <code>IPC_EXCL</code> exige la création.</li>
+        <li><code>msgsnd</code> prend la longueur du corps seul, sans le type ; il attend si la file est pleine, sauf avec <code>IPC_NOWAIT</code>.</li>
+        <li><code>msgrcv</code> choisit le message par son type : 0 pour le premier, \( t \gt 0 \) pour le premier de type \( t \), \( t \lt 0 \) pour le plus petit type \( \le |t| \).</li>
+        <li>Un message trop long fait échouer <code>msgrcv</code> (<code>E2BIG</code>), sauf avec <code>MSG_NOERROR</code>, qui le tronque.</li>
+        <li>Sans message du type voulu, <code>msgrcv</code> attend, ou renvoie −1 avec <code>ENOMSG</code> sous <code>IPC_NOWAIT</code>.</li>
+        <li>Une file survit aux processus : on la supprime par <code>msgctl(id, IPC_RMID, NULL)</code> ou par <code>ipcrm -q</code> ; <code>ipcs -q</code> les liste.</li>
+        <li>Une seule file suffit pour un client-serveur : les requêtes portent le type du serveur, les réponses le pid du client.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Qu'apporte le type d'un message ?</summary>
+        <div><p>Il permet à chaque processus de n'extraire que les messages qui le concernent, alors que tous partagent la même file.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un émetteur dépose deux messages de 10 octets. Le récepteur peut-il lire les 20 octets en un seul appel ?</summary>
+        <div><p>Non : chaque <code>msgrcv</code> extrait un seul message, en entier. Avec un tube, un seul <code>read</code> pourrait lire les 20 octets.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle longueur passe-t-on à <code>msgsnd</code> ?</summary>
+        <div><p>Celle du corps du message, sans le <code>long</code> du type.</p></div>
+      </details>
+      <details class="carte">
+        <summary>À quoi sert <code>IPC_CREAT | IPC_EXCL</code> ?</summary>
+        <div><p>À créer la file en exigeant qu'elle n'existe pas encore : sinon, <code>msgget</code> échoue avec <code>EEXIST</code>. Le premier serveur lancé est ainsi le seul créateur.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que fait <code>msgrcv</code> avec <code>type = -3</code> ?</summary>
+        <div><p>Il extrait le premier message du plus petit type parmi les types 1, 2 et 3 présents dans la file, et il attend s'il n'y en a aucun.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un programme se termine sans appeler <code>msgctl(…, IPC_RMID, …)</code>. Que devient sa file ?</summary>
+        <div><p>Elle reste dans le système, avec ses messages, visible par <code>ipcs -q</code>, jusqu'à ce qu'on la supprime avec <code>ipcrm -q</code> ou jusqu'au redémarrage.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi le client de l'exemple attend-il un message de type égal à son pid ?</summary>
+        <div><p>Parce que les serveurs répondent avec ce type : un client ne prend ainsi que ses propres réponses, même si plusieurs clients attendent en même temps.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un serveur est bloqué dans <code>msgrcv</code> quand un autre supprime la file. Que se passe-t-il ?</summary>
+        <div><p>Il est réveillé : <code>msgrcv</code> renvoie −1 avec <code>errno = EIDRM</code>.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Références</h2>
+    <p>Pages de manuel de Linux, en anglais : <a href="https://man7.org/linux/man-pages/man7/sysvipc.7.html">sysvipc(7)</a>, <a href="https://man7.org/linux/man-pages/man2/msgget.2.html">msgget(2)</a>, <a href="https://man7.org/linux/man-pages/man2/msgsnd.2.html">msgsnd(2) et msgrcv(2)</a> (erreurs <code>EAGAIN</code>, <code>ENOMSG</code>, <code>E2BIG</code>, choix par type), <a href="https://man7.org/linux/man-pages/man2/msgctl.2.html">msgctl(2)</a>, <a href="https://man7.org/linux/man-pages/man3/ftok.3.html">ftok(3)</a>, <a href="https://man7.org/linux/man-pages/man1/ipcs.1.html">ipcs(1)</a>, <a href="https://man7.org/linux/man-pages/man1/ipcrm.1.html">ipcrm(1)</a>.</p>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-05-tubes.html"><small>← Précédent</small>Les tubes</a>
+    <a class="suivant" href="index.html"><small>Matière →</small>Programmation système</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Programmation système · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

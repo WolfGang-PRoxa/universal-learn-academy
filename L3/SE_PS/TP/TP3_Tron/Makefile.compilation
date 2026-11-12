@@ -1,0 +1,63 @@
+#
+# Option compilation 
+#
+
+# Macros pour creation des objets et edition de liens
+ CCOBJ=gcc -c
+ CCLNK=gcc
+
+
+
+
+# Macro pour Debuggage: affichage de traces plus detaillees
+# Valeurs possibles: yes , no 
+DEBUG=yes
+
+# Macro pour Distribution etudiants
+# Valeurs possibles: yes , no 
+ETU=yes
+
+
+# Macro pour architecture de la machine 
+# Valeurs possibles : mac_os , ubuntu , debian   
+ARCH=ubuntu
+
+FLAGS=-Wall
+ifeq ($(DEBUG),yes)
+	 FLAGS:=-g -D_DEBUG_ 
+endif
+
+ifeq ($(ETU),yes)
+	 FLAGS:=-Wunused-but-set-variable
+endif
+
+
+ifeq ($(ARCH),mac_os)
+	CFLAGS:=-D_MAC_OS_
+
+	LIB_CURSES=-lcurses
+	LIB_MATHS=-lm 
+endif
+
+
+ifeq ($(ARCH),ubuntu)
+# pas de -ansi car les fonctions POSIX ne sont pas ANSI (?) 
+	CFLAGS:=-D_UBUNTU_
+
+	LIB_CURSES=-lncurses -L/opt/ncurses/lib
+	INC_CURSES=-I/opt/ncurses/include
+	LIB_MATHS=-lm
+endif
+
+
+ifeq ($(ARCH),debian)
+	CFLAGS:=-ansi -D_DEBIAN_
+
+	LIB_CURSES=-lcurses
+	LIB_M=-lm 
+endif
+
+#
+# Chemin de l'utilitaire de documentation 
+#
+doxygen=/Applications/Doxygen.app/Contents/Resources/doxygen

@@ -1,0 +1,705 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "id": "c9bc0c29-400d-4ad7-b2b1-dd057eee7e17",
+      "metadata": {
+
+      },
+      "source": [
+        "# Un problème $np-$difficile classique en IA : $k-$center\n",
+        "\n",
+        "Soit $n$ villes, on cherche à installer $k$ casernes de pompiers de façon à ce qu'une intervention soit possible rapidement dans chaque ville. Pour chaque ville, la durée d'intervention minimale est dépendante de la caserne de pompier la plus proche. Dans notre cas, on considère la durée d'intervention minimale pour toutes les villes, et on prend comme critère la pire durée d'intervention parmi toutes celles-ci. L'idée est d'avoir une \"pire durée d'intervention\" qui soit la plus petite possible.\n",
+        "Voici le problème des $k-$centers appliqué à un problème du réel.\n",
+        "\n",
+        "Dans le cas général, considère $n$ points de données $X=\\lbrace x_1, x_2, \\cdots, x_n\\rbrace$. On cherche à trouver $k$ centres $M=\\lbrace \\mu_1, \\mu_2, \\cdots, \\mu_k\\rbrace$ parmi ces $n$ données tels que ces centres minimisent la distance maximale qui existe parmi tous les points entre chaque point et son centre le plus proche.\n",
+        "\n",
+        "Ce problème d'optimisation est $NP-$difficile. Les problèmes $NP-$difficiles sont des problèmes qui sont au moins aussi difficiles que tous les problèmes de la classe $NP$, comme les problèmes $NP-$complets. En revanche, les problèmes $NP-$difficiles ne sont pas forcément dans $NP$.\n",
+        "Dans le cas d'un tel problème d'optimisation, le fait de *vérifier* que la solution est optimale revient à *calculer* la solution optimale, ce qui ne se fait pas en temps polynomial.\n",
+        "Ainsi, si tous les problèmes $NP-$complets sont $NP-$difficiles (ils sont au moins aussi difficiles que tous les problèmes de $NP$), tous les problèmes $NP-$difficiles ne sont pas dans $NP$, et peuvent donc être plus difficiles à résoudre.\n",
+        "\n",
+        "La résolution des $k-$centers ou de problèmes proches peut permettre : \n",
+        "- de trouver un ensemble de sommets dominant le graphe\n",
+        "- de détecter des communautés d'un graphe\n",
+        "- de rassembler des documents ayant le même thème dans une collection de documents\n",
+        "- de rassembler des molécules ayant des propriétés semblables dans une base de données\n",
+        "- etc.\n",
+        "\n",
+        "Nous allons chercher à résoudre le problème des $k-$centers : \n",
+        "1. d'abord de façon optimale via un algorithme exact testant toutes les combinaisons de centres possibles, mais avec $n$ et $k$ de petites tailles.\n",
+        "2. puis via une première heuristique gloutonne de distance maximale au dernier centre trouvé\n",
+        "3. via une seconde heuristique gloutonne de distance maximale à tous les centres trouvés\n",
+        "4. enfin, via un algorithme de recherche locale stochastique proche de celui des $k-$médoïdes qui est un algorithme classique de la famille des algorithmes d'apprentissage supervisé en IA. \n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "8c931e42-4617-49da-83b2-470e0bae0680",
+      "metadata": {
+
+      },
+      "source": [
+        "Les fonctions suivantes permettent de générer des données aléatoirement, et d'afficher ces données en utilisant matplotlib."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 1,
+      "id": "7742dc22-8db5-4921-b36b-28fcd58e17be",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": [
+        "from sklearn.datasets import make_blobs\n",
+        "import numpy as np\n",
+        "import matplotlib.pyplot as plt\n",
+        "\n",
+        "def generate_data(n : int =100, k : int =3):\n",
+        "    '''\n",
+        "    n : le nombre de données à générer\n",
+        "    k : le nombre de groupes à créer dans l'espace, plus k augmente, plus il est difficile de trouver des \n",
+        "    centres convenables\n",
+        "    returns : une liste de liste. La première liste est de taille n, elle contient les n données\n",
+        "    générées. Chaque élément de cette liste est une liste de taille 2 décrivant deux coordonnées\n",
+        "    dans le plan : [[x11, x12], [x21, x22], ..., [xn1, xn2]]\n",
+        "    '''\n",
+        "    X, _ = make_blobs(n_samples=n, centers=k, n_features=2)\n",
+        "    res = list()\n",
+        "    for x in X:\n",
+        "        coordinates = list()\n",
+        "        for c in x:\n",
+        "            coordinates.append(round(c,1))\n",
+        "        res.append(coordinates)\n",
+        "    return res\n",
+        "\n",
+        "from scipy.spatial.distance import euclidean\n",
+        "from math import inf\n",
+        "    \n",
+        "def plot_data(X, centers, title: str=\"\"):\n",
+        "    '''\n",
+        "    X : les données sous forme de liste de liste\n",
+        "    centers : les centres identifiés, sous forme de liste de liste\n",
+        "    '''\n",
+        "    def closest(x, centers):\n",
+        "        dist = inf\n",
+        "        mini = -1\n",
+        "        for idx, center in enumerate(centers):\n",
+        "            d = euclidean(x,center)\n",
+        "            if d \u003C dist:\n",
+        "                dist = d\n",
+        "                mini = idx\n",
+        "        return mini\n",
+        "\n",
+        "    plt.figure()\n",
+        "    \n",
+        "    lw = 2    \n",
+        "    nb_centers = len(centers)       \n",
+        "\n",
+        "    colors = [\"b\", \"g\", \"r\", \"c\", \"m\", \"y\", \"k\"]\n",
+        "    while len(colors) \u003C nb_centers:\n",
+        "        colors += colors   \n",
+        "    color_list = colors[:nb_centers]\n",
+        "    y = [closest(i, centers) for i in X]\n",
+        "    colors = [color_list[i] for i in y]\n",
+        "\n",
+        "    for x,color in zip(X,colors):\n",
+        "        center = x in centers\n",
+        "        size = 50 if center else 5\n",
+        "        marker = 'v' if center else 'o'\n",
+        "        alpha = 0.8 if center else 0.4\n",
+        "        plt.scatter(\n",
+        "            x[0], x[1], color=color, alpha=alpha, lw=lw, s = size, marker=marker\n",
+        "        )\n",
+        "    plt.title(title)\n",
+        "    plt.show()"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "92730b86-5fac-4a5f-b3f4-8a9f5b4c9553",
+      "metadata": {
+
+      },
+      "source": [
+        "**Exemple d'utilisation**\n",
+        "- Les centres sont affichés via des triangles de plus grande taille\n",
+        "- Chaque point de donnée est affecté à son centre le plus proche et a donc la même couleur\n",
+        "- Pour mesurer la proximité entre un centre et une donnée, on utilise la distance euclidienne avec `from scipy.spatial.distance import euclidean`\n",
+        "\n",
+        "Rien à faire ci-dessous, juste à observer les résultats."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "b78e6c8b-72d9-4a1c-b523-fb3c029cf022",
+      "metadata": {
+        "tags": []
+      },
+      "outputs": [],
+      "source": [
+        "for i in range(5):\n",
+        "    X = generate_data(100)\n",
+        "    # Je choisis 3 centres en prenant les trois premiers points dans X\n",
+        "    plot_data(X, X[:3])"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "4b207bfc-d7cc-4e37-8200-292924571a3a",
+      "metadata": {
+
+      },
+      "source": [
+        "## 1. Trouver des centres aléatoirement\n",
+        "\n",
+        "Implémenter une méthode qui renvoie $k$ centres piochés aléatoirement (sans remise) dans $X$ et tester votre méthode."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 3,
+      "id": "ab1a2e4d-3f01-4aad-a4b3-020c876b80cb",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": [
+        "def get_random_centers(X:list, k : int =3):\n",
+        "    #TODO"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "45533a96-7973-40ff-8bbe-ad6f3c1f2942",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": []
+    },
+    {
+      "cell_type": "markdown",
+      "id": "2464a1a8-df48-4d60-89e2-f91cef514193",
+      "metadata": {
+
+      },
+      "source": [
+        "## 2. Calculer le score\n",
+        "\n",
+        "Ce que nous appelons le *score* ici, c'est la fonction qui va calculer la qualité de la solution trouvée par nos algorithmes. Il s'agit donc de la distance maximale parmi tous les distances entre un point et son centre le plus proche. **Ainsi, plus le score est élevé, moins les centres sont bons !**\n",
+        "Les fonctions `min` et `max` existent pas défaut dans Python. Et pour calculer une distance entre deux points, vous pouvez utiliser `euclidean(a,b)`."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 4,
+      "id": "c80fe918-efda-4449-a348-8e3350369aa6",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": [
+        "def score(X:list, centers: list):\n",
+        "    #TODO\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "1a0a3612-e324-4c46-875a-e240b2f83e8b",
+      "metadata": {
+
+      },
+      "source": [
+        "**Vous pouvez utiliser le code ci-dessous pour tester votre méthode et voir si vos résultats sont cohérents**"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "a742572e-e696-40e8-9897-965f7e8556aa",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": [
+        "X = generate_data(50)\n",
+        "for i in range(5):\n",
+        "    centers = get_random_centers(X)\n",
+        "    plot_data(X, centers, title = f'data with randomly selected centers. Score {score(X, centers)}') "
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "0a6df6ef-d631-4ae6-8fa9-50362fe9aac2",
+      "metadata": {
+
+      },
+      "source": [
+        "## 3. Algorithme exact\n",
+        "\n",
+        "### 3.1. Implémentation\n",
+        "\n",
+        "Implémentez ci-dessous l'algorithme exact. Celui-ci calcule tous les sous-ensembles de taille $k$ piochés parmi $X$, soit tous les centres possibles. Pour chaque sous-ensemble, l'algo calcule son *score* avec la fonction que vous avez implémentée. L'algo conserve les centres pour lesquels le score est minimal (plus le score est élevé, moins les centres sont bien choisis)."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 6,
+      "id": "a65e30f2-926f-47fc-94f0-8c6bff329983",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": [
+        "import itertools\n",
+        "def algo_exact(X: list, k:int=3):\n",
+        "    #TODO"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "b7379a31-c7ff-4332-99c4-6b3534c31c62",
+      "metadata": {
+
+      },
+      "source": [
+        "**Vous pouvez tester votre algo avec le code ci-dessous**"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "51e3ce82-5686-46ca-82ff-f0d8138da2d7",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": [
+        "for i in range(5):\n",
+        "    X = generate_data(20)\n",
+        "    centers = algo_exact(X)\n",
+        "    plot_data(X, centers, title = f'data with optimally selected centers. Score {score(X, centers)}') "
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "88c9be87-07c0-460b-ad81-c0ae916b7936",
+      "metadata": {
+
+      },
+      "source": [
+        "### 3.2. Mesurer le temps d'exécution de l'algorithme exact\n",
+        "\n",
+        "Pour mesurer le temps d'exécution de l'algorithme exact, vous pouvez faire varier le nombre de vos données de 10 à 26 par pallier de 5 (`list(range(10,26, 5))`), et le valeur de $k$ de 2 à 5.\n",
+        "Qu'observez-vous ?"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "fe7393fd-6d29-4190-877d-31bf8e472118",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": [
+        "import time\n",
+        "ks = list(range(2,6))\n",
+        "ns = list(range(10,26, 5))\n",
+        "\n",
+        "#TODO\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "d06c50d7-d0d8-437d-b7d9-23f87422545a",
+      "metadata": {
+
+      },
+      "source": [
+        "## 4. Heuristiques gloutonnes\n",
+        "\n",
+        "### 4.1. le prochain centre est le centre le plus loin du dernier centre choisi\n",
+        "\n",
+        "L'algorithme choisit d'abord un centre aléatoirement dans $X_{copy}$ et le supprime de $X_{copy}$. Puis, tant que $k$ centres n'ont pas été choisis, on va calculer la distance de tous les points de $X_{copy}$ au dernier centre choisi (`euclidean(x,centers[-1])`). On ajoute aux centres celui qui en est le plus loin. Et on le supprime de $X_{copy}$."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 9,
+      "id": "a73d8aeb-fa77-40b3-a7e7-79328bd18154",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": [
+        "def greedy_kcenter_farthest_previous(X, k=3):\n",
+        "    X_copy = X.copy()\n",
+        "    #TODO"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "27257436-35e7-4d77-91f3-2e3048e02cc8",
+      "metadata": {
+
+      },
+      "source": [
+        "**Vous pouvez tester votre code avec la cellule suivante**"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "ea60b680-38cf-4322-aa8f-bdc00c490b66",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": [
+        "X = generate_data(100, k=5)\n",
+        "for i in range(5):\n",
+        "    centers = greedy_kcenter_farthest_previous(X, k=5)\n",
+        "    plot_data(X, centers, title = f'data with greedily selected centers. Score {score(X, centers)}') "
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "39ea8617-428d-4c27-8cd6-e37a1e67d2c5",
+      "metadata": {
+
+      },
+      "source": [
+        "### 4.2. le prochain centre est le centre le plus loin de tous les centres choisis (Gonzalez)\n",
+        "\n",
+        "Cette heuristique, celle de Gonzalez, est décrite dans le cours page 28.\n",
+        "\n",
+        "L'algorithme choisit d'abord un centre aléatoirement dans $X_{copy}$ et le supprime de $X_{copy}$. Puis, tant que $k$ centres n'ont pas été choisis, on va calculer la distance de tous les points de $X_{copy}$ à tous les centres choisis. On ajoute aux centres celui qui en est le plus loin, i.e. dont la somme des distances à tous les centres est maximale. Et on le supprime de $X_{copy}$."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 11,
+      "id": "f2583a51-e9ab-4cac-80c6-e2c464c80485",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": [
+        "def greedy_kcenter_farthest_all(X, k=3):\n",
+        "    X_copy = X.copy()\n",
+        "    #TODO"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "656b98a4-f1d4-4ad9-b132-f60ba614970e",
+      "metadata": {
+
+      },
+      "source": [
+        "**Vous pouvez tester votre code avec la cellule ci-dessous**"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "f362c349-5acd-457c-8a8e-fe37e2d5fd5a",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": [
+        "for i in range(5):\n",
+        "    centers = greedy_kcenter_farthest_all(X, k=5)\n",
+        "    plot_data(X, centers, title = f'data with greedily selected centers. Score {score(X, centers)}') "
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "d1e23037-28fc-4d5a-a25c-0f2d7ac8485f",
+      "metadata": {
+
+      },
+      "source": [
+        "**Qu'observez-vous quant à la qualité des solutions données par ces heuristiques gloutonnes ?**"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "28a676d3-143d-4cb0-8ab5-7e0e9c8e15db",
+      "metadata": {
+
+      },
+      "source": [
+        "# 5. Branch & bound\n",
+        "\n",
+        "Pour mettre en oeuvre l'algorithme Branch & bound utilisant l'heuristique de Gonzalez, nous avons besoin de pouvoir ajouter des centres à un début de solution en utilisant la même stratégie. L'algorithme est identique, mais il peut travailler à partir d'une solution initialisée.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "cf1c8e5b-920f-4ae2-9f95-60ca69490cd7",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": [
+        "def greedy_kcenter_farthest_all(X, k=3, centres=[]):\n",
+        "    #### On ajoute un paramètres centres, qui peut être initialisé\n",
+        "    X_copy = X.copy()\n",
+        "    #TODO"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "768be7c9-00de-47df-b274-7713444b37ba",
+      "metadata": {
+
+      },
+      "source": [
+        "Maintenant que nous avons implémenté cela, nous allons pouvoir calculer et la borne supérieure, et la borne inférieure, et ainsi implémenter Branch & bound.\n",
+        "\n",
+        "Pour ce qui est de la **borne supérieure** :\n",
+        "Celle-ci est initialisée avec l'heuristique de Gonzalez, puis mise à jour dès qu'une meilleure solution est trouvée.\n",
+        "\n",
+        "La **borne inférieure** est :\n",
+        "Lorsque l'on calcule l'heuristique de Gonzalez avec une initialisation de centres (ceux choisis dans la branche), on obtient un résultat qui est au maximum deux fois pire que la meilleure solution possible dans la branche.\n",
+        "\n",
+        "L'algo est ainsi : \n",
+        "- on calcule Gonzalez à partir des centres passés en paramètres\n",
+        "- Potentiellement, cela peut améliorer la borne_sup, qu'on met à jour\n",
+        "- la borne_inf est mise à Gonzalez/2, si cette borne_inf est supérieure à la borne sup, alors inutile d'explorer la branche, on return\n",
+        "- On choisit un point x de X\n",
+        "- On appelle banb(X / x, k, centres + [x], borne_sup)\n",
+        "- On appelle banb(X / x, k, centres, borne_sup)\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "363daed4-c2bf-4945-b6eb-3b9a5be3b0c3",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": [
+        "def bandb(X : list, X_to_pick: list, k:int, centres:list, best_centres : list, borne_sup : float):\n",
+        "    # Cas de fins\n",
+        "    if len(centres) \u003E k:\n",
+        "        #TODO\n",
+        "\n",
+        "    if len(centres) == k:\n",
+        "        #TODO\n",
+        "\n",
+        "    if len(X_to_pick) \u003C (k - len(centres)):\n",
+        "        #TODO\n",
+        "\n",
+        "    # Borne sup via Gonzalez\n",
+        "    gonzalez = greedy_kcenter_farthest_all_init(X_to_pick, k, centres)\n",
+        "    res_tmp = score(X, gonzalez)\n",
+        "    # Borne inf via Gonzalez\n",
+        "    borne_sup = min(borne_sup, res_tmp)\n",
+        "    borne_inf = res_tmp / 2\n",
+        "    \n",
+        "\n",
+        "    # Pruning\n",
+        "    if borne_inf \u003E= borne_sup:\n",
+        "       #TODO\n",
+        "\n",
+        "    # Choisir le point qui va rejoindre ou non les centres\n",
+        "    point = #\n",
+        "    rest = #\n",
+        "\n",
+        "    # Branch avec le point\n",
+        "    res_avec = bandb(X, rest, k, centres + [point], best_centres, borne_sup)\n",
+        "    #TODO\n",
+        "    \n",
+        "    # Branch sans le pointpoint\n",
+        "    res_sans = bandb(X, rest, k, centres, best_centres, borne_sup)\n",
+        "    #TODO\n",
+        "\n",
+        "    return best_centres\n",
+        "    \n",
+        "\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "dc4be079-0d5c-4897-80b6-48151caf324d",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": [
+        "ks = list(range(2,5))\n",
+        "ns = list(range(6,26, 5))\n",
+        "for n in ns:\n",
+        "    X = generate_data(n)\n",
+        "    for k in ks:\n",
+        "        centers = algo_exact(X, k)\n",
+        "        plot_data(X, centers, title = f'data with exact centers. Score {score(X, centers)}) \n",
+        "        \n",
+        "        best_centres = greedy_kcenter_farthest_all(X,k)\n",
+        "        centers = bandb(X,X, k, [], best_centres, score(X,best_centres))\n",
+        "        plot_data(X, centers, title = f'data with bnb centers. Score {score(X, centers)}) \n",
+        "    \n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "0b152f5f-0e63-4f88-b4b3-270cae7306f9",
+      "metadata": {
+
+      },
+      "source": [
+        "## 6. Simulated annealing\n",
+        "\n",
+        "Ici, contrairement à Branch and bound, on ne cherche pas à faire une résolution exacte. On se propose de résoudre le problème via une approche *stochastique* (qui fait intervenir l'aléatoire). \n",
+        "À partir d'une solution existante, calculée via l'heuristique de Gonzalez, on va opérer des modifications aléatoires, et accepter ces modifications :\n",
+        "- si le score est amélioré avec la modification\n",
+        "- si le score est dégradé avec une certaine probabilité ($exp(-\\delta / T)$) qui décroit en fonction de la température\n",
+        "\n",
+        "L'idée de la température est la suivante : lorsque celle-ci est élevée, on explore des solutions en prenant des risques, quitte à ce qu'elles dégradent le score. Mais lorsque la température est basse, on va garder uniquement les solutions qui améliorent le score.\n",
+        "\n",
+        "L'algorithme faisant abondamment appel à l'aléatoire, il est tout à fait possible de le lancer plusieurs fois pour trouver des résultats différents."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "d405fd53-0118-46c2-87a9-75987205279b",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": [
+        "import random \n",
+        "import math\n",
+        "\n",
+        "def simulated_annealing(X : list, centres: list, best_centres : list, T : float, cooling : float):\n",
+        "    if (T \u003C= 0):\n",
+        "        return best_centres\n",
+        "    \n",
+        "    # Créer une nouvelle liste de centres en opérant un swap entre un centre existant et un point de X qui n'en est pas un\n",
+        "    \n",
+        "    # Calculer le delta de score entre la solution initiale et la nouvelle\n",
+        "    \n",
+        "    # Si le delta est supérieur à 0, centres devient la nouvelle solution\n",
+        "    \n",
+        "    # Sinon, on accepte cette nouvelle solution en fonction de la probabilité ci-dessous\n",
+        "    #prob = math.exp(-delta / T)\n",
+        "    \n",
+        "    # On calcule les score de centres et best_centres, et on affecte best_centres à centres si ce score s'est amélioré\n",
+        "    \n",
+        "    # Rafraichissement et rappel de la fonction\n",
+        "    T -= cooling\n",
+        "    return simulated_annealing(X, centres, best_centres, T, cooling)\n",
+        "    \n",
+        "    "
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "be65cc11-ef4c-40e5-bca0-5261e820c615",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": [
+        "ks = list(range(2,5))\n",
+        "ns = [200]\n",
+        "for n in ns:\n",
+        "    X = generate_data(n)\n",
+        "    for k in ks:\n",
+        "        best_centres = greedy_kcenter_farthest_all(X,k)\n",
+        "        centers = simulated_annealing(X, best_centres, best_centres, 100, 1)\n",
+        "        plot_data(X, centers, title = f'data with annealing centers. Score {score(X, centers)}') "
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "9b1e7222-bd8c-4496-bc06-0988264caa84",
+      "metadata": {
+
+      },
+      "source": [
+        "## 7. Stochastic local seach : variante des $k-$médoïdes\n",
+        "\n",
+        "Cet algorithme fonctionne différemment des précédentes. Par *stochastic*, on entend un processus algorithmique dans lequel l'aléatoire entre en jeu, et par *local search*, on signifie que l'on va chercher *localement* à améliorer une solution candidate. Dans ce contexte, *localement* signifie que l'on va apporter des modifications très légères à notre solution candidate, et donc en rester proche dans l'espace de recherche : à chaque étape, on va essayer de supprimer un centre de cette solution et d'en ajouter un autre qui améliore le *score*.\n",
+        "\n",
+        "L'algorithme fonctionne ainsi : \n",
+        "1. Initialisation de $k$ centres aléatoirement (utiliser votre fonction ` get_random_centers(X, k)`)\n",
+        "2. Calcul du score de référence.\n",
+        "Itérer `max_iter` fois : \n",
+        "3. Choisir un point *candidat* parmi $X$ aléatoirement\n",
+        "4. Essayer de remplacer chaque centre par le point *candidat*, puis calculer le score. Si un gain en score est observé en cas de remplacement d'un centre par *candidat*, alors *candidat* remplace le centre et le score de référence à améliorer est mis à jour."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 13,
+      "id": "97fb0d31-8fe2-47fd-9b7e-3f140dad9081",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": [
+        "def k_medoids(X, k=3, max_iter=100):\n",
+        "    centers = get_random_centers(X, k)\n",
+        "    #TODO"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "cc957ae4-ca45-4dd5-bc89-27665d423435",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": [
+        "for i in range(5):\n",
+        "    centers = k_medoids(X, k=5)\n",
+        "    plot_data(X, centers, title = f'data with k-medoids centers. Score {score(X, centers)}') "
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "id": "100df921-53d6-4f93-af00-b6dc454d7d3c",
+      "metadata": {
+
+      },
+      "outputs": [],
+      "source": []
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "py39",
+      "language": "python",
+      "name": "py39"
+    },
+    "language_info": {
+      "codemirror_mode": {
+        "name": "ipython",
+        "version": 3
+      },
+      "file_extension": ".py",
+      "mimetype": "text/x-python",
+      "name": "python",
+      "nbconvert_exporter": "python",
+      "pygments_lexer": "ipython3",
+      "version": "3.9.12"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}

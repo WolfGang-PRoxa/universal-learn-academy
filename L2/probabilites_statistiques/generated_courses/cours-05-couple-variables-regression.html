@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Couple de variables, covariance, régression linéaire · Probabilités et statistiques L2</title>
+<meta name="description" content="Cours 5 de probabilités et statistiques (L2) : couple de variables aléatoires, covariance et ses propriétés, coefficient de corrélation, indépendance, matrice de covariance, régression linéaire par les moindres carrés.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<link rel="quiz" href="../generated_quizzes/quiz-cours-05-couple-variables-regression.html" title="Quiz · Couple de variables, régression">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="index.html">Probabilités et statistiques</a>
+    <span aria-current="page">Cours 5 · Couple de variables, régression linéaire</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Probabilités et statistiques</span> Cours 5 · L2 · mars 2025</p>
+    <h1>Couple de variables aléatoires, covariance, régression linéaire</h1>
+    <p class="chapeau">Jusqu'ici, on a étudié une variable aléatoire à la fois. Quand on observe deux grandeurs ensemble, la hauteur de neige et l'altitude, la taille et le poids, on veut savoir si elles sont liées et, si oui, prédire l'une à partir de l'autre. La covariance et la corrélation mesurent le lien ; la régression linéaire en fait un modèle.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/cours4_coupleVar.pdf">cours4_coupleVar.pdf</a> · 12 diapos ; régression : préambule du <a href="../TP/TP4/TP4_regression-etu.ipynb">TP 4</a></dd></div>
+      <div><dt>Enseignante</dt><dd>Marie Tahon</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Définir et calculer la covariance de deux variables, et l'utiliser pour la variance d'une somme.</li>
+        <li>Interpréter le coefficient de corrélation, et ne pas le confondre avec l'indépendance.</li>
+        <li>Construire et lire une matrice de covariance ou de corrélation.</li>
+        <li>Écrire un modèle de régression linéaire simple et trouver ses coefficients par les moindres carrés.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-03-variables-aleatoires-continues.html">Cours 3</a> : espérance, variance, première définition de la covariance.</li>
+        <li><a href="cours-04-estimateurs-intervalles-confiance.html">Cours 4</a> : moyenne et variance empiriques.</li>
+        <li>Dérivées partielles (pour la régression).</li>
+      </ul>
+    </div>
+  </div>
+
+  <section>
+    <h2>D'une variable à deux <span class="ref">diapos 2–3</span></h2>
+    <p>Les cours précédents ont donné les outils pour une variable aléatoire seule. Ce dernier chapitre en considère deux à la fois.</p>
+    <p>Ce que l'on a vu jusqu'ici :</p>
+    <ul>
+      <li>les variables aléatoires discrètes (lois uniforme, de Bernoulli, binomiale, de Poisson) et continues (lois uniforme, exponentielle, normale) ;</li>
+      <li>le théorème central limite et l'approximation de la loi binomiale par la loi normale ;</li>
+      <li>les paramètres d'une loi, leurs estimateurs, et les intervalles de confiance.</li>
+    </ul>
+    <p>Imaginons maintenant un <dfn>couple de variables aléatoires</dfn> (<span class="en" lang="en">pair of random variables</span>) \((X, Y)\), observées ensemble sur la même expérience. On peut se demander :</p>
+    <ul>
+      <li>si elles ont la même distribution, si elles suivent la même loi ;</li>
+      <li>si elles sont corrélées ;</li>
+      <li>si l'on peut construire un modèle linéaire de l'une en fonction de l'autre : c'est la régression linéaire.</li>
+    </ul>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La loi d'un couple</span></p>
+      <p>Pour deux variables discrètes, la loi du couple est donnée par les probabilités \(P(X = x \cap Y = y)\) pour toutes les valeurs \(x\) et \(y\) : on les range dans un tableau à double entrée, la <em>loi jointe</em>. En sommant une ligne, on retrouve \(P(X = x)\) ; en sommant une colonne, \(P(Y = y)\) : ce sont les <em>lois marginales</em>. L'exemple de la section suivante en donne une.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Covariance <span class="ref">diapos 5–6</span></h2>
+    <p>L'espérance et la variance décrivent chaque variable séparément. Elles ne disent rien de la façon dont les deux varient ensemble : c'est le rôle de la covariance, qui généralise la variance.</p>
+
+    <h3>Rappel : la variance</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Rappel <span>Variance et variance empirique</span> <span class="ref">diapo 5</span></p>
+      <p>La variance d'une variable aléatoire \(X\) est</p>
+      \[ V[X] = E\left[(X - E[X])^2\right] = E[X^2] - E[X]^2. \]
+      <p>Un estimateur de la variance est la variance empirique, calculée sur \(n\) observations \(x_i\) de moyenne empirique \(F_n\) :</p>
+      \[ S_{n-1}^2 = \frac{1}{n - 1} \sum_{i=1}^{n} (x_i - F_n)^2. \]
+    </div>
+
+    <h3>Définition et propriétés</h3>
+    <p>Lorsque l'on considère deux variables aléatoires \(X\) et \(Y\), discrètes ou continues, de manière simultanée, on connaît leurs espérances \(E(X)\), \(E(Y)\) et leurs variances \(V(X)\), \(V(Y)\). On peut avoir besoin de savoir comment ces deux variables sont liées.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Covariance</span> <span class="ref">diapo 6</span></p>
+      <p>Soient deux variables aléatoires quelconques \(X\) et \(Y\). La <dfn>covariance</dfn> (<span class="en" lang="en">covariance</span>) de \(X\) et \(Y\) est</p>
+      <div class="encadre">\[ \mathrm{Cov}(X, Y) = E\left\{(X - E(X))(Y - E(Y))\right\}. \]</div>
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriétés <span>Covariance</span> <span class="ref">diapo 6</span></p>
+      <ul>
+        <li>\(\mathrm{Cov}(X, Y) = E(XY) - E(X) \cdot E(Y)\).</li>
+        <li>\(\mathrm{Cov}(X, Y)^2 \le V(X)\, V(Y)\) : c'est l'inégalité de Cauchy-Schwarz, que l'on ne démontre pas.</li>
+        <li>Pour tous \(a, b \in \R\), \(V(aX + bY) = a^2 V(X) + 2ab \cdot \mathrm{Cov}(X, Y) + b^2 V(Y)\).</li>
+      </ul>
+      <details class="preuve">
+        <summary>Preuve des deux formules</summary>
+        <p><span class="badge ajout">Ajout</span> Le cours renvoie au tableau. Notons \(\mu_X = E(X)\) et \(\mu_Y = E(Y)\). En développant et par linéarité de l'espérance :</p>
+        \[ \mathrm{Cov}(X, Y) = E(XY - \mu_Y X - \mu_X Y + \mu_X \mu_Y) = E(XY) - \mu_Y \mu_X - \mu_X \mu_Y + \mu_X \mu_Y = E(XY) - \mu_X \mu_Y. \]
+        <p>Pour la variance, \(aX + bY - E(aX + bY) = a(X - \mu_X) + b(Y - \mu_Y)\) ; on élève au carré et l'on prend l'espérance :</p>
+        \[ V(aX + bY) = a^2 E\left[(X - \mu_X)^2\right] + 2ab\, E\left[(X - \mu_X)(Y - \mu_Y)\right] + b^2 E\left[(Y - \mu_Y)^2\right]. \]
+      </details>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Covariance et variance</span></p>
+      <p><span class="badge ajout">Ajout</span> \(\mathrm{Cov}(X, X) = V(X)\), et la covariance est symétrique : \(\mathrm{Cov}(X, Y) = \mathrm{Cov}(Y, X)\). Son signe se lit sur les produits \((X - E(X))(Y - E(Y))\) : ils sont surtout positifs quand les deux variables sont au-dessus (ou au-dessous) de leur moyenne en même temps.</p>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Covariance d'un couple discret</span></p>
+      <p><span class="badge ajout">Ajout</span> On choisit un étudiant au hasard. \(X = 1\) s'il a assisté au TD, 0 sinon ; \(Y = 1\) s'il a eu la moyenne, 0 sinon. La loi jointe est la suivante.</p>
+      <div class="tableau compact centre">
+        <table>
+          <caption>Loi jointe de \((X, Y)\) et lois marginales</caption>
+          <thead><tr><th></th><th>\(Y = 0\)</th><th>\(Y = 1\)</th><th>loi de \(X\)</th></tr></thead>
+          <tbody>
+            <tr><th>\(X = 0\)</th><td>0,3</td><td>0,1</td><td>0,4</td></tr>
+            <tr><th>\(X = 1\)</th><td>0,1</td><td>0,5</td><td>0,6</td></tr>
+            <tr><th>loi de \(Y\)</th><td>0,4</td><td>0,6</td><td>1</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>\(E(X) = E(Y) = 0{,}6\). Le produit \(XY\) vaut 1 seulement si \(X = Y = 1\) : \(E(XY) = 0{,}5\). Donc \(\mathrm{Cov}(X, Y) = 0{,}5 - 0{,}6 \times 0{,}6 = 0{,}14 \gt 0\) : assister au TD et avoir la moyenne vont ensemble. Avec \(V(X) = V(Y) = 0{,}6 \times 0{,}4 = 0{,}24\), on a aussi \(V(X + Y) = 0{,}24 + 2 \times 0{,}14 + 0{,}24 = 0{,}76\), bien plus que \(0{,}48\).</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Corrélation et indépendance <span class="ref">diapos 7–8</span></h2>
+    <p>La covariance dépend des unités : en grammes ou en kilogrammes, elle n'a pas la même valeur. Pour comparer des liens entre variables d'échelles différentes, on la normalise.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Coefficient de corrélation</span> <span class="ref">diapo 7</span></p>
+      <p>Le <dfn>coefficient de corrélation</dfn> (<span class="en" lang="en">correlation coefficient</span>) de deux variables aléatoires \(X\) et \(Y\), discrètes ou continues, se définit à partir de la covariance et des variances :</p>
+      <div class="encadre">\[ \rho(X, Y) = \frac{\mathrm{Cov}(X, Y)}{\sqrt{V(X) \cdot V(Y)}}, \qquad \rho(X, Y) \in [-1\,; 1]. \]</div>
+      <ul>
+        <li>Si \(\rho(X, Y) \gt 0\), \(Y\) a tendance à augmenter quand \(X\) augmente.</li>
+        <li>Si \(\rho(X, Y) \lt 0\), \(Y\) a tendance à diminuer quand \(X\) augmente.</li>
+        <li>C'est une version « normalisée » de la covariance : elle permet de comparer des variables même si elles ne sont pas à la même échelle.</li>
+      </ul>
+      <p>Le cours 3 le notait \(R(X, Y)\). Que \(\rho\) reste dans \([-1\,; 1]\) découle de l'inégalité de Cauchy-Schwarz.</p>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>ρ = 0 n'implique pas l'indépendance</span> <span class="ref">diapo 7</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>La diapo 7 écrit : « si \(\rho(X, Y) = 0\) alors les variables \(X\) et \(Y\) sont indépendantes ». C'est la réciproque de la propriété de la diapo 8, que la même diapo 8 déclare fausse. Le bon énoncé est : si \(X\) et \(Y\) sont indépendantes, alors \(\rho(X, Y) = 0\) ; mais \(\rho = 0\) dit seulement que \(X\) et \(Y\) sont <em>non corrélées</em>, sans lien <em>linéaire</em>.</p>
+      <p>Contre-exemple (cours 3) : \(X\) uniforme sur \(\{-1, 0, 1\}\) et \(Y = X^2\). \(\mathrm{Cov}(X, Y) = E(X^3) - E(X)E(X^2) = 0\), et pourtant \(Y\) est une fonction de \(X\).</p>
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Indépendance et covariance</span> <span class="ref">diapo 8</span></p>
+      <p>Si les deux variables aléatoires sont indépendantes, alors \(P(X = x \cap Y = y) = P(X = x)\, P(Y = y)\) et \(E[XY] = E[X] \cdot E[Y]\) (la réciproque est fausse). Par conséquent :</p>
+      <div class="encadre">\[ X \text{ et } Y \text{ indépendantes} \implies \mathrm{Cov}(X, Y) = 0. \]</div>
+      <p>On retrouve alors \(V(X + Y) = V(X) + V(Y)\), et \(\rho(X, Y) = 0\).</p>
+      <details class="preuve">
+        <summary>Preuve de E[XY] = E[X] E[Y] (cas discret)</summary>
+        <p><span class="badge ajout">Ajout</span> \(E[XY] = \sum_{x, y} xy\, P(X = x \cap Y = y) = \sum_{x, y} xy\, P(X = x) P(Y = y) = \left(\sum_x x\, P(X = x)\right)\left(\sum_y y\, P(Y = y)\right)\).</p>
+      </details>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les cas extrêmes</span></p>
+      <p>\(\rho = 1\) exactement quand \(Y = aX + b\) avec \(a \gt 0\) ; \(\rho = -1\) quand \(a \lt 0\). Plus \(|\rho|\) est proche de 1, plus le nuage des points \((x_i, y_i)\) est proche d'une droite. Une forte corrélation ne prouve pas pour autant une relation de cause à effet : les ventes de glaces et les coups de soleil sont corrélés, parce que tous deux dépendent du soleil.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Matrice de covariance <span class="ref">diapo 9</span></h2>
+    <p>Avec plus de deux variables, on range toutes les covariances deux à deux dans un tableau carré.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Matrice de covariance</span> <span class="ref">diapo 9</span></p>
+      <p>Soient \(K\) variables aléatoires \(X_1, \dots, X_K\). Leur <dfn>matrice de covariance</dfn> (<span class="en" lang="en">covariance matrix</span>), notée \(\Sigma\), est la matrice \(K \times K\) telle que</p>
+      \[ \Sigma_{i,j} = \mathrm{Cov}(X_i, X_j). \]
+      <ul>
+        <li>Elle est symétrique, car \(\mathrm{Cov}(X_i, X_j) = \mathrm{Cov}(X_j, X_i)\).</li>
+        <li>Sa diagonale contient les variances : \(\Sigma_{i,i} = V(X_i)\).</li>
+        <li>Si les variables sont indépendantes, la matrice est diagonale.</li>
+        <li>Par extension, on calcule aussi la <em>matrice de corrélation</em>, de terme \(\rho(X_i, X_j)\) ; sa diagonale est alors égale à 1.</li>
+      </ul>
+    </div>
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>En Python</span></p>
+      <p><span class="badge ajout">Ajout</span> Sur des données, <code>np.cov(x, y)</code> renvoie la matrice de covariance empirique 2×2, avec la division par \(n - 1\) (<code>bias=True</code> pour diviser par \(n\)), et <code>np.corrcoef(x, y)</code> la matrice de corrélation. Le TP 4 demande de recalculer ces valeurs à partir des définitions, et de n'utiliser ces fonctions que pour vérifier.</p>
+<pre data-fichier="covariance.py"><code class="language-python">import numpy as np
+
+x = np.array([1, 2, 3, 4, 5])
+y = np.array([2.1, 3.9, 6.2, 7.8, 10.1])
+print(np.cov(x, y))        # [[2.5   4.975] [4.975 9.927]]
+print(np.corrcoef(x, y))   # diagonale 1, hors diagonale 0.9987</code></pre>
+    </div>
+  </section>
+
+  <section>
+    <h2>Régression linéaire <span class="ref">diapos 10–11 et TP 4</span></h2>
+    <p>Quand deux variables sont corrélées, on peut chercher à prédire l'une à partir de l'autre. La diapo 11 renvoie au notebook : cette section reprend le préambule du TP 4, rédigé par l'enseignante, et le complète.</p>
+
+    <h3>Le modèle</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Régression linéaire simple</span> <span class="ref">TP 4, introduction</span></p>
+      <p>Une <dfn>régression</dfn> (<span class="en" lang="en">regression</span>) est un modèle \(f\) qui permet de prédire la valeur d'une variable \(Y\) en fonction de la valeur d'une autre variable \(X\). Cela n'est possible que s'il existe une dépendance entre \(Y\) et \(X\) : on parle alors de corrélation. Une <dfn>régression linéaire simple</dfn> (<span class="en" lang="en">simple linear regression</span>) est une relation affine entre \(Y\) et une seule variable \(X\) :</p>
+      \[ Y = f(X) = aX + b + e_{err}, \]
+      <p>où \(Y\) est la variable <em>dépendante</em>, \(X\) la variable <em>explicative</em>, \(b\) l'ordonnée à l'origine, \(a\) la pente de la droite de régression (la variation moyenne de \(Y\) quand \(X\) augmente d'une unité), et \(e_{err}\) l'erreur résiduelle.</p>
+    </div>
+
+    <h3>Les moindres carrés</h3>
+    <p>On dispose de \(n\) données, les couples \((x_i, y_i)\) : \(x_i\) est l'entrée du modèle, ce que l'on mesure ; \(y_i\) la sortie, ce que l'on cherche à prédire. Le modèle prédit \(y_{pred,i} = f(x_i) = a\, x_i + b\). Choisir le modèle revient à trouver les paramètres \(a\) et \(b\) optimaux suivant un critère.</p>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Minimiser l'erreur quadratique moyenne</span> <span class="ref">TP 4, préambule</span></p>
+      <p>Pour un problème de régression (prédire une valeur réelle), on utilise généralement la méthode des <dfn>moindres carrés</dfn> (<span class="en" lang="en">least squares</span>). L'erreur est la MSE (<span lang="en">Mean Square Error</span>) :</p>
+      \[ MSE = \frac1n \sum_{i=1}^{n} (y_i - y_{pred,i})^2 = \frac1n \sum_{i=1}^{n} (y_i - a\,x_i - b)^2. \]
+      <p>Les coefficients sont optimaux quand cette erreur est minimale. On annule donc les dérivées partielles par rapport aux deux variables \(a\) et \(b\) :</p>
+      \[ \frac{\partial MSE}{\partial a} = 0, \qquad \frac{\partial MSE}{\partial b} = 0. \]
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Coefficients de la droite des moindres carrés</span> <span class="badge examen">Examen</span></p>
+      <p><span class="badge ajout">Ajout</span> La résolution du système donne</p>
+      <div class="encadre">\[ a = \frac{\mathrm{Cov}(x, y)}{V(x)} = \frac{\sum_{i} (x_i - \bar x)(y_i - \bar y)}{\sum_{i} (x_i - \bar x)^2}, \qquad b = \bar y - a\, \bar x, \]</div>
+      <p>où \(\bar x\) et \(\bar y\) sont les moyennes des \(x_i\) et des \(y_i\), et où covariance et variance sont empiriques (le facteur \(\frac1n\) ou \(\frac{1}{n-1}\) se simplifie dans le quotient). La droite passe par le point moyen \((\bar x, \bar y)\), et la pente a le signe de la covariance, donc de la corrélation.</p>
+      <p>Le TP 4 fait retrouver ces formules (question du préambule et exercice 3) : la démonstration est laissée à ce TP. Indice : la dérivée en \(b\) donne \(\bar y = a \bar x + b\), et l'on reporte \(b\) dans la dérivée en \(a\).</p>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Une droite sur cinq points</span></p>
+      <p><span class="badge ajout">Ajout</span> Points : \(x = (1, 2, 3, 4, 5)\), \(y = (2{,}1\,; 3{,}9\,; 6{,}2\,; 7{,}8\,; 10{,}1)\). On a \(\bar x = 3\), \(\bar y = 6{,}02\) ; les écarts \(x_i - \bar x\) valent −2, −1, 0, 1, 2, d'où \(\sum (x_i - \bar x)^2 = 10\) et \(\sum (x_i - \bar x)(y_i - \bar y) = 19{,}9\).</p>
+      <p>Donc \(a = \frac{19{,}9}{10} = 1{,}99\) et \(b = 6{,}02 - 1{,}99 \times 3 = 0{,}05\) : la droite est \(y = 1{,}99\,x + 0{,}05\). La MSE vaut 0,021 et la corrélation 0,9987 : le modèle linéaire convient très bien.</p>
+<pre data-fichier="regression.py"><code class="language-python">import numpy as np
+
+x = np.array([1, 2, 3, 4, 5])
+y = np.array([2.1, 3.9, 6.2, 7.8, 10.1])
+a, b = np.polyfit(x, y, 1)   # polynôme de degré 1 : pente puis ordonnée
+print(round(a, 2), round(b, 2))                  # 1.99 0.05
+print(round(np.mean((y - (a*x + b))**2), 4))     # 0.0214</code></pre>
+    </div>
+
+    <h3>Régression linéaire multiple</h3>
+    <p>Lorsque \(Y\) dépend de plusieurs variables, on peut toujours réaliser une régression linéaire, avec plusieurs variables d'entrée :</p>
+    \[ Y = a_0 + a_1 X_1 + a_2 X_2 + \dots + a_p X_p + e_{err}. \]
+    <p>On l'écrit avec des matrices : \(Y = Xa + e_{err}\), où la ligne \(i\) de \(X\) est \((1, x_{1,i}, x_{2,i}, \dots, x_{p,i})\) et \(a = (a_0, a_1, \dots, a_p)^t\). Le vecteur des estimateurs est alors</p>
+    \[ \hat a = \left(X^t X\right)^{-1} X^t y. \]
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Ordre du produit dans le notebook</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>Le notebook du TP 4 écrit \(\hat a = \left(X \times X^t\right)^{-1} X^t y\). Avec \(X\) de taille \(n \times (p+1)\), \(X X^t\) est une matrice \(n \times n\) qui ne se multiplie pas avec \(X^t y\) (de taille \(p + 1\)) : la formule des moindres carrés (équations normales) est \(\left(X^t X\right)^{-1} X^t y\). En Python, <code>np.linalg.lstsq(X, y)</code> résout ce problème sans calculer l'inverse.</p>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Pour aller plus loin <span>Ce que le cours ne traite pas</span> <span class="ref">diapo 12</span></p>
+      <p>Les tests d'hypothèse, les comparaisons de moyennes et d'écarts-types entre deux variables aléatoires, le cas à deux dimensions au-delà de la covariance…</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>\(\mathrm{Cov}(X, Y) = E[(X - E(X))(Y - E(Y))] = E(XY) - E(X)E(Y)\) ; \(\mathrm{Cov}(X, X) = V(X)\).</li>
+        <li>\(V(aX + bY) = a^2 V(X) + 2ab\,\mathrm{Cov}(X, Y) + b^2 V(Y)\).</li>
+        <li>\(\rho(X, Y) = \frac{\mathrm{Cov}(X, Y)}{\sqrt{V(X)V(Y)}} \in [-1\,; 1]\), sans unité ; son signe donne le sens du lien, sa valeur absolue sa force (linéaire).</li>
+        <li>Indépendance \(\implies\) covariance nulle \(\implies\) \(V(X + Y) = V(X) + V(Y)\). La réciproque est fausse : \(\rho = 0\) veut dire « non corrélées », pas « indépendantes ».</li>
+        <li>La matrice de covariance \(\Sigma_{i,j} = \mathrm{Cov}(X_i, X_j)\) est symétrique, avec les variances sur la diagonale ; diagonale si les variables sont indépendantes.</li>
+        <li>Régression linéaire simple : \(y = ax + b\) qui minimise la MSE, avec \(a = \frac{\mathrm{Cov}(x, y)}{V(x)}\) et \(b = \bar y - a \bar x\).</li>
+        <li>En Python : <code>np.cov</code>, <code>np.corrcoef</code>, <code>np.polyfit(x, y, 1)</code>, <code>np.linalg.lstsq</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>\(E(X) = 2\), \(E(Y) = 3\), \(E(XY) = 7\). Que vaut \(\mathrm{Cov}(X, Y)\) ?</summary>
+        <div><p>\(7 - 2 \times 3 = 1\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>\(V(X) = 4\), \(V(Y) = 9\), \(\mathrm{Cov}(X, Y) = -3\). Que valent \(\rho(X, Y)\) et \(V(X - Y)\) ?</summary>
+        <div><p>\(\rho = \frac{-3}{\sqrt{36}} = -0{,}5\). \(V(X - Y) = 4 - 2 \times (-3) + 9 = 19\) (ici \(a = 1\), \(b = -1\)).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Deux variables ont une covariance nulle. Sont-elles indépendantes ?</summary>
+        <div><p>Pas forcément : elles sont non corrélées. Exemple : \(X\) uniforme sur \(\{-1, 0, 1\}\) et \(Y = X^2\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi préférer \(\rho\) à la covariance pour comparer deux liens ?</summary>
+        <div><p>La covariance dépend des unités (multiplier \(X\) par 1 000 la multiplie par 1 000) ; \(\rho\) est sans unité et toujours dans \([-1\,; 1]\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que contient la diagonale d'une matrice de covariance ? et celle d'une matrice de corrélation ?</summary>
+        <div><p>Les variances \(V(X_i)\) ; des 1, puisque \(\rho(X_i, X_i) = 1\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>\(\bar x = 10\), \(\bar y = 50\), \(\mathrm{Cov}(x, y) = 6\), \(V(x) = 2\). Droite de régression ?</summary>
+        <div><p>\(a = \frac62 = 3\), \(b = 50 - 3 \times 10 = 20\) : \(y = 3x + 20\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que renvoie <code>np.polyfit(x, y, 1)</code> ?</summary>
+        <div><p>Les coefficients du polynôme de degré 1 qui ajuste les points au sens des moindres carrés, du plus haut degré au plus bas : la pente \(a\), puis l'ordonnée à l'origine \(b\).</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-04-estimateurs-intervalles-confiance.html"><small>← Précédent</small>Estimateurs et intervalles de confiance</a>
+    <a class="suivant" href="index.html"><small>Matière →</small>Tous les chapitres</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Probabilités et statistiques · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

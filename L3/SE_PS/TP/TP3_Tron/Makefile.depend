@@ -1,0 +1,87 @@
+#
+# MODULES
+#
+
+
+#--- Commun
+
+$(DirCommun)/commun.o : $(DirCommun)/commun.c $(DirCommun)/commun.h
+	cd $(DirCommun) ; make -f Makefile commun.o
+
+#--- Coordonnees 
+
+$(DirCoord)/coord.o : $(DirCoord)/coord.c $(DirCoord)/coord.h
+	cd $(DirCoord) ; make -f Makefile coord.o 
+$(DirCoord)/coord_stdout.o : $(DirCoord)/coord_stdout.c $(DirCoord)/coord_stdout.h
+	cd $(DirCoord) ; make -f Makefile coord_stdout.o 
+
+#--- Ecran 
+
+$(DirEcran)/ecran.o : $(DirEcran)/ecran.c $(DirEcran)/ecran.h
+	cd $(DirEcran) ; make -f Makefile ecran.o
+
+#--- Moto
+
+$(DirMoto)/moto.o : $(DirMoto)/moto.c $(DirMoto)/moto.h
+	cd $(DirMoto) ; make -f Makefile moto.o 
+$(DirMoto)/moto_stdout.o : $(DirMoto)/moto_stdout.c $(DirMoto)/moto_stdout.h
+	cd $(DirMoto) ; make -f Makefile moto_stdout.o
+
+#--- Mvt
+
+$(DirMvt)/mvt_moto.o : $(DirMvt)/mvt_moto.c $(DirMvt)/mvt_moto.h
+	cd $(DirMvt) ; make -f Makefile mvt_moto.o 
+
+
+#--- Piste 
+
+
+$(DirPiste)/piste.o : $(DirPiste)/piste.c $(DirPiste)/piste.h
+	cd $(DirPiste) ; make -f Makefile piste.o 
+$(DirPiste)/piste_stdout.o : $(DirPiste)/piste_stdout.c $(DirPiste)/piste_stdout.h
+	cd $(DirPiste) ; make -f Makefile piste_stdout.o 
+$(DirPiste)/piste_ecran.o : $(DirPiste)/piste_ecran.c $(DirPiste)/piste_ecran.h
+	cd $(DirPiste) ; make -f Makefile piste_ecran.o 
+
+#
+# HEADERS
+#
+
+#--- Commun
+
+#--- Coordonnees 
+
+$(DirCoord)/coord.h : $(DirCommun)/commun.h
+	cd $(DirCoord) ; make -f Makefile coord.h
+
+$(DirCoord)/coord_stdout.h : $(DirCoord)/coord.h
+	cd $(DirCoord) ; make -f Makefile coord_stdout.h
+
+#--- Ecran 
+
+$(DirEcran)/ecran.h : $(DirCoord)/coord.h
+	cd $(DirEcran) ; make -f Makefile ecran.h
+
+#--- Moto 
+
+$(DirMoto)/moto.h : $(DirCommun)/commun.h $(DirCoord)/coord.h
+	cd $(DirMoto) ; make -f Makefile moto.h
+
+$(DirMoto)/moto_stdout.h : $(DirMoto)/moto.h
+	cd $(DirMoto) ; make -f Makefile moto_stdout.h
+
+#--- Mvt
+
+$(DirMvt)/mvt_moto.h : $(DirPiste)/piste.h $(DirMoto)/moto.h
+	cd $(DirMvt) ; make -f Makefile mvt_moto.h
+
+#--- Piste 
+
+$(DirPiste)/piste.h : $(DirCommun)/commun.h $(DirCoord)/coord.h
+	cd $(DirPiste) ; make -f Makefile piste.h
+
+$(DirPiste)/piste_stdout.h : $(DirPiste)/piste.h 
+	cd $(DirPiste) ; make -f Makefile piste_stdout.h
+
+$(DirPiste)/piste_ecran.h : $(DirPiste)/piste.h $(DirEcran)/ecran.h
+	cd $(DirPiste) ; make -f Makefile piste_ecran.h

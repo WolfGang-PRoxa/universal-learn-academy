@@ -1,0 +1,168 @@
+@charset "utf-8";
+/* Quiz · résultats : bilan, compteurs, thèmes, évaluation détaillée, correction question par question */
+
+.quiz-bilan {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.4rem 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  box-shadow: var(--ombre);
+}
+@media (max-width: 34rem) { .quiz-bilan { grid-template-columns: 1fr; justify-items: center; text-align: center; } }
+.quiz-anneau {
+  --p: 0;
+  display: grid;
+  place-items: center;
+  width: 8.5rem;
+  height: 8.5rem;
+  border-radius: 50%;
+  background: conic-gradient(var(--accent) calc(var(--p) * 1turn), var(--surface-2) 0);
+}
+.quiz-anneau > span {
+  display: grid;
+  place-items: center;
+  width: 6.6rem;
+  height: 6.6rem;
+  border-radius: 50%;
+  background: var(--surface);
+  font-family: var(--police-titre);
+  font-size: 1.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.quiz-bilan-texte h2 { margin-bottom: 0.3rem; }
+.quiz-bilan-texte p { margin: 0.2rem 0; color: var(--texte-2); }
+.quiz-bilan-texte strong { color: var(--texte); }
+
+/* Compteurs : justes, partielles, fausses, sans réponse, à évaluer */
+.quiz-compteurs { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: 0.6rem; margin: 1rem 0 0; }
+.compteur {
+  --etat: 255;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid oklch(var(--ton-trait) var(--etat));
+  border-radius: var(--rayon-petit);
+  background: oklch(var(--ton-doux) var(--etat));
+}
+.compteur.juste { --etat: 150; }
+.compteur.faux { --etat: 25; }
+.compteur.partiel { --etat: 85; }
+.compteur.attente { --etat: 195; }
+.compteur.vide { background: var(--surface); border-color: var(--bordure); }
+.compteur strong { display: block; font-family: var(--police-titre); font-size: 1.45rem; line-height: 1.1; font-variant-numeric: tabular-nums; color: oklch(var(--ton-fort) var(--etat)); }
+.compteur.vide strong { color: var(--texte-2); }
+.compteur span { font-size: 0.82rem; color: var(--texte-2); }
+
+.quiz-themes { margin: 1.75rem 0 0; }
+.theme-barre {
+  display: grid;
+  grid-template-columns: minmax(7rem, 14rem) 1fr 3.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.45rem 0;
+  font-size: 0.92rem;
+}
+.theme-barre .piste { height: 0.6rem; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.theme-barre .piste > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transform-origin: 0 50%;
+  transform: scaleX(var(--p, 0));
+}
+.theme-barre .val { text-align: right; font-variant-numeric: tabular-nums; color: var(--texte-2); }
+
+.quiz-archive { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin: 1rem 0 0; }
+
+/* Évaluation détaillée par Claude ---------------------------------------------------------------- */
+
+.quiz-evaluation {
+  margin-top: 1.75rem;
+  padding: 1.2rem 1.4rem;
+  border: 1px solid var(--claude-trait);
+  border-radius: var(--rayon);
+  background: var(--surface);
+}
+.quiz-evaluation-tete { display: flex; align-items: flex-start; gap: 0.75rem; }
+.quiz-evaluation-tete h2 { margin: 0 0 0.2rem; font-size: 1.2rem; }
+.quiz-evaluation-tete p { margin: 0; font-size: 0.9rem; color: var(--texte-2); }
+.quiz-evaluation-corps:empty { display: none; }
+.quiz-evaluation-corps { margin-top: 1rem; }
+.quiz-evaluation-corps h3, .quiz-evaluation-corps h4, .quiz-evaluation-corps h5 {
+  margin: 1.25rem 0 0.4rem;
+  padding: 0;
+  border: 0;
+  font-size: 1.02rem;
+  color: var(--claude-fort);
+}
+.quiz-evaluation-corps h3::before { content: none; }
+.quiz-evaluation-corps > :first-child { margin-top: 0; }
+.quiz-evaluation-corps > :last-child { margin-bottom: 0; }
+.quiz-evaluation-pied { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-top: 1rem; }
+.quiz-evaluation-meta { font-size: 0.8rem; color: var(--texte-3); }
+
+/* Correction détaillée ---------------------------------------------------------------------------- */
+
+.quiz-revue { margin-top: 2rem; }
+.quiz-revue-tete { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.75rem; }
+.quiz-revue-tete h2 { margin: 0; }
+.quiz-revue-tete label { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.9rem; }
+.revue-liste { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.5rem; }
+.revue-liste.erreurs-seules .revue-item.juste { display: none; }
+details.revue-item {
+  --etat: 255;
+  min-width: 0;
+  border: 1px solid var(--bordure);
+  border-left: 4px solid oklch(var(--ton-vif) var(--etat));
+  border-radius: var(--rayon-petit);
+  background: var(--surface);
+}
+details.revue-item.juste { --etat: 150; }
+details.revue-item.faux { --etat: 25; }
+details.revue-item.partiel { --etat: 85; }
+details.revue-item.attente { --etat: 195; }
+.revue-item > summary {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.7rem 1rem 0.7rem 2.1rem;
+  cursor: pointer;
+  list-style: none;
+}
+.revue-item > summary::-webkit-details-marker { display: none; }
+.revue-item > summary::before {
+  content: "";
+  position: absolute;
+  left: 0.95rem;
+  top: 50%;
+  width: 0.42em;
+  height: 0.42em;
+  border-right: 2px solid var(--texte-3);
+  border-bottom: 2px solid var(--texte-3);
+  transform: translateY(-50%) rotate(-45deg);
+  transition: transform 0.15s;
+}
+.revue-item[open] > summary::before { transform: translateY(-75%) rotate(45deg); }
+.revue-item > summary { align-items: center; }
+.revue-num { flex: none; font-weight: 700; font-variant-numeric: tabular-nums; }
+.revue-titre { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--texte-2); }
+.revue-score { flex: none; font-weight: 700; font-size: 0.85rem; color: oklch(var(--ton-fort) var(--etat)); }
+.revue-corps { padding: 0 1rem 1rem 2.1rem; }
+.revue-corps > :last-child { margin-bottom: 0; }
+.revue-enonce { margin-bottom: 0.75rem; }
+.revue-enonce > :last-child { margin-bottom: 0; }
+.revue-ligne { display: grid; grid-template-columns: 10rem minmax(0, 1fr); gap: 0.5rem; margin: 0.35rem 0; }
+.revue-ligne > b { color: var(--texte-2); font-weight: 600; }
+.revue-ligne .rep > :last-child { margin-bottom: 0; }
+.revue-ligne .rep pre { margin: 0; }
+@media (max-width: 40rem) { .revue-ligne { grid-template-columns: 1fr; gap: 0.1rem; } .revue-corps { padding-left: 1rem; } }
+.revue-infos { margin: 0.5rem 0; font-size: 0.82rem; color: var(--texte-3); }
+.revue-conversation { margin: 0.75rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--claude-trait); border-radius: var(--rayon-petit); }
+.revue-conversation > summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; color: var(--claude-fort); }
+.revue-conversation .claude-message { margin-top: 0.6rem; }
+.revue-pied { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.75rem; }

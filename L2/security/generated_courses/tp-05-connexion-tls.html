@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="securite">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TP 5 · Connexion TLS à un serveur web · Sécurité informatique L2</title>
+<meta name="description" content="TP 5 de sécurité informatique (L2) : installer un site PHP sous Apache2, capturer un login en clair, créer un certificat auto-signé, passer le site en HTTPS et lire la négociation TLS dans Wireshark. Sujet, et comment le refaire sans Raspberry Pi grâce à un conteneur Docker (ou à WSL).">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-03-securite-si-reseaux.html" title="Quiz · Sécurité des SI et des réseaux">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/langues/dos.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="index.html">Sécurité informatique</a>
+    <span aria-current="page">TP 5 · Connexion TLS</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Sécurité informatique</span> TP 5 · L2 S4</p>
+    <h1>Connexion TLS à un serveur web</h1>
+    <p class="chapeau">On installe un petit site PHP avec authentification sous Apache2, on constate dans Wireshark que le login et le mot de passe passent en clair, puis on crée un certificat auto-signé, on passe le site en HTTPS et on lit la négociation TLS. En salle, tout se fait sur un Raspberry Pi ; chez soi, un conteneur Docker en tient lieu.</p>
+    <dl class="meta">
+      <div><dt>Sujet</dt><dd><a href="../TP/TP5/L2-174UD06-TP5.pdf">L2-174UD06-TP5.pdf</a> · 3 pages</dd></div>
+      <div><dt>Fichiers</dt><dd><a href="../TP/TP5/site_web/">site_web/</a> (<code>index.php</code>, <code>autorisation.php</code>), <a href="../TP/TP5/doc_Apache/doc_Apache/">documentation d'Apache</a> ; conteneur dans <a href="../TP/TP5/environnement/">environnement/</a> (ajouté)</dd></div>
+      <div><dt>Enseignant</dt><dd>Thierry Lemeunier</dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Configurer un site sous Apache2 avec <code>a2ensite</code>, <code>a2dissite</code>, <code>a2enmod</code>.</li>
+        <li>Créer un certificat auto-signé avec OpenSSL et l'utiliser pour HTTPS (<a href="cours-03-securite-si-reseaux.html#creer-et-utiliser-un-certificat">cours 3</a>).</li>
+        <li>Lire dans une capture la version de TLS, les suites de chiffrement et le mode de partage du secret négociés (<a href="cours-03-securite-si-reseaux.html#les-messages-du-handshake">cours 3</a>).</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">À rendre</p>
+      <ul>
+        <li>Rien à déposer : chaque étape est validée par l'enseignant pendant la séance, en binôme.</li>
+      </ul>
+    </div>
+  </div>
+
+  <section>
+    <h2>Le sujet <span class="ref">p. 1–3</span></h2>
+    <p>On travaille en administrateur sur des copies, jamais sur les fichiers originaux. Les étapes 1 et 5 (brancher puis ranger le Raspberry) ne concernent que la salle de TP.</p>
+    <ol class="etapes">
+      <li><strong>Site non sécurisé.</strong> Vérifier que <code>http://localhost</code> répond, étudier <code>/etc/apache2</code> et les commandes <code>a2enmod</code>, <code>a2dismod</code>, <code>a2ensite</code>, <code>a2dissite</code> (<code>man</code>). Créer <code>/var/www/tp5</code> et y copier les deux scripts PHP de la clé USB. Dupliquer <code>sites-available/000-default.conf</code> en <code>sitetp5.conf</code>, le faire pointer sur <code>tp5</code>, activer ce site et désactiver le site par défaut, puis redémarrer Apache (<code>sudo systemctl restart apache2</code>). Donner au site le droit d'écrire dans <code>tp5</code> (<code>sudo chgrp www-data tp5</code>, <code>sudo chmod g+w tp5</code>).</li>
+      <li><strong>Tester et capturer.</strong> Créer un compte et se connecter, capturer l'échange avec Wireshark : le login et le mot de passe doivent apparaître en clair dans le protocole HTTP.</li>
+      <li><strong>Site sécurisé.</strong> Lire la documentation d'Apache (« Exemple de configuration basique » du document 2, trois premières questions « Certificats » de la FAQ, document 4) et <code>sites-available/default-ssl.conf</code>. Créer avec <code>openssl</code> un certificat auto-signé, ranger le certificat dans <code>/etc/ssl/certs</code> et la clé privée dans <code>/etc/ssl/private</code>. Dupliquer <code>default-ssl.conf</code> en <code>sitetp5ssl.conf</code>, l'adapter, activer le module <code>ssl</code> et le nouveau site.</li>
+      <li><strong>Tester et capturer en HTTPS</strong> (<code>https://localhost</code>), filtrer sur TLS et relever : les versions de TLS proposées par le client et celle choisie par le serveur, les suites de chiffrement proposées et celle choisie, le mode de partage du secret proposé (PSK, (EC)DHE ou les deux) et celui choisi.</li>
+      <li><strong>Revenir à la configuration initiale</strong> : supprimer le site, le certificat, la clé privée, <code>sitetp5.conf</code> et <code>sitetp5ssl.conf</code>, et remettre les modules et sites d'origine avec les commandes <code>a2*</code>.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Le refaire sans Raspberry Pi</h2>
+    <p>Le dossier <code>TP/TP5/</code> contient un conteneur Docker qui joue le rôle du Raspberry : Ubuntu avec Apache2, PHP, OpenSSL, <code>tcpdump</code> et la documentation <code>man</code>, Apache déjà lancé avec son site par défaut, et la « clé USB » de l'encadrant montée dans <code>/media/cle-usb</code>. Le TP s'y fait avec les commandes de l'énoncé, <code>sudo systemctl restart apache2</code> compris. Il faut Docker : <a href="https://www.docker.com/products/docker-desktop/">Docker Desktop</a> sous Windows, le paquet <code>docker.io</code> sous Ubuntu.</p>
+    <div class="tableau compact">
+      <table>
+        <thead><tr><th>Dans l'énoncé</th><th>Avec le conteneur</th></tr></thead>
+        <tbody>
+          <tr><td>Allumer le Raspberry</td><td><code>run.bat</code> (Windows) ou <code>./run.sh</code> (Linux) ; la première fois, l'image se construit en quelques minutes</td></tr>
+          <tr><td>Terminal du Raspberry</td><td><code>run.bat terminal</code> : un terminal administrateur dans le conteneur</td></tr>
+          <tr><td>Clé USB de l'encadrant</td><td><code>/media/cle-usb</code> (<code>index.php</code>, <code>autorisation.php</code>)</td></tr>
+          <tr><td><code>http://localhost</code></td><td><code>http://localhost:8080</code> dans le navigateur du PC</td></tr>
+          <tr><td><code>https://localhost</code></td><td><code>https://localhost:8443</code> ; le navigateur prévient que le certificat est auto-signé, il faut l'accepter</td></tr>
+          <tr><td><code>sudo wireshark</code></td><td><code>run.bat capturer http</code>, faire l'échange dans le navigateur, puis <kbd>Ctrl</kbd>+<kbd>C</kbd> : la capture est dans <code>captures\http.pcap</code>, à ouvrir dans Wireshark</td></tr>
+          <tr><td>Étape 4, revenir à la configuration initiale</td><td>à faire avec les commandes <code>a2*</code> comme dans l'énoncé ; <code>run.bat reinitialiser</code> repart ensuite d'une « carte mémoire » neuve</td></tr>
+          <tr><td>Éteindre le Raspberry</td><td><code>run.bat arreter</code> (le travail est gardé jusqu'au prochain <code>run.bat</code>)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Une séance type, depuis une invite de commandes ouverte dans <code>TP\TP5</code> :</p>
+<pre><code class="language-dos">run.bat
+run.bat terminal
+run.bat capturer http
+run.bat capturer https
+run.bat reinitialiser</code></pre>
+    <p>Dans Wireshark, le filtre d'affichage <code>http</code> montre la requête POST et ses champs en clair ; le filtre <code>tls.handshake</code> isole le <span class="en" lang="en">ClientHello</span> et le <span class="en" lang="en">ServerHello</span>, où se lisent les versions (extension <code>supported_versions</code>), les suites de chiffrement et le partage du secret (extensions <code>key_share</code> et <code>pre_shared_key</code>). Les captures sont faites dans le conteneur, sur les ports 80 et 443 : l'interface <span class="en" lang="en">loopback</span> de Windows n'a pas besoin d'être capturée.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Sans Docker : Apache dans WSL</span></p>
+      <p>Faute de Docker, le TP marche aussi dans WSL (Ubuntu), qui est un Linux complet. On y installe une fois ce qu'a le Raspberry :</p>
+<pre class="terminal"><code>$ sudo apt install apache2 libapache2-mod-php openssl tshark
+$ sudo service apache2 start</code></pre>
+      <p>Le site répond alors sur <code>http://localhost</code> depuis le navigateur de Windows. Si <code>systemctl</code> refuse de fonctionner (WSL sans systemd), <code>sudo service apache2 restart</code> le remplace. La capture se fait avec <code>sudo tshark -i any -w /tmp/http.pcap</code>, que l'on copie ensuite côté Windows pour l'ouvrir dans Wireshark. À la fin, l'étape 4 de l'énoncé remet Apache dans son état initial.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Apache et TLS</p>
+      <ul>
+        <li>Sous Debian et Ubuntu, Apache sépare ce qui existe (<code>sites-available</code>, <code>mods-available</code>) de ce qui est actif (<code>sites-enabled</code>, <code>mods-enabled</code>) ; les commandes <code>a2*</code> ajoutent ou retirent les liens, et Apache doit être redémarré ensuite.</li>
+        <li>Sans TLS, un formulaire envoie login et mot de passe en clair dans la requête HTTP : tout observateur du réseau les lit.</li>
+        <li>Un certificat auto-signé permet de chiffrer, mais n'authentifie pas le serveur, puisqu'aucune autorité de certification ne s'en porte garante : le navigateur prévient.</li>
+        <li>La clé privée reste dans <code>/etc/ssl/private</code>, lisible par l'administrateur seulement ; le certificat, public, va dans <code>/etc/ssl/certs</code>.</li>
+        <li>Dans le handshake, le client propose (versions, suites, partage du secret) dans le <span class="en" lang="en">ClientHello</span>, le serveur choisit dans le <span class="en" lang="en">ServerHello</span>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Que fait <code>a2ensite sitetp5</code>, concrètement ?</summary>
+        <div><p>Il crée dans <code>sites-enabled</code> un lien symbolique vers <code>sites-available/sitetp5.conf</code> ; <code>a2dissite</code> le supprime. Le fichier lui-même n'est pas touché.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi le navigateur affiche-t-il un avertissement sur <code>https://localhost</code> ?</summary>
+        <div><p>Le certificat est signé par sa propre clé et non par une autorité que le navigateur connaît : la connexion est chiffrée, mais rien ne prouve qu'on parle au bon serveur.</p></div>
+      </details>
+      <details class="carte">
+        <summary>En TLS 1.3, où lit-on la version réellement négociée ?</summary>
+        <div><p>Dans l'extension <code>supported_versions</code> du <span class="en" lang="en">ServerHello</span> : le vieux champ de version de l'en-tête vaut toujours 0x0303 (TLS 1.2), par compatibilité.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Une fois en HTTPS, que voit encore un observateur du réseau ?</summary>
+        <div><p>Les adresses IP, les ports, la taille et le rythme des échanges, et le nom du site, envoyé en clair dans l'extension SNI du <span class="en" lang="en">ClientHello</span>. Le contenu (URL, formulaire, cookies) est chiffré.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2>Correction</h2>
+    <details class="depliant">
+      <summary>Correction officielle</summary>
+      <p>Les fichiers de configuration de l'enseignant (<code>sitetp5.conf</code>, <code>sitetp5ssl.conf</code>) et ses captures d'écran du site en HTTP et en HTTPS sont dans <a href="../TP/TP5/correction/correction/">TP/TP5/correction/</a>. À n'ouvrir qu'après avoir fait le TP.</p>
+    </details>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="tp-04-hmac.html"><small>← Précédent</small>TP 4 · Gestionnaire de mots de passe v2</a>
+    <a class="suivant" href="index.html"><small>Suivant →</small>Accueil de la matière</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Sécurité informatique · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

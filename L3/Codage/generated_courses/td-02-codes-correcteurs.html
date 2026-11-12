@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="codage">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TD 2 · Codes d'étalement et codes correcteurs · Codage L3</title>
+<meta name="description" content="TD 2 interactif de codage de l'information (L3) : matrice de Hadamard de longueur 8, étalement et signal de deux utilisateurs, code linéaire systématique (5, 2) avec son système, ses matrices génératrice et de contrôle, sa table de décodage et sa probabilité d'erreur, extension d'une source et code parfait ; préremplis avec les réponses du brouillon.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">Codage</a>
+    <span aria-current="page">TD 2 · Codes d'étalement et codes correcteurs</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Codage</span> TD 2 · L3 S5 · interactif</p>
+    <h1>Codes d'étalement et codes correcteurs</h1>
+    <p class="chapeau">Un sujet de deux heures en trois exercices : construire la matrice de Hadamard de longueur 8 et étaler les bits de deux utilisateurs, étudier un code linéaire systématique (5, 2) de son système jusqu'à sa probabilité d'erreur, puis chercher l'extension d'une source qui permet un code parfait. Les réponses de ton brouillon y sont déjà reprises.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TD/TD2/TD2.pdf">TD2.pdf</a> · 1 page</dd></div>
+      <div><dt>Enseignant</dt><dd>Florent Carlier</dd></div>
+      <div><dt>Cours</dt><dd><a href="cours-03B-cdma.html">Cours 3B · Codes d'étalement et CDMA</a>, <a href="cours-03A-codes-correcteurs.html">Cours 3A · Codes correcteurs d'erreurs</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-09">9 oct. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Construire une matrice de Hadamard et étaler les bits de plusieurs utilisateurs.</li>
+        <li>Calculer le signal reçu quand deux utilisateurs émettent ensemble.</li>
+        <li>Écrire le système, la matrice génératrice et la matrice de contrôle d'un code systématique.</li>
+        <li>Trouver le pouvoir correcteur, construire la table de décodage par syndrome et calculer une probabilité d'erreur.</li>
+        <li>Appliquer la condition d'un code parfait.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Notions utilisées</p>
+      <ul>
+        <li><a href="cours-03B-cdma.html#les-sequences-de-walsh-hadamard">Séquences de Walsh-Hadamard</a>, <a href="cours-03B-cdma.html#quatre-utilisateurs-quatre-sequences">étalement</a> et <a href="cours-03B-cdma.html#reception-et-desetalement">désétalement</a></li>
+        <li><a href="cours-03A-codes-correcteurs.html#la-matrice-generatrice">Matrice génératrice</a>, <a href="cours-03A-codes-correcteurs.html#matrice-de-controle">matrice de contrôle</a> et <a href="cours-03A-codes-correcteurs.html#syndrome">syndrome</a></li>
+        <li><a href="cours-03A-codes-correcteurs.html#detecter-et-corriger">Détecter et corriger</a>, <a href="cours-03A-codes-correcteurs.html#codes-parfaits">codes parfaits</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Mode d'emploi</p>
+    <ul>
+      <li>Les réponses de ton brouillon (<code>TD2_notes.pdf</code>, scanné le 1er octobre) sont reprises telles quelles, sans correction ; le pied de chaque atelier le signale. Les questions sans réponse sur le brouillon sont vides.</li>
+      <li>Les matrices et les tables se remplissent au clavier (Entrée ou ↓ : ligne suivante) ; les questions à justifier ont un champ de rédaction.</li>
+      <li>« Vérifier » contrôle la forme, « Comparer » mesure l'écart avec la solution, « Claude » répond aux questions et corrige. La solution reste cachée tant qu'on ne la demande pas ; le menu ⋯ remet ta copie papier ou l'exercice vierge.</li>
+      <li>Le travail s'enregistre tout seul. Avec le serveur local (<code>studies/lancer.bat</code>), il va dans <code>td_results/</code> et Claude est disponible.</li>
+    </ul>
+  </div>
+
+  <div class="bloc exercice">
+    <p class="bloc-titre">Objectifs du sujet</p>
+    <p>Première approche de manipulations de codes correcteurs d'erreurs utilisés dans le domaine des télécommunications.</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Code de Hadamard <span class="ref">TD, exercice 1</span></h2>
+    <p>Les lignes d'une matrice de Hadamard sont des séquences orthogonales : chaque utilisateur étale ses bits avec la sienne, et le récepteur sépare les utilisateurs qui émettent en même temps.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Q-1</span></p>
+      <p>Donner la matrice de Hadamard de longueur 8.</p>
+    </div>
+    <div class="atelier" id="td2-ex1-q1-hadamard" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "Q-1 · matrice de Hadamard de longueur 8",
+        "consigne": "<p>Une ligne par séquence. Écrire 1 pour +1 et 0 pour −1, comme une suite binaire.</p>",
+        "options": {
+          "verrou": "depart",
+          "lignes": false,
+          "ordre": true,
+          "mono": true
+        },
+        "depart": [
+          "| Séquence | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |",
+          "|---|---|---|---|---|---|---|---|---|",
+          "| 1 |  |  |  |  |  |  |  |  |",
+          "| 2 |  |  |  |  |  |  |  |  |",
+          "| 3 |  |  |  |  |  |  |  |  |",
+          "| 4 |  |  |  |  |  |  |  |  |",
+          "| 5 |  |  |  |  |  |  |  |  |",
+          "| 6 |  |  |  |  |  |  |  |  |",
+          "| 7 |  |  |  |  |  |  |  |  |",
+          "| 8 |  |  |  |  |  |  |  |  |"
+        ],
+        "solution": [
+          "| Séquence | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |",
+          "|---|---|---|---|---|---|---|---|---|",
+          "| 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |",
+          "| 2 | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 |",
+          "| 3 | 1 | 1 | 0 | 0 | 1 | 1 | 0 | 0 |",
+          "| 4 | 1 | 0 | 0 | 1 | 1 | 0 | 0 | 1 |",
+          "| 5 | 1 | 1 | 1 | 1 | 0 | 0 | 0 | 0 |",
+          "| 6 | 1 | 0 | 1 | 0 | 0 | 1 | 0 | 1 |",
+          "| 7 | 1 | 1 | 0 | 0 | 0 | 0 | 1 | 1 |",
+          "| 8 | 1 | 0 | 0 | 1 | 0 | 1 | 1 | 0 |"
+        ],
+        "papier": {
+          "source": "TD2_notes.pdf, scan du 1er octobre 2026",
+          "date": "2026-10-01",
+          "texte": [
+            "| Séquence | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |",
+            "|---|---|---|---|---|---|---|---|---|",
+            "| 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |",
+            "| 2 | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 |",
+            "| 3 | 1 | 1 | 0 | 0 | 1 | 1 | 0 | 0 |",
+            "| 4 | 1 | 0 | 0 | 1 | 1 | 0 | 0 | 1 |",
+            "| 5 | 1 | 1 | 1 | 1 | 0 | 0 | 0 | 0 |",
+            "| 6 | 1 | 0 | 1 | 0 | 0 | 1 | 0 | 1 |",
+            "| 7 | 1 | 1 | 0 | 0 | 0 | 0 | 1 | 1 |",
+            "| 8 | 1 | 0 | 0 | 1 | 0 | 1 | 1 | 0 |"
+          ],
+          "note": "tu as d'abord écrit H₀ = [1], H₁ et H₂, avec « longueur = 2⁰ = 1 », « 2¹ = 2 », « 2² = 4 », puis H₃ (« longueur = 2³ = 8 ») ; une flèche « U1 » sur la ligne 2, « U2 » sur la ligne 4, et des flèches sans nom sur les lignes 5 à 8."
+        },
+        "explication": "<p>Construction de Sylvester (<a href='cours-03B-cdma.html#les-sequences-de-walsh-hadamard'>cours 3B</a>) : \\(H_0 = [1]\\), puis \\(H_n = \\begin{bmatrix} H_{n-1} & H_{n-1} \\\\ H_{n-1} & -H_{n-1} \\end{bmatrix}\\). La longueur double à chaque étape : 1, 2, 4, 8, donc \\(H_3\\) est la matrice de longueur 8. En binaire, −1 s'écrit 0 : la moitié basse recopie la moitié haute à gauche, et en donne le complément à droite.</p><p>Deux lignes distinctes coïncident sur exactement 4 positions sur 8 : c'est l'orthogonalité, qui permet à huit utilisateurs d'émettre en même temps.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Partir de \(H_0 = [1]\) et doubler trois fois : à chaque étape, recopier la matrice à droite et en dessous, et l'inverser en bas à droite.</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Q-2</span></p>
+      <p>Un utilisateur 1 (U1) utilise la séquence 2 et émet la séquence 1 0 1. Un utilisateur 2 (U2) utilise la séquence 4 et émet la séquence 0 1 1. Donner le codage de chaque séquence.</p>
+    </div>
+    <div class="atelier" id="td2-ex1-q2-codage" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "Q-2 · codage des deux séquences",
+        "consigne": "<p>Pour chaque bit émis, les 8 chips, sans espaces : la séquence de l'utilisateur pour un 1, son complément pour un 0.</p>",
+        "options": {
+          "verrou": "depart",
+          "lignes": false,
+          "ordre": true,
+          "mono": true
+        },
+        "depart": [
+          "| Utilisateur | Bit 1 | Bit 2 | Bit 3 |",
+          "|---|---|---|---|",
+          "| U1 (101) |  |  |  |",
+          "| U2 (011) |  |  |  |"
+        ],
+        "solution": [
+          "| Utilisateur | Bit 1 | Bit 2 | Bit 3 |",
+          "|---|---|---|---|",
+          "| U1 (101) | 10101010 | 01010101 | 10101010 |",
+          "| U2 (011) | 01100110 | 10011001 | 10011001 |"
+        ],
+        "papier": {
+          "source": "TD2_notes.pdf, scan du 1er octobre 2026",
+          "date": "2026-10-01",
+          "texte": [
+            "| Utilisateur | Bit 1 | Bit 2 | Bit 3 |",
+            "|---|---|---|---|",
+            "| U1 (101) | 10101010 | 01010101 | 10101010 |",
+            "| U2 (011) | 01100110 | 10011001 | 10011001 |"
+          ],
+          "note": "sous chaque bloc de 8 chips, tu as noté le bit codé (1, 0, 1 pour U1 ; 0, 1, 1 pour U2)."
+        },
+        "explication": "<p>U1 a la séquence 2, \\(10101010\\) ; U2 la séquence 4, \\(10011001\\) (lignes numérotées à partir de 1, comme les utilisateurs du <a href='cours-03B-cdma.html#quatre-utilisateurs-quatre-sequences'>cours 3B</a>). Chaque bit multiplie la séquence : un 1 la laisse telle quelle, un 0 (−1) l'inverse. U1 émet donc \\(10101010\\,01010101\\,10101010\\), et U2 \\(01100110\\,10011001\\,10011001\\).</p><p><span class='badge a-verifier'>À vérifier</span> Si l'enseignant numérote les séquences à partir de 0, comme les lignes du programme du TP 1A, « la séquence 2 » est \\(11001100\\) et « la séquence 4 » \\(11110000\\) : la méthode est la même.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Q-3</span></p>
+      <p>Les utilisateurs émettent en même temps. Donner la valeur de la séquence du signal (opération d'étalement).</p>
+    </div>
+    <div class="atelier" id="td2-ex1-q3-signal" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "Q-3 · signal reçu",
+        "consigne": "<p>Somme des chips des deux utilisateurs, chip par chip, en comptant +1 pour un 1 et −1 pour un 0 : chaque valeur vaut −2, 0 ou 2.</p>",
+        "options": {
+          "verrou": "depart",
+          "lignes": false,
+          "ordre": true,
+          "mono": true
+        },
+        "depart": [
+          "| Bits (U1 + U2) | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |",
+          "|---|---|---|---|---|---|---|---|---|",
+          "| 1+0 |  |  |  |  |  |  |  |  |",
+          "| 0+1 |  |  |  |  |  |  |  |  |",
+          "| 1+1 |  |  |  |  |  |  |  |  |"
+        ],
+        "solution": [
+          "| Bits (U1 + U2) | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |",
+          "|---|---|---|---|---|---|---|---|---|",
+          "| 1+0 | 0 | 0 | 2 | -2 | 0 | 0 | 2 | -2 |",
+          "| 0+1 | 0 | 0 | -2 | 2 | 0 | 0 | -2 | 2 |",
+          "| 1+1 | 2 | -2 | 0 | 0 | 2 | -2 | 0 | 0 |"
+        ],
+        "papier": {
+          "source": "TD2_notes.pdf, scan du 1er octobre 2026",
+          "date": "2026-10-01",
+          "texte": [
+            "| Bits (U1 + U2) | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |",
+            "|---|---|---|---|---|---|---|---|---|",
+            "| 1+0 | 0 | 0 | 2 | -2 | 0 | 0 | 2 | -2 |",
+            "| 0+1 | 0 | 0 | -2 | 2 | 0 | 0 | -2 | 2 |",
+            "| 1+1 | 2 | -2 | 0 | 0 | 2 | -2 | 0 | 0 |"
+          ]
+        },
+        "explication": "<p>Avec \\(+1\\) pour 1 et \\(-1\\) pour 0, U1 émet \\((+,-,+,-,+,-,+,-)\\) pour son premier bit, et U2 \\((-,+,+,-,-,+,+,-)\\) pour le sien (un 0) : la somme est \\((0, 0, 2, -2, 0, 0, 2, -2)\\). De même pour les deux autres temps bit.</p><p>Désétalement : le récepteur de U1 multiplie le signal par sa séquence et somme. Pour le premier temps bit, \\(0 + 0 + 2 + 2 + 0 + 0 + 2 + 2 = 8 > 0\\) : U1 a émis un 1. Celui de U2 trouve \\(-8\\) : un 0. La contribution de l'autre utilisateur s'annule, grâce à l'orthogonalité.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Génération d'un code correcteur d'erreurs <span class="ref">TD, exercice 2</span></h2>
+    <p>Un code en bloc linéaire se décrit par un système d'équations, puis par deux matrices : la matrice génératrice, qui code, et la matrice de contrôle, qui calcule le syndrome.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Le code</span></p>
+      <p>Un code associe à deux éléments binaires d'information des mots constitués de cinq éléments binaires suivant la correspondance :</p>
+      <div class="tableau compact">
+        <table>
+          <thead><tr><th>Éléments binaires d'information</th><th>Mots code</th></tr></thead>
+          <tbody>
+            <tr><td>00</td><td>00000</td></tr>
+            <tr><td>01</td><td>01101</td></tr>
+            <tr><td>10</td><td>10111</td></tr>
+            <tr><td>11</td><td>11010</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Q-1</span></p>
+      <p>Le code est linéaire systématique. Expliquez l'implication de ce type de code.</p>
+    </div>
+    <div class="atelier" id="td2-ex2-q1" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Q-1 · implication d'un code systématique",
+        "options": {
+          "lignes": 4,
+          "placeholder": "Ce que signifie « systématique », et ce qu'on y gagne."
+        },
+        "solution": "Les deux éléments binaires d'information se retrouvent tels quels au début de chaque mot de code (00 → 00000, 01 → 01…, 10 → 10…, 11 → 11…), suivis de trois éléments de contrôle calculés à partir d'eux : n = 5, m = 2, k = 3.\nConséquences : après correction, le message se lit directement dans les deux premiers éléments ; la matrice génératrice s'écrit G = (I₂ ; P) et la matrice de contrôle H = (Pᵀ ; I₃).",
+        "papier": {
+          "source": "TD2_notes.pdf, scan du 1er octobre 2026",
+          "date": "2026-10-01",
+          "texte": "systématique veut dire que le début du message est l'information et que le code correcteur d'erreur la suit."
+        },
+        "explication": "<p>C'est la définition du <a href='cours-03A-codes-correcteurs.html#codes-en-bloc'>code séparable, ou systématique</a> : \\(m\\) éléments d'information suivis de \\(k\\) éléments de contrôle. L'implication attendue va un peu plus loin que la définition : pas de décodage à faire pour retrouver l'information, et des matrices de forme connue (<a href='cours-03A-codes-correcteurs.html#forme-systematique'>forme systématique</a>).</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Q-2</span></p>
+      <p>Expliciter le code sous forme d'un système.</p>
+    </div>
+    <div class="atelier" id="td2-ex2-q2" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Q-2 · le code sous forme d'un système",
+        "options": {
+          "lignes": 4,
+          "placeholder": "c1 = …, c2 = …, c3 = … en fonction de a1 et a2 (+ : ou exclusif)"
+        },
+        "solution": "Le mot est a1 a2 c1 c2 c3, avec :\nc1 = a1 + a2\nc2 = a1\nc3 = a1 + a2\n(sommes modulo 2)",
+        "papier": {
+          "source": "TD2_notes.pdf, scan du 1er octobre 2026",
+          "date": "2026-10-01",
+          "texte": "C1 = a1 + a2\nC2 = a1\nC3 = a1 + a2"
+        },
+        "explication": "<p>On lit les trois derniers éléments des mots de code : 01 → 101, 10 → 111, 11 → 010. \\(c_2\\) vaut 0, 1, 1 : c'est \\(a_1\\). \\(c_1\\) et \\(c_3\\) valent 1, 1, 0 : c'est \\(a_1 + a_2\\) modulo 2. Le code étant linéaire, il suffit de vérifier les mots de 10 et 01, puis 11 en est la somme.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Q-3</span></p>
+      <p>Donner l'expression de la matrice génératrice et de la matrice de contrôle.</p>
+    </div>
+    <div class="atelier" id="td2-ex2-q3-g" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "Q-3 · matrice génératrice G",
+        "consigne": "<p>Comme au cours 3A : une ligne par élément du mot de code, une colonne par élément d'information (le mot de code est \\(G \\cdot (a_1, a_2)^T\\)).</p>",
+        "options": {
+          "verrou": "depart",
+          "lignes": false,
+          "ordre": true,
+          "mono": true
+        },
+        "depart": [
+          "| Élément | a1 | a2 |",
+          "|---|---|---|",
+          "| a1 |  |  |",
+          "| a2 |  |  |",
+          "| c1 |  |  |",
+          "| c2 |  |  |",
+          "| c3 |  |  |"
+        ],
+        "solution": [
+          "| Élément | a1 | a2 |",
+          "|---|---|---|",
+          "| a1 | 1 | 0 |",
+          "| a2 | 0 | 1 |",
+          "| c1 | 1 | 1 |",
+          "| c2 | 1 | 0 |",
+          "| c3 | 1 | 1 |"
+        ],
+        "papier": {
+          "source": "TD2_notes.pdf, scan du 1er octobre 2026",
+          "date": "2026-10-01",
+          "texte": [
+            "| Élément | a1 | a2 |",
+            "|---|---|---|",
+            "| a1 | 1 | 0 |",
+            "| a2 | 0 | 1 |",
+            "| c1 | 1 | 1 |",
+            "| c2 | 1 | 0 |",
+            "| c3 | 1 | 1 |"
+          ],
+          "note": "tu l'as appelée « matrice de génération » ; « = I2 » sur les deux premières lignes, « a1 + a2 », « a1 », « a1 + a2 » en face des trois dernières."
+        },
+        "explication": "<p>Les colonnes de \\(G\\) sont les mots de code de 10 et de 01 : \\(10111\\) et \\(01101\\). Sous forme systématique, \\(G = \\begin{pmatrix} I_2 \\\\ P \\end{pmatrix}\\), et \\(P\\) traduit le système de la Q-2 : ligne \\(c_1\\) = (1, 1), ligne \\(c_2\\) = (1, 0), ligne \\(c_3\\) = (1, 1).</p><p>D'autres ouvrages écrivent les mots en ligne et utilisent la transposée, une matrice 2 × 5.</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td2-ex2-q3-h" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "Q-3 · matrice de contrôle H",
+        "consigne": "<p>Comme au cours 3A : \\(H = \\begin{pmatrix} P^T \\\\ I_3 \\end{pmatrix}\\), une ligne par élément du mot de code, une colonne par élément du syndrome.</p>",
+        "options": {
+          "verrou": "depart",
+          "lignes": false,
+          "ordre": true,
+          "mono": true
+        },
+        "depart": [
+          "| Élément | s1 | s2 | s3 |",
+          "|---|---|---|---|",
+          "| a1 |  |  |  |",
+          "| a2 |  |  |  |",
+          "| c1 |  |  |  |",
+          "| c2 |  |  |  |",
+          "| c3 |  |  |  |"
+        ],
+        "solution": [
+          "| Élément | s1 | s2 | s3 |",
+          "|---|---|---|---|",
+          "| a1 | 1 | 1 | 1 |",
+          "| a2 | 1 | 0 | 1 |",
+          "| c1 | 1 | 0 | 0 |",
+          "| c2 | 0 | 1 | 0 |",
+          "| c3 | 0 | 0 | 1 |"
+        ],
+        "papier": {
+          "source": "TD2_notes.pdf, scan du 1er octobre 2026",
+          "date": "2026-10-01",
+          "texte": [
+            "| Élément | s1 | s2 | s3 |",
+            "|---|---|---|---|",
+            "| a1 | 1 | 1 | 1 |",
+            "| a2 | 1 | 0 | 1 |",
+            "| c1 | 1 | 0 | 0 |",
+            "| c2 | 0 | 1 | 0 |",
+            "| c3 | 0 | 0 | 1 |"
+          ],
+          "note": "tu l'as appelée « matrice orthogonale du code » ; « a1 + a2 », « a1 », « a1 + a2 » au-dessus des trois colonnes, « = I3 » sur les trois dernières lignes."
+        },
+        "explication": "<p>\\(P^T\\) a pour lignes (1, 1, 1) et (1, 0, 1) : chaque colonne de \\(H\\) est une équation de contrôle. La première, \\(a_1 + a_2 + c_1 = 0\\), redit \\(c_1 = a_1 + a_2\\) ; la deuxième, \\(a_1 + c_2 = 0\\) ; la troisième, \\(a_1 + a_2 + c_3 = 0\\).</p><p>Vérification : \\(H^T c = 0\\) pour les quatre mots de code (par exemple \\(01101\\) : \\(0 + 1 + 1 = 0\\), \\(0 + 0 = 0\\), \\(0 + 1 + 1 = 0\\)).</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Q-4</span></p>
+      <p>Préciser le pouvoir correcteur de ce code en tenant compte de la question précédente.</p>
+    </div>
+    <div class="atelier" id="td2-ex2-q4" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Q-4 · pouvoir correcteur",
+        "options": {
+          "lignes": 4,
+          "placeholder": "La distance minimale du code, puis ce qu'il détecte et ce qu'il corrige."
+        },
+        "solution": "Le code est linéaire : sa distance minimale est le plus petit poids d'un mot non nul. 01101 et 11010 ont 3 « 1 », 10111 en a 4 : dmin = 3.\nIl détecte dmin − 1 = 2 erreurs et en corrige t = ⌊(dmin − 1)/2⌋ = 1.",
+        "papier": {
+          "source": "TD2_notes.pdf, scan du 1er octobre 2026",
+          "date": "2026-10-01",
+          "texte": "dm − 1 erreurs\n\nt = ent((dm − 1)/2) erreurs"
+        },
+        "explication": "<p>Les formules sont celles du cours (<a href='cours-03A-codes-correcteurs.html#detecter-et-corriger'>détecter et corriger</a>) ; il reste à les appliquer : \\(d_{min} = 3\\), donc 2 erreurs détectées et 1 corrigée. Avec \\(H\\), on le voit aussi : ses cinq lignes sont non nulles et distinctes, donc une erreur simple est toujours reconnue ; mais trois lignes peuvent avoir une somme nulle (\\(a_2 + c_1 + c_3\\) : \\(101 + 100 + 001 = 000\\)), d'où \\(d_{min} = 3\\).</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Q-5</span></p>
+      <p>Construire une table de décodage indiquant les configurations d'erreurs effectivement corrigées.</p>
+    </div>
+    <div class="atelier" id="td2-ex2-q5-decodage" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "Q-5 · table de décodage",
+        "consigne": "<p>Pour chaque syndrome possible, la configuration d'erreur la plus probable (de poids le plus faible), écrite sur 5 éléments.</p>",
+        "options": {
+          "lignes": true,
+          "ordre": false,
+          "mono": true,
+          "cles": [
+            "Syndrome"
+          ]
+        },
+        "depart": [
+          "| Erreur | Syndrome |",
+          "|---|---|",
+          "|  |  |",
+          "|  |  |",
+          "|  |  |",
+          "|  |  |",
+          "|  |  |",
+          "|  |  |",
+          "|  |  |",
+          "|  |  |"
+        ],
+        "solution": [
+          "| Erreur | Syndrome |",
+          "|---|---|",
+          "| 00000 | 000 |",
+          "| 10000 | 111 |",
+          "| 01000 | 101 |",
+          "| 00100 | 100 |",
+          "| 00010 | 010 |",
+          "| 00001 | 001 |",
+          "| 10100 | 011 |",
+          "| 10001 | 110 |"
+        ],
+        "papier": {
+          "source": "TD2_notes.pdf, scan du 1er octobre 2026",
+          "date": "2026-10-01",
+          "texte": [
+            "| Erreur | Syndrome |",
+            "|---|---|",
+            "| 00000 | 000 |",
+            "| 00001 | 001 |",
+            "| 00010 | 010 |",
+            "| 00100 | 100 |",
+            "| 01000 | 101 |",
+            "| 10000 | 111 |"
+          ],
+          "note": "la première ligne est écrite « syndrome 00000 est 000 », dans un cadre."
+        },
+        "explication": "<p>Le syndrome d'une erreur \\(e\\) est \\(H^T e\\) : pour une erreur simple, c'est la ligne de \\(H\\) de l'élément touché. Les cinq erreurs simples donnent cinq syndromes distincts et non nuls : toutes sont corrigées.</p><p>Avec 3 éléments de contrôle, il y a \\(2^3 = 8\\) syndromes : il en reste deux, 011 et 110, qui ne viennent d'aucune erreur simple. Chacun vient de deux erreurs doubles : 011 de 00011 (\\(c_2, c_3\\)) ou de 10100 (\\(a_1, c_1\\)) ; 110 de 00110 (\\(c_1, c_2\\)) ou de 10001 (\\(a_1, c_3\\)). On en choisit une par syndrome : la table corrige alors, en plus, deux configurations d'erreurs doubles. La solution retient 10100 et 10001 ; l'autre choix est aussi juste.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Le syndrome d'une erreur simple est la ligne de \(H\) de l'élément touché. Combien de syndromes différents peut-on obtenir avec 3 éléments de contrôle ? Les erreurs simples les prennent-elles tous ?</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Q-6</span></p>
+      <p>On suppose que les éléments binaires du code sont transmis sur un canal binaire symétrique de probabilité d'erreur inférieure à 0,04. Donner la probabilité d'erreur de notre code.</p>
+    </div>
+    <div class="atelier" id="td2-ex2-q6" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Q-6 · probabilité d'erreur",
+        "options": {
+          "lignes": 5,
+          "placeholder": "Les erreurs corrigées par la table, leur probabilité, puis la probabilité d'erreur pour p = 0,04."
+        },
+        "solution": "Le mot est bien décodé quand l'erreur est l'une des 8 configurations de la table : aucune erreur, l'une des 5 erreurs simples, ou l'une des 2 erreurs doubles choisies.\nP(décision correcte) = (1 − p)^5 + 5p(1 − p)^4 + 2p²(1 − p)^3\nP(erreur) = 1 − [(1 − p)^5 + 5p(1 − p)^4 + 2p²(1 − p)^3]\nPour p = 0,04 : P(correcte) ≈ 0,9881, donc P(erreur) ≈ 0,0119 ; c'est une borne, puisque p est inférieur à 0,04.",
+        "papier": {
+          "source": "TD2_notes.pdf, scan du 1er octobre 2026",
+          "date": "2026-10-01",
+          "texte": "P{décision correcte} = (1 − p)^5 + 5p(1 − p)^4 + 2p^2(1 − p…",
+          "note": "la formule est écrite au-dessus de la table de décodage, et sa fin sort du bord de la feuille."
+        },
+        "explication": "<p>C'est le raisonnement du <a href='cours-03A-codes-correcteurs.html#probabilite-de-mal-decoder'>code (6, 3) du cours</a> : les erreurs touchent les 5 éléments indépendamment, une configuration de poids \\(w\\) a la probabilité \\(p^w (1-p)^{5-w}\\). Pour \\(p = 0{,}04\\) : \\(0{,}96^5 \\approx 0{,}8154\\), \\(5 \\times 0{,}04 \\times 0{,}96^4 \\approx 0{,}1699\\), \\(2 \\times 0{,}04^2 \\times 0{,}96^3 \\approx 0{,}0028\\). La probabilité d'erreur, \\(\\approx 0{,}0119\\), est à comparer à celle d'un message de 2 bits non codé, \\(1 - 0{,}96^2 \\approx 0{,}0784\\).</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Extension d'un code correcteur <span class="ref">TD, exercice 3</span></h2>
+    <p>Un code parfait n'existe que pour certaines longueurs : en regroupant plusieurs messages de la source (son extension), on peut atteindre l'une d'elles.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Q-1</span></p>
+      <p>La longueur du message de la source est 3. On envisage d'utiliser un code correcteur d'erreurs linéaire parfait de distance minimum 3 sur un canal binaire symétrique. Quel doit être l'ordre minimum e d'extension de la source pour que la construction d'un tel code soit possible ?</p>
+    </div>
+    <div class="atelier" id="td2-ex3-q1" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Q-1 · ordre minimal d'extension",
+        "options": {
+          "lignes": 7,
+          "placeholder": "La condition d'un code parfait corrigeant une erreur, puis la plus petite extension qui la vérifie."
+        },
+        "solution": "Une extension d'ordre e de la source donne des messages de m = 3e éléments binaires. Un code de distance minimale 3 corrige t = 1 erreur ; il est parfait quand les boules de rayon 1 autour des mots de code remplissent l'espace : 2^m (1 + n) = 2^n, soit 2^k = 1 + n avec n = m + k.\nDonc 2^k = 3e + k + 1, soit 3e = 2^k − (k + 1).\nk = 2 : 1 ; k = 3 : 4 ; k = 4 : 11 ; k = 5 : 26 ; aucun n'est multiple de 3. k = 6 : 57 = 3 × 19.\nL'ordre minimal est e = 19 : code de Hamming (63, 57), avec k = 6 éléments de contrôle.",
+        "papier": {
+          "source": "TD2_notes.pdf, scan du 1er octobre 2026",
+          "date": "2026-10-01",
+          "texte": "m = 3                q = 2\nΣ (j = 0 à t) C_n^i (q − 1)^j = q^k → 2^k = 1 + n\ndm = 3          t = ⌊(dm − 1)/2⌋ = 1\nn = m + k\n2k = 3E + k + 1\n⟺ 3E = 2^k − (k + 1)",
+          "note": "la page s'arrête là."
+        },
+        "explication": "<p>La borne de Hamming s'écrit \\(\\sum_{j=0}^{t} C_n^j (q-1)^j \\le q^{k}\\) ; un code parfait l'atteint (<a href='cours-03A-codes-correcteurs.html#codes-parfaits'>codes parfaits</a>). En binaire avec \\(t = 1\\) : \\(1 + n = 2^k\\). Comme \\(n = 3e + k\\), il faut que \\(2^k - k - 1\\) soit un multiple de 3 : le premier \\(k\\) qui convient est 6, d'où \\(e = 19\\), \\(n = 63\\) et \\(m = 57\\).</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>L'extension d'ordre \(e\) donne des messages de \(3e\) éléments. Un code parfait qui corrige une erreur vérifie \(2^k = 1 + n\), avec \(n = 3e + k\).</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Q-2</span></p>
+      <p>En utilisant le code trouvé en Q-1, calculer la probabilité pour qu'un mot de l'extension d'ordre e soit correctement transmis.</p>
+    </div>
+    <div class="atelier" id="td2-ex3-q2" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Q-2 · probabilité de transmission correcte",
+        "options": {
+          "lignes": 5,
+          "placeholder": "Les erreurs que le code corrige, puis la probabilité qu'un mot soit correctement transmis."
+        },
+        "solution": "Le code (63, 57) est parfait et corrige exactement les erreurs simples : un mot est correctement transmis s'il subit au plus une erreur.\nP = (1 − p)^63 + 63 p (1 − p)^62\nPar exemple, pour p = 0,01 : P ≈ 0,8688, contre (1 − p)^57 ≈ 0,5639 pour les 57 éléments envoyés sans code.",
+        "explication": "<p>Le sujet ne donne pas la probabilité d'erreur du canal : la réponse est une formule en \\(p\\). Un code parfait ne corrige rien au-delà de \\(t\\) : toute erreur double est mal corrigée. L'exemple numérique est un <span class='badge ajout'>Ajout</span>.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>Hadamard : \(H_n = \begin{bmatrix} H_{n-1} & H_{n-1} \\ H_{n-1} & -H_{n-1} \end{bmatrix}\) ; chaque ligne est la séquence d'un utilisateur. Un bit 1 émet la séquence, un bit 0 son opposée ; les signaux des utilisateurs s'additionnent.</li>
+        <li>Code systématique \((n, m)\) : l'information en tête, \(G = \begin{pmatrix} I_m \\ P \end{pmatrix}\), \(H = \begin{pmatrix} P^T \\ I_k \end{pmatrix}\) en binaire, et \(H^T c = 0\) pour tout mot de code.</li>
+        <li>Code linéaire : \(d_{min}\) = plus petit poids d'un mot non nul ; il détecte \(d_{min} - 1\) erreurs et en corrige \(\lfloor (d_{min} - 1) / 2 \rfloor\).</li>
+        <li>Table de décodage : \(2^k\) syndromes, chacun associé à l'erreur de plus faible poids qui le produit ; la probabilité de bien décoder est la somme des probabilités de ces erreurs.</li>
+        <li>Code parfait corrigeant une erreur : \(2^k = 1 + n\) (codes de Hamming \(n = 2^k - 1\)).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Combien d'utilisateurs une matrice de Hadamard de longueur 16 peut-elle servir en même temps ?</summary>
+        <div><p>16 : une séquence orthogonale par ligne, et pas une de plus.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un code linéaire a pour mots non nuls de poids minimal 4. Que détecte-t-il, que corrige-t-il ?</summary>
+        <div><p>Il détecte 3 erreurs et en corrige 1.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi le syndrome ne dépend-il que de l'erreur ?</summary>
+        <div><p>Parce que \(H^T (c + e) = H^T c + H^T e = H^T e\), puisque \(H^T c = 0\) pour tout mot de code.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quel est le plus petit code de Hamming qui protège des messages de 4 bits ?</summary>
+        <div><p>Le code (7, 4) : \(k = 3\), \(2^3 = 1 + 7\).</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="td-01-codage-physique-entropie.html"><small>← TD 1</small>Codage physique et mesure de l'information</a>
+    <a class="suivant" href="td-03-pseudo-aleatoires-cycliques.html"><small>Suivant →</small>TD 3 · Codes pseudo-aléatoires et codes cycliques</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Codage · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TD 3 · Université et CD de jazz · Bases de données L2</title>
+<meta name="description" content="TD 3 interactif de bases de données (L2) : modéliser le cursus universitaire (étudiants, promos, professeurs, modules), le traduire en relations et l'interroger en SQL (comptages, regroupements) ; modéliser une CD-thèque de jazz (CD, enregistrements, interprètes, compositeurs, leaders) et la traduire, à faire dans la page.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+<script type="application/json" id="atelier-jeux">
+{
+  "vide-pers": {
+    "titre": "Univ : la table pers",
+    "description": "<p>La seule table <code>pers(id_pers, prenom, nom)</code>, avec quatre personnes (identifiants 1 à 4 : Cooper Sheldon, Hofstadter Leonard, Koothrappali Rajesh, Wolowitz Howard).</p>",
+    "script": "CREATE TABLE pers (\n  id_pers SERIAL PRIMARY KEY,\n  prenom varchar(30),\n  nom varchar(30) NOT NULL\n);\nINSERT INTO pers (prenom, nom) VALUES ('Sheldon', 'Cooper'), ('Leonard', 'Hofstadter'), ('Rajesh', 'Koothrappali'), ('Howard', 'Wolowitz');\n"
+  },
+  "univ": {
+    "titre": "Univ (modèle de l'enseignant, données du TD)",
+    "description": "<p>Les tables du modèle relationnel du TP 3 : <code>pers(id_pers, prenom, nom)</code>, <code>prof(id_prof, date_arr)</code>, <code>promo(id_promo, nom_niveau, nom_filiere, nom_ufr)</code>, <code>scolarite(id_promo, annee, id_etudiant, moyenne)</code>, <code>module(id_module, nom_module, dsc_module)</code>, <code>enseignement(id_promo, id_prof, annee, id_module)</code>.</p><p>Données : les personnes, modules et scolarités 2016 à 2021 du script du TP 3 ; <span class=\"badge ajout\">Ajout</span> l'année 2022 (quatorze inscriptions, en L1, L2, L3, M1 et M2 Info, en L2 Maths et en L1 Droit, cette dernière à l'UFR Droit et sciences économiques), et une promotion de L1 Info de 216 étudiants en 2021. Les niveaux s'écrivent <code>'L1'</code>, <code>'L2'</code>…, la filière informatique <code>'Info'</code>, l'UFR <code>'Sciences'</code>.</p>",
+    "script": "CREATE TABLE pers (\n  id_pers SERIAL PRIMARY KEY,\n  prenom varchar(30),\n  nom varchar(30) NOT NULL\n);\nCREATE TABLE prof (\n  id_prof integer PRIMARY KEY REFERENCES pers (id_pers),\n  date_arr date\n);\nCREATE TABLE promo (\n  id_promo SERIAL PRIMARY KEY,\n  nom_niveau varchar(2) NOT NULL,\n  nom_filiere varchar(30) NOT NULL,\n  nom_ufr varchar(30)\n);\nCREATE TABLE scolarite (\n  id_promo integer NOT NULL REFERENCES promo (id_promo),\n  annee integer CHECK (annee BETWEEN 2000 AND 2150),\n  id_etudiant integer REFERENCES pers (id_pers),\n  moyenne numeric(4,2),\n  PRIMARY KEY (annee, id_etudiant)\n);\nCREATE TABLE module (\n  id_module SERIAL PRIMARY KEY,\n  nom_module varchar(50) NOT NULL,\n  dsc_module varchar(200)\n);\nCREATE TABLE enseignement (\n  id_promo integer REFERENCES promo (id_promo),\n  id_prof integer REFERENCES prof (id_prof),\n  annee integer CHECK (annee BETWEEN 2000 AND 2150),\n  id_module integer NOT NULL REFERENCES module (id_module),\n  PRIMARY KEY (id_promo, id_prof, annee)\n);\n\nINSERT INTO pers (prenom, nom) VALUES\n  ('Sheldon', 'Cooper'),\n  ('Leonard', 'Hofstadter'),\n  ('Rajesh', 'Koothrappali'),\n  ('Howard', 'Wolowitz'),\n  ('Rhaenyra', 'Targaryen'),\n  ('Alicent', 'Hightower'),\n  ('Daemon', 'Targaryen'),\n  ('Criston', 'Cole'),\n  ('Aegon', 'Targaryen'),\n  ('Jacaerys', 'Velaryon'),\n  ('Lucerys', 'Velaryon'),\n  ('Laena', 'Velaryon'),\n  ('Corlys', 'Velaryon'),\n  ('Otto', 'Hightower'),\n  ('Larys', 'Strong'),\n  ('Harwin', 'Strong'),\n  ('Helaena', 'Targaryen'),\n  ('Aemond', 'Targaryen'),\n  ('Borros', 'Baratheon'),\n  ('Cregan', 'Stark'),\n  ('Grover', 'Tully');\nINSERT INTO promo (nom_niveau, nom_filiere, nom_ufr) VALUES\n  ('L1', 'Info', 'Sciences'), ('L2', 'Info', 'Sciences'), ('L3', 'Info', 'Sciences'),\n  ('M1', 'Info', 'Sciences'), ('M2', 'Info', 'Sciences'),\n  ('L2', 'Maths', 'Sciences'), ('L1', 'Droit', 'Droit et sciences économiques');\nINSERT INTO module (nom_module, dsc_module) VALUES\n  ('Programmation C', 'Bases du langage C'), ('Bases de données', 'Modélisation, SQL et PostgreSQL'),\n  ('Fouille de données', 'Apprentissage à partir des données'), ('IA - Methodo et Données', 'Méthodologie de l''IA');\nINSERT INTO prof VALUES\n  ((SELECT id_pers FROM pers WHERE nom = 'Cooper'), '2018-10-01'),\n  ((SELECT id_pers FROM pers WHERE nom = 'Wolowitz'), '2015-09-01');\nINSERT INTO enseignement VALUES\n  ((SELECT id_promo FROM promo WHERE nom_niveau = 'L2' AND nom_filiere = 'Info'), (SELECT id_pers FROM pers WHERE nom = 'Cooper'), 2022, (SELECT id_module FROM module WHERE nom_module = 'Bases de données')),\n  ((SELECT id_promo FROM promo WHERE nom_niveau = 'M2' AND nom_filiere = 'Info'), (SELECT id_pers FROM pers WHERE nom = 'Cooper'), 2022, (SELECT id_module FROM module WHERE nom_module = 'Fouille de données')),\n  ((SELECT id_promo FROM promo WHERE nom_niveau = 'L2' AND nom_filiere = 'Info'), (SELECT id_pers FROM pers WHERE nom = 'Wolowitz'), 2022, (SELECT id_module FROM module WHERE nom_module = 'Programmation C'));\n\n-- Scolarités 2016 à 2021 : script de l'enseignant (TP/TP3/script_2.txt)\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L2' AND nom_filiere = 'Info'), 2017, (SELECT id_pers FROM pers WHERE nom = 'Hofstadter' AND prenom = 'Leonard'), 14.79);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'M2' AND nom_filiere = 'Info'), 2021, (SELECT id_pers FROM pers WHERE nom = 'Hofstadter' AND prenom = 'Leonard'), 14.32);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L2' AND nom_filiere = 'Info'), 2017, (SELECT id_pers FROM pers WHERE nom = 'Targaryen' AND prenom = 'Rhaenyra'), 15.39);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L3' AND nom_filiere = 'Info'), 2018, (SELECT id_pers FROM pers WHERE nom = 'Targaryen' AND prenom = 'Rhaenyra'), 15.32);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'M1' AND nom_filiere = 'Info'), 2019, (SELECT id_pers FROM pers WHERE nom = 'Targaryen' AND prenom = 'Rhaenyra'), 14.87);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'M2' AND nom_filiere = 'Info'), 2020, (SELECT id_pers FROM pers WHERE nom = 'Targaryen' AND prenom = 'Rhaenyra'), 15.32);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L2' AND nom_filiere = 'Info'), 2017, (SELECT id_pers FROM pers WHERE nom = 'Hightower' AND prenom = 'Alicent'), 12.39);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L3' AND nom_filiere = 'Info'), 2018, (SELECT id_pers FROM pers WHERE nom = 'Hightower' AND prenom = 'Alicent'), 11.32);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'M1' AND nom_filiere = 'Info'), 2019, (SELECT id_pers FROM pers WHERE nom = 'Hightower' AND prenom = 'Alicent'), 13.87);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'M2' AND nom_filiere = 'Info'), 2020, (SELECT id_pers FROM pers WHERE nom = 'Hightower' AND prenom = 'Alicent'), 10.32);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L2' AND nom_filiere = 'Info'), 2016, (SELECT id_pers FROM pers WHERE nom = 'Cole' AND prenom = 'Criston'), 11.39);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L3' AND nom_filiere = 'Info'), 2017, (SELECT id_pers FROM pers WHERE nom = 'Cole' AND prenom = 'Criston'), 10.32);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'M1' AND nom_filiere = 'Info'), 2018, (SELECT id_pers FROM pers WHERE nom = 'Cole' AND prenom = 'Criston'), 9.87);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'M1' AND nom_filiere = 'Info'), 2019, (SELECT id_pers FROM pers WHERE nom = 'Cole' AND prenom = 'Criston'), 10.07);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'M2' AND nom_filiere = 'Info'), 2020, (SELECT id_pers FROM pers WHERE nom = 'Cole' AND prenom = 'Criston'), 5.32);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'M2' AND nom_filiere = 'Info'), 2021, (SELECT id_pers FROM pers WHERE nom = 'Cole' AND prenom = 'Criston'), 8.32);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L2' AND nom_filiere = 'Info'), 2017, (SELECT id_pers FROM pers WHERE nom = 'Targaryen' AND prenom = 'Daemon'), 14.52);\n\n-- Ajouts pour le TD : l'année 2022, deux autres filières, une autre UFR\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L1' AND nom_filiere = 'Info'), 2022, (SELECT id_pers FROM pers WHERE nom = 'Targaryen' AND prenom = 'Aemond'), 11.25);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L1' AND nom_filiere = 'Info'), 2022, (SELECT id_pers FROM pers WHERE nom = 'Targaryen' AND prenom = 'Helaena'), 13.5);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L1' AND nom_filiere = 'Info'), 2022, (SELECT id_pers FROM pers WHERE nom = 'Velaryon' AND prenom = 'Lucerys'), 9.75);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L1' AND nom_filiere = 'Info'), 2022, (SELECT id_pers FROM pers WHERE nom = 'Stark' AND prenom = 'Cregan'), 12.0);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L2' AND nom_filiere = 'Info'), 2022, (SELECT id_pers FROM pers WHERE nom = 'Targaryen' AND prenom = 'Aegon'), 8.5);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L2' AND nom_filiere = 'Info'), 2022, (SELECT id_pers FROM pers WHERE nom = 'Velaryon' AND prenom = 'Jacaerys'), 14.25);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L2' AND nom_filiere = 'Info'), 2022, (SELECT id_pers FROM pers WHERE nom = 'Baratheon' AND prenom = 'Borros'), 10.0);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L3' AND nom_filiere = 'Info'), 2022, (SELECT id_pers FROM pers WHERE nom = 'Strong' AND prenom = 'Harwin'), 12.75);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'M1' AND nom_filiere = 'Info'), 2022, (SELECT id_pers FROM pers WHERE nom = 'Hofstadter' AND prenom = 'Leonard'), 15.5);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'M2' AND nom_filiere = 'Info'), 2022, (SELECT id_pers FROM pers WHERE nom = 'Targaryen' AND prenom = 'Daemon'), 13.0);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L2' AND nom_filiere = 'Maths'), 2022, (SELECT id_pers FROM pers WHERE nom = 'Velaryon' AND prenom = 'Laena'), 16.25);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L2' AND nom_filiere = 'Maths'), 2022, (SELECT id_pers FROM pers WHERE nom = 'Tully' AND prenom = 'Grover'), 7.75);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L1' AND nom_filiere = 'Droit'), 2022, (SELECT id_pers FROM pers WHERE nom = 'Hightower' AND prenom = 'Otto'), 12.5);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L1' AND nom_filiere = 'Droit'), 2022, (SELECT id_pers FROM pers WHERE nom = 'Strong' AND prenom = 'Larys'), 11.0);\nINSERT INTO scolarite VALUES ((SELECT id_promo FROM promo WHERE nom_niveau = 'L1' AND nom_filiere = 'Info'), 2021, (SELECT id_pers FROM pers WHERE nom = 'Velaryon' AND prenom = 'Corlys'), 10.5);\n\n-- La promotion de L1 Info de 2021 : 215 étudiants (pour la question 3e)\nINSERT INTO pers (prenom, nom) SELECT 'Etudiant' || i, 'L1-2021-' || lpad(i::text, 3, '0') FROM generate_series(1, 215) AS i;\nINSERT INTO scolarite\n  SELECT (SELECT id_promo FROM promo WHERE nom_niveau = 'L1' AND nom_filiere = 'Info'), 2021, p.id_pers,\n         round(6 + (p.id_pers * 37 % 120) / 10.0, 2)\n  FROM pers p WHERE p.nom LIKE 'L1-2021-%';\n"
+  }
+}
+</script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="index.html">Bases de données</a>
+    <span aria-current="page">TD 3 · Université et CD de jazz</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> TD 3 · L2 S3 · interactif</p>
+    <h1>TD 3 : cursus universitaire et CD de jazz</h1>
+    <p class="chapeau">Deux modélisations plus riches : des associations qui portent des attributs datés, une spécialisation, des identifiants relatifs, et une même personne dans plusieurs rôles. La première se termine par des requêtes de comptage et de regroupement. Le TD met en œuvre les cours 1 à 4 ; les TP 3 et 4 reprennent les deux bases.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TD/TD3_Univ_CDJazz.pdf">TD3_Univ_CDJazz.pdf</a> · séance 3, 1 page</dd></div>
+      <div><dt>Enseignante</dt><dd>Nathalie Camelin</dd></div>
+      <div><dt>Cours</dt><dd><a href="cours-01-modele-entite-association.html">Cours 1</a> · <a href="cours-04-fonctions-regroupements.html">Cours 4 · Fonctions et regroupements</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Placer un attribut daté (année, moyenne) sur l'association qui le justifie.</li>
+        <li>Remplacer une association entre trois entités par une entité, et choisir sa clé d'après les règles de gestion.</li>
+        <li>Repérer un identifiant relatif (une plage dans un CD) et une personne aux rôles multiples.</li>
+        <li>Compter et regrouper en SQL : <code>COUNT</code>, <code>GROUP BY</code>, <code>HAVING</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Notions utilisées</p>
+      <ul>
+        <li><a href="cours-01-modele-entite-association.html">Cours 1</a> : spécialisation, identifiant relatif, association n-aire, règles de passage.</li>
+        <li><a href="cours-03-cles-sous-requetes-jointures.html">Cours 3</a> : clés, jointures.</li>
+        <li><a href="cours-04-fonctions-regroupements.html">Cours 4</a> : agrégats, <code>GROUP BY</code>, <code>HAVING</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Mode d'emploi</p>
+    <ul>
+      <li>La réponse se construit sur le dessin ou dans la vue texte (« Les deux ») ; les deux restent synchronisés.</li>
+      <li>« Vérifier » contrôle la forme sans rien dévoiler, « Comparer » mesure l'écart avec une solution de référence, « Claude » répond aux questions et corrige.</li>
+      <li>Les solutions restent cachées. Les modèles relationnels et le diagramme des CD sont ceux de l'enseignant, rappelés dans les sujets des <a href="../TP/TP3/TP3_Univ-2025.pdf">TP 3</a> et <a href="../TP/TP4/TP4-CDJazz_2025.pdf">TP 4</a> (bouton « Correction ») ; le diagramme de l'université en est adapté, et les requêtes SQL sont proposées.</li>
+      <li>La spécialisation « est un » du cours se dessine avec le lien d'héritage (<code>Prof --|&gt; Personne</code>) ; un attribut d'association, avec une classe d'association (<code>[Scolarite]</code> en fin de lien).</li>
+      <li>Le SQL s'exécute avec le serveur local (<code>studies/lancer.bat</code>). Le travail s'enregistre tout seul, dans <code>td_results/</code> avec le serveur.</li>
+    </ul>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exercice 1 · Cursus universitaire <span class="ref">TD, p. 1</span></h2>
+    <p>Des étudiants, des promotions, des professeurs et des modules, suivis d'année en année : la difficulté est de placer l'année au bon endroit.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Énoncé</span></p>
+      <p>Une université souhaite mettre en place un SGBD pour la gestion de ses étudiants avec les informations suivantes :</p>
+      <p>On connaît pour chaque étudiant son nom de famille, son prénom. On souhaite également conserver sa scolarité : la promo à laquelle il appartient une année donnée et sa moyenne générale finale dans cette promo.</p>
+      <p>La promo est définie par le nom de la filière (par ex. informatique), le nom du niveau (par ex. L2) et le nom de l'UFR auquel la promo est rattachée.</p>
+      <p>On souhaite également conserver l'ensemble des professeurs d'une promo. Pour une année donnée, on souhaite stocker quel est <strong>le</strong> module qu'il a enseigné à cette classe-là. Un professeur peut enseigner plusieurs modules. Une année donnée, il ne dispensera des cours que d'un seul module auprès d'une promo donnée. Pour chaque professeur, on conservera son nom, son prénom et sa date d'arrivée dans l'établissement.</p>
+      <p>Concernant les modules enseignés, on conservera son nom et un descriptif. Celui-ci ne dépend pas de l'enseignant et un module peut être enseigné par plusieurs professeurs.</p>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 1 <span>Modèle conceptuel</span></p>
+      <p>Donnez le modèle conceptuel correspondant en utilisant le formalisme UML.</p>
+    </div>
+    <div class="atelier" id="td3-ex1-q1-classes" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "Question 1 · Diagramme de classes de l'université",
+        "options": {
+          "bdd": true
+        },
+        "hauteur": 520,
+        "disposition": {
+          "Promo": [
+            330,
+            10
+          ],
+          "Enseignement": [
+            60,
+            200
+          ],
+          "Personne": [
+            470,
+            260
+          ],
+          "Module": [
+            10,
+            400
+          ],
+          "Prof": [
+            330,
+            440
+          ]
+        },
+        "solution": [
+          "classe Promo",
+          "  id_promo {PK}",
+          "  nom_niveau",
+          "  nom_filiere",
+          "  nom_ufr",
+          "classe Personne",
+          "  id_pers {PK}",
+          "  nom",
+          "  prenom",
+          "classe Prof",
+          "  date_arr",
+          "classe Module",
+          "  id_module {PK}",
+          "  nom_module",
+          "  dsc_module",
+          "classe Enseignement",
+          "  id_enseignement {PK}",
+          "  annee",
+          "classe Scolarite",
+          "  annee",
+          "  moyenne",
+          "Prof --|> Personne",
+          "Personne \"1..*\" -- \"0..*\" Promo : être inscrit [Scolarite]",
+          "Enseignement \"1..*\" -- \"1..1\" Promo : suivre",
+          "Enseignement \"1..*\" -- \"1..1\" Module : être enseigné",
+          "Enseignement \"1..*\" -- \"1..1\" Prof : donner"
+        ],
+        "explication": "<p>Adapté du diagramme de l'enseignant, rappelé au TP 3 (<code>TP3_Univ-2025.pdf</code>, p. 1), où Prof est relié à Personne par l'association de spécialisation « être une » (<code>(1..1)</code> près de Personne, <code>0..1</code> près de Prof), dessinée ici en héritage.</p><ul><li>Étudiants et professeurs ont un nom et un prénom : une entité Personne, et Prof en spécialisation (avec sa date d'arrivée). Un étudiant est une personne inscrite dans une promo.</li><li>L'année et la moyenne ne dépendent ni de l'étudiant seul, ni de la promo seule : ce sont des attributs de l'inscription.</li><li>« Un professeur enseigne un module à une promo une année » relie trois entités : le cours remplace l'association ternaire par une entité, Enseignement, reliée à chacune par un <code>1..1</code>. Son identifiant sera remplacé au relationnel par la clé qui traduit la règle « un seul module par professeur, par promo et par année ».</li></ul><p>On peut aussi spécialiser Personne en Etudiant et Prof : c'est plus symétrique, et c'est un écart acceptable.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Où mettre l'année et la moyenne : dans Etudiant ? dans Promo ? Pour l'enseignement, combien d'entités sont en jeu dans la phrase « une année donnée, il ne dispensera des cours que d'un seul module auprès d'une promo donnée » ?</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 2 <span>Les relations</span></p>
+      <p>Décrivez l'ensemble des relations issues de cette modélisation.</p>
+    </div>
+    <div class="atelier" id="td3-ex1-q2-relationnel" data-editeur="relationnel">
+      <script type="application/json">
+      {
+        "titre": "Question 2 · Modèle relationnel de l'université",
+        "consigne": "<p>Clé primaire composée : souligner chacun de ses attributs, <code>_annee_, _#id_etudiant_(Pers.id_pers)</code>. Écrire d'abord les relations référencées.</p>",
+        "vue": "les-deux",
+        "solution_source": "enseignant",
+        "solution": [
+          "Pers(_id_pers_, prenom, nom)",
+          "Prof(_#id_prof_(Pers.id_pers), date_arr)",
+          "Promo(_id_promo_, nom_niveau, nom_filiere, nom_ufr)",
+          "Scolarite(#id_promo(Promo), _annee_, _#id_etudiant_(Pers.id_pers), moyenne)",
+          "Module(_id_module_, nom_module, dsc_module)",
+          "Enseignement(_#id_promo_(Promo), _#id_prof_(Prof), _annee_, #id_module(Module))"
+        ],
+        "explication": "<p>Modèle relationnel de l'enseignant (TP 3, p. 2).</p><ul><li>Prof : spécialisation, la clé de la personne devient sa clé primaire et étrangère.</li><li>Scolarite : l'inscription devient une relation. Sa clé, <code>(annee, id_etudiant)</code>, traduit « la promo à laquelle il appartient une année donnée » : une seule promo par étudiant et par an. <code>id_promo</code> est une clé étrangère hors de la clé.</li><li>Enseignement : sa clé, <code>(id_promo, id_prof, annee)</code>, traduit « une année donnée, un seul module auprès d'une promo donnée ». <code>id_module</code> reste hors de la clé : c'est la valeur déterminée. L'identifiant <code>id_enseignement</code> du diagramme disparaît : il n'empêcherait pas les doublons.</li></ul><p>Le TP 3 (questions 2 et 3) fait ensuite évoluer ces deux clés, pour permettre à un étudiant d'avoir deux moyennes la même année et à un professeur d'enseigner deux modules à une même promo.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>La clé primaire n'est pas automatique (règle 2) : se demander, pour chaque relation issue d'une association, quelles colonnes ne doivent jamais se répéter ensemble d'après l'énoncé.</p></div>
+    </details>
+
+    <h3>Un peu de SQL</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3a <span>La table PROF</span></p>
+      <p>Créer la table PROF.</p>
+    </div>
+    <div class="atelier" id="td3-ex1-q3a-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 3a · Création de la table prof",
+        "consigne": "<p>La table <code>pers(id_pers, prenom, nom)</code> existe, avec les personnes 1 à 4. Colonnes du modèle de l'enseignant : <code>prof(id_prof, date_arr)</code>. « Comparer » exécute le script, puis quatre tests.</p>",
+        "options": {
+          "jeu": "vide-pers",
+          "mode": "script",
+          "lignes": 6
+        },
+        "depart": "CREATE TABLE prof (\n  \n);",
+        "tests": [
+          {
+            "nom": "Une personne existante devient professeur",
+            "requete": "INSERT INTO prof (id_prof, date_arr) VALUES (1, '2018-10-01');",
+            "doit": "reussir"
+          },
+          {
+            "nom": "Un professeur doit être une personne connue",
+            "requete": "INSERT INTO prof (id_prof, date_arr) VALUES (99, '2018-10-01');",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Une personne n'est professeur qu'une fois",
+            "requete": "INSERT INTO prof (id_prof, date_arr) VALUES (4, '2015-09-01');\nINSERT INTO prof (id_prof, date_arr) VALUES (4, '2016-09-01');",
+            "doit": "echouer"
+          },
+          {
+            "nom": "La date d'arrivée est une date",
+            "requete": "INSERT INTO prof (id_prof, date_arr) VALUES (4, '2015-09-01'), (1, '2018-10-01');\nSELECT id_prof FROM prof WHERE date_arr < '2016-01-01';",
+            "resultat": true
+          }
+        ],
+        "solution": "CREATE TABLE prof (\n  id_prof integer PRIMARY KEY REFERENCES pers (id_pers),\n  date_arr date\n);",
+        "explication": "<p><code>id_prof</code> est à la fois clé primaire (une personne n'est professeur qu'une fois) et clé étrangère vers <code>pers</code> (un professeur est une personne). Son type est <code>integer</code>, et non <code>SERIAL</code> : la valeur vient de <code>pers</code>, elle n'est pas fabriquée par la table.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Un professeur est une personne : sa clé primaire est aussi une clé étrangère. Faut-il un <code>SERIAL</code> ?</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3b <span>Les moyennes de 2022</span></p>
+      <p>Quelles sont les moyennes obtenues en 2022 ?</p>
+    </div>
+    <div class="atelier" id="td3-ex1-q3b1-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 3b · Les moyennes de 2022",
+        "consigne": "<p>Sur la base Univ (voir le jeu de données). Afficher le nom, le prénom et la moyenne de chaque étudiant inscrit en 2022.</p>",
+        "options": {
+          "jeu": "univ"
+        },
+        "depart": "SELECT ",
+        "solution": "SELECT nom, prenom, moyenne\nFROM scolarite\n  JOIN pers ON pers.id_pers = scolarite.id_etudiant\nWHERE annee = 2022;",
+        "explication": "<p>La moyenne est dans <code>scolarite</code>, le nom dans <code>pers</code> : une jointure sur <code>id_etudiant = id_pers</code>. Sans le nom, <code>SELECT id_etudiant, moyenne FROM scolarite WHERE annee = 2022</code> répond aussi à la question, mais se lit mal.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>La jointure se fait entre la clé étrangère <code>id_etudiant</code> de <code>scolarite</code> et la clé <code>id_pers</code> de <code>pers</code>.</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3b <span>Les L1 Info de 2022</span></p>
+      <p>Quelles sont les moyennes obtenues en 2022 par les L1 Info (Arghh) ?</p>
+    </div>
+    <div class="atelier" id="td3-ex1-q3b2-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 3b · Les L1 Info de 2022",
+        "consigne": "<p>Afficher le nom, le prénom et la moyenne.</p>",
+        "options": {
+          "jeu": "univ"
+        },
+        "depart": "SELECT ",
+        "solution": "SELECT nom, prenom, moyenne\nFROM scolarite\n  JOIN pers ON pers.id_pers = scolarite.id_etudiant\n  JOIN promo USING (id_promo)\nWHERE annee = 2022\n  AND nom_niveau = 'L1'\n  AND nom_filiere = 'Info';",
+        "explication": "<p>Une jointure de plus, avec <code>promo</code>, pour filtrer sur le niveau et la filière. <code>USING (id_promo)</code> convient car la colonne porte le même nom dans les deux tables. Les L1 Droit de 2022, et les 216 L1 Info de 2021, ne doivent pas apparaître.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3c <span>Les L2 Info de 2022</span></p>
+      <p>Combien d'étudiants sont inscrits en L2 Info en 2022 ?</p>
+    </div>
+    <div class="atelier" id="td3-ex1-q3c-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 3c · Les L2 Info de 2022",
+        "consigne": "<p>Une seule colonne, le nombre d'étudiants.</p>",
+        "options": {
+          "jeu": "univ"
+        },
+        "depart": "SELECT ",
+        "solution": "SELECT count(*) AS nb_etudiants\nFROM scolarite\n  JOIN promo USING (id_promo)\nWHERE annee = 2022\n  AND nom_niveau = 'L2'\n  AND nom_filiere = 'Info';",
+        "explication": "<p><code>count(*)</code> compte les lignes retenues par le <code>WHERE</code>. La clé de <code>scolarite</code> empêche un étudiant d'être inscrit deux fois la même année : il n'y a pas de doublon à craindre, sinon on écrirait <code>count(DISTINCT id_etudiant)</code>. La table <code>pers</code> est inutile ici.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3d <span>Par promo, à l'UFR Sciences</span></p>
+      <p>Combien y a-t-il d'étudiants par promo à l'UFR sciences en 2022 ?</p>
+    </div>
+    <div class="atelier" id="td3-ex1-q3d-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 3d · Par promo, à l'UFR Sciences",
+        "consigne": "<p>Afficher le niveau, la filière et le nombre d'étudiants de chaque promo de l'UFR <code>'Sciences'</code> en 2022.</p>",
+        "options": {
+          "jeu": "univ"
+        },
+        "depart": "SELECT ",
+        "solution": "SELECT nom_niveau, nom_filiere, count(*) AS nb_etudiants\nFROM scolarite\n  JOIN promo USING (id_promo)\nWHERE annee = 2022\n  AND nom_ufr = 'Sciences'\nGROUP BY id_promo, nom_niveau, nom_filiere;",
+        "explication": "<p>« Par promo » : un <code>GROUP BY</code> sur la promo, et un comptage par groupe. Toute colonne affichée hors d'un agrégat doit figurer dans le <code>GROUP BY</code>. Grouper sur <code>id_promo</code> garantit un groupe par promo, même si deux promos avaient le même niveau et la même filière. La L1 Droit, d'une autre UFR, n'apparaît pas ; une promo sans inscrit en 2022 non plus (il faudrait une jointure externe pour la voir avec 0).</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Filtrer d'abord (<code>WHERE</code> : l'année et l'UFR), puis regrouper (<code>GROUP BY</code>) et compter dans chaque groupe.</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3e <span>Plus de 200 étudiants</span></p>
+      <p>Quelles sont les promos qui ont plus de 200 étudiants ?</p>
+    </div>
+    <div class="atelier" id="td3-ex1-q3e-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 3e · Plus de 200 étudiants",
+        "consigne": "<p>Afficher le niveau, la filière et le nombre d'étudiants, toutes années confondues.</p>",
+        "options": {
+          "jeu": "univ"
+        },
+        "depart": "SELECT ",
+        "solution": "SELECT nom_niveau, nom_filiere, count(DISTINCT id_etudiant) AS nb_etudiants\nFROM scolarite\n  JOIN promo USING (id_promo)\nGROUP BY id_promo, nom_niveau, nom_filiere\nHAVING count(DISTINCT id_etudiant) > 200;",
+        "explication": "<p>La condition porte sur le résultat d'un agrégat : elle va dans <code>HAVING</code>, qui filtre les groupes, et non dans <code>WHERE</code>, qui filtre les lignes avant le regroupement. Seule la L1 Info dépasse 200 (216 étudiants en 2021, quatre en 2022). <code>DISTINCT</code> ne compte qu'une fois un étudiant qui aurait redoublé dans la même promo. La question peut aussi se lire « une année donnée » : il faut alors grouper aussi par <code>annee</code> et l'afficher ; on trouve la même promo.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Un comptage par promo, puis une condition sur ce comptage : quelle clause filtre des groupes ?</p></div>
+    </details>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exercice 2 · Les CD de jazz <span class="ref">TD, p. 1</span></h2>
+    <p>Un CD, ses plages et les musiciens qui y apparaissent : une même personne peut y tenir trois rôles différents.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Énoncé</span></p>
+      <p>On souhaite constituer une base de données qui modélise les informations concernant des CD de jazz.</p>
+      <p>Sur chaque CD apparaissent les informations suivantes : le numéro de CD, le titre du disque, le nom de l'éditeur, le pays de l'éditeur, le nom du distributeur, une note artistique de 1 à 10, une note technique de 1 à 10, le(s) nom(s) du (des) leader(s).</p>
+      <p>Pour chaque enregistrement d'un CD, on dispose des informations suivantes : le numéro de la plage, la durée de l'enregistrement, le titre du morceau de musique, le(s) compositeur(s) du morceau de musique, les interprètes principaux de l'enregistrement avec pour chacun la liste des instruments utilisés, l'année d'enregistrement, le lieu d'enregistrement et les conditions d'enregistrement (ex. « Studio » ou « Public »).</p>
+      <p>Pour les leaders, les interprètes et les compositeurs (chaque individu peut-être à la fois leader, compositeur et/ou interprète), on dispose des informations suivantes : le numéro d'individu, le nom et le prénom, la date de naissance, la date de décès et la nationalité.</p>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 1 <span>Modèle conceptuel</span></p>
+      <p>Donnez la modélisation conceptuelle correspondante en utilisant le formalisme UML.</p>
+    </div>
+    <div class="atelier" id="td3-ex2-q1-classes" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "Question 1 · Diagramme de classes de la CD-thèque",
+        "options": {
+          "bdd": true
+        },
+        "hauteur": 520,
+        "solution_source": "enseignant",
+        "disposition": {
+          "CD": [
+            10,
+            10
+          ],
+          "Edition": [
+            480,
+            20
+          ],
+          "Enr": [
+            10,
+            330
+          ],
+          "Personne": [
+            470,
+            320
+          ]
+        },
+        "solution": [
+          "classe CD",
+          "  id_cd {PK}",
+          "  titre_cd",
+          "  note_art",
+          "  note_tech",
+          "  nom_distrib",
+          "classe Edition",
+          "  id_edit {PK}",
+          "  nom_edit",
+          "  pays",
+          "classe Enr",
+          "  id_enr {PK}",
+          "  titre_enr",
+          "  duree_enr",
+          "  annee_enr",
+          "  lieu_enr",
+          "  cond_enr",
+          "classe Personne",
+          "  id_pers {PK}",
+          "  nom_pers",
+          "  prenom_pers",
+          "  date_naiss",
+          "  date_deces",
+          "  nationalite",
+          "classe Interpretation",
+          "  instrument",
+          "CD \"0..*\" -- \"1..1\" Edition : est édité par",
+          "CD \"0..*\" -- \"1..*\" Personne : est leader de",
+          "CD \"1..1\" -- \"1..*\" Enr : appartient",
+          "Enr \"0..*\" -- \"1..*\" Personne : est interprété par [Interpretation]",
+          "Enr \"0..*\" -- \"1..*\" Personne : est composé par"
+        ],
+        "explication": "<p>Modèle de l'enseignant, rappelé au TP 4 (<code>TP4-CDJazz_2025.pdf</code>, p. 1, « version sans classe Musique ») ; son attribut <code>num_cd</code>, absent de son modèle relationnel, est laissé de côté : le numéro du CD est son identifiant.</p><ul><li>L'éditeur a un pays : c'est une entité (sinon le pays serait répété pour chaque CD de l'éditeur, ce qui violerait la 3NF). Le distributeur n'a qu'un nom : un attribut suffit.</li><li>Un enregistrement est une plage d'un CD : son numéro de plage ne l'identifie que dans son CD. C'est un <b>identifiant relatif</b>, noté <code>(1..1)</code> près de CD dans le cours.</li><li>Leaders, compositeurs et interprètes sont des personnes : <b>une seule entité</b> Personne, et trois associations, une par rôle.</li><li>L'instrument dépend du couple (enregistrement, interprète) : attribut de l'association « est interprété par ». Comme un interprète peut jouer de plusieurs instruments, l'instrument entrera dans la clé au relationnel.</li></ul><p>« Sans classe Musique » : on pourrait séparer le morceau (titre, compositeurs), qui peut être enregistré plusieurs fois, de l'enregistrement. C'est plus juste, mais l'énoncé ne le demande pas.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Combien d'entités pour les leaders, les interprètes et les compositeurs, sachant qu'une même personne peut tenir les trois rôles ? Le numéro de plage suffit-il à désigner un enregistrement parmi tous ceux de la base ?</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 2 <span>Les relations</span></p>
+      <p>Décrivez l'ensemble des relations issues de cette modélisation.</p>
+    </div>
+    <div class="atelier" id="td3-ex2-q2-relationnel" data-editeur="relationnel">
+      <script type="application/json">
+      {
+        "titre": "Question 2 · Modèle relationnel de la CD-thèque",
+        "consigne": "<p>Une clé étrangère composée (un enregistrement : son CD et sa plage) s'écrit attribut par attribut : <code>_#id_cd_(Enreg.id_cd), _#id_enr_(Enreg.id_enr)</code>.</p>",
+        "vue": "les-deux",
+        "solution_source": "enseignant",
+        "solution": [
+          "Personne(_id_pers_, nom_pers, prenom_pers, date_nais, date_deces, pays_nationalite)",
+          "Edit(_id_edit_, nom_edit, pays)",
+          "CD(_id_cd_, titre_cd, #id_edit(Edit), note_art, note_tech, nom_distrib)",
+          "Enreg(_#id_cd_(CD), _id_enr_, titre_enr, duree_enr, annee_enr, lieu_enr, cond_enr)",
+          "Interp(_#id_cd_(Enreg.id_cd), _#id_enr_(Enreg.id_enr), _#id_interprete_(Personne.id_pers), _instrument_)",
+          "Leader(_#id_cd_(CD), _#id_leader_(Personne.id_pers))",
+          "Compo(_#id_cd_(Enreg.id_cd), _#id_enr_(Enreg.id_enr), _#id_compo_(Personne.id_pers))"
+        ],
+        "explication": "<p>Modèle relationnel de l'enseignant (TP 4, p. 1).</p><ul><li>Enreg : identifiant relatif, la clé du CD entre dans sa clé primaire, <code>(id_cd, id_enr)</code> (règle 3, cas de l'identifiant relatif).</li><li>Leader, Compo et Interp : trois associations <code>* — *</code>, trois relations (règle 2), de clé la réunion des clés. Compo et Interp référencent un enregistrement par sa clé complète, <code>(id_cd, id_enr)</code> ; le TP 4 (question 1) insiste : c'est le couple qui référence Enreg, pas <code>id_cd</code> seul qui référencerait CD.</li><li>Interp : l'instrument fait partie de la clé, pour qu'un interprète puisse jouer de plusieurs instruments sur une même plage.</li></ul>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>Un attribut qui dépend de deux entités à la fois (la moyenne d'un étudiant dans une promo, une année) va sur leur association.</li>
+        <li>Une phrase qui relie trois entités se modélise par une entité intermédiaire ; sa clé, au relationnel, traduit la règle de gestion (« un seul module par professeur, par promo et par an »).</li>
+        <li>Une personne qui tient plusieurs rôles reste une seule entité, avec une association par rôle.</li>
+        <li>Un identifiant qui ne vaut qu'à l'intérieur d'une autre entité (la plage dans son CD) est relatif : la clé de l'entité forte entre dans la clé primaire.</li>
+        <li>Une clé étrangère vers une clé composée est composée : elle reprend toutes les colonnes de la clé.</li>
+        <li>Compter : <code>count(*)</code> ; par groupe : <code>GROUP BY</code>, avec toutes les colonnes affichées hors agrégat ; filtrer les groupes : <code>HAVING</code>, après le regroupement.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi la moyenne n'est-elle pas un attribut d'Etudiant ?</summary>
+        <div><p>Un étudiant a une moyenne par année et par promo : elle dépend de l'inscription, pas de l'étudiant seul.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle est la clé de Scolarite, et que garantit-elle ?</summary>
+        <div><p><code>(annee, id_etudiant)</code> : un étudiant n'est inscrit que dans une promo par an.</p></div>
+      </details>
+      <details class="carte">
+        <summary><code>WHERE count(*) &gt; 200</code> : pourquoi est-ce refusé ?</summary>
+        <div><p><code>WHERE</code> filtre les lignes avant le regroupement : les agrégats n'existent pas encore. La condition va dans <code>HAVING</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle est la clé de Enreg ?</summary>
+        <div><p><code>(id_cd, id_enr)</code> : le numéro de plage n'identifie un enregistrement que dans son CD.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="td-02-avions.html"><small>← TD 2</small>Les avions</a>
+    <a class="suivant" href="td-04-socialcat.html"><small>TD 4 →</small>Réseau social SocialCat</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

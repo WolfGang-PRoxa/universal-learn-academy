@@ -1,0 +1,75 @@
+"use strict";
+/* Paramètres de l'application installée, dans <userData>/parametres.json
+   (%APPDATA%\Studies sous Windows, ~/.config/Studies sous Linux).
+
+   Les clés manquantes reprennent leur valeur par défaut. La clé d'API Anthropic
+   y est rangée chiffrée par le système (safeStorage, voir claude.js) et n'est
+   jamais envoyée à l'interface des paramètres. */
+
+const { app } = require("electron");
+const fs = require("fs");
+const path = require("path");
+
+const DEFAUT = {
+  // Recherche et installation des mises à jour au lancement
+  miseAJourAuto: true,
+  // Fenêtre au lancement : « agrandie » (par défaut) ou « personnalisee » (bornes)
+  fenetre: { mode: "agrandie", bornes: { x: 120, y: 80, width: 1400, height: 900 } },
+  // Cours affichés : « integre » (copie des cours livrés avec l'application) ou
+  // « dossier » (un dossier studies existant, par exemple un clone git)
+  cours: { mode: "integre", dossier: "" },
+  // Connexion à Claude : « compte » (Claude Code, connecté par l'utilisateur) ou
+  // « cle » (clé d'API personnelle, chiffrée : « enc:… »)
+  claude: { mode: "compte", cle: "" },
+  // Dossiers où l'utilisateur a demandé un raccourci, en plus du Bureau et du menu
+  raccourcis: { dossiers: [] }
+};
+
+function fichier() {
+  return path.join(app.getPath("userData"), "parametres.json");
+}
+
+function copie(x) { return JSON.parse(JSON.stringify(x)); }
+
+function estObjet(x) { return x && typeof x === "object" && !Array.isArray(x); }
+
+// Fusion récursive : les objets se complètent, le reste remplace
+function fusion(base, ajout) {
+  const r = copie(base);
+  if (!estObjet(ajout)) return r;
+  for (const [cle, valeur] of Object.entries(ajout)) {
+    if (estObjet(valeur) && estObjet(r[cle])) r[cle] = fusion(r[cle], valeur);
+    else if (valeur !== undefined) r[cle] = copie(valeur);
+  }
+  return r;
+}
+
+function lire() {
+  let brut = null;
+  try { brut = JSON.parse(fs.readFileSync(fichier(), "utf8")); } catch (e) { /* absent ou illisible */ }
+  return fusion(DEFAUT, brut);
+}
+
+/** Écriture atomique : fichier temporaire puis renommage. */
+function ecrire(reglages) {
+  const f = fichier();
+  fs.mkdirSync(path.dirname(f), { recursive: true });
+  const temporaire = f + "." + process.pid + ".tmp";
+  fs.writeFileSync(temporaire, JSON.stringify(reglages, null, 2), "utf8");
+  fs.renameSync(temporaire, f);
+  return reglages;
+}
+
+function modifier(partiel) {
+  return ecrire(fusion(lire(), partiel));
+}
+
+/** Réglages sans la clé chiffrée, pour l'interface. */
+function publics(reglages = lire()) {
+  const r = copie(reglages);
+  r.claude.cleEnregistree = Boolean(r.claude.cle);
+  delete r.claude.cle;
+  return r;
+}
+
+module.exports = { DEFAUT, fichier, lire, ecrire, modifier, publics, fusion };

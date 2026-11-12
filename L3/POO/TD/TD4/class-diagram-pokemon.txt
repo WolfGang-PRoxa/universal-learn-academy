@@ -1,0 +1,92 @@
+classDiagram
+    direction TB
+
+    class Pokemon {
+        <<abstract>>
+        -String nom
+        -Numeric poids
+        +initialize(nom, poids)
+        +poids() Numeric
+        +vitesse() Numeric
+        +to_s() String
+        +<=>(autre) Integer
+    }
+
+    class Terrestre {
+        <<abstract>>
+        -Numeric taille
+        -Integer pattes
+        +initialize(nom, poids, taille, pattes)
+        +vitesse() Numeric
+        +to_s() String
+    }
+
+    class Sportif {
+        -Integer frequenceCardiaque
+        +initialize(nom, poids, taille, pattes, frequenceCardiaque)
+        +to_s() String
+    }
+
+    class Casanier {
+        -Numeric tempsTV
+        +initialize(nom, poids, taille, pattes, tempsTV)
+        +to_s() String
+    }
+
+    class Marin {
+        -Integer nageoires
+        +initialize(nom, poids, nageoires)
+        +vitesse() Numeric
+        +to_s() String
+    }
+
+    class Croisiere {
+        +vitesse() Numeric
+    }
+
+    class Detente {
+        <<module>>
+        -Integer nombre_seances
+        -Numeric duree_totale_detente
+        +enregistrer_detente(duree)
+        +nombre_seances() Integer
+        +duree_totale_detente() Numeric
+    }
+
+    class CollectionPokemons {
+        -Array lesPokemons
+        +initialize()
+        +lesPokemons() Array
+        +ajouter(pokemon) CollectionPokemons
+        +each()
+        +moyenne() Numeric
+        +to_s() String
+    }
+
+    class Comparable {
+        <<module>>
+    }
+
+    class Enumerable {
+        <<module>>
+    }
+
+    Pokemon <|-- Terrestre
+    Pokemon <|-- Marin
+
+    Terrestre <|-- Sportif
+    Terrestre <|-- Casanier
+
+    Marin <|-- Croisiere
+
+    Pokemon ..> Comparable : include
+
+    Casanier ..> Detente : include
+    Croisiere ..> Detente : include
+
+    CollectionPokemons ..> Enumerable : include
+    CollectionPokemons "0..*" o-- "0..*" Pokemon : contient
+
+    note for Detente "Les compteurs sont propres à chaque Pokémon."
+    note for Pokemon "new est privée."
+    note for Terrestre "new reste privée."

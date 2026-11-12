@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Formes normales · Bases de données L3</title>
+<meta name="description" content="Quiz interactif de bases de données (L3) : dépendances fonctionnelles, reconnaître une forme normale, normaliser une relation jusqu'à la 3NF.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/langues/pgsql.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="../generated_courses/index.html">Bases de données</a>
+    <span aria-current="page">Quiz · Formes normales</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> Quiz · L3 S5</p>
+    <h1>Formes normales : reconnaître et normaliser</h1>
+    <p class="chapeau">Treize questions sur les formes normales, du cours 1 : lire une dépendance fonctionnelle, classer une relation, et surtout normaliser jusqu'à la 3NF. Quatre relations sont à décomposer dans l'atelier, une requête est exécutée, et une question ouverte reprend les anomalies.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-01-uml-vers-relationnel.html#les-formes-normales">Cours 1 · Les formes normales</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-01">1<sup>er</sup> nov. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "bd-formes-normales",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 1 · Du diagramme de classes au modèle relationnel",
+      "lien": "../generated_courses/cours-01-uml-vers-relationnel.html"
+    }
+  ],
+  "jeux": {
+    "ventes": {
+      "titre": "Ventes saisies dans un tableur",
+      "description": "<p>Une seule table, <code>ventes(<u>num_vente</u>, id_client, ville, ref_article, libelle, quantite)</code>, sept lignes recopiées d'un tableur.</p>",
+      "script": "CREATE TABLE ventes (\n    num_vente   INT PRIMARY KEY,\n    id_client   INT,\n    ville       VARCHAR(30),\n    ref_article VARCHAR(10),\n    libelle     VARCHAR(30),\n    quantite    INT\n);\n\nINSERT INTO ventes VALUES\n    (1, 10, 'Le Mans', 'A1', 'Clavier', 2),\n    (2, 10, 'Le Mans', 'A2', 'Souris',  1),\n    (3, 11, 'Nantes',  'A1', 'Clavier', 1),\n    (4, 12, 'Angers',  'A3', 'Ecran',   1),\n    (5, 12, 'Laval',   'A2', 'Souris',  3),\n    (6, 13, 'Rennes',  'A3', 'Ecran',   1),\n    (7, 11, 'Nantes',  'A2', 'Souris',  2);\n"
+    }
+  },
+  "questions": [
+    {
+      "id": "q01",
+      "type": "qcm-multi",
+      "theme": "Dépendances fonctionnelles",
+      "difficulte": 1,
+      "enonce": "<p>Voici quatre lignes d'une relation <code>Film</code>. Quelles dépendances fonctionnelles sont <strong>contredites</strong> par ces lignes ?</p><table><thead><tr><th>id_film</th><th>titre</th><th>realisateur</th><th>annee</th></tr></thead><tbody><tr><td>1</td><td>Alien</td><td>Scott</td><td>1979</td></tr><tr><td>2</td><td>Blade Runner</td><td>Scott</td><td>1982</td></tr><tr><td>3</td><td>Dune</td><td>Lynch</td><td>1984</td></tr><tr><td>4</td><td>Dune</td><td>Villeneuve</td><td>2021</td></tr></tbody></table>",
+      "choix": [
+        "<code>id_film → titre</code>",
+        "<code>titre → realisateur</code>",
+        "<code>realisateur → annee</code>",
+        "<code>annee → titre</code>"
+      ],
+      "reponses": [
+        1,
+        2
+      ],
+      "indices": [
+        "<p>\\(A \\to B\\) est contredite dès que deux lignes ont le même \\(A\\) et des \\(B\\) différents.</p>"
+      ],
+      "explication": "<p><code>titre → realisateur</code> tombe, car <em>Dune</em> a deux réalisateurs ; <code>realisateur → annee</code> aussi, car Scott a deux années. <code>id_film → titre</code> tient : c'est la clé. <code>annee → titre</code> tient sur ces quatre lignes, mais rien ne le garantit : des lignes peuvent contredire une dépendance, jamais la prouver. Une dépendance se déduit des règles du domaine.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Vérifications sémantiques",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#verifications-semantiques"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "qcm-multi",
+      "theme": "Dépendances fonctionnelles",
+      "difficulte": 2,
+      "enonce": "<p>Un relevé de notes tient dans <code>Releve(id_etu, id_cours, nom_etu, intitule, note)</code>. Un étudiant a un seul nom, et deux étudiants peuvent être homonymes. Un cours a un seul intitulé. Un étudiant a une seule note par cours, et ses notes varient d'un cours à l'autre. Quelles dépendances fonctionnelles sont vraies ?</p>",
+      "choix": [
+        "<code>id_etu → nom_etu</code>",
+        "<code>id_cours → intitule</code>",
+        "<code>(id_etu, id_cours) → note</code>",
+        "<code>id_etu → note</code>",
+        "<code>nom_etu → id_etu</code>"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "indices": [
+        "<p>Pour chaque proposition, se demander : à une valeur de gauche, peut-il correspondre deux valeurs de droite ?</p>"
+      ],
+      "explication": "<p>Le nom se déduit de l'étudiant, l'intitulé du cours, et la note demande les deux : c'est pourquoi la clé est le couple (<code>id_etu</code>, <code>id_cours</code>). <code>id_etu → note</code> est faux, car un étudiant a plusieurs notes. <code>nom_etu → id_etu</code> est l'inverse d'une dépendance vraie : une dépendance ne se retourne pas, et les homonymes l'interdisent ici.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Vérifications sémantiques",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#verifications-semantiques"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "code",
+      "theme": "Dépendances fonctionnelles",
+      "difficulte": 2,
+      "enonce": "<p>La table <code>ventes</code> vient d'un tableur. Elle devrait respecter la dépendance <code>id_client → ville</code>, mais une erreur de saisie s'y est glissée. Afficher les <code>id_client</code> qui contredisent cette dépendance (une colonne, une ligne par client fautif).</p>",
+      "langage": "sql",
+      "jeu": "ventes",
+      "depart": "SELECT ",
+      "solution": "SELECT id_client\nFROM ventes\nGROUP BY id_client\nHAVING COUNT(DISTINCT ville) > 1;",
+      "indices": [
+        "<p>Un client fautif a plusieurs villes différentes : regrouper par client, puis compter les villes distinctes.</p>"
+      ],
+      "explication": "<p>On regroupe par partie gauche de la dépendance, et l'on garde les groupes où la partie droite prend plusieurs valeurs : <code>COUNT(DISTINCT ville) &gt; 1</code>. Le client 12 apparaît avec Angers et Laval. <code>COUNT(*) &gt; 1</code> ne convient pas : il renverrait aussi les clients 10 et 11, qui ont plusieurs ventes mais une seule ville. Cette redondance mal maîtrisée est exactement l'anomalie de mise à jour que la normalisation supprime.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Vérifications sémantiques",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#verifications-semantiques"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "association",
+      "theme": "Reconnaître une forme normale",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque relation à sa forme normale la plus haute. Outre les dépendances envers la clé, on sait seulement que <code>titre_livre</code> dépend de <code>id_livre</code>, et <code>nom_editeur</code> de <code>id_editeur</code>.</p>",
+      "paires": [
+        [
+          "<code>Film(<u>id_film</u>, titre, acteurs [1..*])</code>",
+          "Pas en 1NF"
+        ],
+        [
+          "<code>Emprunt(<u>id_livre, id_lecteur</u>, titre_livre, date_retour)</code>",
+          "En 1NF, pas en 2NF"
+        ],
+        [
+          "<code>Livre(<u>id_livre</u>, titre_livre, id_editeur, nom_editeur)</code>",
+          "En 2NF, pas en 3NF"
+        ],
+        [
+          "<code>Editeur(<u>id_editeur</u>, nom_editeur, ville)</code>",
+          "En 3NF"
+        ]
+      ],
+      "explication": "<p><code>acteurs [1..*]</code> n'est pas atomique : pas de 1NF. Dans <code>Emprunt</code>, <code>titre_livre</code> dépend d'une partie de la clé : pas de 2NF. Dans <code>Livre</code>, la clé est simple, mais <code>nom_editeur</code> dépend de <code>id_editeur</code>, un attribut non-clé : pas de 3NF. <code>Editeur</code> ne dépend que de sa clé.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les formes normales",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#les-formes-normales"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "vrai-faux",
+      "theme": "Reconnaître une forme normale",
+      "difficulte": 1,
+      "enonce": "<p>Une relation en 1NF dont la clé primaire ne compte qu'un seul attribut est forcément en 2NF.</p>",
+      "reponse": true,
+      "explication": "<p>Vrai. La 2NF interdit qu'un attribut non-clé dépende d'une <em>partie</em> de la clé, et une clé d'un seul attribut n'a pas de partie. Cela ne dit rien de la 3NF : <code>Employe(<u>id_emp</u>, id_service, nom_service)</code> est en 2NF, mais pas en 3NF.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les formes normales",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#les-formes-normales"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "qcm",
+      "theme": "Reconnaître une forme normale",
+      "difficulte": 1,
+      "enonce": "<p>Un artiste rejoint un groupe à une certaine date : <code>Participation(<u>#id_artiste, #id_groupe</u>, date_debut)</code>, où <code>date_debut</code> dépend à la fois de l'artiste et du groupe. Quelle est la forme normale la plus haute que respecte cette relation ?</p>",
+      "choix": [
+        "3NF",
+        "2NF",
+        "1NF",
+        "Aucune"
+      ],
+      "reponse": 0,
+      "melanger": false,
+      "explication": "<p>Une clé composée n'est pas un défaut en soi : la 2NF demande seulement que chaque attribut non-clé dépende de toute la clé, ce qui est le cas de <code>date_debut</code>. Il n'y a qu'un attribut non-clé, donc aucune dépendance entre attributs non-clés : la relation est en 3NF.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les formes normales",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#les-formes-normales"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "qcm-multi",
+      "theme": "Reconnaître une forme normale",
+      "difficulte": 2,
+      "enonce": "<p>Soit <code>Commande(<u>num_cmd, ref_produit</u>, quantite, date_cmd, id_client, ville_client)</code>. Une commande a une date et un client, un client a une ville, et la quantité est donnée par produit de la commande. Quelles affirmations sont justes ?</p>",
+      "choix": [
+        "<code>date_cmd</code> empêche la 2NF : il ne dépend que de <code>num_cmd</code>",
+        "<code>id_client</code> empêche la 2NF : il ne dépend que de <code>num_cmd</code>",
+        "<code>ville_client</code> dépend d'un attribut non-clé : c'est un défaut de 3NF",
+        "<code>quantite</code> empêche la 2NF : il ne dépend que de <code>ref_produit</code>",
+        "Ajouter <code>date_cmd</code> à la clé mettrait la relation en 2NF"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "indices": [
+        "<p>Prendre les attributs non-clés un par un : de quoi chacun dépend-il exactement ?</p>"
+      ],
+      "explication": "<p><code>date_cmd</code> et <code>id_client</code> se déduisent de <code>num_cmd</code> seul : dépendances partielles, donc pas de 2NF. <code>ville_client</code> dépend de <code>id_client</code>, un attribut non-clé : c'est la 3NF qui l'interdit. <code>quantite</code>, lui, dépend de toute la clé. Agrandir la clé ne corrige rien : une dépendance partielle se règle en sortant les attributs dans une nouvelle relation.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les formes normales",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#les-formes-normales"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "atelier",
+      "theme": "Normaliser",
+      "difficulte": 1,
+      "enonce": "<p>Mettre en 1NF <code>Etudiant(<u>id_etu</u>, nom, telephones [1..*])</code>, sachant qu'un numéro de téléphone appartient à un seul étudiant. Écrire deux relations, <code>Etudiant</code> et <code>Telephone</code> ; le numéro s'appelle <code>numero</code>.</p>",
+      "editeur": "relationnel",
+      "titre": "Mettre en 1NF",
+      "options": {
+        "ordre": false
+      },
+      "solution": [
+        "Etudiant(_id_etu_, nom)",
+        "Telephone(_numero_, #id_etu)"
+      ],
+      "explication": "<p>L'attribut multivalué sort dans sa propre relation, comme <code>marques</code> dans le cours. Le numéro identifie la ligne, et comme il appartient à un seul étudiant, c'est <code>Telephone</code> qui porte la clé étrangère <code>#id_etu</code> (règle 3 de la traduction).</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les formes normales",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#les-formes-normales"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "atelier",
+      "theme": "Normaliser",
+      "difficulte": 2,
+      "enonce": "<p>Normaliser <code>Participation(<u>id_artiste, id_festival</u>, pseudo, ville_festival, cachet)</code>. Le pseudo dépend de l'artiste, la ville dépend du festival, et le cachet dépend des deux. Écrire le modèle en 3NF, avec les relations <code>Artiste</code>, <code>Festival</code> et <code>Participation</code>.</p>",
+      "editeur": "relationnel",
+      "titre": "Mettre en 2NF",
+      "options": {
+        "ordre": false
+      },
+      "solution": [
+        "Artiste(_id_artiste_, pseudo)",
+        "Festival(_id_festival_, ville_festival)",
+        "Participation(_#id_artiste_, _#id_festival_, cachet)"
+      ],
+      "indices": [
+        "<p>Chaque partie de la clé dont dépend un attribut devient la clé d'une nouvelle relation.</p>"
+      ],
+      "explication": "<p><code>pseudo</code> et <code>ville_festival</code> dépendent chacun d'une partie de la clé : ils partent dans <code>Artiste</code> et <code>Festival</code>, dont cette partie devient la clé. <code>Participation</code> garde le cachet, et sa clé reste le couple, désormais formé de deux clés étrangères : c'est ce qui conserve le lien entre artistes et festivals.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les formes normales",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#les-formes-normales"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "atelier",
+      "theme": "Normaliser",
+      "difficulte": 2,
+      "enonce": "<p>Normaliser <code>Concert(<u>id_concert</u>, date_concert, id_salle, nom_salle, ville_salle)</code>. Le nom et la ville se déduisent de la salle. Écrire le modèle en 3NF, avec les relations <code>Salle</code> et <code>Concert</code>.</p>",
+      "editeur": "relationnel",
+      "titre": "Mettre en 3NF",
+      "options": {
+        "ordre": false
+      },
+      "solution": [
+        "Salle(_id_salle_, nom_salle, ville_salle)",
+        "Concert(_id_concert_, date_concert, #id_salle)"
+      ],
+      "indices": [
+        "<p>La partie gauche de la dépendance entre attributs non-clés devient une clé primaire d'un côté et une clé étrangère de l'autre.</p>"
+      ],
+      "explication": "<p><code>nom_salle</code> et <code>ville_salle</code> dépendent de <code>id_salle</code>, qui n'est pas une clé : la 3NF est violée. La dépendance devient une relation <code>Salle</code>, dont <code>id_salle</code> est la clé. <code>Concert</code> en garde la clé étrangère : sans <code>#id_salle</code>, on ne saurait plus où a lieu un concert.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les formes normales",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#les-formes-normales"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "atelier",
+      "theme": "Normaliser",
+      "difficulte": 3,
+      "enonce": "<p>Une facture est saisie dans une seule relation, une ligne par article facturé :</p><p><code>Ligne_facture(<u>num_facture, ref_article</u>, date_facture, id_client, nom_client, ville_client, libelle, prix_unitaire, quantite, montant)</code></p><ul><li>une facture a une date et un client ;</li><li>un client a un nom et une ville ;</li><li>un article a un libellé et un prix unitaire, qui ne change pas ;</li><li>la quantité est donnée par article de la facture ;</li><li><code>montant</code> vaut <code>prix_unitaire × quantite</code>.</li></ul><p>Écrire le modèle en 3NF, avec les relations <code>Client</code>, <code>Facture</code>, <code>Article</code> et <code>Ligne_facture</code>.</p>",
+      "editeur": "relationnel",
+      "titre": "Normaliser une facture",
+      "options": {
+        "ordre": false
+      },
+      "solution": [
+        "Client(_id_client_, nom_client, ville_client)",
+        "Facture(_num_facture_, date_facture, #id_client)",
+        "Article(_ref_article_, libelle, prix_unitaire)",
+        "Ligne_facture(_#num_facture_, _#ref_article_, quantite)"
+      ],
+      "indices": [
+        "<p>Écarter d'abord l'attribut calculable. Traiter ensuite les dépendances partielles, puis celles entre attributs non-clés.</p>",
+        "<p>Trois dépendances mènent à trois nouvelles relations : <code>num_facture → …</code>, <code>ref_article → …</code> et <code>id_client → …</code>.</p>"
+      ],
+      "explication": "<p>On procède dans l'ordre. <code>montant</code> est calculable : il disparaît. Dépendances partielles : <code>num_facture</code> détermine la date et le client, <code>ref_article</code> détermine le libellé et le prix, d'où <code>Facture</code> et <code>Article</code> ; <code>Ligne_facture</code> ne garde que <code>quantite</code>. Reste dans <code>Facture</code> la dépendance entre non-clés <code>id_client → nom_client, ville_client</code> : elle donne <code>Client</code>, et <code>Facture</code> garde <code>#id_client</code>.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les formes normales",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#les-formes-normales"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "ouverte",
+      "theme": "Normaliser",
+      "difficulte": 2,
+      "enonce": "<p>Un club garde ses adhésions dans une seule table, une ligne par adhésion d'un adhérent à une section : <code>Adhesion(<u>id_adherent, id_section</u>, nom_adherent, nom_section, tel_responsable)</code>. Le nom de l'adhérent dépend de l'adhérent ; le nom de la section et le téléphone du responsable dépendent de la section. Donner sur cet exemple une anomalie de mise à jour, une anomalie d'insertion et une anomalie de suppression, puis dire comment les supprimer.</p>",
+      "reponse_modele": "<p>Mise à jour : si le responsable d'une section change de numéro, il faut modifier toutes les lignes de cette section, et en oublier une rend la base incohérente. Insertion : on ne peut pas enregistrer une section qui n'a encore aucun adhérent. Suppression : si le dernier adhérent d'une section la quitte, on perd son nom et le numéro du responsable. On décompose en <code>Adherent(<u>id_adherent</u>, nom_adherent)</code>, <code>Section(<u>id_section</u>, nom_section, tel_responsable)</code> et <code>Adhesion(<u>#id_adherent, #id_section</u>)</code>.</p>",
+      "criteres": [
+        "Une anomalie de mise à jour tirée de l'exemple (information répétée sur plusieurs lignes)",
+        "Une anomalie d'insertion tirée de l'exemple (section sans adhérent, ou adhérent sans section)",
+        "Une anomalie de suppression tirée de l'exemple (perte d'une information en supprimant la dernière ligne)",
+        "Une décomposition en trois relations reliées par des clés étrangères"
+      ],
+      "revoir": {
+        "texte": "Cours 1 · Les formes normales",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#les-formes-normales"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "qcm",
+      "theme": "Reconnaître une forme normale",
+      "difficulte": 3,
+      "enonce": "<p>Une compagnie enregistre ses vols dans <code>Vol(num_vol, date_vol, ville_depart, pilote, compagnie)</code>. Le même numéro de vol circule chaque jour, toujours au départ de la même ville. Un jour donné, un vol a un seul pilote. Un pilote peut assurer plusieurs vols dans la même journée, et il appartient à une seule compagnie. Quelle est la clé, et quelle est la forme normale la plus haute ?</p>",
+      "choix": [
+        "Clé (<code>num_vol</code>, <code>date_vol</code>) ; en 1NF seulement, à cause de <code>ville_depart</code>",
+        "Clé (<code>num_vol</code>, <code>date_vol</code>) ; en 2NF, pas en 3NF, à cause de <code>compagnie</code>",
+        "Clé (<code>num_vol</code>) ; en 2NF, pas en 3NF, à cause de <code>compagnie</code>",
+        "Clé (<code>num_vol</code>, <code>date_vol</code>, <code>pilote</code>) ; en 1NF seulement, à cause de <code>compagnie</code>"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Chercher le plus petit ensemble d'attributs qui détermine tous les autres.</p>",
+        "<p>Vérifier ensuite la 2NF avant la 3NF : un attribut dépend-il d'une partie de cette clé ?</p>"
+      ],
+      "explication": "<p>Le numéro seul ne suffit pas : le pilote change d'un jour à l'autre. Le couple (<code>num_vol</code>, <code>date_vol</code>) détermine tout, et ajouter <code>pilote</code> à la clé serait inutile. <code>ville_depart</code> dépend de <code>num_vol</code>, une partie de la clé : la 2NF tombe, et la relation reste en 1NF. Le défaut le plus visible, <code>pilote → compagnie</code>, relève de la 3NF, mais il ne suffit pas à classer la relation : les formes sont successives, c'est la première violée qui compte.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les formes normales",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#les-formes-normales"
+      }
+    }
+  ]
+}
+</script>
+</body>
+</html>

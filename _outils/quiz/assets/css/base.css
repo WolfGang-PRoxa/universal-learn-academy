@@ -1,0 +1,243 @@
+@charset "utf-8";
+/* Quiz · base : mise en page, boutons, bandeaux, barre du haut, notifications */
+
+:root {
+  --claude-teinte: 42;                                /* terre cuite : tout ce qui vient de Claude */
+  --claude: oklch(var(--ton-vif) var(--claude-teinte));
+  --claude-fort: oklch(var(--ton-fort) var(--claude-teinte));
+  --claude-doux: oklch(var(--ton-doux) var(--claude-teinte));
+  --claude-trait: oklch(var(--ton-trait) var(--claude-teinte));
+  --largeur-claude: min(28rem, 100vw);
+}
+
+.quiz, .portail { grid-area: contenu; min-width: 0; }
+.quiz h2, .portail h2 { margin: 0 0 1rem; padding: 0; border: 0; font-size: 1.35rem; }
+.quiz-zone, .portail-zone { margin-top: 2rem; }
+.quiz-zone:focus { outline: none; }
+
+/* Grand écran : l'en-tête du quiz devient une colonne à gauche, qui reste en vue,
+   et la zone du quiz (accueil, question, résultats) occupe le reste. L'ensemble
+   prend la largeur de la barre du haut (80rem), pas seulement celle de la colonne
+   de lecture : la question commence en haut de l'écran. */
+@media (min-width: 72rem) {
+  .page:has(> .quiz) { grid-template-columns: minmax(0, 80rem); }
+  .quiz {
+    display: grid;
+    grid-template-columns: minmax(13rem, 1fr) minmax(0, 3fr);
+    column-gap: clamp(2rem, 3.5vw, 3.5rem);
+    align-items: start;
+  }
+  .quiz > * { grid-column: 2; }
+  .quiz > .entete {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    position: sticky;
+    top: calc(var(--hauteur-barre) + 2rem);
+    max-height: calc(100vh - var(--hauteur-barre) - 4rem);
+    overflow-y: auto;
+    margin: 0;
+    padding: 0 0 0.5rem;
+    border-bottom: 0;
+    scrollbar-width: thin;
+  }
+  .quiz > .entete h1 { font-size: clamp(1.6rem, 1rem + 1vw, 2.1rem); }
+  .quiz > .entete .chapeau { font-size: 0.98rem; }
+  .quiz > .entete .meta { flex-direction: column; gap: 0.85rem; }
+  .quiz-zone { margin-top: 0; }
+}
+
+/* Au-delà de 1 440 px, la page grandit avec la fenêtre : règle de la charte
+   (cours.css, section 4), commune à toutes les pages. */
+/* Le code en ligne peut passer à la ligne : les réponses contiennent souvent des requêtes entières */
+.quiz :not(pre) > code, .claude-panneau :not(pre) > code { white-space: normal; overflow-wrap: anywhere; }
+.espace { flex: 1; }
+/* L'attribut hidden l'emporte sur les display: flex/grid des composants */
+.quiz [hidden], .portail [hidden], .claude-panneau [hidden], .dialogue [hidden] { display: none !important; }
+.hors-ecran { position: fixed; left: -9999px; top: 0; opacity: 0; }
+
+.icone { width: 1.05em; height: 1.05em; flex: none; }
+
+/* Boutons -------------------------------------------------------------------- */
+
+.bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.6rem;
+  padding: 0.5rem 1.15rem;
+  border: 1px solid var(--bordure-forte);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--texte);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.bouton:hover { border-color: var(--accent); }
+.bouton.principal { background: var(--accent-fort); border-color: var(--accent-fort); color: var(--surface); }
+.bouton.principal:hover { background: var(--accent); border-color: var(--accent); }
+.bouton.discret { background: transparent; border-color: transparent; color: var(--texte-2); }
+.bouton.discret:hover { color: var(--texte); border-color: var(--bordure); }
+.bouton.petit { min-height: 2.1rem; padding: 0.3rem 0.8rem; font-size: 0.87rem; }
+.bouton:disabled { opacity: 0.45; cursor: not-allowed; }
+.bouton kbd { font-size: 0.72rem; opacity: 0.75; }
+.bouton.bouton-claude { color: var(--claude-fort); border-color: var(--claude-trait); background: var(--claude-doux); }
+.bouton.bouton-claude:hover { border-color: var(--claude); }
+.bouton.principal.bouton-claude, .quiz-evaluation-pied .bouton.principal { background: var(--claude-fort); border-color: var(--claude-fort); color: var(--surface); }
+a.bouton { text-decoration: none; }
+a.bouton::after { content: none; }
+
+.bouton-icone-seul {
+  display: inline-grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--texte-2);
+  cursor: pointer;
+}
+.bouton-icone-seul:hover { color: var(--texte); border-color: var(--bordure); }
+.bouton-icone-seul .icone { width: 1.15rem; height: 1.15rem; }
+
+.quiz-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+}
+
+.quiz-aide { margin: 0.75rem 0 0; font-size: 0.8rem; color: var(--texte-3); }
+.quiz-attente { color: var(--texte-2); font-style: italic; }
+
+.quiz-alerte {
+  margin: 1rem 0 0;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--rayon-petit);
+  background: oklch(var(--ton-doux) 85);
+  color: oklch(var(--ton-fort) 85);
+  font-size: 0.9rem;
+}
+
+.quiz-erreur {
+  padding: 1rem 1.2rem;
+  border: 1px solid oklch(var(--ton-trait) 25);
+  border-left: 4px solid oklch(var(--ton-vif) 25);
+  border-radius: var(--rayon-petit);
+  background: oklch(var(--ton-doux) 25);
+}
+.quiz-erreur pre { margin: 0.6rem 0 0; white-space: pre-wrap; }
+
+/* Bandeaux (hors ligne, génération en cours, relecture) ------------------------------ */
+
+.quiz-bandeau {
+  --b: var(--accent);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--bordure);
+  border-left: 4px solid var(--b);
+  border-radius: var(--rayon-petit);
+  background: var(--surface);
+  font-size: 0.92rem;
+}
+.quiz-bandeau p { margin: 0; flex: 1 1 18rem; }
+.quiz-bandeau.hors-ligne { --b: oklch(var(--ton-vif) 85); background: oklch(var(--ton-doux) 85); }
+.quiz-bandeau.tache { --b: var(--claude); background: var(--claude-doux); }
+.quiz-bandeau.revue { --b: var(--texte-3); background: var(--surface-2); }
+
+/* Barre du haut : état du serveur, portail, réglages ---------------------------------- */
+
+.barre-quiz { display: flex; align-items: center; gap: 0.5rem; flex: none; }
+.etat-serveur {
+  --e: var(--texte-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--texte-2);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.etat-serveur::before { content: ""; width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--e); }
+.etat-serveur:hover { border-color: var(--bordure-forte); color: var(--texte); }
+.etat-serveur.ok { --e: oklch(var(--ton-vif) 150); }
+.etat-serveur.partiel { --e: oklch(var(--ton-vif) 85); }
+.etat-serveur.hors-ligne { --e: var(--texte-3); }
+.bouton-barre {
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--texte-2);
+  cursor: pointer;
+}
+.bouton-barre:hover { color: var(--texte); border-color: var(--bordure-forte); }
+.bouton-barre .icone { width: 1.1rem; height: 1.1rem; }
+@media (max-width: 40rem) {
+  .etat-serveur { padding: 0 0.6rem; font-size: 0; gap: 0; }
+  .etat-serveur::before { width: 0.7rem; height: 0.7rem; }
+}
+
+/* Notifications ------------------------------------------------------------------------ */
+
+.notifications {
+  position: fixed;
+  left: 50%;
+  bottom: 1.25rem;
+  z-index: 90;
+  display: grid;
+  gap: 0.5rem;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  pointer-events: none;
+}
+.notification {
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  background: var(--texte);
+  color: var(--fond);
+  font-size: 0.9rem;
+  box-shadow: var(--ombre);
+  animation: notif-entree 0.2s ease;
+}
+.notification.erreur { background: oklch(var(--ton-fort) 25); color: #fff; }
+.notification.sortie { opacity: 0; transition: opacity 0.4s; }
+@keyframes notif-entree { from { opacity: 0; transform: translateY(0.5rem); } }
+
+/* Mouvement (charte, section 12) : chaque écran du quiz ou du portail, la
+   correction, les indices et la réponse modèle arrivent en fondu ; choix et
+   boutons s'enfoncent au clic. Coupé si le système réduit les animations. */
+@media screen and (prefers-reduced-motion: no-preference) {
+  .quiz-zone > *, .portail-zone > * { animation: charte-monter 0.4s var(--courbe-sortie) both; }
+  .quiz-retour, .quiz-indice, .quiz-modele, .correction-claude { animation: charte-monter 0.35s var(--courbe-sortie) both; }
+  .bouton { transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.1s; }
+  .bouton:active:not(:disabled) { transform: scale(0.97); }
+  .choix { transition: border-color 0.12s, background 0.12s, transform 0.1s; }
+  .choix:active { transform: scale(0.99); }
+}

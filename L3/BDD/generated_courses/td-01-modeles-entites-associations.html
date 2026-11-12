@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TD 1 · Modèles entités-associations · Bases de données L3</title>
+<meta name="description" content="TD 1 interactif de bases de données : repérer les erreurs d'un diagramme de classes, le corriger, le traduire en modèle relationnel et l'interroger en SQL (films et cinéma, plateforme de jeux en ligne).">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+<script type="application/json" id="atelier-jeux">
+{
+  "cinema": {
+    "titre": "Films et cinéma (exercice 1)",
+    "description": "<p>Le schéma de la solution proposée à la question 3 : <code>personne</code>, <code>film</code>, <code>distribution</code> (qui joue quel rôle dans quel film), <code>realise</code> (qui réalise quel film), <code>genre</code>, <code>genre_film</code>, <code>adresse</code>, <code>cinema</code>, <code>salle</code>, <code>seance</code> ; <code>agent</code>, <code>habite</code> et <code>represente</code> sont vides. Films réels à la distribution simplifiée ; « Poussière d'or » et « Le Shérif de Carson City » sont inventés.</p>",
+    "script": "CREATE TABLE personne (id_personne integer PRIMARY KEY, nom varchar(40) NOT NULL, prenom varchar(40));\nCREATE TABLE adresse (id_adresse integer PRIMARY KEY, rue varchar(80), code_postal varchar(10), ville varchar(40));\nCREATE TABLE agent (id_agent integer PRIMARY KEY, nom varchar(40) NOT NULL);\nCREATE TABLE film (id_film integer PRIMARY KEY, titre varchar(80) NOT NULL, annee integer, duree integer);\nCREATE TABLE genre (id_genre integer PRIMARY KEY, libelle varchar(30) NOT NULL);\nCREATE TABLE cinema (id_cinema integer PRIMARY KEY, nom varchar(40) NOT NULL, id_adresse integer NOT NULL REFERENCES adresse);\nCREATE TABLE salle (id_salle integer, id_cinema integer REFERENCES cinema ON DELETE CASCADE, nom varchar(20), nb_places integer, PRIMARY KEY (id_salle, id_cinema));\nCREATE TABLE seance (id_seance integer PRIMARY KEY, date_heure timestamp NOT NULL, version varchar(10), id_film integer NOT NULL REFERENCES film, id_salle integer NOT NULL, id_cinema integer NOT NULL, FOREIGN KEY (id_salle, id_cinema) REFERENCES salle);\nCREATE TABLE distribution (id_personne integer REFERENCES personne, id_film integer REFERENCES film, role varchar(60), PRIMARY KEY (id_personne, id_film));\nCREATE TABLE realise (id_personne integer REFERENCES personne, id_film integer REFERENCES film, PRIMARY KEY (id_personne, id_film));\nCREATE TABLE habite (id_personne integer REFERENCES personne, id_adresse integer REFERENCES adresse, PRIMARY KEY (id_personne, id_adresse));\nCREATE TABLE represente (id_personne integer REFERENCES personne, id_agent integer REFERENCES agent, PRIMARY KEY (id_personne, id_agent));\nCREATE TABLE genre_film (id_film integer REFERENCES film, id_genre integer REFERENCES genre, PRIMARY KEY (id_film, id_genre));\n\nINSERT INTO personne VALUES\n(1, 'Eastwood', 'Clint'), (2, 'Pitt', 'Brad'), (3, 'Freeman', 'Morgan'), (4, 'Fincher', 'David'),\n(5, 'Norton', 'Edward'), (6, 'Paltrow', 'Gwyneth'), (7, 'Petersen', 'Wolfgang'), (8, 'Bana', 'Eric'),\n(9, 'Kruger', 'Diane'), (10, 'Malkovich', 'John'), (11, 'Tarantino', 'Quentin'), (12, 'DiCaprio', 'Leonardo'),\n(13, 'Robbie', 'Margot'), (14, 'Pacino', 'Al'), (15, 'Laurent', 'Mélanie'), (16, 'Waltz', 'Christoph'),\n(17, 'Swank', 'Hilary'), (18, 'Damon', 'Matt'), (19, 'Scott', 'Ridley'), (20, 'Sarandon', 'Susan'),\n(21, 'Davis', 'Geena'), (22, 'Vang', 'Bee'), (23, 'Bonham Carter', 'Helena'), (24, 'Russo', 'Rene'),\n(25, 'Russell', 'Kurt');\n\nINSERT INTO film VALUES\n(1, 'Gran Torino', 2008, 116), (2, 'Million Dollar Baby', 2004, 132), (3, 'Invictus', 2009, 134),\n(4, 'Fight Club', 1999, 139), (5, 'Seven', 1995, 127), (6, 'Troie', 2004, 163),\n(7, 'Dans la ligne de mire', 1993, 128), (8, 'Once Upon a Time… in Hollywood', 2019, 161),\n(9, 'Inglourious Basterds', 2009, 153), (10, 'Thelma et Louise', 1991, 130),\n(11, 'Poussière d''or', 2024, 118), (12, 'Le Shérif de Carson City', 2026, 124);\n\nINSERT INTO realise VALUES\n(1, 1), (1, 2), (1, 3), (4, 4), (4, 5), (7, 6), (7, 7), (11, 8), (11, 9), (19, 10), (1, 11), (1, 12);\n\nINSERT INTO distribution VALUES\n(1, 1, 'Walt Kowalski'), (22, 1, 'Thao Vang Lor'),\n(1, 2, 'Frankie Dunn'), (17, 2, 'Maggie Fitzgerald'), (3, 2, 'Eddie Dupris'),\n(3, 3, 'Nelson Mandela'), (18, 3, 'François Pienaar'),\n(2, 4, 'Tyler Durden'), (5, 4, 'le narrateur'), (23, 4, 'Marla Singer'),\n(2, 5, 'David Mills'), (3, 5, 'William Somerset'), (6, 5, 'Tracy Mills'),\n(2, 6, 'Achille'), (8, 6, 'Hector'), (9, 6, 'Hélène'),\n(1, 7, 'Frank Horrigan'), (10, 7, 'Mitch Leary'), (24, 7, 'Lilly Raines'),\n(12, 8, 'Rick Dalton'), (2, 8, 'Cliff Booth'), (13, 8, 'Sharon Tate'), (14, 8, 'Marvin Schwarz'), (25, 8, 'Randy'),\n(2, 9, 'Aldo Raine'), (15, 9, 'Shosanna Dreyfus'), (16, 9, 'Hans Landa'), (9, 9, 'Bridget von Hammersmark'),\n(20, 10, 'Louise Sawyer'), (21, 10, 'Thelma Dickinson'), (2, 10, 'J.D.'),\n(2, 11, 'Jake Morrow'), (3, 11, 'Ned Harlan'), (1, 11, 'le shérif Cole'),\n(2, 12, 'Billy Carson'), (18, 12, 'Tom Hale');\n\nINSERT INTO genre VALUES (1, 'Drame'), (2, 'Western'), (3, 'Thriller'), (4, 'Guerre'), (5, 'Comédie'), (6, 'Policier'), (7, 'Historique');\nINSERT INTO genre_film VALUES\n(1, 1), (2, 1), (3, 1), (3, 7), (4, 1), (4, 3), (5, 3), (5, 6), (6, 7), (6, 4), (7, 3), (7, 6),\n(8, 1), (8, 5), (9, 4), (9, 7), (10, 1), (11, 2), (12, 2);\n\nINSERT INTO adresse VALUES (1, '12 avenue du Général-Leclerc', '72000', 'Le Mans'), (2, '3 place de la République', '72000', 'Le Mans');\nINSERT INTO cinema VALUES (1, 'Le Palace', 1), (2, 'Cinéma du Centre', 2);\nINSERT INTO salle VALUES (1, 1, 'Salle 1', 320), (2, 1, 'Salle 2', 180), (3, 1, 'Salle 3', 90), (1, 2, 'Salle 1', 240), (2, 2, 'Salle 2', 110);\nINSERT INTO seance VALUES\n(1, '2026-09-25 14:00', 'VF', 1, 1, 1), (2, '2026-09-25 20:30', 'VOST', 8, 1, 1), (3, '2026-09-25 18:00', 'VOST', 4, 2, 1),\n(4, '2026-09-26 21:00', 'VF', 12, 1, 2), (5, '2026-09-26 16:00', 'VOST', 9, 2, 2), (6, '2026-09-27 20:30', 'VF', 11, 3, 1);\n"
+  },
+  "plateforme": {
+    "titre": "Plateforme de jeux (base du TP 1)",
+    "description": "<p>Le script de l'enseignant pour le TP 1, complété par les tables <code>jeu</code>, <code>partie</code> et <code>save</code> décrites dans le TP : <code>visiteur</code>, <code>objet</code>, <code>stock</code>, <code>race</code>, <code>avatar</code>, <code>jeu</code>, <code>partie</code>, <code>save</code>.</p>",
+    "script": "-- CREATION DES TABLES\nCREATE TABLE visiteur (\n\tid_visiteur serial PRIMARY KEY,\n\tlogin varchar(10) NOT NULL,\n\tmdp varchar(10) NOT NULL,\n\tmail varchar(50),\n\tville varchar(50)\n);\n\nCREATE TABLE objet (\n\tid_objet serial PRIMARY KEY,\n\tnom_objet varchar(40) NOT NULL,\n\tprix integer,\n\tpuissance integer\n);\n\nCREATE TABLE stock (\n\tid_objet bigint REFERENCES objet,\n\tid_visiteur bigint REFERENCES visiteur,\n\tnb_achat integer,\n\tnb_dispo integer,\n\tPRIMARY KEY (id_objet, id_visiteur)\n);\n\nCREATE TABLE race(\n\tid_race serial PRIMARY KEY,\n\tnom_race varchar(20) NOT NULL,\n\ttxt_race text NOT NULL\t\n);\n\nCREATE TABLE avatar (\n\tid_avatar serial PRIMARY KEY,\n\tnom_avatar varchar(20) NOT NULL,\n\tsexe char(1),\n\txp integer,\n\tcode_dsc integer,\n\tid_visiteur bigint REFERENCES visiteur,\n\tid_race bigint REFERENCES race\n);\n\nCREATE TABLE jeu (\n\tid_jeu serial PRIMARY KEY,\n\tnom_jeu varchar(20) UNIQUE NOT NULL,\n\ttype varchar(20) CHECK (type IN ('role', 'plateau', 'tower defense', 'MMORPG', 'Autre')),\n\tnb_joueur integer\n);\n\nCREATE TABLE partie (\n\tid_avatar bigint REFERENCES avatar,\n\tid_jeu bigint REFERENCES jeu,\n\trole varchar(20),\n\thighscore integer,\n\tPRIMARY KEY (id_avatar, id_jeu)\n);\n\nCREATE TABLE save (\n\tid_avatar bigint REFERENCES avatar,\n\tid_jeu bigint REFERENCES jeu,\n\tdate_s date,\n\tnb_pv integer,\n\tfichier varchar(50) UNIQUE NOT NULL,\n\tPRIMARY KEY (id_avatar, id_jeu, date_s)\n);\n\nINSERT INTO visiteur VALUES (DEFAULT, 'Elijah', 'toto','toto@toto.me','Dunkerque');\nINSERT INTO visiteur VALUES (DEFAULT, 'Ian', 'titi');\nINSERT INTO visiteur VALUES (DEFAULT, 'Sean', 'tata');\nINSERT INTO visiteur VALUES (DEFAULT, 'Billy', 'tutu','tutu@tutu.me','Grenoble');\nINSERT INTO visiteur VALUES (DEFAULT, 'Dominic', 'tyty','tyty@tyty.me','Annecy');\nINSERT INTO visiteur VALUES (DEFAULT, 'Viggo', 'tete','tete@tete.me','Foix');\n\nINSERT INTO objet VALUES (DEFAULT, 'Amulette en ivoire',520,40);\nINSERT INTO objet VALUES (DEFAULT, 'Bille de force',680,70);\nINSERT INTO objet VALUES (DEFAULT, 'Bouclier de nécrophage',990,140);\nINSERT INTO objet VALUES (DEFAULT, 'Chaine tourbillonnante',543,70);\nINSERT INTO objet VALUES (DEFAULT, 'Crane des ténèbres',264,30);\nINSERT INTO objet VALUES (DEFAULT, 'Cristal de sécurité',377,40);\nINSERT INTO objet VALUES (DEFAULT, 'Dague de défiance',590,80);\nINSERT INTO objet VALUES (DEFAULT, 'Elixir de déplacement furtif',521,90);\nINSERT INTO objet VALUES (DEFAULT, 'Filet aquatique',343,30);\nINSERT INTO objet VALUES (DEFAULT, 'Gant de venin',678,100);\nINSERT INTO objet VALUES (DEFAULT, 'Sceptre de maitrise des dragons',802,150);\n\nINSERT INTO stock VALUES (1,1,2,1);\nINSERT INTO stock VALUES (7,1,1,0);\nINSERT INTO stock VALUES (6,1,1,0);\nINSERT INTO stock VALUES (9,1,3,2);\nINSERT INTO stock VALUES (3,1,4,3);\nINSERT INTO stock VALUES (4,1,10,8);\nINSERT INTO stock VALUES (2,2,3,1);\nINSERT INTO stock VALUES (5,2,2,0);\nINSERT INTO stock VALUES (6,2,1,1);\nINSERT INTO stock VALUES (8,2,1,1);\nINSERT INTO stock VALUES (2,3,2,1);\nINSERT INTO stock VALUES (9,3,1,0);\nINSERT INTO stock VALUES (9,4,3,1);\nINSERT INTO stock VALUES (11,4,2,1);\nINSERT INTO stock VALUES (8,5,1,1);\nINSERT INTO stock VALUES (7,5,4,1);\nINSERT INTO stock VALUES (6,5,3,2);\nINSERT INTO stock VALUES (5,5,2,0);\nINSERT INTO stock VALUES (4,5,1,1);\nINSERT INTO stock VALUES (3,5,1,0);\n\nINSERT INTO race VALUES (DEFAULT, 'Homme', ' Les humains sont les Seconds Enfants d Ilúvatar, les \"Suivants\" (quenya Hildor). Contrairement aux elfes, leur durée de vie n est pas liée à Arda (dans un langage plus courant, on peut les considérer comme mortels).');\nINSERT INTO race VALUES (DEFAULT, 'Elfe', 'Les elfes (Quendi, « ceux qui parlent », en quenya) sont des êtres sages et immortels (vieillesse et maladies n ont aucun effet sur eux). Seule une souffrance trop grande ou un rejet de la vie, ainsi qu une mort physique, peut les tuer. Lorsqu un elfe meurt, son esprit se rend dans les cavernes de Mandos. Ce sont les premiers-nés, conçus par Ilúvatar seul.');\nINSERT INTO race VALUES (DEFAULT, 'Nain', 'Ils ne mesurent pas plus d 1,50 mètre. Ils portent de longues barbes. Ils sont spécialisés dans l exploitation des mines : ils ont construit les mines de la Moria ou Khazad-dûm et plus largement sur une grande partie de la Terre du milieu. Ils sont de piètres cavaliers mais il sont très endurants. Ils parlent le Khuzdul.');\nINSERT INTO race VALUES (DEFAULT, 'Ainur', 'Les Ainur (en quenya, « les saints », au singulier Ainu) sont présents dans Le Silmarillion et les Contes et légendes inachevés. Ils créèrent le monde avec Ilúvatar à travers la Musique des Ainur. Après la création d Arda, une partie des Ainur y descendit pour la guider et réguler sa croissance.');\nINSERT INTO race VALUES (DEFAULT, 'Valar', 'Les Valar (nom quenya) sont présents dans Le Silmarillion. Les Valar (« puissances ») sont les quatorze plus puissants Ainur (esprits angéliques) qui soient descendus sur Arda, la Terre, pour y faire naître ce qui a été entrevu dans l Ainulindalë. Parmi eux, les huit plus puissants se nomment les « Aratar » (en quenya, « les exaltés »); ils étaient Neuf avant le bannissement de Melkor, divinité maléfique, dont le but est de détruire et défigurer Arda. Parmi les quatorze, on compte sept esprits masculins et sept féminins (appelés Valier).');\nINSERT INTO race VALUES (DEFAULT, 'Maiar', 'Les Maiar (nom quenya, au singulier : Maia) sont présents dans Le Silmarilion et les Contes et légendes inachevés. Les Maiar font partie des Ainur, les divinités issues de l esprit d Ilúvatar, le père des dieux. Ce sont cependant des esprits de second rang, servant les esprits supérieurs, les Valar. Ils sont beaucoup plus nombreux que ces derniers, mais seule une petite partie d entre eux est nommée. Parmi les serviteurs de Melkor, le dieu maléfique, figurent Sauron et les Balrogs.');\nINSERT INTO race VALUES (DEFAULT, 'Hobbit', 'Les Hobbits sont des créatures de petite taille, de 0,60 à 1,20 m et vivent dans des terriers confortables pour les plus riches, des trous pour les plus pauvres, ou des habitations de surface depuis leur installation dans la Comté. Ce sont des bons vivants, amateurs d herbe à pipe, de bière et de bonne chère. Ils sont accueillants mais se dissimulent souvent aux étrangers. Ils vivent dans la Terre du milieu et plus précisément dans la Comté, et dans une moindre mesure à Bree. Sauf exception, ils n aiment pas voyager.');\nINSERT INTO race VALUES (DEFAULT, 'Orques','Un orque est une créature inspirée du gobelin des légendes germaniques. C est à l origine une espèce humanoïde aux moeurs brutales. Le nom « orque » vient du sindarin « orch » (pluriel : yrch).'); \nINSERT INTO race VALUES (DEFAULT, 'Troll', 'Les trolls furent créés par Melkor au premier Âge du monde, mais leur origine n est pas connue. Sylvebarbe indique qu ils ont été créés à partir d ents qui auraient été corrompus à l instar des orcs qui seraient des elfes torturés et corrompus.');\nINSERT INTO race VALUES (DEFAULT, 'Balrog','Les balrogs (sindarin pour Démon de Puissance, analogue du quenya valarauko (pl. valaraukar)), sont des créatures fantastiques. Aux origines du monde, ils faisaient partie des Maiar. Ils furent corrompus par Melkor et prirent l apparence de formes ténébreuses et horribles. Ils se présentent comme des démons enveloppés de feu et d obscurité, munis de fouets de feu.'); \n\nINSERT INTO avatar VALUES (DEFAULT, 'Hector', 'M',170,345,1,1);\nINSERT INTO avatar VALUES (DEFAULT, 'Timothy', 'M',135,126,2,2);\nINSERT INTO avatar VALUES (DEFAULT, 'Matthis', 'M',90,336,3,3);\nINSERT INTO avatar VALUES (DEFAULT, 'Baptiste', 'M',80,456,4,4);\nINSERT INTO avatar VALUES (DEFAULT, 'David', 'M',102,333,4,5);\nINSERT INTO avatar VALUES (DEFAULT, 'Yannick', 'M',145,234,5,6);\nINSERT INTO avatar VALUES (DEFAULT, 'Luc', 'M',130,145,6,7);\nINSERT INTO avatar VALUES (DEFAULT, 'Antoine', 'M',85,321,1,8);\nINSERT INTO avatar VALUES (DEFAULT, 'Wajdi', 'M',140,234,1,8);\nINSERT INTO avatar VALUES (DEFAULT, 'Yann', 'M',82,344,2,10);\nINSERT INTO avatar VALUES (DEFAULT, 'Eliass', 'M',90,145,3,1);\nINSERT INTO avatar VALUES (DEFAULT, 'Mohammed', 'M',100,321,3,2);\nINSERT INTO avatar VALUES (DEFAULT, 'Youssef', 'M',150,321,4,3);\nINSERT INTO avatar VALUES (DEFAULT, 'Ayas', 'M',150,345,4,4);\nINSERT INTO avatar VALUES (DEFAULT, 'Merieme', 'F',110,431,5,5);\nINSERT INTO avatar VALUES (DEFAULT, 'Stevy', 'M',152,241,6,6);\nINSERT INTO avatar VALUES (DEFAULT, 'Victorien', 'M',135,241,1,7);\nINSERT INTO avatar VALUES (DEFAULT, 'Houssam', 'M',145,214,1,8);\nINSERT INTO avatar VALUES (DEFAULT, 'Pierre', 'M',120,234,2,8);\nINSERT INTO avatar VALUES (DEFAULT, 'Etienne', 'M',85,432,3,10);\nINSERT INTO avatar VALUES (DEFAULT, 'Marius', 'M',127,132,4,2);\nINSERT INTO avatar VALUES (DEFAULT, 'Choukri', 'F',135,342,4,3);\nINSERT INTO avatar VALUES (DEFAULT, 'Ahmed', 'M',100,121,5,4);\nINSERT INTO avatar VALUES (DEFAULT, 'Joris', 'M',130,345,6,5);\n\nINSERT INTO jeu VALUES (DEFAULT,'Forge of Empire','role');\nINSERT INTO jeu VALUES (DEFAULT,'Solitaire','plateau');\nINSERT INTO jeu VALUES (DEFAULT,'Plants vs Zombies','tower defense');\nINSERT INTO jeu VALUES (DEFAULT,'Drakensang Online','MMORPG');\nINSERT INTO jeu VALUES (DEFAULT,'Cooking Fever','Autre');\nINSERT INTO jeu VALUES (DEFAULT,'Kingdom Rush','tower defense');\nINSERT INTO jeu VALUES (DEFAULT,'League of Angels','role');\nINSERT INTO jeu VALUES (DEFAULT,'Mahjong','plateau');\n\nINSERT INTO partie VALUES (1, 2, 'gentil', 345);\nINSERT INTO partie VALUES (2, 7, 'méchant', 234);\nINSERT INTO partie VALUES (3, 6, 'gentil', 543);\nINSERT INTO partie VALUES (4, 3, 'méchant', 987);\nINSERT INTO partie VALUES (4, 2, 'gentil', 554);\nINSERT INTO partie VALUES (23, 1, 'méchant', 290);\nINSERT INTO partie VALUES (12, 4, 'gentil', 541);\nINSERT INTO partie VALUES (17, 5, 'méchant', 509);\nINSERT INTO partie VALUES (9, 3, 'gentil', 80);\nINSERT INTO partie VALUES (15, 7, 'méchant', 589);\nINSERT INTO partie VALUES (3, 3, 'gentil', 430);\nINSERT INTO partie VALUES (4, 8, 'méchant', 734);\nINSERT INTO partie VALUES (14, 2, 'gentil', 127);\nINSERT INTO partie VALUES (6, 2, 'méchant', 343);\nINSERT INTO partie VALUES (7, 6, 'gentil', 13);\nINSERT INTO partie VALUES (19, 8, 'méchant', 84);\nINSERT INTO partie VALUES (8, 4, 'gentil', 885);\nINSERT INTO partie VALUES (10, 5, 'méchant', 413);\nINSERT INTO partie VALUES (2, 6, 'gentil', 283);\nINSERT INTO partie VALUES (7, 1, 'méchant', 145);\nINSERT INTO partie VALUES (12, 2, 'gentil', 587);\nINSERT INTO partie VALUES (14, 3, 'méchant', 175);\nINSERT INTO partie VALUES (21, 3, 'gentil', 497);\nINSERT INTO partie VALUES (21, 4, 'méchant', 383);\nINSERT INTO partie VALUES (8, 5, 'gentil', 566);\nINSERT INTO partie VALUES (24, 7, 'méchant', 786);\nINSERT INTO partie VALUES (8, 1, 'méchant', 12);\nINSERT INTO partie VALUES (1, 1, 'gentil', 76);\nINSERT INTO partie VALUES (7, 4, 'méchant', 55);\nINSERT INTO partie VALUES (6, 5, 'gentil', 496);\nINSERT INTO partie VALUES (16, 5, 'méchant', 448);\nINSERT INTO partie VALUES (2, 2, 'gentil', 883);\n\nINSERT INTO save VALUES (1, 2, '2016-02-01', 45, '/Save/Part001_02_010216.txt');\nINSERT INTO save VALUES (2, 7, '2016-02-01', 34, '/Save/Part002_07_010216.txt');\nINSERT INTO save VALUES (3, 6, '2016-01-24', 43, '/Save/Part003_06_240116.txt');\nINSERT INTO save VALUES (4, 3, '2016-01-12', 87, '/Save/Part004_03_120116.txt');\nINSERT INTO save VALUES (4, 2, '2016-01-18', 54, '/Save/Part004_02_180116.txt');\nINSERT INTO save VALUES (23, 1, '2016-02-19', 90, '/Save/Part023_01_190216.txt');\nINSERT INTO save VALUES (12, 4, '2016-02-18', 41, '/Save/Part012_04_180216.txt');\nINSERT INTO save VALUES (17, 5, '2016-01-15', 19, '/Save/Part017_05_150116.txt');\nINSERT INTO save VALUES (9, 3, '2016-02-19', 28, '/Save/Part009_03_190216.txt');\nINSERT INTO save VALUES (15, 7, '2016-01-08', 89, '/Save/Part015_07_080116.txt');\n"
+  }
+}
+</script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">Bases de données</a>
+    <span aria-current="page">TD 1 · Modèles entités-associations</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> TD 1 · L3 S5 · interactif</p>
+    <h1>Modèles entités-associations</h1>
+    <p class="chapeau">Deux exercices qui parcourent toute la conception d'une base : critiquer un diagramme mal fait, le corriger, le traduire en modèle relationnel, puis l'interroger en SQL. Chaque réponse se construit dans un atelier, avec contrôles, comparaison à une solution et aide de Claude.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TD/%5B26%5DTD1%20-%20BadCinema%20-%20Jeu.pdf">[26]TD1 - BadCinema - Jeu.pdf</a> · 2 pages</dd></div>
+      <div><dt>Enseignants</dt><dd>T. Mariotte, N. Camelin</dd></div>
+      <div><dt>Cours</dt><dd><a href="cours-01-uml-vers-relationnel.html">Cours 1</a> et <a href="cours-02-sql.html">cours 2</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-23">23 sept. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Repérer les défauts d'un diagramme de classes et les corriger.</li>
+        <li>Modéliser un domaine décrit en français.</li>
+        <li>Traduire un diagramme en modèle relationnel.</li>
+        <li>Écrire des requêtes avec jointures, regroupements et sous-requêtes.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Notions utilisées</p>
+      <ul>
+        <li><a href="cours-01-uml-vers-relationnel.html#verifier-le-diagramme-avant-la-traduction">Vérifications d'un diagramme</a> et <a href="cours-01-uml-vers-relationnel.html#les-formes-normales">formes normales</a></li>
+        <li><a href="cours-01-uml-vers-relationnel.html#traduire-en-modele-relationnel">Règles de traduction</a>, dont le <a href="cours-01-uml-vers-relationnel.html#composition">cas de la composition</a></li>
+        <li><a href="cours-02-sql.html">SQL</a> : jointures, <code>GROUP BY</code>, <code>HAVING</code>, sous-requêtes</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Mode d'emploi</p>
+    <ul>
+      <li>La réponse se construit sur le dessin ou dans la vue texte (« Les deux ») ; les deux restent synchronisés. Double-clic sur le fond pour une nouvelle classe, sur un élément pour le modifier ; « Relier » pour tracer une association.</li>
+      <li>« Vérifier » contrôle la forme sans rien dévoiler, « Comparer » mesure l'écart avec la solution, « Claude » répond aux questions et corrige.</li>
+      <li>Le travail s'enregistre tout seul. Avec le serveur local (<code>studies/lancer.bat</code>), il va dans <code>td_results/</code>, Claude est disponible et le SQL s'exécute.</li>
+    </ul>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Films et cinéma <span class="ref">TD, p. 1</span></h2>
+    <p>Le premier exercice part d'un diagramme volontairement raté. On le critique avec les vérifications du cours, on le corrige, puis on le traduit et on l'interroge.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Films et cinéma</span></p>
+      <p>Voici une modélisation qui pose de noooooombreux problèmes. Le diagramme de l'énoncé est reproduit dans l'atelier de la question 1 ; il sert aussi de point de départ à la question 2.</p>
+    </div>
+
+    <h3>Repérer les erreurs</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 1</p>
+      <p>Identifiez les erreurs de modélisation et les incohérences dont souffre ce modèle.</p>
+    </div>
+    <div class="atelier" id="td1-ex1-q1-erreurs" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "Diagramme de l'énoncé",
+        "mode": "annoter",
+        "hauteur": 480,
+        "consigne": "<p>Cliquer sur une classe, un attribut ou une association pour y poser une remarque. « Comparer » indique combien des éléments fautifs ont été annotés ; « Solution » affiche la liste des erreurs.</p>",
+        "question_reponse": "Synthèse des erreurs (facultatif)",
+        "options": { "bdd": true },
+        "depart": [
+          "classe Acteur", "  Nom : VARCHAR [1] {PK}", "  Prénom : VARCHAR [0..1] {PK}", "  Adresses : ADRESSE [1..*]", "  Agent : VARCHAR [0..*]",
+          "classe Distribution", "  rôle : VARCHAR [1]",
+          "classe Film", "  Titre : VARCHAR [1] {PK}", "  Année : INTEGER [1]", "  Genre : VARCHAR [0..*]",
+          "classe Salle", "  Nom : VARCHAR [1] {PK}", "  Date : INTEGER [1]", "  Heure : VARCHAR [0..*]", "  Durée_film : VARCHAR [0..*]", "  Version : VARCHAR [0..*]",
+          "classe Capacité", "  nb_places : INTEGER [1]",
+          "classe Cinéma", "  Nom : VARCHAR [1] {PK}", "  Adresse : ADRESSE [1]",
+          "classe Réalisateur", "  Nom : VARCHAR [1] {PK}", "  Prénom : VARCHAR [0..1] {PK}", "  Adresses : ADRESSE [1..5]",
+          "Acteur \"2..*\" -- \"*\" Film : Joue [Distribution]",
+          "Film \"*\" -- \"*\" Salle : Projette",
+          "Cinéma \"1..1\" -- \"2..20\" Salle : Possède [Capacité]",
+          "Réalisateur \"*\" -- \"*\" Film : Réalise",
+          "Acteur \"*\" -- \"*\" Réalisateur : JoueDansFilmDe"
+        ],
+        "disposition": {
+          "Distribution": [300, 0], "Acteur": [40, 70], "Film": [430, 70], "Salle": [780, 190],
+          "Capacité": [790, 400], "Cinéma": [430, 380], "Réalisateur": [40, 420]
+        },
+        "attendu": [
+          { "cible": "Acteur.Prénom", "texte": "Identifiant mal choisi : un attribut facultatif ([0..1]) ne peut pas faire partie d'un identifiant, et le couple nom–prénom n'identifie pas une personne (homonymes). On ajoute un identifiant artificiel." },
+          { "cible": "Acteur.Adresses", "texte": "Attribut multivalué ([1..*]) et composite (type ADRESSE) : il n'est pas atomique, la classe n'est pas en 1NF. Il devient une classe Adresse, reliée par une association." },
+          { "cible": "Acteur.Agent", "texte": "Attribut multivalué ([0..*]) : il devient une classe Agent, reliée à l'acteur." },
+          { "cible": "Film.Titre", "texte": "Le titre seul n'identifie pas un film : « Les Misérables » a été tourné plus de dix fois. On ajoute un identifiant." },
+          { "cible": "Film.Genre", "texte": "Attribut multivalué ([0..*]) : il devient une classe Genre, associée à Film (* — *)." },
+          { "cible": "Salle.Date", "texte": "Date, heure et version décrivent une projection, pas une salle : une salle accueille de nombreuses séances. Il manque une classe Séance, reliée au film et à la salle. De plus, Date est de type INTEGER, et Heure et Version sont multivaluées." },
+          { "cible": "Salle.Durée_film", "texte": "La durée dépend du film, pas de la salle : elle va dans Film (dépendance fonctionnelle mal placée), avec un type numérique plutôt que VARCHAR, et une seule valeur." },
+          { "cible": "Salle.Nom", "texte": "« Salle 1 » existe dans presque tous les cinémas : le nom n'identifie une salle qu'à l'intérieur de son cinéma. La salle fait partie du cinéma (composition), et sa clé comprendra celle du cinéma." },
+          { "cible": "Cinéma.Adresse", "texte": "Attribut composite (type ADRESSE) : on le décompose en attributs atomiques, ou on le relie à la classe Adresse." },
+          { "cible": "Capacité", "texte": "Le nombre de places dépend de la salle seule, pas du couple cinéma–salle : c'est un attribut de Salle. La classe d'association Capacité disparaît." },
+          { "cible": "Cinéma--Salle", "texte": "Une salle appartient à un seul cinéma et n'existe pas sans lui : c'est une composition. Par ailleurs, « 1..1 » s'écrit simplement « 1 »." },
+          { "cible": "Film--Salle", "texte": "« Projette » relie un film à une salle sans dire quand : impossible de représenter deux séances du même film dans la même salle. Elle est remplacée par la classe Séance." },
+          { "cible": "Réalisateur--Film", "texte": "Un film a au moins un réalisateur : la multiplicité côté Réalisateur est 1..*, pas *." },
+          { "cible": "Acteur--Réalisateur", "texte": "« JoueDansFilmDe » est redondante : elle se déduit de « Joue » et de « Réalise », comme un attribut calculable. On la supprime." },
+          { "cible": "Réalisateur", "texte": "Réalisateur a les mêmes attributs qu'Acteur, avec les mêmes défauts (identifiant, adresses [1..5]) : on factorise en une classe Personne, reliée à Film par « joue » et par « réalise ». Une même personne peut alors jouer et réaliser, comme Clint Eastwood." }
+        ],
+        "explication": "<p>Les erreurs se repèrent en passant les vérifications du cours dans l'ordre : la syntaxe (noms explicites, types, attributs composites ou multivalués), le sens (identifiants, attributs rangés dans la bonne classe, classes à factoriser, associations redondantes), puis les formes normales.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Passer chaque classe au crible des <a href="cours-01-uml-vers-relationnel.html#verifications-syntaxiques">vérifications syntaxiques</a> puis <a href="cours-01-uml-vers-relationnel.html#verifications-semantiques">sémantiques</a> : son identifiant est-il unique et obligatoire ? Chaque attribut est-il atomique, monovalué, et dépend-il bien de cette classe ? Puis chaque association : est-elle utile, ses multiplicités ont-elles du sens ? On en trouve une quinzaine.</p></div>
+    </details>
+
+    <h3>Proposer un modèle corrigé</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 2</p>
+      <p>Proposez un modèle corrigé bien formé.</p>
+    </div>
+    <div class="atelier" id="td1-ex1-q2-modele" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "Modèle corrigé",
+        "hauteur": 560,
+        "consigne": "<p>Le diagramme de l'énoncé est le point de départ : le modifier jusqu'à ce que « Vérifier » ne signale plus rien, puis comparer à la solution proposée.</p>",
+        "options": { "bdd": true },
+        "depart": [
+          "classe Acteur", "  Nom : VARCHAR [1] {PK}", "  Prénom : VARCHAR [0..1] {PK}", "  Adresses : ADRESSE [1..*]", "  Agent : VARCHAR [0..*]",
+          "classe Distribution", "  rôle : VARCHAR [1]",
+          "classe Film", "  Titre : VARCHAR [1] {PK}", "  Année : INTEGER [1]", "  Genre : VARCHAR [0..*]",
+          "classe Salle", "  Nom : VARCHAR [1] {PK}", "  Date : INTEGER [1]", "  Heure : VARCHAR [0..*]", "  Durée_film : VARCHAR [0..*]", "  Version : VARCHAR [0..*]",
+          "classe Capacité", "  nb_places : INTEGER [1]",
+          "classe Cinéma", "  Nom : VARCHAR [1] {PK}", "  Adresse : ADRESSE [1]",
+          "classe Réalisateur", "  Nom : VARCHAR [1] {PK}", "  Prénom : VARCHAR [0..1] {PK}", "  Adresses : ADRESSE [1..5]",
+          "Acteur \"2..*\" -- \"*\" Film : Joue [Distribution]",
+          "Film \"*\" -- \"*\" Salle : Projette",
+          "Cinéma \"1..1\" -- \"2..20\" Salle : Possède [Capacité]",
+          "Réalisateur \"*\" -- \"*\" Film : Réalise",
+          "Acteur \"*\" -- \"*\" Réalisateur : JoueDansFilmDe"
+        ],
+        "disposition": {
+          "Distribution": [300, 0], "Acteur": [40, 70], "Film": [430, 70], "Salle": [780, 190],
+          "Capacité": [790, 400], "Cinéma": [430, 380], "Réalisateur": [40, 420]
+        },
+        "solution": [
+          "classe Personne", "  id_personne : int {PK}", "  nom : varchar", "  prenom : varchar",
+          "classe Adresse", "  id_adresse : int {PK}", "  rue : varchar", "  code_postal : varchar", "  ville : varchar",
+          "classe Agent", "  id_agent : int {PK}", "  nom : varchar",
+          "classe Film", "  id_film : int {PK}", "  titre : varchar", "  annee : int", "  duree : int",
+          "classe Genre", "  id_genre : int {PK}", "  libelle : varchar",
+          "classe Distribution", "  role : varchar",
+          "classe Cinéma", "  id_cinema : int {PK}", "  nom : varchar",
+          "classe Salle", "  id_salle : int {PK}", "  nom : varchar", "  nb_places : int",
+          "classe Séance", "  id_seance : int {PK}", "  date_heure : timestamp", "  version : varchar",
+          "Personne \"*\" -- \"*\" Film : joue > [Distribution]",
+          "Personne \"1..*\" -- \"*\" Film : réalise >",
+          "Personne \"*\" -- \"1..*\" Adresse : habite >",
+          "Personne \"*\" -- \"*\" Agent : est représentée par >",
+          "Film \"*\" -- \"*\" Genre : relève de >",
+          "Cinéma \"1\" *-- \"2..20\" Salle : possède >",
+          "Cinéma \"*\" -- \"1\" Adresse : est situé à >",
+          "Film \"1\" -- \"*\" Séance : est projeté lors de >",
+          "Salle \"1\" -- \"*\" Séance : accueille >"
+        ],
+        "explication": "<p>Les corrections principales :</p><ul><li>Acteur et Réalisateur ont les mêmes attributs : ils sont fusionnés en <b>Personne</b>, reliée à Film par « joue » (classe d'association Distribution) et par « réalise ». Une même personne peut jouer et réaliser, et « JoueDansFilmDe », qui s'en déduit, disparaît.</li><li>Chaque classe reçoit un identifiant artificiel (<code>id_personne</code>, <code>id_film</code>…) : ni un nom ni un titre ne sont uniques.</li><li>Les attributs multivalués ou composites deviennent des classes : Adresse, Agent, Genre.</li><li>Date, heure et version décrivent une <b>Séance</b> : une classe reliée à un film et à une salle. La durée rejoint Film, le nombre de places rejoint Salle.</li><li>La salle fait partie du cinéma : composition, de 2 à 20 salles par cinéma (la contrainte de l'énoncé est conservée).</li></ul><p>D'autres modèles sont justes : Acteur et Réalisateur en spécialisations de Personne, ou l'adresse du cinéma en attributs (rue, code postal, ville). Côté acteurs, la multiplicité 2..* de l'énoncé excluait les films à un seul acteur et les films d'animation : * est plus sûr.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Commencer par fusionner Acteur et Réalisateur en une classe Personne, puis sortir de Salle ce qui décrit une séance. Une séance a lieu à une date, dans une salle, pour un film : c'est une classe à part entière, pas une classe d'association, puisqu'un même film passe plusieurs fois dans la même salle.</p></div>
+    </details>
+
+    <h3>Traduire en modèle relationnel</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3</p>
+      <p>Proposez le modèle relationnel correspondant.</p>
+    </div>
+    <div class="atelier" id="td1-ex1-q3-relationnel" data-editeur="relationnel">
+      <script type="application/json">
+      {
+        "titre": "Modèle relationnel",
+        "consigne": "<p>Traduire le modèle corrigé (celui de la solution proposée à la question 2, ou le sien). Noms de relations en minuscules, comme dans le TP.</p>",
+        "solution": [
+          "personne(_id_personne_, nom, prenom)",
+          "adresse(_id_adresse_, rue, code_postal, ville)",
+          "agent(_id_agent_, nom)",
+          "film(_id_film_, titre, annee, duree)",
+          "genre(_id_genre_, libelle)",
+          "cinema(_id_cinema_, nom, #id_adresse(adresse))",
+          "salle(_id_salle_, _#id_cinema_, nom, nb_places)",
+          "seance(_id_seance_, date_heure, version, #id_film(film), #id_salle(salle.id_salle), #id_cinema(salle.id_cinema))",
+          "distribution(_#id_personne_, _#id_film_, role)",
+          "realise(_#id_personne_, _#id_film_)",
+          "habite(_#id_personne_, _#id_adresse_)",
+          "represente(_#id_personne_, _#id_agent_)",
+          "genre_film(_#id_film_, _#id_genre_)"
+        ],
+        "explication": "<p><b>Règle 1</b> : chaque classe devient une relation, et son identifiant devient la clé primaire. <b>Règle 2</b> : chaque association * — * devient une table d'association dont la clé réunit les deux clés étrangères : <code>distribution</code> (avec l'attribut <code>role</code> de la classe d'association), <code>realise</code>, <code>habite</code>, <code>represente</code>, <code>genre_film</code>. <b>Règle 3</b> : pour une association 1 — *, la clé du côté 1 va du côté * (<code>cinema.id_adresse</code>, <code>seance.id_film</code>).</p><p><b>Composition</b> : une salle n'existe pas sans son cinéma, donc la clé de <code>salle</code> comprend <code>#id_cinema</code>, comme Salle et Bâtiment dans le cours. Une séance désigne alors sa salle par le couple <code>(id_salle, id_cinema)</code> : c'est une clé étrangère composée. L'ordre des relations est celui de l'implémentation : une table référencée vient avant celles qui la référencent.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Appliquer les <a href="cours-01-uml-vers-relationnel.html#traduire-en-modele-relationnel">règles du cours</a> une à une : d'abord une relation par classe, puis une table par association * — *, puis une clé étrangère du côté * pour chaque association 1 — *. Pour la composition Cinéma–Salle, relire le <a href="cours-01-uml-vers-relationnel.html#composition">cas du bâtiment et de ses salles</a>.</p></div>
+    </details>
+
+    <h3>Répondre en SQL</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 4</p>
+      <p>Répondre en SQL aux questions suivantes :</p>
+      <ol type="a">
+        <li>Dans quels films réalisés par Clint Eastwood joue Brad Pitt ?</li>
+        <li>Combien de films a réalisé chaque réalisateur ?</li>
+        <li>Quel est le film qui a le plus gros casting ?</li>
+      </ol>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le jeu de données</span></p>
+      <p>Les requêtes s'exécutent sur une base qui suit le modèle relationnel de la question 3 (bouton « Données » de chaque atelier). Les films sont réels, avec une distribution simplifiée. Brad Pitt n'a jamais tourné sous la direction de Clint Eastwood : les films « Poussière d'or » et « Le Shérif de Carson City » sont inventés pour que la question a ait une réponse.</p>
+    </div>
+
+    <div class="atelier" id="td1-ex1-q4a-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 4a · Eastwood et Pitt",
+        "consigne": "<p>Films réalisés par Clint Eastwood dans lesquels joue Brad Pitt. Colonne attendue : <code>titre</code>.</p>",
+        "options": { "jeu": "cinema" },
+        "depart": "SELECT ",
+        "solution": "SELECT f.titre\nFROM film f\nJOIN realise r ON r.id_film = f.id_film\nJOIN personne pr ON pr.id_personne = r.id_personne\nJOIN distribution d ON d.id_film = f.id_film\nJOIN personne pa ON pa.id_personne = d.id_personne\nWHERE pr.prenom = 'Clint' AND pr.nom = 'Eastwood'\n  AND pa.prenom = 'Brad' AND pa.nom = 'Pitt';",
+        "explication": "<p>Le réalisateur se trouve par <code>realise</code>, l'acteur par <code>distribution</code> : il faut deux copies de <code>personne</code> (alias <code>pr</code> et <code>pa</code>), une par rôle. Chercher Clint Eastwood dans <code>distribution</code> donnerait les films où il joue aux côtés de Brad Pitt, ce qui n'est pas la question (ici, un seul film au lieu de deux).</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Un film est lié à son réalisateur par <code>realise</code> et à ses acteurs par <code>distribution</code>. La table <code>personne</code> intervient deux fois, avec deux alias.</p></div>
+    </details>
+
+    <div class="atelier" id="td1-ex1-q4b-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 4b · Films par réalisateur",
+        "consigne": "<p>Nombre de films réalisés par chaque réalisateur. Colonnes attendues : <code>nom</code>, <code>prenom</code>, nombre de films.</p>",
+        "options": { "jeu": "cinema" },
+        "depart": "SELECT ",
+        "solution": "SELECT p.nom, p.prenom, count(*) AS nb_films\nFROM personne p\nJOIN realise r ON r.id_personne = p.id_personne\nGROUP BY p.id_personne, p.nom, p.prenom;",
+        "explication": "<p>On regroupe les lignes de <code>realise</code> par réalisateur et on les compte. Le regroupement porte sur <code>id_personne</code>, et pas seulement sur le nom, pour ne pas fusionner deux homonymes. La jointure ne garde que les personnes qui ont réalisé au moins un film, c'est-à-dire les réalisateurs.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="atelier" id="td1-ex1-q4c-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 4c · Le plus gros casting",
+        "consigne": "<p>Film qui a le plus d'acteurs. Colonne attendue : <code>titre</code>.</p>",
+        "options": { "jeu": "cinema" },
+        "depart": "SELECT ",
+        "solution": "SELECT f.titre\nFROM film f\nJOIN distribution d ON d.id_film = f.id_film\nGROUP BY f.id_film, f.titre\nHAVING count(*) >= ALL (SELECT count(*) FROM distribution GROUP BY id_film);",
+        "explication": "<p>On compte les acteurs de chaque film, puis on garde le ou les films dont le compte est au moins égal à tous les autres (<code>&gt;= ALL</code>). <code>ORDER BY count(*) DESC LIMIT 1</code> donne ici le même résultat, mais n'afficherait qu'un seul film en cas d'ex æquo.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Compter les lignes de <code>distribution</code> par film, puis comparer chaque compte au maximum : une sous-requête dans le <code>HAVING</code>.</p></div>
+    </details>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Plateforme de jeux en ligne <span class="ref">TD, p. 1–2</span></h2>
+    <p>Le second exercice part d'un texte, comme à l'examen : il faut en tirer le diagramme, puis le modèle relationnel et des requêtes. Le TP 1 donne le modèle de l'enseignant et la base qui va avec : il sert ici de correction et de jeu de données.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Plateforme de jeux en ligne</span></p>
+      <p>Nous désirons réaliser la base de données d'une plateforme de jeux en ligne. Celle-ci permet aux visiteurs de se créer des avatars pour jouer aux différents jeux proposés en ligne.</p>
+      <p>Chaque visiteur doit renseigner les informations suivantes : nom d'utilisateur, adresse mail, mot de passe, ville. Il peut créer autant d'avatars qu'il le souhaite.</p>
+      <p>Pour chaque avatar on retient le nom, la race, le sexe, un code description (numérique) et le niveau d'expérience globale.</p>
+      <p>La race d'un avatar est décrite par un nom et un texte définissant ses particularités.</p>
+      <p>L'expérience globale d'un avatar est donnée en nombre de points d'expérience qu'il acquiert grâce à sa participation dans les jeux de la plate-forme. Les avatars peuvent jouer dans tous les jeux de la plateforme.</p>
+      <p>Pour chaque avatar, nous allons retenir dans chaque jeu de la plateforme où il a commencé à jouer une partie : son rôle dans ce jeu (guerrier, magicien, pacman, chien, chat…), son high-score et autant de sauvegardes qu'il veut pour ce jeu. Chaque sauvegarde est datée, elle comporte un nombre de points de vie et la référence à un fichier binaire décrivant en détails son avancée dans la partie.</p>
+      <p>Pour les jeux, nous retenons le nom du jeu, son type (jeu de rôle, de plateau, MMP…), le nombre d'avatars actuellement en train de jouer.</p>
+      <p>Les joueurs ont la possibilité d'acheter des objets sur notre plate-forme pour leurs avatars (tels que des potions soignantes, des accélérateurs de réflexes ou encore des boules de cristal). Ces objets leur permettent de donner quelques coups de pouce à leurs avatars. Ils sont utilisables dans tous les jeux, par n'importe lequel des avatars du joueur.</p>
+      <p>Ces objets sont définis par un nom, un prix, une puissance (il existe des potions de différents niveaux). Un objet acheté par un utilisateur n'est utilisable qu'une seule fois. On souhaite conserver dans la base le nombre de chacun des objets achetés par l'utilisateur et également le nombre de chacun des objets encore disponibles (c'est-à-dire non utilisés). En revanche, on ne conservera pas l'information de son utilisation (dans quel jeu par quel avatar).</p>
+    </div>
+
+    <h3>Modélisation entité-association</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 1</p>
+      <p>Faire une modélisation entité/association de cette plateforme de jeux.</p>
+    </div>
+    <div class="atelier" id="td1-ex2-q1-modele" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "Diagramme de la plateforme",
+        "hauteur": 520,
+        "options": { "bdd": true },
+        "solution_source": "enseignant",
+        "solution": [
+          "classe Visiteur", "  id_visiteur : int {PK}", "  login : varchar", "  mdp : varchar", "  mail : varchar", "  ville : varchar",
+          "classe Avatar", "  id_avatar : int {PK}", "  nom_avatar : varchar", "  sexe : char", "  xp : int", "  code_dsc : int",
+          "classe Race", "  id_race : int {PK}", "  nom_race : varchar", "  txt_race : text",
+          "classe Jeu", "  id_jeu : int {PK}", "  nom_jeu : varchar", "  type : varchar", "  nb_joueur : int",
+          "classe Objet", "  id_objet : int {PK}", "  nom_objet : varchar", "  prix : int", "  puissance : int",
+          "classe Stock", "  nb_achat : int", "  nb_dispo : int",
+          "classe Partie", "  role : varchar", "  highscore : int",
+          "classe Sauvegarde", "  date_s : date", "  nb_pv : int", "  fichier : varchar",
+          "Visiteur \"1\" -- \"0..*\" Avatar : crée >",
+          "Avatar \"1..*\" -- \"1\" Race : est >",
+          "Visiteur \"0..*\" -- \"0..*\" Objet : achète > [Stock]",
+          "Avatar \"1..*\" -- \"1..*\" Jeu : participe > [Partie]",
+          "Avatar \"1..*\" -- \"1..*\" Jeu : sauvegarde > [Sauvegarde]"
+        ],
+        "explication": "<p>Modèle donné par l'enseignant au début du TP 1 (« Rappel du modèle entité-association »). Les associations porteuses d'attributs y sont dessinées en ellipses ; en UML, ce sont des classes d'association : Stock pour « Acheter », Partie pour « Participer », Sauvegarde pour « Sauvegarder ». Les objets sont liés au visiteur, et non à un avatar, puisqu'ils servent à tous ses avatars ; leur utilisation n'est pas conservée.</p><p><span class='badge ajout'>Ajout</span> Deux remarques. Un avatar peut garder <em>plusieurs</em> sauvegardes par jeu, or une classe d'association n'admet qu'un lien par couple (avatar, jeu) : le modèle relationnel règle ce point en ajoutant la date à la clé de <code>save</code>. Et le 1..* côté Avatar de « Être » impose que chaque race ait au moins un avatar, ce que les données du TP ne respectent pas (la race Troll n'en a aucun) : 0..* serait plus juste.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Cinq classes se lisent dans le texte : visiteur, avatar, race, jeu, objet. Ce qui dépend d'un couple (le rôle et le high-score d'un avatar <em>dans un jeu</em>, le nombre d'objets achetés <em>par un visiteur</em>) va sur une association, sous forme de classe d'association.</p></div>
+    </details>
+
+    <h3>Modèle relationnel</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 2</p>
+      <p>Proposer le MR de l'ensemble des tables que vous aurez à implémenter.</p>
+    </div>
+    <div class="atelier" id="td1-ex2-q2-relationnel" data-editeur="relationnel">
+      <script type="application/json">
+      {
+        "titre": "Modèle relationnel de la plateforme",
+        "solution_source": "enseignant",
+        "solution": [
+          "visiteur(_id_visiteur_, login, mdp, mail, ville)",
+          "objet(_id_objet_, nom_objet, prix, puissance)",
+          "stock(_#id_objet_, _#id_visiteur_, nb_achat, nb_dispo)",
+          "race(_id_race_, nom_race, txt_race)",
+          "avatar(_id_avatar_, nom_avatar, sexe, xp, code_dsc, #id_visiteur, #id_race)",
+          "jeu(_id_jeu_, nom_jeu, type, nb_joueur)",
+          "partie(_#id_avatar_, _#id_jeu_, role, highscore)",
+          "save(_#id_avatar_, _#id_jeu_, _date_s_, nb_pv, fichier)"
+        ],
+        "explication": "<p>Modèle relationnel donné par l'enseignant dans le TP 1. Règle 1 pour les cinq classes. Règle 3 pour « Créer » et « Être » : <code>#id_visiteur</code> et <code>#id_race</code> vont dans <code>avatar</code>, du côté *. Règle 2 pour les trois associations * — * : <code>stock</code>, <code>partie</code> et <code>save</code>. Dans <code>save</code>, la date entre dans la clé, ce qui permet plusieurs sauvegardes d'un même avatar dans un même jeu.</p>"
+      }
+      </script>
+    </div>
+
+    <h3>Répondre en SQL</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3</p>
+      <p>Répondre en SQL aux questions suivantes :</p>
+      <ol type="a">
+        <li>Combien d'objets a acheté chaque visiteur ?
+          <ol type="i">
+            <li>Pas d'affichage particulier.</li>
+            <li>Afficher par ordre d'objets décroissant.</li>
+            <li>Afficher uniquement les visiteurs ayant acheté plus de 5 objets.</li>
+          </ol>
+        </li>
+        <li>Quel est le nom du visiteur qui possède actuellement le plus grand nombre d'objets disponibles ?
+          <ol type="i">
+            <li>Pas de contrainte particulière.</li>
+            <li>Prendre en compte uniquement les visiteurs qui possèdent au moins un avatar féminin.</li>
+          </ol>
+        </li>
+      </ol>
+    </div>
+    <p>Les requêtes s'exécutent sur la base du TP 1 : le script de l'enseignant, complété par les tables <code>jeu</code>, <code>partie</code> et <code>save</code> telles que le TP les décrit.</p>
+
+    <div class="atelier" id="td1-ex2-q3a1-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 3a.i · Objets achetés",
+        "consigne": "<p>Nombre d'objets achetés par chaque visiteur qui a acheté quelque chose. Colonnes attendues : <code>login</code>, nombre d'objets.</p>",
+        "options": { "jeu": "plateforme" },
+        "depart": "SELECT ",
+        "solution": "SELECT v.login, sum(s.nb_achat) AS nb_objets\nFROM visiteur v\nJOIN stock s ON s.id_visiteur = v.id_visiteur\nGROUP BY v.id_visiteur, v.login;",
+        "explication": "<p><code>nb_achat</code> est la quantité achetée de chaque objet : on additionne ces quantités par visiteur (<code>sum</code>). <code>count(*)</code> compterait les sortes d'objets (6 pour Elijah au lieu de 21).</p><p>La jointure ne garde que les visiteurs présents dans <code>stock</code> : Viggo, qui n'a rien acheté, n'apparaît pas. Pour l'afficher avec 0, partir de <code>visiteur</code> avec un <code>LEFT JOIN stock</code> et écrire <code>COALESCE(sum(s.nb_achat), 0)</code>.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Dans <code>stock</code>, une ligne dit combien d'exemplaires d'un objet un visiteur a achetés. Faut-il compter les lignes ou additionner une colonne ?</p></div>
+    </details>
+
+    <div class="atelier" id="td1-ex2-q3a2-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 3a.ii · Par ordre décroissant",
+        "consigne": "<p>La même liste, du visiteur qui a acheté le plus d'objets à celui qui en a acheté le moins. Colonnes attendues : <code>login</code>, nombre d'objets.</p>",
+        "options": { "jeu": "plateforme", "ordre": true },
+        "depart": "SELECT ",
+        "solution": "SELECT v.login, sum(s.nb_achat) AS nb_objets\nFROM visiteur v\nJOIN stock s ON s.id_visiteur = v.id_visiteur\nGROUP BY v.id_visiteur, v.login\nORDER BY nb_objets DESC;",
+        "explication": "<p>Même requête, triée par <code>ORDER BY nb_objets DESC</code>. Un alias de colonne peut servir dans <code>ORDER BY</code>, mais pas dans <code>WHERE</code> ni dans <code>HAVING</code>. Ici, l'ordre des lignes est vérifié.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="atelier" id="td1-ex2-q3a3-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 3a.iii · Plus de 5 objets",
+        "consigne": "<p>Seulement les visiteurs qui ont acheté plus de 5 objets. Colonnes attendues : <code>login</code>, nombre d'objets.</p>",
+        "options": { "jeu": "plateforme" },
+        "depart": "SELECT ",
+        "solution": "SELECT v.login, sum(s.nb_achat) AS nb_objets\nFROM visiteur v\nJOIN stock s ON s.id_visiteur = v.id_visiteur\nGROUP BY v.id_visiteur, v.login\nHAVING sum(s.nb_achat) > 5;",
+        "explication": "<p>La condition porte sur un groupe : elle va dans <code>HAVING</code>, pas dans <code>WHERE</code>, qui filtre les lignes avant le regroupement. « Plus de 5 » exclut 5 : Billy, qui en a acheté exactement 5, n'apparaît pas.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="atelier" id="td1-ex2-q3b1-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 3b.i · Le plus d'objets disponibles",
+        "consigne": "<p>Visiteur qui possède le plus grand nombre d'objets disponibles. Colonne attendue : <code>login</code>.</p>",
+        "options": { "jeu": "plateforme" },
+        "depart": "SELECT ",
+        "solution": "SELECT v.login\nFROM visiteur v\nJOIN stock s ON s.id_visiteur = v.id_visiteur\nGROUP BY v.id_visiteur, v.login\nHAVING sum(s.nb_dispo) >= ALL (SELECT sum(nb_dispo) FROM stock GROUP BY id_visiteur);",
+        "explication": "<p>On calcule le total disponible (<code>sum(nb_dispo)</code>) de chaque visiteur, et on garde celui dont le total est au moins égal à tous les autres. <code>ORDER BY … DESC LIMIT 1</code> donne ici le même résultat, mais perdrait un ex æquo.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Même principe que la question 4c de l'exercice 1 : un regroupement par visiteur, puis un <code>HAVING … &gt;= ALL (sous-requête)</code>.</p></div>
+    </details>
+
+    <div class="atelier" id="td1-ex2-q3b2-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 3b.ii · Avec un avatar féminin",
+        "consigne": "<p>Même question, parmi les seuls visiteurs qui ont au moins un avatar féminin (<code>sexe = 'F'</code>). Colonne attendue : <code>login</code>.</p>",
+        "options": { "jeu": "plateforme" },
+        "depart": "SELECT ",
+        "solution": "SELECT v.login\nFROM visiteur v\nJOIN stock s ON s.id_visiteur = v.id_visiteur\nWHERE v.id_visiteur IN (SELECT id_visiteur FROM avatar WHERE sexe = 'F')\nGROUP BY v.id_visiteur, v.login\nHAVING sum(s.nb_dispo) >= ALL (\n  SELECT sum(st.nb_dispo) FROM stock st\n  WHERE st.id_visiteur IN (SELECT id_visiteur FROM avatar WHERE sexe = 'F')\n  GROUP BY st.id_visiteur);",
+        "explication": "<p>Le filtre sur les avatars s'applique avant le regroupement : <code>WHERE id_visiteur IN (SELECT id_visiteur FROM avatar WHERE sexe = 'F')</code>. Il doit aussi figurer dans la sous-requête du <code>HAVING</code> : sinon, on compare aux totaux de tous les visiteurs, Elijah (sans avatar féminin) l'emporte, et la requête ne renvoie rien.</p><p>Une jointure avec <code>avatar</code> à la place du <code>IN</code> serait piégeuse : un visiteur qui a deux avatars féminins verrait ses lignes de <code>stock</code> comptées deux fois.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>Critiquer un diagramme, c'est passer les vérifications du cours dans l'ordre : syntaxe (noms, types, attributs atomiques et monovalués), sens (identifiants, attributs bien placés, classes à factoriser, associations redondantes), formes normales.</li>
+        <li>Un identifiant est unique et obligatoire : ni un nom, ni un titre, ni un attribut facultatif. Dans le doute, on ajoute un identifiant artificiel.</li>
+        <li>Un attribut multivalué ou composite devient une classe reliée par une association.</li>
+        <li>Quand plusieurs événements relient les mêmes objets (plusieurs séances d'un film dans une salle), il faut une classe, pas une classe d'association.</li>
+        <li>Traduction : une relation par classe, une table par association * — *, une clé étrangère du côté * d'une association 1 — * ; pour une composition, la clé du « tout » entre dans la clé de la partie.</li>
+        <li>En SQL, la même table peut servir deux fois avec deux alias ; une condition sur un groupe va dans <code>HAVING</code> ; « le plus grand » s'écrit avec <code>&gt;= ALL</code> pour garder les ex æquo.</li>
+        <li><code>count(*)</code> compte des lignes, <code>sum(colonne)</code> additionne des quantités : lire le schéma avant de choisir.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi le couple (nom, prénom) de l'énoncé ne peut-il pas identifier un acteur ?</summary>
+        <div><p>Le prénom est facultatif ([0..1]), or un identifiant doit toujours avoir une valeur ; et deux personnes peuvent porter les mêmes nom et prénom. On ajoute un identifiant artificiel.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi Séance est-elle une classe plutôt qu'une classe d'association entre Film et Salle ?</summary>
+        <div><p>Une classe d'association n'admet qu'un lien par couple (film, salle). Or un même film passe plusieurs fois dans la même salle : chaque séance est un objet à part, relié à un film et à une salle.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que devient la composition Cinéma–Salle dans le modèle relationnel ?</summary>
+        <div><p>La clé du cinéma entre dans la clé de la salle : <code>salle(<u>id_salle</u>, <u>#id_cinema</u>, nom, nb_places)</code>. Toute référence à une salle utilise alors le couple (id_salle, id_cinema).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi les objets achetés sont-ils liés au visiteur plutôt qu'à l'avatar ?</summary>
+        <div><p>L'énoncé dit qu'ils sont utilisables par n'importe lequel des avatars du joueur, et qu'on ne conserve pas leur utilisation : l'achat et le stock sont une affaire entre le visiteur et l'objet.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi <code>count(*)</code> ne donne-t-il pas le nombre d'objets achetés par un visiteur ?</summary>
+        <div><p>Une ligne de <code>stock</code> correspond à une sorte d'objet, avec sa quantité dans <code>nb_achat</code>. <code>count(*)</code> compte les sortes d'objets ; le nombre d'objets est <code>sum(nb_achat)</code>.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-01-uml-vers-relationnel.html"><small>← Cours 1</small>Du diagramme de classes au modèle relationnel</a>
+    <a class="suivant" href="td-02-compagnie-sw7.html"><small>TD 2 →</small>La compagnie SW7</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

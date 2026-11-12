@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TD 2 · La compagnie SW7 · Bases de données L3</title>
+<meta name="description" content="TD 2 interactif de bases de données : modéliser la compagnie de transport SW7 (véhicules, pleins, entretiens, chauffeurs, planning) en diagramme de classes et en modèle relationnel, créer deux tables avec leurs contraintes, puis l'exploiter en SQL sur la base de l'enseignant : jointures, fonction SQL, CTE, fonctions de fenêtrage, séries de dates, et commandes de gestion.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+<script type="application/json" id="atelier-jeux">
+{
+  "sw7": {
+    "titre": "Compagnie SW7 (questions 4 à 11)",
+    "description": "<p>La base de l'enseignant (script ScriptsSW7 du TP noté de L2), adaptée au TD 2 : <code>zone</code>, <code>station</code>, <code>modele</code>, <code>vehicule</code>, <code>plein</code>, <code>entretien</code>, <code>chauffeur</code>, <code>permis</code>, <code>position</code>, et <code>distance</code> (distances entre zones, en parsecs, non utilisée ici). Les adaptations sont décrites dans la section Implémentation.</p><p>Dans <code>position</code>, une ligne est une case du tableau de planification : un véhicule, une date, une tranche horaire <code>th</code> (1, 2 ou 3), le chauffeur, et la zone où il est disponible (vide quand il est en course).</p>",
+    "script": "-- Base SW7 : script de l'enseignant (ScriptsSW7.txt, TP noté SW7 de L2, 2025-2026), adapté au TD 2\n-- Les dates sont saisies au format jour-mois-année, comme dans le script d'origine\nSET datestyle = 'ISO, DMY';\n\nCREATE TABLE zone (\n  id_zone SERIAL NOT NULL,\n  nom_zone VARCHAR(12) NOT NULL,\n  CONSTRAINT PK_zone PRIMARY KEY (id_zone)\n);\nINSERT INTO zone VALUES\n  (DEFAULT, 'Arkanis'), (DEFAULT, 'Cadavine'), (DEFAULT, 'Chommel'),\n  (DEFAULT, 'Sluis'), (DEFAULT, 'Core Words'), (DEFAULT, 'Mayagil');\n\nCREATE TABLE station (\n  id_station BIGINT NOT NULL,\n  nom_station VARCHAR(20) NOT NULL,\n  id_zone BIGINT,\n  CONSTRAINT PK_station PRIMARY KEY (id_station),\n  CONSTRAINT FK_station FOREIGN KEY (id_zone) REFERENCES zone\n);\nINSERT INTO station VALUES\n  (1, 'Tatooine', 1), (2, 'Geonosis', 2), (3, 'Naboo', 3),\n  (4, 'Dagobah', 4), (5, 'Mustafar', 6), (6, 'Coruscant', 5);\n\nCREATE TABLE modele (\n  id_modele BIGINT NOT NULL,\n  nom_modele VARCHAR(30) NOT NULL,\n  nb_pers INTEGER,\n  type_carbu VARCHAR(10),\n  cat_perm_m VARCHAR(10),\n  type_bav VARCHAR(1),\n  pds INTEGER,\n  CONSTRAINT PK_modele PRIMARY KEY (id_modele)\n);\nINSERT INTO modele VALUES\n  (1, 'cargo YT-1300', 6, 'X37', 'CL', 'M', 1200),\n  (2, 'voilier solaire geonosien', 20, 'Z12', 'GP', 'A', 8500),\n  (11, 'corvette corellienne', 120, 'Z12', 'CC', 'A', NULL),\n  (12, 'ARC-170 starfighter', 3, 'X37', 'SC', 'M', 850);\n\nCREATE TABLE vehicule (\n  id_vehicule BIGINT NOT NULL,\n  no_chassis CHAR(17) NOT NULL UNIQUE CHECK (no_chassis ~ '^[A-Z0-9]{17}$'),\n  nom_vehicule VARCHAR(30) NOT NULL,\n  date_mes DATE DEFAULT CURRENT_DATE,\n  id_station_v BIGINT,\n  id_modele BIGINT,\n  CONSTRAINT PK_vehicule PRIMARY KEY (id_vehicule),\n  CONSTRAINT FK_vehicule_station FOREIGN KEY (id_station_v) REFERENCES station (id_station),\n  CONSTRAINT FK_vehicule_modele FOREIGN KEY (id_modele) REFERENCES modele (id_modele)\n);\nINSERT INTO vehicule VALUES\n  (100001, 'CR1YT1300FAUCON01', 'Faucon millenium', '11-11-25', 1, 1),\n  (100002, 'YO26DA03F26835177', 'Geonosis power', '01-01-26', 2, 2),\n  (100003, 'GE0N0S1SPWRPLUS03', 'Geonosis power plus', '14-05-25', 2, 2),\n  (100004, 'STRSHPTR00PERS004', 'Starship troopers', '14-06-25', 2, 1),\n  (100005, 'NEB300CORVETTE005', 'Nebuleuse 300', '20-12-23', 3, 11),\n  (100006, 'AIGLER0YAL1300006', 'Aigle royal', '13-11-24', 3, 1);\n\nCREATE TABLE plein (\n  id_vehicule BIGINT NOT NULL,\n  id_plein BIGINT NOT NULL,\n  date_p DATE,\n  nb_km INTEGER,\n  qte_carbu INTEGER,\n  CONSTRAINT PK_plein PRIMARY KEY (id_vehicule, id_plein),\n  CONSTRAINT FK_plein_vehicule FOREIGN KEY (id_vehicule) REFERENCES vehicule (id_vehicule)\n);\nINSERT INTO plein VALUES\n  (100001, 1, '07-12-25', 300, 30),\n  (100002, 1, '12-02-26', 600, 122), (100002, 2, '14-04-26', 620, 134),\n  (100002, 3, '21-05-26', 580, 117), (100002, 4, '15-07-26', 300, 75),\n  (100003, 1, '12-06-25', 500, 122), (100003, 2, '14-08-25', 520, 134), (100003, 3, '21-10-25', 480, 117),\n  (100004, 1, '15-07-25', 270, 27), (100004, 2, '14-09-25', 250, 25), (100004, 3, '21-11-25', 265, 28),\n  (100005, 1, '21-01-24', 1265, 234), (100005, 2, '17-02-25', 1005, 203),\n  (100006, 1, '17-01-25', 270, 24), (100006, 2, '12-03-25', 256, 26), (100006, 3, '06-05-25', 291, 28),\n  (100006, 4, '15-07-25', 234, 25), (100006, 5, '21-09-25', 287, 20), (100006, 6, '14-11-25', 301, 26),\n  (100006, 7, '07-12-25', 241, 24);\n\nCREATE TABLE entretien (\n  id_vehicule BIGINT NOT NULL,\n  id_entretien BIGINT NOT NULL,\n  date_e DATE NOT NULL,\n  descr VARCHAR(50),\n  CONSTRAINT PK_entretien PRIMARY KEY (id_vehicule, id_entretien),\n  CONSTRAINT FK_entretien_vehicule FOREIGN KEY (id_vehicule) REFERENCES vehicule (id_vehicule)\n);\nINSERT INTO entretien VALUES\n  (100002, 1, '12-06-26', 'vidange'),\n  (100005, 1, '10-07-24', 'boite de vitesse'),\n  (100005, 2, '12-08-25', 'controle technique'),\n  (100006, 1, '25-03-25', 'vidange'),\n  (100006, 2, '30-11-25', 'propulsion atomique');\n\nCREATE TABLE chauffeur (\n  id_chauffeur BIGINT NOT NULL,\n  nom VARCHAR(20) NOT NULL,\n  prenom VARCHAR(20),\n  adr VARCHAR(30),\n  id_station_c BIGINT,\n  CONSTRAINT PK_chauffeur PRIMARY KEY (id_chauffeur),\n  CONSTRAINT FK_chauffeur_station FOREIGN KEY (id_station_c) REFERENCES station (id_station)\n);\nINSERT INTO chauffeur VALUES\n  (111, 'Han', 'Solo', NULL, 1),\n  (211, 'Organa', 'Leia', 'Alderaan', 2),\n  (310, 'Skywalker', 'Luke', 'Tatooine', 2),\n  (411, 'Windu', 'Mace', 'Coruscant', 2),\n  (511, 'Dark', 'Sidius', 'Coruscant', 2),\n  (601, 'Binks', 'Jar Jar', 'Naboo', 3),\n  (671, 'Trooper', 'Phasma', NULL, 3),\n  (761, 'Kenobi', 'Obi-Wan', 'Tatooine', 4),\n  (811, 'Yoda', 'Maître', 'Dagobah', 4),\n  (821, 'Tano', 'Ahsoka', 'Shili', 4);\n\nCREATE TABLE permis (\n  id_chauffeur BIGINT NOT NULL,\n  cat_perm_c VARCHAR(10) NOT NULL,\n  CONSTRAINT PK_permis PRIMARY KEY (id_chauffeur, cat_perm_c),\n  CONSTRAINT FK_permis_chauffeur FOREIGN KEY (id_chauffeur) REFERENCES chauffeur (id_chauffeur)\n);\nINSERT INTO permis VALUES\n  (111, 'CL'), (111, 'GP'), (111, 'SC'), (111, 'CC'),\n  (211, 'GP'), (211, 'SC'), (211, 'CC'),\n  (310, 'CL'), (310, 'GP'), (310, 'SC'), (310, 'CC'),\n  (411, 'CL'), (601, 'CL'), (601, 'CC'), (671, 'CC'), (761, 'CL'),\n  (811, 'GP'), (811, 'SC'), (821, 'GP'), (821, 'CC');\n\nCREATE TABLE position (\n  id_vehicule BIGINT NOT NULL,\n  date DATE,\n  th INTEGER,\n  id_chauffeur BIGINT NOT NULL,\n  id_zone BIGINT,\n  CONSTRAINT PK_position PRIMARY KEY (id_vehicule, date, th),\n  CONSTRAINT FK_position_vehicule FOREIGN KEY (id_vehicule) REFERENCES vehicule (id_vehicule),\n  CONSTRAINT FK_position_chauffeur FOREIGN KEY (id_chauffeur) REFERENCES chauffeur (id_chauffeur),\n  CONSTRAINT FK_position_zone FOREIGN KEY (id_zone) REFERENCES zone\n);\nINSERT INTO position VALUES\n  (100001, '09-01-26', 1, 111, NULL), (100002, '09-01-26', 1, 310, NULL), (100003, '09-01-26', 1, 211, NULL),\n  (100005, '09-01-26', 1, 601, NULL), (100001, '09-01-26', 2, 111, NULL), (100002, '09-01-26', 2, 310, NULL),\n  (100003, '09-01-26', 2, 211, NULL), (100005, '09-01-26', 2, 671, NULL), (100006, '09-01-26', 2, 601, NULL),\n  (100001, '09-01-26', 3, 111, NULL), (100002, '09-01-26', 3, 310, NULL), (100003, '09-01-26', 3, 211, NULL),\n  (100004, '09-01-26', 3, 411, NULL), (100005, '09-01-26', 3, 671, NULL), (100006, '09-01-26', 3, 601, NULL),\n  (100001, '10-01-26', 1, 111, NULL), (100002, '10-01-26', 1, 310, NULL), (100003, '10-01-26', 1, 211, NULL),\n  (100005, '10-01-26', 1, 671, NULL), (100001, '10-01-26', 2, 511, NULL), (100002, '10-01-26', 2, 211, 6),\n  (100003, '10-01-26', 2, 310, 3), (100005, '10-01-26', 2, 671, 5), (100006, '10-01-26', 2, 601, 3),\n  -- ajouts pour le TD 2 : d'autres jours de janvier 2026, Yoda et Ahsoka\n  (100002, '05-01-26', 1, 310, NULL), (100001, '05-01-26', 2, 111, 1),\n  (100002, '12-01-26', 2, 211, NULL), (100005, '12-01-26', 1, 821, NULL), (100006, '12-01-26', 3, 601, 3),\n  (100002, '19-01-26', 3, 811, 4), (100005, '20-01-26', 2, 821, NULL),\n  (100002, '26-01-26', 1, 821, NULL), (100004, '26-01-26', 2, 411, 2);\n\nCREATE TABLE distance (\n  nom_zone1 VARCHAR(12) NOT NULL,\n  nom_zone2 VARCHAR(12) NOT NULL,\n  parsec INTEGER,\n  CONSTRAINT PK_distance PRIMARY KEY (nom_zone1, nom_zone2)\n);\nINSERT INTO distance VALUES\n  ('Arkanis', 'Arkanis', 0), ('Arkanis', 'Cadavine', 1), ('Arkanis', 'Chommel', 3), ('Arkanis', 'Sluis', 6),\n  ('Arkanis', 'Core Words', 11), ('Arkanis', 'Mayagil', 6),\n  ('Cadavine', 'Arkanis', 1), ('Cadavine', 'Cadavine', 0), ('Cadavine', 'Chommel', 2), ('Cadavine', 'Sluis', 5),\n  ('Cadavine', 'Core Words', 11), ('Cadavine', 'Mayagil', 5),\n  ('Chommel', 'Arkanis', 3), ('Chommel', 'Cadavine', 2), ('Chommel', 'Chommel', 0), ('Chommel', 'Sluis', 4),\n  ('Chommel', 'Core Words', 10), ('Chommel', 'Mayagil', 4),\n  ('Core Words', 'Arkanis', 11), ('Core Words', 'Cadavine', 11), ('Core Words', 'Chommel', 10),\n  ('Core Words', 'Sluis', 11), ('Core Words', 'Core Words', 0), ('Core Words', 'Mayagil', 10),\n  ('Sluis', 'Arkanis', 6), ('Sluis', 'Cadavine', 5), ('Sluis', 'Chommel', 4), ('Sluis', 'Core Words', 11),\n  ('Sluis', 'Sluis', 0), ('Sluis', 'Mayagil', 1),\n  ('Mayagil', 'Arkanis', 6), ('Mayagil', 'Cadavine', 5), ('Mayagil', 'Chommel', 4), ('Mayagil', 'Core Words', 10),\n  ('Mayagil', 'Sluis', 1), ('Mayagil', 'Mayagil', 0);\n"
+  },
+  "sw7-q3a": {
+    "titre": "SW7 sans la table vehicule (question 3a)",
+    "description": "<p>Les tables <code>zone</code>, <code>station</code> et <code>modele</code>, avec leurs données : la table <code>vehicule</code> est à créer.</p>",
+    "script": "-- Base SW7 : script de l'enseignant (ScriptsSW7.txt, TP noté SW7 de L2, 2025-2026), adapté au TD 2\n-- Les dates sont saisies au format jour-mois-année, comme dans le script d'origine\nSET datestyle = 'ISO, DMY';\n\nCREATE TABLE zone (\n  id_zone SERIAL NOT NULL,\n  nom_zone VARCHAR(12) NOT NULL,\n  CONSTRAINT PK_zone PRIMARY KEY (id_zone)\n);\nINSERT INTO zone VALUES\n  (DEFAULT, 'Arkanis'), (DEFAULT, 'Cadavine'), (DEFAULT, 'Chommel'),\n  (DEFAULT, 'Sluis'), (DEFAULT, 'Core Words'), (DEFAULT, 'Mayagil');\n\nCREATE TABLE station (\n  id_station BIGINT NOT NULL,\n  nom_station VARCHAR(20) NOT NULL,\n  id_zone BIGINT,\n  CONSTRAINT PK_station PRIMARY KEY (id_station),\n  CONSTRAINT FK_station FOREIGN KEY (id_zone) REFERENCES zone\n);\nINSERT INTO station VALUES\n  (1, 'Tatooine', 1), (2, 'Geonosis', 2), (3, 'Naboo', 3),\n  (4, 'Dagobah', 4), (5, 'Mustafar', 6), (6, 'Coruscant', 5);\n\nCREATE TABLE modele (\n  id_modele BIGINT NOT NULL,\n  nom_modele VARCHAR(30) NOT NULL,\n  nb_pers INTEGER,\n  type_carbu VARCHAR(10),\n  cat_perm_m VARCHAR(10),\n  type_bav VARCHAR(1),\n  pds INTEGER,\n  CONSTRAINT PK_modele PRIMARY KEY (id_modele)\n);\nINSERT INTO modele VALUES\n  (1, 'cargo YT-1300', 6, 'X37', 'CL', 'M', 1200),\n  (2, 'voilier solaire geonosien', 20, 'Z12', 'GP', 'A', 8500),\n  (11, 'corvette corellienne', 120, 'Z12', 'CC', 'A', NULL),\n  (12, 'ARC-170 starfighter', 3, 'X37', 'SC', 'M', 850);\n"
+  },
+  "sw7-q3b": {
+    "titre": "SW7 sans la table entretien (question 3b)",
+    "description": "<p>Les tables <code>zone</code>, <code>station</code>, <code>modele</code> et <code>vehicule</code>, avec leurs données (véhicules 100001 à 100006) : la table <code>entretien</code> est à créer.</p>",
+    "script": "-- Base SW7 : script de l'enseignant (ScriptsSW7.txt, TP noté SW7 de L2, 2025-2026), adapté au TD 2\n-- Les dates sont saisies au format jour-mois-année, comme dans le script d'origine\nSET datestyle = 'ISO, DMY';\n\nCREATE TABLE zone (\n  id_zone SERIAL NOT NULL,\n  nom_zone VARCHAR(12) NOT NULL,\n  CONSTRAINT PK_zone PRIMARY KEY (id_zone)\n);\nINSERT INTO zone VALUES\n  (DEFAULT, 'Arkanis'), (DEFAULT, 'Cadavine'), (DEFAULT, 'Chommel'),\n  (DEFAULT, 'Sluis'), (DEFAULT, 'Core Words'), (DEFAULT, 'Mayagil');\n\nCREATE TABLE station (\n  id_station BIGINT NOT NULL,\n  nom_station VARCHAR(20) NOT NULL,\n  id_zone BIGINT,\n  CONSTRAINT PK_station PRIMARY KEY (id_station),\n  CONSTRAINT FK_station FOREIGN KEY (id_zone) REFERENCES zone\n);\nINSERT INTO station VALUES\n  (1, 'Tatooine', 1), (2, 'Geonosis', 2), (3, 'Naboo', 3),\n  (4, 'Dagobah', 4), (5, 'Mustafar', 6), (6, 'Coruscant', 5);\n\nCREATE TABLE modele (\n  id_modele BIGINT NOT NULL,\n  nom_modele VARCHAR(30) NOT NULL,\n  nb_pers INTEGER,\n  type_carbu VARCHAR(10),\n  cat_perm_m VARCHAR(10),\n  type_bav VARCHAR(1),\n  pds INTEGER,\n  CONSTRAINT PK_modele PRIMARY KEY (id_modele)\n);\nINSERT INTO modele VALUES\n  (1, 'cargo YT-1300', 6, 'X37', 'CL', 'M', 1200),\n  (2, 'voilier solaire geonosien', 20, 'Z12', 'GP', 'A', 8500),\n  (11, 'corvette corellienne', 120, 'Z12', 'CC', 'A', NULL),\n  (12, 'ARC-170 starfighter', 3, 'X37', 'SC', 'M', 850);\n\nCREATE TABLE vehicule (\n  id_vehicule BIGINT NOT NULL,\n  no_chassis CHAR(17) NOT NULL UNIQUE CHECK (no_chassis ~ '^[A-Z0-9]{17}$'),\n  nom_vehicule VARCHAR(30) NOT NULL,\n  date_mes DATE DEFAULT CURRENT_DATE,\n  id_station_v BIGINT,\n  id_modele BIGINT,\n  CONSTRAINT PK_vehicule PRIMARY KEY (id_vehicule),\n  CONSTRAINT FK_vehicule_station FOREIGN KEY (id_station_v) REFERENCES station (id_station),\n  CONSTRAINT FK_vehicule_modele FOREIGN KEY (id_modele) REFERENCES modele (id_modele)\n);\nINSERT INTO vehicule VALUES\n  (100001, 'CR1YT1300FAUCON01', 'Faucon millenium', '11-11-25', 1, 1),\n  (100002, 'YO26DA03F26835177', 'Geonosis power', '01-01-26', 2, 2),\n  (100003, 'GE0N0S1SPWRPLUS03', 'Geonosis power plus', '14-05-25', 2, 2),\n  (100004, 'STRSHPTR00PERS004', 'Starship troopers', '14-06-25', 2, 1),\n  (100005, 'NEB300CORVETTE005', 'Nebuleuse 300', '20-12-23', 3, 11),\n  (100006, 'AIGLER0YAL1300006', 'Aigle royal', '13-11-24', 3, 1);\n"
+  }
+}
+</script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">Bases de données</a>
+    <span aria-current="page">TD 2 · La compagnie SW7</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> TD 2 · L3 S5 · interactif</p>
+    <h1>La compagnie SW7</h1>
+    <p class="chapeau">Une compagnie de transport galactique veut informatiser son parc de véhicules, leur entretien et le planning de ses chauffeurs. Du compte rendu des réunions, on tire le diagramme de classes et le modèle relationnel, on crée deux tables, puis on interroge la base de l'enseignant avec les outils du cours 3 : CTE, fonctions de fenêtrage, séries de dates. Chaque réponse se construit dans un atelier, avec contrôles, comparaison à une solution et aide de Claude.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TD/%5B26%5D%20TD2%20-%20SW7.pdf">[26] TD2 - SW7.pdf</a> · 2 pages</dd></div>
+      <div><dt>Données</dt><dd>script de l'enseignant <a href="../../../L2/BDD/TP/TP5/script.txt">ScriptsSW7</a>, adapté (voir la section Implémentation)</dd></div>
+      <div><dt>Enseignants</dt><dd>T. Mariotte, N. Camelin</dd></div>
+      <div><dt>Cours</dt><dd><a href="cours-01-uml-vers-relationnel.html">Cours 1</a>, <a href="cours-02-sql.html">cours 2</a> et <a href="cours-03-sql-avance-plpgsql.html">cours 3</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-29">29 sept. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Tirer un diagramme de classes d'un compte rendu de réunion, puis le traduire en modèle relationnel.</li>
+        <li>Créer une table avec ses contraintes : format d'une colonne, valeur par défaut, valeur obligatoire.</li>
+        <li>Interroger la base : jointures, fonction SQL, CTE, <code>RANK</code> et <code>LAG</code>, série de dates.</li>
+        <li>Choisir les commandes qui traduisent un événement de gestion.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Notions utilisées</p>
+      <ul>
+        <li><a href="cours-01-uml-vers-relationnel.html#les-associations">Associations</a>, <a href="cours-01-uml-vers-relationnel.html#composition">composition</a> et <a href="cours-01-uml-vers-relationnel.html#traduire-en-modele-relationnel">règles de traduction</a></li>
+        <li><a href="cours-02-sql.html#les-contraintes-d-integrite">Contraintes d'intégrité</a>, <a href="cours-02-sql.html#la-clause-from-et-les-jointures">jointures</a>, <a href="cours-02-sql.html#les-fonctions-sql">fonctions SQL</a></li>
+        <li><a href="cours-03-sql-avance-plpgsql.html#les-cte-with">CTE</a>, <a href="cours-03-sql-avance-plpgsql.html#row-number-rank-et-dense-rank">RANK</a>, <a href="cours-03-sql-avance-plpgsql.html#lag-et-lead">LAG</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Mode d'emploi</p>
+    <ul>
+      <li>Diagramme et modèle relationnel se construisent sur le dessin ou dans la vue texte (« Les deux ») ; les deux restent synchronisés. Double-clic sur le fond pour une nouvelle classe, sur un élément pour le modifier ; « Relier » pour tracer une association.</li>
+      <li>« Vérifier » contrôle la forme sans rien dévoiler, « Comparer » mesure l'écart avec la solution ou lance les tests SQL, « Claude » répond aux questions et corrige. La solution reste cachée tant qu'on ne la demande pas.</li>
+      <li>Le travail s'enregistre tout seul. Avec le serveur local (<code>studies/lancer.bat</code>), il va dans <code>td_results/</code>, Claude est disponible et le SQL s'exécute.</li>
+    </ul>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Modélisation <span class="ref">TD, p. 1–2</span></h2>
+    <p>Le sujet se présente comme le compte rendu de deux réunions : chaque cadre décrit son activité avec ses mots, et c'est à la modélisation de réunir les deux points de vue en un seul schéma.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Sujet <span>Compagnie SW7</span></p>
+      <p><strong>Présentation générale.</strong> La compagnie de transport SW7 a choisi de se diversifier. Son domaine d'activité historique est lié aux transports de civils mais plus récemment la compagnie a décidé de se tourner vers les transports de groupes. Cette diversification récente a entraîné des problèmes de gestion et la direction a compris que les difficultés étaient en partie liées à l'obsolescence de son système d'information. Le PDG de la compagnie a ainsi décidé de passer à une gestion informatisée de son activité via une base de données.</p>
+      <p>L'activité couverte par la base de données concerne : le parc de véhicules, son entretien, l'administration des chauffeurs et de leur emploi du temps.</p>
+      <p>Le texte qui suit est une description de l'activité telle qu'elle apparaît à la suite d'une réunion avec les différents cadres de la direction.</p>
+      <p><strong>Compte rendu de la réunion avec le chef mécanicien.</strong> Chaque véhicule possède un numéro de châssis, un nom ainsi qu'une date de mise en service.</p>
+      <p>Le parc de véhicules est divisé en plusieurs modèles. Un modèle est connu par son nom (ex : « Cargo YT-1300 »). Un véhicule ne peut bien entendu appartenir qu'à un seul modèle. La description d'un modèle permet de connaître le nombre de personnes pouvant prendre place dans les véhicules, le type de carburant consommé, la catégorie de permis que doit posséder le chauffeur, le type de boite à vitesse et le poids du modèle.</p>
+      <p>Un des objectifs de ce système d'information est de surveiller la consommation en carburant des véhicules. Ainsi une augmentation de cette consommation sera le signe que le moteur nécessite un réglage. A chaque fois que le plein d'un véhicule est effectué, une fiche qui indique l'identifiant du véhicule, la date, le nombre de kilomètres roulés depuis le dernier plein, la quantité de carburant mis dans le réservoir est remplie.</p>
+      <p>L'équipe des mécaniciens s'occupe de l'entretien des véhicules. À chaque fois que l'entretien d'un véhicule est réalisé, une fiche datée indique l'opération réalisée (texte descriptif).</p>
+      <p><strong>Compte rendu de la réunion avec le responsable de la planification.</strong> <em>Attribution d'un véhicule à un chauffeur.</em> Jusqu'à maintenant, la gestion des chauffeurs se faisait sur papier et tableau.</p>
+      <p>D'une part, le responsable de la planification dispose de fiches sur les chauffeurs où l'on trouve le numéro du chauffeur, son nom, son prénom, son adresse. La fiche contient aussi un emplacement où sont notées les catégories de permis que possède le chauffeur.</p>
+      <p>D'autre part, l'emploi du temps des chauffeurs et des véhicules est défini sur un grand tableau qui occupe une paroi entière de son bureau. Les numéros des plaques<sup>1</sup> des véhicules se trouvent sur les entêtes de ligne. Les entêtes de colonne sont des dates subdivisées en trois tranches horaire. Un seul chauffeur est inscrit dans une case du tableau.</p>
+      <p>Le responsable de la planification doit faire attention à ce que les modèles conduits par les chauffeurs soient compatibles avec les permis qu'ils possèdent<sup>2</sup>.</p>
+      <p>La compagnie SW7 est répartie dans la ville en stations où sont garés les véhicules. Une station possède un numéro, un nom de station et se trouve dans une zone. Un véhicule est associé à une seule station. Un chauffeur est aussi assigné à une seule station. C'est à cette station qu'il vient prendre et rendre son véhicule.</p>
+      <p><em>Localisation d'un chauffeur.</em> Lorsqu'un chauffeur est disponible, il indique au responsable de la planification la zone dans laquelle il se trouve. Cette information est alors ajoutée sur son tableau dans la case adéquate.</p>
+    </div>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Deux notes de bas de page manquantes</span></p>
+      <p><span class="badge a-verifier">À vérifier</span> Le PDF appelle deux notes (après « plaques » et après « possèdent »), mais leur texte n'y figure pas : le filet de séparation est là, les notes sont vides. La première précise sans doute que le numéro de plaque identifie le véhicule ; la seconde, que la catégorie de permis du modèle doit figurer parmi celles du chauffeur.</p>
+    </div>
+
+    <h3>Le diagramme de classes</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 1 <span>Transcription en modèle entité-association</span></p>
+      <p>Proposez le diagramme de classes correspondant à la description ci-dessus.</p>
+    </div>
+    <div class="atelier" id="td2-q1-classes" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "Diagramme de classes",
+        "hauteur": 560,
+        "consigne": "<p>Construire le diagramme sur le dessin ou dans la vue texte. « Vérifier » signale ce qui empêchera la traduction en relationnel. La solution proposée est une modélisation raisonnable parmi d'autres : un écart n'est pas forcément une erreur.</p>",
+        "options": {
+          "bdd": true
+        },
+        "solution": [
+          "classe Zone",
+          "  id_zone : int {PK}",
+          "  nom_zone : varchar",
+          "classe Station",
+          "  id_station : int {PK}",
+          "  nom_station : varchar",
+          "classe Modele",
+          "  id_modele : int {PK}",
+          "  nom_modele : varchar",
+          "  nb_pers : int",
+          "  type_carbu : varchar",
+          "  cat_perm_m : varchar",
+          "  type_bav : char",
+          "  pds : int",
+          "classe Vehicule",
+          "  id_vehicule : int {PK}",
+          "  no_chassis : char",
+          "  nom_vehicule : varchar",
+          "  date_mes : date",
+          "classe Plein",
+          "  id_plein : int {PK}",
+          "  date_p : date",
+          "  nb_km : int",
+          "  qte_carbu : int",
+          "classe Entretien",
+          "  id_entretien : int {PK}",
+          "  date_e : date",
+          "  descr : varchar",
+          "classe Chauffeur",
+          "  id_chauffeur : int {PK}",
+          "  nom : varchar",
+          "  prenom : varchar",
+          "  adr : varchar",
+          "classe Permis",
+          "  cat_perm_c : varchar {PK}",
+          "classe Position",
+          "  date : date {PK}",
+          "  th : int {PK}",
+          "Station \"*\" -- \"1\" Zone : se trouve dans >",
+          "Vehicule \"*\" -- \"1\" Station : est garé à >",
+          "Chauffeur \"*\" -- \"1\" Station : est assigné à >",
+          "Vehicule \"*\" -- \"1\" Modele : est un >",
+          "Vehicule \"1\" *-- \"*\" Plein : fait le plein >",
+          "Vehicule \"1\" *-- \"*\" Entretien : est entretenu >",
+          "Chauffeur \"1\" *-- \"*\" Permis : possède >",
+          "Vehicule \"1\" *-- \"*\" Position : est planifié >",
+          "Chauffeur \"1\" -- \"*\" Position : conduit >",
+          "Zone \"0..1\" -- \"*\" Position : est disponible dans >"
+        ],
+        "explication": "<p>Cette solution est celle qui se traduit exactement en modèle relationnel de l'enseignant (question 2) :</p><ul><li><b>Plein</b> et <b>Entretien</b> sont des fiches qui n'existent que pour un véhicule : compositions, avec un numéro propre au véhicule.</li><li>Les <b>permis</b> d'un chauffeur sont un attribut multivalué (« un emplacement où sont notées les catégories ») : ils deviennent une classe, partie du chauffeur. La catégorie exigée par un modèle reste un attribut de Modele ; la compatibilité modèle–permis se vérifie par une requête (question 4), pas par une association.</li><li>Le <b>tableau de planification</b> devient la classe Position : une case par véhicule (ligne), date et tranche horaire (colonne), avec un seul chauffeur, et une zone facultative (0..1), renseignée quand le chauffeur est disponible.</li><li>Stations et zones : une station se trouve dans une zone ; véhicules et chauffeurs sont rattachés à une seule station.</li></ul><p>D'autres modèles sont justes : une classe CategoriePermis reliée au modèle (1) et aux chauffeurs (*), ce qui ferait de la compatibilité une contrainte de clé étrangère ; ou Position en classe d'association entre Vehicule et Chauffeur, datée.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Les noms qui ont des propriétés donnent les classes : véhicule, modèle, chauffeur, station, zone. Les fiches (plein, entretien) n'existent que pour un véhicule : ce sont des parties du véhicule. La liste des permis d'un chauffeur est un attribut multivalué, qui devient une classe.</p></div>
+    </details>
+    <details class="indice">
+      <summary>Deuxième indice</summary>
+      <div><p>Le grand tableau : une ligne par véhicule, une colonne par date et tranche horaire, un chauffeur par case, et parfois une zone (quand le chauffeur est disponible). Chaque case est un objet : de quoi dépend-elle, et qu'est-ce qui l'identifie ?</p></div>
+    </details>
+
+    <h3>Le modèle relationnel</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 2 <span>Passage au modèle relationnel</span></p>
+      <p>Écrire le modèle relationnel associé au diagramme de classes. L'écriture de chacun des attributs doit permettre de montrer s'il est porteur d'une contrainte de clé primaire ou #étrangère.</p>
+      <p>Attention :</p>
+      <ul>
+        <li>l'ordre de présentation des différentes relations doit être cohérent avec celui d'une implémentation ;</li>
+        <li>si vos attributs clés étrangères ne portent pas le même nom que l'attribut auquel ils font référence, préciser le nom de la table entre parenthèse.</li>
+      </ul>
+    </div>
+    <div class="atelier" id="td2-q2-relationnel" data-editeur="relationnel">
+      <script type="application/json">
+      {
+        "titre": "Modèle relationnel",
+        "consigne": "<p>Traduire son propre diagramme (ou celui de la solution de la question 1). Noms de relations en minuscules ; l'ordre des relations est celui de l'implémentation.</p>",
+        "solution_source": "enseignant",
+        "solution": [
+          "zone(_id_zone_, nom_zone)",
+          "station(_id_station_, nom_station, #id_zone)",
+          "modele(_id_modele_, nom_modele, nb_pers, type_carbu, cat_perm_m, type_bav, pds)",
+          "vehicule(_id_vehicule_, no_chassis, nom_vehicule, date_mes, #id_station_v(station), #id_modele)",
+          "plein(_#id_vehicule_, _id_plein_, date_p, nb_km, qte_carbu)",
+          "entretien(_#id_vehicule_, _id_entretien_, date_e, descr)",
+          "chauffeur(_id_chauffeur_, nom, prenom, adr, #id_station_c(station))",
+          "permis(_#id_chauffeur_, _cat_perm_c_)",
+          "position(_#id_vehicule_, _date_, _th_, #id_chauffeur, #id_zone)"
+        ],
+        "explication": "<p>Modèle relationnel donné par l'enseignant dans le sujet du TP noté SW7 de L2 (même cas d'étude, même base), avec les clés du script ScriptsSW7. Seule la clé de <code>permis</code>, dont le script ne crée pas la table, est déduite : le chauffeur et la catégorie.</p><ul><li><b>Règle 1</b> pour zone, station, modele, vehicule, chauffeur.</li><li><b>Règle 3</b> : les clés étrangères vont du côté * (<code>station.#id_zone</code>, <code>vehicule.#id_modele</code>…). <code>id_station_v</code> et <code>id_station_c</code> ne portent pas le nom de la clé qu'elles désignent : on précise <code>(station)</code>.</li><li><b>Compositions</b> : <code>plein</code>, <code>entretien</code> et <code>permis</code> ont une clé qui commence par celle du « tout ».</li><li><b>position</b> : la clé (véhicule, date, tranche) dit qu'une case du tableau n'a qu'un chauffeur ; le chauffeur et la zone sont de simples clés étrangères, la zone pouvant rester vide.</li></ul>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Pour une composition, la clé du « tout » entre dans la clé de la partie (<a href="cours-01-uml-vers-relationnel.html#regle-3-les-associations-0-1">règle 3, cas de la composition</a>) : un plein est identifié par son véhicule <em>et</em> son numéro. La syntaxe de la référence : <code>#id_station_v(station)</code> quand le nom de la clé étrangère diffère de celui de la clé qu'elle désigne.</p></div>
+    </details>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Implémentation <span class="ref">TD, p. 2</span></h2>
+    <p>Deux tables du modèle, avec les contraintes que la description impose en plus des clés. Chaque script est exécuté sur une base qui contient déjà les tables dont il a besoin, puis éprouvé par des tests d'insertion.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La base de données de l'enseignant, adaptée</span></p>
+      <p>Les questions 4 à 11 portent sur la base SW7 de l'enseignant, le script <a href="../../../L2/BDD/TP/TP5/script.txt">ScriptsSW7</a> (N. Camelin, C. Piau-Toffolon), fourni avec le TP noté SW7 de L2 dont le sujet donne aussi le modèle relationnel de l'enseignant (<a href="../../../L2/BDD/TP/TP5/Exam_TP_SW7-2025_26.pdf">Exam_TP_SW7-2025_26.pdf</a>). Le sujet du TD 2 cite des données qui n'y sont pas ; le script a donc été adapté :</p>
+      <ul>
+        <li>les tables <code>chauffeur</code> et <code>permis</code>, que le TP noté faisait créer, sont ajoutées ;</li>
+        <li>les numéros de châssis ont 17 caractères, comme à la question 3, et les identifiants des véhicules reprennent les anciens numéros de châssis : le « Geonosis power » est le véhicule <code>100002</code>, de châssis <code>YO26DA03F26835177</code> ;</li>
+        <li>ce véhicule est mis en service le 1<sup>er</sup> janvier 2026, comme le dit la question 9 : ses pleins et son entretien sont décalés en 2026, et le planning des 9 et 10 décembre 2025 est déplacé aux 9 et 10 janvier 2026 ;</li>
+        <li>Yoda et Ahsoka Tano (question 12 e) rejoignent la station Dagobah avec leurs permis, et quelques créneaux de janvier 2026 sont ajoutés.</li>
+      </ul>
+      <p>Les dates se saisissent au format jour-mois-année (<code>'09-01-26'</code>), comme dans le script d'origine, ou au format ISO (<code>'2026-01-09'</code>).</p>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3 <span>Implémentation</span></p>
+      <p>Implémenter les tables suivantes, en prenant en compte en plus des contraintes de clés primaires et étrangères, les informations suivantes :</p>
+      <ol type="a">
+        <li>Véhicule : le numero de chassis comporte 17 caractères, uniquement majuscules ou chiffres, par défaut la date de mise en service correspond à la date de saisie dans la table ;</li>
+        <li>Entretien : la date d'entretien doit toujours être saisie.</li>
+      </ol>
+    </div>
+    <div class="atelier" id="td2-q3a-vehicule" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 3a · La table vehicule",
+        "consigne": "<p>Les tables <code>zone</code>, <code>station</code> et <code>modele</code> existent. Créer <code>vehicule</code> avec les colonnes du modèle de l'enseignant, pour que les tests puissent y insérer des lignes : <code>id_vehicule</code>, <code>no_chassis</code>, <code>nom_vehicule</code>, <code>date_mes</code>, <code>id_station_v</code>, <code>id_modele</code>. « Comparer » exécute le script, puis sept tests.</p>",
+        "options": {
+          "jeu": "sw7-q3a",
+          "mode": "script",
+          "lignes": 12
+        },
+        "depart": "CREATE TABLE vehicule (\n  \n);",
+        "tests": [
+          {
+            "nom": "Un véhicule correct est accepté, et sa date de mise en service est celle du jour",
+            "requete": "INSERT INTO vehicule (id_vehicule, no_chassis, nom_vehicule, id_station_v, id_modele) VALUES (200001, 'AB12CD34EF56GH789', 'Essai', 1, 1);\nSELECT count(*) AS nb FROM vehicule WHERE id_vehicule = 200001 AND date_mes = CURRENT_DATE;",
+            "resultat": true
+          },
+          {
+            "nom": "Un numéro de châssis de 16 caractères est refusé",
+            "requete": "INSERT INTO vehicule (id_vehicule, no_chassis, nom_vehicule, id_station_v, id_modele) VALUES (200002, 'AB12CD34EF56GH78', 'Essai', 1, 1);",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Un numéro de châssis de 18 caractères est refusé",
+            "requete": "INSERT INTO vehicule (id_vehicule, no_chassis, nom_vehicule, id_station_v, id_modele) VALUES (200003, 'AB12CD34EF56GH7890', 'Essai', 1, 1);",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Un numéro de châssis avec des minuscules est refusé",
+            "requete": "INSERT INTO vehicule (id_vehicule, no_chassis, nom_vehicule, id_station_v, id_modele) VALUES (200004, 'ab12cd34ef56gh789', 'Essai', 1, 1);",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Un numéro de châssis avec des espaces est refusé",
+            "requete": "INSERT INTO vehicule (id_vehicule, no_chassis, nom_vehicule, id_station_v, id_modele) VALUES (200005, 'YO2 6DA03F 268351', 'Essai', 1, 1);",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Un véhicule doit être rattaché à une station qui existe",
+            "requete": "INSERT INTO vehicule (id_vehicule, no_chassis, nom_vehicule, id_station_v, id_modele) VALUES (200006, 'AB12CD34EF56GH789', 'Essai', 99, 1);",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Un véhicule doit être d'un modèle qui existe",
+            "requete": "INSERT INTO vehicule (id_vehicule, no_chassis, nom_vehicule, id_station_v, id_modele) VALUES (200007, 'AB12CD34EF56GH789', 'Essai', 1, 99);",
+            "doit": "echouer"
+          }
+        ],
+        "solution": "CREATE TABLE vehicule (\n  id_vehicule bigint PRIMARY KEY,\n  no_chassis char(17) NOT NULL UNIQUE CHECK (no_chassis ~ '^[A-Z0-9]{17}$'),\n  nom_vehicule varchar(30) NOT NULL,\n  date_mes date DEFAULT CURRENT_DATE,\n  id_station_v bigint REFERENCES station (id_station),\n  id_modele bigint REFERENCES modele (id_modele)\n);",
+        "explication": "<p>La longueur et le format se vérifient ensemble par une expression régulière : <code>^[A-Z0-9]{17}$</code> accepte exactement 17 caractères, majuscules ou chiffres, du début (<code>^</code>) à la fin (<code>$</code>). <code>CHAR(17)</code> seul refuserait 18 caractères, mais compléterait un numéro trop court par des espaces et accepterait les minuscules. <code>UNIQUE</code> est un plus : deux véhicules n'ont pas le même châssis.</p><p><code>DEFAULT CURRENT_DATE</code> donne la date du jour à <code>date_mes</code> quand l'insertion ne la précise pas. Les deux clés étrangères référencent <code>station</code> et <code>modele</code>.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>« 17 caractères, uniquement majuscules ou chiffres » : une longueur et un format. Un <code>CHECK</code> avec une expression régulière (<code>colonne ~ '^…$'</code>) vérifie les deux à la fois. « Par défaut » : une clause <code>DEFAULT</code>, avec la date du jour <code>CURRENT_DATE</code>.</p></div>
+    </details>
+    <div class="atelier" id="td2-q3b-entretien" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 3b · La table entretien",
+        "consigne": "<p>Les tables <code>zone</code>, <code>station</code>, <code>modele</code> et <code>vehicule</code> existent. Créer <code>entretien</code>, de colonnes <code>id_vehicule</code>, <code>id_entretien</code>, <code>date_e</code>, <code>descr</code>. « Comparer » exécute le script, puis cinq tests.</p>",
+        "options": {
+          "jeu": "sw7-q3b",
+          "mode": "script",
+          "lignes": 9
+        },
+        "depart": "CREATE TABLE entretien (\n  \n);",
+        "tests": [
+          {
+            "nom": "Un entretien daté est accepté",
+            "requete": "INSERT INTO entretien (id_vehicule, id_entretien, date_e, descr) VALUES (100002, 1, '2026-06-12', 'vidange');",
+            "doit": "reussir"
+          },
+          {
+            "nom": "Un entretien sans date est refusé",
+            "requete": "INSERT INTO entretien (id_vehicule, id_entretien, date_e, descr) VALUES (100002, 1, NULL, 'vidange');",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Un entretien d'un véhicule inconnu est refusé",
+            "requete": "INSERT INTO entretien (id_vehicule, id_entretien, date_e, descr) VALUES (999999, 1, '2026-06-12', 'vidange');",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Deux entretiens de même numéro pour un véhicule sont refusés",
+            "requete": "INSERT INTO entretien (id_vehicule, id_entretien, date_e, descr) VALUES (100002, 1, '2026-06-12', 'vidange');\nINSERT INTO entretien (id_vehicule, id_entretien, date_e, descr) VALUES (100002, 1, '2026-07-01', 'pneus');",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Deux véhicules peuvent avoir chacun leur entretien n° 1",
+            "requete": "INSERT INTO entretien (id_vehicule, id_entretien, date_e, descr) VALUES (100002, 1, '2026-06-12', 'vidange');\nINSERT INTO entretien (id_vehicule, id_entretien, date_e, descr) VALUES (100005, 1, '2026-07-01', 'pneus');",
+            "doit": "reussir"
+          }
+        ],
+        "solution": "CREATE TABLE entretien (\n  id_vehicule bigint REFERENCES vehicule (id_vehicule),\n  id_entretien bigint,\n  date_e date NOT NULL,\n  descr varchar(50),\n  PRIMARY KEY (id_vehicule, id_entretien)\n);",
+        "explication": "<p>« Doit toujours être saisie » : <code>NOT NULL</code> sur <code>date_e</code>. La clé primaire réunit le véhicule et le numéro d'entretien (composition) : le numéro n'est unique que pour un véhicule, et chaque véhicule a son entretien n° 1. Une clé sur <code>id_entretien</code> seul échouerait au dernier test.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exploitation <span class="ref">TD, p. 2</span></h2>
+    <p>Les questions qui suivent interrogent la base : d'abord une jointure transformée en fonction, puis des calculs qui demandent les outils du cours 3, et enfin les commandes qu'appellent des événements de la vie de la compagnie.</p>
+
+    <h3>Qui peut conduire ce véhicule ?</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 4 <span>Chauffeurs possibles</span></p>
+      <p>Quels chauffeurs de la station Dagobah peuvent conduire la voiture dont le numéro de chassis est YO2 6DA03F 26835177 (id 100002) ? Les informations suivantes devront être affichées : nom_véhicule, nom_modele, id_permis, nom_chauffeur, id_chauffeur.</p>
+    </div>
+    <div class="atelier" id="td2-q4-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 4 · Chauffeurs de Dagobah pour le véhicule 100002",
+        "consigne": "<p>Colonnes attendues, dans l'ordre : <code>nom_vehicule</code>, <code>nom_modele</code>, <code>id_permis</code> (la catégorie de permis), <code>nom_chauffeur</code>, <code>id_chauffeur</code>.</p>",
+        "options": {
+          "jeu": "sw7"
+        },
+        "depart": "SELECT ",
+        "solution": "SELECT v.nom_vehicule, m.nom_modele, p.cat_perm_c AS id_permis, c.nom AS nom_chauffeur, c.id_chauffeur\nFROM vehicule v\nJOIN modele m ON m.id_modele = v.id_modele\nJOIN permis p ON p.cat_perm_c = m.cat_perm_m\nJOIN chauffeur c ON c.id_chauffeur = p.id_chauffeur\nJOIN station s ON s.id_station = c.id_station_c\nWHERE s.nom_station = 'Dagobah'\n  AND v.no_chassis = 'YO26DA03F26835177';",
+        "explication": "<p>Cinq tables : le véhicule donne son modèle, le modèle la catégorie de permis exigée, qu'on apparie aux permis des chauffeurs (<code>p.cat_perm_c = m.cat_perm_m</code>), puis le chauffeur et sa station. Le filtre porte sur la station <em>du chauffeur</em> : le véhicule, lui, est garé à Geonosis.</p><p>Deux chauffeurs de Dagobah ont le permis GP du voilier solaire : Yoda et Ahsoka. Kenobi, aussi à Dagobah, n'a que le permis CL ; Han Solo, Leia et Luke ont le permis GP, mais sont rattachés à d'autres stations.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Le lien entre un chauffeur et un véhicule passe par le permis : la catégorie exigée par le modèle du véhicule (<code>modele.cat_perm_m</code>) doit figurer parmi les permis du chauffeur (<code>permis.cat_perm_c</code>). La station à filtrer est celle du chauffeur.</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 5 <span>Fonction SQL</span></p>
+      <p>Transformer la question 4 en fonction SQL. Attention aux entrées/sorties.</p>
+    </div>
+    <div class="atelier" id="td2-q5-fonction" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 5 · La fonction f_chauffeurs_possibles",
+        "consigne": "<p>Créer la fonction SQL <code>f_chauffeurs_possibles(nom de station, numéro de châssis)</code>, qui renvoie les mêmes cinq colonnes que la question 4. Les tests l'appellent par <code>SELECT * FROM f_chauffeurs_possibles('Dagobah', 'YO26DA03F26835177')</code>.</p>",
+        "options": {
+          "jeu": "sw7",
+          "mode": "script",
+          "lignes": 14
+        },
+        "depart": "CREATE FUNCTION f_chauffeurs_possibles (p_station varchar, p_chassis varchar)\nRETURNS ",
+        "tests": [
+          {
+            "nom": "Station Dagobah, véhicule YO26DA03F26835177",
+            "requete": "SELECT * FROM f_chauffeurs_possibles('Dagobah', 'YO26DA03F26835177');",
+            "resultat": true
+          },
+          {
+            "nom": "Station Geonosis, Faucon millenium",
+            "requete": "SELECT * FROM f_chauffeurs_possibles('Geonosis', 'CR1YT1300FAUCON01');",
+            "resultat": true
+          },
+          {
+            "nom": "Station Naboo, Nebuleuse 300",
+            "requete": "SELECT * FROM f_chauffeurs_possibles('Naboo', 'NEB300CORVETTE005');",
+            "resultat": true
+          },
+          {
+            "nom": "Station inconnue : aucune ligne",
+            "requete": "SELECT * FROM f_chauffeurs_possibles('Hoth', 'YO26DA03F26835177');",
+            "resultat": true
+          }
+        ],
+        "solution": "CREATE FUNCTION f_chauffeurs_possibles (p_station varchar, p_chassis varchar)\nRETURNS TABLE (nom_vehicule varchar, nom_modele varchar, id_permis varchar, nom_chauffeur varchar, id_chauffeur bigint) AS $$\n  SELECT v.nom_vehicule, m.nom_modele, p.cat_perm_c, c.nom, c.id_chauffeur\n  FROM vehicule v\n  JOIN modele m ON m.id_modele = v.id_modele\n  JOIN permis p ON p.cat_perm_c = m.cat_perm_m\n  JOIN chauffeur c ON c.id_chauffeur = p.id_chauffeur\n  JOIN station s ON s.id_station = c.id_station_c\n  WHERE s.nom_station = p_station\n    AND v.no_chassis = p_chassis;\n$$ LANGUAGE SQL;",
+        "explication": "<p><b>Entrées</b> : ce qui changeait d'un appel à l'autre, la station et le véhicule, deviennent des paramètres. <b>Sorties</b> : plusieurs lignes de cinq colonnes, d'où <code>RETURNS TABLE (…)</code> ; <code>RETURNS varchar</code> ne renverrait que le premier nom, sans erreur (le piège du cours 2). Les types des colonnes déclarées doivent correspondre à ceux de la requête : <code>id_chauffeur</code> est un <code>bigint</code>.</p>"
+      }
+      </script>
+    </div>
+
+    <h3>Consommation et activité</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 6 <span>Modèles gourmands</span></p>
+      <p>Pour chaque modèle de véhicule, calculez la consommation moyenne (litres pour 100km) de l'ensemble de ses véhicules. Affichez uniquement les modèles dont la consommation moyenne dépasse la consommation moyenne globale, tous modèles confondus (indice : CTE).</p>
+    </div>
+    <div class="atelier" id="td2-q6-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 6 · Les modèles plus gourmands que la moyenne",
+        "consigne": "<p>Colonnes attendues : <code>nom_modele</code>, consommation en litres pour 100 km (sans arrondir).</p>",
+        "options": {
+          "jeu": "sw7"
+        },
+        "depart": "WITH ",
+        "solution": "WITH conso_modele AS (\n  SELECT m.nom_modele, 100.0 * sum(p.qte_carbu) / sum(p.nb_km) AS conso\n  FROM modele m\n  JOIN vehicule v ON v.id_modele = m.id_modele\n  JOIN plein p ON p.id_vehicule = v.id_vehicule\n  GROUP BY m.id_modele, m.nom_modele\n),\nconso_globale AS (\n  SELECT 100.0 * sum(qte_carbu) / sum(nb_km) AS conso FROM plein\n)\nSELECT cm.nom_modele, cm.conso\nFROM conso_modele cm, conso_globale cg\nWHERE cm.conso > cg.conso;",
+        "explication": "<p>La consommation d'un ensemble de pleins est le total des litres rapporté au total des kilomètres : <code>100.0 * sum(qte_carbu) / sum(nb_km)</code>. Avec <code>100 *</code>, la division entre entiers serait entière (22 au lieu de 22,81).</p><p>La première CTE calcule la consommation de chaque modèle, la seconde la consommation globale ; la requête finale garde les modèles au-dessus. Ici, la moyenne des consommations des modèles donne le même choix : le voilier solaire (22,8 L/100 km) et la corvette (19,3). Le modèle ARC-170, sans véhicule, n'intervient pas.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Deux CTE : la consommation de chaque modèle, et la consommation globale ; la requête finale les compare. Consommation aux 100 km : <code>100.0 * sum(qte_carbu) / sum(nb_km)</code>. Pourquoi <code>100.0</code> et pas <code>100</code> ?</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 7 <span>Chauffeurs les plus actifs</span></p>
+      <p>Pour chaque chauffeur, affichez son nombre total de sorties (lignes dans POSITION) ainsi que son rang parmi les chauffeurs de sa station (le plus actif = rang 1) (indice : CTE + WINDOW FUNCTION).</p>
+    </div>
+    <div class="atelier" id="td2-q7-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 7 · Sorties et rang dans la station",
+        "consigne": "<p>Tous les chauffeurs. Colonnes attendues : <code>id_chauffeur</code>, <code>nom</code>, nombre de sorties, rang dans la station. En cas d'égalité, les ex æquo ont le même rang, et le suivant prend le rang qui tient compte d'eux (1, 1, 3).</p>",
+        "options": {
+          "jeu": "sw7"
+        },
+        "depart": "WITH ",
+        "solution": "WITH sorties AS (\n  SELECT c.id_chauffeur, c.nom, c.id_station_c, count(p.id_vehicule) AS nb_sorties\n  FROM chauffeur c\n  LEFT JOIN position p ON p.id_chauffeur = c.id_chauffeur\n  GROUP BY c.id_chauffeur, c.nom, c.id_station_c\n)\nSELECT id_chauffeur, nom, nb_sorties,\n       rank() OVER (PARTITION BY id_station_c ORDER BY nb_sorties DESC) AS rang\nFROM sorties;",
+        "explication": "<p>La CTE compte les lignes de <code>position</code> de chaque chauffeur. Avec un <code>LEFT JOIN</code> et <code>count(p.id_vehicule)</code>, Kenobi, jamais sorti, apparaît avec 0 ; un <code>JOIN</code> le ferait disparaître.</p><p><code>rank() OVER (PARTITION BY id_station_c ORDER BY nb_sorties DESC)</code> classe les chauffeurs à l'intérieur de leur station. À Geonosis, Leia et Luke sont ex æquo (6 sorties) : <code>rank()</code> les met premiers et Mace Windu troisième, <code>dense_rank()</code> le mettrait deuxième, <code>row_number()</code> départagerait arbitrairement les ex æquo.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Une CTE compte les sorties de chaque chauffeur ; la requête finale les classe avec une fonction de fenêtrage dont la fenêtre est la station (<code>OVER (PARTITION BY … ORDER BY …)</code>). Un chauffeur qui n'est jamais sorti fait-il partie du résultat ?</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 8 <span>Détecter un moteur qui se dérègle</span></p>
+      <p>L'objectif affiché du système est de surveiller la consommation de carburant pour détecter un moteur qui se dérègle. Pour chaque véhicule, affichez, pour chaque plein (trié par date), sa consommation aux 100km, ainsi que la variation par rapport au plein précédent du même véhicule.</p>
+    </div>
+    <div class="atelier" id="td2-q8-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 8 · Consommation plein par plein",
+        "consigne": "<p>Une ligne par plein. Colonnes attendues : <code>id_vehicule</code>, <code>date_p</code>, consommation aux 100 km, variation par rapport au plein précédent du même véhicule (vide pour son premier plein), sans arrondir.</p>",
+        "options": {
+          "jeu": "sw7"
+        },
+        "depart": "SELECT ",
+        "solution": "SELECT id_vehicule, date_p,\n       100.0 * qte_carbu / nb_km AS conso,\n       100.0 * qte_carbu / nb_km\n         - lag(100.0 * qte_carbu / nb_km) OVER (PARTITION BY id_vehicule ORDER BY date_p) AS variation\nFROM plein\nORDER BY id_vehicule, date_p;",
+        "explication": "<p><code>lag(…) OVER (PARTITION BY id_vehicule ORDER BY date_p)</code> lit la consommation du plein précédent <em>du même véhicule</em> ; sans <code>PARTITION BY</code>, le premier plein d'un véhicule serait comparé au dernier du véhicule d'avant. La variation du premier plein est vide (<code>NULL</code>).</p><p>Le signal attendu apparaît : le dernier plein du Geonosis power passe à 25 L/100 km, 4,8 de plus que le précédent. Le moteur mérite un réglage.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p><code>LAG(expression) OVER (…)</code> donne la valeur de la ligne précédente dans la fenêtre. « Du même véhicule » : la fenêtre est découpée par véhicule, et ordonnée par date.</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 9 <span>Jours sans sortie</span></p>
+      <p>Le véhicule de numéro de châssis YO2 6DA03F 26835177 (id 100002) est en service depuis le 1er janvier 2026. Affichez, pour le mois de janvier 2026, la liste des dates où ce véhicule n'apparaît dans aucune tranche horaire de la table POSITION (jours où il est resté au garage, sans sortie).</p>
+    </div>
+    <div class="atelier" id="td2-q9-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 9 · Les jours de janvier sans sortie",
+        "consigne": "<p>Une ligne par jour, dans une colonne <code>jour</code> de type <code>date</code>. Une colonne de type <code>timestamp</code> (ce que renvoie <code>generate_series</code>) s'afficherait ici décalée d'un jour : la convertir avec <code>::date</code>.</p>",
+        "options": {
+          "jeu": "sw7"
+        },
+        "depart": "SELECT ",
+        "solution": "SELECT j::date AS jour\nFROM generate_series(DATE '2026-01-01', DATE '2026-01-31', INTERVAL '1 day') AS j\nWHERE j::date NOT IN (SELECT p.date FROM position p WHERE p.id_vehicule = 100002)\nORDER BY jour;",
+        "explication": "<p>Les jours sans sortie n'existent dans aucune table : on fabrique les 31 jours de janvier avec <code>generate_series</code>, puis on retire ceux où le véhicule 100002 a au moins une ligne dans <code>position</code> (<code>NOT IN</code>, <code>NOT EXISTS</code> ou <code>EXCEPT</code>). Il est sorti les 5, 9, 10, 12, 19 et 26 janvier : il reste 25 jours.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Les jours sans sortie ne figurent dans aucune table : il faut d'abord fabriquer la liste des 31 jours de janvier, avec <code>generate_series(date_début, date_fin, INTERVAL '1 day')</code>, puis retirer ceux où le véhicule apparaît.</p></div>
+    </details>
+
+    <h3>Le trafic par tranche horaire</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 10 <span>Chauffeurs par tranche</span></p>
+      <p>En moyenne, combien de chauffeurs sortent pour chaque tranche horaire ?</p>
+    </div>
+    <div class="atelier" id="td2-q10-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 10 · Chauffeurs en moyenne par tranche",
+        "consigne": "<p>Une ligne par tranche horaire. Colonnes attendues : <code>th</code>, nombre moyen de chauffeurs (sans arrondir). La moyenne porte sur les cases du tableau (une date et une tranche) où au moins un chauffeur est sorti.</p>",
+        "options": {
+          "jeu": "sw7"
+        },
+        "depart": "WITH ",
+        "solution": "WITH par_creneau AS (\n  SELECT date, th, count(DISTINCT id_chauffeur) AS nb\n  FROM position\n  GROUP BY date, th\n)\nSELECT th, avg(nb) AS moyenne\nFROM par_creneau\nGROUP BY th\nORDER BY th;",
+        "explication": "<p>Deux étages de regroupement : d'abord le nombre de chauffeurs de chaque case (<code>GROUP BY date, th</code>), puis la moyenne de ces nombres par tranche (<code>GROUP BY th</code>). <code>count(*)</code> par tranche donnerait le total des sorties, pas une moyenne.</p><p>Les jours où personne ne sort dans une tranche n'ont aucune ligne, et ne comptent donc pas dans la moyenne : pour les compter comme des zéros, il faudrait fabriquer la liste des cases avec <code>generate_series</code>, comme à la question 9.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Une moyenne de comptes : compter d'abord les chauffeurs de chaque case du tableau (une date et une tranche), puis faire la moyenne de ces comptes par tranche. Deux regroupements, donc une sous-requête ou une CTE.</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 11 <span>Heure de pointe</span></p>
+      <p>Dans quelle tranche horaire y-a-t-il le plus de trafic ?</p>
+    </div>
+    <div class="atelier" id="td2-q11-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 11 · La tranche la plus chargée",
+        "consigne": "<p>La ou les tranches horaires qui comptent le plus de sorties. Colonne attendue : <code>th</code>.</p>",
+        "options": {
+          "jeu": "sw7"
+        },
+        "depart": "SELECT ",
+        "solution": "SELECT th\nFROM position\nGROUP BY th\nHAVING count(*) >= ALL (SELECT count(*) FROM position GROUP BY th);",
+        "explication": "<p>Le trafic d'une tranche est son nombre de lignes dans <code>position</code>. On garde la tranche dont le compte est au moins égal à celui de toutes les autres (<code>&gt;= ALL</code>), ce qui conserverait des ex æquo. Ici, la tranche 2 (14 sorties, contre 11 et 8).</p>"
+      }
+      </script>
+    </div>
+
+    <h3>Les commandes de gestion</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 12 <span>Commandes</span></p>
+      <p>Quelles sont les commandes à appliquer ?</p>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Pour chaque événement, se demander quelles lignes apparaissent, changent ou disparaissent, et dans quel ordre pour que les clés étrangères restent valides. Une condition (le chauffeur a-t-il le bon permis ? la case est-elle libre ?) s'écrit SI … ALORS.</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 12a</p>
+      <p>Un chauffeur prend service.</p>
+    </div>
+    <div class="atelier" id="td2-q12a-commandes" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Question 12a · commandes",
+        "options": {
+          "lignes": 4,
+          "placeholder": "Une commande par ligne (par exemple : UPDATE position SET …), avec SI … ALORS au besoin."
+        },
+        "solution": "INSERT INTO position VALUES (véhicule, date, tranche, chauffeur, NULL)\n— après avoir vérifié :\nSI le chauffeur a le permis du modèle du véhicule (SELECT … FROM permis …)\nET SI la case (véhicule, date, tranche) est libre (SELECT … FROM position …)",
+        "explication": "<p>Prendre son service, c'est occuper une case du tableau : une ligne de <code>position</code>. Deux vérifications que la base ne fait pas seule : la compatibilité du permis avec le modèle, et la case libre (la clé primaire refuserait de toute façon un second chauffeur pour la même case). La zone reste vide tant que le chauffeur n'est pas disponible.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 12b</p>
+      <p>Un chauffeur se rend disponible.</p>
+    </div>
+    <div class="atelier" id="td2-q12b-commandes" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Question 12b · commandes",
+        "options": {
+          "lignes": 4,
+          "placeholder": "Une commande par ligne (par exemple : UPDATE position SET …), avec SI … ALORS au besoin."
+        },
+        "solution": "UPDATE position SET id_zone = (zone indiquée) WHERE id_chauffeur = … AND date = … AND th = …",
+        "explication": "<p>Disponible, le chauffeur indique la zone où il se trouve : on la note dans sa case, c'est-à-dire sa ligne de <code>position</code> pour la date et la tranche en cours.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 12c</p>
+      <p>Un véhicule rentre au garage pour un entretien.</p>
+    </div>
+    <div class="atelier" id="td2-q12c-commandes" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Question 12c · commandes",
+        "options": {
+          "lignes": 4,
+          "placeholder": "Une commande par ligne (par exemple : UPDATE position SET …), avec SI … ALORS au besoin."
+        },
+        "solution": "INSERT INTO entretien VALUES (véhicule, numéro suivant, date du jour, opération)\nSI le véhicule est planifié pendant l'entretien ALORS DELETE FROM position WHERE … (ou UPDATE position SET id_vehicule = un autre véhicule)",
+        "explication": "<p>L'entretien est une fiche datée : une ligne d'<code>entretien</code>, avec la date obligatoire de la question 3b. Pendant qu'il est au garage, le véhicule ne peut pas sortir : on libère ou on réaffecte ses cases du planning.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 12d</p>
+      <p>Une station ferme ses portes.</p>
+    </div>
+    <div class="atelier" id="td2-q12d-commandes" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Question 12d · commandes",
+        "options": {
+          "lignes": 4,
+          "placeholder": "Une commande par ligne (par exemple : UPDATE position SET …), avec SI … ALORS au besoin."
+        },
+        "solution": "UPDATE vehicule SET id_station_v = (autre station) WHERE id_station_v = …\nUPDATE chauffeur SET id_station_c = (autre station) WHERE id_station_c = …\nDELETE FROM station WHERE …",
+        "explication": "<p>Les véhicules et les chauffeurs de la station la référencent par une clé étrangère : il faut d'abord les rattacher à une autre station, sinon la suppression est refusée. Une clé étrangère avec <code>ON DELETE SET NULL</code> les laisserait sans station, ce qui n'a pas de sens ici.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 12e</p>
+      <p>Ahsoka vient d'avoir un accident. La Nebuleuse 300 est bonne pour la casse.</p>
+    </div>
+    <div class="atelier" id="td2-q12e-commandes" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Question 12e · commandes",
+        "options": {
+          "lignes": 4,
+          "placeholder": "Une commande par ligne (par exemple : UPDATE position SET …), avec SI … ALORS au besoin."
+        },
+        "solution": "DELETE FROM position WHERE id_chauffeur = (Ahsoka) AND date >= aujourd'hui (elle ne peut plus assurer ses créneaux)\nDELETE FROM position WHERE id_vehicule = (Nebuleuse 300) AND date >= aujourd'hui\nSI l'on garde l'historique ALORS ALTER TABLE vehicule ADD date_retrait date ; UPDATE vehicule SET date_retrait = …\nSINON DELETE FROM plein / DELETE FROM entretien / DELETE FROM position WHERE id_vehicule = … ; DELETE FROM vehicule WHERE …",
+        "explication": "<p>Deux conséquences : Ahsoka est indisponible (ses créneaux à venir sont libérés, et réattribués à d'autres chauffeurs), et le véhicule disparaît du parc. Pour le supprimer, il faut d'abord supprimer ce qui le référence (pleins, entretiens, positions), ou avoir déclaré ces clés étrangères <code>ON DELETE CASCADE</code>. Mais supprimer efface aussi son historique de consommation : garder le véhicule avec une date de retrait est souvent préférable, ce qui demande de modifier le schéma.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 12f</p>
+      <p>Afficher le carnet d'entretien d'une voiture.</p>
+    </div>
+    <div class="atelier" id="td2-q12f-commandes" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Question 12f · commandes",
+        "options": {
+          "lignes": 4,
+          "placeholder": "Une commande par ligne (par exemple : UPDATE position SET …), avec SI … ALORS au besoin."
+        },
+        "solution": "SELECT e.date_e, e.descr FROM entretien e JOIN vehicule v ON … WHERE v.nom_vehicule = … ORDER BY e.date_e",
+        "explication": "<p>Une simple requête : les entretiens du véhicule, dans l'ordre chronologique. Si l'on désigne la voiture par son nom ou son châssis plutôt que par son identifiant, il faut une jointure avec <code>vehicule</code>. Cette requête peut aussi devenir une fonction, comme à la question 5.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>Une fiche qui n'existe que pour un objet (plein, entretien d'un véhicule) est une partie de cet objet : composition, et la clé du « tout » entre dans sa clé.</li>
+        <li>Un attribut multivalué (les permis d'un chauffeur) devient une classe, puis une table dont la clé réunit le chauffeur et la valeur.</li>
+        <li>Un tableau à double entrée (véhicule × date et tranche) se traduit par une table dont la clé réunit les deux entrées.</li>
+        <li>Format d'une colonne : <code>CHECK (colonne ~ '^[A-Z0-9]{17}$')</code> ; valeur par défaut : <code>DEFAULT CURRENT_DATE</code> ; valeur obligatoire : <code>NOT NULL</code>.</li>
+        <li>Une division entre entiers est une division entière : <code>100.0 *</code> force le calcul décimal.</li>
+        <li>Une CTE nomme un résultat intermédiaire ; <code>RANK() OVER (PARTITION BY … ORDER BY …)</code> classe à l'intérieur d'un groupe ; <code>LAG()</code> lit la ligne précédente.</li>
+        <li>Pour lister ce qui <em>n'existe pas</em> dans une table (des jours sans sortie), on fabrique d'abord l'ensemble complet (<code>generate_series</code>), puis on retire ce qui existe.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi la clé de <code>plein</code> contient-elle <code>id_vehicule</code> ?</summary>
+        <div><p>Un plein n'existe que pour un véhicule, et son numéro n'est unique qu'à l'intérieur de ce véhicule (le plein n° 1 de chaque véhicule) : c'est une composition, dont la traduction ajoute la clé du véhicule à celle du plein.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que vérifie <code>CHECK (no_chassis ~ '^[A-Z0-9]{17}$')</code> que <code>CHAR(17)</code> ne vérifie pas ?</summary>
+        <div><p><code>CHAR(17)</code> refuse plus de 17 caractères, mais complète un texte plus court par des espaces et accepte les minuscules. L'expression régulière impose exactement 17 caractères, tous majuscules ou chiffres.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que vaut <code>100 * 30 / 300</code> en SQL ? Et <code>30 / 300 * 100</code> ?</summary>
+        <div><p>10, puis 0 : entre entiers, la division est entière, et <code>30 / 300</code> vaut 0. D'où <code>100.0 *</code> en tête du calcul.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Deux chauffeurs sont ex æquo premiers de leur station. Quel rang <code>RANK()</code> donne-t-il au suivant ? Et <code>DENSE_RANK()</code> ?</summary>
+        <div><p>3 avec <code>RANK()</code>, qui saute les rangs occupés par les ex æquo ; 2 avec <code>DENSE_RANK()</code>, qui ne laisse pas de trou.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi un <code>JOIN</code> entre <code>chauffeur</code> et <code>position</code> ne suffit-il pas pour compter les sorties de chaque chauffeur ?</summary>
+        <div><p>La jointure élimine les chauffeurs qui n'ont aucune ligne dans <code>position</code> : ils disparaissent au lieu d'apparaître avec 0 sortie. Il faut un <code>LEFT JOIN</code>, et compter une colonne de <code>position</code> plutôt que <code>*</code>.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="td-01-modeles-entites-associations.html"><small>← TD 1</small>Modèles entités-associations</a>
+    <a class="suivant" href="td-03-gestion-halloween.html"><small>TD 3 →</small>La gestion d'Halloween</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

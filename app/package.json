@@ -1,0 +1,104 @@
+{
+  "name": "studies",
+  "productName": "Studies",
+  "version": "1.0.1",
+  "description": "Cours, quiz et TD interactifs de licence informatique, dans leur propre fenêtre.",
+  "author": "WolfGang-PRoxa",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "src/main.js",
+  "homepage": "https://github.com/WolfGang-PRoxa/universal-learn-academy",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WolfGang-PRoxa/universal-learn-academy.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "check": "node scripts/check.mjs",
+    "contenu": "node scripts/preparer-contenu.mjs",
+    "donnees-perso": "node scripts/check.mjs --lister-personnels",
+    "dist": "node scripts/construire.mjs",
+    "release": "node scripts/release.mjs",
+    "public": "node scripts/exporter-public.mjs"
+  },
+  "desktopName": "studies.desktop",
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "electron-updater": "^6.8.11"
+  },
+  "devDependencies": {
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0"
+  },
+  "allowScripts": {
+    "electron-winstaller": false
+  },
+  "build": {
+    "appId": "fr.wolfgangproxa.studies",
+    "productName": "Studies",
+    "executableName": "Studies",
+    "copyright": "Copyright © 2026 WolfGang-PRoxa",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/@electric-sql/pglite/**"
+    ],
+    "extraResources": [
+      {
+        "from": ".contenu",
+        "to": "cours",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "afterPack": "scripts/apres-empaquetage.cjs",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "Studies-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false,
+      "shortcutName": "Studies"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "Education",
+      "syncDesktopName": true,
+      "artifactName": "Studies-${version}.${ext}",
+      "synopsis": "Cours, quiz et TD interactifs"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "WolfGang-PRoxa",
+        "repo": "universal-learn-academy",
+        "releaseType": "release"
+      }
+    ]
+  }
+}

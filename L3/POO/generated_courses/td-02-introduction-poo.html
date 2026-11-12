@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="poo">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TD 2 · Introduction à la POO · POO L3</title>
+<meta name="description" content="TD 2 interactif d'introduction à la POO (L3) : le décaleur des afficheurs lumineux, une file circulaire chaînée, la classe Compte avec un seuil de retrait et le crible d'Ératosthène par une chaîne de filtres ; diagrammes de classes et code Ruby, préremplis avec les réponses du brouillon.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">POO</a>
+    <span aria-current="page">TD 2 · Introduction à la POO</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">POO</span> TD 2 · L3 S5 · interactif</p>
+    <h1>Introduction à la POO</h1>
+    <p class="chapeau">Quatre sujets pour concevoir des classes : le décaleur d'un afficheur lumineux, une file circulaire chaînée, un compte en banque avec un seuil de retrait, et le crible d'Ératosthène bâti sur une chaîne de filtres. Pour chacun, les classes se dessinent dans un diagramme et le code s'écrit dans un éditeur Ruby ; les réponses de ton brouillon y sont déjà reprises.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TD/TD2/TD2.pdf">TD2.pdf</a> · 2 pages</dd></div>
+      <div><dt>Cours</dt><dd><a href="cours-02-ruby-panorama.html">Cours 2 · Ruby, panorama</a>, <a href="cours-03-heritage.html">Cours 3 · L'héritage</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Passer d'une description en français aux classes, à leurs attributs et à leur interface.</li>
+        <li>Dessiner un diagramme de classes, puis l'écrire en Ruby.</li>
+        <li>Construire une structure chaînée (file circulaire, chaîne de filtres) avec des objets qui se désignent.</li>
+        <li>Cacher une règle derrière une méthode privée, et rendre un objet affichable avec <code>to_s</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Notions utilisées</p>
+      <ul>
+        <li><a href="cours-02-ruby-panorama.html#classes-instances-et-interface">Classes, instances et interface</a>, <a href="cours-02-ruby-panorama.html#exemple-la-classe-compte">la classe Compte</a></li>
+        <li><a href="cours-02-ruby-panorama.html#generation-des-accesseurs">Accesseurs</a>, <a href="cours-02-ruby-panorama.html#bonne-pratique-des-methodes-de-creation-metier">méthodes de création</a></li>
+        <li>Méthodes privées et redéfinition : <a href="cours-03-heritage.html">cours 3</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Mode d'emploi</p>
+    <ul>
+      <li>Ton brouillon (<code>TD2_notes.pdf</code>, scanné le 1er octobre, et la fin de <code>TD1_notes.pdf</code>) est repris tel quel, fautes comprises ; le pied de l'atelier le signale, et une note dit ce que l'atelier n'a pas pu reprendre à l'identique. Les questions sans réponse sur le brouillon sont vides.</li>
+      <li>Diagrammes : double-clic sur le fond pour une classe, sur une classe pour la modifier ; « Les deux » montre aussi la vue texte. Le code s'écrit dans l'éditeur Ruby (Tab indente) ; Ruby ne s'exécute pas ici.</li>
+      <li>« Vérifier » contrôle la forme, « Comparer » mesure l'écart d'un diagramme avec la référence. Les trois diagrammes ont la correction de l'enseignant (bouton « Correction », diagrammes Mermaid du dossier <code>TD/TD2/</code>) ; pour le code, « Solution » montre une solution proposée, exécutée avec Ruby. « Claude » répond et corrige. Le menu ⋯ remet ta copie papier ou l'exercice vierge.</li>
+      <li>Le travail s'enregistre tout seul. Avec le serveur local (<code>studies/lancer.bat</code>), il va dans <code>td_results/</code> et Claude est disponible.</li>
+    </ul>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Simulation d'afficheurs lumineux <span class="ref">TD, TD1-sujet 3</span></h2>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">TD1-Sujet 3 <span>Simulation d'afficheurs lumineux – Partie 1</span></p>
+      <p>Le but de cet exercice est de simuler en Ruby les afficheurs lumineux qui font circuler un texte en boucle.</p>
+      <p><strong>A) Le décaleur.</strong> Intéressons-nous d'abord au <em>décaleur</em>. C'est un objet qui stocke une suite de l caractères (avec l &gt; 0). l est constant et est appelé <em>largeur du décaleur</em>. Initialement, un décaleur contient l espaces. Les quatre fonctionnalités d'un décaleur sont :</p>
+      <ul>
+        <li>fournir un accès à la largeur du décaleur ;</li>
+        <li>remettre à zéro : force tous les caractères à <em>espace</em> ;</li>
+        <li>décaler d'une position vers la gauche sa suite de caractères : le caractère le plus à gauche est supprimé de la suite et est renvoyé par la méthode. Le nouveau caractère le plus à droite est fixé à la valeur du paramètre fourni ;</li>
+        <li>l'affichage d'un décaleur affiche le contenu de celui-ci.</li>
+      </ul>
+      <p><strong>Définir</strong> entièrement en Ruby la classe <code>Decaleur</code>. Écrire en Ruby le code de toutes les méthodes de la classe, sans oublier en particulier les méthodes de création/initialisation.</p>
+      <div class="tableau compact mono">
+        <table>
+          <caption>Exemple d'utilisation de la classe <code>Decaleur</code></caption>
+          <thead><tr><th>Test</th><th>Affichage</th></tr></thead>
+          <tbody>
+            <tr><td>d=Decaleur.creer(5)</td><td></td></tr>
+            <tr><td>puts d</td><td>&lt;&lt;-----&gt;&gt;</td></tr>
+            <tr><td>d.decale('a')</td><td></td></tr>
+            <tr><td>puts d</td><td>&lt;&lt;----a&gt;&gt;</td></tr>
+            <tr><td>d.decale('b')</td><td></td></tr>
+            <tr><td>puts d</td><td>&lt;&lt;---ab&gt;&gt;</td></tr>
+            <tr><td>d.decale('c')</td><td></td></tr>
+            <tr><td>puts d</td><td>&lt;&lt;--abc&gt;&gt;</td></tr>
+            <tr><td>d.decale('d')</td><td></td></tr>
+            <tr><td>puts d</td><td>&lt;&lt;-abcd&gt;&gt;</td></tr>
+            <tr><td>d.decale('e')</td><td></td></tr>
+            <tr><td>puts d</td><td>&lt;&lt;abcde&gt;&gt;</td></tr>
+            <tr><td>d.decale('f')</td><td></td></tr>
+            <tr><td>puts d</td><td>&lt;&lt;bcdef&gt;&gt;</td></tr>
+            <tr><td>puts d.getLargeur</td><td>5</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="atelier" id="td2-s3-diagramme" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "Diagramme de la classe Decaleur",
+        "options": {
+          "methodes": true
+        },
+        "hauteur": 380,
+        "solution": [
+          "classe Decaleur",
+          "  - buffer : un tableau",
+          "  - largeur : un entier",
+          "  + largeur() : un entier",
+          "  + raz()",
+          "  + decale(caractereEntrant) : un caractere",
+          ""
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Diagramme Mermaid de l'enseignant (<code>TD/TD2/class-diagram-decaleur.md</code>), avec sa note : « Création d'un Decaleur en fournissant la largeur ; une méthode d'accès en lecture à la variable d'instance largeur ; pas d'accès à la variable d'instance buffer ; on doit pouvoir afficher les objets de la classe Decaleur. » Le diagramme ne montre donc ni <code>creer</code> ni <code>to_s</code>, qui sont dans la note.</p><p>Les quatre fonctionnalités du sujet donnent quatre méthodes publiques : <code>largeur</code> (l'accès, appelé <code>getLargeur</code> dans l'exemple d'utilisation), <code>raz</code>, <code>decale</code> et l'affichage (<code>to_s</code>, appelé par <code>puts</code>). Il faut en plus une méthode de création, puisque l'exemple écrit <code>Decaleur.creer(5)</code>. Le TD 3 rappelle le code de l'enseignant : le tableau s'y appelle <code>@texte</code>, et <code>raz</code> le remplit de tirets.</p>",
+        "papier": {
+          "source": "TD2_notes.pdf, scan du 1er octobre 2026",
+          "date": "2026-10-01",
+          "texte": [
+            "classe decaleur",
+            "  - buffer : tab",
+            "  - largeur : int",
+            "  + largeur() : int",
+            "  + raz()",
+            "  + decale(caractereEntrant) : un caractère",
+            ""
+          ],
+          "note": "tu as écrit « :: » avant les types de retour, et « largeur » sans parenthèses dans le compartiment des opérations."
+        }
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td2-s3-code" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "La classe Decaleur",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class Decaleur",
+          "  attr_reader :largeur",
+          "",
+          "  def Decaleur.creer(largeur)",
+          "    new(largeur)",
+          "  end",
+          "",
+          "  private_class_method :new",
+          "",
+          "  def initialize(largeur)",
+          "    @largeur = largeur",
+          "    raz",
+          "  end",
+          "",
+          "  # Nom de l'exemple d'utilisation",
+          "  def getLargeur",
+          "    @largeur",
+          "  end",
+          "",
+          "  def raz",
+          "    @contenu = Array.new(@largeur, \" \")",
+          "    self",
+          "  end",
+          "",
+          "  # Le caractère le plus à gauche sort et est renvoyé ; le nouveau entre à droite",
+          "  def decale(caractere)",
+          "    sorti = @contenu.shift",
+          "    @contenu.push(caractere)",
+          "    sorti",
+          "  end",
+          "",
+          "  def to_s",
+          "    \"<<\" + @contenu.join + \">>\"",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p>Le tableau des caractères se décale avec <code>shift</code> (enlève et rend le premier) et <code>push</code> (ajoute à la fin) : c'est ton idée. Points à reprendre dans ta version :</p><ul><li>un nom de classe commence par une majuscule (<code>Decaleur</code>), sinon Ruby refuse la définition ;</li><li><code>decale</code> doit renvoyer le caractère qui sort : ton <code>push</code> suivi de <code>shift</code> le fait bien ;</li><li>l'affichage attendu est <code>&lt;&lt;--abc&gt;&gt;</code>, avec deux chevrons (les tirets du sujet représentent des espaces).</li></ul><p>Vérifié sur l'exemple du sujet : <code>&lt;&lt;     &gt;&gt;</code>, puis <code>&lt;&lt;    a&gt;&gt;</code>… jusqu'à <code>&lt;&lt;bcdef&gt;&gt;</code>, et <code>getLargeur</code> rend 5.</p>",
+        "papier": {
+          "source": "TD2_notes.pdf, scan du 1er octobre 2026",
+          "date": "2026-10-01",
+          "texte": [
+            "class decaleur",
+            "",
+            "    attr_reader :largeur",
+            "",
+            "    private_class_method :new",
+            "",
+            "    def decaleur.creer(largeur)",
+            "        new(largeur)",
+            "    end",
+            "",
+            "    def initialize(largeur)",
+            "        @buffer = Array.new(largeur)",
+            "        @largeur = largeur",
+            "        raz()           #équivalent à écrire self.raz()",
+            "    end",
+            "",
+            "    def raz()",
+            "        @buffer.fill(' ')",
+            "    end",
+            "",
+            "    def decale(caractereEntrant)",
+            "        @buffer.push(caractereEntrant)",
+            "        return @buffer.shift()",
+            "    end",
+            "",
+            "    def to_s()",
+            "        return \"<#{@buffer.join()}>\"",
+            "    end",
+            "end",
+            ""
+          ]
+        }
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Un tableau de l caractères suffit : <code>shift</code> enlève et rend le premier élément, <code>push</code> ajoute à la fin. Les tirets de l'exemple représentent des espaces.</p></div>
+    </details>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Un TDA file circulaire <span class="ref">TD, TD1-sujet 4</span></h2>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">TD1-Sujet 4 <span>Un TDA File circulaire en Ruby</span></p>
+      <p>On souhaite réaliser le type de données abstrait (TDA) <code>File</code> par <u>chaînage circulaire</u> en Ruby. On rappelle qu'une file est une liste de type FIFO (<i>First In First Out</i>) : une file est une liste où les insertions s'effectuent à la fin et les suppressions au début.</p>
+      <p>Les opérations primitives autorisées sur une liste sont au nombre de 5 : faire <code>entrer</code> un élément dans la file, faire <code>sortir</code> un élément de la file, tester si la file est <code>vide</code>, accéder au <code>premier</code> élément de la file, <code>afficher</code> le contenu de la file.</p>
+      <ul>
+        <li>Une file est représentée par une cellule d'en-tête dont le champ suivant pointe sur la dernière cellule de la file ; le champ suivant de cette dernière pointe sur la première.</li>
+        <li>Exemple : représentation de la file 1, 2, 3, 4.</li>
+      </ul>
+      <figure class="figure">
+        <svg class="schema" viewBox="0 0 560 190" width="560" role="img" aria-labelledby="fig-file-titre">
+          <title id="fig-file-titre">File circulaire 1, 2, 3, 4 : mafile désigne la cellule d'en-tête, dont le champ suivant pointe sur la cellule 4 ; 1 pointe sur 2, 2 sur 3, 3 sur 4, et 4 revient sur 1</title>
+          <defs><marker id="fl-file" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+          <g fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="10" y="22" width="70" height="30"/>
+            <path d="M88 37 H122" stroke-width="4" marker-end="url(#fl-file)"/>
+            <rect x="200" y="22" width="44" height="26"/><line x1="222" y1="22" x2="222" y2="48"/>
+            <path d="M233 35 H480 V92" marker-end="url(#fl-file)"/>
+            <rect x="80" y="96" width="44" height="26"/><line x1="102" y1="96" x2="102" y2="122"/>
+            <rect x="200" y="96" width="44" height="26"/><line x1="222" y1="96" x2="222" y2="122"/>
+            <rect x="330" y="96" width="44" height="26"/><line x1="352" y1="96" x2="352" y2="122"/>
+            <rect x="458" y="96" width="44" height="26"/><line x1="480" y1="96" x2="480" y2="122"/>
+            <path d="M113 109 H198" marker-end="url(#fl-file)"/>
+            <path d="M233 109 H328" marker-end="url(#fl-file)"/>
+            <path d="M363 109 H456" marker-end="url(#fl-file)"/>
+            <path d="M491 109 V160 H91 V125" marker-end="url(#fl-file)"/>
+          </g>
+          <g font-size="15" fill="currentColor" text-anchor="middle">
+            <text x="45" y="42" font-weight="600">mafile</text>
+            <text x="222" y="16" font-weight="600">entête</text>
+            <text x="91" y="115">1</text><text x="211" y="115">2</text><text x="341" y="115">3</text><text x="469" y="115">4</text>
+          </g>
+        </svg>
+        <figcaption>La file 1, 2, 3, 4 (redessinée d'après le sujet).</figcaption>
+      </figure>
+      <ul>
+        <li>Avantage de cette réalisation pour les <code>File</code> : toutes les opérations (sauf détruire) sont en O(1).</li>
+      </ul>
+      <ol start="8">
+        <li>Déterminer les objets nécessaires à la réalisation d'une file circulaire.</li>
+        <li>Coder en Ruby la/les classes nécessaires.</li>
+      </ol>
+      <p>Écrire un programme de test, qui crée la file <code>(m,e,r,c,i, ,J,a,c,o)</code> et l'affiche.</p>
+    </div>
+    <div class="atelier" id="td2-s4-diagramme" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "8 · objets d'une file circulaire",
+        "options": {
+          "methodes": true
+        },
+        "hauteur": 380,
+        "consigne": "<p>Les classes, leurs attributs et leurs méthodes, et les liens entre elles.</p>",
+        "solution": [
+          "classe Cellule",
+          "  - valeur : Object",
+          "  - suivant : Cellule",
+          "  + initialize(valeur : Object, suivant : Cellule)",
+          "  + valeur() : Object",
+          "  + suivant() : Cellule",
+          "  + suivant=(Cellule) : void",
+          "  + to_s() : String",
+          "classe FileCirculaire",
+          "  - en_tete : Cellule",
+          "  + initialize()",
+          "  + vide?() : Boolean",
+          "  + premier() : Object",
+          "  + entrer(valeur : Object) : FileCirculaire",
+          "  + sortir() : Object",
+          "  + to_s() : String",
+          "  + taille() : Integer",
+          "FileCirculaire \"1\" *-- \"1\" Cellule : -en_tete (sentinelle)",
+          "FileCirculaire ..> Cellule : crée et manipule >",
+          "Cellule \"1\" --> \"0..1\" Cellule : +suivant (chaînage)",
+          ""
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Diagramme Mermaid de l'enseignant (<code>TD/TD2/class-diagram-tda.md</code>), avec ses notes : la file est un « TDA File (FIFO : First In, First Out) ; structure : liste circulaire avec sentinelle ; accès tête/queue en O(1) » ; la cellule est le « maillon de la structure chaînée : valeur immuable (<code>attr_reader</code>), suivant mutable (<code>attr_accessor</code>) ».</p><p>Deux sortes d'objets : la file, qui ne garde que sa cellule d'en-tête (la sentinelle), et les cellules, qui portent une valeur et le lien vers la suivante. Le champ suivant de l'en-tête désigne la <em>dernière</em> cellule : on y entre en O(1) ; et la dernière désigne la première : on en sort en O(1). La solution proposée pour le code ajoute un compteur, pour que <code>taille</code> soit aussi en O(1).</p><p>Attention au nom : <code>File</code> existe déjà en Ruby (la classe des fichiers). Rouvrir cette classe changerait <code>File.new</code> pour tout le programme : mieux vaut <code>FileCirculaire</code>.</p>",
+        "papier": {
+          "source": "TD2_notes.pdf, scan du 1er octobre 2026",
+          "date": "2026-10-01",
+          "texte": [
+            "classe FileCirculaire",
+            "  - en_tete : Cellule",
+            "  + initialize()",
+            "  + vide?() : Boolean",
+            "  + premier() : Object",
+            "  + entrer(valeur : Object) : FileCirculaire",
+            "  + sortir() : objet",
+            "classe Cellule",
+            "  - valeur : Object",
+            "  - suivant : Cellule",
+            "  + initialize(valeur : Object, suivant : Cellule)",
+            ""
+          ],
+          "note": "tu as écrit « File circulaire », « - Cellule en tete », « - Object valeur » et « - Cellule suivant » (le type avant le nom) : l'atelier n'accepte pas les espaces dans un nom ni cet ordre, d'où « FileCirculaire », « en_tete : Cellule »… Les opérations de la file sont écrites sous la boîte, et l'initialize de Cellule s'arrête à « suivant », sans type ni parenthèse fermante."
+        }
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td2-s4-code" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "9 · les classes de la file circulaire",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class Cellule",
+          "  attr_accessor :valeur, :suivant",
+          "",
+          "  def initialize(valeur, suivant = nil)",
+          "    @valeur = valeur",
+          "    @suivant = suivant",
+          "  end",
+          "end",
+          "",
+          "class FileCirculaire",
+          "  attr_reader :taille",
+          "",
+          "  def FileCirculaire.creer",
+          "    new",
+          "  end",
+          "",
+          "  private_class_method :new",
+          "",
+          "  def initialize",
+          "    @entete = Cellule.new(nil)   # entete.suivant : la dernière cellule, nil si la file est vide",
+          "    @taille = 0",
+          "  end",
+          "",
+          "  def vide?",
+          "    @entete.suivant.nil?",
+          "  end",
+          "",
+          "  def entrer(valeur)",
+          "    c = Cellule.new(valeur)",
+          "    if vide?",
+          "      c.suivant = c",
+          "    else",
+          "      derniere = @entete.suivant",
+          "      c.suivant = derniere.suivant   # la nouvelle pointe sur la première",
+          "      derniere.suivant = c",
+          "    end",
+          "    @entete.suivant = c              # et devient la dernière",
+          "    @taille += 1",
+          "    self",
+          "  end",
+          "",
+          "  def premier",
+          "    raise \"file vide\" if vide?",
+          "    @entete.suivant.suivant.valeur",
+          "  end",
+          "",
+          "  def sortir",
+          "    raise \"file vide\" if vide?",
+          "    derniere = @entete.suivant",
+          "    premiere = derniere.suivant",
+          "    if premiere == derniere",
+          "      @entete.suivant = nil",
+          "    else",
+          "      derniere.suivant = premiere.suivant",
+          "    end",
+          "    @taille -= 1",
+          "    premiere.valeur",
+          "  end",
+          "",
+          "  def to_s",
+          "    return \"()\" if vide?",
+          "    valeurs = []",
+          "    c = @entete.suivant.suivant",
+          "    @taille.times { valeurs << c.valeur; c = c.suivant }",
+          "    \"(\" + valeurs.join(\",\") + \")\"",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p>Toutes les opérations sont en O(1), sauf l'affichage, qui parcourt la file. Le cas délicat est la file à une seule cellule : elle pointe sur elle-même en entrant, et sa sortie vide la file. Vérifié avec la file du sujet : <code>(m,e,r,c,i, ,J,a,c,o)</code>, 10 éléments, premier « m » ; après une sortie, <code>(e,r,c,i, ,J,a,c,o)</code> ; une sortie de trop lève l'erreur « file vide ».</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td2-s4-test" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "Programme de test",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "f = FileCirculaire.creer",
+          "puts f.vide?                                 # true",
+          "\"merci Jaco\".each_char { |c| f.entrer(c) }  # m, e, r, c, i, espace, J, a, c, o",
+          "puts f                                       # (m,e,r,c,i, ,J,a,c,o)",
+          "puts f.taille                                # 10",
+          "puts f.premier                               # m",
+          "puts f.sortir                                # m",
+          "puts f                                       # (e,r,c,i, ,J,a,c,o)",
+          "puts f.vide?                                 # false",
+          ""
+        ],
+        "explication": "<p>Le test passe par toutes les opérations, et ses commentaires donnent ce qu'on doit lire. La file du sujet contient un espace (entre « i » et « J ») : « merci Jaco », caractère par caractère.</p>"
+      }
+      </script>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Le sujet du TD 1</span></p>
+      <p>Au TD 1, ce sujet demandait aussi une sixième primitive, <code>calculer</code> la taille de la file, et le diagramme de classes ; la solution donne les deux.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>La classe Compte, un peu moins rudimentaire <span class="ref">TD, sujet 1</span></h2>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Sujet 1 <span>La classe Compte</span></p>
+      <p>La classe <code>Compte</code> du cours n° 1 d'introduction à Ruby, un peu moins rudimentaire, avec un seuil de retrait et des fonctions d'accès générées par le « Coding Assistant ». Les objets de cette classe :</p>
+      <ol>
+        <li>sont caractérisés par leur <code>numéro</code>, leur <code>titulaire</code> et leur <code>solde</code> ;</li>
+        <li>sont capables de donner leur solde, de déposer une somme et de retirer une somme si le seuil de retrait n'est pas atteint.
+          <ol type="a">
+            <li>Par défaut, le seuil est fixé à 0.</li>
+            <li>La notion de seuil sera implémentée en définissant une méthode privée qui renvoie la valeur du seuil autorisé. (On aurait aussi pu utiliser une variable d'instance.)</li>
+          </ol>
+        </li>
+        <li>Pour créer un objet de cette classe, on envoie le message <code>ouvrir</code> à la classe <code>Compte</code> avec pour arguments le numéro, le titulaire et le solde du compte que l'on veut créer. Il n'est pas possible de modifier les informations du compte (titulaire et numéro). Le solde ne peut être modifié que par les opérations de retrait et de dépôt prévues à l'interface.</li>
+        <li>Faire le nécessaire pour pouvoir afficher un <code>Compte</code> avec les instructions classiques du système (<code>puts</code>, <code>print</code>, etc.).</li>
+      </ol>
+    </div>
+    <div class="atelier" id="td2-s1-compte" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "La classe Compte avec un seuil de retrait",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class Compte",
+          "  attr_reader :numero, :titulaire, :solde",
+          "",
+          "  def Compte.ouvrir(numero, titulaire, solde)",
+          "    new(numero, titulaire, solde)",
+          "  end",
+          "",
+          "  private_class_method :new",
+          "",
+          "  def initialize(numero, titulaire, solde)",
+          "    @numero, @titulaire, @solde = numero, titulaire, solde",
+          "  end",
+          "",
+          "  def deposer(somme)",
+          "    @solde += somme",
+          "    self",
+          "  end",
+          "",
+          "  def retirer(somme)",
+          "    if @solde - somme >= seuil",
+          "      @solde -= somme",
+          "    else",
+          "      puts \"Retrait de #{somme} refusé : le solde passerait sous le seuil (#{seuil}).\"",
+          "    end",
+          "    self",
+          "  end",
+          "",
+          "  # Pour puts et print",
+          "  def to_s",
+          "    \"Compte #{@numero} de #{@titulaire} : solde #{@solde}\"",
+          "  end",
+          "",
+          "  private",
+          "",
+          "  # Seuil de retrait autorisé (0 par défaut)",
+          "  def seuil",
+          "    0",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p>Les quatre points du sujet : <code>attr_reader</code> pour le numéro, le titulaire et le solde (aucun accès en écriture) ; <code>retirer</code> qui compare au seuil ; une méthode privée <code>seuil</code> (après <code>private</code>, elle ne s'appelle que de l'intérieur, sans destinataire explicite) ; <code>ouvrir</code> pour créer ; <code>to_s</code> pour l'affichage, que <code>puts</code> appelle tout seul. Ton test <code>@solde - uneSomme &gt; seuil()</code> refuse un retrait qui amène pile au seuil : avec un seuil de 0, vider son compte serait interdit ; <code>&gt;=</code> l'autorise.</p><p>Ce découpage sert au <a href='cours-03-heritage.html'>cours 3</a> : une sous-classe (un compte avec découvert) n'aura qu'à redéfinir <code>seuil</code>. Vérifié : un compte à 100, un retrait de 80 accepté, un de 30 refusé, un dépôt de 10 : solde 30.</p>",
+        "papier": {
+          "source": "TD2_notes.pdf, scan du 1er octobre 2026",
+          "date": "2026-10-01",
+          "texte": [
+            "# La classe Compte en moins rudimentaires.",
+            "",
+            "# 1)",
+            "def retire(uneSomme)",
+            "    if",
+            "    if @solde - uneSomme > seuil()",
+            "        @solde -= uneSomme",
+            "    else",
+            "        puts('",
+            "    end",
+            "end",
+            ""
+          ],
+          "note": "un premier « if » est resté seul sur sa ligne, et le puts s'arrête à son apostrophe."
+        }
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le crible d'Ératosthène <span class="ref">TD, sujet 2</span></h2>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Sujet 2 <span>Le crible d'Ératosthène</span></p>
+      <p>Donner une réalisation en Ruby du crible d'Ératosthène, un algorithme qui permet de trouver l'ensemble des nombres premiers inférieurs ou égaux à n, n étant donné.</p>
+      <p><strong>Principe :</strong> un générateur envoie des nombres de 2 à n de façon incrémentale. Une série de filtres sont placés de façon à récupérer les valeurs envoyées par les filtres précédents. Lorsqu'un nombre x est récupéré par un filtre i, si x est divisible par i, alors x n'est pas premier. Sinon x passe sur le filtre suivant. Si x n'a rencontré aucun diviseur à la sortie de la chaîne des filtres, on construit au bout de la chaîne un filtre de valeur x.</p>
+      <figure class="figure">
+        <svg class="schema" viewBox="0 0 420 100" width="420" role="img" aria-labelledby="fig-crible-titre">
+          <title id="fig-crible-titre">Un générateur suivi d'une chaîne de filtres 2, 3, 5, puis la suite</title>
+          <defs><marker id="fl-crible" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+          <g fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="10" y="40" width="80" height="44" rx="20"/>
+            <path d="M94 62 H128" marker-end="url(#fl-crible)"/>
+            <rect x="132" y="44" width="40" height="36"/>
+            <path d="M174 62 H208" marker-end="url(#fl-crible)"/>
+            <rect x="212" y="44" width="40" height="36"/>
+            <path d="M254 62 H288" marker-end="url(#fl-crible)"/>
+            <rect x="292" y="44" width="40" height="36"/>
+            <path d="M336 62 H370" marker-end="url(#fl-crible)"/>
+          </g>
+          <g font-size="15" fill="currentColor" text-anchor="middle">
+            <text x="50" y="28">générateur</text><text x="232" y="28">filtres</text>
+            <text x="152" y="68" font-weight="600">2</text><text x="232" y="68" font-weight="600">3</text><text x="312" y="68" font-weight="600">5</text>
+            <text x="395" y="68">…</text>
+          </g>
+        </svg>
+        <figcaption>Le générateur et la chaîne des filtres (redessiné d'après le sujet).</figcaption>
+      </figure>
+      <ol type="a">
+        <li>Donner une description en français des classes nécessaires à la réalisation de ce programme.</li>
+        <li>Écrire en Ruby la définition des classes correspondantes.</li>
+        <li>Écrire en Ruby un programme de test demandant un nombre à l'utilisateur et affichant tous les nombres premiers inférieurs à ce nombre.</li>
+      </ol>
+    </div>
+    <div class="atelier" id="td2-s2-classes" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "a) les classes du crible",
+        "options": {
+          "methodes": true
+        },
+        "hauteur": 380,
+        "consigne": "<p>La question a) demande une description en français : le diagramme la résume ; la correction donne les deux.</p>",
+        "solution": [
+          "classe Generateur",
+          "  - premierFiltre : Filtre",
+          "  + lanceToi(unNombre : number)",
+          "classe Filtre",
+          "  - valeur : number",
+          "  - suivant : Filtre",
+          "  + aToiDeTraiter(unNombre : number) : Filtre",
+          "Generateur *-- Filtre : premierFiltre",
+          "Filtre *-- Filtre : suivant",
+          ""
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Diagramme Mermaid de l'enseignant (<code>TD/TD2/class-diagram-erathostene.md</code>). Ses deux notes sont la description en français demandée à la question a) :</p><p>« Un filtre est responsable de sa valeur, de la création du filtre qui le suit et de la communication avec celui-ci. A) Les variables d'instance : il connaît sa valeur (le nombre premier), et un lien vers le filtre suivant s'il existe ; il possède deux variables d'instance : valeur (un entier), suivant (un Filtre, nil si pas de suivant). Pas de méthodes d'accès, les filtres sont immuables et on ne peut que les afficher. B) Les services : a) afficher son nombre premier ; b) traiter un nombre qu'il reçoit en paramètre. C) Création des filtres : on fournit la valeur du filtre. » Et pour le générateur : « Le générateur est responsable de lancer la génération des filtres et de lancer l'affichage des filtres. A) Il connaît son premier filtre (variable d'instance premierFiltre), de valeur 2 (plus petit des nombres premiers). B) Les services : a) lancer la génération des filtres de valeur inférieure à unNombre (donné), lanceToi(unNombre) ; b) il est capable d'afficher tous les filtres générés. C) Création des générateurs : pas de paramètre à la création d'un générateur. »</p><p>Chaque filtre est composé de son suivant : la chaîne se construit de proche en proche, et le générateur n'en connaît que le début.</p>",
+        "papier": {
+          "source": "TD2_notes.pdf, scan du 1er octobre 2026",
+          "date": "2026-10-01",
+          "texte": [
+            "classe generateur",
+            "  - borne_sup",
+            "  - filtre",
+            "  + creerGen()",
+            "  + lancerGen(Integer n)",
+            "  + afficherGen()",
+            "classe filtre",
+            "  - valeur : Integer",
+            ""
+          ],
+          "note": "tu as écrit « borne sup » en deux mots et « afficherGen » sans parenthèses ; la boîte de filtre n'a pas d'opérations."
+        }
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td2-s2-code" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "b) la définition des classes",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class Filtre",
+          "  # @valeur  : le nombre premier du filtre",
+          "  # @suivant : le filtre suivant, ou nil au bout de la chaîne",
+          "",
+          "  def initialize(valeur)",
+          "    @valeur = valeur",
+          "    @suivant = nil",
+          "  end",
+          "",
+          "  # unNombre est éliminé s'il est divisible par @valeur ; sinon il passe au filtre",
+          "  # suivant, ou, au bout de la chaîne, devient la valeur d'un nouveau filtre",
+          "  def aToiDeTraiter(unNombre)",
+          "    if unNombre % @valeur != 0",
+          "      if @suivant.nil?",
+          "        @suivant = Filtre.new(unNombre)",
+          "      else",
+          "        @suivant.aToiDeTraiter(unNombre)",
+          "      end",
+          "    end",
+          "    self",
+          "  end",
+          "",
+          "  # Le filtre et ceux qui le suivent",
+          "  def to_s",
+          "    @valeur.to_s + (@suivant.nil? ? \"\" : \" \" + @suivant.to_s)",
+          "  end",
+          "end",
+          "",
+          "class Generateur",
+          "  # @premierFiltre : le filtre de valeur 2, premier de la chaîne",
+          "",
+          "  def initialize()",
+          "    @premierFiltre = Filtre.new(2)",
+          "  end",
+          "",
+          "  # Génère les filtres des nombres premiers inférieurs à unNombre",
+          "  def lanceToi(unNombre)",
+          "    3.upto(unNombre - 1) { |x| @premierFiltre.aToiDeTraiter(x) }",
+          "    self",
+          "  end",
+          "",
+          "  def to_s",
+          "    \"La liste des filtres générés est : \" + @premierFiltre.to_s",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p>Solution proposée, qui suit le diagramme et les notes de l'enseignant : un générateur sans paramètre, dont le premier filtre vaut 2, <code>lanceToi(unNombre)</code> et <code>aToiDeTraiter(unNombre)</code>. Chaque filtre ne connaît que le suivant : c'est la chaîne de la figure, construite au fur et à mesure. Pas d'accesseurs : les filtres sont immuables et on ne peut que les afficher, d'où le <code>to_s</code> récursif.</p><p>Vérifié avec Ruby 3.3 : <code>Generateur.new.lanceToi(50)</code> affiche les 15 nombres premiers jusqu'à 47. Le premier filtre existe toujours : pour un nombre inférieur ou égal à 3, la liste se réduit à 2. Dans ta version, <code>Filtre.valeur(2)</code> appelle une méthode de classe qui n'existe pas : un filtre se crée avec <code>Filtre.new(2)</code>.</p>",
+        "papier": {
+          "source": "TD2_notes.pdf, scan du 1er octobre 2026",
+          "date": "2026-10-01",
+          "texte": [
+            "class Generateur",
+            "",
+            "    def initialize()",
+            "        @premierfiltre = Filtre.valeur(2)",
+            "    end",
+            "    def to_s()",
+            "        \"\\n La liste des filtres générés est : \\n\" +",
+            ""
+          ],
+          "note": "la page s'arrête sur le « + »."
+        }
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td2-s2-test" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "c) programme de test",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "print \"Nombres premiers inférieurs à : \"",
+          "n = gets.to_i",
+          "puts Generateur.new.lanceToi(n)",
+          ""
+        ],
+        "explication": "<p><code>gets</code> lit une ligne au clavier, <code>to_i</code> la convertit ; <code>puts</code> appelle le <code>to_s</code> du générateur. Pour 30 : <code>La liste des filtres générés est : 2 3 5 7 11 13 17 19 23 29</code>. Le sujet dit « inférieurs ou égaux à n » plus haut et « inférieurs à ce nombre » ici ; la note de l'enseignant tranche pour « inférieur à unNombre ».</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>Concevoir d'abord : quelles classes, quels attributs (privés), quelle interface (méthodes publiques) ; le diagramme de classes le résume.</li>
+        <li>Un nom de classe commence par une majuscule ; attention aux classes qui existent déjà en Ruby (<code>File</code>).</li>
+        <li>Une structure chaînée se fait avec des objets qui se désignent (une cellule, sa suivante) ; on garde un accès direct aux cellules dont les opérations ont besoin.</li>
+        <li><code>private</code> cache une règle (le seuil) que les sous-classes pourront redéfinir ; <code>to_s</code> rend un objet affichable par <code>puts</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Que rend <code>[1, 2, 3].shift</code>, et que devient le tableau ?</summary>
+        <div><p>1 ; le tableau devient <code>[2, 3]</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Dans une file circulaire, pourquoi l'en-tête désigne-t-il la dernière cellule plutôt que la première ?</summary>
+        <div><p>Parce que la dernière donne accès aux deux bouts : on entre après elle, et sa suivante est la première, d'où l'on sort. Toutes deux en O(1).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi le seuil du compte est-il une méthode privée plutôt qu'une constante ?</summary>
+        <div><p>Une sous-classe pourra la redéfinir (un compte avec découvert autorisé) sans toucher à <code>retirer</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que doit définir une classe pour que <code>puts objet</code> affiche quelque chose de lisible ?</summary>
+        <div><p>Une méthode <code>to_s</code>, que <code>puts</code> appelle.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="td-01-application-ruby.html"><small>← TD 1</small>Application à Ruby</a>
+    <a class="suivant" href="td-03-heritage-polymorphisme.html"><small>Suivant →</small>TD 3 · Héritage et polymorphisme</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">POO · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="reseau">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Internet : la couche réseau · Réseaux L2</title>
+<meta name="description" content="Cours 5 de réseaux (L2) : rôle de la couche réseau, communication entre réseaux locaux, protocole IP, en-tête IPv4, adresse et masque, notation CIDR, classes, adresses privées et spéciales, subnetting, VLSM, plan d'adressage et DHCP, routeur, table de routage (show ip route, distance administrative, métrique), routage statique, route par défaut et routage dynamique.">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-05-couche-reseau.html" title="Quiz · Cours 5 · Couche réseau">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="index.html">Réseaux</a>
+    <span aria-current="page">Cours 5 · Couche réseau</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Réseaux</span> Cours 5 · L2 S3</p>
+    <h1>Internet : la couche réseau</h1>
+    <p class="chapeau">La couche réseau fait passer les paquets d'un réseau local à un autre. C'est le chapitre le plus long du module, et le plus calculatoire : adresses IPv4 et masques, découpage en sous-réseaux (subnetting et VLSM), puis routage, avec la lecture d'une table de routage, les routes statiques et la route par défaut. Les calculs d'adresses tombent à chaque contrôle.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/05%20-%20Internet%20-%20couche%20r%C3%A9seau.pdf">05 - Internet - couche réseau.pdf</a> · 89 diapos ; livre Cisco, chapitres « La couche réseau » et « IPv4 : adressage et subnetting »</dd></div>
+      <div><dt>Autre version</dt><dd><a href="../cours/05%20-%20couche%20r%C3%A9seau.pdf">05 - couche réseau.pdf</a> (21 septembre) : même contenu, avec des coquilles corrigées depuis (172.6.64.0 pour 172.16.64.0)</dd></div>
+      <div><dt>Enseignant</dt><dd>Sylvain Meignier</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Dire ce qui change (adresses MAC) et ce qui reste (adresses IP) quand un paquet traverse des routeurs.</li>
+        <li>Énoncer les caractéristiques d'IP : sans connexion, au mieux, indépendant du média.</li>
+        <li>Calculer, pour une adresse et un masque, l'adresse du réseau, la diffusion, la plage des hôtes et leur nombre.</li>
+        <li>Passer d'un masque décimal pointé à la notation CIDR ; reconnaître une adresse privée, de bouclage ou APIPA.</li>
+        <li>Découper un réseau en sous-réseaux de même taille, puis de tailles variables (VLSM).</li>
+        <li>Lire une ligne de <code>show ip route</code> ; écrire une table de routage statique avec route par défaut.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-01-introduction.html">Cours 1</a> : binaire, puissances de 2, ET logique.</li>
+        <li><a href="cours-04-liaison-de-donnees.html">Cours 4</a> : trame, adresse MAC, commutateur, ARP, domaine de broadcast.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Rôle de la couche réseau <span class="ref">diapos 2–5</span></h2>
+    <p>La couche liaison ne sait faire circuler des trames qu'à l'intérieur d'un réseau local. Pour aller plus loin, il faut une adresse qui désigne une machine où qu'elle soit, et des équipements qui choisissent le chemin : c'est la couche réseau, appelée Internet dans le modèle ARPA.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Fonctions de la couche réseau</span></p>
+      <p>La couche réseau utilise deux protocoles, <strong>IPv4</strong> et IPv6. Ses objectifs :</p>
+      <ul>
+        <li>l'<strong>adressage logique</strong>, par opposition à l'adresse physique des couches physique et liaison (Ethernet) ;</li>
+        <li>le <strong>routage</strong> : la communication entre les réseaux locaux.</li>
+      </ul>
+      <p>Elle ajoute de l'information (encapsulation) au datagramme de la couche transport pour former les <strong>paquets</strong>.</p>
+    </div>
+    <p>Dans l'encapsulation, l'en-tête R du paquet porte l'<strong>adresse logique, l'adresse IP</strong> ; l'en-tête L de la trame porte l'<strong>adresse physique, l'adresse MAC</strong>.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Communication entre réseaux locaux <span class="ref">diapos 6–10</span></h2>
+    <p>Un réseau d'entreprise ou Internet est fait de réseaux locaux (des commutateurs et leurs postes) reliés par des routeurs. Que se passe-t-il quand un poste écrit à un poste du même réseau, puis à un poste d'un autre réseau ? <span class="badge examen">Examen</span></p>
+
+    <h3>Dans le même réseau local</h3>
+    <p>A et B sont reliés au même commutateur. A envoie à B une trame d'adresses <code>MAC A → MAC B</code>, qui contient un paquet d'adresses <code>IP A → IP B</code>. Le commutateur ne lit que la trame.</p>
+
+    <h3>À travers des routeurs</h3>
+    <p>A écrit maintenant à C, situé dans un autre réseau, derrière plusieurs routeurs. <strong>Pour A, seule la couche IP de C est « visible »</strong> : A connaît l'adresse IP de C, mais pas son adresse MAC, qui n'a de sens que dans le réseau de C. A envoie donc la trame à sa passerelle (GW<sub>A</sub>, la première interface du premier routeur). Chaque routeur décapsule la trame, lit le paquet, et le réencapsule dans une nouvelle trame pour le réseau suivant.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Les adresses à chaque étape du trajet de A à C (diapo 10)</caption>
+        <thead><tr><th>Tronçon</th><th>Trame : MAC source → destination</th><th>Paquet : IP source → destination</th></tr></thead>
+        <tbody>
+          <tr><td>réseau de A</td><td>MAC A → GW<sub>A</sub> (routeur R1)</td><td>IP A → IP C</td></tr>
+          <tr><td>entre deux routeurs</td><td>R1 → R2</td><td>IP A → IP C</td></tr>
+          <tr><td>entre deux routeurs</td><td>R3 → R4</td><td>IP A → IP C</td></tr>
+          <tr><td>réseau de C</td><td>GW<sub>C</sub> (dernier routeur) → MAC C</td><td>IP A → IP C</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Ce qui change et ce qui ne change pas</span> <span class="badge examen">Examen</span></p>
+      <p>Les adresses IP source et destination restent les mêmes de bout en bout. Les adresses MAC changent à chaque réseau traversé : elles désignent toujours l'émetteur et le récepteur <strong>du tronçon</strong>.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>L'adresse logique et le protocole IP <span class="ref">diapos 11–12</span></h2>
+    <p>L'adresse IP est dite <dfn>logique</dfn> parce qu'elle est décidée par l'administrateur, et non gravée dans la carte comme l'adresse MAC.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Adresse IP</span></p>
+      <p>Pour une machine sur un réseau Internet, l'<dfn>adresse IP</dfn> est un nombre de <strong>32 bits</strong> (en IPv4). Elle permet d'identifier deux éléments :</p>
+      <ul>
+        <li>le <dfn>préfixe du réseau</dfn> : le réseau auquel appartient la machine. Il définit le domaine de broadcast de la machine (de sa carte). Ce sont les \(x\) premiers bits de l'adresse, identiques pour toutes les machines d'un même réseau ;</li>
+        <li>l'<dfn>identifiant de la machine</dfn> : son numéro dans ce réseau.</li>
+      </ul>
+    </div>
+
+    <h3>Caractéristiques du protocole IP</h3>
+    <div class="tableau">
+      <table>
+        <caption>Les trois caractéristiques d'IP (diapo 12)</caption>
+        <tbody>
+          <tr><th>Sans connexion<br><span lang="en">connectionless</span></th><td>Pas de connexion entre la source et le destinataire avant d'envoyer les paquets. L'information arrive si le destinataire existe et si un chemin est disponible. Le destinataire n'est pas prévenu de l'arrivée des paquets.</td></tr>
+          <tr><th>Au mieux, non fiable<br><span lang="en">best effort</span></th><td>Aucune garantie que les paquets soient correctement remis. La source ne sait pas si l'échange a réussi. Les paquets peuvent arriver en retard, dans le désordre, corrompus, ou jamais.</td></tr>
+          <tr><th>Indépendant du média<br><span lang="en">media independent</span></th><td>IP ne dépend pas des caractéristiques physiques du support : l'accès au support est rendu transparent par la couche inférieure, LLC.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Ces faiblesses sont voulues : IP reste simple et rapide, et c'est TCP, au-dessus, qui apporte la fiabilité quand l'application en a besoin (<a href="cours-06-couche-transport.html">chapitre 6</a>). <span class="badge examen">Examen</span></p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Routage, passerelle et routeur <span class="ref">diapos 13–18</span></h2>
+    <p>Quand la destination n'est pas dans le même réseau que la source, il faut faire appel au mécanisme de routage.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Routage</span> <span class="badge examen">Examen</span></p>
+      <p>Le <dfn>routage</dfn> consiste à définir par quels équipements intermédiaires de niveau 3 les paquets doivent passer pour atteindre le réseau destinataire : trouver un chemin, en utilisant un équipement intermédiaire, le <strong>routeur</strong>, équipement de niveau réseau (niveau 3) du modèle OSI. Le commutateur, lui, est un équipement de niveau liaison qui n'utilise que les adresses MAC.</p>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Table de routage</span></p>
+      <p>La <dfn>table de routage</dfn> permet de prendre les décisions de routage. Elle est constituée des <strong>préfixes de destination</strong> IP, et pour chacun, de la manière de rejoindre cette destination : une adresse IP du réseau local, la porte de sortie. Elle est construite par l'administrateur (<strong>routage statique</strong>) ou automatiquement par des protocoles de routage (<strong>routage dynamique</strong>).</p>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Passerelle</span></p>
+      <p>La <dfn>passerelle</dfn> (<span class="en" lang="en">gateway</span>) est la porte de sortie par défaut du réseau local, indiquée dans la table de routage. Toute information destinée à un hôte situé hors du réseau local, pour lequel on n'a pas de règle spécifique, est envoyée à cette adresse.</p>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Routeur</span></p>
+      <p>Un <dfn>routeur</dfn> est un équipement du réseau qui implémente les trois premières couches, dispose de plusieurs interfaces réseau, donc de plusieurs adresses, et se trouve à l'interface entre plusieurs réseaux locaux.</p>
+    </div>
+    <p>La diapo 17 récapitule ce que chaque équipement possède : un poste ou un serveur a une adresse IP, une table de routage (qui contient au moins l'adresse IP de la passerelle), une adresse MAC et une table ARP. Le routeur a, <strong>pour chaque interface</strong>, une adresse IP, une adresse MAC et une table ARP, et une table de routage commune.</p>
+
+    <h3>L'en-tête IPv4</h3>
+    <p>IPv4 est le protocole le plus répandu, utilisé depuis les années 1980. L'adresse logique y fait 32 bits, soit 4 octets. L'en-tête du paquet, écrit sur des lignes de 32 bits, est le suivant :</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 660 200" width="660" role="img" aria-labelledby="fig-ipv4-titre">
+        <title id="fig-ipv4-titre">En-tête IPv4 sur des lignes de 32 bits : version, longueur de l'en-tête, type de service, longueur totale ; identification, indicateurs, décalage du fragment ; durée de vie, protocole, somme de contrôle de l'en-tête ; adresse IP source ; adresse IP destination ; options et remplissage.</title>
+        <text x="10" y="14" class="t2 mono">0</text><text x="170" y="14" class="t2 mono">8</text><text x="330" y="14" class="t2 mono">16</text><text x="630" y="14" class="t2 mono">31</text>
+        <rect class="boite-accent" x="10" y="20" width="80" height="28"/><text x="50" y="39" text-anchor="middle">Version</text>
+        <rect class="boite" x="90" y="20" width="80" height="28"/><text x="130" y="39" text-anchor="middle">Lg en-tête</text>
+        <rect class="boite" x="170" y="20" width="160" height="28"/><text x="250" y="39" text-anchor="middle">Type de service</text>
+        <rect class="boite" x="330" y="20" width="320" height="28"/><text x="490" y="39" text-anchor="middle">Longueur totale</text>
+        <rect class="boite" x="10" y="48" width="320" height="28"/><text x="170" y="67" text-anchor="middle">Identification</text>
+        <rect class="boite" x="330" y="48" width="60" height="28"/><text x="360" y="67" text-anchor="middle">Indic.</text>
+        <rect class="boite" x="390" y="48" width="260" height="28"/><text x="520" y="67" text-anchor="middle">Décalage du fragment</text>
+        <rect class="boite-accent" x="10" y="76" width="160" height="28"/><text x="90" y="95" text-anchor="middle">Durée de vie (TTL)</text>
+        <rect class="boite-accent" x="170" y="76" width="160" height="28"/><text x="250" y="95" text-anchor="middle">Protocole</text>
+        <rect class="boite" x="330" y="76" width="320" height="28"/><text x="490" y="95" text-anchor="middle">Somme de contrôle de l'en-tête</text>
+        <rect class="boite-accent" x="10" y="104" width="640" height="28"/><text x="330" y="123" text-anchor="middle">Adresse IP source</text>
+        <rect class="boite-accent" x="10" y="132" width="640" height="28"/><text x="330" y="151" text-anchor="middle">Adresse IP destination</text>
+        <rect class="boite" x="10" y="160" width="640" height="28"/><text x="330" y="179" text-anchor="middle" class="t2">Option(s) + remplissage</text>
+      </svg>
+      <figcaption>En-tête IPv4 (diapo 18) ; en couleur, les champs que la diapo surligne.</figcaption>
+    </figure>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le rôle des champs</span></p>
+      <ul>
+        <li><strong>Version</strong> : 4 pour IPv4. <strong>Longueur de l'en-tête</strong> : en mots de 32 bits (5, soit 20 octets, sans option).</li>
+        <li><strong>Longueur totale</strong> : taille du paquet, en-tête compris, au plus 65 535 octets.</li>
+        <li><strong>Identification, indicateurs, décalage</strong> : servent à la <dfn>fragmentation</dfn>, quand un paquet est plus grand que la MTU d'un réseau traversé (1 500 octets en Ethernet).</li>
+        <li><strong>Durée de vie (TTL)</strong> : chaque routeur la décrémente de 1 ; à 0, le paquet est détruit. Elle empêche un paquet de tourner indéfiniment dans une boucle de routage.</li>
+        <li><strong>Protocole</strong> : le protocole encapsulé, 6 pour TCP, 17 pour UDP, 1 pour ICMP (celui de <code>ping</code>). C'est le multiplexage de la couche réseau, comme l'EtherType pour la trame.</li>
+        <li><strong>Somme de contrôle</strong> : ne porte que sur l'en-tête ; recalculée par chaque routeur, puisque le TTL change.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>L'adresse IPv4 et le masque <span class="ref">diapos 19–28</span></h2>
+    <p>Toute la suite repose sur une opération : séparer, dans une adresse, la partie qui désigne le réseau de celle qui désigne l'hôte. C'est le rôle du masque.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Format d'une adresse IPv4</span> <span class="badge examen">Examen</span></p>
+      <p>Une adresse IPv4 est composée de deux parties : l'<strong>adresse du réseau</strong> (aussi appelée <dfn>préfixe réseau</dfn>) et l'<strong>adresse de l'hôte</strong>. Elle fait 32 bits, soit 4 octets, écrits en décimal et séparés par des points : <code>192.168.1.1</code>.</p>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Masque de sous-réseau</span> <span class="badge examen">Examen</span></p>
+      <p>Le <dfn>masque de sous-réseau</dfn> fait 32 bits : une suite de 1 puis une suite de 0. Il détermine l'adresse du réseau au moyen d'un <strong>ET logique</strong> avec l'adresse IP. Exemple : <code>1111 1111.1111 1111.1111 1111.0000 0000</code>, soit <code>255.255.255.0</code> en décimal pointé.</p>
+    </div>
+    <div class="tableau mono compact centre">
+      <table>
+        <caption>Les seules valeurs possibles d'un octet de masque (diapo 21)</caption>
+        <thead><tr><th>Bits</th><th>Valeur</th><th>Bits</th><th>Valeur</th></tr></thead>
+        <tbody>
+          <tr><td>0000 0000</td><td>0</td><td>1111 1000</td><td>248</td></tr>
+          <tr><td>1000 0000</td><td>128</td><td>1111 1100</td><td>252</td></tr>
+          <tr><td>1100 0000</td><td>192</td><td>1111 1110</td><td>254</td></tr>
+          <tr><td>1110 0000</td><td>224</td><td>1111 1111</td><td>255</td></tr>
+          <tr><td>1111 0000</td><td>240</td><td></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Calculer l'adresse du réseau</h3>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>172.168.129.1 avec un masque de 16 bits, puis de 21 bits</span></p>
+      <div class="tableau mono compact">
+        <table>
+          <caption>Masque de 16 bits (diapo 22)</caption>
+          <tbody>
+            <tr><th>Adresse IP</th><td>172.168.129.1</td><td>1010 1100.1010 1000.1000 0001.0000 0001</td></tr>
+            <tr><th>Masque</th><td>255.255.0.0</td><td>1111 1111.1111 1111.0000 0000.0000 0000</td></tr>
+            <tr><th>ET logique</th><td>172.168.0.0</td><td>1010 1100.1010 1000.0000 0000.0000 0000</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tableau mono compact">
+        <table>
+          <caption>Masque de 21 bits (diapo 23)</caption>
+          <tbody>
+            <tr><th>Adresse IP</th><td>172.168.129.1</td><td>1010 1100.1010 1000.1000 0001.0000 0001</td></tr>
+            <tr><th>Masque</th><td>255.255.248.0</td><td>1111 1111.1111 1111.1111 1000.0000 0000</td></tr>
+            <tr><th>ET logique</th><td>172.168.128.0</td><td>1010 1100.1010 1000.1000 0000.0000 0000</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Le réseau est 172.168.0.0 dans le premier cas, 172.168.128.0 dans le second.</p>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> Sur les diapos 22 et 23, 172 est écrit <code>10 100 110</code>, qui vaut 166 : 172 s'écrit <code>1010 1100</code>. Le quatrième octet y a aussi un bit de trop (<code>0000 00001</code>). Les tableaux ci-dessus sont corrigés ; les résultats de la diapo sont justes.</p>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Calculer vite, sans tout écrire en binaire</span></p>
+      <p><span class="badge ajout">Ajout</span> Les octets de masque à 255 recopient l'octet de l'adresse ; ceux à 0 donnent 0. Il ne reste qu'un octet « coupé » à traiter. Pour lui, on calcule le <strong>pas</strong> \(256 - \text{octet du masque}\) : l'octet du réseau est le plus grand multiple du pas inférieur ou égal à l'octet de l'adresse.</p>
+      <p>Pour 172.168.129.1/21 : l'octet coupé est le troisième, masque 248, pas \(256 - 248 = 8\). Le plus grand multiple de 8 inférieur ou égal à 129 est 128 : réseau 172.168.128.0. Le réseau suivant commence à 172.168.136.0, donc la diffusion est 172.168.135.255.</p>
+    </div>
+
+    <h3>Le masque comme curseur</h3>
+    <p>Le masque est une sorte de curseur sur l'adresse IPv4 : à gauche, l'identification du réseau ; à droite, l'identification de l'hôte. Avec un masque de 16 bits, 16 bits pour le réseau et 16 pour les hôtes ; avec un masque de 21 bits, 21 bits pour le réseau et 11 pour les hôtes. <strong>Plus il y a de bits dans la partie réseau, moins il y a d'hôtes dans le réseau.</strong> <span class="badge examen">Examen</span></p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Adresses particulières, CIDR et classes <span class="ref">diapos 26–36</span></h2>
+    <p>Deux adresses de chaque réseau sont réservées, et certaines plages ont un usage particulier. La notation CIDR remplace depuis 1993 l'ancien découpage en classes.</p>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Adresse du réseau, adresse de diffusion, nombre d'hôtes</span> <span class="badge examen">Examen</span></p>
+      <ul>
+        <li>Tous les bits de la partie hôte à 0 : l'<strong>adresse du réseau</strong>.</li>
+        <li>Tous les bits de la partie hôte à 1 : l'<strong>adresse de broadcast</strong> (adresse de diffusion).</li>
+        <li>Les autres sont les adresses des hôtes (unicast). Avec \(h\) bits d'hôte :</li>
+      </ul>
+      <div class="encadre">\[ \text{nombre d'hôtes} = 2^{h} - 2 \qquad h = 32 - \text{longueur du masque} \]</div>
+      <p>Masque de 16 bits : \(2^{16} - 2 = 65\,534\) hôtes. Masque de 21 bits : \(2^{11} - 2 = 2\,046\) hôtes.</p>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo 26 donne 65 532 pour le masque de 16 bits : \(2^{16} - 2 = 65\,536 - 2 = 65\,534\).</p>
+
+    <h3>La notation CIDR</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Notation CIDR</span> <span class="badge examen">Examen</span></p>
+      <p>La notation <dfn>CIDR</dfn> (<span class="en" lang="en">Classless Inter-Domain Routing</span>, 1993, RFC 1519) simplifie l'écriture d'une adresse et de son masque : on écrit après l'adresse une barre oblique et le <strong>nombre de bits à 1 du masque</strong>. 192.168.1.1 de masque 255.255.255.0 s'écrit <code>192.168.1.1/24</code> ; <code>192.168.128.10/21</code> désigne l'adresse 192.168.128.10 avec un masque de 21 bits.</p>
+    </div>
+    <p>Les <dfn>RFC</dfn> (<span class="en" lang="en">Requests For Comments</span>, « demandes de commentaires ») sont une série de documents numérotés qui décrivent les spécifications techniques d'Internet. Rédigées par des experts et revues par la communauté, elles ont une forme normalisée (par exemple <code>datatracker.ietf.org/doc/html/rfc1519</code>).</p>
+
+    <h3>L'adressage par classes (historique)</h3>
+    <p>Jusqu'aux années 1990, l'espace d'adresses était découpé en <dfn>classes</dfn> (1981, RFC 790), reconnaissables à leurs premiers bits, chacune avec un masque implicite. Cette notion a été abandonnée au profit du CIDR, mais certains protocoles de routage l'utilisent encore.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Les classes d'adresses (diapos 29 à 32)</caption>
+        <thead><tr><th>Classe</th><th>Premiers bits</th><th>Début</th><th>Fin</th><th>Masque par défaut</th><th>Nombre de réseaux</th></tr></thead>
+        <tbody>
+          <tr><td>A</td><td>0</td><td>0.0.0.0</td><td>127.255.255.255</td><td>/8, 255.0.0.0</td><td>\(2^7 = 128\)</td></tr>
+          <tr><td>B</td><td>10</td><td>128.0.0.0</td><td>191.255.255.255</td><td>/16, 255.255.0.0</td><td>\(2^{14} = 16\,384\)</td></tr>
+          <tr><td>C</td><td>110</td><td>192.0.0.0</td><td>223.255.255.255</td><td>/24, 255.255.255.0</td><td>\(2^{21} = 2\,097\,152\)</td></tr>
+          <tr><td>D</td><td>1110</td><td>224.0.0.0</td><td>239.255.255.255</td><td>—</td><td>multicast</td></tr>
+          <tr><td>E</td><td>1111</td><td>240.0.0.0</td><td>255.255.255.255</td><td>—</td><td>réservée (expérimentale)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Vues comme des nombres, la classe A occupe la moitié de l'espace (de 0 à \(2^{31} - 1\)), la classe B le quart suivant (de \(2^{31}\) à \(2^{31} + 2^{30} - 1\)), la classe C le huitième suivant (jusqu'à \(2^{31} + 2^{30} + 2^{29} - 1 = 3\,758\,096\,383\)), puis viennent D et E.</p>
+    <p><span class="badge a-verifier">À vérifier</span> Les diapos 31 et 32 écrivent \(2^{31} - 1 = 2\,130\,706\,431\) : \(2^{31} - 1\) vaut 2 147 483 647 (127.255.255.255) ; 2 130 706 431 correspond à 126.255.255.255. Elles écrivent aussi \(2^{39}\) pour \(2^{29}\). Les lignes D et E du tableau sont ajoutées : la diapo 30 renvoie au livre Cisco pour leur usage.</p>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Reconnaître une classe</span></p>
+      <p><span class="badge ajout">Ajout</span> On regarde le premier octet : 0 à 127 → A ; 128 à 191 → B ; 192 à 223 → C ; 224 à 239 → D ; 240 à 255 → E.</p>
+    </div>
+
+    <h3>Adresses privées et spéciales</h3>
+    <div class="tableau compact">
+      <table>
+        <caption>Adresses IP privées (1996, RFC 1918)</caption>
+        <thead><tr><th>Classe</th><th>Plage privée</th><th>Masque</th><th>Étendue</th><th>Réseaux de la classe</th></tr></thead>
+        <tbody>
+          <tr><td>A</td><td>10.0.0.0/8</td><td>255.0.0.0</td><td>10.0.0.0 – 10.255.255.255</td><td>1 réseau</td></tr>
+          <tr><td>B</td><td>172.16.0.0/12</td><td>255.240.0.0</td><td>172.16.0.0 – 172.31.255.255</td><td>16 réseaux</td></tr>
+          <tr><td>C</td><td>192.168.0.0/16</td><td>255.255.0.0</td><td>192.168.0.0 – 192.168.255.255</td><td>256 réseaux</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Une adresse privée n'est pas routée sur Internet : elle sert dans les réseaux locaux, et il faut la traduire en adresse publique pour sortir (NAT, <a href="cours-08-nat.html">chapitre 8</a>). <span class="badge examen">Examen</span></p>
+    <ul>
+      <li>Les adresses <dfn>lien local</dfn> ou <dfn>APIPA</dfn> (<span lang="en">Automatic Private Internet Protocol Addressing</span>), de 169.254.0.0 à 169.254.255.255, sont celles qu'une interface se donne quand elle n'obtient pas de réponse d'un serveur DHCP.</li>
+      <li>L'adresse de <dfn>bouclage</dfn> (<span lang="en">loopback</span>) est 127.0.0.1. Elle sert à vérifier la configuration de l'hôte et à faire dialoguer des applications sur une même machine.</li>
+    </ul>
+
+    <h3>Réseau local : le sens du mot selon la couche</h3>
+    <ul>
+      <li>Pour la couche liaison (Ethernet), un réseau local est l'ensemble des équipements connectés à un même média.</li>
+      <li>Pour la couche réseau (IP), un réseau local est l'ensemble des équipements qui ont le même préfixe d'adresse réseau et le même masque.</li>
+      <li>Plusieurs réseaux locaux IP peuvent partager un même média physique, les mêmes commutateurs (les VLAN du <a href="cours-07-vlan-stp.html">chapitre 7</a> les séparent proprement).</li>
+    </ul>
+
+    <h3>Les adresses publiques</h3>
+    <p>L'attribution des adresses publiques est régie par l'<dfn>IANA</dfn> et les <dfn>RIR</dfn> (<span class="en" lang="en">Regional Internet Registries</span>) : l'IANA répartit les adresses entre 5 RIR (ARIN pour l'Amérique du Nord, LACNIC pour l'Amérique latine, RIPE NCC pour l'Europe et le Moyen-Orient, AFRINIC pour l'Afrique, APNIC pour l'Asie-Pacifique), qui gèrent l'attribution finale. Les adresses IPv4 sont épuisées : le RIPE NCC n'attribue plus que des blocs /24 (256 adresses) par une liste d'attente.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le découpage en sous-réseaux <span class="ref">diapos 37–45</span></h2>
+    <p>Un grand réseau, c'est un seul domaine de broadcast, couches liaison et réseau confondues : toutes les machines peuvent communiquer sur le réseau local, mais chaque requête ARP les dérange toutes. On le découpe donc en réseaux plus petits.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Subnetting</span> <span class="badge examen">Examen</span></p>
+      <p>Le <dfn>découpage en sous-réseaux</dfn> (<span class="en" lang="en">subnetting</span>) est l'action de diviser un réseau donné en une série de réseaux plus petits. On emprunte des bits à la partie hôte pour numéroter les sous-réseaux : le masque s'allonge d'autant.</p>
+    </div>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Découper en N sous-réseaux de même taille</span> <span class="badge examen">Examen</span></p>
+      <ol>
+        <li>Trouver le plus petit \(n\) tel que \(2^n \ge N\) : \(n\) bits de sous-réseau.</li>
+        <li>Nouveau masque : ancien masque + \(n\).</li>
+        <li>Il reste \(h = 32 - \text{masque}\) bits d'hôte, soit \(2^h - 2\) hôtes par sous-réseau.</li>
+        <li>Les sous-réseaux se suivent avec un pas de \(2^h\) adresses : on fait varier les \(n\) bits empruntés de 0 à \(2^n - 1\).</li>
+      </ol>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>172.16.0.0/16 en 3 sous-réseaux</span></p>
+      <p>Pour 3 sous-réseaux, il faut 2 bits (\(2^2 = 4 \ge 3\)). Le masque passe à \(16 + 2 = /18\), soit 255.255.192.0, et il reste 14 bits pour les hôtes : \(2^{14} - 2 = 16\,382\) hôtes par sous-réseau. Les 2 bits empruntés sont les deux bits de poids fort du troisième octet (poids 128 et 64) :</p>
+      <div class="tableau mono compact">
+        <table>
+          <caption>Les quatre sous-réseaux /18 (diapos 41 à 45)</caption>
+          <thead><tr><th>Bits</th><th>Réseau</th><th>Premier hôte</th><th>Dernier hôte</th><th>Diffusion</th></tr></thead>
+          <tbody>
+            <tr><td>00</td><td>172.16.0.0/18</td><td>172.16.0.1</td><td>172.16.63.254</td><td>172.16.63.255</td></tr>
+            <tr><td>01</td><td>172.16.64.0/18</td><td>172.16.64.1</td><td>172.16.127.254</td><td>172.16.127.255</td></tr>
+            <tr><td>10</td><td>172.16.128.0/18</td><td>172.16.128.1</td><td>172.16.191.254</td><td>172.16.191.255</td></tr>
+            <tr><td>11</td><td>172.16.192.0/18</td><td>—</td><td>—</td><td>non utilisé</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>On n'utilise que les trois premiers ; le quatrième (barré sur la diapo) reste libre pour l'avenir.</p>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> Sur les diapos 37 à 42, 172 est écrit <code>11 000 000</code> (c'est 192) et 16 est écrit <code>10 101 000</code> (c'est 168) : 172 = <code>1010 1100</code>, 16 = <code>0001 0000</code>. La diapo 39 écrit aussi « 14 bits = 16 385 hôtes, 4 × 16 385 = 65 536 » : 14 bits donnent \(2^{14} = 16\,384\) adresses, soit 16 382 hôtes, et \(4 \times 16\,384 = 65\,536\).</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>VLSM : des sous-réseaux de tailles variables <span class="ref">diapos 46–56</span></h2>
+    <p>Avec des sous-réseaux tous de la même taille, un lien entre deux routeurs, qui n'a que 2 machines, consommerait autant d'adresses qu'un bâtiment entier. VLSM permet d'ajuster chaque sous-réseau à son besoin.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>VLSM</span></p>
+      <p><dfn>VLSM</dfn> (<span class="en" lang="en">Variable Length Subnet Mask</span>) : la longueur du masque de sous-réseau peut varier d'un sous-réseau à l'autre, dans le but d'économiser des adresses IP. Attention à la compatibilité du matériel : les protocoles de routage par classes comme RIP v1, IGRP et EGP ne sont pas compatibles avec VLSM.</p>
+    </div>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Mettre en place VLSM</span> <span class="badge examen">Examen</span></p>
+      <ol>
+        <li>Ordonner les besoins, du plus grand au plus petit nombre d'hôtes : il faut <strong>nécessairement commencer par le réseau qui a le plus d'hôtes</strong>.</li>
+        <li>Pour chaque besoin de \(H\) hôtes, chercher le plus petit \(h\) tel que \(2^h - 2 \ge H\) ; le masque vaut \(32 - h\).</li>
+        <li>Le premier sous-réseau commence à l'adresse du réseau de départ ; chaque sous-réseau suivant commence à la <strong>diffusion du précédent + 1</strong>.</li>
+      </ol>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>172.16.0.0/16 pour 20 745, 7 280 et 1 132 hôtes, et deux liens point à point</span></p>
+      <ul>
+        <li>20 745 hôtes : \(2^{14} - 2 = 16\,382\) ne suffit pas, \(2^{15} - 2 = 32\,766\) suffit : 15 bits d'hôte, masque \(32 - 15 = /17\).</li>
+        <li>7 280 hôtes : \(2^{13} - 2 = 8\,190 \ge 7\,280\) : 13 bits, /19. Il commence à 172.16.127.255 + 1 = 172.16.128.0.</li>
+        <li>1 132 hôtes : \(2^{11} - 2 = 2\,046\) : 11 bits, /21. Il commence à 172.16.159.255 + 1 = 172.16.160.0.</li>
+        <li>2 liens point à point de 2 équipements : \(2^2 - 2 = 2\) : 2 bits, /30.</li>
+      </ul>
+      <div class="tableau mono compact">
+        <table>
+          <caption>Plan d'adressage VLSM (diapo 53)</caption>
+          <thead><tr><th>Sous-réseau</th><th>Adresse réseau</th><th>Premier hôte</th><th>Dernier hôte</th><th>Diffusion</th></tr></thead>
+          <tbody>
+            <tr><td>1 (20 745)</td><td>172.16.0.0/17</td><td>172.16.0.1</td><td>172.16.127.254</td><td>172.16.127.255</td></tr>
+            <tr><td>2 (7 280)</td><td>172.16.128.0/19</td><td>172.16.128.1</td><td>172.16.159.254</td><td>172.16.159.255</td></tr>
+            <tr><td>3 (1 132)</td><td>172.16.160.0/21</td><td>172.16.160.1</td><td>172.16.167.254</td><td>172.16.167.255</td></tr>
+            <tr><td>4 (2)</td><td>172.16.168.0/30</td><td>172.16.168.1</td><td>172.16.168.2</td><td>172.16.168.3</td></tr>
+            <tr><td>5 (2)</td><td>172.16.168.4/30</td><td>172.16.168.5</td><td>172.16.168.6</td><td>172.16.168.7</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Que reste-t-il ? De 172.16.0.0 à 172.16.168.7, on a utilisé \(168 \times 256 + 8 = 43\,016\) adresses sur \(2^{16} = 65\,536\), soit environ 65 %. Le /17 prend la moitié des adresses, le /19 un huitième, le /21 un trente-deuxième ; le quart 172.16.192.0/18 reste entièrement libre, et le /16 tout entier n'est qu'une infime part de l'espace IPv4 (diapos 54 à 56).</p>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> Les diapos 48 à 51 écrivent 172.16 en binaire <code>1010 1100.0000 1000</code> : 16 s'écrit <code>0001 0000</code> (<code>0000 1000</code> vaut 8). La diapo 50 écrit « \(2^{13} - 2 = 8\,192\) hôtes » (c'est 8 190), la diapo 53 « 65 336 » pour 65 536. Les adresses du tableau sont justes (vérifiées par calcul).</p>
+
+    <h3>Plan d'adressage et attribution des adresses</h3>
+    <p>Un plan d'adressage doit être réfléchi : il faut <strong>prévoir les besoins futurs</strong>. On peut s'aider d'une calculette, par exemple <code>sebastienadam.be/ipcalculator</code>.</p>
+    <div class="colonnes">
+      <div class="colonne">
+        <p class="colonne-titre">Attribution statique</p>
+        <p>Configuration explicite : l'administrateur saisit manuellement les paramètres réseau, à savoir l'adresse IP et le masque, la passerelle (la porte de sortie du réseau local) et le serveur DNS.</p>
+      </div>
+      <div class="colonne">
+        <p class="colonne-titre">Attribution automatique : DHCP</p>
+        <p><dfn>DHCP</dfn> (<span lang="en">Dynamic Host Configuration Protocol</span>, RFC 1531) attribue dynamiquement des adresses aux hôtes qui en font la demande, avec les mêmes paramètres (masque, passerelle, DNS).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le routeur et la table de routage <span class="ref">diapos 59–75</span></h2>
+    <p>Le routeur effectue la jonction entre les différents réseaux, pour que les hôtes puissent se joindre. C'est un équipement de la couche réseau (trois couches), avec plusieurs interfaces physiques : une couche liaison et une couche physique par interface, et une seule couche réseau au-dessus.</p>
+
+    <h3>Le traitement d'un paquet</h3>
+    <ol class="etapes">
+      <li><strong>Liaison, interface d'entrée</strong> : la trame est reçue ; son en-tête et sa queue sont supprimés, le paquet passe à la couche réseau.</li>
+      <li><strong>Réseau</strong> : le routeur lit l'adresse IP de destination, la cherche dans la table de routage et sélectionne l'interface de sortie (la meilleure route). Il décrémente le <strong>TTL</strong> (<span lang="en">Time to Live</span>).</li>
+      <li><strong>Liaison, interface de sortie</strong> : il écrit un nouvel en-tête et une nouvelle queue de trame, et envoie la trame.</li>
+    </ol>
+
+    <h3>Contenu de la table de routage</h3>
+    <p>Chaque couche réseau, sur un routeur comme sur un poste, a une table de routage. Une entrée s'appuie sur deux informations : les interfaces disponibles, et les réseaux joignables, directement ou indirectement, par ces interfaces. Types de routes :</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Les codes de route de <code>show ip route</code> (diapo 63)</caption>
+        <thead><tr><th>Code</th><th>Type</th><th>Origine</th></tr></thead>
+        <tbody>
+          <tr><td><code>C</code></td><td>route connectée</td><td>réseau directement attaché à une interface, déduit de son adresse IP et de son masque</td></tr>
+          <tr><td><code>L</code></td><td>route locale</td><td>l'adresse particulière configurée sur l'interface du routeur lui-même</td></tr>
+          <tr><td><code>S</code></td><td>route statique</td><td>une interface ou un voisin avec la liste des réseaux joignables, saisis manuellement</td></tr>
+          <tr><td><code>R</code>, <code>O</code>, <code>D</code>…</td><td>route dynamique</td><td>générée par un protocole de routage : R = RIP, O = OSPF, D = EIGRP…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Lire <code>show ip route</code></h3>
+    <p>Sur le réseau de la diapo 64, quatre routeurs R0 à R3 forment un carré relié par des liens /30 (1.1.1.0/30, 1.1.1.4/30, 1.1.1.8/30, 1.1.1.12/30) ; chacun dessert un réseau local 172.16.x.0/24. OSPF tourne entre eux. La table de R0 :</p>
+<pre class="terminal"><code>R0#show ip route
+.....
+     1.0.0.0/30 is subnetted, 4 subnets
+C       1.1.1.0 is directly connected, FastEthernet0/1
+O       1.1.1.4 [110/2] via 1.1.1.2, 00:10:04, FastEthernet0/1
+O       1.1.1.8 [110/2] via 1.1.1.13, 00:10:04, FastEthernet0/0
+C       1.1.1.12 is directly connected, FastEthernet0/0
+     172.16.0.0/24 is subnetted, 4 subnets
+C       172.16.0.0 is directly connected, Ethernet0/0/0
+O       172.16.1.0 [110/11] via 1.1.1.2, 00:10:04, FastEthernet0/1
+O       172.16.2.0 [110/12] via 1.1.1.13, 00:09:24, FastEthernet0/0
+                   [110/12] via 1.1.1.2, 00:09:24, FastEthernet0/1
+O       172.16.3.0 [110/11] via 1.1.1.13, 00:10:04, FastEthernet0/0</code></pre>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Décomposer une ligne</span> <span class="badge examen">Examen</span></p>
+      <p><code>O 1.1.1.4 [110/2] via 1.1.1.2, 00:10:04, FastEthernet0/1</code> se lit :</p>
+      <ul>
+        <li><code>O</code> : le protocole qui a appris la route, ici OSPF ;</li>
+        <li><code>1.1.1.4</code> : l'adresse du réseau de destination (un /30, d'après l'en-tête du bloc) ;</li>
+        <li><code>[110/2]</code> : la distance administrative (110) et la métrique (2) ;</li>
+        <li><code>via 1.1.1.2</code> : le prochain saut, le routeur voisin à qui envoyer le paquet ;</li>
+        <li><code>00:10:04</code> : l'âge de l'information ;</li>
+        <li><code>FastEthernet0/1</code> : l'interface de sortie.</li>
+      </ul>
+    </div>
+    <p>Les diapos 68 à 71 entourent les éléments : les routes <code>C</code> sont les trois réseaux branchés sur R0 (1.1.1.0/30 vers R1, 1.1.1.12/30 vers R3, 172.16.0.0/24 vers PC1) ; 1.1.1.4/30, entre R1 et R2, se rejoint par R1 (1.1.1.2) ; 1.1.1.8/30, entre R3 et R2, par R3 (1.1.1.13). Le réseau 172.16.2.0/24, derrière R2, est à deux sauts par les deux côtés du carré, avec la même métrique (12) : la table garde les deux routes, et le trafic est partagé entre elles.</p>
+
+    <h3>Distance administrative et métrique</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Distance administrative</span></p>
+      <p>La <dfn>distance administrative</dfn> permet de prioriser les routes quand plusieurs sources proposent une route vers la même destination : la plus petite l'emporte. Par défaut : route connectée &gt; route statique &gt; EIGRP interne &gt; OSPF &gt; RIP &gt; EIGRP externe.</p>
+    </div>
+    <div class="tableau compact">
+      <table>
+        <caption>Distances administratives par défaut (diapo 65)</caption>
+        <thead><tr><th>Source de la route</th><th>Distance</th></tr></thead>
+        <tbody>
+          <tr><td>interface connectée</td><td>0</td></tr>
+          <tr><td>route statique</td><td>1</td></tr>
+          <tr><td>EIGRP interne</td><td>90</td></tr>
+          <tr><td>OSPF</td><td>110</td></tr>
+          <tr><td>RIP</td><td>120</td></tr>
+          <tr><td>EIGRP externe</td><td>170</td></tr>
+          <tr><td>inconnue (route jamais utilisée)</td><td>255</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Métrique</span></p>
+      <p>La <dfn>métrique</dfn> quantifie la qualité d'une route, pour départager les routes apprises par un même protocole. Elle dépend du protocole : attribuée manuellement pour une route statique, calculée par le protocole pour une route dynamique. En OSPF, plus la métrique est petite, meilleure est la route (elle dépend du débit des liens) ; en RIP, la métrique est le nombre de sauts.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le préfixe le plus long</span></p>
+      <p>Quand une destination correspond à plusieurs entrées (par exemple 172.10.0.0/16 et 172.10.2.0/24 pour l'adresse 172.10.2.5), le routeur choisit la plus <strong>précise</strong>, celle de masque le plus long : la /24. C'est pourquoi la route par défaut 0.0.0.0/0, qui correspond à toutes les adresses mais avec un masque de longueur 0, ne sert qu'en dernier recours. La distance administrative ne départage que des routes de même préfixe.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le routage statique <span class="ref">diapos 76–84</span></h2>
+    <p>Une route statique est renseignée manuellement par l'administrateur. C'est la solution des petits réseaux, et la façon de configurer les postes.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Route par défaut</span> <span class="badge examen">Examen</span></p>
+      <p>La <dfn>route par défaut</dfn> est utilisée quand la table de routage n'a pas d'entrée correspondant au réseau de destination. On la note <code>0.0.0.0/0</code>. <strong>Il faut toujours mettre une route par défaut sur les machines</strong> : sur une machine, la route par défaut, c'est la passerelle (<span lang="en">gateway</span>).</p>
+    </div>
+    <p>On utilise des routes statiques :</p>
+    <ul>
+      <li>pour connecter un routeur d'extrémité qui n'a qu'un seul chemin vers l'extérieur (souvent Internet) ;</li>
+      <li>pour forcer le passage par un chemin spécifique ;</li>
+      <li>pour résumer un ensemble de routes, afin de simplifier la table de routage ;</li>
+      <li>pour définir une route par défaut.</li>
+    </ul>
+
+    <h3>De la table par hôte à la route par défaut</h3>
+    <p>Les diapos 78 à 84 construisent pas à pas la table d'un poste. Sur le réseau le plus simple (diapo 78), PC0 et PC1 sont dans le réseau 1, PC2, PC3 et PC4 dans le réseau 2, et le routeur a une interface A0 dans le réseau 1 et A1 dans le réseau 2. Une table par hôte serait longue (PC0 : direct ; PC1 : direct ; PC2, PC3, PC4 : via A0). Par réseau, elle se réduit à deux lignes : réseau 1 en direct, réseau 2 via A0.</p>
+    <p>Sur un réseau plus grand (diapo 79), le poste PC1 est dans 192.168.1.0/24, avec deux routeurs : A (interface A0) vers 192.168.10.0/24, et B (interface B0) vers 172.10.1.0/24, 172.10.2.0/24 et, au-delà, 10.0.0.0/8 et Internet.</p>
+    <div class="colonnes">
+      <div class="tableau compact">
+        <table>
+          <caption>Table de PC1, réseau par réseau (diapo 79)</caption>
+          <thead><tr><th>Pour aller vers</th><th>J'envoie à</th></tr></thead>
+          <tbody>
+            <tr><td>192.168.1.0/24</td><td>direct</td></tr>
+            <tr><td>192.168.10.0/24</td><td>A0</td></tr>
+            <tr><td>172.10.1.0/24</td><td>B0</td></tr>
+            <tr><td>172.10.2.0/24</td><td>B0</td></tr>
+            <tr><td>10.0.0.0/8</td><td>B0</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tableau compact">
+        <table>
+          <caption>Table de PC1, résumée puis avec route par défaut (diapos 82 et 83)</caption>
+          <thead><tr><th>Pour aller vers</th><th>J'envoie à</th></tr></thead>
+          <tbody>
+            <tr><td>192.168.1.0/24</td><td>direct</td></tr>
+            <tr><td>192.168.10.0/24</td><td>A0</td></tr>
+            <tr><td>172.10.0.0/16</td><td>B0</td></tr>
+            <tr><td>10.0.0.0/8</td><td>B0</td></tr>
+            <tr><th colspan="2">puis, avec une route par défaut :</th></tr>
+            <tr><td>192.168.1.0/24</td><td>direct</td></tr>
+            <tr><td>192.168.10.0/24</td><td>A0</td></tr>
+            <tr><td>0.0.0.0/0</td><td>B0</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p>Les deux réseaux 172.10.1.0/24 et 172.10.2.0/24 sont <strong>résumés</strong> en 172.10.0.0/16, puis tout ce qui passe par B0 est remplacé par la route par défaut. Seule la route vers 192.168.10.0/24, qui passe par un autre routeur, doit rester explicite. La diapo 80 donne la table du routeur B : 192.168.1.0/24 et 172.10.1.0/24 en direct, 192.168.10.0/24 via A0, 172.10.2.0/24 via C0, le réseau du routeur E via D0.</p>
+    <p><span class="badge a-verifier">À vérifier</span> Les tables des diapos écrivent <code>1.0.0.0/8</code> ; le réseau du schéma est <code>10.0.0.0/8</code> (entre les routeurs D et E). Les tableaux ci-dessus le corrigent.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le routage dynamique <span class="ref">diapos 85–89</span></h2>
+    <p>Le routage statique fonctionne pour de petits réseaux. Au-delà, ou dès qu'il faut réagir aux pannes, on laisse les routeurs construire leurs tables eux-mêmes.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Protocole de routage</span></p>
+      <p>Les <dfn>protocoles de routage</dfn> sont des programmes qui échangent, entre les routeurs, des messages sur l'état des réseaux distants.</p>
+    </div>
+    <ol class="etapes">
+      <li>Chaque routeur <strong>envoie des messages</strong> pour découvrir ses routeurs voisins, découvrir les réseaux distants, et mettre à jour les informations de routage en fonction des événements.</li>
+      <li>Il <strong>enregistre</strong> ces informations dans des tables (table de voisinage, table de topologie…).</li>
+      <li>Il <strong>utilise un algorithme</strong> de routage pour choisir le meilleur chemin vers chaque destination, et recalculer une nouvelle route en cas de perte de lien. <strong>Chaque routeur calcule sa propre table de routage.</strong></li>
+    </ol>
+    <p>Mise à jour des tables : quand la topologie change sur une interface directement connectée à un routeur, celui-ci le perçoit directement ; il envoie un message de mise à jour à ses voisins, qui retransmettent l'information à leurs voisins ; chaque routeur, individuellement, recalcule sa table.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Convergence</span></p>
+      <p>Il y a <dfn>convergence</dfn> lorsque tous les routeurs disposent d'informations complètes sur le réseau.</p>
+    </div>
+
+    <h3>Les familles de protocoles</h3>
+    <div class="tableau compact">
+      <table>
+        <caption>Classement des protocoles de routage dynamique (diapo 88, d'après Cisco)</caption>
+        <thead><tr><th colspan="2">IGP : <span lang="en">Interior Gateway Protocol</span></th><th>EGP : <span lang="en">Exterior Gateway Protocol</span></th></tr></thead>
+        <tbody>
+          <tr><th>à vecteur de distance</th><th>à état de liens</th><td rowspan="2">EGP, BGP</td></tr>
+          <tr><td>RIP v1, RIP v2, IGRP, EIGRP</td><td>OSPF, IS-IS</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>IGP et EGP, vecteur de distance et état de liens</span></p>
+      <p>Un <strong>IGP</strong> route à l'intérieur d'un même domaine d'administration (un système autonome : une entreprise, un opérateur) ; un <strong>EGP</strong> route entre systèmes autonomes : BGP est le protocole qui relie les opérateurs d'Internet. La diapo 89 renvoie à un MOOC de l'IMT (« Routage et qualité de service dans l'Internet ») pour le détail ; en bref :</p>
+      <ul>
+        <li><strong>vecteur de distance</strong> (RIP) : chaque routeur envoie périodiquement à ses voisins sa table (« je joins tel réseau à telle distance »), et retient pour chaque destination le voisin qui annonce la plus petite distance + 1. Simple, mais lent à converger ;</li>
+        <li><strong>état de liens</strong> (OSPF) : chaque routeur diffuse à tous l'état de ses propres liens ; chacun reconstruit la carte complète du réseau et calcule les plus courts chemins (algorithme de Dijkstra). Converge vite, mais demande plus de calcul et de mémoire.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exercices</h2>
+    <p>Exercices d'entraînement, ajoutés : ce sont les calculs qu'on demande en contrôle. Les réponses ont été vérifiées par programme.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Une adresse, un masque</span></p>
+      <p>Pour l'adresse 192.168.10.77/26, donner le masque en décimal pointé, l'adresse du réseau, l'adresse de diffusion, la première et la dernière adresse d'hôte, et le nombre d'hôtes.</p>
+      <details class="indice"><summary>Indice</summary><p>/26 : 26 bits à 1, donc le dernier octet du masque vaut 1100 0000. Le pas est \(256 - 192 = 64\).</p></details>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>Masque 255.255.255.192. Multiples de 64 : 0, 64, 128, 192 ; 77 est entre 64 et 128. Réseau 192.168.10.64, diffusion 192.168.10.127, hôtes de 192.168.10.65 à 192.168.10.126, soit \(2^6 - 2 = 62\) hôtes.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Même réseau ?</span></p>
+      <p>Les machines 10.1.37.200/20 et 10.1.44.3/20 sont-elles dans le même réseau ? Et 10.1.47.255/20 : est-ce une adresse d'hôte ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>/20 : le troisième octet du masque vaut 240, pas 16. 37 → réseau 10.1.32.0 ; 44 → 10.1.32.0 aussi : même réseau (10.1.32.0/20, de 10.1.32.0 à 10.1.47.255). 10.1.47.255 est l'adresse de diffusion de ce réseau, pas une adresse d'hôte.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Subnetting</span></p>
+      <p>Découper 192.168.1.0/24 en 6 sous-réseaux de même taille. Donner le masque, le nombre d'hôtes par sous-réseau, et les adresses des sous-réseaux.</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>\(2^3 = 8 \ge 6\) : 3 bits empruntés, masque /27 (255.255.255.224), 5 bits d'hôte, \(2^5 - 2 = 30\) hôtes. Pas de 32 : 192.168.1.0, .32, .64, .96, .128, .160 (puis .192 et .224 restent libres).</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 4 <span>VLSM</span></p>
+      <p>Avec 192.168.50.0/24, attribuer des sous-réseaux à : un LAN de 100 hôtes, un LAN de 50 hôtes, un LAN de 20 hôtes et deux liens entre routeurs.</p>
+      <details class="indice"><summary>Indice</summary><p>Du plus grand au plus petit ; chaque sous-réseau commence après la diffusion du précédent.</p></details>
+      <details class="solution"><summary>Solution proposée</summary>
+        <ul>
+          <li>100 hôtes : \(2^7 - 2 = 126\), /25 : 192.168.50.0/25 (diffusion .127).</li>
+          <li>50 hôtes : \(2^6 - 2 = 62\), /26 : 192.168.50.128/26 (diffusion .191).</li>
+          <li>20 hôtes : \(2^5 - 2 = 30\), /27 : 192.168.50.192/27 (diffusion .223).</li>
+          <li>liens : /30 : 192.168.50.224/30 (hôtes .225 et .226) et 192.168.50.228/30 (hôtes .229 et .230).</li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 5 <span>Choisir une route</span></p>
+      <p>Un routeur a les routes : <code>S 10.0.0.0/8 via 192.0.2.1</code>, <code>O 10.20.0.0/16 [110/20] via 192.0.2.5</code>, <code>R 10.20.0.0/16 [120/2] via 192.0.2.9</code>, <code>S* 0.0.0.0/0 via 192.0.2.13</code>. Par où part un paquet pour 10.20.3.4 ? pour 10.99.1.1 ? pour 8.8.8.8 ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>10.20.3.4 : le préfixe le plus long est /16, proposé par OSPF (110) et RIP (120) : OSPF l'emporte, via 192.0.2.5 (et seule la route OSPF figure en pratique dans la table). 10.99.1.1 : seul 10.0.0.0/8 correspond, via 192.0.2.1. 8.8.8.8 : route par défaut, via 192.0.2.13.</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>La couche réseau assure l'adressage logique (IP) et le routage entre réseaux locaux. Les adresses IP restent les mêmes de bout en bout ; les adresses MAC changent à chaque réseau traversé.</li>
+        <li>IP est sans connexion, au mieux (non fiable) et indépendant du média.</li>
+        <li>Adresse IPv4 = 32 bits = préfixe réseau + identifiant d'hôte ; le masque (des 1 puis des 0) donne le réseau par un ET logique.</li>
+        <li>Partie hôte à 0 : adresse du réseau ; à 1 : diffusion. Nombre d'hôtes : \(2^h - 2\), avec \(h = 32 -\) longueur du masque.</li>
+        <li>CIDR : <code>/n</code> = nombre de bits à 1 du masque. Classes : A (0-127, /8), B (128-191, /16), C (192-223, /24).</li>
+        <li>Privées : 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16. APIPA : 169.254.0.0/16. Bouclage : 127.0.0.1.</li>
+        <li>Subnetting : \(n\) bits empruntés pour \(2^n\) sous-réseaux. VLSM : du plus grand au plus petit besoin, chaque sous-réseau commence après la diffusion du précédent.</li>
+        <li>Le routeur décapsule la trame, cherche la destination dans sa table, décrémente le TTL, réencapsule dans une nouvelle trame.</li>
+        <li>Table de routage : C connectée, L locale, S statique, O/R/D dynamiques ; [distance administrative/métrique] ; via prochain saut ; interface de sortie.</li>
+        <li>Route par défaut 0.0.0.0/0 = la passerelle ; à mettre sur toutes les machines. Routage dynamique : IGP (RIP à vecteur de distance, OSPF à état de liens) et EGP (BGP).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>A envoie un paquet à C, deux routeurs plus loin. Quelle adresse MAC de destination porte la trame qui quitte A ?</summary>
+        <div><p>Celle de la passerelle de A (l'interface du premier routeur), pas celle de C.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que signifie « best effort » pour IP ?</summary>
+        <div><p>IP fait de son mieux sans rien garantir : un paquet peut être perdu, retardé, dupliqué ou arriver dans le désordre, et la source n'en est pas informée.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Combien d'hôtes dans un /23 ? dans un /30 ?</summary>
+        <div><p>/23 : \(2^9 - 2 = 510\). /30 : \(2^2 - 2 = 2\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quel masque décimal correspond à /20 ?</summary>
+        <div><p>255.255.240.0.</p></div>
+      </details>
+      <details class="carte">
+        <summary>172.20.5.1 est-elle une adresse privée ? et 172.32.0.1 ?</summary>
+        <div><p>172.20.5.1 oui (172.16.0.0/12 va jusqu'à 172.31.255.255) ; 172.32.0.1 non.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi commencer VLSM par le plus grand sous-réseau ?</summary>
+        <div><p>Pour que chaque sous-réseau commence à une adresse multiple de sa taille ; en plaçant d'abord les petits, les grands ne tomberaient plus sur une frontière valide et l'on gaspillerait des adresses.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Dans <code>O 172.16.1.0 [110/11] via 1.1.1.2</code>, que valent 110 et 11 ?</summary>
+        <div><p>110 est la distance administrative (celle d'OSPF), 11 la métrique OSPF de la route.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que fait un routeur du TTL d'un paquet ?</summary>
+        <div><p>Il le décrémente de 1 ; à 0, il détruit le paquet, ce qui évite les boucles infinies.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-04-liaison-de-donnees.html"><small>← Précédent</small>Accès au réseau : la liaison de données</a>
+    <a class="suivant" href="cours-06-couche-transport.html"><small>Suivant →</small>TCP et UDP : la couche transport</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Réseaux · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

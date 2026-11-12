@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="reseau">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Annexe A1 : introduction à l'IOS Cisco · Réseaux L2</title>
+<meta name="description" content="Annexe A1 de réseaux (L2) : l'IOS Cisco, composants matériels d'un routeur (CPU, RAM, flash, NVRAM, ROM), séquence de démarrage, connexion par le port console, CLI (aide, abréviations, complétion), nomenclature des interfaces, modes de commande et navigation, configuration courante et de démarrage, commandes de base pour les TP.">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-a1-introduction-ios.html" title="Quiz · Annexe A1 · IOS Cisco">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="index.html">Réseaux</a>
+    <span aria-current="page">Annexe A1 · IOS Cisco</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Réseaux</span> Annexe A1 · L2 S3</p>
+    <h1>Introduction à l'IOS Cisco</h1>
+    <p class="chapeau">En TP, on configure de vrais routeurs et commutateurs Cisco. Cette annexe présente ce qu'il y a dans la boîte (les mémoires et leur rôle), comment s'y connecter, et comment se déplacer dans l'interface en ligne de commande : modes, aide, abréviations, et la différence capitale entre configuration courante et configuration de démarrage.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/A1%20-%20introduction%20%C3%A0%20IOS.pdf">A1 - introduction à IOS.pdf</a> · 25 diapos ; d'après une présentation AFNOG (Maputo, 2005) et le module CCNA 2</dd></div>
+      <div><dt>Enseignant</dt><dd>Sylvain Meignier</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Associer chaque mémoire du routeur (RAM, NVRAM, flash, ROM) à ce qu'elle contient.</li>
+        <li>Décrire la séquence de démarrage.</li>
+        <li>Se connecter par le port console avec les bons paramètres.</li>
+        <li>Passer d'un mode de commande à l'autre et reconnaître le mode à l'invite.</li>
+        <li>Sauvegarder une configuration pour qu'elle survive à un redémarrage.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-03-couche-physique.html">Cours 3</a> : câble RJ45.</li>
+        <li><a href="cours-05-couche-reseau.html">Cours 5</a> : adresse IP, masque, routeur.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Qu'est-ce que l'IOS ? <span class="ref">diapos 2–3</span></h2>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>IOS</span></p>
+      <p>L'IOS (<i>Internetwork Operating System</i>) est le système d'exploitation des équipements Cisco. Une <strong>image IOS</strong> est le fichier qui le contient.</p>
+    </div>
+    <p>Comme tout système, un équipement Cisco se compose :</p>
+    <ul>
+      <li>du <strong>matériel</strong> (les composants physiques) ;</li>
+      <li>d'un <strong>noyau</strong>, le système lui-même ;</li>
+      <li>d'un <strong>shell</strong>, l'interface utilisateur : graphique (GUI) ou en ligne de commande (<strong>CLI</strong>), de loin la plus utilisée.</li>
+    </ul>
+    <p>L'IOS gère le matériel et les interfaces, et offre des services : routage, sécurité (pare-feu), DHCP, NAT, serveur web… Il doit être maintenu à jour, pour les correctifs de sécurité ou pour ajouter des fonctions (diapo 9).</p>
+    <p>Le matériel des salles de TP (diapo 3) : des routeurs Cisco 1700 (avec deux cartes d'extension Ethernet) et RV320 (un port WAN, quatre ports Ethernet), des commutateurs Cisco des gammes 200 et 300, HP et Netgear.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les composants matériels <span class="ref">diapos 4–8</span></h2>
+    <p>Un routeur est un ordinateur. On y retrouve un processeur (CPU) qui exécute le système, et quatre sortes de mémoire, chacune avec son équivalent sur un PC :</p>
+
+    <div class="tableau">
+      <table>
+        <thead><tr><th>Mémoire</th><th>Volatile ?</th><th>Contenu</th><th>Équivalent PC</th></tr></thead>
+        <tbody>
+          <tr><td><strong>RAM</strong></td><td>oui : effacée à la coupure</td><td>Le système en cours d'exécution, la <strong>configuration courante</strong> (<i>running</i>), les tables de routage et ARP, les mémoires tampons.</td><td>La mémoire vive</td></tr>
+          <tr><td><strong>NVRAM</strong></td><td>non</td><td>La <strong>configuration sauvegardée</strong> (<i>startup</i>) et le registre de configuration (une valeur sur 16 bits).</td><td>—</td></tr>
+          <tr><td><strong>Flash</strong></td><td>non (ROM effaçable)</td><td>L'<strong>image IOS</strong> ; on peut en stocker plusieurs.</td><td>Le disque dur</td></tr>
+          <tr><td><strong>ROM</strong></td><td>non</td><td>Le programme d'amorçage (<i>bootstrap</i>) et les tests de démarrage (POST, <i>Power-On Self Test</i>).</td><td>Le BIOS</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Ce qui se perd à la coupure</span></p>
+      <p>Toute modification tapée en CLI va dans la configuration courante, en RAM. Si le routeur s'éteint avant qu'on l'ait copiée en NVRAM, elle est perdue.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>La séquence de démarrage <span class="ref">diapos 10 et 18</span></h2>
+    <ol class="etapes">
+      <li><strong>Charger le bootstrap</strong> depuis la ROM et <strong>tester le matériel</strong> (POST : diagnostic des mémoires et des modules).</li>
+      <li>Lire le <strong>registre de configuration</strong> et <strong>chercher l'image IOS</strong> (en flash en général), la vérifier et la démarrer.</li>
+      <li><strong>Charger la configuration</strong> de démarrage depuis la NVRAM (<i>startup-config</i>), qui devient la configuration courante.</li>
+    </ol>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Et sans configuration ?</span> <span class="badge ajout">Ajout</span></p>
+      <p>Si la NVRAM est vide (routeur neuf ou effacé avec <code>erase startup-config</code>), l'IOS propose un dialogue de configuration initiale (« <i>Would you like to enter the initial configuration dialog?</i> ») ; on répond <code>no</code> pour configurer à la main. Le registre de configuration sert notamment à démarrer en ignorant la NVRAM, pour récupérer un équipement dont on a perdu le mot de passe.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Se connecter au routeur <span class="ref">diapos 11–14</span></h2>
+    <p>On peut atteindre un routeur par plusieurs chemins (diapo 11) : un terminal sur la <strong>ligne console</strong> ; un modem sur la <strong>ligne auxiliaire</strong> ; par le réseau Ethernet, un <strong>terminal virtuel</strong> (Telnet ou SSH), un <strong>serveur TFTP</strong> (pour charger images et configurations) ou un <strong>navigateur web</strong>.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Port console</span></p>
+      <p>Solution par défaut, qui marche même sur un équipement neuf sans adresse IP : un câble « console », avec un connecteur série d'un côté et un RJ45 de l'autre, relie le port console de l'équipement à un terminal série, physique ou logiciel (HyperTerminal sous Windows, PuTTY…).</p>
+    </div>
+
+    <div class="tableau compact">
+      <table>
+        <thead><tr><th>Paramètre</th><th>Cisco 1700</th></tr></thead>
+        <tbody>
+          <tr><td>Vitesse</td><td>9600 bauds</td></tr>
+          <tr><td>Bits de données</td><td>8</td></tr>
+          <tr><td>Parité</td><td>aucune</td></tr>
+          <tr><td>Bits d'arrêt</td><td>1</td></tr>
+          <tr><td>Contrôle de flux</td><td>aucun</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Les paramètres changent d'un matériel à l'autre</span></p>
+      <p>Les commutateurs Cisco 300 utilisent 115 200 bauds. Si l'écran reste vide ou affiche des caractères incohérents, vérifier d'abord la vitesse.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>L'interface en ligne de commande <span class="ref">diapos 15–17</span></h2>
+
+    <h3>L'aide</h3>
+    <div class="tableau mono compact">
+      <table>
+        <thead><tr><th>Saisie</th><th>Effet</th></tr></thead>
+        <tbody>
+          <tr><td>?</td><td>Liste les commandes disponibles dans le mode courant.</td></tr>
+          <tr><td>show ?</td><td>Liste les options de la commande <code>show</code>.</td></tr>
+          <tr><td>sh?</td><td>Liste les commandes qui commencent par « sh ».</td></tr>
+          <tr><td>Tab</td><td>Complète le mot en cours.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Les abréviations</h3>
+    <p>Toute commande peut être abrégée tant que l'abréviation n'est pas ambiguë :</p>
+<pre class="terminal"><code>router#conf t
+router(config)#int e0
+router(config-if)#ip addr 196.200.1.1 255.255.255.0</code></pre>
+    <p><code>conf t</code> pour <code>configure terminal</code>, <code>int e0</code> pour <code>interface ethernet 0</code>, <code>ip addr</code> pour <code>ip address</code>. La touche Tab, elle, écrit le mot en entier :</p>
+<pre class="terminal"><code>Router(config)#int&lt;TAB&gt;
+Router(config)#interface et&lt;TAB&gt;
+Router(config)#interface ethernet 0
+Router(config-if)#ip add&lt;TAB&gt;
+Router(config-if)#ip address</code></pre>
+
+    <h3>Le nom des interfaces</h3>
+    <p>Une interface se désigne par un <strong>type</strong>, un <strong>emplacement</strong> (<i>slot</i> : 0, 1, 2, 3) et un <strong>numéro</strong> dans cet emplacement (0, 1), par exemple <code>e0/0</code>. Les types s'abrègent :</p>
+    <div class="tableau mono compact">
+      <table>
+        <thead><tr><th>Type</th><th>Abréviation</th><th>Débit</th></tr></thead>
+        <tbody>
+          <tr><td>ethernet</td><td>e</td><td>10 Mb/s</td></tr>
+          <tr><td>fastethernet</td><td>fa</td><td>100 Mb/s</td></tr>
+          <tr><td>gigabitethernet</td><td>gi</td><td>1 Gb/s</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les modes de commande <span class="ref">diapos 19–22</span></h2>
+    <p>Les commandes disponibles dépendent du mode, que l'invite indique. <span class="badge examen">Examen</span></p>
+    <div class="tableau mono">
+      <table>
+        <thead><tr><th>Mode</th><th>Invite</th><th>Pour quoi faire</th></tr></thead>
+        <tbody>
+          <tr><td>Utilisateur</td><td>Router&gt;</td><td>Mode à la connexion : consulter, sans rien modifier.</td></tr>
+          <tr><td>Privilégié</td><td>Router#</td><td>Toutes les commandes de consultation, sauvegarde, redémarrage ; on y entre par <code>enable</code> (et un mot de passe).</td></tr>
+          <tr><td>Configuration globale</td><td>Router(config)#</td><td>Commandes qui portent sur tout le routeur.</td></tr>
+          <tr><td>Interface</td><td>Router(config-if)#</td><td>Commandes propres à une interface.</td></tr>
+          <tr><td>Ligne</td><td>Router(config-line)#</td><td>Commandes propres à une ligne (console, vty…).</td></tr>
+          <tr><td>Routage</td><td>Router(config-router)#</td><td>Commandes d'un protocole de routage.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 600 300" width="600" role="img" aria-labelledby="fig-modes-titre">
+        <title id="fig-modes-titre">Navigation dans les modes : du mode utilisateur, enable mène au mode privilégié et disable en revient ; du mode privilégié, configure terminal mène à la configuration globale et exit en revient ; de la configuration globale, interface, line et router mènent aux modes de configuration spécifiques, et exit en revient.</title>
+        <defs>
+          <marker id="fleche-modes" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein-accent"/>
+          </marker>
+          <marker id="fleche-modes-gris" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="170" y="10" width="260" height="36" rx="6"/><text x="300" y="33" text-anchor="middle">Utilisateur <tspan class="mono">Router&gt;</tspan></text>
+        <rect class="boite" x="170" y="96" width="260" height="36" rx="6"/><text x="300" y="119" text-anchor="middle">Privilégié <tspan class="mono">Router#</tspan></text>
+        <rect class="boite-accent" x="170" y="182" width="260" height="36" rx="6"/><text x="300" y="205" text-anchor="middle">Configuration globale <tspan class="mono">(config)#</tspan></text>
+        <rect class="boite" x="20" y="256" width="160" height="36" rx="6"/><text x="100" y="279" text-anchor="middle" class="mono">(config-if)#</text>
+        <rect class="boite" x="220" y="256" width="160" height="36" rx="6"/><text x="300" y="279" text-anchor="middle" class="mono">(config-line)#</text>
+        <rect class="boite" x="420" y="256" width="160" height="36" rx="6"/><text x="500" y="279" text-anchor="middle" class="mono">(config-router)#</text>
+        <path class="accent" d="M280 46 V94" marker-end="url(#fleche-modes)"/><text x="272" y="76" text-anchor="end" class="mono accent">enable</text>
+        <path class="trait" d="M320 96 V48" marker-end="url(#fleche-modes-gris)"/><text x="328" y="76" class="mono">disable</text>
+        <path class="accent" d="M280 132 V180" marker-end="url(#fleche-modes)"/><text x="272" y="162" text-anchor="end" class="mono accent">configure terminal</text>
+        <path class="trait" d="M320 182 V134" marker-end="url(#fleche-modes-gris)"/><text x="328" y="162" class="mono">exit</text>
+        <path class="accent" d="M190 218 L110 254" marker-end="url(#fleche-modes)"/><text x="80" y="236" class="mono accent">interface</text>
+        <path class="accent" d="M300 218 V254" marker-end="url(#fleche-modes)"/><text x="306" y="242" class="mono accent">line</text>
+        <path class="accent" d="M410 218 L490 254" marker-end="url(#fleche-modes)"/><text x="470" y="236" class="mono accent">router</text>
+      </svg>
+      <figcaption>Navigation dans les modes (diapo 21). <code>exit</code> remonte d'un niveau ; <code>end</code> ou Ctrl+Z ramènent directement au mode privilégié.</figcaption>
+    </figure>
+
+    <p>Pour entrer dans un mode spécifique, depuis la configuration globale :</p>
+    <ul>
+      <li><code>interface {type} {numéro}</code> passe en configuration d'interface (type : e, fa, gi) ;</li>
+      <li><code>router {protocole} [option]</code> passe en configuration du routage (protocole : rip, ospf…) ;</li>
+      <li><code>line {console|vty} {numéros}</code> passe en configuration d'une ligne.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les fichiers de configuration <span class="ref">diapos 23–25</span></h2>
+    <p>Un routeur a toujours <strong>deux</strong> configurations : <span class="badge examen">Examen</span></p>
+    <div class="colonnes">
+      <div class="colonne">
+        <p><strong>Configuration courante</strong> (<i>running-config</i>)</p>
+        <ul>
+          <li>En RAM ; c'est celle qui s'applique en ce moment.</li>
+          <li>Modifiée par chaque commande de configuration.</li>
+          <li>Affichée par <code>show running-config</code>.</li>
+        </ul>
+      </div>
+      <div class="colonne">
+        <p><strong>Configuration de démarrage</strong> (<i>startup-config</i>)</p>
+        <ul>
+          <li>En NVRAM ; chargée au démarrage.</li>
+          <li>Mise à jour seulement par <code>copy running-config startup-config</code>.</li>
+          <li>Affichée par <code>show startup-config</code>.</li>
+        </ul>
+      </div>
+    </div>
+
+    <p>Un extrait de <code>show running-config</code> (diapo 24) : chaque ligne est une commande de configuration globale, les <code>!</code> servent de séparateurs.</p>
+<pre class="terminal"><code>Current configuration : 894 bytes
+!
+version 12.4
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname Router
+!
+enable password cisco
+!
+ip subnet-zero
+ip cef</code></pre>
+    <p>On y lit, par exemple, le nom de l'équipement (<code>hostname</code>) et le mot de passe du mode privilégié, ici en clair (<code>enable password cisco</code>, avec <code>no service password-encryption</code>).</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Une configuration de base complète</span> <span class="badge ajout">Ajout</span></p>
+      <p>Les commandes à connaître pour démarrer un TP : nommer l'équipement, protéger les accès, adresser une interface, vérifier, sauvegarder.</p>
+<pre class="terminal"><code>Router&gt; enable
+Router# configure terminal
+Router(config)# hostname R1
+R1(config)# enable secret Cl4ss3
+R1(config)# line console 0
+R1(config-line)# password c0ns0le
+R1(config-line)# login
+R1(config-line)# exit
+R1(config)# interface gi0/0
+R1(config-if)# ip address 192.168.1.1 255.255.255.0
+R1(config-if)# no shutdown
+R1(config-if)# end
+R1# show ip interface brief
+R1# show ip route
+R1# copy running-config startup-config</code></pre>
+      <ul>
+        <li><code>enable secret</code> stocke le mot de passe chiffré, contrairement à <code>enable password</code>.</li>
+        <li>Les interfaces d'un routeur sont éteintes par défaut : sans <code>no shutdown</code>, rien ne passe.</li>
+        <li><code>show ip interface brief</code> résume l'adresse et l'état (up/down) de chaque interface.</li>
+        <li>Pour exécuter une commande du mode privilégié depuis un mode de configuration, la précéder de <code>do</code> : <code>R1(config)# do show ip route</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exercices</h2>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Où est-ce rangé ?</span></p>
+      <p>Pour chaque élément, donner la mémoire qui le contient : (a) la table ARP ; (b) l'image IOS ; (c) la configuration qui sera chargée au prochain démarrage ; (d) le programme du POST ; (e) une route statique que l'on vient de taper.</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>(a) RAM. (b) Flash. (c) NVRAM. (d) ROM. (e) RAM (configuration courante), tant qu'on ne l'a pas sauvegardée.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Reconnaître le mode</span></p>
+      <p>Dans quel mode est-on, et comment y est-on arrivé, avec les invites <code>R1&gt;</code>, <code>R1(config-if)#</code>, <code>R1(config-router)#</code>, <code>R1#</code> ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <ul>
+          <li><code>R1&gt;</code> : utilisateur, à la connexion.</li>
+          <li><code>R1(config-if)#</code> : configuration d'interface, par <code>enable</code>, <code>configure terminal</code>, <code>interface …</code>.</li>
+          <li><code>R1(config-router)#</code> : configuration du routage, par <code>enable</code>, <code>configure terminal</code>, <code>router rip</code> (par exemple).</li>
+          <li><code>R1#</code> : privilégié, par <code>enable</code>.</li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Le TP perdu</span></p>
+      <p>Un étudiant configure les adresses de son routeur, teste avec succès, puis éteint le routeur. Le lendemain, plus rien ne marche. Que s'est-il passé ? Quelle commande a-t-il oubliée, et dans quel mode se tape-t-elle ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>Sa configuration n'était qu'en RAM (configuration courante), effacée à la coupure ; au démarrage, le routeur a rechargé l'ancienne configuration de la NVRAM. Il fallait taper <code>copy running-config startup-config</code> en mode privilégié (ou <code>do copy running-config startup-config</code> depuis un mode de configuration).</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 4 <span>Écrire la configuration</span></p>
+      <p>Depuis l'invite <code>Router&gt;</code>, écrire les commandes qui nomment le routeur R2, donnent l'adresse 10.1.1.254/24 à l'interface fa0/1, l'activent, puis sauvegardent.</p>
+      <details class="solution"><summary>Solution proposée</summary>
+<pre class="terminal"><code>Router&gt; enable
+Router# configure terminal
+Router(config)# hostname R2
+R2(config)# interface fa0/1
+R2(config-if)# ip address 10.1.1.254 255.255.255.0
+R2(config-if)# no shutdown
+R2(config-if)# end
+R2# copy running-config startup-config</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>IOS = système d'exploitation des équipements Cisco ; on le pilote surtout en CLI.</li>
+        <li>RAM (volatile) : configuration courante, tables de routage et ARP. NVRAM : configuration de démarrage. Flash : image IOS. ROM : bootstrap et POST.</li>
+        <li>Démarrage : bootstrap et test du matériel ; registre de configuration et recherche de l'IOS ; chargement de la configuration.</li>
+        <li>Connexion par défaut : câble console, terminal série (9600 bauds, 8 bits, sans parité, 1 bit d'arrêt, sans contrôle de flux, sur un 1700).</li>
+        <li>Aide : <code>?</code> ; abréviations (<code>conf t</code>) ; Tab pour compléter. Interfaces : type + emplacement/numéro (<code>gi0/0</code>).</li>
+        <li>Modes : utilisateur <code>&gt;</code>, privilégié <code>#</code> (<code>enable</code>), configuration globale <code>(config)#</code> (<code>configure terminal</code>), puis interface, ligne, routage.</li>
+        <li>Toute modification va dans la running-config ; <code>copy running-config startup-config</code> pour la garder au redémarrage.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Dans quelle mémoire est stockée la configuration de démarrage ?</summary>
+        <div><p>La NVRAM.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quel est l'équivalent du BIOS d'un PC sur un routeur ?</summary>
+        <div><p>La ROM (bootstrap et POST).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle commande fait passer du mode utilisateur au mode privilégié ?</summary>
+        <div><p><code>enable</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que signifie l'invite <code>Router(config-line)#</code> ?</summary>
+        <div><p>Mode de configuration d'une ligne (console ou terminal virtuel).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Comment afficher la configuration en cours ?</summary>
+        <div><p><code>show running-config</code> (en mode privilégié).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que désigne <code>fa0/1</code> ?</summary>
+        <div><p>L'interface FastEthernet numéro 1 de l'emplacement 0.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-08-nat.html"><small>← Précédent</small>La traduction d'adresses (NAT)</a>
+    <a class="suivant" href="cours-a2-couche-application.html"><small>Suivant →</small>Annexe A2 : la couche application</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Réseaux · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

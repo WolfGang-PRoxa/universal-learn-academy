@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="se">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fichiers et catalogues · Programmation système L3</title>
+<meta name="description" content="Cours 1 de programmation système (L3) : système de gestion de fichiers, catalogues, organisation des blocs (blocs chaînés, table des blocs, blocs d'index), descripteurs, partage, le SGF d'Unix (i-nœuds, droits, catalogues, liens) et la FAT de MS-DOS, les primitives stat, lstat et readdir.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-01-fichiers-catalogues.html" title="Quiz · Fichiers et catalogues">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-cc1.html" title="Quiz · Annale CC1 2025">
+<link rel="quiz" href="../generated_quizzes/quiz-fichiers-verrous-erreurs.html" title="Quiz · Fichiers et verrous : reprendre les erreurs">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-ct-2025.html" title="Annale · Examen de décembre 2024">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">Programmation système</a>
+    <span aria-current="page">Cours 1 · Fichiers et catalogues</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Programmation système</span> Cours 1 · L3 S5</p>
+    <h1>Fichiers et catalogues</h1>
+    <p class="chapeau">Le système de gestion de fichiers range sur le disque les données qui doivent survivre aux programmes, et les rend accessibles par leur nom. Ce cours présente ses mécanismes (catalogues, organisation des blocs, descripteurs, partage), deux réalisations, le SGF d'Unix et la FAT de MS-DOS, puis les primitives C qui l'interrogent : c'est la base du TD 1 et des questions de cours du CC1.</p>
+    <dl class="meta">
+      <div><dt>Sources</dt><dd>notes de séance « Cours SE » (CM 1, CM 2 § 1 à 4) · rappels de <a href="../TD/TD1.pdf">TD1.pdf</a> · <a href="../cours/Cours_(étudiants_de_lannee_passee).pdf">cours rédigé par des étudiants de l'an dernier</a></dd></div>
+      <div><dt>Enseignant</dt><dd>B. Jacob</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-31">31 oct. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Expliquer le rôle d'un système de gestion de fichiers et celui d'un catalogue.</li>
+        <li>Comparer les trois organisations des blocs d'un fichier : blocs chaînés, table des blocs, blocs d'index.</li>
+        <li>Calculer la taille maximale d'un fichier décrit par un i-nœud, et le nombre d'accès disque pour en lire un octet.</li>
+        <li>Décrire les descripteurs de fichiers ouverts, à un et à deux niveaux.</li>
+        <li>Lire les droits d'un fichier Unix (rwx, SET_UID, SET_GID, sticky bit) ; distinguer lien physique et lien symbolique.</li>
+        <li>Suivre la chaîne des secteurs d'un fichier dans une FAT.</li>
+        <li>Interroger le SGF en C avec <code>stat</code>, <code>lstat</code> et <code>readdir</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Langage C : structures, pointeurs, opérateurs bit à bit (<code>&amp;</code>, <code>|</code>), <code>errno</code>.</li>
+        <li>Terminal Unix : <code>ls</code>, <code>cd</code>, chemins de fichiers.</li>
+        <li>Écritures binaire, octale et hexadécimale d'un entier.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc complement">
+    <p class="bloc-titre">Complément <span>D'où vient cette page</span></p>
+    <p>L'enseignant ne distribue pas de support écrit pour ce chapitre. La page s'appuie sur les notes prises en séance (Google Doc « Cours SE » : tout le CM 1, et les § 1 à 4 du CM 2), recoupées avec un cours rédigé par trois étudiants de la promotion précédente d'après le même enseignement, et sur les rappels de l'énoncé du TD 1. Les notes sont brèves : les explications qui les développent sont signalées comme ajouts. Le § 5 du CM 2, sur les verrous, fait l'objet du <a href="cours-02-verrous.html">cours 2</a>.</p>
+    <p>Les commandes de la page et les deux programmes de la section 8 ont été exécutés sous Linux (noyau 6.18, dans WSL 2) ; les sorties reproduites sont celles obtenues, seuls les numéros d'i-nœuds et les dates changent d'une machine à l'autre. Le CC1 2025 a interrogé ce chapitre (rôle du catalogue, table des blocs, fonctions <code>modif</code> et <code>ordinaire</code> écrites avec <code>stat</code>) : son <a href="../annales/corrige-cc1-2025.html">corrigé</a> renvoie à cette page.</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Système d'exploitation et gestion de fichiers <span class="ref">notes CM 1</span></h2>
+    <p>Un programme perd ses variables quand il se termine. Pour garder des données d'une exécution à l'autre, il les écrit dans des fichiers, dont le système d'exploitation confie la gestion à l'un de ses composants : le système de gestion de fichiers.</p>
+
+    <h3>Définitions <span class="ref">CM 1</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Système d'exploitation</span></p>
+      <p>Un <dfn>système d'exploitation</dfn> (<span class="en" lang="en">operating system</span>, SE) est l'ensemble des programmes qui gèrent l'ordinateur : ses ressources matérielles, comme la mémoire et les disques, et immatérielles, comme les processus en cours d'exécution.</p>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Système de gestion de fichiers</span></p>
+      <p>Le <dfn>système de gestion de fichiers</dfn> (<span class="en" lang="en">file system</span>, SGF) est le programme qui gère l'ensemble des fichiers de la machine.</p>
+    </div>
+    <p>Le module étudie le système d'exploitation par ses principaux composants, sur l'exemple d'Unix : les fichiers d'abord (ce cours et le cours 2), puis les processus, leur communication et leur ordonnancement.</p>
+
+    <h3>Le fichier, vu de l'utilisateur et du système <span class="ref">CM 1</span></h3>
+    <p>Un fichier sert au stockage de longue durée, sur un support qui garde son contenu hors tension (disque, clé USB), et non en mémoire vive. On le voit de deux façons :</p>
+    <ul>
+      <li>pour l'utilisateur, c'est une <strong>collection de données</strong> (un texte, une image, un programme) qu'il désigne par un nom ;</li>
+      <li>pour le système, c'est une <strong>suite de blocs</strong> de taille fixe, sur une unité logique.</li>
+    </ul>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Unité logique, bloc, secteur</span></p>
+      <p>Une <dfn>unité logique</dfn> est un espace de stockage que le SGF gère d'un seul tenant : un disque, une partition de disque, une clé USB. Le SGF la découpe en <dfn>blocs</dfn> (<span class="en" lang="en">blocks</span>) de même taille, numérotés, qui sont son unité d'allocation : un fichier occupe toujours un nombre entier de blocs, même s'il ne remplit pas le dernier.</p>
+      <p>Le disque, lui, lit et écrit par <dfn>secteurs</dfn>, souvent de 512 octets ; un bloc regroupe un ou plusieurs secteurs consécutifs. MS-DOS appelle d'ailleurs ses blocs des secteurs (section 7).</p>
+    </div>
+
+    <h3>Les services du SGF <span class="ref">CM 1</span></h3>
+    <p>Le CM 1 énumère ce que le SGF doit permettre, et le moyen qui y répond. Ce sont les parties de ce cours et du suivant.</p>
+    <table>
+      <caption>Ce que le SGF doit permettre (notes du CM 1)</caption>
+      <thead><tr><th>Service</th><th>Moyen</th><th>Où</th></tr></thead>
+      <tbody>
+        <tr><td>allouer le nombre de blocs suffisant pour stocker le fichier</td><td>la gestion des blocs</td><td>section 3</td></tr>
+        <tr><td>créer et supprimer des fichiers</td><td><code>open</code>, <code>close</code> et les descripteurs</td><td>section 4</td></tr>
+        <tr><td>manipuler les fichiers par un nom symbolique</td><td>le catalogue</td><td>section 2</td></tr>
+        <tr><td>partager les fichiers entre plusieurs utilisateurs</td><td>les droits</td><td>sections 5 et 6</td></tr>
+        <tr><td>interdire les écritures concurrentes</td><td>le verrouillage</td><td><a href="cours-02-verrous.html">cours 2</a></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le catalogue <span class="ref">notes CM 1</span></h2>
+    <p>Le disque ne connaît que des numéros de blocs ; l'utilisateur, lui, désigne ses fichiers par des noms. Le catalogue fait le lien entre les deux.</p>
+
+    <h3>Rôle du catalogue <span class="ref">CM 1</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Catalogue</span></p>
+      <p>Un <dfn>catalogue</dfn> (<span class="en" lang="en">directory</span>) est une table qui associe à chaque fichier son <strong>nom symbolique</strong> et l'<strong>adresse physique</strong> de son contenu sur le support. Une ligne de cette table, l'<dfn>entrée</dfn> du fichier, contient donc un nom et une adresse.</p>
+    </div>
+    <table>
+      <caption>Un catalogue : une entrée par fichier</caption>
+      <thead><tr><th>Nom du fichier</th><th>Adresse du contenu</th></tr></thead>
+      <tbody>
+        <tr><td><code>rapport.txt</code></td><td>bloc 112</td></tr>
+        <tr><td><code>photo.png</code></td><td>bloc 37</td></tr>
+      </tbody>
+    </table>
+    <p>Sous Unix, on dit plutôt <dfn>répertoire</dfn> ; « catalogue » est le mot du cours et de l'énoncé du TD 1. Un catalogue est lui-même un fichier, rangé sur le disque comme les autres.</p>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Une question du CC1 2025</span></p>
+      <p>« Quel est le rôle d'un catalogue ? » valait 1 point au CC1 2025. On attend l'association d'un nom symbolique à l'adresse du fichier <em>sur le disque</em> (sous Unix, son numéro d'i-nœud), et non « une adresse mémoire » : voir le <a href="../annales/corrige-cc1-2025.html#q1">corrigé de la question 1</a>.</p>
+    </div>
+
+    <h3>Le catalogue à deux niveaux <span class="ref">CM 1</span></h3>
+    <p>Une première organisation range les fichiers sur deux niveaux :</p>
+    <ul>
+      <li>le <strong>catalogue principal</strong> a une entrée par utilisateur ;</li>
+      <li>chaque entrée renvoie à un <strong>catalogue secondaire</strong>, qui a une entrée par fichier de cet utilisateur.</li>
+    </ul>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 580 166" width="580" role="img" aria-labelledby="fig-deux-niveaux-titre">
+        <title id="fig-deux-niveaux-titre">Catalogue à deux niveaux : le catalogue principal a une entrée par utilisateur, alice et bob ; chacune renvoie au catalogue de l'utilisateur, qui a une entrée par fichier (td1.c et notes.txt pour alice, rapport.pdf pour bob) dont l'adresse mène au contenu.</title>
+        <defs>
+          <marker id="fleche-deux-niveaux" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <g font-size="13">
+          <text x="10" y="30" class="gras">catalogue principal</text>
+          <rect class="boite" x="10" y="40" width="150" height="96" rx="3"/>
+          <path class="boite" d="M10 72 H160 M10 104 H160"/>
+          <text x="22" y="61" class="mono">alice</text>
+          <text x="22" y="93" class="mono">bob</text>
+          <text x="22" y="125" class="t2">…</text>
+          <text x="230" y="14" class="t2">catalogue de alice</text>
+          <rect class="boite" x="230" y="22" width="170" height="64" rx="3"/>
+          <path class="boite" d="M230 54 H400"/>
+          <text x="242" y="43" class="mono">td1.c</text>
+          <text x="242" y="75" class="mono">notes.txt</text>
+          <text x="230" y="118" class="t2">catalogue de bob</text>
+          <rect class="boite" x="230" y="126" width="170" height="32" rx="3"/>
+          <text x="242" y="147" class="mono">rapport.pdf</text>
+          <rect class="boite-accent" x="470" y="24" width="96" height="28" rx="3"/>
+          <rect class="boite-accent" x="470" y="56" width="96" height="28" rx="3"/>
+          <rect class="boite-accent" x="470" y="128" width="96" height="28" rx="3"/>
+          <text x="518" y="43" text-anchor="middle" class="accent">contenu</text>
+          <text x="518" y="75" text-anchor="middle" class="accent">contenu</text>
+          <text x="518" y="147" text-anchor="middle" class="accent">contenu</text>
+        </g>
+        <path class="trait" d="M160 56 L228 54" marker-end="url(#fleche-deux-niveaux)"/>
+        <path class="trait" d="M160 88 L228 140" marker-end="url(#fleche-deux-niveaux)"/>
+        <path class="trait" d="M400 38 H468" marker-end="url(#fleche-deux-niveaux)"/>
+        <path class="trait" d="M400 70 H468" marker-end="url(#fleche-deux-niveaux)"/>
+        <path class="trait" d="M400 142 H468" marker-end="url(#fleche-deux-niveaux)"/>
+      </svg>
+      <figcaption>Un catalogue à deux niveaux. Pour trouver un fichier, deux recherches suffisent : l'utilisateur dans le catalogue principal, puis le nom dans le catalogue de cet utilisateur.</figcaption>
+    </figure>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="colonne-titre">Avantage</p>
+        <ul>
+          <li>Rapide et simple : deux recherches, quel que soit le fichier.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p class="colonne-titre">Inconvénient</p>
+        <ul>
+          <li>Très rigide : chaque utilisateur n'a qu'une liste de fichiers, et le partage entre utilisateurs est malcommode. Cette organisation n'est plus utilisée aujourd'hui.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>L'arborescence de catalogues <span class="ref">CM 1</span></h3>
+    <p>On lui préfère une <dfn>arborescence</dfn> : un catalogue peut contenir des fichiers et d'autres catalogues, dont il garde les adresses. Les catalogues forment un arbre, dont la <dfn>racine</dfn> est le catalogue de départ.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 430 210" width="430" role="img" aria-labelledby="fig-arbre-titre">
+        <title id="fig-arbre-titre">Arborescence de catalogues : la racine / contient les catalogues home et etc ; home contient les catalogues alice et bob ; alice contient les fichiers td1.c et notes.txt ; etc contient le fichier passwd.</title>
+        <path class="trait" d="M260 36 L150 66 M260 36 L370 66 M150 92 L100 122 M150 92 L210 122 M100 148 L60 178 M100 148 L170 178 M370 92 V122"/>
+        <g font-size="13">
+          <rect class="boite" x="230" y="10" width="60" height="26" rx="5"/>
+          <text x="260" y="28" text-anchor="middle" class="mono">/</text>
+          <rect class="boite" x="110" y="66" width="80" height="26" rx="5"/>
+          <text x="150" y="84" text-anchor="middle" class="mono">home</text>
+          <rect class="boite" x="340" y="66" width="60" height="26" rx="5"/>
+          <text x="370" y="84" text-anchor="middle" class="mono">etc</text>
+          <rect class="boite" x="60" y="122" width="80" height="26" rx="5"/>
+          <text x="100" y="140" text-anchor="middle" class="mono">alice</text>
+          <rect class="boite" x="180" y="122" width="60" height="26" rx="5"/>
+          <text x="210" y="140" text-anchor="middle" class="mono">bob</text>
+          <rect class="boite-accent" x="330" y="122" width="80" height="26" rx="5"/>
+          <text x="370" y="140" text-anchor="middle" class="mono accent">passwd</text>
+          <rect class="boite-accent" x="20" y="178" width="80" height="26" rx="5"/>
+          <text x="60" y="196" text-anchor="middle" class="mono accent">td1.c</text>
+          <rect class="boite-accent" x="120" y="178" width="100" height="26" rx="5"/>
+          <text x="170" y="196" text-anchor="middle" class="mono accent">notes.txt</text>
+        </g>
+      </svg>
+      <figcaption>Une arborescence de catalogues (cadres neutres) et de fichiers (en couleur). Le chemin <code>/home/alice/notes.txt</code> désigne le fichier <code>notes.txt</code> du catalogue <code>alice</code>, lui-même dans <code>home</code>, sous la racine.</figcaption>
+    </figure>
+    <p>L'accès est plus lent : pour atteindre un fichier, il faut lire chaque étage de l'arborescence depuis la racine. Pour <code>/home/alice/notes.txt</code>, on lit la racine, puis <code>home</code>, puis <code>alice</code>, avant de trouver l'entrée <code>notes.txt</code>. En échange, l'organisation est bien plus flexible.</p>
+    <p>Pour limiter ces lectures, le système garde le chemin du dernier catalogue accédé. Il mise sur le <strong>regroupement des accès</strong> : un programme utilise souvent plusieurs fichiers d'un même catalogue, et les accès suivants partent de là.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Chemin absolu, chemin relatif</span></p>
+      <p>Un <dfn>chemin absolu</dfn> part de la racine et commence par <code>/</code> : <code>/home/alice/notes.txt</code>. Un <dfn>chemin relatif</dfn> part du <dfn>catalogue de travail</dfn> du processus, que <code>pwd</code> affiche et que <code>cd</code> change : depuis <code>/home/alice</code>, <code>notes.txt</code> suffit. Le catalogue de travail joue le rôle du « dernier chemin accédé » : un chemin relatif évite de repartir de la racine.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>L'organisation des blocs <span class="ref">notes CM 1</span></h2>
+    <p>Un fichier occupe en général plusieurs blocs, rarement voisins sur le disque. Le catalogue ne donne qu'un point de départ : il faut encore savoir quels blocs forment le fichier, et dans quel ordre. Le CM 1 compare trois organisations.</p>
+
+    <h3>Les blocs chaînés <span class="ref">CM 1</span></h3>
+    <div class="bloc methode">
+      <p class="bloc-titre">Principe <span>Blocs chaînés</span></p>
+      <p>Chaque bloc contient, au début, des données du fichier et, à la fin, l'adresse du bloc suivant. Le dernier bloc porte une marque de fin de fichier (<code>EOF</code>, souvent la valeur <code>FF…F</code>). Le catalogue donne l'adresse du premier bloc.</p>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 610 80" width="610" role="img" aria-labelledby="fig-chaine-titre">
+        <title id="fig-chaine-titre">Blocs chaînés : l'entrée rapport.txt du catalogue donne le bloc 12 ; le bloc 12 contient des données puis l'adresse 7 ; le bloc 7 contient des données puis l'adresse 21 ; le bloc 21 contient des données puis la marque EOF.</title>
+        <defs>
+          <marker id="fleche-chaine" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <g font-size="13">
+          <text x="10" y="26" class="gras">catalogue</text>
+          <rect class="boite" x="10" y="38" width="130" height="30" rx="3"/>
+          <path class="boite" d="M100 38 V68"/>
+          <text x="18" y="58" class="mono" font-size="12">rapport.txt</text>
+          <text x="120" y="58" text-anchor="middle" class="mono">12</text>
+          <text x="180" y="26" class="t2">bloc 12</text>
+          <rect class="boite" x="180" y="38" width="120" height="30" rx="3"/>
+          <path class="boite" d="M260 38 V68"/>
+          <text x="220" y="58" text-anchor="middle" class="t2">données</text>
+          <text x="280" y="58" text-anchor="middle" class="mono">7</text>
+          <text x="330" y="26" class="t2">bloc 7</text>
+          <rect class="boite" x="330" y="38" width="120" height="30" rx="3"/>
+          <path class="boite" d="M410 38 V68"/>
+          <text x="370" y="58" text-anchor="middle" class="t2">données</text>
+          <text x="430" y="58" text-anchor="middle" class="mono">21</text>
+          <text x="480" y="26" class="t2">bloc 21</text>
+          <rect class="boite" x="480" y="38" width="120" height="30" rx="3"/>
+          <path class="boite" d="M560 38 V68"/>
+          <text x="520" y="58" text-anchor="middle" class="t2">données</text>
+          <text x="580" y="58" text-anchor="middle" class="mono accent">EOF</text>
+        </g>
+        <path class="trait" d="M140 53 H178" marker-end="url(#fleche-chaine)"/>
+        <path class="trait" d="M300 53 H328" marker-end="url(#fleche-chaine)"/>
+        <path class="trait" d="M450 53 H478" marker-end="url(#fleche-chaine)"/>
+      </svg>
+      <figcaption>Des blocs chaînés : chacun garde, à la fin, l'adresse du suivant, et le dernier porte <code>EOF</code>.</figcaption>
+    </figure>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="colonne-titre">Avantages</p>
+        <ul>
+          <li>Simple à mettre en place.</li>
+          <li>Rapide pour une lecture du début à la fin.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p class="colonne-titre">Inconvénients</p>
+        <ul>
+          <li>Place perdue : chaque bloc garde une adresse au lieu de données.</li>
+          <li>Pour atteindre la fin du fichier, il faut parcourir tous ses blocs : pas d'accès direct au milieu.</li>
+          <li>Problème de défragmentation.</li>
+        </ul>
+      </div>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Ce dernier point vient de la dispersion des blocs : quand ceux d'un fichier sont éparpillés sur le disque, la tête de lecture fait de grands déplacements, et les regrouper (défragmenter) oblige à réécrire les adresses de chaînage.</p>
+
+    <h3>La table des blocs <span class="ref">CM 1</span></h3>
+    <div class="bloc methode">
+      <p class="bloc-titre">Principe <span>Table des blocs</span></p>
+      <p>Les adresses quittent les blocs : elles sont toutes rangées dans une <dfn>table des blocs</dfn>, gardée en mémoire centrale (MC). La table a une entrée par bloc du disque ; l'entrée <var>i</var> contient le numéro du bloc qui suit le bloc <var>i</var> dans son fichier, ou <code>EOF</code>. Le catalogue donne le numéro du premier bloc, et l'on parcourt le fichier en suivant la chaîne dans la table, sans lire ses données.</p>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 580 190" width="580" role="img" aria-labelledby="fig-table-titre">
+        <title id="fig-table-titre">Table des blocs : le catalogue indique que le fichier B commence au bloc 2 et le fichier A au bloc 4. La table, en mémoire centrale, a une entrée par bloc : 0 contient EOF, 1 contient 3, 2 contient 0, 3 contient EOF, 4 contient 1, et 5 est libre. Le fichier A occupe donc les blocs 4, 1 et 3, le fichier B les blocs 2 et 0.</title>
+        <defs>
+          <marker id="fleche-table" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <g font-size="13">
+          <text x="10" y="26" class="gras">catalogue</text>
+          <rect class="boite" x="10" y="38" width="110" height="60" rx="3"/>
+          <path class="boite" d="M10 68 H120 M80 38 V98"/>
+          <text x="45" y="58" text-anchor="middle" class="mono">B</text>
+          <text x="100" y="58" text-anchor="middle" class="mono">2</text>
+          <text x="45" y="88" text-anchor="middle" class="mono">A</text>
+          <text x="100" y="88" text-anchor="middle" class="mono">4</text>
+          <text x="190" y="16" class="gras">table des blocs</text>
+          <rect class="boite" x="190" y="24" width="100" height="156" rx="3"/>
+          <path class="boite" d="M190 50 H290 M190 76 H290 M190 102 H290 M190 128 H290 M190 154 H290 M226 24 V180"/>
+          <text x="208" y="42" text-anchor="middle" class="mono t2">0</text>
+          <text x="208" y="68" text-anchor="middle" class="mono t2">1</text>
+          <text x="208" y="94" text-anchor="middle" class="mono t2">2</text>
+          <text x="208" y="120" text-anchor="middle" class="mono t2">3</text>
+          <text x="208" y="146" text-anchor="middle" class="mono t2">4</text>
+          <text x="208" y="172" text-anchor="middle" class="mono t2">5</text>
+          <text x="258" y="42" text-anchor="middle" class="mono">EOF</text>
+          <text x="258" y="68" text-anchor="middle" class="mono">3</text>
+          <text x="258" y="94" text-anchor="middle" class="mono">0</text>
+          <text x="258" y="120" text-anchor="middle" class="mono">EOF</text>
+          <text x="258" y="146" text-anchor="middle" class="mono">1</text>
+          <text x="258" y="172" text-anchor="middle" class="t2">libre</text>
+          <text x="330" y="94" class="gras">B</text>
+          <rect class="boite-accent" x="350" y="76" width="34" height="26" rx="3"/>
+          <text x="367" y="94" text-anchor="middle" class="mono accent">2</text>
+          <rect class="boite-accent" x="410" y="76" width="34" height="26" rx="3"/>
+          <text x="427" y="94" text-anchor="middle" class="mono accent">0</text>
+          <text x="468" y="94" class="mono">EOF</text>
+          <text x="330" y="146" class="gras">A</text>
+          <rect class="boite-accent" x="350" y="128" width="34" height="26" rx="3"/>
+          <text x="367" y="146" text-anchor="middle" class="mono accent">4</text>
+          <rect class="boite-accent" x="410" y="128" width="34" height="26" rx="3"/>
+          <text x="427" y="146" text-anchor="middle" class="mono accent">1</text>
+          <rect class="boite-accent" x="470" y="128" width="34" height="26" rx="3"/>
+          <text x="487" y="146" text-anchor="middle" class="mono accent">3</text>
+          <text x="528" y="146" class="mono">EOF</text>
+        </g>
+        <path class="pointille" d="M120 53 L188 89" marker-end="url(#fleche-table)"/>
+        <path class="pointille" d="M120 83 L188 141" marker-end="url(#fleche-table)"/>
+        <path class="trait" d="M384 89 H408" marker-end="url(#fleche-table)"/>
+        <path class="trait" d="M444 89 H464" marker-end="url(#fleche-table)"/>
+        <path class="trait" d="M384 141 H408" marker-end="url(#fleche-table)"/>
+        <path class="trait" d="M444 141 H468" marker-end="url(#fleche-table)"/>
+        <path class="trait" d="M504 141 H524" marker-end="url(#fleche-table)"/>
+      </svg>
+      <figcaption>Une table des blocs (d'après le cours de l'an dernier). Le catalogue donne le premier bloc de chaque fichier, la table le suivant de chaque bloc : A occupe les blocs 4, 1 et 3 ; B les blocs 2 et 0. Le bloc 5 est libre.</figcaption>
+    </figure>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="colonne-titre">Avantages</p>
+        <ul>
+          <li>Aucune place perdue dans les blocs, qui ne contiennent que des données.</li>
+          <li>Accès direct : pour atteindre le <var>n</var>-ième bloc, on suit la chaîne dans la table, en mémoire, sans lire un seul bloc du disque.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p class="colonne-titre">Inconvénients</p>
+        <ul>
+          <li>Perte d'espace dans le dernier bloc, que le fichier remplit rarement.</li>
+          <li>Problèmes de swap si la table est trop grande pour la mémoire centrale.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Quelle taille pour la table ?</span></p>
+      <p>Un disque de 1 Tio découpé en blocs de 4 Kio compte \(2^{40} / 2^{12} = 2^{28}\), soit environ 268 millions de blocs. Avec des numéros de 4 octets, la table occupe 1 Gio de mémoire centrale. Si elle ne tient pas, une partie reste sur le disque, et le système échange les deux parties au gré des besoins (<span class="en" lang="en">swap</span>). Quand les blocs d'un fichier sont dispersés dans la table, les échanges se multiplient, et le gain de vitesse disparaît.</p>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Une question du CC1 2025</span></p>
+      <p>« Donnez un inconvénient de l'organisation des blocs d'un fichier par table des blocs » valait 1 point. Attention à ne pas citer l'inconvénient d'une autre organisation : devoir lire tous les blocs pour atteindre la fin est celui des blocs chaînés, que la table corrige justement. Voir le <a href="../annales/corrige-cc1-2025.html#q2">corrigé de la question 2</a>.</p>
+    </div>
+
+    <h3>La taille des blocs <span class="ref">CM 1</span></h3>
+    <p>Le choix de la taille des blocs est un compromis entre le gaspillage d'espace à la fin des fichiers et le nombre d'adresses à manipuler :</p>
+    <ul>
+      <li>avec de grands blocs, il y a peu d'adresses (une table plus petite, des index plus courts), mais le dernier bloc de chaque fichier, à moitié vide en moyenne, perd beaucoup de place ;</li>
+      <li>avec de petits blocs, on perd peu de place, mais il y a beaucoup plus d'adresses à gérer.</li>
+    </ul>
+    <p><span class="badge ajout">Ajout</span> Sur le système Linux des exemples, les blocs font 4 Kio : un fichier d'un octet en occupe un entier.</p>
+<pre class="terminal"><code>$ stat -f -c "%S %n" /
+4096 /</code></pre>
+
+    <h3>Les blocs d'index <span class="ref">CM 1</span></h3>
+    <div class="bloc methode">
+      <p class="bloc-titre">Principe <span>Organisation par blocs d'index</span></p>
+      <p>Chaque fichier a son propre <dfn>bloc d'index</dfn>, qui contient la liste ordonnée des numéros de ses blocs. Le catalogue donne l'adresse de ce bloc d'index.</p>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 520 156" width="520" role="img" aria-labelledby="fig-index-titre">
+        <title id="fig-index-titre">Blocs d'index : l'entrée photo.png du catalogue désigne le bloc d'index 9, qui contient dans l'ordre les numéros 14, 3, 27 et 8 ; ce sont le premier, le deuxième, le troisième et le quatrième bloc de données du fichier.</title>
+        <defs>
+          <marker id="fleche-index" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <g font-size="13">
+          <text x="10" y="64" class="gras">catalogue</text>
+          <rect class="boite" x="10" y="72" width="130" height="30" rx="3"/>
+          <path class="boite" d="M100 72 V102"/>
+          <text x="18" y="92" class="mono" font-size="12">photo.png</text>
+          <text x="120" y="92" text-anchor="middle" class="mono">9</text>
+          <text x="190" y="16" class="gras">bloc d'index 9</text>
+          <rect class="boite" x="190" y="26" width="60" height="120" rx="3"/>
+          <path class="boite" d="M190 56 H250 M190 86 H250 M190 116 H250"/>
+          <text x="220" y="46" text-anchor="middle" class="mono">14</text>
+          <text x="220" y="76" text-anchor="middle" class="mono">3</text>
+          <text x="220" y="106" text-anchor="middle" class="mono">27</text>
+          <text x="220" y="136" text-anchor="middle" class="mono">8</text>
+          <rect class="boite-accent" x="330" y="29" width="100" height="24" rx="3"/>
+          <rect class="boite-accent" x="330" y="59" width="100" height="24" rx="3"/>
+          <rect class="boite-accent" x="330" y="89" width="100" height="24" rx="3"/>
+          <rect class="boite-accent" x="330" y="119" width="100" height="24" rx="3"/>
+          <text x="380" y="46" text-anchor="middle" class="mono accent">bloc 14</text>
+          <text x="380" y="76" text-anchor="middle" class="mono accent">bloc 3</text>
+          <text x="380" y="106" text-anchor="middle" class="mono accent">bloc 27</text>
+          <text x="380" y="136" text-anchor="middle" class="mono accent">bloc 8</text>
+          <text x="442" y="46" class="t2">1er bloc</text>
+          <text x="442" y="76" class="t2">2e bloc</text>
+          <text x="442" y="106" class="t2">3e bloc</text>
+          <text x="442" y="136" class="t2">4e bloc</text>
+        </g>
+        <path class="trait" d="M140 87 L188 86" marker-end="url(#fleche-index)"/>
+        <path class="trait" d="M250 41 H328" marker-end="url(#fleche-index)"/>
+        <path class="trait" d="M250 71 H328" marker-end="url(#fleche-index)"/>
+        <path class="trait" d="M250 101 H328" marker-end="url(#fleche-index)"/>
+        <path class="trait" d="M250 131 H328" marker-end="url(#fleche-index)"/>
+      </svg>
+      <figcaption>Un bloc d'index : la <var>n</var>-ième adresse de l'index désigne le <var>n</var>-ième bloc du fichier.</figcaption>
+    </figure>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="colonne-titre">Avantages</p>
+        <ul>
+          <li>Plus léger : seuls les index des fichiers ouverts sont en mémoire ; plus de table géante, donc plus de problème de swap.</li>
+          <li>Plus rapide : accès direct (le <var>n</var>-ième numéro de l'index) comme séquentiel.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p class="colonne-titre">Inconvénients</p>
+        <ul>
+          <li>Insérer des données au milieu du fichier est un peu plus long : il faut décaler toutes les adresses qui suivent dans l'index.</li>
+          <li>Le dernier bloc reste en partie perdu.</li>
+        </ul>
+      </div>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Un bloc d'index a une taille fixe, donc un nombre limité d'adresses, ce qui limite la taille d'un fichier. Unix étage ses index sur plusieurs niveaux pour décrire les grands fichiers (<a href="#i-noeud-et-blocs-d-index">section 6.3</a>).</p>
+
+    <h3>Comparer les trois organisations</h3>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les trois organisations côte à côte</span></p>
+      <table>
+        <caption>Où sont les adresses, et ce que cela coûte</caption>
+        <thead><tr><th></th><th>Blocs chaînés</th><th>Table des blocs</th><th>Blocs d'index</th></tr></thead>
+        <tbody>
+          <tr><th>Adresses</th><td>dans chaque bloc</td><td>dans une table en MC, commune au disque</td><td>dans un bloc d'index par fichier</td></tr>
+          <tr><th>Accès au <var>n</var>-ième bloc</th><td>lire les <var>n</var> − 1 blocs qui précèdent</td><td>suivre la chaîne en mémoire</td><td>lire l'index</td></tr>
+          <tr><th>Place perdue</th><td>une adresse par bloc, la fin du dernier bloc</td><td>la fin du dernier bloc</td><td>la fin du dernier bloc, le bloc d'index</td></tr>
+          <tr><th>Point faible</th><td>accès séquentiel seulement</td><td>taille de la table (swap)</td><td>insertion au milieu</td></tr>
+          <tr><th>Exemple réel</th><td>—</td><td>la FAT de MS-DOS (section 7)</td><td>les i-nœuds d'Unix (section 6)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Ouvrir et fermer un fichier : les descripteurs <span class="ref">notes CM 1</span></h2>
+    <p>Chercher un fichier dans le catalogue à chacune de ses lectures serait coûteux. On l'ouvre donc une fois : le SGF vérifie qu'il existe et garde en mémoire, dans un descripteur, ce qu'il faut pour y accéder, jusqu'à sa fermeture.</p>
+
+    <h3>open et close <span class="ref">CM 1</span></h3>
+    <ul>
+      <li><code>open(nom_fich, mode)</code> ouvre le fichier dans un mode d'accès (lecture, écriture). Dans ce premier modèle, l'ouverture est atomique, avec une utilisation simultanée par fichier au plus ; les descripteurs à deux niveaux lèvent cette limite.</li>
+      <li><code>close(nom_fich)</code> ferme le fichier.</li>
+    </ul>
+    <p><span class="badge ajout">Ajout</span> Sous Unix, <code>open</code> renvoie un petit entier, le numéro du descripteur (<a href="#les-descripteurs-ouverts-d-un-processus">section 6.7</a>), et c'est ce numéro, non le nom du fichier, que reçoivent ensuite <code>read</code>, <code>write</code>, <code>lseek</code> et <code>close</code>.</p>
+
+    <h3>Le descripteur de fichier <span class="ref">CM 1</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Descripteur de fichier</span></p>
+      <p>Un <dfn>descripteur de fichier</dfn> (<span class="en" lang="en">file descriptor</span>) est une structure créée temporairement à l'ouverture, pour gérer le fichier le temps de son utilisation. Pour le créer, le SGF contrôle l'entrée du fichier dans le catalogue. Il contient :</p>
+      <ul>
+        <li>le nom du fichier ;</li>
+        <li>l'adresse du début du fichier ;</li>
+        <li>l'adresse courante, celle de la dernière lecture ou écriture ;</li>
+        <li>le mode d'accès (lecture, écriture) ;</li>
+        <li>la taille du fichier.</li>
+      </ul>
+    </div>
+    <p>La taille est le seul moyen de savoir qu'on arrive à la fin du fichier : il n'y a pas de marqueur de fin dans les données.</p>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>EOF et taille</span> <span class="badge ajout">Ajout</span></p>
+      <p>Le <code>EOF</code> des blocs chaînés et de la table des blocs marque le dernier <em>bloc</em> du fichier, pas son dernier octet. C'est la taille qui dit où s'arrêtent les données dans ce dernier bloc, souvent rempli en partie seulement.</p>
+    </div>
+
+    <h3>Descripteurs à un niveau, à deux niveaux <span class="ref">CM 1 · cours de l'an dernier, § 2.1.3</span></h3>
+    <p>Le SGF tient la liste des descripteurs des fichiers ouverts. Avec une liste à <strong>un niveau</strong>, un fichier ouvert plusieurs fois a plusieurs descripteurs, où les mêmes informations sont dupliquées ; chaque modification doit les mettre toutes à jour, de façon atomique, sous verrou : c'est lourd.</p>
+    <p>La liste à <strong>deux niveaux</strong> sépare ce qui est commun de ce qui est propre à chaque ouverture :</p>
+    <ul>
+      <li>le <dfn>descripteur commun</dfn>, ou central, unique pour un fichier, garde les informations communes : le nom du fichier, l'adresse de son début et le verrouillage interne ;</li>
+      <li>chaque ouverture a son <dfn>descripteur local</dfn>, avec ses informations propres : le mode d'ouverture et l'adresse du prochain bloc à lire ou écrire.</li>
+    </ul>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 590 184" width="590" role="img" aria-labelledby="fig-descripteurs-titre">
+        <title id="fig-descripteurs-titre">Descripteurs à deux niveaux : le processus P1 a un descripteur local (mode lecture, prochain bloc 3), le processus P2 un autre (mode écriture, prochain bloc 0) ; tous deux renvoient au même descripteur commun du fichier notes.txt, qui contient son nom, l'adresse de son début et le verrouillage interne.</title>
+        <defs>
+          <marker id="fleche-descripteurs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <g font-size="13">
+          <text x="10" y="16" class="gras">descripteur local de P1</text>
+          <rect class="boite" x="10" y="24" width="200" height="56" rx="3"/>
+          <text x="22" y="46">mode : lecture</text>
+          <text x="22" y="68">prochain bloc : 3</text>
+          <text x="10" y="110" class="gras">descripteur local de P2</text>
+          <rect class="boite" x="10" y="118" width="200" height="56" rx="3"/>
+          <text x="22" y="140">mode : écriture</text>
+          <text x="22" y="162">prochain bloc : 0</text>
+          <text x="340" y="48" class="gras">descripteur commun</text>
+          <rect class="boite-accent" x="340" y="56" width="240" height="86" rx="3"/>
+          <text x="352" y="80">nom : notes.txt</text>
+          <text x="352" y="104">adresse de début : bloc 12</text>
+          <text x="352" y="128">verrouillage interne</text>
+        </g>
+        <path class="trait" d="M210 52 L338 88" marker-end="url(#fleche-descripteurs)"/>
+        <path class="trait" d="M210 146 L338 112" marker-end="url(#fleche-descripteurs)"/>
+      </svg>
+      <figcaption>Deux ouvertures du même fichier : chacune a son mode et sa position, le descripteur commun n'existe qu'une fois.</figcaption>
+    </figure>
+    <p>Avantage : plusieurs processus peuvent ouvrir le même fichier en même temps, chacun avec son mode et sa position. C'est aussi là que se règlent les accès simultanés : le CM 1 ajoute au descripteur commun un booléen d'écriture et un compteur de lectures, ce que développe le cours 2 (<a href="cours-02-verrous.html#une-solution-dans-le-systeme-de-gestion-de-fichiers">Une solution dans le système de gestion de fichiers</a>).</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Partager les fichiers <span class="ref">notes CM 1</span></h2>
+    <p>Une machine sert à plusieurs utilisateurs, qui ne doivent pas tous pouvoir lire ou modifier les fichiers des autres. Le partage pose deux questions : qui a le droit de faire quoi, et que faire quand deux programmes utilisent le même fichier en même temps.</p>
+
+    <h3>Des classes plutôt que des droits individuels <span class="ref">CM 1</span></h3>
+    <p>Avec \(N\) modes d'accès (lire, écrire, exécuter…) et \(M\) utilisateurs, noter pour chaque fichier ce que chaque utilisateur a le droit de faire demanderait \(N \times M\) informations par fichier : beaucoup trop. On forme donc des classes :</p>
+    <ul>
+      <li>\(C\) classes d'utilisateurs, avec \(C \ll M\) ;</li>
+      <li>\(G\) classes de modes d'accès, avec \(G \ll N\).</li>
+    </ul>
+    <p>Chaque fichier ne garde que \(C \times G\) droits, et \(C \times G \ll N \times M\). Unix prend trois classes d'utilisateurs (le propriétaire, son groupe, les autres) et trois droits (lire, écrire, exécuter) : neuf bits par fichier (<a href="#les-droits-et-les-bits-speciaux">section 6.4</a>).</p>
+    <p><span class="badge a-verifier">À vérifier</span> Les notes écrivent \(G \ll M\) pour les classes de modes d'accès. C'est au nombre de modes, \(N\), qu'il faut les comparer, comme le fait le cours de l'an dernier.</p>
+
+    <h3>Les accès simultanés <span class="ref">CM 1</span></h3>
+    <table>
+      <caption>Arbitrage des accès simultanés à un même fichier (notes du CM 1)</caption>
+      <thead><tr><th>Accès en même temps</th><th>Permis ?</th></tr></thead>
+      <tbody>
+        <tr><td>deux écritures</td><td>non</td></tr>
+        <tr><td>une écriture et une lecture</td><td>non</td></tr>
+        <tr><td>deux lectures</td><td>oui</td></tr>
+        <tr><td>une écriture et trois lectures</td><td>non</td></tr>
+      </tbody>
+    </table>
+    <p>Plusieurs lectures peuvent avoir lieu ensemble, mais une écriture doit être seule. Le CM 1 en tire une gestion par le descripteur commun, le CM 2 des verrous : tout cela est l'objet du cours 2, à partir de <a href="cours-02-verrous.html#la-regle-des-lecteurs-et-des-ecrivains">La règle des lecteurs et des écrivains</a>.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le SGF d'Unix <span class="ref">notes CM 1 et CM 2, § 1 à 4</span></h2>
+    <p>Unix applique ces principes avec des choix précis : une arborescence de catalogues, des blocs d'index étagés rangés dans des i-nœuds, des droits par classes d'utilisateurs. C'est le modèle des TD et des TP du module.</p>
+
+    <h3>Un système de fichiers virtuel <span class="ref">CM 1</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>VFS</span></p>
+      <p>Le SGF d'Unix est un <dfn>système de fichiers virtuel</dfn> (<span class="en" lang="en">virtual file system</span>, VFS) : un ensemble de sous-SGF, présentés dans une seule arborescence. Les notes en citent trois :</p>
+      <ul>
+        <li><code>bfs</code> (<span class="en" lang="en">boot file system</span>), qui lit les fichiers du système ;</li>
+        <li><code>proc</code>, qui lit les « fichiers processus » : il présente chaque processus comme un catalogue de fichiers ;</li>
+        <li><code>ufs</code> (<span class="en" lang="en">Unix file system</span>), qui organise les fichiers de données.</li>
+      </ul>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> Les notes écrivent « u5 / ufs » : « u5 » désigne peut-être s5, le SGF d'Unix System V ; le cours de l'an dernier ne cite que « Unix File System (ufs) ».</p>
+    <p>On résume souvent cette idée par « sous Unix, tout est fichier ». L'énoncé du TD 1 s'en sert : le catalogue <code>/proc</code> contient les références des processus, et <code>/proc/&lt;numéro de pid&gt;</code> se manipule comme un fichier.</p>
+    <p><span class="badge ajout">Ajout</span> Sous Linux, <code>findmnt</code> montre quel SGF gère chaque partie de l'arborescence. Dans WSL, la racine est en ext4 (le successeur d'ufs sous Linux), <code>/proc</code> est géré par proc, et le disque <code>C:</code> de Windows est vu par un troisième SGF, 9p :</p>
+<pre class="terminal"><code>$ findmnt -n -o TARGET,FSTYPE -T /
+/ ext4
+$ findmnt -n -o TARGET,FSTYPE -T /proc
+/proc proc
+$ findmnt -n -o TARGET,FSTYPE -T /mnt/c
+/mnt/c 9p
+$ ls /proc/self | head -5
+arch_status
+attr
+auxv
+cgroup
+clear_refs</code></pre>
+    <p><code>/proc/self</code> désigne le processus qui lit, ici <code>ls</code> lui-même : son catalogue contient des dizaines de fichiers qui le décrivent. L'énoncé du TD 1 rappelle aussi qu'une arborescence peut réunir plusieurs unités logiques (« disques logiques ») : chacune numérote ses i-nœuds de son côté, et le champ <code>st_dev</code> de <code>stat</code> dit sur laquelle se trouve une référence.</p>
+
+    <h3>L'unité logique <span class="ref">CM 1</span></h3>
+    <p>Une unité logique Unix est découpée en quatre zones :</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 500 200" width="500" role="img" aria-labelledby="fig-unite-titre">
+        <title id="fig-unite-titre">L'unité logique d'Unix, de haut en bas : le bloc d'initialisation (initialisation du système), le super-bloc (informations générales), la table des i-nœuds (descripteurs centraux et index), puis les blocs des fichiers (leur contenu).</title>
+        <g font-size="13">
+          <rect class="boite" x="10" y="10" width="190" height="30"/>
+          <text x="105" y="30" text-anchor="middle">bloc d'initialisation</text>
+          <rect class="boite" x="10" y="40" width="190" height="30"/>
+          <text x="105" y="60" text-anchor="middle">super-bloc</text>
+          <rect class="boite-accent" x="10" y="70" width="190" height="50"/>
+          <text x="105" y="100" text-anchor="middle" class="accent">table des i-nœuds</text>
+          <rect class="boite" x="10" y="120" width="190" height="70"/>
+          <text x="105" y="160" text-anchor="middle">blocs des fichiers</text>
+          <text x="220" y="30" class="t2">initialisation du système</text>
+          <text x="220" y="60" class="t2">informations générales</text>
+          <text x="220" y="100" class="t2">descripteurs centraux et index</text>
+          <text x="220" y="160" class="t2">contenu des fichiers</text>
+        </g>
+        <path class="pointille" d="M200 25 H214 M200 55 H214 M200 95 H214 M200 155 H214"/>
+      </svg>
+      <figcaption>Les quatre zones d'une unité logique Unix.</figcaption>
+    </figure>
+    <ul>
+      <li>le <strong>bloc d'initialisation</strong> sert au démarrage du système ;</li>
+      <li>le <dfn>super-bloc</dfn> donne les informations générales sur l'unité ;</li>
+      <li>la <strong>table des i-nœuds</strong> range les descripteurs centraux de tous les fichiers, catalogues compris, avec leurs index ;</li>
+      <li>les <strong>blocs des fichiers</strong> portent leur contenu.</li>
+    </ul>
+    <p><span class="badge ajout">Ajout</span> Parmi les informations générales du super-bloc : la taille de l'unité et celle de ses blocs, le nombre d'i-nœuds, et de quoi retrouver les blocs et les i-nœuds libres.</p>
+
+    <h3 id="i-noeud-et-blocs-d-index">L'i-nœud et ses blocs d'index <span class="ref">CM 2, § 1 · cours de l'an dernier, § 3.2</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>i-nœud</span></p>
+      <p>Un <dfn>i-nœud</dfn> (<span class="en" lang="en">inode</span>, pour <span class="en" lang="en">index node</span>) est le descripteur central d'un fichier, conservé sur le disque dans la table des i-nœuds. Il contient les informations communes du fichier (son numéro, ses droits, sa taille, ses dates de modification et de création…) et les adresses de ses blocs, organisées en blocs d'index.</p>
+    </div>
+    <p><span class="badge ajout">Ajout</span> L'i-nœud ne contient pas le nom du fichier : le nom est dans le catalogue (<a href="#les-catalogues-d-unix">section 6.5</a>). C'est ce qui permet à un même fichier d'avoir plusieurs noms.</p>
+    <p>L'i-nœud contient treize adresses, en quatre étages :</p>
+    <ul>
+      <li>10 <strong>adresses directes</strong>, qui désignent les 10 premiers blocs de données ;</li>
+      <li>une adresse de <strong>1<sup>er</sup> niveau</strong>, qui désigne un bloc d'index, dont chaque adresse désigne un bloc de données ;</li>
+      <li>une adresse de <strong>2<sup>e</sup> niveau</strong>, qui désigne un bloc d'index dont chaque adresse désigne un bloc d'index de 1<sup>er</sup> niveau ;</li>
+      <li>une adresse de <strong>3<sup>e</sup> niveau</strong>, qui ajoute un troisième étage d'index.</li>
+    </ul>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 630 284" width="630" role="img" aria-labelledby="fig-inoeud-titre">
+        <title id="fig-inoeud-titre">Un i-nœud et ses blocs d'index. Ses informations communes (numéro, droits, taille, dates, nombre de liens) sont suivies de treize adresses : dix adresses directes mènent à dix blocs de données ; l'adresse de 1er niveau mène à un bloc d'index, dont les adresses mènent à des blocs de données ; celle de 2e niveau passe par deux étages d'index ; celle de 3e niveau par trois.</title>
+        <defs>
+          <marker id="fleche-inoeud" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <g font-size="13">
+          <rect class="boite" x="10" y="10" width="170" height="264" rx="5"/>
+          <text x="95" y="32" text-anchor="middle" class="gras">i-nœud</text>
+          <text x="95" y="52" text-anchor="middle" class="t2" font-size="12">numéro, droits, taille,</text>
+          <text x="95" y="68" text-anchor="middle" class="t2" font-size="12">dates, nombre de liens</text>
+          <path class="boite" d="M10 80 H180"/>
+          <rect class="boite" x="22" y="92" width="146" height="56" rx="3"/>
+          <text x="95" y="116" text-anchor="middle" font-size="12">10 adresses</text>
+          <text x="95" y="132" text-anchor="middle" font-size="12">directes</text>
+          <rect class="boite" x="22" y="164" width="146" height="24" rx="3"/>
+          <text x="95" y="181" text-anchor="middle" font-size="12">1er niveau</text>
+          <rect class="boite" x="22" y="198" width="146" height="24" rx="3"/>
+          <text x="95" y="215" text-anchor="middle" font-size="12">2e niveau</text>
+          <rect class="boite" x="22" y="232" width="146" height="24" rx="3"/>
+          <text x="95" y="249" text-anchor="middle" font-size="12">3e niveau</text>
+          <rect class="boite-accent" x="225" y="106" width="140" height="28" rx="3"/>
+          <text x="295" y="125" text-anchor="middle" class="accent" font-size="12">10 blocs de données</text>
+          <rect class="boite" x="225" y="164" width="86" height="24" rx="3"/>
+          <text x="268" y="181" text-anchor="middle" font-size="12">index</text>
+          <rect class="boite-accent" x="335" y="164" width="60" height="24" rx="3"/>
+          <text x="365" y="181" text-anchor="middle" class="accent" font-size="11">données</text>
+          <rect class="boite" x="225" y="198" width="86" height="24" rx="3"/>
+          <text x="268" y="215" text-anchor="middle" font-size="12">index</text>
+          <rect class="boite" x="335" y="198" width="86" height="24" rx="3"/>
+          <text x="378" y="215" text-anchor="middle" font-size="12">index</text>
+          <rect class="boite-accent" x="445" y="198" width="60" height="24" rx="3"/>
+          <text x="475" y="215" text-anchor="middle" class="accent" font-size="11">données</text>
+          <rect class="boite" x="225" y="232" width="86" height="24" rx="3"/>
+          <text x="268" y="249" text-anchor="middle" font-size="12">index</text>
+          <rect class="boite" x="335" y="232" width="86" height="24" rx="3"/>
+          <text x="378" y="249" text-anchor="middle" font-size="12">index</text>
+          <rect class="boite" x="445" y="232" width="86" height="24" rx="3"/>
+          <text x="488" y="249" text-anchor="middle" font-size="12">index</text>
+          <rect class="boite-accent" x="555" y="232" width="60" height="24" rx="3"/>
+          <text x="585" y="249" text-anchor="middle" class="accent" font-size="11">données</text>
+        </g>
+        <path class="trait" d="M168 120 H223" marker-end="url(#fleche-inoeud)"/>
+        <path class="trait" d="M168 176 H223" marker-end="url(#fleche-inoeud)"/>
+        <path class="trait" d="M311 176 H333" marker-end="url(#fleche-inoeud)"/>
+        <path class="trait" d="M168 210 H223" marker-end="url(#fleche-inoeud)"/>
+        <path class="trait" d="M311 210 H333" marker-end="url(#fleche-inoeud)"/>
+        <path class="trait" d="M421 210 H443" marker-end="url(#fleche-inoeud)"/>
+        <path class="trait" d="M168 244 H223" marker-end="url(#fleche-inoeud)"/>
+        <path class="trait" d="M311 244 H333" marker-end="url(#fleche-inoeud)"/>
+        <path class="trait" d="M421 244 H443" marker-end="url(#fleche-inoeud)"/>
+        <path class="trait" d="M531 244 H553" marker-end="url(#fleche-inoeud)"/>
+      </svg>
+      <figcaption>Les treize adresses d'un i-nœud. Chaque bloc « index » contient autant d'adresses qu'il en tient dans un bloc ; une seule chaîne est dessinée par étage.</figcaption>
+    </figure>
+    <p>Avec des blocs de 1 Kio et des adresses de 4 octets, un bloc d'index contient \(1024 / 4 = 256\) adresses. Le CM 2 en déduit le nombre de blocs qu'un fichier peut atteindre à chaque étage, puis refait le calcul pour des blocs de 2 Kio (512 adresses par bloc) :</p>
+    <table>
+      <caption>Nombre maximal de blocs d'un fichier, étage par étage (CM 2)</caption>
+      <thead><tr><th>Jusqu'à l'étage</th><th>Blocs de 1 Kio (256 adresses)</th><th>Blocs de 2 Kio (512 adresses)</th></tr></thead>
+      <tbody>
+        <tr><td>adresses directes</td><td>10 blocs, soit 10 Kio</td><td>10 blocs, soit 20 Kio</td></tr>
+        <tr><td>1<sup>er</sup> niveau</td><td>10 + 256 = 266 blocs</td><td>10 + 512 = 522 blocs</td></tr>
+        <tr><td>2<sup>e</sup> niveau</td><td>10 + 256 + 256² = 65 802 blocs</td><td>10 + 512 + 512² = 262 666 blocs</td></tr>
+        <tr><td>3<sup>e</sup> niveau</td><td>10 + 256 + 256² + 256³ = 16 843 018 blocs, ≈ 16,06 Gio</td><td>134 480 394 blocs, soit 268 960 788 Kio ≈ 256,5 Gio</td></tr>
+      </tbody>
+    </table>
+    <div class="encadre">\[ \text{taille maximale} = (10 + a + a^2 + a^3) \text{ blocs}, \qquad a = \frac{\text{taille d'un bloc}}{\text{taille d'une adresse}} \]</div>
+    <p><span class="badge a-verifier">À vérifier</span> Les notes donnent 16,6 Go et 269 Go pour les deux tailles maximales. Le second nombre est le nombre de Kio divisé par un million (268 960 788 Kio ≈ 269 « Go ») ; le même calcul donne 16,8, et non 16,6, pour des blocs de 1 Kio (16 843 018 Kio). En octets, on trouve environ 16,06 Gio (17,2 milliards d'octets) et 256,5 Gio (275 milliards d'octets).</p>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Trouver le bloc qui contient un octet</span> <span class="badge ajout">Ajout</span></p>
+      <ol>
+        <li>Calculer le numéro du bloc dans le fichier, en comptant à partir de 0 : \(k = \lfloor x / \text{taille d'un bloc} \rfloor\) pour l'octet \(x\).</li>
+        <li>Si \(k \lt 10\), l'adresse est directe : l'i-nœud la donne.</li>
+        <li>Sinon, si \(k - 10 \lt a\), passer par l'index de 1<sup>er</sup> niveau (entrée \(k - 10\)).</li>
+        <li>Sinon, si \(k - 10 - a \lt a^2\), passer par le 2<sup>e</sup> niveau : entrée \(\lfloor (k - 10 - a) / a \rfloor\) de l'index de 2<sup>e</sup> niveau, puis entrée \((k - 10 - a) \bmod a\) de l'index de 1<sup>er</sup> niveau qu'elle désigne.</li>
+        <li>Sinon, c'est le 3<sup>e</sup> niveau, avec un étage de plus.</li>
+      </ol>
+      <p>Chaque étage d'index traversé coûte une lecture sur le disque, en plus de celle du bloc de données.</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-1">
+      <p class="bloc-titre">Exercice 1 <span>Des blocs de 4 Kio</span> <span class="badge ajout">Ajout</span></p>
+      <p>Les blocs font 4 Kio et les adresses 4 octets ; l'i-nœud a toujours 10 adresses directes et trois niveaux d'index. Quelle est la taille maximale d'un fichier ? Quel étage en fournit presque tout ?</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Un bloc d'index contient \(a = 4096 / 4 = 1024\) adresses. Le fichier peut atteindre \(10 + 1024 + 1024^2 + 1024^3 = 1\,074\,791\,434\) blocs de 4 Kio, soit 4 299 165 736 Kio, environ 4 Tio. Le 3<sup>e</sup> niveau en fournit presque tout : \(1024^3\) blocs de 4 Kio font exactement 4 Tio, les trois autres étages réunis à peine 4 Gio.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice" id="ex-2">
+      <p class="bloc-titre">Exercice 2 <span>Combien d'accès disque ?</span> <span class="badge ajout">Ajout</span></p>
+      <p>Les blocs font 1 Kio et les adresses 4 octets. L'i-nœud d'un fichier est déjà en mémoire. Combien de blocs faut-il lire sur le disque pour obtenir l'octet n° 300 000 du fichier (en comptant à partir de 0) ? Lesquels ?</p>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Les blocs 0 à 9 sont directs ; le 1<sup>er</sup> niveau couvre les 256 blocs suivants, le 2<sup>e</sup> niveau les 65 536 d'après.</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>L'octet est dans le bloc \(k = \lfloor 300\,000 / 1\,024 \rfloor = 292\) du fichier. Les blocs 0 à 9 sont directs, les blocs 10 à 265 relèvent du 1<sup>er</sup> niveau, les blocs 266 à 65 801 du 2<sup>e</sup> : le bloc 292 est au 2<sup>e</sup> niveau, avec \(292 - 266 = 26\).</p>
+        <p>Il faut donc trois lectures : le bloc d'index de 2<sup>e</sup> niveau, dont l'adresse est dans l'i-nœud (on y lit l'entrée \(\lfloor 26 / 256 \rfloor = 0\)) ; le bloc d'index de 1<sup>er</sup> niveau qu'elle désigne (entrée 26) ; enfin le bloc de données. Pour un octet des 10 premiers blocs, une seule lecture aurait suffi.</p>
+      </details>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Et aujourd'hui ?</span> <span class="badge hors-programme">Hors programme</span></p>
+      <p>Les SGF ext2 et ext3 de Linux suivent ce schéma, avec 12 adresses directes au lieu de 10. ext4 décrit plutôt un fichier par des <span class="en" lang="en">extents</span>, des suites de blocs consécutifs (« 2 000 blocs à partir du bloc 81 920 »), ce qui raccourcit beaucoup l'index des grands fichiers.</p>
+    </div>
+
+    <h3>Les droits et les bits spéciaux <span class="ref">CM 2, § 2 et 3 · TD 1</span></h3>
+    <p>L'i-nœud contient une section de droits, sur 16 bits. Les 9 bits de poids faible donnent les droits de trois <strong>classes d'utilisateurs</strong> :</p>
+    <ul>
+      <li><code>user</code> : le propriétaire du fichier ;</li>
+      <li><code>group</code> : le groupe du propriétaire ;</li>
+      <li><code>others</code> : tous les autres utilisateurs.</li>
+    </ul>
+    <p>Pour chaque classe, trois <strong>types de droits</strong> : <code>r</code> (<span class="en" lang="en">read</span>, lecture), <code>w</code> (<span class="en" lang="en">write</span>, écriture ou modification) et <code>x</code> (<span class="en" lang="en">exec</span>, exécution). Au-dessus viennent trois bits spéciaux, puis, sur les 4 bits de poids fort, le type du fichier.</p>
+    <div class="tableau mono centre compact">
+      <table>
+        <caption>Les 16 bits du champ des droits (st_mode), du bit 15 au bit 0</caption>
+        <thead><tr><th>15–12</th><th>11</th><th>10</th><th>9</th><th>8–6</th><th>5–3</th><th>2–0</th></tr></thead>
+        <tbody><tr><td>type</td><td>SET_UID</td><td>SET_GID</td><td>sticky</td><td>user rwx</td><td>group rwx</td><td>others rwx</td></tr></tbody>
+      </table>
+    </div>
+    <p>L'énoncé du TD 1 donne les masques qui isolent et testent le type, définis dans <code>&lt;sys/stat.h&gt;</code>. Leur écriture octale, celle qu'affichent les outils Unix, est ajoutée :</p>
+    <table>
+      <caption>Masques du type de fichier (TD 1, colonne octale ajoutée)</caption>
+      <thead><tr><th>Type</th><th>Bits 15–12</th><th>Hexadécimal</th><th>Octal</th><th>Nom</th></tr></thead>
+      <tbody>
+        <tr><td>masque du type</td><td><code>1111</code></td><td><code>0xF000</code></td><td><code>0170000</code></td><td><code>S_IFMT</code></td></tr>
+        <tr><td>fichier régulier (ordinaire)</td><td><code>1000</code></td><td><code>0x8000</code></td><td><code>0100000</code></td><td><code>S_IFREG</code></td></tr>
+        <tr><td>catalogue</td><td><code>0100</code></td><td><code>0x4000</code></td><td><code>0040000</code></td><td><code>S_IFDIR</code></td></tr>
+        <tr><td>lien symbolique</td><td><code>1010</code></td><td><code>0xA000</code></td><td><code>0120000</code></td><td><code>S_IFLNK</code></td></tr>
+        <tr><td>socket</td><td><code>1100</code></td><td><code>0xC000</code></td><td><code>0140000</code></td><td><code>S_IFSOCK</code></td></tr>
+      </tbody>
+    </table>
+    <p><span class="badge a-verifier">À vérifier</span> L'énoncé du TD 1 écrit le masque <code>S_IFMT</code> avec vingt chiffres binaires (<code>11110000000000000000</code>, soit <code>0xF0000</code>) ; la valeur hexadécimale donnée, <code>0xF000</code>, correspond à <code>1111000000000000</code> sur 16 bits, et c'est la bonne. De même, les notes du CM 2 donnent « 1000 : dossier normal » : <code>1000</code> est le code du fichier régulier, le catalogue étant <code>0100</code>.</p>
+    <p>Les trois bits spéciaux, d'après les notes du CM 2 :</p>
+    <ul>
+      <li><code>SET_UID</code> : l'utilisateur qui exécute le programme hérite temporairement des droits de son propriétaire (<code>user</code>) ;</li>
+      <li><code>SET_GID</code> : il hérite temporairement des droits du groupe propriétaire ;</li>
+      <li><dfn>sticky bit</dfn> : le fichier exécutable est maintenu en mémoire centrale, pour accélérer ses chargements suivants.</li>
+    </ul>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>passwd et /tmp</span> <span class="badge ajout">Ajout</span></p>
+      <p>La commande <code>passwd</code>, qui change un mot de passe, appartient à <code>root</code> et porte le bit <code>SET_UID</code> (le <code>s</code> à la place du premier <code>x</code>) : n'importe quel utilisateur peut la lancer, et elle s'exécute avec les droits de <code>root</code>, seul autorisé à modifier le fichier des mots de passe. Le catalogue <code>/tmp</code> porte le sticky bit (le <code>t</code> final) :</p>
+<pre class="terminal"><code>$ ls -ld /usr/bin/passwd /tmp
+drwxrwxrwt 9 root root   180 Oct  1 09:45 /tmp
+-rwsr-xr-x 1 root root 93640 Feb  2  2026 /usr/bin/passwd
+$ stat -c "%a %A %n" /usr/bin/passwd /tmp
+4755 -rwsr-xr-x /usr/bin/passwd
+1777 drwxrwxrwt /tmp
+$ touch essai &amp;&amp; chmod 640 essai
+$ stat -c "%a %A %n" essai
+640 -rw-r----- essai</code></pre>
+      <p>En octal, chaque chiffre code trois bits : 6 = <code>rw-</code>, 4 = <code>r--</code>, 0 = <code>---</code>, 7 = <code>rwx</code>, 5 = <code>r-x</code> ; un quatrième chiffre, en tête, code les bits spéciaux (4 pour <code>SET_UID</code>, 2 pour <code>SET_GID</code>, 1 pour le sticky bit).</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le sticky bit aujourd'hui</span> <span class="badge hors-programme">Hors programme</span></p>
+      <p>Linux ignore le sticky bit sur un fichier exécutable : le sens qu'en donnent les notes est historique. Sur un catalogue, il a pris un autre sens : seul le propriétaire d'un fichier (ou du catalogue) peut alors le supprimer ou le renommer. Dans <code>/tmp</code>, où tout le monde écrit, chacun ne peut ainsi effacer que ses propres fichiers. Pour un catalogue, d'ailleurs, <code>r</code> permet d'en lister les entrées, <code>w</code> d'en créer ou d'en supprimer, et <code>x</code> de le traverser.</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-3">
+      <p class="bloc-titre">Exercice 3 <span>Lire un st_mode</span> <span class="badge ajout">Ajout</span></p>
+      <p>Pour chaque valeur octale du champ des droits, donner le type de la référence, ses droits au format de <code>ls -l</code>, et les bits spéciaux posés : <code>0100640</code>, <code>0040755</code>, <code>0104755</code>, <code>0041777</code>, <code>0120777</code>.</p>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Se servir du tableau des masques : les chiffres octaux de tête donnent le type (<code>010</code> régulier, <code>004</code> catalogue, <code>012</code> lien), le suivant les bits spéciaux, les trois derniers les droits.</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <ul>
+          <li><code>0100640</code> : fichier régulier, <code>-rw-r-----</code>, aucun bit spécial.</li>
+          <li><code>0040755</code> : catalogue, <code>drwxr-xr-x</code>, aucun bit spécial.</li>
+          <li><code>0104755</code> : fichier régulier, <code>-rwsr-xr-x</code>, <code>SET_UID</code> (c'est <code>/usr/bin/passwd</code>).</li>
+          <li><code>0041777</code> : catalogue, <code>drwxrwxrwt</code>, sticky bit (c'est <code>/tmp</code>).</li>
+          <li><code>0120777</code> : lien symbolique, <code>lrwxrwxrwx</code>. Les droits d'un lien ne servent pas : ce sont ceux de sa cible qui comptent.</li>
+        </ul>
+      </details>
+    </div>
+
+    <h3>Les catalogues d'Unix <span class="ref">CM 2, § 4 · cours de l'an dernier, § 3.4</span></h3>
+    <p>Les catalogues sont organisés en arborescence. Chaque catalogue est un fichier spécial qui contient une table d'entrées clé/valeur :</p>
+    <ul>
+      <li>la clé est le nom d'un fichier ou d'un sous-catalogue ;</li>
+      <li>la valeur est son identifiant, le numéro de son i-nœud.</li>
+    </ul>
+    <p>Deux entrées sont réservées dans chaque catalogue : <code>.</code> désigne le catalogue lui-même, <code>..</code> son catalogue parent. Par convention, la racine a l'identifiant 1, et elle est son propre parent : chez elle, <code>.</code> et <code>..</code> valent tous deux 1.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 590 144" width="590" role="img" aria-labelledby="fig-catalogues-titre">
+        <title id="fig-catalogues-titre">Résolution du chemin /home : l'i-nœud 1, celui de la racine, donne les blocs du catalogue /, qui contient les entrées . (1), .. (1), home (10) et etc (20). L'entrée home mène à l'i-nœud 10, qui donne les blocs du catalogue /home : . (10), .. (1), alice (100) et bob (200).</title>
+        <defs>
+          <marker id="fleche-catalogues" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <g font-size="13">
+          <text x="55" y="52" text-anchor="middle" class="mono gras">/</text>
+          <rect class="boite-accent" x="10" y="60" width="90" height="50" rx="5"/>
+          <text x="55" y="82" text-anchor="middle" class="accent">i-nœud 1</text>
+          <text x="55" y="100" text-anchor="middle" class="t2" font-size="11">droits, adresses</text>
+          <text x="140" y="22" class="t2">catalogue /</text>
+          <rect class="boite" x="140" y="30" width="110" height="104" rx="3"/>
+          <path class="boite" d="M140 56 H250 M140 82 H250 M140 108 H250 M210 30 V134"/>
+          <text x="150" y="48" class="mono">.</text>
+          <text x="150" y="74" class="mono">..</text>
+          <text x="150" y="100" class="mono">home</text>
+          <text x="150" y="126" class="mono">etc</text>
+          <text x="230" y="48" text-anchor="middle" class="mono">1</text>
+          <text x="230" y="74" text-anchor="middle" class="mono">1</text>
+          <text x="230" y="100" text-anchor="middle" class="mono">10</text>
+          <text x="230" y="126" text-anchor="middle" class="mono">20</text>
+          <text x="365" y="52" text-anchor="middle" class="mono gras">/home</text>
+          <rect class="boite-accent" x="320" y="60" width="90" height="50" rx="5"/>
+          <text x="365" y="82" text-anchor="middle" class="accent">i-nœud 10</text>
+          <text x="365" y="100" text-anchor="middle" class="t2" font-size="11">droits, adresses</text>
+          <text x="450" y="22" class="t2">catalogue /home</text>
+          <rect class="boite" x="450" y="30" width="130" height="104" rx="3"/>
+          <path class="boite" d="M450 56 H580 M450 82 H580 M450 108 H580 M530 30 V134"/>
+          <text x="460" y="48" class="mono">.</text>
+          <text x="460" y="74" class="mono">..</text>
+          <text x="460" y="100" class="mono">alice</text>
+          <text x="460" y="126" class="mono">bob</text>
+          <text x="555" y="48" text-anchor="middle" class="mono">10</text>
+          <text x="555" y="74" text-anchor="middle" class="mono">1</text>
+          <text x="555" y="100" text-anchor="middle" class="mono">100</text>
+          <text x="555" y="126" text-anchor="middle" class="mono">200</text>
+        </g>
+        <path class="trait" d="M100 85 H138" marker-end="url(#fleche-catalogues)"/>
+        <path class="trait" d="M250 95 L318 88" marker-end="url(#fleche-catalogues)"/>
+        <path class="trait" d="M410 85 H448" marker-end="url(#fleche-catalogues)"/>
+      </svg>
+      <figcaption>Le chemin <code>/home</code>, étage par étage : un catalogue associe des noms à des numéros d'i-nœuds, et chaque i-nœud donne les blocs de son catalogue (d'après le cours de l'an dernier).</figcaption>
+    </figure>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Résoudre un chemin absolu</span> <span class="badge ajout">Ajout</span></p>
+      <ol>
+        <li>Partir de l'i-nœud de la racine.</li>
+        <li>Lire les blocs du catalogue courant, que donne son i-nœud, et y chercher l'entrée qui porte le nom suivant du chemin : elle donne un numéro d'i-nœud.</li>
+        <li>Charger cet i-nœud ; recommencer tant que le chemin n'est pas épuisé. Le dernier i-nœud est celui du fichier cherché.</li>
+      </ol>
+      <p>À chaque étage, le système vérifie aussi le droit <code>x</code> sur le catalogue traversé.</p>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Sous Linux, ext4 donne le numéro 2 à la racine (le numéro 1 est réservé à un autre usage), mais le principe est le même : <code>/..</code> est la racine elle-même. Un catalogue a toujours au moins deux liens, son entrée dans son parent et sa propre entrée <code>.</code>, plus un par sous-catalogue, dont l'entrée <code>..</code> le désigne :</p>
+<pre class="terminal"><code>$ ls -di / /..
+2 /
+2 /..
+$ mkdir -p projet/src projet/doc
+$ stat -c "%h %n" projet projet/src
+4 projet
+2 projet/src</code></pre>
+
+    <h3>Liens physiques et liens symboliques <span class="ref">TD 1, exercice 2</span></h3>
+    <p>Puisque le nom d'un fichier est dans le catalogue et tout le reste dans l'i-nœud, un même fichier peut avoir plusieurs noms. L'énoncé du TD 1 distingue deux sortes de liens. Dans un catalogue :</p>
+    <ul>
+      <li>un <dfn>lien physique</dfn> (<span class="en" lang="en">hard link</span>) a le même numéro d'i-nœud que la référence : c'est une entrée de plus vers le même i-nœud ;</li>
+      <li>un <dfn>lien symbolique</dfn> (<span class="en" lang="en">symbolic link</span>) est une entrée indépendante, avec un numéro d'i-nœud différent : c'est un petit fichier, de type lien, qui contient le chemin de sa cible.</li>
+    </ul>
+    <p>Appliquée à un lien symbolique, la primitive <code>stat</code> donne les caractéristiques du fichier désigné par le contenu du lien, et non celles du lien ; <code>lstat</code> donne celles du lien lui-même (<a href="#la-structure-stat">section 8.1</a>). Les commandes <code>ln</code> et <code>ln -s</code> créent les deux sortes de liens, et <code>ls -li</code> affiche les numéros d'i-nœuds :</p>
+<pre class="terminal"><code>$ echo bonjour &gt; notes.txt
+$ ln notes.txt copie.txt
+$ ln -s notes.txt raccourci.txt
+$ mkdir rapports
+$ ls -li
+total 8
+21 -rw-r--r-- 2 piaur piaur  8 Oct  1 09:41 copie.txt
+21 -rw-r--r-- 2 piaur piaur  8 Oct  1 09:41 notes.txt
+22 lrwxrwxrwx 1 piaur piaur  9 Oct  1 09:41 raccourci.txt -&gt; notes.txt
+23 drwxr-xr-x 2 piaur piaur 40 Oct  1 09:41 rapports
+$ stat -c "%i %h %F %n" notes.txt copie.txt raccourci.txt
+21 2 regular file notes.txt
+21 2 regular file copie.txt
+22 1 symbolic link raccourci.txt
+$ stat -L -c "%i %h %F %n" raccourci.txt
+21 2 regular file raccourci.txt</code></pre>
+    <p><code>notes.txt</code> et <code>copie.txt</code> partagent l'i-nœud 21, dont le compteur de liens vaut 2 (la troisième colonne de <code>ls -li</code>). <code>raccourci.txt</code> a son propre i-nœud, 22, et sa taille est celle du chemin qu'il contient : 9 octets, les caractères de <code>notes.txt</code>. Avec <code>-L</code>, <code>stat</code> suit le lien, comme la primitive <code>stat</code> ; sans, il décrit le lien, comme <code>lstat</code>.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Ce qu'il faut savoir des liens</span></p>
+      <ul>
+        <li>L'i-nœud compte ses noms (le champ <code>st_nlink</code>). Supprimer un nom (<code>rm</code>, la primitive <code>unlink</code>) retire une entrée et décrémente ce compteur ; le fichier n'est effacé que quand il tombe à 0, et qu'aucun processus ne l'a plus ouvert.</li>
+        <li>Un lien physique ne peut pas sortir de son unité logique, puisque chaque unité numérote ses i-nœuds de son côté ; et on ne peut pas en créer vers un catalogue. Un lien symbolique n'a aucune de ces limites, mais il peut désigner un fichier qui n'existe plus.</li>
+      </ul>
+    </div>
+
+    <div class="bloc exercice" id="ex-4">
+      <p class="bloc-titre">Exercice 4 <span>Que reste-t-il après rm ?</span> <span class="badge ajout">Ajout</span></p>
+      <p>Dans un catalogue vide, on exécute les commandes suivantes. Qu'affichent les deux <code>cat</code> ? Que montre ensuite <code>ls -li</code> ?</p>
+<pre class="terminal"><code>$ echo bonjour &gt; a
+$ ln a b
+$ ln -s a c
+$ rm a
+$ cat b
+$ cat c</code></pre>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p><code>b</code> est un autre nom de l'i-nœud de <code>a</code> : supprimer <code>a</code> fait passer son compteur de liens de 2 à 1, et le contenu reste accessible par <code>b</code>. <code>c</code> contient le chemin <code>a</code>, qui n'existe plus : c'est un lien « cassé ». Exécution réelle :</p>
+<pre class="terminal"><code>$ cat b
+bonjour
+$ cat c
+cat: c: No such file or directory
+$ ls -li
+total 4
+28 -rw-r--r-- 1 piaur piaur 8 Oct  1 09:41 b
+29 lrwxrwxrwx 1 piaur piaur 1 Oct  1 09:41 c -&gt; a</code></pre>
+      </details>
+    </div>
+
+    <h3>Les descripteurs ouverts d'un processus <span class="ref">cours de l'an dernier, § 3.5</span></h3>
+    <p>Unix applique la liste de descripteurs à deux niveaux de la section 4. Chaque processus a une table locale de descripteurs, dont les trois premières entrées sont ouvertes dès son lancement : 0 pour l'entrée standard (<code>stdin</code>), 1 pour la sortie standard (<code>stdout</code>), 2 pour la sortie d'erreur (<code>stderr</code>). Chaque entrée renvoie aux informations propres à l'ouverture (mode, adresse du prochain octet, numéro d'i-nœud), qui renvoient à l'i-nœud chargé en mémoire, le descripteur central.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 590 146" width="590" role="img" aria-labelledby="fig-ouverts-titre">
+        <title id="fig-ouverts-titre">Les descripteurs ouverts d'un processus : sa table locale a les entrées 0 (stdin), 1 (stdout), 2 (stderr) et 3 (notes.txt). L'entrée 3 renvoie aux informations de l'ouverture (mode lecture, position 4 096, i-nœud 21), qui renvoient à l'i-nœud 21 chargé en mémoire, le descripteur central, avec les droits, la taille, les dates, les liens et les adresses des blocs.</title>
+        <defs>
+          <marker id="fleche-ouverts" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <g font-size="13">
+          <text x="10" y="16" class="gras">table du processus</text>
+          <rect class="boite" x="10" y="24" width="140" height="104" rx="3"/>
+          <path class="boite" d="M10 50 H150 M10 76 H150 M10 102 H150"/>
+          <text x="22" y="42" class="mono">0 · stdin</text>
+          <text x="22" y="68" class="mono">1 · stdout</text>
+          <text x="22" y="94" class="mono">2 · stderr</text>
+          <text x="22" y="120" class="mono accent">3 · notes.txt</text>
+          <text x="200" y="54" class="gras">ouverture</text>
+          <rect class="boite" x="200" y="62" width="170" height="74" rx="3"/>
+          <text x="212" y="84">mode : lecture</text>
+          <text x="212" y="106">position : 4 096</text>
+          <text x="212" y="128">i-nœud : 21</text>
+          <text x="420" y="54" class="gras">i-nœud 21 en mémoire</text>
+          <rect class="boite-accent" x="420" y="62" width="160" height="74" rx="3"/>
+          <text x="432" y="84">droits, taille</text>
+          <text x="432" y="106">dates, liens</text>
+          <text x="432" y="128">adresses des blocs</text>
+        </g>
+        <path class="trait" d="M150 115 L198 104" marker-end="url(#fleche-ouverts)"/>
+        <path class="trait" d="M370 99 H418" marker-end="url(#fleche-ouverts)"/>
+      </svg>
+      <figcaption>Les deux niveaux sous Unix : la table locale du processus, l'ouverture, puis l'i-nœud en mémoire.</figcaption>
+    </figure>
+    <p><span class="badge ajout">Ajout</span> L'entier que renvoie <code>open</code> est l'indice de la nouvelle entrée dans la table locale : la plus petite libre, donc 3 pour le premier fichier ouvert par un programme.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Un autre SGF : MS-DOS et sa FAT <span class="ref">notes CM 2, § 4</span></h2>
+    <p>Le deuxième exemple du CM 2 est MS-DOS, le système des premiers PC, dont les disques sont organisés par une table des blocs, la FAT. Sous DOS, les blocs s'appellent des secteurs, et un secteur fait en général 512 octets.</p>
+
+    <h3>L'unité logique de MS-DOS <span class="ref">CM 2, § 4</span></h3>
+    <table>
+      <caption>Les zones d'une unité logique MS-DOS (notes du CM 2)</caption>
+      <thead><tr><th>Zone</th><th>Rôle</th></tr></thead>
+      <tbody>
+        <tr><td>secteur de démarrage (BOOT)</td><td>le fichier de démarrage</td></tr>
+        <tr><td>FAT</td><td>la table d'allocation des fichiers (<span class="en" lang="en">File Allocation Table</span>) : la table des blocs</td></tr>
+        <tr><td>une ou plusieurs copies de la FAT</td><td>pourquoi ? (voir ci-dessous)</td></tr>
+        <tr><td>répertoire racine</td><td>le catalogue racine, de taille fixée</td></tr>
+        <tr><td>zone de données</td><td>le contenu des fichiers et des autres catalogues</td></tr>
+      </tbody>
+    </table>
+    <p>Pourquoi des copies ? Les notes posent la question sans y répondre. La FAT est la seule à savoir quels secteurs forment chaque fichier : si elle est abîmée, les données sont toujours sur le disque, mais on ne sait plus les rassembler. Une copie permet de la reconstruire.</p>
+    <p><span class="badge ajout">Ajout</span> « De taille fixée » signifie que le répertoire racine a un nombre maximal d'entrées, choisi à la préparation du disque, alors que les autres catalogues, rangés dans la zone de données, grandissent comme des fichiers.</p>
+
+    <h3>La FAT, une table des secteurs <span class="ref">CM 2, § 4</span></h3>
+    <p>La FAT a une entrée par secteur de la zone de données. L'entrée <var>i</var> contient le numéro du secteur qui suit le secteur <var>i</var> dans son fichier, <code>EOF</code> pour le dernier secteur d'un fichier, ou <code>LIBRE</code> ; les entrées 0 et 1 sont réservées. Le catalogue donne, pour chaque fichier, le numéro de son premier secteur. Voici l'exemple du CM 2 :</p>
+    <div class="tableau mono centre compact">
+      <table>
+        <caption>La FAT de l'exemple du CM 2 : A commence au secteur 6, B au secteur 5</caption>
+        <thead><tr><th>Entrée</th><th>Contenu</th><th>Fichier</th></tr></thead>
+        <tbody>
+          <tr><td>0</td><td>0</td><td>réservée</td></tr>
+          <tr><td>1</td><td>1</td><td>réservée</td></tr>
+          <tr><td>2</td><td>EOF</td><td>A</td></tr>
+          <tr><td>3</td><td>LIBRE</td><td></td></tr>
+          <tr><td>4</td><td>2</td><td>A</td></tr>
+          <tr><td>5</td><td>9</td><td>B</td></tr>
+          <tr><td>6</td><td>8</td><td>A</td></tr>
+          <tr><td>7</td><td></td><td></td></tr>
+          <tr><td>8</td><td>4</td><td>A</td></tr>
+          <tr><td>9</td><td>12</td><td>B</td></tr>
+          <tr><td>10</td><td></td><td></td></tr>
+          <tr><td>11</td><td></td><td></td></tr>
+          <tr><td>12</td><td>EOF</td><td>B</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>A occupe les secteurs 6, 8, 4 et 2 : l'entrée 6 donne 8, l'entrée 8 donne 4, l'entrée 4 donne 2, et l'entrée 2 vaut <code>EOF</code>. B occupe les secteurs 5, 9 et 12. Les notes laissent les entrées 7, 10 et 11 vides : on peut les supposer libres.</p>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Lire un fichier dans une FAT</span></p>
+      <ol>
+        <li>Prendre dans le catalogue le numéro du premier secteur du fichier.</li>
+        <li>Lire ce secteur, puis l'entrée de ce numéro dans la FAT : elle donne le secteur suivant.</li>
+        <li>Recommencer jusqu'à une entrée qui vaut <code>EOF</code>.</li>
+      </ol>
+      <p>C'est le parcours des blocs chaînés, mais la chaîne est dans la table, en mémoire, et non dans les secteurs.</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-5">
+      <p class="bloc-titre">Exercice 5 <span>Suivre une FAT</span> <span class="badge ajout">Ajout</span></p>
+      <p>Le catalogue indique que le fichier X commence au secteur 3, et Y au secteur 7. La FAT contient, pour les entrées 2 à 11 : 5, 10, LIBRE, EOF, LIBRE, 2, 11, LIBRE, 8, EOF.</p>
+      <ol>
+        <li>Quels secteurs occupe X, dans l'ordre ? Et Y ?</li>
+        <li>Combien de secteurs sont libres ?</li>
+        <li>Y grandit d'un secteur, et le système prend le secteur libre de plus petit numéro. Quelles entrées de la FAT changent ?</li>
+      </ol>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <ol>
+          <li>X : 3, 10, 8, 11 (l'entrée 3 donne 10, l'entrée 10 donne 8, l'entrée 8 donne 11, et l'entrée 11 vaut EOF). Y : 7, 2, 5.</li>
+          <li>Trois secteurs libres : 4, 6 et 9.</li>
+          <li>Le nouveau secteur est le 4. L'entrée 5, qui valait EOF, prend la valeur 4, et l'entrée 4, qui valait LIBRE, prend la valeur EOF. Le catalogue ne change pas, le premier secteur de Y restant le 7 ; seule la taille de Y, rangée dans son entrée de catalogue, est mise à jour.</li>
+        </ol>
+      </details>
+    </div>
+
+    <h3>Une FAT de 12 bits <span class="ref">CM 2, § 4</span></h3>
+    <p>Dans la première version de DOS, la FAT tient dans un seul secteur, 512 octets réservés en mémoire centrale, et chaque adresse occupe 12 bits. Elle était prévue pour une disquette de 160 Kio :</p>
+    <div class="encadre">\[ \frac{160 \times 1024}{512} = 320 \text{ secteurs, donc } 320 \text{ entrées} \qquad 320 \times \frac{12}{8} = 480 \text{ octets} \le 512 \]</div>
+    <p>La FAT de la disquette tient donc bien dans un secteur.</p>
+    <p><span class="badge a-verifier">À vérifier</span> Les notes écrivent « Floppy de 16 Ko », mais font le calcul avec 160 ; c'est bien 160 Kio, la capacité des premières disquettes de 5¼ pouces des PC.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>FAT12, FAT16, FAT32</span></p>
+      <p>Avec 12 bits, on numérote au plus \(2^{12} = 4096\) secteurs : 2 Mio de secteurs de 512 octets, assez pour une disquette, pas pour un disque dur. D'où les versions suivantes, FAT16 puis FAT32, dont le nom donne la taille d'une adresse ; elles numérotent des grappes (<span class="en" lang="en">clusters</span>) de plusieurs secteurs. FAT32 sert encore sur les clés USB et les cartes mémoire.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Interroger le SGF en C : stat et readdir <span class="ref">TD 1 · CC1 2025</span></h2>
+    <p>Le TD 1 et le CC1 font écrire des fonctions qui interrogent le SGF : quel est le type d'une référence, quand a-t-elle été modifiée, que contient un catalogue. Trois primitives suffisent : <code>stat</code>, <code>lstat</code> et <code>readdir</code>.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>D'où vient cette section</span></p>
+      <p>Les notes du CM ne présentent pas ces primitives : l'énoncé du TD 1 les rappelle en quelques lignes (champ du type, masques, différence entre <code>stat</code> et <code>lstat</code>), et le CC1 les a demandées. Le reste suit les pages de manuel de Linux. Les exercices du TD 1 ne sont pas résolus ici ; les deux programmes de la section servent d'exemples.</p>
+    </div>
+
+    <h3>La structure stat <span class="ref">TD 1 · CC1 2025, question 5</span></h3>
+<pre data-fichier="Prototypes"><code class="language-c">#include &lt;sys/stat.h&gt;
+
+int stat(const char *chemin, struct stat *infos);    /* suit les liens symboliques */
+int lstat(const char *chemin, struct stat *infos);   /* décrit le lien lui-même    */
+int fstat(int fd, struct stat *infos);               /* un fichier déjà ouvert     */</code></pre>
+    <p>Ces primitives copient les informations de l'i-nœud dans la structure pointée par <code>infos</code>. Elles renvoient 0, ou −1 en cas d'erreur (référence inexistante, droit refusé sur un catalogue du chemin…), avec la cause dans <code>errno</code>. Il n'est pas nécessaire d'ouvrir le fichier avant <code>stat</code> ou <code>lstat</code>.</p>
+    <table>
+      <caption>Les principaux champs de struct stat</caption>
+      <thead><tr><th>Champ</th><th>Contenu</th></tr></thead>
+      <tbody>
+        <tr><td><code>st_dev</code></td><td>l'unité logique (le disque) qui contient l'i-nœud</td></tr>
+        <tr><td><code>st_ino</code></td><td>le numéro d'i-nœud</td></tr>
+        <tr><td><code>st_mode</code></td><td>le type et les droits, sur 16 bits (section 6.4)</td></tr>
+        <tr><td><code>st_nlink</code></td><td>le nombre de liens physiques</td></tr>
+        <tr><td><code>st_uid</code>, <code>st_gid</code></td><td>les numéros du propriétaire et de son groupe</td></tr>
+        <tr><td><code>st_size</code></td><td>la taille, en octets</td></tr>
+        <tr><td><code>st_mtime</code></td><td>la date de la dernière modification du contenu, en secondes depuis le 1<sup>er</sup> janvier 1970</td></tr>
+        <tr><td><code>st_atime</code>, <code>st_ctime</code></td><td>la date du dernier accès, celle du dernier changement de l'i-nœud</td></tr>
+      </tbody>
+    </table>
+    <p><span class="badge a-verifier">À vérifier</span> L'énoncé du TD 1 parle du champ « <code>st.mode</code> » : le champ s'appelle <code>st_mode</code>, avec un tiret bas.</p>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>La question 5 du CC1 2025</span></p>
+      <p>La fonction <code>modif</code> du CC1 compare <code>st_mtime</code> avant et après une attente de dix secondes : si la date a changé, le fichier a été modifié entre-temps. La proposition de corrigé qui circule écrit <code>stat.l_mtime</code> au lieu de <code>info.st_mtime</code>, entre autres erreurs : voir le <a href="../annales/corrige-cc1-2025.html#q5">corrigé de la question 5</a>.</p>
+    </div>
+
+    <h3>Le type et les droits : st_mode <span class="ref">TD 1 · CC1 2025, question 6</span></h3>
+    <p>Pour connaître le type d'une référence, on isole les 4 bits de poids fort de <code>st_mode</code> avec le masque <code>S_IFMT</code>, puis on compare le résultat à la constante du type cherché :</p>
+<pre><code class="language-c">if ((infos.st_mode &amp; S_IFMT) == S_IFREG)    /* fichier régulier */</code></pre>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Les parenthèses sont obligatoires</span></p>
+      <p>En C, <code>==</code> est prioritaire sur <code>&amp;</code>. Sans parenthèses, <code>infos.st_mode &amp; S_IFMT == S_IFDIR</code> se lit <code>infos.st_mode &amp; (S_IFMT == S_IFDIR)</code> : la comparaison vaut 0, puisque les deux constantes diffèrent, et l'expression vaut toujours 0, quel que soit le fichier. <code>gcc -Wall</code> le signale (« suggest parentheses »).</p>
+    </div>
+    <p><span class="badge ajout">Ajout</span> <code>&lt;sys/stat.h&gt;</code> fournit aussi des macros qui font le test d'un coup : <code>S_ISREG(m)</code>, <code>S_ISDIR(m)</code>, <code>S_ISLNK(m)</code>… Pour les droits, chaque bit a son masque : <code>S_IRUSR</code>, <code>S_IWUSR</code>, <code>S_IXUSR</code> pour le propriétaire (<code>0400</code>, <code>0200</code>, <code>0100</code>), <code>S_IRGRP</code>… pour le groupe, <code>S_IROTH</code>… pour les autres, et <code>S_ISUID</code>, <code>S_ISGID</code>, <code>S_ISVTX</code> pour les bits spéciaux.</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Afficher le type et les droits, comme ls -l</span> <span class="badge ajout">Ajout</span></p>
+      <p>Le programme suivant décrit chaque référence passée en argument : type et droits, valeur octale de <code>st_mode</code>, numéro d'i-nœud, nombre de liens, taille et date de modification. Il utilise <code>lstat</code>, pour décrire un lien symbolique plutôt que sa cible.</p>
+<pre data-fichier="infos.c"><code class="language-c">/* infos.c : type, droits, i-nœud et date de modification de chaque référence */
+#include &lt;stdio.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;time.h&gt;
+
+/* Type de la référence : les 4 bits de poids fort de st_mode */
+static char type(mode_t mode)
+{
+    switch (mode &amp; S_IFMT) {
+    case S_IFREG:  return '-';   /* fichier ordinaire */
+    case S_IFDIR:  return 'd';   /* catalogue */
+    case S_IFLNK:  return 'l';   /* lien symbolique */
+    case S_IFCHR:  return 'c';   /* périphérique en mode caractère */
+    case S_IFBLK:  return 'b';   /* périphérique en mode bloc */
+    case S_IFIFO:  return 'p';   /* tube nommé */
+    case S_IFSOCK: return 's';   /* socket */
+    default:       return '?';
+    }
+}
+
+/* Droits au format de ls -l : rwx pour user, group et others,
+   s (SET_UID, SET_GID) ou t (sticky bit) à la place du x */
+static void droits(mode_t mode, char *s)
+{
+    s[0] = mode &amp; S_IRUSR ? 'r' : '-';
+    s[1] = mode &amp; S_IWUSR ? 'w' : '-';
+    s[2] = mode &amp; S_ISUID ? (mode &amp; S_IXUSR ? 's' : 'S') : (mode &amp; S_IXUSR ? 'x' : '-');
+    s[3] = mode &amp; S_IRGRP ? 'r' : '-';
+    s[4] = mode &amp; S_IWGRP ? 'w' : '-';
+    s[5] = mode &amp; S_ISGID ? (mode &amp; S_IXGRP ? 's' : 'S') : (mode &amp; S_IXGRP ? 'x' : '-');
+    s[6] = mode &amp; S_IROTH ? 'r' : '-';
+    s[7] = mode &amp; S_IWOTH ? 'w' : '-';
+    s[8] = mode &amp; S_ISVTX ? (mode &amp; S_IXOTH ? 't' : 'T') : (mode &amp; S_IXOTH ? 'x' : '-');
+    s[9] = '\0';
+}
+
+int main(int argc, char *argv[])
+{
+    for (int i = 1; i &lt; argc; i++) {
+        struct stat st;
+        if (lstat(argv[i], &amp;st) == -1) {      /* lstat : le lien lui-même, pas sa cible */
+            perror(argv[i]);
+            continue;
+        }
+        char d[10], date[20];
+        droits(st.st_mode, d);
+        strftime(date, sizeof date, "%Y-%m-%d %H:%M", localtime(&amp;st.st_mtime));
+        printf("%c%s  %07o  i-noeud %-8lu  liens %-2lu  %6lld o  %s  %s\n",
+               type(st.st_mode), d, (unsigned) st.st_mode,
+               (unsigned long) st.st_ino, (unsigned long) st.st_nlink,
+               (long long) st.st_size, date, argv[i]);
+    }
+    return 0;
+}</code></pre>
+      <p>Compilé avec <code>gcc -Wall -o infos infos.c</code>, puis lancé sur les fichiers de la section 6.6, sur <code>passwd</code> et sur <code>/tmp</code> :</p>
+<pre class="terminal"><code>$ ./infos notes.txt raccourci.txt rapports /usr/bin/passwd /tmp
+-rw-r--r--  0100644  i-noeud 21        liens 2        8 o  2026-10-01 09:41  notes.txt
+lrwxrwxrwx  0120777  i-noeud 22        liens 1        9 o  2026-10-01 09:41  raccourci.txt
+drwxr-xr-x  0040755  i-noeud 23        liens 2       40 o  2026-10-01 09:41  rapports
+-rwsr-xr-x  0104755  i-noeud 2010      liens 1    93640 o  2026-02-02 21:45  /usr/bin/passwd
+drwxrwxrwt  0041777  i-noeud 1         liens 9      180 o  2026-10-01 09:41  /tmp</code></pre>
+      <p>Dans la valeur octale, on lit le type en tête (<code>010</code>, <code>012</code>, <code>004</code>), puis le chiffre des bits spéciaux (4 pour <code>passwd</code>, 1 pour <code>/tmp</code>), puis les trois chiffres des droits.</p>
+    </div>
+
+    <h3>Lire un catalogue : opendir et readdir <span class="ref">TD 1</span></h3>
+<pre data-fichier="Prototypes"><code class="language-c">#include &lt;dirent.h&gt;
+
+DIR *opendir(const char *chemin);     /* NULL en cas d'erreur          */
+struct dirent *readdir(DIR *d);       /* entrée suivante, NULL à la fin */
+int closedir(DIR *d);</code></pre>
+    <p><code>opendir</code> ouvre un catalogue en lecture, <code>readdir</code> en renvoie les entrées une à une, et <code>closedir</code> le ferme. Chaque entrée est une <code>struct dirent</code>, dont deux champs comptent ici : <code>d_ino</code>, le numéro d'i-nœud, et <code>d_name</code>, le nom. Les entrées arrivent dans un ordre quelconque, <code>.</code> et <code>..</code> compris.</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Lister un catalogue avec ses numéros d'i-nœuds</span> <span class="badge ajout">Ajout</span></p>
+<pre data-fichier="liste.c"><code class="language-c">/* liste.c : les entrées d'un catalogue et leur numéro d'i-nœud, comme ls -ai */
+#include &lt;stdio.h&gt;
+#include &lt;dirent.h&gt;
+
+int main(int argc, char *argv[])
+{
+    const char *chemin = argc &gt; 1 ? argv[1] : ".";
+    DIR *d = opendir(chemin);
+    if (d == NULL) {
+        perror(chemin);
+        return 1;
+    }
+    struct dirent *e;
+    while ((e = readdir(d)) != NULL)          /* NULL : plus aucune entrée */
+        printf("%8lu  %s\n", (unsigned long) e-&gt;d_ino, e-&gt;d_name);
+    closedir(d);
+    return 0;
+}</code></pre>
+<pre class="terminal"><code>$ ./liste rapports
+      23  .
+      20  ..
+$ ./liste /
+    8193  boot
+   24578  mnt
+   57345  sys
+   24577  media
+   49153  snap
+   32770  proc
+       2  .
+   49154  srv
+   16385  etc
+      11  lost+found
+    1443  lib64
+       2  ..
+   57346  tmp
+   40962  run
+   32769  opt
+   65537  usr
+   40961  root
+   16386  home
+    1442  lib
+    8194  dev
+    1470  sbin
+   44834  init
+   49155  var
+      13  bin</code></pre>
+      <p>Le catalogue vide <code>rapports</code> n'a que ses deux entrées réservées : <code>.</code> est son propre i-nœud, 23, et <code>..</code> celui du catalogue où il a été créé. Dans la racine, <code>.</code> et <code>..</code> valent tous deux 2 : la racine est son propre parent. L'ordre des entrées n'est pas alphabétique.</p>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Deux pièges de la boucle de lecture</span></p>
+      <ul>
+        <li>La boucle s'écrit <code>while ((e = readdir(d)) != NULL)</code>. Sans la paire de parenthèses intérieure, <code>e = readdir(d) != NULL</code> range dans <code>e</code> le résultat de la comparaison, 0 ou 1, et non l'adresse de l'entrée.</li>
+        <li><code>d_name</code> ne contient que le nom de l'entrée, pas son chemin. Pour appeler <code>stat</code> sur une entrée d'un autre catalogue que le catalogue de travail, il faut construire le chemin (<code>catalogue/nom</code>, par exemple avec <code>snprintf</code>), ou se placer d'abord dans ce catalogue avec <code>chdir</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Le SGF gère les fichiers : pour l'utilisateur, une collection de données nommée ; pour le système, une suite de blocs de taille fixe sur une unité logique.</li>
+        <li>Le catalogue associe un nom symbolique à l'adresse du fichier sur le disque. L'arborescence de catalogues, plus flexible que deux niveaux, oblige à lire chaque étage depuis la racine.</li>
+        <li>Blocs chaînés : simple, mais accès séquentiel seulement. Table des blocs : accès direct en mémoire, mais table trop grande pour un grand disque (swap). Blocs d'index : léger et direct, mais insertion au milieu coûteuse. Partout, le dernier bloc est en partie perdu.</li>
+        <li>Le descripteur, créé à l'ouverture, garde la position courante et la taille. À deux niveaux, un descripteur commun par fichier et un descripteur local par ouverture.</li>
+        <li>Les droits se donnent par classes (\(C \times G \ll N \times M\)) : sous Unix, rwx pour le propriétaire, le groupe et les autres, plus SET_UID, SET_GID et le sticky bit, et 4 bits de type, dans <code>st_mode</code>.</li>
+        <li>Sous Unix, un catalogue associe des noms à des numéros d'i-nœuds ; l'i-nœud porte tout le reste (droits, taille, dates, adresses), pas le nom. <code>.</code> désigne le catalogue, <code>..</code> son parent ; la racine est son propre parent.</li>
+        <li>L'i-nœud a 10 adresses directes et 3 niveaux d'index : un fichier compte au plus \(10 + a + a^2 + a^3\) blocs, avec \(a\) = taille d'un bloc / taille d'une adresse.</li>
+        <li>Lien physique : une entrée de plus vers le même i-nœud. Lien symbolique : un fichier qui contient un chemin. <code>stat</code> suit les liens, <code>lstat</code> non.</li>
+        <li>La FAT de MS-DOS est une table des blocs (des secteurs) ; on la recopie, car sa perte rend les fichiers impossibles à reconstituer.</li>
+        <li>En C : <code>(st.st_mode &amp; S_IFMT) == S_IFDIR</code>, avec les parenthèses ; <code>readdir</code> parcourt un catalogue, <code>.</code> et <code>..</code> compris, dans un ordre quelconque.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Quel est le rôle d'un catalogue ?</summary>
+        <div><p>Il permet de désigner un fichier par un nom symbolique : c'est une table qui associe à chaque nom l'adresse du fichier sur le disque (sous Unix, son numéro d'i-nœud).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Donner un inconvénient de l'organisation des blocs par table des blocs.</summary>
+        <div><p>La table a une entrée par bloc du disque et doit tenir en mémoire centrale : pour un grand disque, elle est trop grande, et le système doit en échanger des morceaux avec le disque (swap). Autre défaut, commun à toutes les organisations : la fin du dernier bloc est perdue.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi les blocs d'index évitent-ils les problèmes de swap de la table des blocs ?</summary>
+        <div><p>Chaque fichier a son propre index : seuls ceux des fichiers ouverts sont en mémoire, au lieu d'une table qui décrit tout le disque.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Sous Unix, où se trouvent le nom d'un fichier, et ses droits ?</summary>
+        <div><p>Le nom est dans une entrée de catalogue, avec le numéro d'i-nœud. Les droits, la taille, les dates et les adresses des blocs sont dans l'i-nœud. C'est ce qui permet les liens physiques : plusieurs noms pour un même i-nœud.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Blocs de 1 Kio, adresses de 4 octets, 10 adresses directes et 3 niveaux : quelle taille maximale pour un fichier ?</summary>
+        <div><p>Un bloc d'index contient 256 adresses : \(10 + 256 + 256^2 + 256^3 = 16\,843\,018\) blocs de 1 Kio, environ 16 Gio.</p></div>
+      </details>
+      <details class="carte">
+        <summary><code>b</code> est un lien physique et <code>c</code> un lien symbolique vers <code>a</code>. On supprime <code>a</code> : que deviennent <code>b</code> et <code>c</code> ?</summary>
+        <div><p><code>b</code> garde le contenu : l'i-nœud perd un lien, mais il lui en reste un. <code>c</code> désigne un chemin qui n'existe plus : <code>cat c</code> échoue (« No such file or directory »).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que vaut <code>st.st_mode &amp; S_IFMT == S_IFDIR</code> pour un catalogue ?</summary>
+        <div><p>0, comme pour tout fichier : <code>==</code> est évalué d'abord, <code>S_IFMT == S_IFDIR</code> vaut 0, et <code>st_mode &amp; 0</code> aussi. Il faut écrire <code>(st.st_mode &amp; S_IFMT) == S_IFDIR</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi un disque MS-DOS garde-t-il une ou plusieurs copies de la FAT ?</summary>
+        <div><p>La FAT est la seule à savoir quels secteurs forment chaque fichier, et dans quel ordre : abîmée, elle rend les fichiers impossibles à reconstituer. La copie permet de la réparer.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Références</h2>
+    <ul>
+      <li>A. Bidard, N. Breteau, L. Tonnelier, <a href="../cours/Cours_(étudiants_de_lannee_passee).pdf"><cite>Système d'Exploitation &amp; Programmation Système (SE&amp;PS)</cite></a>, 2 septembre 2026, d'après le cours de B. Jacob ; sous licence <a href="https://creativecommons.org/licenses/by-sa/3.0/deed.fr">CC BY-SA 3.0</a>. Les figures de la table des blocs et des catalogues d'Unix en sont adaptées.</li>
+      <li>Pages de manuel de Linux, en anglais : <a href="https://man7.org/linux/man-pages/man2/stat.2.html">stat(2)</a> et <a href="https://man7.org/linux/man-pages/man7/inode.7.html">inode(7)</a> pour <code>struct stat</code> et les masques de <code>st_mode</code> ; <a href="https://man7.org/linux/man-pages/man3/opendir.3.html">opendir(3)</a> et <a href="https://man7.org/linux/man-pages/man3/readdir.3.html">readdir(3)</a> ; <a href="https://man7.org/linux/man-pages/man7/symlink.7.html">symlink(7)</a> pour les liens ; <a href="https://man7.org/linux/man-pages/man7/path_resolution.7.html">path_resolution(7)</a> pour la résolution d'un chemin ; <a href="https://man7.org/linux/man-pages/man5/proc.5.html">proc(5)</a> pour <code>/proc</code>.</li>
+    </ul>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="index.html"><small>← Matière</small>Programmation système</a>
+    <a class="suivant" href="cours-02-verrous.html"><small>Suivant →</small>Les verrous sur les fichiers</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Programmation système · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

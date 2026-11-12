@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="securite">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TP 3 · Primitives cryptographiques · Sécurité informatique L2</title>
+<meta name="description" content="TP 3 de sécurité informatique (L2) : étudier un générateur d'aléa, AES-128 en mode CBC et une dérivation de clé à partir d'un mot de passe, puis compléter un petit gestionnaire de mots de passe en C. Sujet, fichiers fournis, commandes pour compiler et lancer les tests sous Linux et sous Windows (WSL), correction officielle.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/langues/dos.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="index.html">Sécurité informatique</a>
+    <span aria-current="page">TP 3 · Primitives cryptographiques</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Sécurité informatique</span> TP 3 · L2 S4</p>
+    <h1>Primitives cryptographiques</h1>
+    <p class="chapeau">On lit le code d'un générateur d'aléa, d'un chiffrement AES-128 et d'une fonction qui tire une clé d'un mot de passe, puis on s'en sert pour finir un petit gestionnaire de mots de passe dont le fichier de sauvegarde est chiffré. Cette page reprend le sujet et donne les commandes pour compiler et lancer les tests fournis, à la fac comme sous Windows.</p>
+    <dl class="meta">
+      <div><dt>Sujet</dt><dd><a href="../TP/TP3/L2-174UD06-TP3.pdf">L2-174UD06-TP3.pdf</a> · 3 pages</dd></div>
+      <div><dt>Fichiers</dt><dd><a href="../TP/TP3/annexe/">TP/TP3/annexe/</a> : <code>aes.c</code>, <code>crypto.c</code>, <code>test.c</code>, <code>test2.c</code>, <code>memopwd.c</code>, <code>Makefile</code> (fournis)</dd></div>
+      <div><dt>Enseignant</dt><dd>Thierry Lemeunier</dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Reconnaître dans du code C un générateur d'aléa, un chiffrement par bloc et son mode d'assemblage (<a href="cours-02-initiation-cryptographie.html#les-modes-d-assemblage-du-chiffrement-par-bloc">cours 2</a>).</li>
+        <li>Comprendre comment une clé secrète est tirée d'un mot de passe, et pourquoi ce calcul doit être lent.</li>
+        <li>Compléter <code>do_command_add</code> du gestionnaire de mots de passe.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">À rendre</p>
+      <ul>
+        <li>Une archive <code>Prénom_Nom_TP3.zip</code> : tous les fichiers source, le <code>Makefile</code> et un document texte avec les réponses aux questions, déposée sur UMTICE.</li>
+      </ul>
+    </div>
+  </div>
+
+  <section>
+    <h2>Le sujet <span class="ref">p. 1–3</span></h2>
+    <p>Seul <code>memopwd.c</code> est à modifier ; le reste est fourni par l'enseignant. L'implémentation d'AES vient de <a href="https://github.com/kokke/tiny-AES-c">tiny-AES-c</a>.</p>
+    <ol class="etapes">
+      <li><strong>Compiler et tester.</strong> Étudier les directives du <code>Makefile</code>, compiler, puis lancer <code>test</code> (tous les tests doivent réussir) et <code>test2</code> (le texte déchiffré doit être « Ceci est le texte en clair »).</li>
+      <li><strong>Générateur de nombres aléatoires</strong> (questions 1 à 3). Dans <code>crypto.c</code>, trouver la fonction qui produit l'aléa : son nom, la source d'entropie du système qu'elle lit, son principe.</li>
+      <li><strong>Chiffrement symétrique</strong> (questions 4 à 13). Dans <code>aes.c</code> : le nom complet du système, traitement par bloc ou par unité, les fonctions de chiffrement et de déchiffrement, les fonctions d'assemblage et de désassemblage des blocs. Dans <code>test2.c</code> : les trois primitives utilisées, le rôle de <code>rng</code>, du tableau <code>key</code>, de <code>AES_init_ctx_iv</code> et de <code>main</code>, et pourquoi <code>iv</code> change à chaque exécution.</li>
+      <li><strong>Générateur de clé secrète</strong> (questions 14 à 17). Dans <code>crypto.c</code>, la fonction qui crée une clé à partir d'un mot de passe : son nom, la primitive qu'elle utilise, son principe, et si elle est déterministe.</li>
+      <li><strong>Cas réaliste</strong> (questions 18 à 20). Dans <code>memopwd.c</code>, le rôle de <code>do_command_key</code>, <code>do_command_add</code> et <code>do_command_print</code> ; implémenter <code>do_command_add</code> en suivant l'algorithme donné en commentaire, puis tester le programme.</li>
+    </ol>
+    <p>Sortie des tests fournis, obtenue en compilant le code de l'enseignant tel quel (l'IV et le chiffré de <code>test2</code> changent à chaque exécution) :</p>
+<pre class="terminal"><code>$ ./test
+Testing AES128
+
+CBC encrypt: SUCCESS!
+CBC decrypt: SUCCESS!
+CTR encrypt: SUCCESS!
+CTR decrypt: SUCCESS!
+ECB decrypt: SUCCESS!
+ECB encrypt: SUCCESS!
+ECB encrypt verbose:
+…
+$ ./test2
+IV : a2a8e5e83337cdbd0160121bdb202b73
+Cypher text: 8881e6c978e739d7b78786ad40b36b1c58ae47d2ff51eeb5264cd5
+Clear text: Ceci est le texte en clair</code></pre>
+  </section>
+
+  <section>
+    <h2>Compiler et lancer</h2>
+    <p>Le code fourni lit <code>/dev/urandom</code>, qui n'existe que sous Linux : sous Windows, on passe par WSL.</p>
+    <h3>À la fac, sous Linux</h3>
+<pre class="terminal"><code>$ cd TP/TP3
+$ ./run.sh test
+$ ./run.sh memopwd</code></pre>
+    <p><code>./run.sh</code> compile seulement (<code>make all</code> dans <code>annexe/</code>), <code>./run.sh test</code> lance <code>test</code> puis <code>test2</code>, <code>./run.sh memopwd</code> lance le gestionnaire, <code>./run.sh clean</code> supprime les fichiers compilés en gardant <code>memopwd.data</code>. On peut aussi travailler directement dans <code>annexe/</code> avec <code>make</code>.</p>
+    <h3>Chez soi, sous Windows</h3>
+    <p><code>run.bat</code> lance le même script dans WSL (Ubuntu), après avoir monté le lecteur de Google Drive. Une seule fois, installer gcc et make dans WSL :</p>
+<pre class="terminal"><code>$ sudo apt install build-essential</code></pre>
+    <p>Puis, dans une invite de commandes ouverte dans <code>TP\TP3</code> :</p>
+<pre><code class="language-dos">run.bat test
+run.bat memopwd</code></pre>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les trois primitives</p>
+      <ul>
+        <li>Un aléa cryptographique vient d'une source d'entropie fournie par le système (<a href="cours-02-initiation-cryptographie.html#alea-et-taille-des-cles">cours 2</a>), jamais de <code>rand()</code>, dont la suite est entièrement fixée par sa graine.</li>
+        <li>AES chiffre des blocs de 128 bits avec une clé de 128, 192 ou 256 bits. Un message plus long passe par un mode d'assemblage : ECB laisse voir les blocs identiques, CBC les masque grâce à un vecteur d'initialisation.</li>
+        <li>L'IV de CBC doit être imprévisible et changer à chaque chiffrement, mais il n'est pas secret : on le range à côté du chiffré.</li>
+        <li>Une clé tirée d'un mot de passe est calculée de façon déterministe (même mot de passe, même clé) et volontairement lente, pour freiner la force brute. Ni le mot de passe ni la clé ne sont écrits sur le disque.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi <code>rand()</code> ne convient-il pas pour tirer une clé ou un IV ?</summary>
+        <div><p>C'est un générateur déterministe : qui connaît ou devine la graine (souvent l'heure) retrouve toute la suite. Il faut une source d'entropie du système.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Avec ECB, que révèlent deux blocs clairs identiques ?</summary>
+        <div><p>Deux blocs chiffrés identiques : la structure du message reste visible. C'est l'attaque simple que le sujet évoque, et la raison d'être des modes CBC ou CTR.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi une dérivation de clé lente gêne-t-elle l'attaquant bien plus que l'utilisateur ?</summary>
+        <div><p>L'utilisateur la calcule une fois par session ; l'attaquant doit la recalculer pour chaque mot de passe qu'il essaie, soit des millions de fois.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Faut-il chiffrer ou cacher l'IV dans le fichier de sauvegarde ?</summary>
+        <div><p>Non : sans la clé, l'IV ne permet pas de déchiffrer. Il doit seulement être nouveau et imprévisible à chaque chiffrement.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2>Correction</h2>
+    <details class="depliant">
+      <summary>Correction officielle</summary>
+      <p>La correction de l'enseignant (réponses aux questions 1 à 20) est dans <a href="../TP/TP3/L2-174UD06-TP3-Correction.pdf">L2-174UD06-TP3-Correction.pdf</a>. À n'ouvrir qu'après avoir fait le TP.</p>
+    </details>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="tp-02-rc4.html"><small>← Précédent</small>TP 2 · RC4</a>
+    <a class="suivant" href="tp-04-hmac.html"><small>Suivant →</small>TP 4 · Gestionnaire de mots de passe v2</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Sécurité informatique · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

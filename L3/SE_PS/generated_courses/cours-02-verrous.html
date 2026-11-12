@@ -1,0 +1,2003 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="se">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les verrous sur les fichiers · Programmation système L3</title>
+<meta name="description" content="Cours sur les verrous (L3, programmation système) : accès concurrents à un fichier, lecteurs et écrivains, verrous partagés et exclusifs, bloquants et non bloquants, interblocage, verrous externes, verrous internes consultatifs et impératifs, primitives fcntl et lockf.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-02-verrous.html" title="Quiz · Les verrous sur les fichiers">
+<link rel="quiz" href="../generated_quizzes/quiz-verrous-scenarios.html" title="Quiz · Scénarios de verrous">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-cc1.html" title="Quiz · Annale CC1 2025">
+<link rel="quiz" href="../generated_quizzes/quiz-fichiers-verrous-erreurs.html" title="Quiz · Fichiers et verrous : reprendre les erreurs">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-ct-2025.html" title="Annale · Examen de décembre 2024">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">Programmation système</a>
+    <span aria-current="page">Cours 2 · Les verrous</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Programmation système</span> Cours 2 · L3 S5</p>
+    <h1>Les verrous sur les fichiers</h1>
+    <p class="chapeau">Quand plusieurs processus lisent et écrivent le même fichier, leurs accès doivent être réglés, sinon les données deviennent incohérentes. Ce cours présente la règle des lecteurs et des écrivains, le vocabulaire des verrous, puis les trois façons d'en poser sous Unix : un fichier verrou externe, la primitive <code>fcntl</code> et la primitive <code>lockf</code>.</p>
+    <dl class="meta">
+      <div><dt>Sources</dt><dd>notes de séance « Cours SE » (CM 1 et CM 2, § 5) · rappel sur <code>fcntl</code> de <a href="../TD/TD_verrous.pdf">TD_verrous.pdf</a>, p. 3</dd></div>
+      <div><dt>Exemples</dt><dd><a href="../cours/Exemples%20du%20cours%20sur%20les%20Verrous-20260922/">Exemples du cours sur les Verrous</a> · 10 programmes C</dd></div>
+      <div><dt>Enseignant</dt><dd>B. Jacob</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-27">27 sept. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Expliquer pourquoi des accès concurrents à un fichier doivent être arbitrés, et énoncer la règle des lecteurs et des écrivains.</li>
+        <li>Employer le vocabulaire : verrou partagé ou exclusif, portée, bloquant ou non bloquant, externe ou interne, consultatif ou impératif, interblocage.</li>
+        <li>Poser et lever un verrou externe avec <code>open(…, O_CREAT|O_EXCL, …)</code> et <code>unlink</code>, et en connaître les limites.</li>
+        <li>Poser, tester et lever un verrou interne avec <code>fcntl</code> et <code>struct flock</code> ; calculer la portée d'un enregistrement.</li>
+        <li>Interpréter les erreurs de <code>fcntl</code> et éviter ses pièges ; utiliser <code>lockf</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Fichiers Unix : descripteurs, <code>open</code>, <code>read</code>, <code>write</code>, <code>lseek</code>, <code>close</code>, <code>unlink</code> ; i-nœuds et droits (<a href="cours-01-fichiers-catalogues.html">cours 1</a>).</li>
+        <li>Processus : identifiant (pid), <code>fork</code>, plusieurs programmes lancés en même temps.</li>
+        <li>Langage C : structures, pointeurs, <code>errno</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc complement">
+    <p class="bloc-titre">Complément <span>D'où vient cette page</span></p>
+    <p>L'enseignant ne distribue pas de support écrit pour ce chapitre. La page s'appuie sur trois sources : les notes prises en séance (Google Doc « Cours SE » : partage des fichiers au CM 1, § 5 « Gestion de la concurrence et verrous » au CM 2), les dix programmes d'exemple de l'enseignant, et le rappel sur <code>fcntl</code> qui termine l'énoncé du TD 2. Les notes sont brèves : les explications qui les développent sont signalées comme ajouts.</p>
+    <p>Les exemples ont été compilés sans modification et exécutés sous Linux (noyau 6.18, dans WSL 2). Les traces reproduites sont celles de ces exécutions ; seuls les pid et les dates changent d'une fois à l'autre. Les règles de <code>fcntl</code> énoncées en complément ont été vérifiées de la même façon, avec un petit programme de test.</p>
+  </div>
+
+  <details class="depliant">
+    <summary>Compiler et lancer les exemples du cours</summary>
+    <p>Le dossier des exemples contient un Makefile. Sa première cible est <code>ecrivain</code> : <code>make</code> seul ne compile que ce programme, <code>make all</code> compile les dix.</p>
+<pre class="terminal"><code>$ cd "Exemples du cours sur les Verrous-20260922"
+$ make all</code></pre>
+    <p>Les programmes qui posent un verrou le gardent pendant une pause (« Pause... ») qui dure jusqu'à ce qu'on tape un mot suivi d'<kbd>Entrée</kbd>. Pour mettre deux processus en concurrence, on ouvre deux terminaux dans le même dossier, on lance le premier programme, puis le second pendant la pause du premier.</p>
+    <p>Sous Windows, <code>fcntl</code> et <code>lockf</code> ne sont disponibles qu'à travers WSL. Une Ubuntu fraîchement installée dans WSL n'a pas de compilateur C : <code>sudo apt install gcc make</code> l'ajoute. Par défaut, WSL ne monte que le disque <code>C:</code> (sous <code>/mnt/c</code>) et pas le lecteur <code>G:</code> de Google Drive : on copie donc le dossier des exemples sur <code>C:</code> ou dans son répertoire personnel WSL avant de le compiler.</p>
+    <p>Sous Linux, <code>cat /proc/locks</code> (ou la commande <code>lslocks</code>) affiche les verrous posés à un instant donné. On s'en sert tout au long de la page.</p>
+  </details>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Accès concurrents à un fichier <span class="ref">notes CM 1 et CM 2, § 5.1</span></h2>
+    <p>Un fichier peut être ouvert au même moment par plusieurs processus. Si rien ne règle leurs accès, les écritures des uns écrasent celles des autres, et un lecteur peut lire un état à moitié écrit.</p>
+
+    <h3>Le problème <span class="ref">CM 2, § 5.1</span></h3>
+    <p>Parmi les services qu'un système de gestion de fichiers doit rendre, le CM 1 cite le <strong>partage des fichiers</strong>, sous deux formes : entre plusieurs utilisateurs, ce que règlent les droits d'accès ; et entre plusieurs accès simultanés, ce que règlent des outils qui interdisent les écritures concurrentes, le <dfn>verrouillage</dfn> (<span class="en" lang="en">locking</span>).</p>
+    <p>Lorsque plusieurs processus accèdent simultanément au même fichier, des risques d'incohérence des données surviennent. La communication par fichier nécessite donc des mécanismes de régulation.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Communiquer par un fichier</span></p>
+      <p>Des processus communiquent par fichier quand l'un y dépose des données que les autres viennent lire ou modifier : un fichier de comptes mis à jour par plusieurs guichets, un fichier de configuration relu par des services, une petite base de données. Le TP Route en est un exemple : plusieurs processus « voitures » se déplacent sur une route enregistrée dans un fichier partagé.</p>
+    </div>
+
+    <h3>Deux écrivains sans verrou <span class="ref">ecrivain.c</span></h3>
+    <p>Le premier exemple du cours montre ce qui se passe sans aucune régulation. Le programme <code>ecrivain</code> reçoit un nom de fichier et une lettre. Il écrit 10 lignes de 13 octets, faites de dix fois la lettre, d'un numéro de ligne sur deux chiffres et d'un saut de ligne, avec une pause aléatoire de 0 à 2 secondes entre deux lignes.</p>
+<pre data-fichier="ecrivain.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+
+#include &lt;commun.h&gt;
+
+/*
+ * Ecrivain sans verrou
+ */
+
+int
+main( int nb_arg , char * tab_arg[] )
+{
+     int d_fich ;  /* Descripteur du fichier ressource */
+     int i , j ;
+     char buffer[10];
+
+     /*----------*/
+
+
+     if( nb_arg != 3 )
+     {
+          fprintf( stderr , "Usage : %s &lt;reference fichier&gt; &lt;lettre&gt;\n" , tab_arg[0]);
+          exit(-1);
+
+     }
+
+     srandom(getpid());
+
+     printf("Ecrivain %s --&gt; Debut ecriture dans  %s\n", tab_arg[2] , tab_arg[1]);
+
+     /*
+      * Ecriture dans le fichier partage
+      */
+
+     /* ouverture en fin de fichier */
+     if( (d_fich = open(tab_arg[1], O_RDWR|O_CREAT , 0666 )) == -1 )
+     {
+          fprintf( stderr, "Pb open sur %s\n", tab_arg[1] );
+          exit(-2);
+     }
+
+     /* Ecriture */
+     for( i=0; i&lt;NB_LETTRES ; i++)
+     {
+          for( j=0;j&lt;10;j++)
+               write( d_fich , tab_arg[2] , strlen(tab_arg[2]) ) ;
+          sprintf( buffer , "%02d" , i );
+          write( d_fich , buffer , strlen(buffer) ) ;
+          write( d_fich , "\n" , strlen("\n") );
+
+          sleep(random()%3);
+
+     }
+
+     /* fermeture */
+     close(d_fich);
+
+     printf("Ecrivain %s --&gt; Fin ecriture dans %s\n", tab_arg[2] , tab_arg[1]);
+
+     exit(0);
+
+}</code></pre>
+    <p>On lance deux écrivains en même temps sur le même fichier, puis on affiche le fichier :</p>
+<pre class="terminal"><code>$ ./ecrivain fichier A &amp; ./ecrivain fichier B &amp;
+Ecrivain B --&gt; Debut ecriture dans  fichier
+Ecrivain A --&gt; Debut ecriture dans  fichier
+Ecrivain B --&gt; Fin ecriture dans fichier
+Ecrivain A --&gt; Fin ecriture dans fichier
+$ cat fichier
+BBBBBBBBBB00
+BBBBBBBBBB01
+AAAAAAAAAA02
+AAAAAAAAAA03
+BBBBBBBBBB04
+BBBBBBBBBB05
+BBBBBBBBBB06
+BBBBBBBBBB07
+BBBBBBBBBB08
+BBBBBBBBBB09</code></pre>
+    <p>Le fichier final ne contient ni les lignes de A, ni celles de B, mais un mélange des deux : chaque écrivain a écrasé une partie du travail de l'autre. Le mélange change à chaque exécution, puisqu'il dépend des pauses tirées au hasard. (Les numéros de tâche affichés par le shell après <code>&amp;</code> ont été retirés de la trace.)</p>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Pourquoi les lignes s'écrasent</span></p>
+      <p><span class="badge ajout">Ajout</span> Chaque <code>open</code> crée sa propre position courante, qui part de 0. Les deux écrivains écrivent donc aux mêmes positions : la ligne <var>i</var> de A et celle de B occupent les octets \(13i\) à \(13i + 12\), et le fichier contient, pour chaque ligne, la version écrite en dernier.</p>
+      <p><span class="badge a-verifier">À vérifier</span> Le commentaire du programme annonce une « ouverture en fin de fichier », mais <code>open</code> est appelé sans <code>O_APPEND</code> : l'écriture commence au début du fichier, comme la trace le montre. Avec <code>O_APPEND</code>, chaque <code>write</code> se ferait en fin de fichier et les lignes ne s'écraseraient plus, mais elles pourraient encore s'entremêler, puisqu'une ligne est produite par douze appels à <code>write</code>.</p>
+    </div>
+
+    <p>Le programme <code>lecteur</code> affiche le contenu d'un fichier, par blocs, avec des pauses. Lancé pendant les écritures, il affiche un état intermédiaire du fichier, que personne n'a voulu écrire.</p>
+    <details class="depliant">
+      <summary>Le programme lecteur.c</summary>
+<pre data-fichier="lecteur.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;stdlib.h&gt;
+
+#include &lt;commun.h&gt;
+
+/*
+ * Lecteur sans verrou
+ */
+
+int
+main( int nb_arg , char * tab_arg[] )
+{
+     int d_fich ;  /* Descripteur du fichier ressource */
+     char buffer[1024] ;
+     int i ;
+
+     /*----------*/
+
+     srandom(getpid());
+
+     if( nb_arg != 2 )
+     {
+          fprintf( stderr , "Usage : %s &lt;reference fichier&gt;\n" , tab_arg[0]);
+          exit(-1);
+
+     }
+
+     printf("Lecteur %d --&gt; debut lecture dans %s\n", getpid() , tab_arg[1] );
+
+     /*
+      * Lecture dans le fichier partage
+      */
+
+     /* ouverture au debut */
+     if( (d_fich = open(tab_arg[1], O_RDONLY , 744 )) == -1 )
+     {
+          fprintf( stderr, "Pb open sur %s\n", tab_arg[1] );
+          exit(-2);
+     }
+
+     /* Lecture */
+     i = 0;
+     printf("Lecteur %d :\n" , getpid() );
+     while( read( d_fich , buffer , sizeof(buffer) ) &gt; 0  )
+     {
+          write( 1 , buffer , strlen(buffer) );
+          sleep(random()%2);
+     }
+
+     /* fermeture */
+     close(d_fich);
+
+
+     printf("Lecteur %d --&gt; Fin lecture dans %s\n", getpid() ,  tab_arg[1] );
+
+     exit(0);
+
+}</code></pre>
+      <p><span class="badge ajout">Ajout</span> <code>read</code> ne termine pas le tampon par un caractère nul : <code>strlen(buffer)</code> peut donc compter des octets qui n'ont pas été lus. Il vaut mieux écrire le nombre d'octets renvoyé par <code>read</code>, comme le fait <code>lecteur_externe.c</code> (section 3).</p>
+    </details>
+
+    <h3>La règle des lecteurs et des écrivains <span class="ref">CM 1</span></h3>
+    <p>Pour arbitrer les accès concurrents, le cours distingue les lectures, qui ne modifient pas le fichier, des écritures. Il donne les cas suivants :</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Arbitrage des accès concurrents (notes du CM 1)</caption>
+        <thead><tr><th>Accès simultanés</th><th>Autorisés ?</th></tr></thead>
+        <tbody>
+          <tr><td>2 écritures</td><td class="non">non</td></tr>
+          <tr><td>1 écriture + 1 lecture</td><td class="non">non</td></tr>
+          <tr><td>2 lectures</td><td class="oui">oui</td></tr>
+          <tr><td>1 écriture + 3 lectures</td><td class="non">non</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Lecteurs et écrivains</span></p>
+      <p><span class="badge ajout">Ajout</span> Le tableau se résume en une règle, celle du problème des <dfn>lecteurs et des écrivains</dfn> (<span class="en" lang="en">readers-writers problem</span>) : à tout instant, un fichier peut être utilisé <strong>soit par autant de lecteurs qu'on veut, soit par un seul écrivain</strong>, et jamais par un écrivain et des lecteurs à la fois.</p>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Deux lectures ne se gênent pas, puisqu'aucune ne modifie les données. Une lecture pendant une écriture risque en revanche de voir un état à moitié écrit, et deux écritures s'écrasent, comme dans l'exemple précédent.</p>
+
+    <h3>Une solution dans le système de gestion de fichiers <span class="ref">CM 1</span></h3>
+    <p>Le CM 1 décrit les <strong>descripteurs à deux niveaux</strong>. Quand un processus ouvre un fichier, il obtient un descripteur local, qui contient ses informations propres : le mode d'ouverture et l'adresse du prochain bloc à lire ou écrire. Ce descripteur renvoie à un descripteur commun, unique pour le fichier, qui contient le nom du fichier, l'adresse de son début et le verrouillage interne. Cette organisation permet à plusieurs processus d'ouvrir le même fichier en même temps.</p>
+    <p>Pour appliquer la règle des lecteurs et des écrivains, il faut ajouter au descripteur commun un <strong>booléen d'écriture</strong> et un <strong>compteur de lectures en cours</strong> :</p>
+    <ul>
+      <li>ouverture en lecture : possible si et seulement si aucune écriture n'est en cours ;</li>
+      <li>ouverture en écriture : possible si et seulement si aucune lecture ni écriture n'est en cours ;</li>
+      <li>fermeture en lecture : le compteur de lectures est décrémenté ;</li>
+      <li>fermeture en écriture : le booléen d'écriture repasse à FAUX.</li>
+    </ul>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 240" width="640" role="img" aria-labelledby="fig-desc-titre">
+        <title id="fig-desc-titre">Deux processus ont ouvert le même fichier en lecture : chacun a son descripteur local, avec son mode d'ouverture et son prochain bloc ; les deux renvoient au descripteur commun du fichier, où le booléen d'écriture vaut FAUX et le compteur de lectures vaut 2</title>
+        <defs>
+          <marker id="fleche-desc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="20" y="20" width="230" height="84" rx="6"/>
+        <text x="34" y="44" class="gras">P1 · descripteur local</text>
+        <text x="34" y="68" class="t2" font-size="13">mode d'ouverture : lecture</text>
+        <text x="34" y="90" class="t2" font-size="13">prochain bloc : 3</text>
+        <rect class="boite" x="20" y="136" width="230" height="84" rx="6"/>
+        <text x="34" y="160" class="gras">P2 · descripteur local</text>
+        <text x="34" y="184" class="t2" font-size="13">mode d'ouverture : lecture</text>
+        <text x="34" y="206" class="t2" font-size="13">prochain bloc : 1</text>
+        <rect class="boite-accent" x="370" y="30" width="250" height="180" rx="6"/>
+        <text x="384" y="54" class="gras">Descripteur commun</text>
+        <text x="384" y="76" class="t2" font-size="13">un seul pour le fichier</text>
+        <text x="384" y="104" font-size="13">fichier : notes.txt</text>
+        <text x="384" y="126" font-size="13">début : bloc 12</text>
+        <text x="384" y="160" class="mono accent" font-size="13">ecriture_en_cours = FAUX</text>
+        <text x="384" y="184" class="mono accent" font-size="13">nb_lectures = 2</text>
+        <path class="trait" d="M250 62 L366 100" marker-end="url(#fleche-desc)"/>
+        <path class="trait" d="M250 178 L366 140" marker-end="url(#fleche-desc)"/>
+      </svg>
+      <figcaption>Descripteurs à deux niveaux (CM 1). Les deux champs en couleur servent à la gestion des accès concurrents : ici, deux lectures sont en cours, une demande d'ouverture en écriture serait refusée.</figcaption>
+    </figure>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les quatre règles en pseudo-code</span></p>
+<pre><code class="language-pseudo"><b>fonction</b> ouvrir_en_lecture(f)
+    <b>si</b> f.ecriture_en_cours <b>alors</b> refuser      <i>// ou attendre</i>
+    f.nb_lectures ← f.nb_lectures + 1
+
+<b>fonction</b> ouvrir_en_ecriture(f)
+    <b>si</b> f.ecriture_en_cours <b>ou</b> f.nb_lectures &gt; 0 <b>alors</b> refuser
+    f.ecriture_en_cours ← VRAI
+
+<b>fonction</b> fermer_lecture(f)
+    f.nb_lectures ← f.nb_lectures − 1
+
+<b>fonction</b> fermer_ecriture(f)
+    f.ecriture_en_cours ← FAUX</code></pre>
+      <p>Le test et la mise à jour doivent se faire d'un seul tenant : si deux processus testaient le booléen en même temps, avant que l'un d'eux ne le passe à VRAI, ils ouvriraient tous deux le fichier en écriture. C'est le système qui exécute ces fonctions, sans pouvoir être interrompu au milieu.</p>
+      <p>Tant que des lecteurs se succèdent sans interruption, le compteur ne revient jamais à 0 et un écrivain peut attendre indéfiniment : c'est une <dfn>famine</dfn> (<span class="en" lang="en">starvation</span>). Les solutions complètes du problème des lecteurs et des écrivains refusent les nouveaux lecteurs dès qu'un écrivain attend.</p>
+    </div>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Et sous Unix ?</span></p>
+      <p><span class="badge ajout">Ajout</span> Unix n'applique pas ce contrôle : <code>open</code> ne refuse jamais un fichier parce qu'un autre processus l'a déjà ouvert. Ce sont les processus eux-mêmes qui posent des <strong>verrous</strong>, sur tout ou partie du fichier, pour signaler l'accès qu'ils font. La suite du cours décrit ces verrous.</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-1">
+      <p class="bloc-titre">Exercice 1 <span>Un booléen et un compteur</span></p>
+      <p>Un fichier est géré par les quatre règles ci-dessus. Au départ, aucune lecture ni écriture n'est en cours. Les demandes suivantes arrivent dans cet ordre :</p>
+      <ol>
+        <li>L1 ouvre le fichier en lecture ;</li>
+        <li>L2 l'ouvre en lecture ;</li>
+        <li>E1 demande à l'ouvrir en écriture ;</li>
+        <li>L1 le ferme ;</li>
+        <li>L2 le ferme ;</li>
+        <li>E1 demande de nouveau à l'ouvrir en écriture ;</li>
+        <li>L3 demande à l'ouvrir en lecture ;</li>
+        <li>E1 le ferme.</li>
+      </ol>
+      <p>Pour chaque demande, dire si elle est acceptée, puis donner la valeur du booléen d'écriture et du compteur de lectures.</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <div class="tableau compact">
+          <table>
+            <caption>État du descripteur commun après chaque demande</caption>
+            <thead><tr><th>Demande</th><th>Résultat</th><th>Écriture</th><th>Lectures</th></tr></thead>
+            <tbody>
+              <tr><td>1. L1 lecture</td><td class="oui">acceptée</td><td>FAUX</td><td>1</td></tr>
+              <tr><td>2. L2 lecture</td><td class="oui">acceptée</td><td>FAUX</td><td>2</td></tr>
+              <tr><td>3. E1 écriture</td><td class="non">refusée : 2 lectures en cours</td><td>FAUX</td><td>2</td></tr>
+              <tr><td>4. L1 ferme</td><td>—</td><td>FAUX</td><td>1</td></tr>
+              <tr><td>5. L2 ferme</td><td>—</td><td>FAUX</td><td>0</td></tr>
+              <tr><td>6. E1 écriture</td><td class="oui">acceptée</td><td>VRAI</td><td>0</td></tr>
+              <tr><td>7. L3 lecture</td><td class="non">refusée : écriture en cours</td><td>VRAI</td><td>0</td></tr>
+              <tr><td>8. E1 ferme</td><td>—</td><td>FAUX</td><td>0</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le vocabulaire des verrous <span class="ref">notes CM 2, § 5.2 · TD 2, p. 3</span></h2>
+    <p>Un verrou se caractérise par le type d'accès qu'il protège, la partie du fichier qu'il couvre, et ce qui arrive à un processus qui le demande alors qu'il n'est pas disponible.</p>
+
+    <h3>Verrou partagé, verrou exclusif</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Verrou partagé, verrou exclusif</span> <span class="ref">CM 2, § 5.4 · TD 2</span></p>
+      <p>Un <dfn>verrou partagé</dfn> (<span class="en" lang="en">shared lock</span>), ou verrou en lecture, autorise plusieurs lectures en même temps.</p>
+      <p>Un <dfn>verrou exclusif</dfn> (<span class="en" lang="en">exclusive lock</span>), ou verrou en écriture, garantit à son détenteur un accès total : personne d'autre ne peut lire ni écrire la zone verrouillée.</p>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Ces deux types traduisent la règle des lecteurs et des écrivains. Un processus demande un verrou partagé pour lire, un verrou exclusif pour écrire, et le système accorde ou refuse la demande selon les verrous déjà posés par les autres processus :</p>
+    <div class="tableau compact centre">
+      <table>
+        <caption>Compatibilité des verrous posés par deux processus différents</caption>
+        <thead><tr><th>Verrou déjà posé sur la zone</th><th>Demande d'un verrou partagé</th><th>Demande d'un verrou exclusif</th></tr></thead>
+        <tbody>
+          <tr><th>aucun</th><td class="oui">accordé</td><td class="oui">accordé</td></tr>
+          <tr><th>partagé</th><td class="oui">accordé</td><td class="non">refusé</td></tr>
+          <tr><th>exclusif</th><td class="non">refusé</td><td class="non">refusé</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>La portée d'un verrou</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Portée</span> <span class="ref">CM 2, § 5.3–5.4</span></p>
+      <p>La <dfn>portée</dfn> d'un verrou est la partie du fichier qu'il couvre : une zone d'octets, définie par une position de début et une longueur. Un verrou peut couvrir le fichier entier ou seulement quelques octets, par exemple un enregistrement.</p>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Deux verrous posés par deux processus différents ne sont en conflit que si leurs portées se chevauchent <strong>et</strong> que l'un des deux au moins est exclusif. Verrouiller un seul enregistrement plutôt que tout le fichier laisse donc les autres processus travailler sur le reste.</p>
+
+    <h3>Verrou bloquant, verrou non bloquant <span class="ref">CM 2, § 5.2</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Bloquant, non bloquant</span></p>
+      <p>Avec un <dfn>verrou bloquant</dfn>, si le fichier est occupé, le processus attend, mis en sommeil, jusqu'à ce que le verrou soit libéré.</p>
+      <p>Avec un <dfn>verrou non bloquant</dfn>, le système renvoie immédiatement une erreur si le fichier est utilisé, ce qui permet au processus de poursuivre d'autres tâches.</p>
+    </div>
+
+    <h3>L'interblocage <span class="ref">CM 2, § 5.2</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Interblocage</span></p>
+      <p>Un <dfn>interblocage</dfn> (<span class="en" lang="en">deadlock</span>) est un cycle de dépendance mutuelle, où chaque processus attend une ressource détenue par l'autre. Le système doit idéalement permettre de détecter ces cycles.</p>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 230" width="640" role="img" aria-labelledby="fig-inter-titre">
+        <title id="fig-inter-titre">Interblocage : P1 tient l'enregistrement 0 et attend l'enregistrement 1 ; P2 tient l'enregistrement 1 et attend l'enregistrement 0 ; les attentes forment un cycle</title>
+        <defs>
+          <marker id="fleche-inter" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+          <marker id="fleche-inter-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein-accent"/>
+          </marker>
+        </defs>
+        <circle class="boite" cx="120" cy="115" r="42"/>
+        <text x="120" y="120" text-anchor="middle" class="gras">P1</text>
+        <circle class="boite" cx="520" cy="115" r="42"/>
+        <text x="520" y="120" text-anchor="middle" class="gras">P2</text>
+        <rect class="boite" x="260" y="20" width="120" height="44" rx="4"/>
+        <text x="320" y="47" text-anchor="middle" class="mono">enreg. 0</text>
+        <rect class="boite" x="260" y="166" width="120" height="44" rx="4"/>
+        <text x="320" y="193" text-anchor="middle" class="mono">enreg. 1</text>
+        <path class="trait" d="M258 50 L160 96" marker-end="url(#fleche-inter)"/>
+        <text x="200" y="60" text-anchor="end" class="t2" font-size="12">tenu par P1</text>
+        <path class="trait" d="M382 180 L480 134" marker-end="url(#fleche-inter)"/>
+        <text x="440" y="192" class="t2" font-size="12">tenu par P2</text>
+        <path class="accent pointille" d="M160 134 L256 180" marker-end="url(#fleche-inter-accent)"/>
+        <text x="200" y="190" text-anchor="end" class="accent" font-size="12">P1 attend</text>
+        <path class="accent pointille" d="M480 96 L384 50" marker-end="url(#fleche-inter-accent)"/>
+        <text x="440" y="56" class="accent" font-size="12">P2 attend</text>
+      </svg>
+      <figcaption>Un interblocage entre deux processus. Aucun des deux ne lâchera l'enregistrement qu'il tient, puisqu'il est endormi en attendant l'autre.</figcaption>
+    </figure>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Détecter ou éviter</span></p>
+      <p>Pour les verrous posés avec <code>fcntl</code>, le système détecte le cycle : la demande qui le fermerait échoue avec l'erreur <code>EDEADLK</code> au lieu d'endormir le processus (section 5).</p>
+      <p>On peut aussi l'éviter par construction : si tous les processus verrouillent les enregistrements dans le même ordre, par exemple par numéros croissants, aucun cycle ne peut se former.</p>
+    </div>
+
+    <h3>Deux stratégies <span class="ref">CM 2, § 5.3</span></h3>
+    <p>Le cours distingue deux façons de réaliser des verrous :</p>
+    <ul>
+      <li>les <strong>verrous externes</strong>, qui reposent sur un fichier annexe servant de drapeau (section 3) ;</li>
+      <li>les <strong>verrous internes</strong>, gérés par le système dans ses propres structures ; ils sont <strong>consultatifs</strong> ou <strong>impératifs</strong> (section 4) et se posent avec <code>fcntl</code> (section 5) ou <code>lockf</code> (section 6).</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les verrous externes <span class="ref">notes CM 2, § 5.3 A · ecrivain_externe.c, lecteur_externe.c</span></h2>
+    <p>La façon la plus simple de signaler qu'un fichier est utilisé est de créer à côté de lui un second fichier, dont la seule existence veut dire « occupé ».</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Verrou externe</span></p>
+      <p>Un <dfn>verrou externe</dfn> est un fichier annexe, par exemple <code>fichier.verrou</code>, créé comme drapeau : tant qu'il existe, le fichier qu'il protège est réservé.</p>
+    </div>
+
+    <h3>Poser et lever un verrou externe</h3>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Verrou externe</span> <span class="ref">ecrivain_externe.c</span></p>
+      <ol>
+        <li><strong>Poser le verrou</strong> : créer le fichier verrou avec <code>open(ref_verrou, O_CREAT|O_EXCL, 0)</code>. Si l'appel échoue avec <code>errno == EEXIST</code>, le verrou est déjà posé : on recommence, jusqu'à ce que la création réussisse.</li>
+        <li><strong>Fermer</strong> aussitôt le descripteur obtenu : on n'a pas besoin du descripteur, seulement de l'existence du fichier.</li>
+        <li><strong>Utiliser</strong> le fichier protégé.</li>
+        <li><strong>Lever le verrou</strong> : supprimer le fichier verrou avec <code>unlink(ref_verrou)</code>.</li>
+      </ol>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Tester et créer d'un seul coup</span></p>
+      <p><span class="badge ajout">Ajout</span> Tout repose sur <code>O_EXCL</code> : avec <code>O_CREAT|O_EXCL</code>, <code>open</code> échoue si le fichier existe déjà, et le test d'existence et la création sont faits par un seul appel système, sans qu'un autre processus puisse s'intercaler (les notes du CM 1 qualifient l'ouverture d'atomique). Un test suivi d'une création, en deux appels, ne protège rien :</p>
+      <div class="tableau compact mono">
+        <table>
+          <caption>Deux processus qui testent puis créent le verrou en deux appels</caption>
+          <thead><tr><th>Étape</th><th>Processus A</th><th>Processus B</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>access(v, F_OK) : absent</td><td></td></tr>
+            <tr><td>2</td><td></td><td>access(v, F_OK) : absent</td></tr>
+            <tr><td>3</td><td>creat(v, 0) : réussit</td><td></td></tr>
+            <tr><td>4</td><td></td><td>creat(v, 0) : réussit aussi</td></tr>
+            <tr><td>5</td><td>écrit dans le fichier</td><td>écrit dans le fichier</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Les deux processus se croient seuls. Sans <code>O_EXCL</code>, <code>open</code> et <code>creat</code> ouvrent un fichier existant sans échouer.</p>
+    </div>
+
+    <h3>L'exemple de l'écrivain <span class="ref">ecrivain_externe.c</span></h3>
+    <p>L'écrivain construit le nom du verrou en ajoutant <code>_verrou</code> au nom du fichier, attend de pouvoir le créer, écrit 100 lignes dans le fichier, marque une pause, puis lève le verrou.</p>
+<pre data-fichier="ecrivain_externe.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;
+
+#include &lt;commun.h&gt;
+
+/*
+ * Pose d'un verrou externe sur un fichier  par un ecrivain
+ */
+int
+main( int nb_arg , char * tab_arg[] )
+{
+     int d_verrou ;                 /* Descripteur du fichier verrou interne */
+     int d_fich ;                   /* Descripteur du fichier partage */
+     char ref_verrou[256] ;         /* Reference du fichier verrou interne */
+     char ref_fichier[256] ;        /* Reference du fichier partage */
+     int i , j ;
+     char lettre , buffer[1024] ;
+     /*----------------------------*/
+
+     if( nb_arg != 3  )
+     {
+          fprintf( stderr , "Usage : %s &lt;reference fichier&gt; &lt;lettre&gt;\n" , tab_arg[0]);
+          exit(-1);
+     }
+
+     strcpy(ref_fichier,tab_arg[1]);
+     lettre = tab_arg[2][0];
+
+     /* construction du verrou externe : creation du nom du fichier verrou */
+     strcpy(ref_verrou, ref_fichier);
+     strcat(ref_verrou, "_verrou" );
+
+     /*
+      * Consultation du verrou externe :
+      * Attente jusqu'a ce qu'on puisse poser le verrou
+      */
+
+     printf("Ecrivain %c --&gt; attente pose verrou externe %s\n" , lettre , ref_verrou);
+
+     while( ( ( d_verrou = open(ref_verrou, O_CREAT|O_EXCL,0)) == -1 ) &amp;&amp;
+            ( errno == EEXIST ) ) ;
+
+
+     /* Fin attente --&gt; la pose est effectuee
+      * Pas besoin du descripteur, juste de la ref. du verrou */
+     close(d_verrou);
+
+     printf("Ecrivain %c --&gt; pose du verrou externe %s\n", lettre, ref_verrou);
+
+     /*
+      * Ecriture dans le fichier partage
+      */
+     /* -- Ouverture */
+     if( (d_fich = open(ref_fichier, O_RDWR|O_CREAT , 0666 )) == -1 )
+     {
+          fprintf( stderr, "Pb open sur %s\n", ref_fichier );
+          exit(-2);
+     }
+
+     /* -- Ecriture */
+     for( i=0; i&lt;100 ; i++)
+     {
+          for( j=0;j&lt;NB_LETTRES;j++)
+               write( d_fich , &amp;lettre , sizeof(char) ) ;
+          sprintf( buffer , "%02d" , i );
+          write( d_fich , buffer , strlen(buffer) ) ;
+          write( d_fich , "\n" , strlen("\n") );
+     }
+
+     /* -- Fermeture */
+     close(d_fich);
+
+     /* Pause */
+     fprintf(stdout, "Ecrivain %c : Pause...\n" , lettre);
+     fscanf(stdin,"%s", buffer) ;
+
+     /* Levee du verou externe */
+     unlink(ref_verrou);
+     printf("Ecrivain %c --&gt; levee du verrou externe %s\n", lettre , ref_verrou);
+
+     exit(0);
+}</code></pre>
+    <p>Le lecteur suit le même protocole : il pose le verrou externe, affiche le fichier, puis lève le verrou.</p>
+    <details class="depliant">
+      <summary>Le programme lecteur_externe.c</summary>
+<pre data-fichier="lecteur_externe.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;
+
+
+/*
+ * Pose d'un verrou externe sur un fichier par un lecteur
+ */
+
+int
+main( int nb_arg , char * tab_arg[] )
+{
+     int d_verrou ;                 /* Descripteur du fichier verrou */
+     int d_fich ;                   /* Descripteur du fichier partage */
+     char ref_verrou[256] ;         /* Reference du fichier verrou */
+     char ref_fichier[256];         /* Reference du fichier partage */
+     char buffer[1024] ;
+     char mess[512];
+     int i , nb_lus ;
+
+     /*----------*/
+
+     if( nb_arg != 2 )
+     {
+          fprintf( stderr , "Usage : %s &lt;reference fichier&gt;\n" , tab_arg[0]);
+          exit(-1);
+
+     }
+
+     strcpy(ref_fichier, tab_arg[1]);
+
+     /* construction du nom du fichier verrou */
+     strcpy(ref_verrou, ref_fichier);
+     strcat(ref_verrou, "_verrou" );
+
+     /* Attente jusqu'a la pose du verrou externe */
+
+     sprintf( mess , "Lecteur --&gt; attente pose verrou externe %s\n" , ref_verrou);
+     write( 1 , mess , strlen(mess) );
+
+     while( ( ( d_verrou = open(ref_verrou, O_CREAT|O_EXCL,0)) == -1 ) &amp;&amp;
+            ( errno == EEXIST ) ) ;
+
+     /* Fin attente --&gt; la pose est effectuee
+      * Pas besoin du descripteur, juste de la ref. du verrou */
+     close(d_verrou);
+
+     sprintf( mess , "Lecteur --&gt; pose du verrou externe %s\n", ref_verrou);
+     write( 1 , mess , strlen(mess) );
+
+     /*
+      * Lecture dans le fichier partage
+      */
+
+     /* ouverture */
+     if( (d_fich = open(ref_fichier, O_RDONLY , 744 )) == -1 )
+     {
+          fprintf( stderr, "Pb open sur %s\n", ref_fichier );
+          exit(-2);
+     }
+
+     /* Lecture */
+     i = 0;
+     sprintf( mess , "Informations lues :\n");
+     write( 1 , mess , strlen(mess) );
+
+     while( (nb_lus = read( d_fich , buffer , sizeof(buffer) )) &gt; 0  )
+     {
+          write( 1 , buffer , nb_lus );
+     }
+
+     /* fermeture */
+     close(d_fich);
+
+     /* Levee du verou externe */
+     unlink(ref_verrou);
+     sprintf( mess , "\nLecteur --&gt; levee du verrou externe %s\n", ref_verrou);
+     write( 1 , mess , strlen(mess) );
+
+     exit(0);
+
+}</code></pre>
+    </details>
+
+    <h3>Exécution</h3>
+    <p>Dans un premier terminal, l'écrivain A pose le verrou et s'arrête sur sa pause. Pendant cette pause, on lance l'écrivain B dans un deuxième terminal, puis on observe les deux processus depuis un troisième.</p>
+<pre class="terminal" data-fichier="Terminal 1"><code>$ ./ecrivain_externe fichier A
+Ecrivain A --&gt; attente pose verrou externe fichier_verrou
+Ecrivain A --&gt; pose du verrou externe fichier_verrou
+Ecrivain A : Pause...
+ok
+Ecrivain A --&gt; levee du verrou externe fichier_verrou</code></pre>
+<pre class="terminal" data-fichier="Terminal 2"><code>$ ./ecrivain_externe fichier B
+Ecrivain B --&gt; attente pose verrou externe fichier_verrou
+Ecrivain B --&gt; pose du verrou externe fichier_verrou
+Ecrivain B : Pause...</code></pre>
+<pre class="terminal" data-fichier="Terminal 3, pendant la pause de A"><code>$ ls -l fichier*
+-rw-r--r-- 1 piaur piaur 1300 Sep 27 19:35 fichier
+---------- 1 piaur piaur    0 Sep 27 19:35 fichier_verrou
+$ ps -o pid,stat,pcpu,time,args -C ecrivain_externe
+    PID STAT %CPU     TIME COMMAND
+    807 Ss+   0.0 00:00:00 ./ecrivain_externe fichier A
+    827 Rs+  99.0 00:00:01 ./ecrivain_externe fichier B</code></pre>
+    <p>B reste sur son message d'attente jusqu'à ce qu'on tape <code>ok</code> dans le terminal de A : A supprime alors <code>fichier_verrou</code>, et B le crée à son tour. Le fichier verrou est vide et n'a aucun droit (mode 0), puisqu'il est créé avec le mode <code>0</code>. Surtout, <code>ps</code> montre B dans l'état <code>R</code> (en cours d'exécution) à 99 % du processeur : il n'est pas endormi, il exécute sa boucle <code>while</code> sans arrêt.</p>
+
+    <h3>Avantages et limites <span class="ref">CM 2, § 5.3 A</span></h3>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="colonne-titre">Avantage</p>
+        <ul>
+          <li>Simple à mettre en œuvre : <code>open</code> et <code>unlink</code> suffisent.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p class="colonne-titre">Inconvénients</p>
+        <ul>
+          <li><strong>Attente active</strong> : le processus qui attend consomme du temps processeur.</li>
+          <li><strong>Pas de notion de portée</strong> : le verrou porte sur la totalité du fichier.</li>
+          <li><strong>Discipline</strong> : il dépend d'une discipline stricte des programmes, car rien n'empêche un processus d'ouvrir le fichier sans passer par le verrou.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Trois autres limites</span></p>
+      <ul>
+        <li><strong>Pas de verrou partagé</strong> : le verrou externe est toujours exclusif. Deux <code>lecteur_externe</code> ne peuvent pas lire en même temps, alors que la règle des lecteurs et des écrivains le permettrait.</li>
+        <li><strong>Verrou orphelin</strong> : si le processus meurt avant son <code>unlink</code> (<kbd>Ctrl</kbd> + <kbd>C</kbd> pendant la pause, plantage), le fichier verrou reste, et tous les autres attendent indéfiniment. Il faut le supprimer à la main.</li>
+        <li><strong>Attente coûteuse</strong> : on peut espacer les essais en dormant un peu entre deux tentatives (<code>sleep</code>, <code>usleep</code>). Le processus consomme alors moins de temps processeur, mais il réagit avec retard à la levée du verrou.</li>
+      </ul>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>La boucle d'attente s'arrête aussi sur une autre erreur</span></p>
+      <p><span class="badge ajout">Ajout</span> La boucle de <code>ecrivain_externe.c</code> ne continue que si <code>open</code> échoue avec <code>EEXIST</code>. Si l'appel échoue pour une autre raison, par exemple <code>EACCES</code> parce que le processus n'a pas le droit d'écrire dans le répertoire, la boucle s'arrête, <code>close(-1)</code> échoue sans bruit, et le programme continue comme s'il avait posé le verrou. Un programme plus sûr teste le résultat après la boucle et s'arrête avec un message d'erreur.</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-2">
+      <p class="bloc-titre">Exercice 2 <span>Un verrou orphelin</span></p>
+      <p>On lance <code>./ecrivain_externe fichier A</code>, et on tape <kbd>Ctrl</kbd> + <kbd>C</kbd> pendant sa pause.</p>
+      <ol>
+        <li>Que devient <code>fichier_verrou</code> ?</li>
+        <li>Que fait ensuite <code>./lecteur_externe fichier</code> ?</li>
+        <li>Comment débloquer la situation ?</li>
+        <li>Comment l'écrivain pourrait-il éviter de laisser son verrou derrière lui s'il reçoit <code>SIGINT</code> ?</li>
+      </ol>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Le comportement par défaut de <code>SIGINT</code> est la terminaison immédiate du processus (cours sur les signaux).</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <ol>
+          <li><code>SIGINT</code> termine l'écrivain avant son <code>unlink</code> : <code>fichier_verrou</code> reste sur le disque.</li>
+          <li>Il boucle indéfiniment dans sa boucle d'attente, à 100 % du processeur, car la création de <code>fichier_verrou</code> échoue toujours avec <code>EEXIST</code>.</li>
+          <li>On supprime le verrou à la main, après avoir vérifié que plus aucun processus ne l'utilise : <code>rm -f fichier_verrou</code>. Sans <code>-f</code>, <code>rm</code> demande une confirmation, parce que le fichier n'a aucun droit (« remove write-protected regular empty file? »). Le lecteur en attente pose alors son verrou et s'exécute.</li>
+          <li>En captant <code>SIGINT</code> (et <code>SIGTERM</code>) avec un handler qui supprime le fichier verrou avant de terminer le processus. Rien ne protège en revanche contre <code>SIGKILL</code>, qui ne peut pas être capté. Les verrous internes n'ont pas ce défaut : le système les lève à la fin du processus, quelle qu'en soit la cause.</li>
+        </ol>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les verrous internes : consultatifs et impératifs <span class="ref">notes CM 1 et CM 2, § 5.3 B · ecrivain_imperatif.c, lecteur_imperatif.c</span></h2>
+    <p>Un verrou interne n'est pas un fichier : c'est une information que le système enregistre dans ses propres structures. Le processus qui attend peut alors être endormi, et le verrou peut ne couvrir qu'une partie du fichier.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Verrou interne</span> <span class="ref">CM 2, § 5.3 B</span></p>
+      <p>Un <dfn>verrou interne</dfn> est géré par le système, qui l'intègre aux structures du système de fichiers et aux descripteurs. Au CM 1, le verrouillage interne figure ainsi parmi les informations communes du descripteur de fichier.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Ce qu'on gagne par rapport au verrou externe</span></p>
+      <ul>
+        <li>Le processus qui attend est <strong>endormi</strong> par le système et réveillé à la levée du verrou : pas d'attente active.</li>
+        <li>Le verrou a une <strong>portée</strong>, à l'octet près, et il peut être <strong>partagé</strong> ou <strong>exclusif</strong>.</li>
+        <li>Le système connaît le propriétaire de chaque verrou (son pid) : il <strong>lève les verrous d'un processus qui se termine</strong>, et il peut détecter les interblocages.</li>
+      </ul>
+      <p>Sous Linux, le fichier <code>/proc/locks</code> liste les verrous internes posés sur la machine. Voici une ligne relevée pendant l'exécution de la section 5, et sa lecture :</p>
+<pre class="terminal"><code>$ cat /proc/locks
+5: POSIX  ADVISORY  WRITE 446 00:49:27 13 25
+5: -&gt; POSIX  ADVISORY  WRITE 466 00:49:27 13 25</code></pre>
+      <ul>
+        <li><code>POSIX</code> : verrou posé par <code>fcntl</code> (ou <code>lockf</code>) ; <code>ADVISORY</code> : consultatif ; <code>WRITE</code> : exclusif (<code>READ</code> : partagé) ;</li>
+        <li><code>446</code> : pid du propriétaire ; <code>00:49:27</code> : périphérique et numéro d'i-nœud du fichier ; <code>13 25</code> : premier et dernier octets couverts (<code>EOF</code> si le verrou va jusqu'à la fin du fichier) ;</li>
+        <li>une ligne qui commence par <code>-&gt;</code> décrit une demande en attente : ici, le processus 466 est endormi en attendant le verrou du processus 446.</li>
+      </ul>
+    </div>
+
+    <h3>Les verrous consultatifs <span class="ref">CM 2, § 5.3 B</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Verrou consultatif</span></p>
+      <p>Avec des <dfn>verrous consultatifs</dfn> (<span class="en" lang="en">advisory locks</span>), le programme doit explicitement vérifier l'existence du verrou avant d'accéder au fichier. C'est la méthode la plus courante.</p>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Le système ne contrôle donc pas <code>read</code> et <code>write</code> : il ne fait qu'arbitrer les demandes de verrous. Un processus qui ne demande pas de verrou lit et écrit librement, même dans une zone verrouillée. L'expérience suivante le montre avec les programmes de la section 5 : l'écrivain A tient un verrou exclusif sur l'enregistrement 1 d'un fichier de trois enregistrements.</p>
+<pre class="terminal" data-fichier="Terminal 1"><code>$ printf 'xxxxxxxxxx00\nxxxxxxxxxx01\nxxxxxxxxxx02\n' &gt; fichier
+$ ./ecrivain_interne fichier 1 A
+Ecrivain A --&gt; attente pose verrou interne consultatif
+Ecrivain A --&gt; pose du verrou interne consultatif
+Ecrivain A : Pause...</code></pre>
+<pre class="terminal" data-fichier="Terminal 2, pendant la pause de A"><code>$ ./lecteur fichier
+Lecteur 920 --&gt; debut lecture dans fichier
+Lecteur 920 :
+xxxxxxxxxx00
+AAAAAAAAAA01
+xxxxxxxxxx02
+Lecteur 920 --&gt; Fin lecture dans fichier
+$ ./lecteur_interne fichier 1
+Lecteur --&gt; attente pose verrou interne consultatif</code></pre>
+    <p><code>lecteur</code>, qui ne pose aucun verrou, lit l'enregistrement 1 pendant qu'A le tient. <code>lecteur_interne</code>, qui demande un verrou partagé sur ce même enregistrement, reste bloqué jusqu'à ce qu'A lève le sien. Comme pour les verrous externes, la protection repose sur la discipline : tous les programmes qui accèdent au fichier doivent demander les verrous.</p>
+
+    <h3>Les verrous impératifs <span class="ref">CM 2, § 5.3 B</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Verrou impératif</span></p>
+      <p>Avec des <dfn>verrous impératifs</dfn> (<span class="en" lang="en">mandatory locks</span>), le système bloque automatiquement les accès (<code>read</code>, <code>write</code>) si un verrou est posé. Cela nécessite une configuration de montage spécifique du système de fichiers, l'option <code>mand</code>.</p>
+    </div>
+    <p>Dans l'exemple du cours, un verrou devient impératif quand le fichier a le bit <strong>set-gid</strong> positionné et le droit d'exécution pour le groupe retiré, ce que fait la commande <code>chmod g+s,g-x</code>. Le verrou lui-même se pose avec <code>fcntl</code>, comme un verrou consultatif (section 5). Ici, il couvre tout le fichier. L'écrivain retire le bit set-gid avant de lever son verrou.</p>
+<pre data-fichier="ecrivain_imperatif.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+
+#include &lt;commun.h&gt;
+
+/*
+ * Pose d'un verrou interne imperatif sur un fichier par un ecrivain
+ * Mac Marverick ne supporte la les verrous impératifs
+ */
+
+int
+main( int nb_arg , char * tab_arg[] )
+{
+     int d_fich ;                   /* Descripteur du fichier partage */
+     char ref_fichier[256] ;        /* Reference du fichier partage */
+     struct flock  verrou  ;        /* Verrou interne */
+     int id_enreg ;
+     char lettre ;
+     int i ;
+     char buffer[1024] ;
+     struct stat inoeud ;
+
+     /*----------*/
+
+     if( nb_arg != 4)
+     {
+          fprintf( stderr , "Usage : %s &lt;reference fichier&gt; &lt;numero d'enregistrement&gt; &lt;lettre&gt;\n" , tab_arg[0]);
+          exit(-1);
+     }
+
+     strcpy(ref_fichier,tab_arg[1]);
+     sscanf( tab_arg[2], "%d" , &amp;id_enreg );
+     lettre = tab_arg[3][0] ;
+
+
+
+     /* Positionnement du set-gid ==&gt; verrou imperatif */
+     if( stat(ref_fichier, &amp;inoeud) == -1 )
+     {
+          perror("pb sur stat");
+          return(-2);
+     }
+     sprintf( buffer , "chmod g+s,g-x %s" , ref_fichier) ;
+     system( buffer ) ;
+     /* if( chmod( ref_fichier , inoeud.st_mode | S_ISGID ) == -1 ) */
+     /* { */
+     /*           perror("pb sur chmod 1"); */
+     /*           return(-3); */
+     /* } */
+     printf("Ecrivain %c --&gt; pose du verrou interne imperatif\n", lettre);
+
+     /* Ouverture du fichier partage */
+     if( (d_fich = open( ref_fichier , O_RDWR , 0666 )) == -1 )
+     {
+          fprintf( stderr, "Pb open sur %s\n", ref_fichier);
+          exit(-1);
+     }
+
+     /* Construction du verrou interne : affectation d'une struct flock */
+     verrou.l_type   = F_WRLCK ;                          /* verrou en ecriture (exclusif)*/
+     verrou.l_whence = (short)0 ;                         /* a partir du debut du fichier */
+/*      verrou.l_start  = (long)(SIZE_ENREG*id_enreg);  /\* debut de la portee du verrou *\/ */
+/*      verrou.l_len    = (long)SIZE_ENREG;             /\* longueur de la portee (un enreg.) *\/   */
+     /* Pose verrou sur tout le fichier */
+     verrou.l_start  = 0 ;
+     verrou.l_len    = 0 ;
+
+     /*
+      * Consultation du verrou interne
+      * Tentative de pose d'un verrou Bloquant Exclusif
+      */
+     printf("Ecrivain %c --&gt; pose verrou interne " , lettre); fflush(stdout);
+
+     if( fcntl( d_fich , F_SETLKW , &amp;verrou ) == -1 )
+     {
+          fcntl_error(errno);
+          fprintf(stderr, "Ecrivain: Pb sur pose verrou\n");
+          exit(-2);
+     }
+     printf("...OK\n") ;
+
+     /* Fin attente --&gt; la pose du verrou est effectuee */
+
+
+
+     /*
+      * Acces au fichier partage
+      */
+
+     lseek( d_fich , (SIZE_ENREG*id_enreg) , 0 ) ;
+     /*lseek( d_fich , verrou.l_start , 0 ) ;*/
+     /* Ecriture */
+     for( i=0; i&lt;NB_LETTRES ; i++)
+          write( d_fich , &amp;lettre , sizeof(char) ) ;
+     sprintf( buffer , "%02d" , i );
+     write( d_fich , buffer , strlen(buffer) ) ;
+     write( d_fich , "\n" , strlen("\n") );
+
+
+     /* Pause */
+     fprintf(stdout, "Ecrivain %c : Pause...\n" , lettre);
+     fscanf(stdin,"%s", buffer) ;
+
+     /* Suppression du set-gid */
+     if( chmod( ref_fichier , inoeud.st_mode ) == -1 )
+     {
+          perror("pb sur chmod 2");
+          return(-3);
+     }
+
+     /* Levee du verrou (meme portee) */
+     verrou.l_type   = F_UNLCK ;
+     if( fcntl( d_fich , F_SETLKW , &amp;verrou ) == -1 )
+     {
+          fcntl_error(errno);
+          fprintf( stderr , "Ecrivain : Pb fcntl sur levee verrou\n");
+          exit(-1);
+     }
+
+     /* fermeture du fichier partage */
+     close(d_fich);
+
+     printf("Ecrivain %c --&gt; levee du verrou interne imperatif\n" , lettre );
+
+     exit(0);
+}</code></pre>
+    <p>Le lecteur, lui, ne demande aucun verrou : il compte sur le système pour que son <code>read</code> attende la levée du verrou de l'écrivain.</p>
+<pre data-fichier="lecteur_imperatif.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+
+#include &lt;commun.h&gt;
+
+/*
+ * Pose d'un verrou interne sur un fichier par un lecteur
+ * Les verrous imperatifs ne sont pas supportes par les Mac Os ni Windows
+ */
+
+int
+main( int nb_arg , char * tab_arg[] )
+{
+     int d_fich ;                   /* Descripteur du fichier partage */
+     char ref_fichier[256];         /* Reference du fichier partage */
+     char buffer[1024] ;
+     int id_enreg ;
+
+     /*----------*/
+
+     if( nb_arg != 3)
+     {
+          fprintf( stderr , "Usage : %s &lt;reference fichier&gt; &lt;numero d'enregistrement&gt;\n" , tab_arg[0]);
+          exit(-1);
+     }
+
+     strcpy(ref_fichier,tab_arg[1]);
+     sscanf( tab_arg[2], "%d" , &amp;id_enreg );
+
+     /* Ouverture du fichier partage */
+     if( (d_fich = open( ref_fichier , O_RDONLY , 0666 )) == -1 )
+     {
+          fprintf( stderr, "Pb open sur %s\n", ref_fichier);
+          exit(-1);
+     }
+
+     /*
+      * Acces au fichier partage
+      */
+
+     /* Lecture */
+
+     lseek( d_fich , (SIZE_ENREG*id_enreg) , 0 ) ;
+     printf("Lecteur :\n");
+     read( d_fich , buffer , SIZE_ENREG ) ;
+     write( 1 , buffer , SIZE_ENREG );
+     printf("\n");
+
+
+     /* Pause */
+     fprintf(stdout, "Lecteur : Pause...\n");
+     fscanf(stdin,"%s", buffer) ;
+
+     /* fermeture du fichier partage */
+     close(d_fich);
+
+
+     exit(0);
+
+}</code></pre>
+    <p>Les commentaires des deux programmes précisent que les verrous impératifs ne sont pas pris en charge par macOS (Mavericks) ni par Windows.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Sous Linux, les verrous impératifs n'existent plus</span></p>
+      <p>Linux a longtemps accepté les verrous impératifs, avec les deux conditions du cours : le fichier marqué par set-gid sans droit d'exécution pour le groupe, et le système de fichiers monté avec <code>-o mand</code>. Cette possibilité a été supprimée dans la version 5.15 du noyau (2021) : l'option <code>mand</code> est ignorée, et tous les verrous posés avec <code>fcntl</code> sont consultatifs. Sur un noyau récent, l'exemple se comporte donc comme un verrou consultatif :</p>
+<pre class="terminal" data-fichier="Terminal 1"><code>$ ls -l fichier
+-rw-r--r-- 1 piaur piaur 39 Sep 27 19:36 fichier
+$ ./ecrivain_imperatif fichier 1 A
+Ecrivain A --&gt; pose du verrou interne imperatif
+Ecrivain A --&gt; pose verrou interne ...OK
+Ecrivain A : Pause...</code></pre>
+<pre class="terminal" data-fichier="Terminal 2, pendant la pause de A"><code>$ ls -l fichier
+-rw-r-Sr-- 1 piaur piaur 39 Sep 27 19:36 fichier
+$ grep POSIX /proc/locks
+6: POSIX  ADVISORY  WRITE 1130 00:49:33 0 EOF
+$ ./lecteur_imperatif fichier 1
+Lecteur :
+AAAAAAAAAA10
+
+Lecteur : Pause...</code></pre>
+      <p>Le <code>S</code> majuscule de <code>ls -l</code> indique le bit set-gid sans droit d'exécution pour le groupe. <code>/proc/locks</code> montre un verrou exclusif sur tout le fichier (de l'octet 0 à <code>EOF</code>), mais consultatif (<code>ADVISORY</code>), et le lecteur lit l'enregistrement aussitôt. Sur un système qui applique les verrous impératifs, ce <code>read</code> attendrait la levée du verrou d'A.</p>
+      <p>L'enregistrement lu se termine par <code>10</code> et non par <code>01</code> : <code>ecrivain_imperatif.c</code> écrit la valeur de <code>i</code> en fin de boucle (<code>NB_LETTRES</code>, soit 10), là où <code>ecrivain_interne.c</code> écrit le numéro d'enregistrement. De même, son message « pose du verrou interne imperatif » s'affiche quand le bit set-gid est positionné, avant la pose du verrou par <code>fcntl</code>.</p>
+    </div>
+
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="colonne-titre">Verrou consultatif</p>
+        <ul>
+          <li>Seuls les processus qui demandent un verrou sont arbitrés.</li>
+          <li><code>read</code> et <code>write</code> ne sont jamais bloqués.</li>
+          <li>Disponible partout (Unix, Linux, macOS).</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p class="colonne-titre">Verrou impératif</p>
+        <ul>
+          <li>Le système bloque les <code>read</code> et <code>write</code> de tous les processus sur la zone verrouillée.</li>
+          <li>Demande un fichier marqué (set-gid sans x de groupe) et un montage <code>mand</code>.</li>
+          <li>Absent de macOS, de Windows et des noyaux Linux depuis la version 5.15.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Programmer les verrous internes : fcntl <span class="ref">notes CM 2, § 5.4 · TD 2, p. 3 · ecrivain_interne.c, lecteur_interne.c, commun.c</span></h2>
+    <p>Sous Unix et Linux, la gestion des verrous internes repose sur la primitive <code>fcntl</code> et sur la structure <code>struct flock</code>, qui décrit le verrou demandé.</p>
+
+    <h3>La primitive fcntl <span class="ref">TD 2, p. 3</span></h3>
+<pre data-fichier="Prototype"><code class="language-c">int fcntl(int fd, int operation, struct flock * verrou);</code></pre>
+    <ul>
+      <li><code>fd</code> : descripteur local du fichier, obtenu par <code>open</code> ;</li>
+      <li><code>operation</code> : l'opération demandée, parmi les trois valeurs du tableau ci-dessous ;</li>
+      <li><code>verrou</code> : pointeur sur les caractéristiques du verrou, contenues dans une structure <code>flock</code>.</li>
+    </ul>
+    <div class="tableau compact">
+      <table>
+        <caption>Les opérations de fcntl sur les verrous (TD 2, p. 3)</caption>
+        <thead><tr><th>Opération</th><th>Effet</th></tr></thead>
+        <tbody>
+          <tr><th><code>F_GETLK</code></th><td>test d'existence d'un verrou</td></tr>
+          <tr><th><code>F_SETLK</code></th><td>pose d'un verrou non bloquant</td></tr>
+          <tr><th><code>F_SETLKW</code></th><td>pose d'un verrou bloquant</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le vrai prototype</span></p>
+      <p><code>fcntl</code> (<span class="en" lang="en">file control</span>) sert à bien d'autres choses que les verrous : dupliquer un descripteur, lire ou changer ses options. Son prototype, déclaré dans <code>&lt;fcntl.h&gt;</code>, est donc <code>int fcntl(int fd, int cmd, ...)</code> : le troisième argument dépend de l'opération, et c'est un <code>struct flock *</code> pour les trois opérations sur les verrous. <code>fcntl</code> renvoie −1 en cas d'échec, avec la cause dans <code>errno</code>. Le W de <code>F_SETLKW</code> signifie <span class="en" lang="en">wait</span>. Pour lever un verrou, <code>F_SETLK</code> et <code>F_SETLKW</code> font la même chose, puisque la levée n'a jamais à attendre ; les exemples du cours utilisent <code>F_SETLKW</code>.</p>
+    </div>
+
+    <h3>La structure flock <span class="ref">TD 2, p. 3 · CM 2, § 5.4</span></h3>
+<pre data-fichier="Rappel du TD 2"><code class="language-c">struct flock
+{
+  short l_type ;    /* Type du verrou */
+  short l_whence ;  /* Position absolue :
+                     * debut    --&gt; 0,
+                     * courant  --&gt; 1,
+                     * fin      --&gt; 2 */
+  long  l_start ;   /* Position debut */
+  long  l_len ;     /* Longueur */
+  short l_pid ;     /* PID du processus proprietaire */
+}</code></pre>
+    <p>Le champ <code>l_type</code> définit le type d'accès :</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Les valeurs de l_type (TD 2, p. 3)</caption>
+        <thead><tr><th>Valeur</th><th>Signification</th></tr></thead>
+        <tbody>
+          <tr><th><code>F_RDLCK</code></th><td>verrou partagé, en lecture : il autorise plusieurs lectures</td></tr>
+          <tr><th><code>F_WRLCK</code></th><td>verrou exclusif, en écriture : il garantit un accès total</td></tr>
+          <tr><th><code>F_UNLCK</code></th><td>verrou à lever</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La structure réelle</span></p>
+      <p>Dans la norme POSIX, <code>l_start</code> et <code>l_len</code> sont de type <code>off_t</code>, <code>l_pid</code> de type <code>pid_t</code>, et l'ordre des champs n'est pas imposé : on affecte donc les champs un par un, par leur nom, comme dans les exemples. Les valeurs 0, 1 et 2 de <code>l_whence</code> ont les noms <code>SEEK_SET</code>, <code>SEEK_CUR</code> et <code>SEEK_END</code>, ceux de <code>lseek</code>. <code>l_pid</code> n'est pas lu à la pose : c'est <code>F_GETLK</code> qui le remplit.</p>
+    </div>
+
+    <h3>La portée d'un verrou <span class="ref">CM 2, § 5.4</span></h3>
+    <p>La portée est définie par la position de début <code>l_start</code> et par la longueur <code>l_len</code>. Le point de référence <code>l_whence</code> précise d'où l'on compte <code>l_start</code> : 0 pour le début du fichier, 1 pour la position courante, 2 pour la fin du fichier.</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Verrouillage global</span> <span class="ref">CM 2, § 5.4</span></p>
+      <p>Avec les valeurs \((0, 0, 0)\) pour <code>l_whence</code>, <code>l_start</code> et <code>l_len</code>, le verrou couvre la totalité du fichier.</p>
+    </div>
+    <p>Pour un fichier fait d'enregistrements de taille fixe \(T\), numérotés à partir de 0, l'enregistrement \(k\) occupe les octets \(kT\) à \(kT + T - 1\). Son verrou s'écrit donc :</p>
+    <div class="encadre">
+      \[ \mathtt{l\_whence} = 0 \qquad \mathtt{l\_start} = k \times T \qquad \mathtt{l\_len} = T \]
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 200" width="640" role="img" aria-labelledby="fig-portee-titre">
+        <title id="fig-portee-titre">Un fichier de trois enregistrements de 13 octets ; le verrou de l'enregistrement 1 a pour origine le début du fichier, commence à l'octet 13 et couvre 13 octets, soit les octets 13 à 25</title>
+        <defs>
+          <marker id="fleche-portee" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein-accent"/>
+          </marker>
+        </defs>
+        <rect class="boite-accent" x="220" y="16" width="180" height="26" rx="4"/>
+        <text x="310" y="34" text-anchor="middle" class="mono accent" font-size="13">verrou F_WRLCK</text>
+        <rect class="boite" x="40" y="54" width="180" height="40"/>
+        <rect class="boite-accent" x="220" y="54" width="180" height="40"/>
+        <rect class="boite" x="400" y="54" width="180" height="40"/>
+        <text x="130" y="79" text-anchor="middle" class="mono" font-size="13">xxxxxxxxxx00↵</text>
+        <text x="310" y="79" text-anchor="middle" class="mono" font-size="13">AAAAAAAAAA01↵</text>
+        <text x="490" y="79" text-anchor="middle" class="mono" font-size="13">xxxxxxxxxx02↵</text>
+        <text x="40" y="112" text-anchor="middle" class="mono t2" font-size="12">0</text>
+        <text x="220" y="112" text-anchor="middle" class="mono t2" font-size="12">13</text>
+        <text x="400" y="112" text-anchor="middle" class="mono t2" font-size="12">26</text>
+        <text x="580" y="112" text-anchor="middle" class="mono t2" font-size="12">39</text>
+        <text x="130" y="130" text-anchor="middle" class="t2" font-size="12">enreg. 0</text>
+        <text x="310" y="130" text-anchor="middle" class="t2" font-size="12">enreg. 1</text>
+        <text x="490" y="130" text-anchor="middle" class="t2" font-size="12">enreg. 2</text>
+        <path class="pointille" d="M40 118 V176"/>
+        <path class="accent" d="M44 156 H216" marker-start="url(#fleche-portee)" marker-end="url(#fleche-portee)"/>
+        <text x="130" y="178" text-anchor="middle" class="mono accent" font-size="13">l_start = 13</text>
+        <path class="accent" d="M224 156 H396" marker-start="url(#fleche-portee)" marker-end="url(#fleche-portee)"/>
+        <text x="310" y="178" text-anchor="middle" class="mono accent" font-size="13">l_len = 13</text>
+        <text x="420" y="160" class="t2" font-size="12">origine (l_whence = 0) :</text>
+        <text x="420" y="178" class="t2" font-size="12">le début du fichier</text>
+      </svg>
+      <figcaption>Le verrou de l'enregistrement 1 dans un fichier d'enregistrements de 13 octets (10 lettres, 2 chiffres et un saut de ligne, noté ↵). <code>/proc/locks</code> l'affiche comme la zone <code>13 25</code>.</figcaption>
+    </figure>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les cas particuliers de la portée</span></p>
+      <ul>
+        <li><code>l_len = 0</code> : le verrou va de <code>l_start</code> jusqu'à la fin du fichier, et au-delà. Il couvre aussi les octets que l'on ajoutera plus tard : un verrou posé à partir de l'octet 26 d'un fichier de 39 octets entre en conflit avec une demande sur l'octet 5000.</li>
+        <li><code>l_whence = SEEK_END</code> avec un <code>l_start</code> négatif compte à partir de la fin : \((2, -13, 13)\) verrouille les 13 derniers octets. La position est calculée au moment de l'appel ; le verrou ne se déplace pas si le fichier grandit ensuite.</li>
+        <li><code>l_len</code> négatif (autorisé par POSIX) couvre les octets <em>qui précèdent</em> <code>l_start</code> : \((0, 20, -10)\) verrouille les octets 10 à 19. Le TP Route utilise cette possibilité pour les zones parcourues vers l'ouest.</li>
+      </ul>
+    </div>
+
+    <h3>Exemple : un écrivain et un lecteur d'enregistrements <span class="ref">ecrivain_interne.c, lecteur_interne.c</span></h3>
+    <p>Le fichier contient des enregistrements de <code>SIZE_ENREG</code> = 13 octets. L'écrivain reçoit un nom de fichier, un numéro d'enregistrement et une lettre. Il pose un verrou exclusif bloquant sur cet enregistrement seulement, le remplace par dix fois la lettre suivie du numéro, marque une pause, puis lève le verrou avec la même portée.</p>
+<pre data-fichier="ecrivain_interne.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+
+#include &lt;commun.h&gt;
+
+/*
+ * Pose d'un verrou interne sur un fichier par un ecrivain
+ */
+
+int
+main( int nb_arg , char * tab_arg[] )
+{
+     int d_fich ;                   /* Descripteur du fichier partage */
+     char ref_fichier[256] ;        /* Reference du fichier partage */
+     struct flock  verrou  ;        /* Verrou interne */
+     int id_enreg ;
+     char lettre ;
+     int i ;
+     char buffer[1024] ;
+
+     /*----------*/
+
+     if( nb_arg != 4)
+     {
+          fprintf( stderr , "Usage : %s &lt;reference fichier&gt; &lt;numero d'enregistrement&gt; &lt;lettre&gt;\n" , tab_arg[0]);
+          exit(-1);
+     }
+
+     strcpy(ref_fichier,tab_arg[1]);
+     sscanf( tab_arg[2], "%d" , &amp;id_enreg );
+     lettre = tab_arg[3][0] ;
+
+     /* Ouverture du fichier partage */
+     if( (d_fich = open( ref_fichier , O_RDWR|O_CREAT , 0666 )) == -1 )
+     {
+          fprintf( stderr, "Pb open sur %s\n", ref_fichier);
+          exit(-1);
+     }
+
+     /* Construction du verrou interne : affectation d'une struct flock */
+     verrou.l_type   = F_WRLCK ;                          /* verrou en ecriture (exclusif)*/
+     verrou.l_whence = (short)0 ;                         /* a partir du debut du fichier */
+     verrou.l_start  = (long)(SIZE_ENREG*id_enreg); /* debut de la portee du verrou */
+     verrou.l_len    = (long)SIZE_ENREG;          /* longueur de la portee (un enreg.) */
+
+     /*
+      * Consultation du verrou interne
+      * Tentative de pose d'un verrou Bloquant Exclusif
+      */
+     printf("Ecrivain %c --&gt; attente pose verrou interne consultatif\n" , lettre);
+
+     if( fcntl( d_fich , F_SETLKW , &amp;verrou ) == -1 )
+     {
+          fcntl_error(errno);
+          fprintf(stderr, "Ecrivain: Pb sur pose verrou\n");
+          exit(-2);
+     }
+
+     /* Fin attente --&gt; la pose du verrou est effectuee */
+
+     printf("Ecrivain %c --&gt; pose du verrou interne consultatif\n", lettre);
+
+     /*
+      * Acces au fichier partage
+      */
+
+     /* Ecriture */
+     lseek( d_fich , verrou.l_start , 0 ) ;
+     for( i=0; i&lt;NB_LETTRES; i++)
+          write( d_fich , &amp;lettre , sizeof(char) ) ;
+     sprintf( buffer , "%02d" , id_enreg );
+     write( d_fich , buffer , strlen(buffer) ) ;
+     write( d_fich , "\n" , strlen("\n") );
+
+
+     /* Pause */
+     fprintf(stdout, "Ecrivain %c : Pause...\n" , lettre);
+     fscanf(stdin,"%s", buffer) ;
+
+     /* Levee du verrou (meme portee) */
+     verrou.l_type   = F_UNLCK ;
+     if( fcntl( d_fich , F_SETLKW , &amp;verrou ) == -1 )
+     {
+          fcntl_error(errno);
+          fprintf( stderr , "Ecrivain : Pb fcntl sur levee verrou\n");
+          exit(-1);
+     }
+
+     /* fermeture du fichier partage */
+     close(d_fich);
+
+     printf("Ecrivain %c --&gt; levee du verrou interne consultatif\n" , lettre );
+
+     exit(0);
+}</code></pre>
+    <p>Le lecteur pose un verrou partagé bloquant sur l'enregistrement demandé, l'affiche, marque une pause, puis lève le verrou. Il ouvre le fichier en lecture seule : cela suffit pour un verrou partagé.</p>
+<pre data-fichier="lecteur_interne.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+
+#include &lt;commun.h&gt;
+
+/*
+ * Pose d'un verrou interne sur un fichier par un lecteur
+ */
+
+int
+main( int nb_arg , char * tab_arg[] )
+{
+     int d_fich ;                   /* Descripteur du fichier partage */
+     char ref_fichier[256];         /* Reference du fichier partage */
+     char buffer[1024] ;
+     struct flock  verrou  ;        /* Verrou interne */
+     int id_enreg ;
+
+     /*----------*/
+
+     if( nb_arg != 3)
+     {
+          fprintf( stderr , "Usage : %s &lt;reference fichier&gt; &lt;numero d'enregistrement&gt;\n" , tab_arg[0]);
+          exit(-1);
+     }
+
+     strcpy(ref_fichier,tab_arg[1]);
+     sscanf( tab_arg[2], "%d" , &amp;id_enreg );
+
+     /* Ouverture du fichier partage */
+     if( (d_fich = open( ref_fichier , O_RDONLY , 0666 )) == -1 )
+     {
+          fprintf( stderr, "Pb open sur %s\n", ref_fichier);
+          exit(-1);
+     }
+
+     /* Construction du verrou interne : affectation d'une struct flock */
+     verrou.l_type   = F_RDLCK ;                          /* verrou en lecture (partage) */
+     verrou.l_whence = (short)0 ;                         /* a partir du debut du fichier */
+     verrou.l_start  = (long)(SIZE_ENREG*id_enreg); /* debut de la portee du verrou */
+     verrou.l_len    = (long)SIZE_ENREG;              /* longueur de la portee (un enreg.) */
+
+     /*
+      * Consultation du verrou interne
+      * Tentative de pose d'un verrou Bloquant Partage
+      */
+
+     printf("Lecteur --&gt; attente pose verrou interne consultatif\n");
+
+     if( fcntl( d_fich , F_SETLKW , &amp;verrou ) == -1 )
+     {
+          fcntl_error(errno);
+          fprintf(stderr, "Lecteur: Pb sur pose verrou\n");
+          exit(-2);
+     }
+
+     /* Fin attente --&gt; la pose du verrou est effectuee */
+
+     printf("Lecteur --&gt; pose du verrou interne consultatif\n");
+
+     /*
+      * Acces au fichier partage
+      */
+
+     /* Lecture */
+     lseek( d_fich , verrou.l_start , 0 ) ;
+     printf("Lecteur :\n");
+     read( d_fich , buffer , SIZE_ENREG ) ;
+     write( 1 , buffer , SIZE_ENREG );
+     printf("\n");
+
+
+     /* Pause */
+     fprintf(stdout, "Lecteur : Pause...\n");
+     fscanf(stdin,"%s", buffer) ;
+
+     /* Levee du verrou interne (meme portee) */
+     verrou.l_type   = F_UNLCK ;
+     if( fcntl( d_fich , F_SETLKW , &amp;verrou ) == -1 )
+     {
+          fcntl_error(errno);
+          fprintf( stderr , "Lecteur : Pb fcntl sur levee verrou\n");
+          exit(-1);
+     }
+
+     /* fermeture du fichier partage */
+     close(d_fich);
+
+     printf("Lecteur --&gt; levee du verrou interne consultatif\n");
+
+     exit(0);
+
+}</code></pre>
+    <p>Les deux programmes partagent <code>commun.h</code>, qui définit les constantes, et <code>commun.c</code>, qui affiche le nom de l'erreur en cas d'échec de <code>fcntl</code> :</p>
+<pre data-fichier="commun.h"><code class="language-c">/*
+ * Types et fonctions communs aux
+ * processus petits et grands
+ */
+
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;sys/mman.h&gt;
+#include &lt;limits.h&gt;
+#include &lt;signal.h&gt;
+
+#define NB_LETTRES 10
+#define SIZE_ENREG 13
+
+typedef enum bool { FAUX , VRAI } bool_t ;
+
+extern
+void
+fcntl_error( const int no_err ) ;</code></pre>
+<pre data-fichier="commun.c"><code class="language-c">#include &lt;commun.h&gt;
+
+extern
+void
+fcntl_error( const int no_err )
+{
+     switch( no_err )
+     {
+        case EAGAIN  : printf(" --&gt; EAGAIN\n");
+             break ;
+        case EBADF : printf(" --&gt;EBADF\n");
+             break ;
+        case EFAULT : printf(" --&gt; EFAULT \n");
+             break ;
+        case EINTR : printf(" --&gt; EINTR\n");
+             break ;
+        case EINVAL: printf(" --&gt; EINVAL\n");
+             break ;
+        case EIO : printf(" --&gt;  EIO\n");
+             break ;
+        case EMFILE : printf(" --&gt; EMFILE\n");
+             break ;
+        case ENOLCK  : printf(" --&gt; ENOLCK ; Desole, le nombre limite de verrous est atteint\n");
+             break ;
+        case ENOLINK: printf(" --&gt; ENOLINK\n");
+             break ;
+        case EOVERFLOW: printf(" --&gt; EOVERFLOW\n");
+             break ;
+        case EDEADLK : printf(" --&gt; EDEADLK\n");
+             break ;
+        default :
+             printf(" --&gt; Code erreur inconnu = %d\n" , no_err ) ;
+             break ;
+     }
+     return ;
+}</code></pre>
+
+    <h3>Exécution : trois écrivains</h3>
+    <p>On lance trois écrivains sur un fichier de trois enregistrements : A et B veulent l'enregistrement 1, C l'enregistrement 2. Chacun reçoit son <kbd>Entrée</kbd> à un instant différent. Le tableau suit la trace obtenue, avec le temps écoulé depuis le lancement de A.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Trace de trois ecrivain_interne lancés à 0,5 s d'intervalle</caption>
+        <thead><tr><th>t (s)</th><th>Processus</th><th>Message affiché</th><th>Explication</th></tr></thead>
+        <tbody>
+          <tr><td>0,01</td><td>A</td><td><code>pose du verrou interne consultatif</code></td><td>l'enregistrement 1 est libre</td></tr>
+          <tr><td>0,51</td><td>B</td><td><code>attente pose verrou interne consultatif</code></td><td>B s'endort dans <code>fcntl</code> : A tient l'enregistrement 1</td></tr>
+          <tr><td>1,02</td><td>C</td><td><code>pose du verrou interne consultatif</code></td><td>l'enregistrement 2 est libre : C n'attend pas</td></tr>
+          <tr><td>1,52</td><td>C</td><td><code>levee du verrou interne consultatif</code></td><td>C a reçu son <kbd>Entrée</kbd></td></tr>
+          <tr><td>3,02</td><td>A</td><td><code>levee du verrou interne consultatif</code></td><td>A a reçu son <kbd>Entrée</kbd></td></tr>
+          <tr><td>3,03</td><td>B</td><td><code>pose du verrou interne consultatif</code></td><td>B est réveillé et obtient le verrou</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 200" width="640" role="img" aria-labelledby="fig-chrono-titre">
+        <title id="fig-chrono-titre">Chronogramme : A tient l'enregistrement 1 de 0 à 3 secondes ; B attend, endormi, de 0,5 à 3 secondes, puis obtient le verrou ; C tient l'enregistrement 2 de 1 à 1,5 seconde sans attendre</title>
+        <text x="16" y="45" class="gras" font-size="13">A</text>
+        <text x="32" y="45" class="t2" font-size="12">enreg. 1</text>
+        <text x="16" y="95" class="gras" font-size="13">B</text>
+        <text x="32" y="95" class="t2" font-size="12">enreg. 1</text>
+        <text x="16" y="145" class="gras" font-size="13">C</text>
+        <text x="32" y="145" class="t2" font-size="12">enreg. 2</text>
+        <rect class="boite-accent" x="120" y="31" width="390" height="18" rx="3"/>
+        <text x="315" y="45" text-anchor="middle" font-size="12">verrou exclusif</text>
+        <path class="pointille" d="M185 90 H508"/>
+        <text x="347" y="82" text-anchor="middle" class="t2" font-size="12">endormi dans fcntl(F_SETLKW)</text>
+        <rect class="boite-accent" x="510" y="81" width="60" height="18" rx="3"/>
+        <rect class="boite-accent" x="250" y="131" width="65" height="18" rx="3"/>
+        <text x="325" y="145" class="t2" font-size="12">aucune attente</text>
+        <path class="accent pointille" d="M510 24 V160"/>
+        <text x="510" y="18" text-anchor="middle" class="accent" font-size="12">A lève son verrou, B l'obtient</text>
+        <path class="trait" d="M120 160 H620"/>
+        <text x="120" y="178" text-anchor="middle" class="t2" font-size="12">0 s</text>
+        <text x="250" y="178" text-anchor="middle" class="t2" font-size="12">1 s</text>
+        <text x="380" y="178" text-anchor="middle" class="t2" font-size="12">2 s</text>
+        <text x="510" y="178" text-anchor="middle" class="t2" font-size="12">3 s</text>
+      </svg>
+      <figcaption>Chronogramme de la trace. Les rectangles marquent la détention d'un verrou, le pointillé l'attente de B, qui ne consomme pas de temps processeur.</figcaption>
+    </figure>
+    <p>Pendant l'attente de B, <code>/proc/locks</code> montre le verrou d'A et, marquée par <code>-&gt;</code>, la demande de B sur la même zone. Le fichier final contient la version de B pour l'enregistrement 1 et celle de C pour l'enregistrement 2 : aucune écriture n'a été perdue.</p>
+<pre class="terminal"><code>$ cat /proc/locks
+5: POSIX  ADVISORY  WRITE 446 00:49:27 13 25
+5: -&gt; POSIX  ADVISORY  WRITE 466 00:49:27 13 25
+$ cat fichier
+xxxxxxxxxx00
+BBBBBBBBBB01
+CCCCCCCCCC02</code></pre>
+    <p>Avec deux lecteurs sur le même enregistrement, les deux verrous partagés sont accordés en même temps. Un écrivain qui arrive ensuite attend que les deux soient levés :</p>
+<pre class="terminal"><code>$ cat /proc/locks
+6: POSIX  ADVISORY  READ 1018 00:49:32 13 25
+7: POSIX  ADVISORY  READ 1050 00:49:32 13 25</code></pre>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Poser un verrou interne avec fcntl</span></p>
+      <ol class="etapes">
+        <li><strong>Ouvrir le fichier</strong> dans un mode compatible avec le verrou : en lecture pour <code>F_RDLCK</code>, en écriture pour <code>F_WRLCK</code>.</li>
+        <li><strong>Remplir une <code>struct flock</code></strong> : <code>l_type</code>, <code>l_whence</code>, <code>l_start</code>, <code>l_len</code>.</li>
+        <li><strong>Appeler <code>fcntl(fd, F_SETLKW, &amp;verrou)</code></strong> (ou <code>F_SETLK</code>) et tester le résultat : en cas d'échec, <code>errno</code> donne la cause.</li>
+        <li><strong>Accéder à la zone</strong> : <code>lseek</code> au début de la portée, puis <code>read</code> ou <code>write</code>.</li>
+        <li><strong>Lever le verrou</strong> : même portée, <code>l_type = F_UNLCK</code>, puis <code>fcntl</code> ; enfin <code>close</code>.</li>
+      </ol>
+    </div>
+
+    <h3>Poser sans attendre : F_SETLK</h3>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le cas du conflit</span></p>
+      <p>Avec <code>F_SETLK</code>, si un autre processus tient un verrou incompatible sur une partie de la zone, <code>fcntl</code> renvoie aussitôt −1 avec <code>errno</code> égal à <code>EAGAIN</code> ou <code>EACCES</code> : la norme autorise les deux, Linux renvoie <code>EAGAIN</code>. Un programme portable teste donc les deux valeurs.</p>
+<pre data-fichier="Extrait"><code class="language-c">if( fcntl( d_fich , F_SETLK , &amp;verrou ) == -1 )
+{
+     if( errno == EAGAIN || errno == EACCES )
+     {
+          /* zone occupee : faire autre chose, puis reessayer plus tard */
+     }
+     else
+     {
+          perror("fcntl");
+          exit(-2);
+     }
+}</code></pre>
+    </div>
+
+    <h3>Tester : F_GETLK</h3>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Ce que renvoie F_GETLK</span></p>
+      <p>Le TD présente <code>F_GETLK</code> comme le « test d'existence d'un verrou ». Plus précisément, on lui passe la description du verrou que l'on <em>voudrait</em> poser, et il ne pose rien :</p>
+      <ul>
+        <li>si aucun verrou d'un autre processus n'empêche cette pose, il met <code>l_type</code> à <code>F_UNLCK</code> et laisse les autres champs inchangés ;</li>
+        <li>sinon, il remplace le contenu de la structure par la description de l'un des verrous gênants : son type, sa portée (<code>l_whence</code> vaut alors <code>SEEK_SET</code>) et le pid de son propriétaire dans <code>l_pid</code>.</li>
+      </ul>
+      <p>Par exemple, pendant qu'un processus de pid 456 tient un <code>F_WRLCK</code> sur les octets 0 à 9, un autre processus qui teste un <code>F_RDLCK</code> sur les octets 5 à 9 obtient <code>l_type = F_WRLCK</code>, <code>l_start = 0</code>, <code>l_len = 10</code> et <code>l_pid = 456</code>. S'il teste les octets 10 à 14, il obtient <code>F_UNLCK</code>. Le processus 456 lui-même obtient <code>F_UNLCK</code> sur sa propre zone : ses verrous ne le gênent pas.</p>
+      <p>La réponse peut être périmée dès le retour de l'appel, puisqu'un autre processus peut poser un verrou juste après. Pour poser un verrou seulement s'il est libre, on appelle directement <code>F_SETLK</code>, plutôt que <code>F_GETLK</code> suivi de <code>F_SETLK</code>.</p>
+    </div>
+
+    <h3>Les règles à connaître</h3>
+    <p><span class="badge ajout">Ajout</span> Les notes du cours ne détaillent pas ces règles, mais elles décident du résultat de nombreux exercices. Elles ont été vérifiées sous Linux, sauf la conservation des verrous à travers <code>exec</code>, qui vient de la page de manuel de <code>fcntl</code>.</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Les verrous d'un même processus</span></p>
+      <p>Les verrous d'un processus n'entrent jamais en conflit avec ses propres demandes. Quand il pose un verrou sur une zone qu'il a déjà verrouillée, le nouveau remplace l'ancien sur la partie commune : les zones sont découpées ou fusionnées, et un verrou partagé peut devenir exclusif, ou l'inverse. Une levée peut ne porter que sur une partie d'un verrou.</p>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Découpage et fusion</span></p>
+      <p>Un processus enchaîne quatre opérations sur un fichier ; <code>/proc/locks</code> donne, après chacune, les zones qu'il détient (premier et dernier octets).</p>
+      <div class="tableau compact">
+        <table>
+          <caption>Verrous d'un processus après chaque opération</caption>
+          <thead><tr><th>Opération</th><th>Verrous détenus ensuite</th></tr></thead>
+          <tbody>
+            <tr><td><code>F_RDLCK</code>, octets 0 à 39</td><td>partagé 0–39</td></tr>
+            <tr><td><code>F_WRLCK</code>, octets 10 à 19</td><td>partagé 0–9, exclusif 10–19, partagé 20–39</td></tr>
+            <tr><td><code>F_UNLCK</code>, octets 15 à 24</td><td>partagé 0–9, exclusif 10–14, partagé 25–39</td></tr>
+            <tr><td><code>F_WRLCK</code>, octets 0 à 39</td><td>exclusif 0–39</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Quand les verrous disparaissent</span></p>
+      <ul>
+        <li><strong>Fermer n'importe quel descripteur du fichier lève tous les verrous du processus sur ce fichier</strong>, même ceux posés par un autre descripteur. Un processus qui tient un verrou, puis appelle une fonction qui ouvre et referme le même fichier, perd son verrou sans le savoir.</li>
+        <li><strong>Les verrous ne sont pas hérités par <code>fork</code></strong> : ils appartiennent au processus, pas au descripteur. Le fils qui demande la zone de son père est bloqué comme n'importe quel autre processus. Ils sont en revanche conservés à travers <code>exec</code>.</li>
+        <li><strong>La fin du processus lève tous ses verrous</strong>, quelle qu'en soit la cause. C'est un avantage sur les verrous externes : pas de verrou orphelin.</li>
+      </ul>
+      <p><span class="badge hors-programme">Hors programme</span> Linux propose, depuis la version 3.15, des verrous attachés à l'ouverture du fichier plutôt qu'au processus (<code>F_OFD_SETLK</code>, <code>F_OFD_SETLKW</code>, <code>F_OFD_GETLK</code>), qui n'ont pas les deux premiers pièges.</p>
+    </div>
+
+    <h3>Les erreurs de fcntl <span class="ref">commun.c</span></h3>
+    <p>La fonction <code>fcntl_error</code> de <code>commun.c</code> affiche le nom des erreurs que <code>fcntl</code> peut renvoyer. Le tableau précise leur sens pour les verrous.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Les codes d'erreur traités par fcntl_error</caption>
+        <thead><tr><th>Code</th><th>Cause, pour les opérations sur les verrous</th></tr></thead>
+        <tbody>
+          <tr><th><code>EAGAIN</code></th><td><code>F_SETLK</code> : la zone est déjà verrouillée de façon incompatible par un autre processus (ou <code>EACCES</code>, selon les systèmes).</td></tr>
+          <tr><th><code>EBADF</code></th><td>descripteur invalide, ou mode d'ouverture incompatible avec le verrou : <code>F_RDLCK</code> sur un fichier ouvert en écriture seule, <code>F_WRLCK</code> sur un fichier ouvert en lecture seule.</td></tr>
+          <tr><th><code>EDEADLK</code></th><td><code>F_SETLKW</code> : l'attente créerait un interblocage.</td></tr>
+          <tr><th><code>EINTR</code></th><td><code>F_SETLKW</code> : l'attente a été interrompue par un signal capté.</td></tr>
+          <tr><th><code>EINVAL</code></th><td>opération ou champ de la structure invalide (<code>l_whence</code>, <code>l_type</code>…).</td></tr>
+          <tr><th><code>ENOLCK</code></th><td>le nombre limite de verrous est atteint, ou le verrouillage d'un fichier distant a échoué.</td></tr>
+          <tr><th><code>EOVERFLOW</code></th><td>une position de la zone ne peut pas être représentée dans les champs de la structure.</td></tr>
+          <tr><th><code>EFAULT</code></th><td>le pointeur <code>verrou</code> ne désigne pas une zone valide de la mémoire du processus.</td></tr>
+          <tr><th><code>ENOLINK</code></th><td>le fichier est sur une machine distante dont la liaison est coupée.</td></tr>
+          <tr><th><code>EIO</code>, <code>EMFILE</code></th><td>erreur d'entrée-sortie ; trop de descripteurs ouverts (cette dernière concerne la duplication de descripteurs, pas les verrous).</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Trois erreurs à reconnaître</span></p>
+      <ul>
+        <li><code>EBADF</code> explique pourquoi <code>lecteur_interne.c</code> peut ouvrir le fichier en lecture seule, alors que <code>ecrivain_interne.c</code> l'ouvre en lecture-écriture.</li>
+        <li><code>EDEADLK</code> : si P tient l'enregistrement 0 et attend le 1, et que Q, qui tient le 1, demande le 0 avec <code>F_SETLKW</code>, la demande de Q échoue aussitôt avec <code>EDEADLK</code>. C'est la détection de cycle souhaitée par le cours. P, lui, reste endormi jusqu'à ce que Q lève son verrou.</li>
+        <li><code>EINTR</code> relie ce cours à celui sur les signaux : pour ne pas attendre un verrou plus de <var>n</var> secondes, on arme <code>alarm(n)</code> avant <code>F_SETLKW</code>, avec un handler installé par <code>sigaction</code> sans <code>SA_RESTART</code>. Si le verrou n'est pas obtenu à temps, <code>fcntl</code> renvoie −1 avec <code>EINTR</code>.</li>
+      </ul>
+      <p>Plutôt que de recopier la liste des codes, on peut aussi afficher le message du système avec <code>perror</code> ou <code>strerror(errno)</code>.</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-3">
+      <p class="bloc-titre">Exercice 3 <span>Calculer des portées</span></p>
+      <p>Un fichier contient des enregistrements de 13 octets, numérotés à partir de 0. Donner <code>l_whence</code>, <code>l_start</code> et <code>l_len</code> pour verrouiller :</p>
+      <ol>
+        <li>les enregistrements 3 à 5 inclus ;</li>
+        <li>tout le fichier à partir de l'enregistrement 2, y compris les enregistrements qui seront ajoutés plus tard ;</li>
+        <li>le dernier enregistrement, sans connaître la taille du fichier ;</li>
+        <li>tout le fichier ;</li>
+        <li>l'enregistrement qu'on vient de lire, la position courante étant juste après lui.</li>
+      </ol>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <ol>
+          <li>\((0, 39, 39)\) : l'enregistrement 3 commence à l'octet \(3 \times 13 = 39\), et trois enregistrements font 39 octets. La zone va de l'octet 39 à l'octet 77.</li>
+          <li>\((0, 26, 0)\) : une longueur nulle va jusqu'à la fin du fichier, quelle que soit sa taille future.</li>
+          <li>\((2, -13, 13)\) : 13 octets à partir de 13 octets avant la fin.</li>
+          <li>\((0, 0, 0)\), le verrouillage global du cours.</li>
+          <li>\((1, -13, 13)\) : 13 octets à partir de 13 octets avant la position courante. \((1, 0, -13)\) convient aussi, avec une longueur négative.</li>
+        </ol>
+      </details>
+    </div>
+
+    <div class="bloc exercice" id="ex-4">
+      <p class="bloc-titre">Exercice 4 <span>Trois processus</span></p>
+      <p>Trois processus P1, P2 et P3 ont chacun ouvert en lecture-écriture un fichier d'enregistrements de 13 octets. Ils font, dans cet ordre, les appels suivants à <code>fcntl</code> (la portée est donnée par <code>l_start</code> et <code>l_len</code>, avec <code>l_whence</code> = 0) :</p>
+      <ol>
+        <li>P1 : <code>F_SETLKW</code>, <code>F_RDLCK</code>, (0, 26) ;</li>
+        <li>P2 : <code>F_SETLKW</code>, <code>F_RDLCK</code>, (13, 13) ;</li>
+        <li>P3 : <code>F_SETLK</code>, <code>F_WRLCK</code>, (13, 13) ;</li>
+        <li>P3 : <code>F_SETLKW</code>, <code>F_WRLCK</code>, (0, 39) ;</li>
+        <li>P1 : <code>F_SETLKW</code>, <code>F_WRLCK</code>, (0, 13) ;</li>
+        <li>P2 : <code>close</code> de son descripteur ;</li>
+        <li>P1 : <code>F_SETLK</code>, <code>F_UNLCK</code>, (0, 0).</li>
+      </ol>
+      <p>Pour chaque appel, dire s'il réussit, échoue ou bloque, puis donner les verrous posés sur le fichier.</p>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Un processus endormi dans <code>F_SETLKW</code> ne détient rien : sa demande n'empêche pas les autres de poser des verrous. Et les verrous de P1 ne gênent pas P1.</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <ol>
+          <li>Accordé : P1 détient un verrou partagé sur les octets 0 à 25 (enregistrements 0 et 1).</li>
+          <li>Accordé : deux verrous partagés sont compatibles. P2 détient les octets 13 à 25 en partagé.</li>
+          <li>Échec immédiat, −1 avec <code>EAGAIN</code> (ou <code>EACCES</code>) : l'enregistrement 1 est verrouillé en partagé par P1 et P2.</li>
+          <li>P3 s'endort : sa zone chevauche les verrous partagés de P1 et de P2.</li>
+          <li>Accordé tout de suite : sur les octets 0 à 12, aucun autre processus ne détient de verrou, et la demande de P3, en attente, ne compte pas. P1 détient maintenant un verrou exclusif sur 0–12 et un partagé sur 13–25.</li>
+          <li>Le verrou de P2 est levé. P3 reste endormi : les verrous de P1 chevauchent encore sa zone.</li>
+          <li>Tous les verrous de P1 sont levés. P3 est réveillé et obtient son verrou exclusif sur les octets 0 à 38.</li>
+        </ol>
+        <p>Ce scénario a été exécuté sous Linux : les résultats et l'état de <code>/proc/locks</code> sont ceux qu'on vient de décrire.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice" id="ex-5">
+      <p class="bloc-titre">Exercice 5 <span>Un verrou perdu</span></p>
+      <p>Un programme met à jour l'enregistrement 4 d'un fichier de comptes :</p>
+<pre data-fichier="maj_compte.c (extrait)"><code class="language-c">d = open("comptes", O_RDWR);
+/* pose d'un F_WRLCK sur l'enregistrement 4, avec F_SETLKW */
+/* ... */
+afficher_taille("comptes");  /* ouvre "comptes", lit sa taille, puis le ferme */
+/* lecture, calcul et reecriture de l'enregistrement 4 */
+/* levee du verrou, close(d) */</code></pre>
+      <p>L'enregistrement 4 est-il protégé pendant sa réécriture ? Proposer une correction.</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Non. <code>afficher_taille</code> ouvre le même fichier puis ferme son propre descripteur : ce <code>close</code> lève tous les verrous du processus sur <code>comptes</code>, y compris celui posé par <code>d</code>. Un autre processus peut alors modifier l'enregistrement 4 pendant le calcul.</p>
+        <p>Correction : ne pas rouvrir le fichier pendant qu'on tient le verrou. Ici, <code>afficher_taille</code> peut recevoir le descripteur <code>d</code> et utiliser <code>fstat(d, …)</code>, ou être appelée avant la pose du verrou.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Une autre interface : lockf <span class="ref">ecrivain_posix.c, lecteur_posix.c</span></h2>
+    <p>Les deux derniers exemples du cours posent leurs verrous avec la primitive <code>lockf</code>, que les programmes appellent « verrous posix ». Elle est plus simple que <code>fcntl</code>, mais moins riche.</p>
+
+<pre data-fichier="Prototype"><code class="language-c">#include &lt;unistd.h&gt;
+
+int lockf(int fd, int cmd, off_t len);</code></pre>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les paramètres de lockf</span></p>
+      <p><code>lockf</code> n'a pas de structure : la zone commence à la <strong>position courante</strong> du descripteur, qu'on place auparavant avec <code>lseek</code>, et s'étend sur <code>len</code> octets (jusqu'à la fin du fichier, et au-delà, si <code>len</code> vaut 0). <code>cmd</code> prend l'une des valeurs suivantes :</p>
+      <div class="tableau compact">
+        <table>
+          <caption>Les commandes de lockf</caption>
+          <thead><tr><th>Commande</th><th>Effet</th><th>Équivalent fcntl</th></tr></thead>
+          <tbody>
+            <tr><th><code>F_LOCK</code></th><td>pose bloquante</td><td><code>F_SETLKW</code>, <code>F_WRLCK</code></td></tr>
+            <tr><th><code>F_TLOCK</code></th><td>pose non bloquante (échec avec <code>EAGAIN</code> ou <code>EACCES</code>)</td><td><code>F_SETLK</code>, <code>F_WRLCK</code></td></tr>
+            <tr><th><code>F_ULOCK</code></th><td>levée</td><td><code>F_SETLK</code>, <code>F_UNLCK</code></td></tr>
+            <tr><th><code>F_TEST</code></th><td>renvoie 0 si la zone est libre ou verrouillée par le processus lui-même, −1 sinon</td><td><code>F_GETLK</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <p>L'écrivain se place au début de l'enregistrement, pose le verrou sur <code>SIZE_ENREG</code> octets, écrit, puis se replace au début de l'enregistrement pour lever le verrou sur la même longueur.</p>
+<pre data-fichier="ecrivain_posix.c"><code class="language-c">#include &lt;stdio.h&gt;
+
+#include &lt;errno.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/file.h&gt;
+
+#include &lt;commun.h&gt;
+
+/*
+ * Pose d'un verrou posix sur un fichier par un ecrivain
+ */
+
+int
+main( int nb_arg , char * tab_arg[] )
+{
+     int d_fich ;                   /* Descripteur du fichier partage */
+     char ref_fichier[256] ;        /* Reference du fichier partage */
+     int id_enreg ;
+     char lettre ;
+     int i ;
+     char buffer[1024] ;
+
+     /*----------*/
+
+     if( nb_arg != 4)
+     {
+          fprintf( stderr , "Usage : %s &lt;reference fichier&gt; &lt;numero d'enregistrement&gt; &lt;lettre&gt;\n" , tab_arg[0]);
+          exit(-1);
+     }
+
+     strcpy(ref_fichier,tab_arg[1]);
+     sscanf( tab_arg[2], "%d" , &amp;id_enreg );
+     lettre = tab_arg[3][0] ;
+
+     /* Ouverture du fichier partage */
+     if( (d_fich = open( ref_fichier , O_WRONLY , 0666 )) == -1 )
+     {
+          fprintf( stderr, "Pb open sur %s\n", ref_fichier);
+          exit(-1);
+     }
+
+     /* Construction du verrou posix : affectation d'une struct flock */
+
+     long verrou_start  = (long)(SIZE_ENREG*id_enreg); /* debut de la portee du verrou */
+
+
+     /*
+      * Consultation du verrou posix
+      * Tentative de pose d'un verrou Bloquant Exclusif
+      */
+     printf("Ecrivain %c --&gt; attente pose verrou posix consultatif\n" , lettre);
+
+     /* Positionement au debut du verrou */
+     lseek( d_fich , verrou_start , SEEK_SET ) ;
+
+     /* Pose du verrou */
+     if( lockf(d_fich, F_LOCK , SIZE_ENREG) == -1 )
+     {
+          perror("Pb pose verrou posix");
+          exit(-2);
+     }
+
+     /* Fin attente --&gt; la pose du verrou est effectuee */
+
+     printf("Ecrivain %c --&gt; pose du verrou posix consultatif\n", lettre);
+
+     /*
+      * Acces au fichier partage
+      */
+
+     /* Ecriture */
+     lseek( d_fich , verrou_start , SEEK_SET ) ;
+     for( i=0; i&lt;NB_LETTRES; i++)
+          write( d_fich , &amp;lettre , sizeof(char) ) ;
+     sprintf( buffer , "%02d" , id_enreg );
+     write( d_fich , buffer , strlen(buffer) ) ;
+     write( d_fich , "\n" , strlen("\n") );
+
+
+     /* Pause */
+     fprintf(stdout, "Ecrivain %c : Pause...\n" , lettre);
+     fscanf(stdin,"%s", buffer) ;
+
+     /* Levee du verrou */
+     lseek( d_fich , verrou_start , SEEK_SET ) ;
+     if( lockf(d_fich, F_ULOCK , SIZE_ENREG) == -1 )
+     {
+          perror("Pb levee verrou" );
+          exit(-1);
+     }
+
+     /* fermeture du fichier partage */
+     close(d_fich);
+
+     printf("Ecrivain %c --&gt; levee du verrou posix consultatif\n" , lettre );
+
+     exit(0);
+}</code></pre>
+    <p>Les commentaires du lecteur relèvent les deux contraintes de <code>lockf</code> : le fichier doit être ouvert en écriture (<code>O_WRONLY</code> ou <code>O_RDWR</code>), même pour lire, et le verrou est toujours exclusif, même pour un lecteur.</p>
+<pre data-fichier="lecteur_posix.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;sys/file.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+
+#include &lt;commun.h&gt;
+
+/*
+ * Pose d'un verrou posix sur un fichier par un lecteur
+ */
+
+int
+main( int nb_arg , char * tab_arg[] )
+{
+     int d_fich ;                   /* Descripteur du fichier partage */
+     char ref_fichier[256];         /* Reference du fichier partage */
+     char buffer[1024] ;
+     int id_enreg ;
+
+     /*----------*/
+
+     if( nb_arg != 3)
+     {
+          fprintf( stderr , "Usage : %s &lt;reference fichier&gt; &lt;numero d'enregistrement&gt;\n" , tab_arg[0]);
+          exit(-1);
+     }
+
+     strcpy(ref_fichier,tab_arg[1]);
+     sscanf( tab_arg[2], "%d" , &amp;id_enreg );
+
+     /* Ouverture du fichier partage */
+     /* Bien qu'on ne fasse que lire dans ce fichier, les verrous POSIX obligent d'ouvrir ce fichier soit en O_WRONLY soit en O_RDWR */
+     if( (d_fich = open( ref_fichier , O_RDWR , 0666 )) == -1 )
+     {
+          fprintf( stderr, "Pb open sur %s\n", ref_fichier);
+          exit(-1);
+     }
+
+     long verrou_start  = (long)(SIZE_ENREG*id_enreg); /* debut de la portee du verrou */
+
+     /*
+      * Consultation du verrou
+      * Tentative de pose d'un verrou Bloquant Partage
+      */
+
+     printf("Lecteur --&gt; attente pose verrou posix consultatif\n");
+     /* Positionnement en debut de verroru */
+     lseek( d_fich , verrou_start , SEEK_SET ) ;
+     /* Bien qu'un lecteur ait besoin d'un verrou partage, les verrous POSIX obligent d'utiliser un verrou exclusif */
+     if( lockf( d_fich , F_LOCK , SIZE_ENREG ) == -1 )
+     {
+          fcntl_error(errno);
+          fprintf(stderr, "Lecteur: Pb sur pose verrou\n");
+          exit(-2);
+     }
+
+     /* Fin attente --&gt; la pose du verrou est effectuee */
+
+     printf("Lecteur --&gt; pose du verrou posix consultatif\n");
+
+     /*
+      * Acces au fichier partage
+      */
+
+     /* Lecture */
+     lseek( d_fich , verrou_start , 0 ) ;
+     printf("Lecteur :\n");
+     read( d_fich , buffer , SIZE_ENREG ) ;
+     write( 1 , buffer , SIZE_ENREG );
+     printf("\n");
+
+
+     /* Pause */
+     fprintf(stdout, "Lecteur : Pause...\n");
+     fscanf(stdin,"%s", buffer) ;
+
+     /* Levee du verrou posix (meme portee) */
+     lseek( d_fich , verrou_start , SEEK_SET ) ;
+     if( lockf( d_fich , F_ULOCK , SIZE_ENREG ) == -1 )
+     {
+          fcntl_error(errno);
+          fprintf( stderr , "Lecteur : Pb fcntl sur levee verrou\n");
+          exit(-1);
+     }
+
+     /* fermeture du fichier partage */
+     close(d_fich);
+
+     printf("Lecteur --&gt; levee du verrou posix consultatif\n");
+
+     exit(0);
+
+}</code></pre>
+
+    <h3>Exécution</h3>
+    <p>Deux <code>lecteur_posix</code> lancés sur le même enregistrement ne lisent pas en même temps : le second attend que le premier lève son verrou, ce que deux <code>lecteur_interne</code> n'auraient pas fait. Pendant que <code>ecrivain_posix</code> tient l'enregistrement 1, un <code>lecteur_posix</code> et un <code>lecteur_interne</code> lancés sur ce même enregistrement attendent tous les deux :</p>
+<pre class="terminal"><code>$ grep POSIX /proc/locks
+6: POSIX  ADVISORY  WRITE 1195 00:49:34 13 25
+6: -&gt; POSIX  ADVISORY  WRITE 1215 00:49:34 13 25
+6:  -&gt; POSIX  ADVISORY  READ 1227 00:49:34 13 25</code></pre>
+    <p>Le processus 1195 est l'écrivain, 1215 le <code>lecteur_posix</code> (verrou exclusif, <code>WRITE</code>), 1227 le <code>lecteur_interne</code> (verrou partagé demandé par <code>fcntl</code>, <code>READ</code>).</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>lockf et fcntl sous Linux</span></p>
+      <p>La trace montre que, sous Linux, <code>lockf</code> et <code>fcntl</code> posent les mêmes verrous : <code>/proc/locks</code> les affiche de la même façon (<code>POSIX</code>), et un verrou posé par <code>lockf</code> bloque une demande faite avec <code>fcntl</code>. <code>lockf</code> y est en effet programmé avec <code>fcntl</code>. La norme ne le garantit pas : dans un programme portable, on n'utilise qu'une seule des deux interfaces sur un même fichier.</p>
+      <p>Le nom « verrous posix » des exemples est à prendre au sens large : <code>fcntl</code> et <code>lockf</code> font toutes deux partie de la norme POSIX ; <code>lockf</code> vient de System V. Les exemples incluent <code>&lt;sys/file.h&gt;</code>, mais <code>lockf</code> est déclarée dans <code>&lt;unistd.h&gt;</code>, que <code>commun.h</code> inclut déjà.</p>
+      <p><span class="badge hors-programme">Hors programme</span> Une troisième primitive, <code>flock(fd, LOCK_SH | LOCK_EX | LOCK_UN)</code>, venue de BSD, verrouille le fichier entier, en partagé ou en exclusif. Sous Linux, ses verrous sont indépendants de ceux de <code>fcntl</code> ; <code>/proc/locks</code> les marque <code>FLOCK</code>.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Comparaison des mécanismes</h2>
+    <p>Les quatre sortes de verrous du cours répondent au même besoin avec des garanties très différentes. Le tableau les résume.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Les verrous du cours, sous Linux</caption>
+        <thead><tr><th></th><th>Externe</th><th>Interne consultatif (<code>fcntl</code>)</th><th><code>lockf</code></th><th>Interne impératif</th></tr></thead>
+        <tbody>
+          <tr><th>Moyen</th><td><code>open(O_CREAT|O_EXCL)</code>, <code>unlink</code></td><td><code>fcntl</code> et <code>struct flock</code></td><td><code>lseek</code> et <code>lockf</code></td><td><code>fcntl</code> sur un fichier set-gid sans x de groupe</td></tr>
+          <tr><th>Attente</th><td>active (boucle)</td><td>endormi, ou erreur immédiate</td><td>endormi, ou erreur immédiate</td><td>endormi, y compris dans <code>read</code> et <code>write</code></td></tr>
+          <tr><th>Portée</th><td>fichier entier</td><td>à l'octet près</td><td>à l'octet près, depuis la position courante</td><td>à l'octet près</td></tr>
+          <tr><th>Verrou partagé</th><td class="non">non</td><td class="oui">oui</td><td class="non">non</td><td class="oui">oui</td></tr>
+          <tr><th>Accès sans verrou</th><td>possibles</td><td>possibles</td><td>possibles</td><td>bloqués par le système</td></tr>
+          <tr><th>Fin du processus</th><td>verrou orphelin</td><td>verrous levés</td><td>verrous levés</td><td>verrous levés</td></tr>
+          <tr><th>Interblocage</th><td>non détecté</td><td><code>EDEADLK</code></td><td><code>EDEADLK</code></td><td><code>EDEADLK</code></td></tr>
+          <tr><th>Linux actuel</th><td class="oui">oui</td><td class="oui">oui</td><td class="oui">oui</td><td class="non">non (depuis 5.15)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><span class="badge ajout">Ajout</span> En pratique, les verrous consultatifs de <code>fcntl</code> sont le bon choix par défaut : ils appliquent directement la règle des lecteurs et des écrivains, n'attendent pas activement et ne laissent pas de verrou orphelin. Le verrou externe garde un intérêt quand il faut protéger une ressource qui n'est pas un seul fichier, ou quand un script shell doit y participer.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Sans régulation, des processus qui partagent un fichier écrasent leurs écritures et lisent des états intermédiaires.</li>
+        <li>Règle des lecteurs et des écrivains : autant de lecteurs qu'on veut, ou un seul écrivain, jamais les deux. Un verrou partagé sert à lire, un verrou exclusif à écrire.</li>
+        <li>Un verrou a une portée, une zone d'octets. Deux verrous de processus différents sont en conflit si leurs portées se chevauchent et que l'un au moins est exclusif.</li>
+        <li>Un verrou bloquant endort le processus jusqu'à la levée ; un verrou non bloquant renvoie une erreur tout de suite. Un interblocage est un cycle d'attentes ; <code>fcntl</code> le détecte (<code>EDEADLK</code>).</li>
+        <li>Verrou externe : un fichier annexe créé par <code>open(…, O_CREAT|O_EXCL, 0)</code>, qui teste et crée en un seul appel, et levé par <code>unlink</code>. Simple, mais attente active, fichier entier, toujours exclusif, et orphelin si le processus meurt.</li>
+        <li>Verrou interne consultatif : seuls les processus qui demandent des verrous sont arbitrés. Verrou impératif : le système bloque aussi <code>read</code> et <code>write</code> (set-gid sans x de groupe, montage <code>mand</code>) ; Linux ne le permet plus depuis la version 5.15.</li>
+        <li><code>fcntl(fd, F_SETLKW | F_SETLK | F_GETLK, &amp;verrou)</code>, avec <code>l_type</code> (<code>F_RDLCK</code>, <code>F_WRLCK</code>, <code>F_UNLCK</code>), <code>l_whence</code>, <code>l_start</code>, <code>l_len</code>. L'enregistrement \(k\) de taille \(T\) : \((0, kT, T)\) ; tout le fichier : \((0, 0, 0)\) ; <code>l_len = 0</code> va jusqu'à la fin, et au-delà.</li>
+        <li>Le fichier doit être ouvert en lecture pour <code>F_RDLCK</code>, en écriture pour <code>F_WRLCK</code>, sinon <code>EBADF</code>. Les verrous d'un processus ne le gênent jamais : une nouvelle pose remplace, découpe ou fusionne les siens.</li>
+        <li>Fermer n'importe quel descripteur du fichier lève tous les verrous du processus sur ce fichier ; <code>fork</code> ne les transmet pas ; la fin du processus les lève.</li>
+        <li><code>lockf(fd, F_LOCK | F_TLOCK | F_ULOCK | F_TEST, len)</code> verrouille <code>len</code> octets depuis la position courante, toujours en exclusif, sur un fichier ouvert en écriture.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi deux lectures simultanées sont-elles permises, mais pas une lecture et une écriture ?</summary>
+        <div><p>Deux lectures ne modifient pas le fichier : elles ne peuvent pas se gêner. Une lecture pendant une écriture peut voir un état à moitié écrit, que personne n'a voulu produire.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi un verrou externe se pose-t-il avec <code>O_CREAT|O_EXCL</code> ?</summary>
+        <div><p>Parce que cet appel teste l'absence du fichier et le crée en une seule opération : si deux processus essaient en même temps, un seul réussit, l'autre reçoit <code>EEXIST</code>. Un test puis une création en deux appels laisseraient passer les deux.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle <code>struct flock</code> verrouille en écriture l'enregistrement 7 d'un fichier d'enregistrements de 20 octets ?</summary>
+        <div><p><code>l_type = F_WRLCK</code>, <code>l_whence = 0</code> (<code>SEEK_SET</code>), <code>l_start = 7 × 20 = 140</code>, <code>l_len = 20</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que fait <code>fcntl</code> avec <code>F_SETLK</code> quand la zone est déjà verrouillée par un autre processus ? Et avec <code>F_SETLKW</code> ?</summary>
+        <div><p>Avec <code>F_SETLK</code>, il renvoie aussitôt −1 avec <code>errno</code> égal à <code>EAGAIN</code> ou <code>EACCES</code>. Avec <code>F_SETLKW</code>, il endort le processus jusqu'à ce que la zone soit libre, sauf interblocage (<code>EDEADLK</code>) ou signal capté (<code>EINTR</code>).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un processus tient un <code>F_RDLCK</code> sur les octets 0 à 99 et pose un <code>F_WRLCK</code> sur les octets 40 à 59. Quels verrous détient-il ensuite ?</summary>
+        <div><p>Partagé sur 0–39, exclusif sur 40–59, partagé sur 60–99. Ses propres verrous ne le gênent pas : le nouveau remplace l'ancien sur la partie commune.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un programme qui ne pose aucun verrou peut-il lire une zone verrouillée en écriture par <code>fcntl</code> ?</summary>
+        <div><p>Oui : les verrous de <code>fcntl</code> sont consultatifs, <code>read</code> et <code>write</code> ne les regardent pas. Seul un verrou impératif l'en empêcherait, et Linux ne les applique plus.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que renvoie <code>F_GETLK</code> quand aucun autre processus ne gêne la pose demandée ?</summary>
+        <div><p>Il met <code>l_type</code> à <code>F_UNLCK</code> et laisse les autres champs inchangés. Sinon, il décrit un verrou gênant, avec le pid de son propriétaire dans <code>l_pid</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi <code>lecteur_posix.c</code> ouvre-t-il le fichier en <code>O_RDWR</code> alors qu'il ne fait que lire ?</summary>
+        <div><p>Parce que <code>lockf</code> ne pose que des verrous exclusifs, et qu'un verrou exclusif exige un fichier ouvert en écriture : en lecture seule, <code>lockf</code> échoue avec <code>EBADF</code>.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Références</h2>
+    <p>Les pages de manuel (<code>man</code>) décrivent chaque primitive. Celles de Linux, en anglais, sont aussi en ligne :</p>
+    <ul>
+      <li><a href="https://man7.org/linux/man-pages/man2/fcntl.2.html">fcntl(2)</a>, section « Advisory record locking » : <code>F_SETLK</code>, <code>F_SETLKW</code>, <code>F_GETLK</code>, erreurs, et la fin des verrous impératifs ;</li>
+      <li><a href="https://man7.org/linux/man-pages/man3/lockf.3.html">lockf(3)</a> et <a href="https://man7.org/linux/man-pages/man2/flock.2.html">flock(2)</a> ;</li>
+      <li><a href="https://man7.org/linux/man-pages/man2/open.2.html">open(2)</a> : les options <code>O_CREAT</code> et <code>O_EXCL</code> ;</li>
+      <li><a href="https://man7.org/linux/man-pages/man5/proc.5.html">proc(5)</a> : le format de <code>/proc/locks</code> ;</li>
+      <li><a href="https://pubs.opengroup.org/onlinepubs/9699919799/functions/fcntl.html">fcntl</a> dans la norme POSIX : ce qui est garanti sur tous les systèmes.</li>
+    </ul>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-01-fichiers-catalogues.html"><small>← Précédent</small>Fichiers et catalogues</a>
+    <a class="suivant" href="cours-03-signaux.html"><small>Suivant →</small>Les signaux Unix</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Programmation système · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

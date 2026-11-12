@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TD 1 · Soutien scolaire et employés · Bases de données L2</title>
+<meta name="description" content="TD 1 interactif de bases de données (L2) : lire un diagramme de classes donné (soutien scolaire), factoriser enseignant et responsable pédagogique par une spécialisation, traduire en modèle relationnel ; modéliser les employés d'une entreprise (hiérarchie réflexive, départements, grille salariale) et en déduire les relations, à faire dans la page.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="index.html">Bases de données</a>
+    <span aria-current="page">TD 1 · Soutien scolaire et employés</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> TD 1 · L2 S3 · interactif</p>
+    <h1>TD 1 : soutien scolaire et employés d'une entreprise</h1>
+    <p class="chapeau">Lire un diagramme de classes pour savoir ce qu'il permet de représenter, le modifier par une spécialisation, puis passer au modèle relationnel ; ensuite, modéliser soi-même une entreprise à partir d'un texte. Le TD met en œuvre le cours 1, et chaque réponse se construit dans la page.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TD/TD1_Soutien_Entreprise.pdf">TD1_Soutien_Entreprise.pdf</a> · séance 1, 2 pages</dd></div>
+      <div><dt>Enseignants</dt><dd>Nathalie Camelin, Sylvain Meignier</dd></div>
+      <div><dt>Cours</dt><dd><a href="cours-01-modele-entite-association.html">Cours 1 · Modèle entité-association</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Lire les multiplicités d'un diagramme de classes et dire ce qu'il permet, ou non, de représenter.</li>
+        <li>Factoriser deux entités qui décrivent la même personne par une spécialisation « est un ».</li>
+        <li>Modéliser un texte en UML : association réflexive, entité isolée.</li>
+        <li>Appliquer les quatre règles de passage au modèle relationnel.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Notions utilisées</p>
+      <ul>
+        <li><a href="cours-01-modele-entite-association.html">Cours 1</a> : associations et cardinalités, spécialisation, association réflexive, vérification d'un diagramme, règles 1 à 4 du passage au relationnel.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Mode d'emploi</p>
+    <ul>
+      <li>La réponse se construit sur le dessin ou dans la vue texte (« Les deux ») ; les deux restent synchronisés.</li>
+      <li>« Vérifier » contrôle la forme sans rien dévoiler, « Comparer » mesure l'écart avec une solution de référence, « Claude » répond aux questions et corrige.</li>
+      <li>Les solutions restent cachées. Pour l'exercice 2, le bouton s'appelle « Correction » : le modèle vient de l'enseignant, qui le rappelle au début du <a href="../TP/TP1/TP1_Entreprise-2025.pdf">TP 1</a>. Pour l'exercice 1, la solution est proposée : un écart n'est pas forcément une erreur.</li>
+      <li>Notation de l'atelier : multiplicités <code>Parent "1..1" -- "1..*" Eleve : est enfant de</code>, la première près de la classe de gauche ; identifiant <code>{PK}</code> ; attribut d'association : une classe d'association, <code>[Affectation]</code> en fin de lien. La spécialisation « est un » du cours se dessine avec le lien d'héritage (<code>Enseignant --|&gt; Personne</code>) : la classe spécialisée n'a pas d'identifiant propre.</li>
+      <li>Le travail s'enregistre tout seul. Avec le serveur local (<code>studies/lancer.bat</code>), il va dans <code>td_results/</code> et Claude est disponible.</li>
+    </ul>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exercice 1 · Soutien scolaire <span class="ref">TD, p. 1</span></h2>
+    <p>Le sujet donne un modèle conceptuel tout fait. Il s'agit d'abord de le lire, puis de le modifier.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Le modèle conceptuel donné</span></p>
+      <p>Le diagramme de classes du sujet, redessiné ci-dessous. L'association « Affectation (date) » porte un attribut, la date : l'atelier l'écrit comme une classe d'association.</p>
+    </div>
+    <div class="atelier" id="td1-ex1-modele" data-editeur="classes">
+      <script type="application/json">
+      {
+        "mode": "lecture",
+        "titre": "Soutien scolaire : le modèle du sujet",
+        "hauteur": 560,
+        "disposition": {
+          "Parent": [20, 20],
+          "Eleve": [470, 20],
+          "Prestation": [20, 230],
+          "Resp_pedagogique": [470, 230],
+          "Enseignant": [20, 420],
+          "Matiere": [470, 450]
+        },
+        "depart": [
+          "classe Parent",
+          "  id_parent {PK}",
+          "  nom_parent",
+          "  prenom_parent",
+          "  adresse",
+          "  profession",
+          "classe Eleve",
+          "  id_eleve {PK}",
+          "  nom_eleve",
+          "  prenom_eleve",
+          "  classe",
+          "  date_naiss",
+          "classe Prestation",
+          "  id_demande {PK}",
+          "  volume",
+          "  date_deb",
+          "classe Resp_pedagogique",
+          "  id_resp {PK}",
+          "  nom_resp",
+          "  date_naiss_resp",
+          "  prenom_resp",
+          "  adresse",
+          "classe Enseignant",
+          "  id_enseignant {PK}",
+          "  nom_ens",
+          "  prenom_ens",
+          "  date_naiss_ens",
+          "  diplome",
+          "  adresse",
+          "classe Matiere",
+          "  id_matiere {PK}",
+          "  libelle",
+          "classe Affectation",
+          "  date",
+          "Parent \"1..1\" -- \"1..*\" Eleve : est enfant de",
+          "Eleve \"1..1\" -- \"0..*\" Prestation : fait une demande",
+          "Eleve \"1..*\" -- \"1..1\" Resp_pedagogique : est responsable de",
+          "Prestation \"0..*\" -- \"0..1\" Enseignant : affectation [Affectation]",
+          "Prestation \"0..*\" -- \"1..1\" Matiere : concerne",
+          "Enseignant \"0..*\" -- \"0..*\" Matiere : est spécialisé"
+        ]
+      }
+      </script>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> La classe des matières s'appelle « Matere » sur la figure du sujet : coquille, écrite ici Matiere.</p>
+
+    <h3>Lire le modèle</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 1 <span>Ce que le modèle permet</span></p>
+      <p>Répondez aux questions suivantes en fonction du modèle conceptuel. Pour les questions auxquelles la réponse est non, indiquez si la situation décrite est représentable avec le modèle donné.</p>
+      <ol type="a">
+        <li>Un élève peut-il suivre plusieurs matières ?</li>
+        <li>Une demande de prestation peut-elle concerner plusieurs matières ?</li>
+        <li>Un responsable pédagogique peut-il suivre plusieurs étudiants ?</li>
+        <li>Un enseignant peut-il être affecté à plus d'une prestation à la même date ?</li>
+        <li>Deux responsables pédagogiques peuvent-ils suivre un même élève ?</li>
+        <li>Deux enseignants différents peuvent-ils être spécialisés dans la même matière ?</li>
+      </ol>
+    </div>
+    <div class="atelier" id="td1-ex1-q1" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "Question 1 · Oui ou non",
+        "consigne": "<p>Une ligne par question : « oui » ou « non » dans la deuxième colonne. Pour un « non », la troisième colonne dit si la situation peut quand même être représentée avec ce modèle (« oui » ou « non ») ; elle reste vide pour un « oui ». La justification se discute avec Claude.</p>",
+        "options": { "verrou": "depart", "lignes": false },
+        "depart": [
+          "| Question | Réponse | Si non : représentable ? |",
+          "|---|---|---|",
+          "| a | | |",
+          "| b | | |",
+          "| c | | |",
+          "| d | | |",
+          "| e | | |",
+          "| f | | |"
+        ],
+        "solution": [
+          "| Question | Réponse | Si non : représentable ? |",
+          "|---|---|---|",
+          "| a | oui | |",
+          "| b | non | oui |",
+          "| c | oui | |",
+          "| d | oui | |",
+          "| e | non | non |",
+          "| f | oui | |"
+        ],
+        "explication": "<p>On lit chaque multiplicité près de la classe dont on compte les objets.</p><ul><li><b>a</b> : oui, indirectement. Un élève fait <code>0..*</code> demandes, et chacune concerne une matière : avec plusieurs demandes, il suit plusieurs matières.</li><li><b>b</b> : non, <code>1..1</code> près de Matiere pour « concerne ». La situation reste représentable en faisant une demande par matière, mais une même demande n'en couvre qu'une.</li><li><b>c</b> : oui, <code>1..*</code> près d'Eleve pour « est responsable de ».</li><li><b>d</b> : oui. Un enseignant a <code>0..*</code> prestations et la date est un attribut de chaque affectation : rien n'interdit deux fois la même date. Pour l'interdire, il faudrait une contrainte d'intégrité, que le diagramme n'exprime pas.</li><li><b>e</b> : non, <code>1..1</code> près de Resp_pedagogique. Ce n'est pas représentable : il faudrait changer la multiplicité en <code>1..*</code> (et l'association deviendrait une relation, règle 2).</li><li><b>f</b> : oui, <code>0..*</code> des deux côtés de « est spécialisé ».</li></ul>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Pour savoir combien de matières concerne une demande, on regarde la multiplicité écrite près de Matiere, sur l'association « concerne ». Pour la question a, aucune association ne relie directement Eleve et Matiere : il faut passer par une autre classe.</p></div>
+    </details>
+
+    <h3>Factoriser</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 2 <span>Une seule personne</span></p>
+      <p>Enseignant et responsable pédagogique pouvant être la même personne, factorisez.</p>
+    </div>
+    <div class="atelier" id="td1-ex1-q2-classes" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "Question 2 · Modèle factorisé",
+        "consigne": "<p>Le dessin part du modèle du sujet : le modifier. La spécialisation « est un » se dessine avec le lien d'héritage (« Relier », puis le type héritage, ou <code>Enseignant --|&gt; Personne</code> dans la vue texte).</p>",
+        "options": { "bdd": true },
+        "hauteur": 640,
+        "vue": "les-deux",
+        "disposition": {
+          "Parent": [20, 20],
+          "Eleve": [470, 20],
+          "Prestation": [20, 230],
+          "Resp_pedagogique": [470, 230],
+          "Enseignant": [20, 420],
+          "Matiere": [470, 450]
+        },
+        "depart": [
+          "classe Parent",
+          "  id_parent {PK}",
+          "  nom_parent",
+          "  prenom_parent",
+          "  adresse",
+          "  profession",
+          "classe Eleve",
+          "  id_eleve {PK}",
+          "  nom_eleve",
+          "  prenom_eleve",
+          "  classe",
+          "  date_naiss",
+          "classe Prestation",
+          "  id_demande {PK}",
+          "  volume",
+          "  date_deb",
+          "classe Resp_pedagogique",
+          "  id_resp {PK}",
+          "  nom_resp",
+          "  date_naiss_resp",
+          "  prenom_resp",
+          "  adresse",
+          "classe Enseignant",
+          "  id_enseignant {PK}",
+          "  nom_ens",
+          "  prenom_ens",
+          "  date_naiss_ens",
+          "  diplome",
+          "  adresse",
+          "classe Matiere",
+          "  id_matiere {PK}",
+          "  libelle",
+          "classe Affectation",
+          "  date",
+          "Parent \"1..1\" -- \"1..*\" Eleve : est enfant de",
+          "Eleve \"1..1\" -- \"0..*\" Prestation : fait une demande",
+          "Eleve \"1..*\" -- \"1..1\" Resp_pedagogique : est responsable de",
+          "Prestation \"0..*\" -- \"0..1\" Enseignant : affectation [Affectation]",
+          "Prestation \"0..*\" -- \"1..1\" Matiere : concerne",
+          "Enseignant \"0..*\" -- \"0..*\" Matiere : est spécialisé"
+        ],
+        "solution": [
+          "classe Parent",
+          "  id_parent {PK}",
+          "  nom_parent",
+          "  prenom_parent",
+          "  adresse",
+          "  profession",
+          "classe Eleve",
+          "  id_eleve {PK}",
+          "  nom_eleve",
+          "  prenom_eleve",
+          "  classe",
+          "  date_naiss",
+          "classe Prestation",
+          "  id_demande {PK}",
+          "  volume",
+          "  date_deb",
+          "classe Personne",
+          "  id_personne {PK}",
+          "  nom",
+          "  prenom",
+          "  date_naiss",
+          "  adresse",
+          "classe Resp_pedagogique",
+          "classe Enseignant",
+          "  diplome",
+          "classe Matiere",
+          "  id_matiere {PK}",
+          "  libelle",
+          "classe Affectation",
+          "  date",
+          "Enseignant --|> Personne",
+          "Resp_pedagogique --|> Personne",
+          "Parent \"1..1\" -- \"1..*\" Eleve : est enfant de",
+          "Eleve \"1..1\" -- \"0..*\" Prestation : fait une demande",
+          "Eleve \"1..*\" -- \"1..1\" Resp_pedagogique : est responsable de",
+          "Prestation \"0..*\" -- \"0..1\" Enseignant : affectation [Affectation]",
+          "Prestation \"0..*\" -- \"1..1\" Matiere : concerne",
+          "Enseignant \"0..*\" -- \"0..*\" Matiere : est spécialisé"
+        ],
+        "explication": "<p>Les attributs communs (nom, prénom, date de naissance, adresse) remontent dans une entité générique Personne, qui porte l'identifiant. Enseignant et Resp_pedagogique en deviennent des spécialisations « est un » (<code>0..1</code> près de la spécialisée, <code>(1..1)</code> près de Personne dans la notation du cours) : sans identifiant propre, Enseignant ne garde que le diplôme, Resp_pedagogique plus rien. Une même personne peut alors être à la fois enseignant et responsable : une instance de Personne, une dans chaque spécialisation.</p><p>Les associations ne bougent pas : chacune reste attachée au rôle qui la justifie (on est responsable d'un élève en tant que responsable, affecté à une prestation en tant qu'enseignant). Les rattacher à Personne permettrait à n'importe qui d'être affecté à une prestation. Parent n'est pas concerné par la question : on pourrait aussi en faire une spécialisation de Personne, mais ses attributs (profession) et son rôle sont différents.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Comparer les attributs d'Enseignant et de Resp_pedagogique : lesquels sont communs ? Le cours 1 (association de spécialisation, diapos 43–44) montre comment un Critique « est une » Personne.</p></div>
+    </details>
+
+    <h3>Passer au relationnel</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3 <span>Les relations</span></p>
+      <p>Décrivez l'ensemble des relations issues de cette nouvelle modélisation.</p>
+    </div>
+    <div class="atelier" id="td1-ex1-q3-relationnel" data-editeur="relationnel">
+      <script type="application/json">
+      {
+        "titre": "Question 3 · Modèle relationnel",
+        "consigne": "<p>Une relation par ligne : clé primaire soulignée <code>_id_</code>, clé étrangère <code>#id</code>, avec sa cible entre parenthèses quand le nom ne suffit pas : <code>#id_resp(Personne.id_personne)</code>. Une clé à la fois primaire et étrangère s'écrit <code>_#id_resp_</code>. Écrire d'abord les relations référencées.</p>",
+        "vue": "les-deux",
+        "solution": [
+          "Parent(_id_parent_, nom_parent, prenom_parent, adresse, profession)",
+          "Personne(_id_personne_, nom, prenom, date_naiss, adresse)",
+          "Resp_pedagogique(_#id_resp_(Personne.id_personne))",
+          "Enseignant(_#id_enseignant_(Personne.id_personne), diplome)",
+          "Matiere(_id_matiere_, libelle)",
+          "Eleve(_id_eleve_, nom_eleve, prenom_eleve, classe, date_naiss, #id_parent(Parent), #id_resp(Resp_pedagogique))",
+          "Prestation(_id_demande_, volume, date_deb, #id_eleve(Eleve), #id_matiere(Matiere), #id_enseignant(Enseignant), date_affectation)",
+          "Specialiser(_#id_enseignant_(Enseignant), _#id_matiere_(Matiere))"
+        ],
+        "explication": "<p>Règle 1 : chaque entité donne une relation. Spécialisation (règle 4, cas « est un ») : la clé de Personne devient la clé primaire, et étrangère, d'Enseignant et de Resp_pedagogique.</p><p>Règle 3, pour les associations <code>1..1 — x..*</code> ou <code>0..1 — x..*</code> : la clé étrangère va du côté <code>*</code>. Eleve reçoit son parent et son responsable (NOT NULL, minimum 1) ; Prestation reçoit l'élève qui la demande, sa matière, et l'enseignant affecté (qui peut être vide : <code>0..1</code>), avec l'attribut de l'association, la date d'affectation.</p><p>Règle 2 : « est spécialisé », <code>* — *</code>, devient une relation dont la clé est le couple des deux clés étrangères. Le nom de cette relation est libre.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Compter les associations de chaque type : combien sont <code>* — *</code> (règle 2) ? Pour les autres, la clé étrangère va du côté où la multiplicité maximale vaut <code>*</code>. Un attribut d'association suit la clé étrangère.</p></div>
+    </details>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exercice 2 · Les employés d'une entreprise <span class="ref">TD, p. 2</span></h2>
+    <p>Cette fois, aucun diagramme n'est donné : il faut le construire à partir du compte rendu d'un audit. La même base sert au <a href="../TP/TP1/TP1_Entreprise-2025.pdf">TP 1</a>.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Énoncé</span></p>
+      <p>Une entreprise souhaite mettre en place un SGBD pour la gestion de ses employés. Suite à un audit au sein de l'entreprise, les informations suivantes sont collectées.</p>
+      <p>Pour chaque employé de l'entreprise, on sauvegardera son nom de famille, sa date d'embauche et le métier qu'il exerce au sein de l'entreprise. On souhaite également conserver son salaire mensuel actuel. Éventuellement si l'employé touche une commission, on sauvegardera cette information.</p>
+      <p>Chaque employé est rattaché à un département (pas au sens géographique, mais au sens organisation dans l'entreprise). Les départements de <em>Recherche</em>, de <em>Paie</em> et de <em>Ventes</em> seront par exemple considérés. Chaque département se situe sur un site de rattachement dont on connaît la localisation. Par exemple le département de <em>Ventes</em> se situe à <em>Chicago</em>. La modélisation devra permettre de connaître le département dans lequel travaille un employé donné.</p>
+      <p>Chaque employé dépend directement d'un chef (sauf le PDG qui lui n'obéit à personne !). Un chef est un employé de l'entreprise à part entière. Cette information devra également apparaître dans la base, c'est-à-dire qu'on devra savoir que <em>JONES</em> est le chef de <em>SMITH</em>, que <em>SMITH</em> est le chef de <em>DOE</em> et que <em>JONES</em> n'a pas de chef (c'est donc le PDG !).</p>
+      <p>Finalement, on souhaite également sauvegarder la grille salariale. Cette grille est établie par l'entreprise de manière indépendante des employés. Elle fait correspondre un grade à une tranche de salaire. Par exemple, le grade 1 correspond à la tranche de salaire : minimum 1500 – maximum 1724. Aucune des tranches de salaire ne se superposent, c.-à-d. qu'à une valeur de salaire ne pourra correspondre qu'un seul grade. Par exemple si le grade 1 a pour valeur maximale 1724 alors le grade 2 aura pour valeur minimale 1725. Attention, ce n'est pas le grade qui définit le salaire. Il faut prendre le problème à l'envers : comme je touche 1600 € alors mon grade est 1. J'ai une augmentation de 200 € alors mon nouveau grade sera le 2. Les évolutions de salaires ne seront pas stockées. La modélisation doit simplement permettre de savoir à un moment donné quel est le grade d'une personne, en fonction de son salaire.</p>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 1 <span>Modèle conceptuel</span></p>
+      <p>Donnez la modélisation conceptuelle de l'entreprise en utilisant le formalisme UML.</p>
+    </div>
+    <div class="atelier" id="td1-ex2-q1-classes" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "Question 1 · Diagramme de classes de l'entreprise",
+        "consigne": "<p>Une association réflexive relie une classe à elle-même ; ses rôles s'écrivent après la multiplicité : <code>Emp \"0..1 chef\" -- \"0..* subordonné\" Emp : est supervisé par</code>.</p>",
+        "options": { "bdd": true },
+        "hauteur": 420,
+        "solution_source": "enseignant",
+        "solution": [
+          "classe Emp",
+          "  id_emp {PK}",
+          "  nom_emp",
+          "  metier",
+          "  date_emb",
+          "  salaire",
+          "  comm",
+          "classe Dep",
+          "  id_dep {PK}",
+          "  nom_dep",
+          "  loc",
+          "classe Grade",
+          "  id_grade {PK}",
+          "  min_sal",
+          "  max_sal",
+          "Emp \"0..1 chef\" -- \"0..* subordonné\" Emp : est supervisé par",
+          "Emp \"0..*\" -- \"1..1\" Dep : est rattaché à"
+        ],
+        "explication": "<p>Modèle rappelé par l'enseignant au début du TP 1 (<code>TP1_Entreprise-2025.pdf</code>, p. 3).</p><p>La hiérarchie est une <b>association réflexive</b> : un employé a <code>0..1</code> chef (le PDG n'en a pas) et <code>0..*</code> subordonnés. Le site du département n'est qu'une localisation : un attribut <code>loc</code> suffit, puisqu'on ne demande rien d'autre sur les sites.</p><p>Grade n'est relié à rien : le grade se <b>calcule</b> à partir du salaire (le salaire est compris entre <code>min_sal</code> et <code>max_sal</code>). Une association Emp — Grade stockerait une information déduite, qu'il faudrait mettre à jour à chaque augmentation, avec un risque d'incohérence. La commission, facultative, est un attribut qui peut rester vide.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>« Un chef est un employé à part entière » : pas de nouvelle classe, mais une association d'Emp vers Emp, avec deux rôles. Pour la grille, se demander si le grade d'un employé doit être stocké, ou s'il peut se retrouver à partir de son salaire.</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 2 <span>Les relations</span></p>
+      <p>Décrivez l'ensemble des relations issues de cette modélisation.</p>
+    </div>
+    <div class="atelier" id="td1-ex2-q2-relationnel" data-editeur="relationnel">
+      <script type="application/json">
+      {
+        "titre": "Question 2 · Modèle relationnel de l'entreprise",
+        "consigne": "<p>Une clé étrangère qui renvoie à la même relation s'écrit avec sa cible : <code>#id_chef(Emp.id_emp)</code>.</p>",
+        "vue": "les-deux",
+        "solution_source": "enseignant",
+        "solution": [
+          "Dep(_id_dep_, nom_dep, loc)",
+          "Grade(_id_grade_, min_sal, max_sal)",
+          "Emp(_id_emp_, nom_emp, metier, #id_chef(Emp.id_emp), date_emb, sal, comm, #id_dep(Dep))"
+        ],
+        "explication": "<p>Modèle relationnel de l'enseignant (TP 1, p. 3).</p><p>Règle 1 : trois entités, trois relations. Règle 3, deux fois : « est rattaché à » met <code>#id_dep</code> dans Emp (NOT NULL, minimum 1) ; l'association réflexive met dans Emp une clé étrangère vers Emp elle-même, nommée d'après son rôle, <code>#id_chef</code>, qui peut être vide pour le PDG. Grade reste seule : aucune clé étrangère ne la relie à Emp, le grade d'un employé se trouve par une requête (<code>sal BETWEEN min_sal AND max_sal</code>).</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>Une multiplicité se lit près de la classe dont on compte les objets : <code>1..1</code> près de Matiere sur « concerne » veut dire qu'une demande concerne une seule matière.</li>
+        <li>« Est-ce possible ? » se lit dans les maximums ; « est-ce obligatoire ? » dans les minimums. Une situation non prévue peut parfois se représenter autrement (plusieurs demandes au lieu d'une).</li>
+        <li>Deux entités qui décrivent la même personne se factorisent : une entité générique avec l'identifiant et les attributs communs, des spécialisations « est un » sans identifiant propre. Chaque association reste attachée au rôle qui la justifie.</li>
+        <li>Une hiérarchie entre éléments d'une même entité est une association réflexive : deux rôles, et au relationnel une clé étrangère nommée d'après le rôle (<code>#id_chef</code>).</li>
+        <li>Une information qui se calcule (le grade à partir du salaire) ne se stocke pas : l'entité peut rester isolée.</li>
+        <li>Au relationnel : règle 2 pour <code>* — *</code> (nouvelle relation), règle 3 sinon (clé étrangère côté <code>*</code>, avec les attributs de l'association), clé de la générique comme clé primaire de la spécialisée.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Sur une association, où lit-on combien de matières concerne une demande ?</summary>
+        <div><p>Près de la classe Matiere : la multiplicité écrite à côté d'une classe compte ses objets, pour un objet de l'autre classe.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi l'entité spécialisée n'a-t-elle pas d'identifiant propre ?</summary>
+        <div><p>Chaque instance spécialisée correspond à exactement une instance générique (<code>(1..1)</code>) : elle est identifiée par elle. Au relationnel, la clé de la générique devient sa clé primaire, et clé étrangère.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle clé étrangère produit une association réflexive <code>0..1</code> — <code>0..*</code> ?</summary>
+        <div><p>Une clé étrangère dans la relation elle-même, du côté <code>*</code> (le subordonné), qui désigne le chef : <code>#id_chef</code>. Elle peut être vide, car le minimum vaut 0.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Faut-il relier Grade à Emp ?</summary>
+        <div><p>Non : le grade se déduit du salaire. Une association stockerait une information calculable, qu'il faudrait mettre à jour à chaque changement de salaire.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="index.html"><small>← Accueil</small>Bases de données</a>
+    <a class="suivant" href="td-02-avions.html"><small>TD 2 →</small>Les avions</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

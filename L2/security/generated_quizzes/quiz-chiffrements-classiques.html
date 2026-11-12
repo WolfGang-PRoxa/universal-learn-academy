@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="securite">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Chiffrements classiques à la main · Sécurité informatique L2</title>
+<meta name="description" content="Quiz interactif sur les chiffrements classiques à faire à la main : César, Vigenère, Vernam, damier de Collon, Delastelle et Playfair (Sécurité informatique, L2).">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="../generated_courses/index.html">Sécurité informatique</a>
+    <span aria-current="page">Quiz · Chiffrements classiques à la main</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Sécurité informatique</span> Quiz · L2</p>
+    <h1>Chiffrements classiques à la main</h1>
+    <p class="chapeau">L'exercice de déchiffrement à la main tombe à chaque examen : César et Vigenère, les formules de César et de Vernam, puis les chiffres « à damier » des annales (Collon 2024, Delastelle 2025, Playfair 2026), avec leurs vrais sujets. 14 questions.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-02-initiation-cryptographie.html">Cours 2 · Initiation à la cryptographie</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 novembre 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Sécurité informatique · L2 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "securite-chiffrements-classiques",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 2 · Initiation à la cryptographie",
+      "lien": "../generated_courses/cours-02-initiation-cryptographie.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "reponse-courte",
+      "theme": "César et Vigenère",
+      "difficulte": 1,
+      "enonce": "<p>Déchiffrer <code>PHVVDJH</code>, chiffré par César avec un décalage de 3.</p>",
+      "reponses": [
+        "MESSAGE"
+      ],
+      "explication": "<p>On recule chaque lettre de trois rangs : \\(m_i = (c_i - 3) \\bmod 26\\). P → M, H → E, V → S, V → S, D → A, J → G, H → E.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le chiffre de César",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#le-chiffre-de-cesar-une-substitution-mono-alphabetique"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "numerique",
+      "theme": "César et Vigenère",
+      "difficulte": 1,
+      "enonce": "<p>Combien de décalages faut-il essayer, au plus, pour casser un chiffre de César par force brute ?</p>",
+      "reponse": 25,
+      "explication": "<p>La clé est un décalage de 1 à 25 (un décalage de 0 laisse le texte inchangé). On les essaie tous et l'on garde celui qui donne un texte lisible.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le chiffre de César",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#le-chiffre-de-cesar-une-substitution-mono-alphabetique"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "qcm",
+      "theme": "César et Vigenère",
+      "difficulte": 2,
+      "enonce": "<p>Dans un long texte français chiffré par César, la lettre la plus fréquente est <code>H</code>. Quel est le décalage le plus probable ?</p>",
+      "choix": [
+        "3",
+        "7",
+        "4",
+        "23"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Quelle est la lettre la plus fréquente en français ?</p>"
+      ],
+      "explication": "<p>C'est l'analyse fréquentielle : en français, la lettre la plus fréquente est E. Si E (rang 4) devient H (rang 7), le décalage est \\(7 - 4 = 3\\). 7 est le rang de H, pas le décalage.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le chiffre de César",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#le-chiffre-de-cesar-une-substitution-mono-alphabetique"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "reponse-courte",
+      "theme": "César et Vigenère",
+      "difficulte": 2,
+      "enonce": "<p>Déchiffrer <code>DZRLZYT</code>, chiffré par Vigenère avec la clé <code>CLE</code>.</p>",
+      "reponses": [
+        "BONJOUR"
+      ],
+      "indices": [
+        "<p>Répéter la clé sous le chiffré (CLECLEC) et soustraire les rangs modulo 26 : \\(m_i = (c_i - k_i) \\bmod 26\\).</p>",
+        "<p>D − C : 3 − 2 = 1, soit B.</p>"
+      ],
+      "explication": "<p>D − C = B, Z − L = O, R − E = N, L − C = J, Z − L = O, Y − E = U, T − C = R. Les deux O du clair donnent deux Z : par hasard, ils sont sous la même lettre de clé (L).</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le chiffre de Vigenère",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#le-chiffre-de-vigenere-une-substitution-poly-alphabetique"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "trous",
+      "theme": "César et Vigenère",
+      "difficulte": 2,
+      "enonce": "<p>Examen 2025 : compléter les formules de chiffrement, avec \\(m = m_1 \\dots m_n\\) le clair et les lettres numérotées de 0 (A) à 25 (Z).</p>",
+      "texte": "César : la clé a une taille de {{0}}, et c_i = {{1}}.\nVernam : la clé a une taille de {{2}}, et c_i = {{3}}.",
+      "code": true,
+      "trous": [
+        {
+          "choix": [
+            "1",
+            "n",
+            "26",
+            "t"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "(m_i + k) mod 26",
+            "m_i XOR k_i",
+            "(m_i + k_i) mod 26",
+            "m_i XOR k"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "n",
+            "1",
+            "26",
+            "128 bits"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "m_i XOR k_i",
+            "(m_i + k) mod 26",
+            "m_i XOR k",
+            "(m_i × k_i) mod 2"
+          ],
+          "reponse": 0
+        }
+      ],
+      "explication": "<p>César n'a qu'une valeur de clé, le décalage : \\(c_i = (m_i + k) \\bmod 26\\). Vernam a une clé aussi longue que le message, combinée bit à bit : \\(c_i = m_i \\xor k_i\\). Vigenère est entre les deux : \\(c_i = (m_i + k_{i \\bmod t}) \\bmod 26\\).</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le masque jetable de Vernam",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#le-masque-jetable-de-vernam"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "association",
+      "theme": "César et Vigenère",
+      "difficulte": 2,
+      "enonce": "<p>Examen 2025 : associer chaque chiffre à la façon de le casser.</p>",
+      "paires": [
+        [
+          "César",
+          "Force brute sur les 25 décalages, ou analyse fréquentielle"
+        ],
+        [
+          "Vigenère",
+          "Trouver la longueur de la clé (Kasiski), puis une analyse fréquentielle par position"
+        ],
+        [
+          "Vernam bien utilisé",
+          "Impossible : tout clair de même longueur est également probable"
+        ],
+        [
+          "Vernam avec une clé réutilisée",
+          "Combiner deux chiffrés par XOR pour éliminer la clé"
+        ]
+      ],
+      "explication": "<p>César n'a que 25 clés ; Vigenère est une suite de César dont on trouve d'abord la période. Le masque jetable correctement utilisé est parfaitement sûr ; la seule faille est la réutilisation de la clé, puisque \\(c_1 \\xor c_2 = m_1 \\xor m_2\\).</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le masque jetable de Vernam",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#le-masque-jetable-de-vernam"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "reponse-courte",
+      "theme": "Damier de Collon",
+      "difficulte": 2,
+      "enonce": "<p>Damier de Collon (examen 2024) : alphabet de 25 lettres sans W, grille formée avec la clé MERCREDI. Une lettre est remplacée par le bigramme (lettre de la première colonne sur sa ligne, lettre de la dernière ligne dans sa colonne) ; ainsi E donne MV et M donne MU.</p><table><tbody><tr><td>M</td><td>E</td><td>R</td><td>C</td><td>D</td></tr><tr><td>I</td><td>A</td><td>B</td><td>F</td><td>G</td></tr><tr><td>H</td><td>J</td><td>K</td><td>L</td><td>N</td></tr><tr><td>O</td><td>P</td><td>Q</td><td>S</td><td>T</td></tr><tr><td>U</td><td>V</td><td>X</td><td>Y</td><td>Z</td></tr></tbody></table><p>Quel bigramme chiffre la lettre <code>T</code> ?</p>",
+      "reponses": [
+        "OZ"
+      ],
+      "explication": "<p>T est sur la ligne qui commence par O, dans la colonne qui finit par Z : T donne OZ.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les chiffres à damier des annales",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#les-machines-enigma"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "reponse-courte",
+      "theme": "Damier de Collon",
+      "difficulte": 3,
+      "enonce": "<p>Examen 2024. Même système, avec la clé <code>EXAMEN</code> : la grille s'écrit avec les lettres de la clé sans doublon, puis le reste de l'alphabet sans W. Au chiffrement, les bigrammes sont relevés par séries de 5 : d'abord les 5 premières lettres des bigrammes, puis leurs 5 secondes lettres, et ainsi de suite (la dernière série peut être plus courte). Déchiffrer (réponse en majuscules, sans espaces ni apostrophe) :</p><p><code>HEEEEZTUVYEEEOTTZTZTBHEETTUTZTOTBHETTYUZHU</code></p>",
+      "reponses": [
+        "LEXAMENESTBIENTOTFINI",
+        "L EXAMEN EST BIENTOT FINI",
+        "L'EXAMEN EST BIENTOT FINI",
+        "L'EXAMEN EST BIENTÔT FINI",
+        "LEXAMEN EST BIENTOT FINI"
+      ],
+      "indices": [
+        "<p>La grille commence par E X A M N / B C D F G / H I J K L… La première colonne donne les lignes (E, B, H, O, T), la dernière ligne les colonnes (T, U, V, Y, Z).</p>",
+        "<p>Découper le chiffré en blocs de 10 lettres : dans chaque bloc, les 5 premières sont les lignes, les 5 suivantes les colonnes. HEEEE ZTUVY donne (H,Z), (E,T), (E,U), (E,V), (E,Y).</p>"
+      ],
+      "explication": "<p>Grille : EXAMN / BCDFG / HIJKL / OPQRS / TUVYZ. Les blocs HEEEE·ZTUVY, EEEOT·TZTZT, BHEET·TUTZT, OTBHE·TTYUZ et le reste HU (une série de 1) donnent LEXAM, ENEST, BIENT, OTFIN, I : « L'examen est bientôt fini ».</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les chiffres à damier des annales",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#les-machines-enigma"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "vrai-faux",
+      "theme": "Damier de Collon",
+      "difficulte": 1,
+      "enonce": "<p>Dans le damier de Collon (sans le relevé par séries), une même lettre claire est toujours remplacée par le même bigramme : c'est une substitution mono-alphabétique.</p>",
+      "reponse": true,
+      "explication": "<p>La grille est fixe : chaque lettre a toujours les mêmes coordonnées. Le relevé par séries ne fait que mélanger l'ordre des lettres du chiffré (une transposition) ; il ne change pas la substitution.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les chiffres à damier des annales",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#les-machines-enigma"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "reponse-courte",
+      "theme": "Delastelle",
+      "difficulte": 2,
+      "enonce": "<p>Substitution monôme-binôme de Delastelle (examen 2025). Les lettres de la ligne du haut sont chiffrées par leur seul chiffre de colonne (A = 0, E = 1…), les autres par deux chiffres, ligne puis colonne (B = 30, F = 71…).</p><table><thead><tr><th></th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th></tr></thead><tbody><tr><th></th><td>A</td><td>E</td><td>I</td><td></td><td>S</td><td>N</td><td>T</td><td></td><td>R</td><td>L</td></tr><tr><th>3</th><td>B</td><td>X</td><td>U</td><td>M</td><td></td><td>Z</td><td>K</td><td>H</td><td>G</td><td>V</td></tr><tr><th>7</th><td>C</td><td>F</td><td>D</td><td>Q</td><td></td><td>W</td><td>Y</td><td>O</td><td>P</td><td>J</td></tr></tbody></table><p>Chiffrer <code>SECRET</code> (sans espaces).</p>",
+      "reponses": [
+        "4170816",
+        "4 1 70 8 1 6"
+      ],
+      "explication": "<p>S = 4, E = 1, C = 70, R = 8, E = 1, T = 6, soit 4170816. Les lettres les plus fréquentes du français sont dans la ligne du haut : le chiffré est plus court, d'où le nom de substitution « économique ».</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les chiffres à damier des annales",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#les-machines-enigma"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "reponse-courte",
+      "theme": "Delastelle",
+      "difficulte": 3,
+      "enonce": "<p>Examen 2025, même table de Delastelle :</p><table><thead><tr><th></th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th></tr></thead><tbody><tr><th></th><td>A</td><td>E</td><td>I</td><td></td><td>S</td><td>N</td><td>T</td><td></td><td>R</td><td>L</td></tr><tr><th>3</th><td>B</td><td>X</td><td>U</td><td>M</td><td></td><td>Z</td><td>K</td><td>H</td><td>G</td><td>V</td></tr><tr><th>7</th><td>C</td><td>F</td><td>D</td><td>Q</td><td></td><td>W</td><td>Y</td><td>O</td><td>P</td><td>J</td></tr></tbody></table><p>Déchiffrer <code>733206778351039829</code> (réponse sans espaces).</p>",
+      "reponses": [
+        "QUATORZEAVRIL",
+        "QUATORZE AVRIL"
+      ],
+      "indices": [
+        "<p>Les colonnes 3 et 7 de la ligne du haut sont vides : un 3 ou un 7 annonce toujours un binôme. Tout autre chiffre est un monôme.</p>",
+        "<p>Le découpage commence par 73 · 32 · 0 · 6 · 77…</p>"
+      ],
+      "explication": "<p>On lit de gauche à droite : un 3 ou un 7 prend le chiffre suivant avec lui. 73 = Q, 32 = U, 0 = A, 6 = T, 77 = O, 8 = R, 35 = Z, 1 = E, 0 = A, 39 = V, 8 = R, 2 = I, 9 = L : « quatorze avril ».</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les chiffres à damier des annales",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#les-machines-enigma"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "reponse-courte",
+      "theme": "Playfair",
+      "difficulte": 2,
+      "enonce": "<p>Chiffre de Playfair (examen 2026), carré obtenu avec la clé GALOIS :</p><table><tbody><tr><td>G</td><td>B</td><td>K</td><td>T</td><td>Z</td></tr><tr><td>A</td><td>C</td><td>M</td><td>U</td><td>L</td></tr><tr><td>D</td><td>N</td><td>V</td><td>O</td><td>E</td></tr><tr><td>P</td><td>W</td><td>I</td><td>F</td><td>Q</td></tr><tr><td>X</td><td>S</td><td>H</td><td>R</td><td>Y</td></tr></tbody></table><p>Règles de chiffrement d'un bigramme :</p><ul><li>lettres sur des lignes et des colonnes différentes : chaque lettre est remplacée par celle de sa ligne, dans la colonne de l'autre lettre ;</li><li>même ligne : chaque lettre est remplacée par sa voisine de droite (on revient au début de la ligne) ;</li><li>même colonne : chaque lettre est remplacée par sa voisine du dessous (on revient en haut de la colonne).</li></ul><p>Chiffrer le bigramme <code>CU</code>.</p>",
+      "reponses": [
+        "ML"
+      ],
+      "explication": "<p>C et U sont sur la même ligne (A C M U L) : chacune est remplacée par sa voisine de droite, C → M et U → L.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les chiffres à damier des annales",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#les-machines-enigma"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "reponse-courte",
+      "theme": "Playfair",
+      "difficulte": 2,
+      "enonce": "<p>Examen 2026. Pour fabriquer le carré de Playfair, on écrit la clé sans doublon sur une ligne, puis le reste de l'alphabet (sans J, confondu avec I) en lignes de même longueur. On relit ensuite ce tableau colonne par colonne, de haut en bas, pour remplir le carré 5 × 5 ligne par ligne. Avec la clé GALOIS, on obtient le carré GBKTZ / ACMUL / DNVOE / PWIFQ / XSHRY. Quelle est la première ligne du carré pour la clé <code>FACILE</code> ?</p>",
+      "reponses": [
+        "FBNTZ",
+        "F B N T Z"
+      ],
+      "indices": [
+        "<p>Le tableau intermédiaire : FACILE / BDGHKM / NOPQRS / TUVWXY / Z.</p>"
+      ],
+      "explication": "<p>La première colonne du tableau intermédiaire est F, B, N, T, Z : c'est la première ligne du carré. Le carré complet est FBNTZ / ADOUC / GPVIH / QWLKR / XEMSY.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les chiffres à damier des annales",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#les-machines-enigma"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "reponse-courte",
+      "theme": "Playfair",
+      "difficulte": 3,
+      "enonce": "<p>Examen 2026. Avec le carré de la clé FACILE :</p><table><tbody><tr><td>F</td><td>B</td><td>N</td><td>T</td><td>Z</td></tr><tr><td>A</td><td>D</td><td>O</td><td>U</td><td>C</td></tr><tr><td>G</td><td>P</td><td>V</td><td>I</td><td>H</td></tr><tr><td>Q</td><td>W</td><td>L</td><td>K</td><td>R</td></tr><tr><td>X</td><td>E</td><td>M</td><td>S</td><td>Y</td></tr></tbody></table><p>et les règles de chiffrement :</p><ul><li>lettres sur des lignes et des colonnes différentes : chaque lettre est remplacée par celle de sa ligne, dans la colonne de l'autre lettre ;</li><li>même ligne : chaque lettre est remplacée par sa voisine de droite (on revient au début de la ligne) ;</li><li>même colonne : chaque lettre est remplacée par sa voisine du dessous (on revient en haut de la colonne).</li></ul><p>déchiffrer <code>MEOXMBOCWYNKVOPX</code> (réponse sans espaces).</p>",
+      "reponses": [
+        "EXAMENDURETLONGE",
+        "EXAMEN DUR ET LONG",
+        "EXAMENDURETLONG",
+        "EXAMEN DUR ET LONGE"
+      ],
+      "indices": [
+        "<p>Pour déchiffrer, on inverse les règles : sur une même ligne, on prend la voisine de gauche ; sur une même colonne, celle du dessus ; sinon, la règle du rectangle est inchangée.</p>",
+        "<p>ME : même ligne (X E M S Y), donc E X.</p>"
+      ],
+      "explication": "<p>Bigrammes : ME → EX, OX → AM, MB → EN, OC → DU, WY → RE, NK → TL, VO → ON, PX → GE, soit EXAMENDURETLONGE : « examen dur et long », le E final complétant le dernier bigramme. ME et OC sont sur une même ligne (voisine de gauche), VO sur une même colonne (voisine du dessus), les autres forment des rectangles.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les chiffres à damier des annales",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#les-machines-enigma"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

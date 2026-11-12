@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="codage">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Codage physique et entropie · Codage L3</title>
+<meta name="description" content="Quiz interactif sur le cours 1 de codage de l'information (L3) : paradigme de Shannon et compression, codes en ligne à deux et trois niveaux (NRZ, NRZI, Manchester, Miller, bipolaire, HDB3), entropie d'une source et d'un couple, expérience de Shannon, avec un chronogramme à tracer et un codeur HDB3 en C.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="../generated_courses/index.html">Codage</a>
+    <span aria-current="page">Quiz · Codage physique et entropie</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Codage</span> Quiz · L3 S5</p>
+    <h1>Codage physique et entropie</h1>
+    <p class="chapeau">Vingt-cinq questions sur le cours 1 : le paradigme de Shannon et la compression, les codes en ligne à deux niveaux (NRZ, NRZI, Manchester, Miller) et à trois niveaux (bipolaire, HDB3), l'entropie d'une source et d'un couple de variables, l'expérience de Shannon sur l'anglais. Un chronogramme à tracer, et un codeur HDB3 à écrire en C, exécuté et corrigé automatiquement.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-01-codage-physique-entropie.html">Cours 1 · Codage physique et entropie</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-25">25 sept. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Codage · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "codage-cours-01-codage-physique-entropie",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 1 · Codage physique et entropie",
+      "lien": "../generated_courses/cours-01-codage-physique-entropie.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "qcm",
+      "theme": "Information et compression",
+      "difficulte": 1,
+      "enonce": "<p>Dans le paradigme de Shannon, quel est le rôle du <strong>codeur de canal</strong> ?</p>",
+      "choix": [
+        "Ajouter une redondance contrôlée, pour que le récepteur détecte ou corrige les erreurs dues au bruit",
+        "Retirer la redondance du message, pour le représenter avec le moins de bits possible",
+        "Traduire les bits en niveaux électriques adaptés au support (NRZ, Manchester…)",
+        "Mesurer l'entropie de la source, pour choisir la longueur des mots de code"
+      ],
+      "reponse": 0,
+      "explication": "<p>Le codeur de canal <em>ajoute</em> de la redondance, mais une redondance calculée, qui permet au décodeur de canal de repérer ou de corriger les erreurs : ce sont les codes correcteurs des cours 3 et 4. Retirer la redondance, c'est le rôle inverse, celui du codeur de source (la compression). La traduction des bits en signaux relève du codage physique.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Le paradigme de Shannon",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#le-paradigme-de-shannon"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "ordre",
+      "theme": "Information et compression",
+      "difficulte": 1,
+      "enonce": "<p>Remettre dans l'ordre les étapes du paradigme de Shannon, de la source de l'information jusqu'à son destinataire.</p>",
+      "elements": [
+        "Source",
+        "Codeur de source",
+        "Codeur de canal",
+        "Canal, perturbé par le bruit",
+        "Décodeur de canal",
+        "Décodeur de source",
+        "Utilisateur"
+      ],
+      "explication": "<p>On compresse d'abord (codeur de source), puis on protège (codeur de canal) avant d'affronter le bruit du canal. À la réception, les décodeurs défont ce qu'ont fait les codeurs, dans l'ordre inverse : on corrige les erreurs avant de décompresser.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Le paradigme de Shannon",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#le-paradigme-de-shannon"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "numerique",
+      "theme": "Information et compression",
+      "difficulte": 2,
+      "enonce": "<p>Un morceau stéréo est échantillonné à 44,1 kHz et quantifié sur 16 bits, puis compressé en MP3 à <strong>192 kbit/s</strong>. Quel est le taux de compression ? Arrondir au dixième.</p>",
+      "reponse": 7.35,
+      "tolerance": 0.06,
+      "indices": [
+        "<p>Commencer par le débit brut : fréquence d'échantillonnage × nombre de bits par échantillon × nombre de voies.</p>",
+        "<p>Le taux de compression est le rapport entre le débit brut et le débit compressé.</p>"
+      ],
+      "explication": "<p>Débit brut : \\(44\\,100 \\times 16 \\times 2 = 1\\,411\\,200\\) bit/s, soit 1 411,2 kbit/s. Taux : \\(1411{,}2 / 192 \\approx 7{,}35\\), donc 7,3 ou 7,4. Oublier le facteur 2 de la stéréo donnerait la moitié, 3,7. À 128 kbit/s, comme dans le cours, on trouve 11.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Compresser sans perte ou avec perte",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#compresser-sans-perte-ou-avec-perte"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "vrai-faux",
+      "theme": "Information et compression",
+      "difficulte": 2,
+      "enonce": "<p>Dans la chaîne de compression du MP3, c'est le codage de Huffman qui fait perdre de l'information.</p>",
+      "reponse": false,
+      "indices": [
+        "<p>Le MP3 enchaîne deux étapes. Laquelle supprime ce que l'oreille n'entend pas ?</p>"
+      ],
+      "explication": "<p>Faux. La perte vient de la première étape, l'élimination des composantes spectrales que l'oreille ne perçoit pas. Le codage de Huffman qui suit est sans perte : il attribue des mots courts aux valeurs fréquentes, et le décodage restitue exactement son entrée. Un format avec perte peut donc contenir une étape sans perte.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Compresser sans perte ou avec perte",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#compresser-sans-perte-ou-avec-perte"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "association",
+      "theme": "Codes à deux niveaux",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque code en ligne à sa règle de codage.</p>",
+      "paires": [
+        [
+          "Unipolaire",
+          "0 V pour un 0, une tension positive pour un 1"
+        ],
+        [
+          "NRZ",
+          "−X pour un 0, +X pour un 1"
+        ],
+        [
+          "NRZI",
+          "Un changement d'état pour un 1, aucun changement pour un 0"
+        ],
+        [
+          "Manchester",
+          "Une transition au milieu de chaque bit : montante pour un 0, descendante pour un 1"
+        ],
+        [
+          "Miller",
+          "Une transition au milieu de chaque 1, et à la fin d'un 0 suivi d'un autre 0"
+        ]
+      ],
+      "intrus": [
+        "0 V pour un 0, alternativement +X et −X pour un 1"
+      ],
+      "explication": "<p>NRZ et unipolaire codent le bit par un <em>niveau</em> ; NRZI, Manchester et Miller le codent par une <em>transition</em>. La règle en trop est celle du code bipolaire, qui utilise trois niveaux.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Transmission numérique : les codes à deux niveaux",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#transmission-numerique-les-codes-a-deux-niveaux"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "qcm",
+      "theme": "Codes à deux niveaux",
+      "difficulte": 1,
+      "enonce": "<p>Quel est le principal inconvénient du codage <strong>unipolaire</strong> ?</p>",
+      "choix": [
+        "Une suite de 0 ne se distingue pas de l'absence de signal",
+        "Il demande trois niveaux de tension : −X, 0 et +X",
+        "Il impose une transition au milieu de chaque bit, ce qui double la bande",
+        "Il code l'information dans les transitions, et non dans les niveaux"
+      ],
+      "reponse": 0,
+      "explication": "<p>En unipolaire, un 0 est codé par une tension nulle : une suite de 0 et une ligne coupée donnent le même 0 V. Le NRZ règle ce problème en codant le 0 par \\(-X\\). Les autres propositions décrivent le bipolaire, le Manchester et le NRZI.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Unipolaire",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#unipolaire"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "vrai-faux",
+      "theme": "Codes à deux niveaux",
+      "difficulte": 1,
+      "enonce": "<p>En NRZI, une longue suite de 1 fait perdre la synchronisation au récepteur.</p>",
+      "reponse": false,
+      "explication": "<p>Faux. En NRZI, chaque 1 provoque un changement d'état : une suite de 1 produit une transition par bit, et le récepteur recale son horloge sans peine. C'est une longue suite de 0 qui laisse le signal constant, comme en NRZ.</p>",
+      "revoir": {
+        "texte": "Cours 1 · NRZI",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#nrzi"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "qcm",
+      "theme": "Codes à deux niveaux",
+      "difficulte": 2,
+      "enonce": "<p>Un récepteur Manchester, qui suit la convention du cours, reçoit ce signal, demi-bit par demi-bit :</p><p><code>bas-haut | haut-bas | haut-bas | bas-haut | haut-bas</code></p><p>Quelle suite de bits a été émise ?</p>",
+      "choix": [
+        "0 1 1 0 1",
+        "1 0 0 1 0",
+        "On ne peut pas conclure sans connaître le niveau de la ligne avant le premier bit"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Dans la convention du cours, un 0 est un front montant au milieu du bit, un 1 un front descendant.</p>"
+      ],
+      "explication": "<p>Bas puis haut, c'est un front montant : un 0 ; haut puis bas, un front descendant : un 1. D'où 0 1 1 0 1. La réponse 1 0 0 1 0 applique la convention inverse, celle d'Ethernet (IEEE 802.3). Le sens de la transition du milieu suffit à décoder chaque bit : contrairement au NRZI ou au Miller, le niveau de départ n'intervient pas.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Manchester",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#manchester"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "qcm-multi",
+      "theme": "Codes à deux niveaux",
+      "difficulte": 2,
+      "enonce": "<p>Parmi ces propriétés, lesquelles sont celles du code <strong>Manchester</strong> ?</p>",
+      "choix": [
+        "Au moins une transition par bit : le code est autosynchronisant",
+        "Pas de composante continue",
+        "Une rapidité de modulation double du débit binaire",
+        "Une bande de fréquences plus étroite que celle du NRZ",
+        "Trois niveaux de tension, dont un niveau nul"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "indices": [
+        "<p>Chaque bit est coupé en deux demi-intervalles de niveaux opposés. Qu'est-ce que cela garantit, et qu'est-ce que cela coûte ?</p>"
+      ],
+      "explication": "<p>La transition au milieu de chaque bit donne la synchronisation, et chaque bit passe la moitié du temps à chaque niveau : pas de composante continue. Le prix est une rapidité de modulation \\(R = 2D\\), donc une bande <em>deux fois plus large</em> qu'en NRZ, et non plus étroite. Le Manchester n'a que deux niveaux.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Manchester",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#manchester"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "atelier",
+      "editeur": "chronogramme",
+      "theme": "Codes à deux niveaux",
+      "difficulte": 3,
+      "titre": "Chronogramme de 1 0 0 1 1 0",
+      "enonce": "<p>Coder la suite <code>1 0 0 1 1 0</code> en NRZI, en Manchester et en Miller, avec les conventions du cours. Avant le premier bit, la ligne est au niveau bas \\(-X\\). En NRZI, le changement d'état d'un 1 se place au début du bit.</p>",
+      "consigne": "Une case = un demi-bit : le bit n° k (de 1 à 6) occupe les cases 2k − 2 et 2k − 1. Choisir un niveau dans la palette, puis peindre les cases de chaque ligne.",
+      "vue": "dessin",
+      "options": {
+        "debut": 0,
+        "fin": 12,
+        "etats": [
+          {
+            "code": "h",
+            "libelle": "+X (haut)"
+          },
+          {
+            "code": "b",
+            "libelle": "−X (bas)"
+          }
+        ]
+      },
+      "depart": [
+        "temps 0..12",
+        "etat h +X (haut)",
+        "etat b −X (bas)",
+        "NRZI :",
+        "Manchester :",
+        "Miller :"
+      ],
+      "solution": [
+        "temps 0..12",
+        "etat h +X (haut)",
+        "etat b −X (bas)",
+        "NRZI : hhhhhhbbhhhh",
+        "Manchester : hbbhbhhbhbbh",
+        "Miller : bhhhbbbhhbbb"
+      ],
+      "indices": [
+        "<p>Travailler bit par bit, en demi-bits. En NRZI et en Miller, noter le niveau courant et ne le faire basculer qu'aux instants prévus par la règle.</p>",
+        "<p>En Miller, les bits 2 et 3 sont deux 0 consécutifs : la transition se place à la <em>fin</em> du bit 2, pas en son milieu.</p>"
+      ],
+      "explication": "<p><b>NRZI</b> : on part de −X ; les 1 (bits 1, 4 et 5) font basculer le niveau au début du bit, les 0 le laissent. <b>Manchester</b> : un 1 donne haut puis bas, un 0 bas puis haut. <b>Miller</b> : on part de −X ; une transition au milieu des bits 1, 4 et 5, et une à la frontière des bits 2 et 3, deux 0 consécutifs. Contrôle : les transitions de Miller tombent exactement sur les fronts descendants du Manchester.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Miller",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#miller"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "qcm",
+      "theme": "Codes à deux niveaux",
+      "difficulte": 3,
+      "enonce": "<p>Avec le code de Miller, quelle est la plus longue durée possible <strong>sans aucune transition</strong> ?</p>",
+      "choix": [
+        "2 bits, pour la suite 1 0 1",
+        "1,5 bit, pour la suite 1 0 0",
+        "1 bit, pour la suite 0 0",
+        "Illimitée, pour une longue suite de 0"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Rappel des règles : une transition au milieu de chaque 1, aucune au milieu d'un 0, une en fin de 0 si un autre 0 suit.</p>",
+        "<p>Chercher un 0 qui n'a pas de transition à sa fin, entouré de bits qui retardent le plus possible la transition suivante.</p>"
+      ],
+      "explication": "<p>Dans <code>1 0 1</code>, la dernière transition est au milieu du premier 1 ; le 0 n'en a ni au milieu ni à la fin (il n'est pas suivi d'un 0) ; la suivante est au milieu du second 1. Soit \\(0{,}5 + 1 + 0{,}5 = 2\\) bits. Une suite de 0 ne pose pas de problème : chaque 0 suivi d'un 0 a une transition à sa fin. C'est ce qui permet au Miller de garder la synchronisation avec une bande moitié de celle du Manchester.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Miller",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#miller"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "trous",
+      "theme": "Codes à trois niveaux",
+      "difficulte": 1,
+      "enonce": "<p>Compléter la description du code bipolaire.</p>",
+      "texte": "Le code bipolaire émet {{0}} pour un bit à 0, et {{1}} pour un bit à 1. La moyenne du signal est nulle : il n'a pas de {{2}}. Mais une longue suite de {{3}} laisse la ligne sans transition, et le récepteur perd la synchronisation.",
+      "trous": [
+        {
+          "choix": [
+            "un niveau nul",
+            "le niveau −X",
+            "le niveau +X"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "alternativement +X et −X",
+            "toujours +X",
+            "une transition au milieu du bit"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "composante continue",
+            "violation",
+            "bourrage"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "0",
+            "1"
+          ],
+          "reponse": 0
+        }
+      ],
+      "explication": "<p>Les 1 alternent entre \\(+X\\) et \\(-X\\), ce qui annule la moyenne et permet de détecter une erreur (deux impulsions de même signe). Les 0 restent à 0 V : une longue suite de 0 ne produit aucune transition. C'est ce défaut que corrigent les codes HDBn.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Bipolaire",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#bipolaire"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "reponse-courte",
+      "theme": "Codes à trois niveaux",
+      "difficulte": 1,
+      "enonce": "<p>En HDBn, comment appelle-t-on l'impulsion qui remplace le \\((n+1)\\)-ième zéro, et qui a la même polarité que l'impulsion précédente ?</p>",
+      "reponses": [
+        "violation",
+        "une violation",
+        "la violation",
+        "V",
+        "impulsion de violation"
+      ],
+      "explication": "<p>C'est une <strong>violation</strong>, notée V : elle viole la règle d'alternance du bipolaire, ce qu'aucun vrai 1 ne peut faire. Le récepteur la reconnaît ainsi et la remplace par un 0. L'autre impulsion ajoutée, B (bourrage), respecte au contraire l'alternance.</p>",
+      "revoir": {
+        "texte": "Cours 1 · HDBn",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#hdbn"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "qcm",
+      "theme": "Codes à trois niveaux",
+      "difficulte": 2,
+      "enonce": "<p>Codage HDB3 : la dernière violation émise était <strong>positive</strong>, et la dernière impulsion émise (le dernier « 1 ») était <strong>négative</strong>. Par quoi sont remplacés les quatre zéros suivants ?</p>",
+      "choix": [
+        "0 0 0 V−",
+        "B+ 0 0 V+",
+        "B− 0 0 V−",
+        "0 0 0 V+"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Deux règles : les violations successives alternent, et V a la polarité de l'impulsion qui la précède.</p>"
+      ],
+      "explication": "<p>La violation précédente était positive : la nouvelle doit être négative, V−. La dernière impulsion est déjà négative, donc V− a directement la même polarité qu'elle : pas besoin de bourrage, on émet 0 0 0 V−. B− 0 0 V− serait faux : B− suivrait une impulsion négative sans alterner, et serait lu comme une violation.</p>",
+      "revoir": {
+        "texte": "Cours 1 · HDB3",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#hdb3"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "qcm",
+      "theme": "Codes à trois niveaux",
+      "difficulte": 3,
+      "enonce": "<p>Coder en HDB3 la suite <code>1 1 0 0 0 0 1 0 0 0 0</code>. Le premier 1 est codé \\(+X\\) ; avant la suite, la dernière violation est supposée négative.</p>",
+      "choix": [
+        "<code>+ − + 0 0 + − 0 0 0 −</code>",
+        "<code>+ − 0 0 0 − + 0 0 0 +</code>",
+        "<code>+ − 0 0 0 + − 0 0 0 +</code>",
+        "<code>+ − + 0 0 + − + 0 0 +</code>"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Pour chaque groupe de quatre zéros, regarder la polarité de la dernière violation (la nouvelle sera opposée), puis celle de la dernière impulsion.</p>",
+        "<p>Règle équivalente : compter les impulsions depuis la dernière violation. Nombre impair : 0 0 0 V ; nombre pair : B 0 0 V.</p>"
+      ],
+      "explication": "<p>Premier groupe : la dernière violation est négative, donc V+ ; la dernière impulsion (le second 1) est négative : il faut d'abord un bourrage, B+ 0 0 V+. Le 1 suivant alterne avec V+ : −. Second groupe : V− cette fois, et la dernière impulsion est déjà négative : 0 0 0 V−. Les autres réponses font alterner V comme un vrai 1 (il serait lu comme un 1), ou ne font pas alterner les violations successives.</p>",
+      "revoir": {
+        "texte": "Cours 1 · HDB3",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#hdb3"
+      }
+    },
+    {
+      "id": "q16",
+      "type": "reponse-courte",
+      "theme": "Codes à trois niveaux",
+      "difficulte": 3,
+      "enonce": "<p>Un récepteur HDB3 reçoit la suite de niveaux suivante :</p><p><code>+ 0 0 0 + − + − 0 0 − + 0</code></p><p>Retrouver les 13 bits émis. Écrire les bits sans séparateur, ou séparés par une espace.</p>",
+      "reponses": [
+        "1000011000010",
+        "1 0 0 0 0 1 1 0 0 0 0 1 0"
+      ],
+      "indices": [
+        "<p>Chercher les impulsions de même signe que l'impulsion non nulle qui les précède : ce sont les violations.</p>",
+        "<p>Une violation et les trois symboles qui la précèdent valent 0000, ce qui efface aussi un éventuel bourrage B.</p>"
+      ],
+      "explication": "<p>Deux violations : le + en position 5 (après le + de la position 1) et le − en position 11 (après le − de la position 8). Les positions 2 à 5 et 8 à 11 valent donc 0 ; le − de la position 8 était un bourrage. Les autres impulsions (positions 1, 6, 7 et 12) sont des 1. Bits : <code>1 0 0 0 0 1 1 0 0 0 0 1 0</code>. Piège : lire le − de la position 8 comme un 1, parce qu'il alterne avec le + qui le précède.</p>",
+      "revoir": {
+        "texte": "Cours 1 · HDB3",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#hdb3"
+      }
+    },
+    {
+      "id": "q17",
+      "type": "code",
+      "langage": "c",
+      "theme": "Codes à trois niveaux",
+      "difficulte": 3,
+      "enonce": "<p>Écrire la fonction <code>hdb3(bits, sortie)</code>, qui code en HDB3 la chaîne <code>bits</code>, faite de caractères <code>'0'</code> et <code>'1'</code>. Elle écrit dans <code>sortie</code> un caractère par bit : <code>'+'</code>, <code>'-'</code> ou <code>'0'</code>. Conventions du cours : le premier 1 est codé <code>'+'</code>, et avant la suite la dernière violation est supposée négative.</p><p>Le programme de test lit la suite de bits, appelle la fonction, termine la chaîne <code>sortie</code> et l'affiche. Exemple : <code>0100111000010</code> donne <code>0+00-+-+00+-0</code>.</p>",
+      "depart": "#include <stdio.h>\n#include <string.h>\n\n/* bits : chaîne de '0' et de '1'.\n   sortie : reçoit un caractère par bit, '+', '-' ou '0'. */\nvoid hdb3(const char *bits, char *sortie) {\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <string.h>\n\n/* bits : chaîne de '0' et de '1'.\n   sortie : reçoit un caractère par bit, '+', '-' ou '0'. */\nvoid hdb3(const char *bits, char *sortie) {\n    int n = strlen(bits);\n    char derniere = '-';   /* dernière impulsion : le premier 1 sera '+' */\n    int compte = 0;        /* impulsions depuis la dernière violation */\n    int i = 0;\n    while (i < n) {\n        if (i + 3 < n && strncmp(bits + i, \"0000\", 4) == 0) {\n            char v;\n            if (compte % 2 == 1) {          /* 0 0 0 V */\n                v = derniere;\n                sortie[i] = sortie[i + 1] = sortie[i + 2] = '0';\n            } else {                        /* B 0 0 V */\n                v = (derniere == '+') ? '-' : '+';\n                sortie[i] = v;\n                sortie[i + 1] = sortie[i + 2] = '0';\n            }\n            sortie[i + 3] = v;\n            derniere = v;\n            compte = 0;\n            i += 4;\n        } else if (bits[i] == '1') {\n            derniere = (derniere == '+') ? '-' : '+';\n            sortie[i] = derniere;\n            compte++;\n            i++;\n        } else {\n            sortie[i] = '0';\n            i++;\n        }\n    }\n}\n",
+      "harnais": "\nint main(void) {\n    static char bits[1024], sortie[1024];\n    if (scanf(\"%1023s\", bits) != 1) return 0;\n    hdb3(bits, sortie);\n    sortie[strlen(bits)] = '\\0';\n    printf(\"%s\\n\", sortie);\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "exemple du cours",
+          "entree": "0100111000010\n",
+          "sortie": "0+00-+-+00+-0\n"
+        },
+        {
+          "nom": "exercice 3 du cours",
+          "entree": "100001000011000000001\n",
+          "sortie": "+000+-000-+-+00+-00-+\n"
+        },
+        {
+          "nom": "quatre zéros au début",
+          "entree": "0000\n",
+          "sortie": "+00+\n"
+        },
+        {
+          "nom": "neuf zéros",
+          "entree": "000000000\n",
+          "sortie": "+00+-00-0\n"
+        },
+        {
+          "nom": "moins de quatre zéros",
+          "entree": "101\n",
+          "sortie": "+0-\n"
+        },
+        {
+          "nom": "un seul 1",
+          "entree": "1\n",
+          "sortie": "+\n"
+        },
+        {
+          "nom": "huit zéros entre deux 1",
+          "entree": "1000000001\n",
+          "sortie": "+000+-00-+\n"
+        }
+      ],
+      "indices": [
+        "<p>Garder deux variables : la polarité de la dernière impulsion émise, et le nombre d'impulsions depuis la dernière violation. À chaque position, tester d'abord si quatre zéros commencent là.</p>",
+        "<p>Nombre impair d'impulsions : 0 0 0 V, avec V de la polarité de la dernière impulsion. Nombre pair (zéro compris) : B 0 0 V, avec B et V de polarité opposée à la dernière impulsion. Après le groupe, la dernière impulsion est V et le compteur repart de 0.</p>"
+      ],
+      "explication": "<p>La solution suit l'algorithme <code>CoderHDBn</code> du cours avec \\(n = 3\\), en appliquant la règle de parité, équivalente à l'arbre de décision. Initialiser la dernière impulsion à <code>'-'</code> fait coder le premier 1 en <code>'+'</code>, et le compteur à 0 fait commencer une suite par B 0 0 V (test « quatre zéros au début »), ce qui fait alterner la première violation avec la violation négative supposée. Erreur fréquente : oublier de mettre à jour la dernière impulsion après V, si bien que le 1 suivant n'alterne plus.</p>",
+      "revoir": {
+        "texte": "Cours 1 · HDB3",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#hdb3"
+      }
+    },
+    {
+      "id": "q18",
+      "type": "numerique",
+      "theme": "Entropie",
+      "difficulte": 1,
+      "enonce": "<p>Quelle est l'incertitude (ou information propre), en bits, d'un événement de probabilité \\(1/32\\) ?</p>",
+      "reponse": 5,
+      "unite": "bits",
+      "explication": "<p>\\(I(x) = -\\log_2 p(x) = \\log_2 32 = 5\\) bits, puisque \\(32 = 2^5\\). Plus un événement est rare, plus il apporte d'information quand il se produit ; un événement certain n'en apporte aucune.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Incertitude d'un événement",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#incertitude-d-un-evenement"
+      }
+    },
+    {
+      "id": "q19",
+      "type": "numerique",
+      "theme": "Entropie",
+      "difficulte": 2,
+      "enonce": "<p>Une source émet cinq symboles avec les probabilités \\(1/2\\), \\(1/4\\), \\(1/8\\), \\(1/16\\) et \\(1/16\\). Calculer son entropie.</p>",
+      "reponse": 1.875,
+      "tolerance": 0.005,
+      "unite": "bits par symbole",
+      "indices": [
+        "<p>\\(-\\log_2 (1/2^k) = k\\) : chaque terme \\(p_i \\log_2 (1/p_i)\\) se calcule de tête.</p>"
+      ],
+      "explication": "<p>\\(H = \\frac12 \\times 1 + \\frac14 \\times 2 + \\frac18 \\times 3 + 2 \\times \\frac{1}{16} \\times 4 = 0{,}5 + 0{,}5 + 0{,}375 + 0{,}5 = 1{,}875\\) bit par symbole. C'est moins que \\(\\log_2 5 \\approx 2{,}32\\), le maximum pour cinq symboles, atteint seulement s'ils sont équiprobables.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Entropie d'une variable aléatoire discrète",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#entropie-d-une-variable-aleatoire-discrete"
+      }
+    },
+    {
+      "id": "q20",
+      "type": "qcm",
+      "theme": "Entropie",
+      "difficulte": 2,
+      "enonce": "<p>Une source binaire émet des 0 avec la probabilité 0,1 et des 1 avec la probabilité 0,9. Son entropie vaut environ :</p>",
+      "choix": [
+        "0,47 bit",
+        "0,90 bit",
+        "0,33 bit",
+        "0,14 bit"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>\\(E = -(p_0 \\log_2 p_0 + p_1 \\log_2 p_1)\\), avec \\(\\log_2 0{,}1 \\approx -3{,}32\\) et \\(\\log_2 0{,}9 \\approx -0{,}152\\).</p>"
+      ],
+      "explication": "<p>\\(E = 0{,}1 \\times 3{,}32 + 0{,}9 \\times 0{,}152 \\approx 0{,}332 + 0{,}137 = 0{,}47\\) bit. Les réponses 0,33 et 0,14 n'utilisent qu'un des deux termes. Le message est très prévisible (surtout des 1) : on pourrait le compresser à moins de la moitié de sa taille.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Analyse de la formule",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#analyse-de-la-formule"
+      }
+    },
+    {
+      "id": "q21",
+      "type": "ouverte",
+      "theme": "Entropie",
+      "difficulte": 2,
+      "enonce": "<p>Définir l'entropie d'une variable aléatoire discrète \\(X\\) et expliquer ce qu'elle mesure. Donner ses valeurs minimale et maximale pour une variable à \\(n\\) valeurs, et dire quand elles sont atteintes.</p>",
+      "reponse_modele": "<p>Si \\(X\\) prend les valeurs \\(x_1, \\dots, x_n\\) avec les probabilités \\(p_i = P\\{X = x_i\\}\\), son entropie est la moyenne des incertitudes \\(-\\log_2 p_i\\) : \\(H(X) = -\\sum_i p_i \\log_2 p_i\\), en bits par symbole. Elle mesure la quantité moyenne d'information apportée par un symbole, c'est-à-dire le désordre de la source ; c'est aussi le nombre minimal de bits par symbole d'un codage sans perte. On a \\(0 \\le H(X) \\le \\log_2 n\\) : 0 quand une valeur est certaine, \\(\\log_2 n\\) quand les \\(n\\) valeurs sont équiprobables.</p>",
+      "criteres": [
+        "la formule \\(H(X) = -\\sum p_i \\log_2 p_i\\), en bits (logarithme en base 2)",
+        "l'interprétation : moyenne des incertitudes, information moyenne par symbole, ou limite de la compression sans perte",
+        "le minimum 0, atteint quand une valeur est certaine",
+        "le maximum \\(\\log_2 n\\), atteint quand les valeurs sont équiprobables"
+      ],
+      "revoir": {
+        "texte": "Cours 1 · Entropie d'une variable aléatoire discrète",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#entropie-d-une-variable-aleatoire-discrete"
+      }
+    },
+    {
+      "id": "q22",
+      "type": "numerique",
+      "theme": "Entropie",
+      "difficulte": 2,
+      "enonce": "<p>Deux variables binaires \\(X\\) et \\(Y\\) ont la loi jointe \\(P(0,0) = 1/4\\), \\(P(0,1) = 1/4\\), \\(P(1,0) = 1/2\\) et \\(P(1,1) = 0\\), où \\(P(x, y) = P\\{X = x \\cap Y = y\\}\\). Calculer l'entropie du couple \\(H(X, Y)\\).</p>",
+      "reponse": 1.5,
+      "tolerance": 0.005,
+      "unite": "bits",
+      "indices": [
+        "<p>\\(H(X, Y) = -\\sum_i \\sum_j p_{ij} \\log_2 p_{ij}\\), et une probabilité nulle ne contribue pas : \\(0 \\log 0 = 0\\).</p>"
+      ],
+      "explication": "<p>\\(H(X, Y) = \\frac14 \\times 2 + \\frac14 \\times 2 + \\frac12 \\times 1 + 0 = 1{,}5\\) bit. Les marginales donnent \\(H(X) = 1\\) (\\(1/2\\), \\(1/2\\)) et \\(H(Y) \\approx 0{,}811\\) (\\(3/4\\), \\(1/4\\)) : leur somme, 1,811, dépasse \\(H(X, Y)\\), donc \\(X\\) et \\(Y\\) ne sont pas indépendantes. On le voit aussi à \\(P(1,1) = 0\\), alors que \\(P\\{X = 1\\} \\times P\\{Y = 1\\} = 1/8\\).</p>",
+      "revoir": {
+        "texte": "Cours 1 · Entropie d'un couple de variables",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#entropie-d-un-couple-de-variables"
+      }
+    },
+    {
+      "id": "q23",
+      "type": "numerique",
+      "theme": "Expérience de Shannon",
+      "difficulte": 2,
+      "enonce": "<p>Pour une langue écrite avec 27 symboles, \\(H_0 = \\log_2 27 \\approx 4{,}75\\) bits. Un modèle estime l'entropie conditionnelle d'une lettre, connaissant les précédentes, à 1,5 bit. Quelle est la redondance de cette langue, en pourcentage ?</p>",
+      "reponse": 68.4,
+      "tolerance": 0.5,
+      "unite": "%",
+      "indices": [
+        "<p>L'entropie relative est le rapport \\(H / H_0\\) ; la redondance est son complément à 1.</p>"
+      ],
+      "explication": "<p>Entropie relative : \\(1{,}5 / 4{,}75 \\approx 0{,}316\\), soit 31,6 %. Redondance : \\(1 - 0{,}316 \\approx 68{,}4\\ \\%\\). Pour l'anglais, avec \\(H_8 = 1{,}86\\), le cours trouve 40 % d'entropie relative et 60 % de redondance.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Entropie relative et redondance",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#entropie-relative-et-redondance"
+      }
+    },
+    {
+      "id": "q24",
+      "type": "qcm",
+      "theme": "Expérience de Shannon",
+      "difficulte": 1,
+      "enonce": "<p>Dans l'expérience de Shannon sur l'anglais, que mesure \\(H_n\\) ?</p>",
+      "choix": [
+        "L'incertitude sur une lettre quand on connaît les \\(n - 1\\) lettres qui la précèdent",
+        "L'entropie d'un alphabet de \\(n\\) lettres équiprobables",
+        "L'entropie totale d'un texte de \\(n\\) lettres",
+        "L'incertitude sur les \\(n\\) lettres qui suivent une lettre connue"
+      ],
+      "reponse": 0,
+      "explication": "<p>\\(H_n\\) est une entropie conditionnelle : l'incertitude sur une lettre connaissant les \\(n - 1\\) précédentes. Chaque lettre connue en plus rend la suivante plus prévisible, d'où la baisse de \\(H_1 = 4{,}03\\) à \\(H_8 = 1{,}86\\) bit. L'entropie de \\(n\\) lettres équiprobables, \\(\\log_2 n\\), correspond au cas \\(H_0\\).</p>",
+      "revoir": {
+        "texte": "Cours 1 · Approximations successives",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#approximations-successives"
+      }
+    },
+    {
+      "id": "q25",
+      "type": "vrai-faux",
+      "theme": "Expérience de Shannon",
+      "difficulte": 1,
+      "enonce": "<p>Un code construit sur les fréquences des lettres de l'anglais est aussi efficace sur un texte en polonais ou en turc.</p>",
+      "reponse": false,
+      "explication": "<p>Faux. Le profil des fréquences change d'une langue à l'autre : le e fait environ 17 % des lettres en allemand, mais moins de 10 % en polonais et en turc, où le a le dépasse. Un code qui donne les mots les plus courts aux lettres fréquentes d'une langue gaspille des bits sur une autre.</p>",
+      "revoir": {
+        "texte": "Cours 1 · D'une langue à l'autre",
+        "lien": "../generated_courses/cours-01-codage-physique-entropie.html#d-une-langue-a-l-autre"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

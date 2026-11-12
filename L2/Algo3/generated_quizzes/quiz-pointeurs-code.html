@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="c">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Pointeurs en C, par le code · Algorithmique 3 L2</title>
+<meta name="description" content="Quiz d'entraînement en C exécuté sur les pointeurs : tableaux de pointeurs de fonctions, déclarations complexes, encapsulation générique, qsort, listes génériques à stockage direct et listes chaînées (Algorithmique 3, L2), d'après les examens de 2018 à 2020.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="../generated_courses/index.html">Algorithmique 3</a>
+    <span aria-current="page">Quiz · Pointeurs en C, par le code</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Algorithmique 3</span> Quiz · L2</p>
+    <h1>Pointeurs en C, par le code</h1>
+    <p class="chapeau">Huit fonctions C à écrire et à tester, et quatre questions courtes, sur le modèle de la partie « Pointeurs » des examens de 2018, 2019 et 2020.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-01-pointeurs.html">Cours 1 · Les pointeurs</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 novembre 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Algorithmique 3 · L2 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "algo3-pointeurs-code",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 1 · Les pointeurs",
+      "lien": "../generated_courses/cours-01-pointeurs.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "trous",
+      "theme": "Pointeurs de fonctions",
+      "difficulte": 1,
+      "enonce": "<p>Examen de mars 2019, Q1.1. Chaque ligne d'un tableau <code>T</code> contient deux opérandes <code>a</code> et <code>b</code> et un pointeur <code>f</code> sur une des fonctions <code>float plus( int a , int b )</code>, <code>moins</code>, <code>div</code> ou <code>mult</code>. Compléter la déclaration du type d'une ligne :</p>",
+      "code": true,
+      "texte": "typedef struct {\n  int a , b ;\n  float {{0}} ;\n} T_t ;\n\nT[2].f = {{1}} ;   /* la ligne 2 divise */",
+      "trous": [
+        {
+          "choix": [
+            "(*f)( int , int )",
+            "*f( int , int )",
+            "f( int , int )",
+            "(*f)( float , float )"
+          ],
+          "reponse": 0
+        },
+        {
+          "reponses": [
+            "div",
+            "&div"
+          ]
+        }
+      ],
+      "explication": "<p>Sans parenthèses, <code>float *f( int , int )</code> déclarerait une fonction renvoyant un <code>float *</code>, ce qui n'est pas permis comme champ. Le nom d'une fonction vaut son adresse : <code>div</code> et <code>&amp;div</code> conviennent.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Des pointeurs de fonctions dans les structures",
+        "lien": "../generated_courses/cours-01-pointeurs.html#des-pointeurs-de-fonctions-dans-les-structures"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "code",
+      "langage": "c",
+      "theme": "Pointeurs de fonctions",
+      "difficulte": 1,
+      "enonce": "<p>Examen de mars 2019, Q1.3. Écrire <code>void applique( T_t T[] , int n )</code> qui, pour chaque ligne de <code>T</code>, applique la fonction <code>f</code> aux deux opérandes <code>a</code> et <code>b</code> et affiche le résultat avec <code>printf( \"%.2f\\n\" , … )</code>.</p>",
+      "depart": "#include <stdio.h>\n\ntypedef struct {\n  int a , b ;\n  float (*f)( int , int ) ;\n} T_t ;\n\nvoid applique( T_t T[] , int n )\n{\n  \n}\n",
+      "solution": "#include <stdio.h>\n\ntypedef struct {\n  int a , b ;\n  float (*f)( int , int ) ;\n} T_t ;\n\nvoid applique( T_t T[] , int n )\n{\n  for( int i = 0 ; i < n ; i++ )\n    printf( \"%.2f\\n\" , T[i].f( T[i].a , T[i].b ) ) ;\n}\n",
+      "harnais": "\nfloat plus( int a , int b ) { return a + b ; }\nfloat moins( int a , int b ) { return a - b ; }\nfloat div( int a , int b ) { return (float)a / b ; }\nfloat mult( int a , int b ) { return (float)a * b ; }\nint main( void )\n{\n  T_t T[4] ;\n  float (*ops[4])( int , int ) = { plus , moins , div , mult } ;\n  int n = 0 , a , b , k ;\n  while( n < 4 && scanf( \"%d %d %d\" , &a , &b , &k ) == 3 ) {\n    T[n].a = a ; T[n].b = b ; T[n].f = ops[k] ; n++ ;\n  }\n  applique( T , n ) ;\n  return 0 ;\n}\n",
+      "tests": [
+        {
+          "nom": "le tableau de l'annale",
+          "entree": "12 23 0\n34 45 1\n56 67 2\n78 89 3\n",
+          "sortie": "35.00\n-11.00\n0.84\n6942.00\n"
+        },
+        {
+          "nom": "une seule ligne",
+          "entree": "7 2 2\n",
+          "sortie": "3.50\n"
+        },
+        {
+          "nom": "tableau vide",
+          "entree": "",
+          "sortie": ""
+        }
+      ],
+      "indices": [
+        "<p><code>T[i].f( T[i].a , T[i].b )</code> appelle la fonction pointée ; <code>(*T[i].f)( … )</code> est équivalent.</p>"
+      ],
+      "explication": "<p>Le tableau associe données et traitement : <code>applique</code> n'a pas à savoir quelle opération porte chaque ligne. C'est le principe des méthodes d'un objet, en C.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Des pointeurs de fonctions dans les structures",
+        "lien": "../generated_courses/cours-01-pointeurs.html#des-pointeurs-de-fonctions-dans-les-structures"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "association",
+      "theme": "Déclarations",
+      "difficulte": 3,
+      "enonce": "<p>Examen de juin 2020, Q1. Associer chaque description à la déclaration de <code>p</code>. On rappelle qu'une fonction C ne peut pas renvoyer une fonction : « dont le résultat est une fonction » s'entend « un pointeur sur une fonction ».</p>",
+      "paires": [
+        [
+          "p prend un <code>int</code> et renvoie un pointeur sur une fonction comme <code>float * F1( double )</code>",
+          "<code>float * (*p( int ))( double )</code>"
+        ],
+        [
+          "p pointe sur une fonction comme <code>F2( int )</code>, qui renvoie un pointeur sur une fonction comme <code>void F1( float )</code>",
+          "<code>void (*(*p)( int ))( float )</code>"
+        ],
+        [
+          "p prend un <code>int</code> et renvoie un pointeur sur une fonction comme <code>F2( float )</code>, qui renvoie un pointeur sur une fonction comme <code>void F1( double )</code>",
+          "<code>void (*(*p( int ))( float ))( double )</code>"
+        ]
+      ],
+      "intrus": [
+        "<code>float * p( int )( double )</code>"
+      ],
+      "explication": "<p>On part du nom et l'on lit d'abord à droite, puis à gauche, en sortant des parenthèses. Dans la troisième : <code>p( int )</code>, fonction d'un <code>int</code> ; <code>*…</code>, qui renvoie un pointeur ; <code>(…)( float )</code>, sur une fonction d'un <code>float</code> ; <code>*…</code>, qui renvoie un pointeur ; <code>void (…)( double )</code>, sur une fonction d'un <code>double</code> qui ne renvoie rien. L'intrus déclarerait une fonction qui renvoie une fonction : refusé par le compilateur.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Salade de pointeurs",
+        "lien": "../generated_courses/cours-01-pointeurs.html#salade-de-pointeurs"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "code",
+      "langage": "c",
+      "theme": "Déclarations",
+      "difficulte": 3,
+      "enonce": "<p>Écrire la fonction <code>choisir</code>, qui prend un <code>int k</code> et renvoie un pointeur sur une fonction <code>double f( double )</code> : <code>carre</code> si <code>k</code> vaut 0, <code>cube</code> sinon (les deux sont fournies). Son en-tête fait partie de la question.</p>",
+      "depart": "#include <stdio.h>\n\ndouble carre( double x ) { return x * x ; }\ndouble cube( double x ) { return x * x * x ; }\n\n/* en-tête de choisir à écrire */\n",
+      "solution": "#include <stdio.h>\n\ndouble carre( double x ) { return x * x ; }\ndouble cube( double x ) { return x * x * x ; }\n\ndouble (*choisir( int k ))( double )\n{\n  return k == 0 ? carre : cube ;\n}\n",
+      "harnais": "\nint main( void )\n{\n  int k ; double x ;\n  while( scanf( \"%d %lf\" , &k , &x ) == 2 ) printf( \"%g\\n\" , choisir( k )( x ) ) ;\n  return 0 ;\n}\n",
+      "tests": [
+        {
+          "nom": "carré",
+          "entree": "0 3\n",
+          "sortie": "9\n"
+        },
+        {
+          "nom": "cube",
+          "entree": "1 3\n2 -2\n",
+          "sortie": "27\n-8\n"
+        }
+      ],
+      "indices": [
+        "<p>Partir de l'appel : <code>choisir( k )</code> est un pointeur sur fonction ; <code>(*choisir( k ))( x )</code> est un <code>double</code>.</p>",
+        "<p>Un <code>typedef double (*fonc_t)( double ) ;</code> simplifie l'écriture : <code>fonc_t choisir( int k )</code>.</p>"
+      ],
+      "explication": "<p>L'en-tête se lit comme la troisième déclaration de l'annale : <code>choisir( int k )</code> renvoie <code>*</code> un pointeur sur une fonction <code>( double )</code> qui renvoie un <code>double</code>. Avec un <code>typedef</code>, c'est bien plus lisible ; les deux sont acceptés ici.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Généraliser la déclaration",
+        "lien": "../generated_courses/cours-01-pointeurs.html#generaliser-la-declaration"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "vrai-faux",
+      "theme": "Déclarations",
+      "difficulte": 1,
+      "enonce": "<p>En C, une fonction peut renvoyer une fonction.</p>",
+      "reponse": false,
+      "explication": "<p>Faux : elle peut renvoyer un <em>pointeur</em> sur une fonction, pas une fonction. C'est pourquoi <code>int f( int )( int )</code> est refusé, et <code>int (*f( int ))( int )</code> accepté.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Salade de pointeurs",
+        "lien": "../generated_courses/cours-01-pointeurs.html#salade-de-pointeurs"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "code",
+      "langage": "c",
+      "theme": "Généricité",
+      "difficulte": 2,
+      "enonce": "<p>Examens de 2018 à 2020, Q2. Encapsuler <code>fraction_comparer</code> : écrire <code>int fraction_comparer_cb( const void * a , const void * b )</code>, qui la rend utilisable par <code>qsort</code> sur un tableau de <code>fraction_t</code>.</p>",
+      "depart": "#include <stdio.h>\n#include <stdlib.h>\n\ntypedef struct { int num , den ; } fraction_t ;     /* den > 0 */\n\n/* fournie, comme en TP : <0, 0 ou >0 selon f1 < f2, f1 == f2, f1 > f2 */\nint fraction_comparer( const fraction_t * f1 , const fraction_t * f2 )\n{\n  long g = (long)f1->num * f2->den , d = (long)f2->num * f1->den ;\n  return ( g > d ) - ( g < d ) ;\n}\n\nint fraction_comparer_cb( const void * a , const void * b )\n{\n  \n}\n",
+      "solution": "#include <stdio.h>\n#include <stdlib.h>\n\ntypedef struct { int num , den ; } fraction_t ;     /* den > 0 */\n\n/* fournie, comme en TP : <0, 0 ou >0 selon f1 < f2, f1 == f2, f1 > f2 */\nint fraction_comparer( const fraction_t * f1 , const fraction_t * f2 )\n{\n  long g = (long)f1->num * f2->den , d = (long)f2->num * f1->den ;\n  return ( g > d ) - ( g < d ) ;\n}\n\nint fraction_comparer_cb( const void * a , const void * b )\n{\n  return fraction_comparer( (const fraction_t *)a , (const fraction_t *)b ) ;\n}\n",
+      "harnais": "\nint main( void )\n{\n  fraction_t t[100] ; int n = 0 ;\n  while( n < 100 && scanf( \"%d/%d\" , &t[n].num , &t[n].den ) == 2 ) n++ ;\n  qsort( t , n , sizeof( fraction_t ) , fraction_comparer_cb ) ;\n  for( int i = 0 ; i < n ; i++ ) printf( \"%d/%d \" , t[i].num , t[i].den ) ;\n  printf( \"\\n\" ) ;\n  return 0 ;\n}\n",
+      "tests": [
+        {
+          "nom": "1/2 1/3 3/4 -1/5",
+          "entree": "1/2 1/3 3/4 -1/5\n",
+          "sortie": "-1/5 1/3 1/2 3/4 \n"
+        },
+        {
+          "nom": "fractions égales",
+          "entree": "2/4 1/3\n",
+          "sortie": "1/3 2/4 \n"
+        }
+      ],
+      "indices": [
+        "<p><code>qsort</code> passe les adresses de deux cases du tableau : ici, deux <code>fraction_t *</code> déguisés en <code>const void *</code>.</p>"
+      ],
+      "explication": "<p>L'encapsulation ne fait que convertir les pointeurs génériques dans le bon type, puis appeler la fonction typée. Écrire <code>qsort( t , n , sizeof( fraction_t ) , (int (*)( const void * , const void * ))fraction_comparer )</code> compilerait, mais appeler une fonction par un pointeur d'un autre type est un comportement indéfini.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Étude de cas : le tri générique d'un tableau",
+        "lien": "../generated_courses/cours-01-pointeurs.html#etude-de-cas-le-tri-generique-d-un-tableau"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "code",
+      "langage": "c",
+      "theme": "Généricité",
+      "difficulte": 3,
+      "enonce": "<p>Examen de juin 2020, Q2. On trie cette fois un tableau de <strong>pointeurs</strong> sur des individus, <code>individu_t * t[n]</code>. La fonction fournie <code>individu_comparer</code> prend deux <code>const individu_t **</code>. Écrire <code>int individu_comparer_cb( const void * a , const void * b )</code>.</p>",
+      "depart": "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\ntypedef struct { char nom[32] ; int age ; } individu_t ;\n\n/* fournie, comme en TP : compare deux pointeurs sur des individus, par nom */\nint individu_comparer( const individu_t ** ind1 , const individu_t ** ind2 )\n{\n  return strcmp( (*ind1)->nom , (*ind2)->nom ) ;\n}\n\nint individu_comparer_cb( const void * a , const void * b )\n{\n  \n}\n",
+      "solution": "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\ntypedef struct { char nom[32] ; int age ; } individu_t ;\n\n/* fournie, comme en TP : compare deux pointeurs sur des individus, par nom */\nint individu_comparer( const individu_t ** ind1 , const individu_t ** ind2 )\n{\n  return strcmp( (*ind1)->nom , (*ind2)->nom ) ;\n}\n\nint individu_comparer_cb( const void * a , const void * b )\n{\n  return individu_comparer( (const individu_t **)a , (const individu_t **)b ) ;\n}\n",
+      "harnais": "\nint main( void )\n{\n  individu_t pers[50] ; individu_t * t[50] ; int n = 0 ;\n  while( n < 50 && scanf( \"%31s %d\" , pers[n].nom , &pers[n].age ) == 2 ) { t[n] = &pers[n] ; n++ ; }\n  qsort( t , n , sizeof( individu_t * ) , individu_comparer_cb ) ;\n  for( int i = 0 ; i < n ; i++ ) printf( \"%s %d\\n\" , t[i]->nom , t[i]->age ) ;\n  /* le tableau des individus eux-mêmes n'a pas bougé */\n  printf( \"%s\\n\" , n ? pers[0].nom : \"-\" ) ;\n  return 0 ;\n}\n",
+      "tests": [
+        {
+          "nom": "trois individus",
+          "entree": "Martin 20\nDurand 31\nLeroy 19\n",
+          "sortie": "Durand 31\nLeroy 19\nMartin 20\nMartin\n"
+        },
+        {
+          "nom": "un seul",
+          "entree": "Zoe 7\n",
+          "sortie": "Zoe 7\nZoe\n"
+        }
+      ],
+      "indices": [
+        "<p>Une case du tableau est un <code>individu_t *</code> : <code>qsort</code> passe l'adresse de la case, donc un <code>individu_t **</code>.</p>"
+      ],
+      "explication": "<p>C'est l'erreur classique : convertir en <code>const individu_t *</code> ferait lire un pointeur comme si c'était un individu. Trier des pointeurs ne déplace que les pointeurs : les individus restent en place, ce que vérifie la dernière ligne affichée.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Étude de cas : le tri générique d'un tableau",
+        "lien": "../generated_courses/cours-01-pointeurs.html#etude-de-cas-le-tri-generique-d-un-tableau"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "qcm",
+      "theme": "Généricité",
+      "difficulte": 2,
+      "enonce": "<p>Examen de mars 2019, Q3. Une liste générique range ses éléments soit indirectement (un tableau de <code>void *</code> vers les éléments), soit directement (les éléments eux-mêmes, à la suite, dans un seul bloc). Que faut-il ajouter à la structure pour le stockage direct ?</p>",
+      "choix": [
+        "La taille d'un élément, pour calculer l'adresse de l'élément <var>i</var> et copier les éléments",
+        "Rien : un <code>void *</code> suffit dans les deux cas",
+        "Le type des éléments, sous forme de chaîne",
+        "Un pointeur vers le dernier élément"
+      ],
+      "reponse": 0,
+      "explication": "<p>On ne peut pas indexer un <code>void *</code> : l'adresse de l'élément <var>i</var> est <code>(char *)base + i * taille</code>, et une copie se fait par <code>memcpy( dest , src , taille )</code>. C'est exactement ce que demande <code>qsort</code> avec son paramètre <code>size</code>.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Le pointeur générique",
+        "lien": "../generated_courses/cours-01-pointeurs.html#le-pointeur-generique-void"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "code",
+      "langage": "c",
+      "theme": "Listes génériques",
+      "difficulte": 3,
+      "enonce": "<p>Examen de mars 2019, Q5. Écrire <code>int liste_ajouter( liste_t * liste , const void * elem )</code>, qui insère une <strong>copie</strong> de l'élément pointé par <code>elem</code> à sa place dans la liste triée par ordre croissant (stockage direct). Elle renvoie 0, ou 1 si la liste est pleine (<code>nb == cap</code>).</p>",
+      "depart": "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\n/* liste générique triée, à stockage DIRECT : les éléments eux-mêmes sont\n   rangés les uns après les autres dans base (capacité cap éléments) */\ntypedef struct {\n  int nb , cap ;\n  size_t taille ;                                   /* taille d'un élément */\n  void * base ;\n  int (*comparer)( const void * , const void * ) ;\n} liste_t ;\n\nint liste_ajouter( liste_t * liste , const void * elem )\n{\n  \n}\n",
+      "solution": "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\n/* liste générique triée, à stockage DIRECT : les éléments eux-mêmes sont\n   rangés les uns après les autres dans base (capacité cap éléments) */\ntypedef struct {\n  int nb , cap ;\n  size_t taille ;                                   /* taille d'un élément */\n  void * base ;\n  int (*comparer)( const void * , const void * ) ;\n} liste_t ;\n\nint liste_ajouter( liste_t * liste , const void * elem )\n{\n  if( liste->nb == liste->cap ) return 1 ;\n  char * base = liste->base ;\n  int i = liste->nb ;\n  /* décaler d'une case les éléments plus grands, en partant de la fin */\n  while( i > 0 && liste->comparer( base + ( i - 1 ) * liste->taille , elem ) > 0 ) {\n    memcpy( base + i * liste->taille , base + ( i - 1 ) * liste->taille , liste->taille ) ;\n    i-- ;\n  }\n  memcpy( base + i * liste->taille , elem , liste->taille ) ;\n  liste->nb++ ;\n  return 0 ;\n}\n",
+      "harnais": "\nint cmp_int( const void * a , const void * b ) { int x = *(const int *)a , y = *(const int *)b ; return ( x > y ) - ( x < y ) ; }\nint cmp_double( const void * a , const void * b ) { double x = *(const double *)a , y = *(const double *)b ; return ( x > y ) - ( x < y ) ; }\nint main( void )\n{\n  char type ; int cap ;\n  if( scanf( \" %c %d\" , &type , &cap ) != 2 ) return 0 ;\n  liste_t l = { 0 , cap , type == 'i' ? sizeof( int ) : sizeof( double ) , NULL , type == 'i' ? cmp_int : cmp_double } ;\n  l.base = malloc( cap * l.taille ) ;\n  if( type == 'i' ) { int v ; while( scanf( \"%d\" , &v ) == 1 ) printf( \"%d\" , liste_ajouter( &l , &v ) ) ; }\n  else { double v ; while( scanf( \"%lf\" , &v ) == 1 ) printf( \"%d\" , liste_ajouter( &l , &v ) ) ; }\n  printf( \"\\n\" ) ;\n  for( int i = 0 ; i < l.nb ; i++ )\n    if( type == 'i' ) printf( \"%d \" , ((int *)l.base)[i] ) ; else printf( \"%g \" , ((double *)l.base)[i] ) ;\n  printf( \"\\n\" ) ;\n  free( l.base ) ;\n  return 0 ;\n}\n",
+      "tests": [
+        {
+          "nom": "entiers",
+          "entree": "i 10\n5 2 8 2 1\n",
+          "sortie": "00000\n1 2 2 5 8 \n"
+        },
+        {
+          "nom": "réels",
+          "entree": "d 10\n2.5 -1 3.25\n",
+          "sortie": "000\n-1 2.5 3.25 \n"
+        },
+        {
+          "nom": "liste pleine",
+          "entree": "i 2\n3 1 2\n",
+          "sortie": "001\n1 3 \n"
+        }
+      ],
+      "indices": [
+        "<p>Travailler sur un <code>char *</code> : l'élément <var>i</var> est à <code>base + i * taille</code>.</p>",
+        "<p>Partir de la fin : tant que l'élément précédent est plus grand que <code>elem</code>, le recopier une case plus loin.</p>"
+      ],
+      "explication": "<p>Le décalage depuis la fin évite d'écraser un élément avant de l'avoir recopié ; <code>memmove</code> sur tout le bloc à décaler serait une autre solution. La liste ne connaît jamais le type de ses éléments : elle n'a besoin que de leur taille et d'une fonction de comparaison.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Fonctions génériques : copier des objets inconnus",
+        "lien": "../generated_courses/cours-01-pointeurs.html#fonctions-generiques-copier-des-objets-inconnus"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "code",
+      "langage": "c",
+      "theme": "Listes génériques",
+      "difficulte": 2,
+      "enonce": "<p>Examen de mars 2018, Q4. Écrire <code>chainon_t * chainon_creer( void * elem )</code>, qui alloue un chaînon, y range le pointeur <code>elem</code> (sans copier l'élément) et un suivant vide, et le renvoie ; elle renvoie <code>NULL</code> si l'allocation échoue.</p>",
+      "depart": "#include <stdio.h>\n#include <stdlib.h>\n\ntypedef struct chainon_s {\n  void * elem ;                       /* élément générique (stockage indirect) */\n  struct chainon_s * suivant ;\n} chainon_t ;\n\nchainon_t * chainon_creer( void * elem )\n{\n  \n}\n",
+      "solution": "#include <stdio.h>\n#include <stdlib.h>\n\ntypedef struct chainon_s {\n  void * elem ;                       /* élément générique (stockage indirect) */\n  struct chainon_s * suivant ;\n} chainon_t ;\n\nchainon_t * chainon_creer( void * elem )\n{\n  chainon_t * c = malloc( sizeof( chainon_t ) ) ;\n  if( c == NULL ) return NULL ;\n  c->elem = elem ;\n  c->suivant = NULL ;\n  return c ;\n}\n",
+      "harnais": "\nint main( void )\n{\n  int x = 42 ; double y = 2.5 ;\n  chainon_t * a = chainon_creer( &x ) , * b = chainon_creer( &y ) ;\n  printf( \"%d %d\\n\" , a->elem == &x , a->suivant == NULL ) ;\n  printf( \"%d %g\\n\" , *(int *)a->elem , *(double *)b->elem ) ;\n  x = 7 ; printf( \"%d\\n\" , *(int *)a->elem ) ;\n  free( a ) ; free( b ) ;\n  return 0 ;\n}\n",
+      "tests": [
+        {
+          "nom": "création et partage",
+          "entree": "",
+          "sortie": "1 1\n42 2.5\n7\n"
+        }
+      ],
+      "indices": [
+        "<p><code>malloc( sizeof( chainon_t ) )</code>, puis remplir les deux champs.</p>"
+      ],
+      "explication": "<p>Avec un stockage indirect, le chaînon partage l'élément de l'appelant : modifier <code>x</code> se voit à travers le chaînon (troisième ligne). Pour qu'il ait sa propre copie, il faudrait une fonction d'affectation, comme le champ <code>affecter</code> de <code>liste_t</code>.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Des structures reliées par des pointeurs",
+        "lien": "../generated_courses/cours-01-pointeurs.html#des-structures-reliees-par-des-pointeurs"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "code",
+      "langage": "c",
+      "theme": "Listes génériques",
+      "difficulte": 3,
+      "enonce": "<p>Examen de mars 2018, Q6. Écrire <code>void liste_inserer( chainon_t ** tete , chainon_t * c , int (*comparer)( const void * , const void * ) )</code>, qui insère le chaînon <code>c</code> à sa place dans la liste chaînée triée par ordre croissant dont <code>*tete</code> est le premier chaînon. Un élément égal se place après ceux qui sont déjà là.</p>",
+      "depart": "#include <stdio.h>\n#include <stdlib.h>\n\ntypedef struct chainon_s {\n  void * elem ;                       /* élément générique (stockage indirect) */\n  struct chainon_s * suivant ;\n} chainon_t ;\n\nvoid liste_inserer( chainon_t ** tete , chainon_t * c ,\n                    int (*comparer)( const void * , const void * ) )\n{\n  \n}\n",
+      "solution": "#include <stdio.h>\n#include <stdlib.h>\n\ntypedef struct chainon_s {\n  void * elem ;                       /* élément générique (stockage indirect) */\n  struct chainon_s * suivant ;\n} chainon_t ;\n\nvoid liste_inserer( chainon_t ** tete , chainon_t * c ,\n                    int (*comparer)( const void * , const void * ) )\n{\n  while( *tete != NULL && comparer( (*tete)->elem , c->elem ) <= 0 )\n    tete = &(*tete)->suivant ;\n  c->suivant = *tete ;\n  *tete = c ;\n}\n",
+      "harnais": "\ntypedef struct { int cle ; char lettre ; } paire_t ;\nint cmp_paire( const void * a , const void * b ) { return ((const paire_t *)a)->cle - ((const paire_t *)b)->cle ; }\nint main( void )\n{\n  paire_t p[50] ; chainon_t ch[50] , * tete = NULL ; int n = 0 ;\n  while( n < 50 && scanf( \" %c%d\" , &p[n].lettre , &p[n].cle ) == 2 ) {\n    ch[n].elem = &p[n] ; ch[n].suivant = NULL ;\n    liste_inserer( &tete , &ch[n] , cmp_paire ) ; n++ ;\n  }\n  for( chainon_t * c = tete ; c ; c = c->suivant ) printf( \"%c%d \" , ((paire_t *)c->elem)->lettre , ((paire_t *)c->elem)->cle ) ;\n  printf( \"\\n\" ) ;\n  return 0 ;\n}\n",
+      "tests": [
+        {
+          "nom": "insertions en tête, au milieu, en queue",
+          "entree": "a5 b2 c9 d4\n",
+          "sortie": "b2 d4 a5 c9 \n"
+        },
+        {
+          "nom": "égalités : ordre d'arrivée conservé",
+          "entree": "a3 b3 c1 d3\n",
+          "sortie": "c1 a3 b3 d3 \n"
+        },
+        {
+          "nom": "liste vide",
+          "entree": "",
+          "sortie": "\n"
+        }
+      ],
+      "indices": [
+        "<p>Avec un <code>chainon_t **</code> qui désigne <em>le pointeur à modifier</em> (d'abord <code>tete</code>, puis le champ <code>suivant</code> d'un chaînon), l'insertion en tête n'est plus un cas particulier.</p>",
+        "<p>Avancer tant que l'élément courant est inférieur <em>ou égal</em> à celui qu'on insère.</p>"
+      ],
+      "explication": "<p>Le double pointeur parcourt les « liens » plutôt que les chaînons : à la fin, <code>*tete</code> est le lien où brancher <code>c</code>, que ce soit la tête de liste ou le <code>suivant</code> d'un chaînon. Le test <code>&lt;= 0</code> rend le tri stable.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Rendre un résultat par un paramètre",
+        "lien": "../generated_courses/cours-01-pointeurs.html#rendre-un-resultat-par-un-parametre"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "qcm",
+      "theme": "Listes génériques",
+      "difficulte": 2,
+      "enonce": "<p>Examens de 2018 à 2020, Q7 et Q8. Une liste générique à stockage indirect contient des pointeurs vers des fractions qu'elle a <strong>copiées</strong> avec sa fonction <code>affecter</code>. Que doit faire <code>liste_detruire( liste_t ** liste )</code> ?</p>",
+      "choix": [
+        "Détruire chaque élément avec la fonction <code>detruire</code> de la liste, libérer le tableau des pointeurs, libérer la structure, puis mettre <code>*liste</code> à <code>NULL</code>",
+        "Libérer seulement la structure : les éléments appartiennent à l'appelant",
+        "Appeler <code>free( *liste )</code>, qui libère aussi tout ce que la structure désigne",
+        "Mettre <code>*liste</code> à <code>NULL</code> : le système libère le reste"
+      ],
+      "reponse": 0,
+      "explication": "<p>Ce que la liste a alloué (les copies, le tableau, la structure), elle doit le libérer, de l'intérieur vers l'extérieur : <code>free</code> ne suit pas les pointeurs. Le paramètre <code>liste_t **</code> sert à remettre le pointeur de l'appelant à <code>NULL</code>, pour éviter un pointeur pendant.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Pointeurs sur des objets dynamiques",
+        "lien": "../generated_courses/cours-01-pointeurs.html#pointeurs-sur-des-objets-dynamiques"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

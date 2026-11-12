@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="securite">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Initiation à la cryptographie · Sécurité informatique L2</title>
+<meta name="description" content="Quiz interactif sur l'initiation à la cryptographie : vocabulaire, chiffrements historiques, symétrique et asymétrique, empreintes et signatures (Sécurité informatique, L2).">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="../generated_courses/index.html">Sécurité informatique</a>
+    <span aria-current="page">Quiz · Initiation à la cryptographie</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Sécurité informatique</span> Quiz · L2</p>
+    <h1>Initiation à la cryptographie</h1>
+    <p class="chapeau">Vocabulaire, César et Vigenère, masque jetable et RC4, modes CBC et CTR, RSA et Diffie-Hellman, empreintes, HMAC et signature : 24 questions sur le cours 2, dont les questions de cours des annales.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-02-initiation-cryptographie.html">Cours 2 · Initiation à la cryptographie</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 novembre 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Sécurité informatique · L2 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "securite-cours-02-initiation-cryptographie",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 2 · Initiation à la cryptographie",
+      "lien": "../generated_courses/cours-02-initiation-cryptographie.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "association",
+      "theme": "Vocabulaire",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque terme à sa définition :</p>",
+      "paires": [
+        [
+          "Déchiffrer",
+          "Retrouver le clair avec l'opération prévue et la clé"
+        ],
+        [
+          "Décrypter",
+          "Retrouver le clair sans la clé"
+        ],
+        [
+          "Cryptanalyse",
+          "Science du décryptage"
+        ],
+        [
+          "Cryptogramme",
+          "Le message chiffré"
+        ]
+      ],
+      "intrus": [
+        "Transformer un clair en chiffré sans clé"
+      ],
+      "explication": "<p>On chiffre et on déchiffre avec la clé ; on décrypte sans elle, ce qui est le travail de la cryptanalyse. Le cryptogramme, ou chiffré, est le résultat du chiffrement. « Crypter » n'a pas de sens précis et s'évite.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Chiffrer, déchiffrer, décrypter",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#chiffrer-dechiffrer-decrypter"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "qcm",
+      "theme": "Vocabulaire",
+      "difficulte": 2,
+      "enonce": "<p>Une fonction de chiffrement \\(E(k, m)\\), avec \\(k\\) parfaitement aléatoire, est (examen 2025) :</p>",
+      "choix": [
+        "déterministe",
+        "aléatoire",
+        "pseudo-aléatoire",
+        "aléatoire et pseudo-aléatoire"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Que se passerait-il au déchiffrement si le même couple \\((k, m)\\) pouvait donner deux chiffrés différents ?</p>"
+      ],
+      "explication": "<p>Avec la même clé et le même message, \\(E\\) donne toujours le même chiffré, sinon le destinataire ne pourrait pas déchiffrer : elle est déterministe. C'est la clé qui est aléatoire, et le chiffré qui <em>semble</em> aléatoire.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Aléa et taille des clés",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#alea-et-taille-des-cles"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "qcm-multi",
+      "theme": "Vocabulaire",
+      "difficulte": 2,
+      "enonce": "<p>De quoi dépend la robustesse d'un système de chiffrement, d'après le cours ?</p>",
+      "choix": [
+        "La taille de la clé",
+        "La puissance de l'algorithme, qui doit être public",
+        "La capacité à garder secrètes les clés secrètes",
+        "Le secret de l'algorithme",
+        "La vitesse du processeur de l'utilisateur"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "indices": [
+        "<p>Penser au principe de Kerckhoffs : sur quoi seul doit reposer le secret ?</p>"
+      ],
+      "explication": "<p>Taille de la clé, algorithme public et éprouvé, secret des clés. Garder l'algorithme secret n'apporte rien de durable : il finit par fuiter, alors qu'une clé se change.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Aléa et taille des clés",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#alea-et-taille-des-cles"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "reponse-courte",
+      "theme": "Chiffrements historiques",
+      "difficulte": 1,
+      "enonce": "<p>Chiffrer <code>SECURITE</code> avec le chiffre de César, décalage 3.</p>",
+      "reponses": [
+        "VHFXULWH"
+      ],
+      "explication": "<p>Chaque lettre avance de trois rangs : S → V, E → H, C → F, U → X, R → U, I → L, T → W, E → H.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le chiffre de César",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#le-chiffre-de-cesar-une-substitution-mono-alphabetique"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "reponse-courte",
+      "theme": "Chiffrements historiques",
+      "difficulte": 2,
+      "enonce": "<p>Chiffrer <code>ATTAQUE</code> avec le chiffre de Vigenère et la clé <code>CLE</code>.</p>",
+      "reponses": [
+        "CEXCBYG"
+      ],
+      "indices": [
+        "<p>Répéter la clé sous le texte : CLECLEC. Puis additionner les rangs modulo 26 (A = 0).</p>",
+        "<p>A + C = C ; T + L = 19 + 11 = 30, soit 4 : E.</p>"
+      ],
+      "explication": "<p>Avec \\(c_i = (m_i + k_{i \\bmod 3}) \\bmod 26\\) : A+C = C, T+L = E, T+E = X, A+C = C, Q+L = B, U+E = Y, E+C = G. Les deux T donnent E puis X : c'est la marque d'une substitution poly-alphabétique.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le chiffre de Vigenère",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#le-chiffre-de-vigenere-une-substitution-poly-alphabetique"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "association",
+      "theme": "Chiffrements historiques",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque chiffrement à sa famille :</p>",
+      "paires": [
+        [
+          "Scytale",
+          "Permutation (transposition)"
+        ],
+        [
+          "César",
+          "Substitution mono-alphabétique"
+        ],
+        [
+          "Vigenère",
+          "Substitution poly-alphabétique"
+        ]
+      ],
+      "intrus": [
+        "Chiffrement asymétrique"
+      ],
+      "explication": "<p>La scytale garde les lettres et change leur ordre. César remplace chaque lettre par une même autre lettre ; Vigenère (et Enigma) font varier la substitution selon la position, via la clé.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Courte histoire du chiffrement",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#courte-histoire-du-chiffrement"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "numerique",
+      "theme": "Symétrique",
+      "difficulte": 1,
+      "enonce": "<p>Combien de clés secrètes faut-il pour que 100 personnes puissent toutes communiquer deux à deux en chiffrement symétrique ?</p>",
+      "reponse": 4950,
+      "explication": "<p>Une clé par couple : \\(\\dfrac{n(n-1)}{2} = \\dfrac{100 \\times 99}{2} = 4\\,950\\). C'est l'un des points faibles du symétrique ; en asymétrique, une paire par personne suffit.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Mode opératoire, principe, forces et faiblesses",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#mode-operatoire-principe-forces-et-faiblesses"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "qcm",
+      "theme": "Symétrique",
+      "difficulte": 1,
+      "enonce": "<p>Quel algorithme symétrique par bloc est aujourd'hui le choix par défaut ?</p>",
+      "choix": [
+        "AES, blocs de 128 bits, clé de 128, 192 ou 256 bits",
+        "DES, blocs de 64 bits, clé de 56 bits",
+        "3DES, blocs de 64 bits, clé effective de 112 bits",
+        "RC4, clé jusqu'à 2 048 bits"
+      ],
+      "reponse": 0,
+      "explication": "<p>AES est rapide, câblé dans les processeurs et non cassé. DES est cassé (clé trop courte), 3DES est lent et n'est plus autorisé pour chiffrer, et RC4 est un chiffrement par flot, considéré comme peu sûr.</p>",
+      "revoir": {
+        "texte": "Cours 2 · DES, 3DES et AES",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#des-3des-et-aes"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "qcm-multi",
+      "theme": "Symétrique",
+      "difficulte": 1,
+      "enonce": "<p>Quelles sont les trois conditions d'usage sûr du masque jetable (examens 2024 et 2026) ?</p>",
+      "choix": [
+        "La clé est aussi longue que le message",
+        "La clé est parfaitement aléatoire",
+        "La clé ne sert qu'une fois",
+        "La clé fait au moins 128 bits",
+        "La clé est publique"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "explication": "<p>Aussi longue que le message, parfaitement aléatoire, à usage unique. Une longueur fixe de 128 bits ne suffirait pas : il faudrait réutiliser la clé, ce qui est fatal.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le masque jetable de Vernam",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#le-masque-jetable-de-vernam"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "qcm",
+      "theme": "Symétrique",
+      "difficulte": 2,
+      "enonce": "<p>Deux messages \\(m_1\\) et \\(m_2\\) sont chiffrés par masque jetable avec la <strong>même</strong> clé \\(k\\). Que donne \\(c_1 \\xor c_2\\) ?</p>",
+      "choix": [
+        "\\(m_1 \\xor m_2\\)",
+        "\\(k\\)",
+        "\\(m_1 \\xor m_2 \\xor k\\)",
+        "Une valeur sans rapport avec les messages"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Écrire \\(c_1 = m_1 \\xor k\\) et \\(c_2 = m_2 \\xor k\\), puis utiliser \\(k \\xor k = 0\\).</p>"
+      ],
+      "explication": "<p>\\(c_1 \\xor c_2 = (m_1 \\xor k) \\xor (m_2 \\xor k) = m_1 \\xor m_2\\) : la clé disparaît et l'attaquant obtient le XOR des deux clairs, d'où il tire beaucoup d'information. D'où l'usage unique.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le masque jetable de Vernam",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#le-masque-jetable-de-vernam"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "ordre",
+      "theme": "Symétrique",
+      "difficulte": 2,
+      "enonce": "<p>Remettre dans l'ordre les étapes de RC4 :</p>",
+      "elements": [
+        "Initialiser \\(S[i] = i\\) et \\(T[i] = K[i \\bmod \\mathit{keylen}]\\)",
+        "Permuter \\(S\\) une première fois à l'aide de \\(T\\)",
+        "Pour chaque octet du message : mettre à jour \\(i\\) et \\(j\\), échanger \\(S[i]\\) et \\(S[j]\\)",
+        "Calculer \\(t = (S[i] + S[j]) \\bmod 256\\) et sortir \\(c = m \\xor S[t]\\)"
+      ],
+      "explication": "<p>Les deux premières étapes (initialisation et première permutation) ne dépendent que de la clé ; ensuite, chaque octet du message fait évoluer \\(S\\) et produit un octet de flot combiné par XOR.</p>",
+      "revoir": {
+        "texte": "Cours 2 · RC4, un chiffrement symétrique par flot",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#rc4-un-chiffrement-symetrique-par-flot"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "qcm",
+      "theme": "Symétrique",
+      "difficulte": 2,
+      "enonce": "<p>Quelle formule décrit le <strong>déchiffrement</strong> en mode CBC ?</p>",
+      "choix": [
+        "\\(m_i = D(k, c_i) \\xor c_{i-1}\\)",
+        "\\(m_i = D(k, c_i \\xor c_{i-1})\\)",
+        "\\(m_i = D(k, c_i) \\xor m_{i-1}\\)",
+        "\\(m_i = c_i \\xor E(k, \\mathrm{IV} + i)\\)"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Au chiffrement, \\(c_i = E(k, m_i \\xor c_{i-1})\\) : il faut défaire \\(E\\) d'abord, puis le XOR.</p>"
+      ],
+      "explication": "<p>On applique \\(D\\) à \\(c_i\\), ce qui donne \\(m_i \\xor c_{i-1}\\), puis on fait le XOR avec le chiffré précédent, avec \\(c_0 = \\mathrm{IV}\\). La dernière formule est celle du mode CTR.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les modes d'assemblage du chiffrement par bloc",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#les-modes-d-assemblage-du-chiffrement-par-bloc"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "qcm-multi",
+      "theme": "Symétrique",
+      "difficulte": 3,
+      "enonce": "<p>Parmi ces affirmations sur les modes d'assemblage, lesquelles sont justes ?</p>",
+      "choix": [
+        "Le chiffrement CBC ne peut pas se faire en parallèle",
+        "Le déchiffrement CBC peut se faire en parallèle",
+        "Le mode CTR n'a besoin que de la fonction de chiffrement \\(E\\)",
+        "En CBC, l'IV peut rester le même d'un message à l'autre",
+        "Le mode CTR ne peut pas se faire en parallèle"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "indices": [
+        "<p>Au chiffrement CBC, il faut \\(c_{i-1}\\) pour calculer \\(c_i\\) ; au déchiffrement, tous les \\(c_i\\) sont déjà reçus.</p>"
+      ],
+      "explication": "<p>Chiffrer en CBC impose d'attendre le bloc précédent ; déchiffrer non, puisque tous les chiffrés sont connus. CTR chiffre un compteur pour produire un flot, puis fait un XOR : il n'utilise que \\(E\\) et se parallélise. L'IV doit changer à chaque chiffrement et rester imprévisible.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les modes d'assemblage du chiffrement par bloc",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#les-modes-d-assemblage-du-chiffrement-par-bloc"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "qcm",
+      "theme": "Asymétrique",
+      "difficulte": 1,
+      "enonce": "<p>Bob veut envoyer un message confidentiel à Alice avec un chiffrement asymétrique. Avec quelle clé chiffre-t-il ?</p>",
+      "choix": [
+        "La clé publique d'Alice",
+        "La clé privée d'Alice",
+        "La clé privée de Bob",
+        "La clé publique de Bob"
+      ],
+      "reponse": 0,
+      "explication": "<p>Bob chiffre avec la clé publique d'Alice ; seule Alice, avec sa clé privée, peut déchiffrer. Chiffrer avec sa propre clé privée ne protège rien, puisque tout le monde peut déchiffrer avec la clé publique : cela sert à signer.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Mode opératoire",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#mode-operatoire"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "trous",
+      "theme": "Asymétrique",
+      "difficulte": 2,
+      "enonce": "<p>RSA avec \\(p = 7\\) et \\(q = 11\\). Compléter :</p>",
+      "texte": "n = {{0}}, φ(n) = {{1}}. Avec e = 7, l'exposant de déchiffrement est d = {{2}}. Le message m = 2 se chiffre en c = {{3}}.",
+      "trous": [
+        {
+          "reponses": [
+            "77"
+          ]
+        },
+        {
+          "reponses": [
+            "60"
+          ]
+        },
+        {
+          "reponses": [
+            "43"
+          ]
+        },
+        {
+          "reponses": [
+            "51"
+          ]
+        }
+      ],
+      "indices": [
+        "<p>\\(\\varphi(n) = (p-1)(q-1)\\), et \\(d\\) vérifie \\(ed \\equiv 1 \\pmod{\\varphi(n)}\\).</p>",
+        "<p>\\(2^7 = 128\\).</p>"
+      ],
+      "explication": "<p>\\(n = 77\\), \\(\\varphi(n) = 6 \\times 10 = 60\\) ; \\(7 \\times 43 = 301 = 5 \\times 60 + 1\\), donc \\(d = 43\\). Chiffrement : \\(2^7 = 128\\) et \\(128 - 77 = 51\\). On vérifie que \\(51^{43} \\bmod 77 = 2\\).</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le système RSA",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#le-systeme-rsa"
+      }
+    },
+    {
+      "id": "q16",
+      "type": "numerique",
+      "theme": "Asymétrique",
+      "difficulte": 3,
+      "enonce": "<p>Diffie-Hellman avec \\(p = 23\\) et \\(g = 5\\). Alice tire \\(a = 4\\), Bob tire \\(b = 3\\). Quel secret partagent-ils ?</p>",
+      "reponse": 18,
+      "indices": [
+        "<p>Alice envoie \\(A = g^a \\bmod p\\), Bob envoie \\(B = g^b \\bmod p\\).</p>",
+        "<p>\\(A = 4\\) et \\(B = 10\\) ; le secret est \\(B^a \\bmod p = A^b \\bmod p\\).</p>"
+      ],
+      "explication": "<p>\\(A = 5^4 \\bmod 23 = 625 \\bmod 23 = 4\\) et \\(B = 5^3 \\bmod 23 = 125 \\bmod 23 = 10\\). Alice calcule \\(10^4 \\bmod 23 = 18\\), Bob \\(4^3 \\bmod 23 = 64 \\bmod 23 = 18\\). Le secret 18 n'a jamais circulé.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Principes et algorithmes",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#principes-et-algorithmes"
+      }
+    },
+    {
+      "id": "q17",
+      "type": "association",
+      "theme": "Asymétrique",
+      "difficulte": 2,
+      "enonce": "<p>Associer chaque système à la difficulté mathématique sur laquelle il repose :</p>",
+      "paires": [
+        [
+          "RSA",
+          "Factoriser le module en produit de deux nombres premiers"
+        ],
+        [
+          "Diffie-Hellman",
+          "Calculer un logarithme discret"
+        ],
+        [
+          "ECC",
+          "Calculs sur des courbes elliptiques modulo p"
+        ]
+      ],
+      "intrus": [
+        "Inverser un XOR"
+      ],
+      "explication": "<p>Tous reposent sur une fonction à sens unique à trappe. Un XOR, au contraire, s'inverse trivialement : c'est la base des chiffrements symétriques par flot.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Principes et algorithmes",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#principes-et-algorithmes"
+      }
+    },
+    {
+      "id": "q18",
+      "type": "vrai-faux",
+      "theme": "Asymétrique",
+      "difficulte": 1,
+      "enonce": "<p>Les systèmes asymétriques sont 100 à 1 000 fois plus lents que les systèmes symétriques : on les utilise pour l'authentification et le partage de secrets, et le symétrique pour la confidentialité des données.</p>",
+      "reponse": true,
+      "explication": "<p>C'est la répartition du cours : l'asymétrique authentifie et permet de partager une clé de session, que le symétrique utilise ensuite pour chiffrer rapidement les données. TLS fonctionne ainsi.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les principaux systèmes de cryptographie",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#les-principaux-systemes-de-cryptographie"
+      }
+    },
+    {
+      "id": "q19",
+      "type": "qcm-multi",
+      "theme": "Empreintes et signature",
+      "difficulte": 1,
+      "enonce": "<p>Quelles propriétés doit avoir une fonction de hachage cryptographique ?</p>",
+      "choix": [
+        "L'empreinte est facile à calculer",
+        "Retrouver le message à partir de l'empreinte est impossible en pratique",
+        "Il est difficile de trouver deux messages de même empreinte",
+        "L'empreinte a la même taille que le message",
+        "On peut retrouver le message avec une clé"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "explication": "<p>Facile à calculer, à sens unique, résistante aux collisions. L'empreinte a une taille fixe (256 bits pour SHA-256), quelle que soit la taille du message, et aucune clé ne permet de revenir au message.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Principe",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#principe"
+      }
+    },
+    {
+      "id": "q20",
+      "type": "qcm",
+      "theme": "Empreintes et signature",
+      "difficulte": 2,
+      "enonce": "<p>Pourquoi un HMAC protège-t-il mieux un fichier qu'une simple empreinte SHA-256 ?</p>",
+      "choix": [
+        "Sans la clé, un attaquant qui modifie le fichier ne peut pas recalculer un HMAC valide",
+        "Le HMAC chiffre le fichier en plus de le hacher",
+        "Le HMAC est plus long que l'empreinte SHA-256",
+        "Le HMAC permet de retrouver le contenu d'origine"
+      ],
+      "reponse": 0,
+      "explication": "<p>Une empreinte sans clé se recalcule par n'importe qui : l'attaquant modifie le fichier et remplace l'empreinte. Le HMAC dépend d'une clé secrète : il garantit l'intégrité et l'authenticité de l'origine. Il ne chiffre rien.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Principe",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#principe"
+      }
+    },
+    {
+      "id": "q21",
+      "type": "qcm",
+      "theme": "Empreintes et signature",
+      "difficulte": 2,
+      "enonce": "<p>Laquelle de ces fonctions de hachage est encore considérée comme fiable ?</p>",
+      "choix": [
+        "SHA-256",
+        "MD5",
+        "SHA-1",
+        "MD4"
+      ],
+      "reponse": 0,
+      "explication": "<p>SHA-256 (famille SHA-2) et SHA-3 sont fiables. MD4 et MD5 sont cassés, SHA-1 aussi : des collisions réelles ont été produites en 2017 puis 2020.</p>",
+      "revoir": {
+        "texte": "Cours 2 · L'effet avalanche et les algorithmes",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#l-effet-avalanche-et-les-algorithmes"
+      }
+    },
+    {
+      "id": "q22",
+      "type": "qcm",
+      "theme": "Empreintes et signature",
+      "difficulte": 3,
+      "enonce": "<p>Quelle combinaison d'un chiffrement et d'un MAC est recommandée, et pourquoi ?</p>",
+      "choix": [
+        "Encrypt-then-MAC : on rejette un message altéré avant même de le déchiffrer",
+        "MAC-then-encrypt : le MAC est caché par le chiffrement",
+        "Encrypt-and-MAC : le MAC du clair se calcule en parallèle",
+        "Aucune : un mode AEAD se passe de toute authentification"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Sur quoi porte le MAC dans chaque cas : le clair ou le chiffré ?</p>"
+      ],
+      "explication": "<p>En Encrypt-then-MAC, le MAC porte sur le chiffré : on vérifie l'intégrité avant de déchiffrer, et un message altéré n'est jamais traité. Un mode AEAD comme GCM intègre justement cette authentification.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Empreinte et chiffrement : AE, AEAD et GCM",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#empreinte-et-chiffrement-ae-aead-et-gcm"
+      }
+    },
+    {
+      "id": "q23",
+      "type": "ordre",
+      "theme": "Empreintes et signature",
+      "difficulte": 2,
+      "enonce": "<p>Remettre dans l'ordre le mode opératoire d'une signature numérique :</p>",
+      "elements": [
+        "Alice calcule l'empreinte \\(h\\) de la donnée",
+        "Alice chiffre l'empreinte par un système asymétrique : c'est la signature",
+        "Alice envoie la donnée et la signature",
+        "Bob recalcule l'empreinte de la donnée reçue et la compare à l'empreinte déchiffrée"
+      ],
+      "explication": "<p>On signe l'empreinte, pas tout le message, car l'asymétrique est lent. Si l'empreinte recalculée égale l'empreinte déchiffrée, la donnée est intègre et vient du détenteur de la clé. Dans le mode standard, Alice chiffre avec sa clé privée.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le mode opératoire usuel",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#le-mode-operatoire-usuel"
+      }
+    },
+    {
+      "id": "q24",
+      "type": "ouverte",
+      "theme": "Synthèse",
+      "difficulte": 3,
+      "enonce": "<p>Comparer chiffrement symétrique et asymétrique sur : le mode d'utilisation, la vitesse, un exemple sûr actuel et les cas d'usage (examens 2024 et 2026).</p>",
+      "reponse_modele": "<p>En symétrique, une même clé secrète partagée chiffre et déchiffre, avec une clé par couple, soit \\(n(n-1)/2\\) clés ; en asymétrique, chaque entité a une paire : on chiffre avec la clé publique du destinataire, qui déchiffre avec sa clé privée. Le symétrique est rapide et câblé dans les processeurs ; l'asymétrique est 100 à 1 000 fois plus lent, avec des clés bien plus longues. Exemples sûrs : AES pour le symétrique, RSA de 2 048 bits ou plus, ou ECC, pour l'asymétrique. Le symétrique sert à la confidentialité des données ; l'asymétrique à l'authentification, à la signature et au partage d'un secret d'où l'on tire les clés de session, comme dans TLS.</p>",
+      "criteres": [
+        "mode d'utilisation : une clé partagée contre une paire publique/privée",
+        "vitesse : l'asymétrique est 100 à 1 000 fois plus lent",
+        "un exemple sûr de chaque côté (AES ; RSA ou ECC)",
+        "usages : confidentialité contre authentification et partage de secret"
+      ],
+      "revoir": {
+        "texte": "Cours 2 · Exercice de synthèse",
+        "lien": "../generated_courses/cours-02-initiation-cryptographie.html#exercice-de-synthese-symetrique-ou-asymetrique"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,136 @@
+/*
+ * Polycopié de synthèse imprimé en PDF (A4), dans la mise en page des PDF
+ * des cours 0 à 3 de POO (L3/POO/cours/) : bandeau de couverture, sommaire,
+ * titres numérotés, encadrés, code colorié.
+ * L'en-tête courant se déclare dans la page : @page { @top-left { content: "…" } }.
+ * Polices de Windows (Segoe UI, Cambria, Cascadia Mono) ; sous Linux, leurs
+ * équivalents métriques ou proches (Inter, Caladea, JetBrains Mono).
+ */
+:root {
+  --bleu: #1f4e79;
+  --encre: #1b2130;
+  --gris: #4a5263;
+  --gris-clair: #7a8292;
+  --trait: #d9dde3;
+  --sans: "Segoe UI", Inter, "Liberation Sans", sans-serif;
+  --serif: Cambria, Caladea, "Liberation Serif", serif;
+  --mono: "Cascadia Mono", Consolas, "JetBrains Mono", "DejaVu Sans Mono", monospace;
+}
+@page {
+  size: A4; margin: 22mm 19mm 20mm 19mm;
+  @top-left { font-family: "Segoe UI", Inter, sans-serif; font-size: 7.5pt; color: #7a8292; vertical-align: top; padding-top: 11.5mm; }
+  @bottom-right { content: counter(page) " / " counter(pages); font-family: "Segoe UI", Inter, sans-serif; font-size: 7.5pt; color: #7a8292; vertical-align: bottom; padding-bottom: 12mm; }
+}
+@page couverture { margin: 0; @top-left { content: none; } @bottom-right { content: none; } }
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; font-family: var(--serif); font-size: 10.5pt; line-height: 1.5; color: var(--encre); }
+p { margin: 0 0 7.5pt; text-align: justify; hyphens: auto; }
+strong, b { font-weight: bold; }
+a { color: var(--bleu); text-decoration: none; }
+
+/* Couverture */
+.couverture { page: couverture; position: relative; width: 210mm; height: 297mm; break-after: page; background: #fff; z-index: 10; }
+.couverture::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 14mm; background: var(--bleu); }
+.couverture .contenu { position: absolute; left: 34mm; right: 24mm; top: 60mm; }
+.couverture .surtitre { font-family: var(--sans); font-weight: 600; font-size: 10pt; letter-spacing: 3pt; color: var(--bleu); text-transform: uppercase; margin: 0 0 14pt; }
+.couverture h1 { font-family: var(--sans); font-weight: 700; font-size: 30pt; line-height: 1.2; margin: 0 0 10pt; color: var(--encre); }
+.couverture .sous-titre { font-size: 15pt; color: var(--gris); margin: 0 0 18pt; text-align: left; }
+.couverture .filet { width: 30mm; height: 3pt; background: var(--bleu); margin: 0 0 26pt; }
+.couverture .resume { color: var(--gris); max-width: 128mm; text-align: left; }
+.couverture .pied { position: absolute; left: 34mm; right: 24mm; bottom: 30mm; border-top: 0.75pt solid var(--trait); padding-top: 11pt; display: flex; justify-content: space-between; font-family: var(--sans); font-size: 9pt; color: var(--gris); line-height: 1.45; }
+.couverture .pied strong { color: var(--encre); font-weight: 600; display: block; }
+.couverture .pied .droite { text-align: right; }
+
+/* Sommaire */
+.sommaire { break-after: page; }
+.sommaire h2 { font-family: var(--sans); font-size: 18pt; font-weight: 700; margin: 0 0 18pt; color: var(--encre); }
+.sommaire ol { list-style: none; margin: 0; padding: 0; }
+.sommaire > ol > li { margin: 0 0 4pt; }
+.sommaire .n1 { display: flex; font-family: var(--sans); font-weight: 600; font-size: 9.8pt; }
+.sommaire .n1 .num { width: 9mm; color: var(--bleu); }
+.sommaire ol ol { margin: 1pt 0 0 9mm; }
+.sommaire .n2 { display: flex; font-size: 9pt; color: var(--gris); line-height: 1.33; }
+.sommaire .n2 .num { width: 10mm; font-family: var(--sans); font-weight: 600; color: var(--bleu); }
+
+/* Titres */
+h1.section { font-family: var(--sans); font-size: 16pt; font-weight: 700; margin: 30pt 0 18pt; padding-bottom: 7pt; border-bottom: 0.75pt solid var(--bleu); break-after: avoid; }
+h1.section .num { color: var(--bleu); margin-right: 5pt; }
+h2.sous-section { font-family: var(--sans); font-size: 12pt; font-weight: 600; color: var(--bleu); margin: 18pt 0 9pt; break-after: avoid; }
+h2.sous-section .num { margin-right: 4pt; }
+h3.titre { font-family: var(--sans); font-size: 10.5pt; font-weight: 600; margin: 13pt 0 6pt; break-after: avoid; }
+.section-debut { break-before: page; }
+.section-debut h1.section { margin-top: 18pt; }
+
+/* Listes */
+ul, ol.liste { margin: 0 0 8pt; padding-left: 14pt; }
+ul { list-style: none; }
+ul > li { position: relative; margin: 0 0 3pt; text-align: justify; }
+ul > li::before { content: ""; position: absolute; left: -11pt; top: 0.62em; width: 3.4pt; height: 3.4pt; background: var(--bleu); }
+ul.references > li { text-align: left; }
+ol.liste > li { margin: 0 0 3pt; }
+ol.liste > li::marker { font-family: var(--sans); font-weight: 600; color: var(--bleu); }
+
+/* Code */
+code, pre { font-variant-ligatures: none; font-feature-settings: "liga" 0, "calt" 0; }
+code { font-family: var(--mono); font-size: 0.86em; background: #f5f6fa; border: 0.75pt solid #dee3e9; border-radius: 2pt; padding: 0 2.5pt; color: var(--encre); }
+.code { border: 0.75pt solid #dee3e9; background: #f5f6fa; border-radius: 2.5pt; margin: 4pt 0 11pt; break-inside: avoid; }
+.code .entete { display: flex; justify-content: space-between; background: #eceff4; border-bottom: 0.75pt solid #dee3e9; padding: 3.5pt 9.5pt; font-family: var(--sans); font-size: 7.5pt; font-weight: 600; color: var(--gris); }
+.code .entete .langue { color: var(--gris-clair); text-transform: uppercase; letter-spacing: 0.4pt; }
+.code pre { margin: 0; padding: 8pt 10pt 9pt; font-family: var(--mono); font-size: 8.3pt; line-height: 12pt; white-space: pre-wrap; color: #24292f; }
+.code.longue { break-inside: auto; }
+.code.sortie { background: #fcfcfd; border-color: #cdd3db; }
+.code.sortie .entete { background: #fcfcfd; border-bottom-color: #cdd3db; }
+.code.sortie pre { color: #3b4252; }
+.k { color: var(--bleu); font-weight: 600; }
+.c { color: #6e7781; font-style: italic; }
+.s { color: #0a6b3d; }
+.n { color: #9a3412; }
+.v { color: #7c3aed; }
+.t { color: #0e6f86; }
+.y { color: #0e6f86; }
+
+/* Encadrés */
+.encadre { padding: 8pt 12pt 3pt 13pt; margin: 6pt 0 12pt; border-left: 1.5pt solid #8a93a2; background: #f4f5f6; break-inside: avoid; }
+.encadre .etiquette { font-family: var(--sans); font-size: 7.5pt; font-weight: 700; letter-spacing: 0.6pt; text-transform: uppercase; color: #5d6575; margin: 0 0 4pt; text-align: left; }
+.encadre.definition, .encadre.methode { background: #e9f1f7; border-left-color: var(--bleu); }
+.encadre.definition .etiquette, .encadre.methode .etiquette { color: var(--bleu); }
+.encadre.retenir { background: #faf5e6; border-left-color: #996a00; }
+.encadre.retenir .etiquette { color: #9a6b00; }
+.encadre.attention { background: #faeded; border-left-color: #a3252b; }
+.encadre.attention .etiquette { color: #a4262c; }
+.encadre .code { background: #fbfbfd; }
+.encadre.longue { break-inside: auto; }
+
+/* Tableaux */
+table { width: 100%; border-collapse: collapse; margin: 4pt 0 12pt; font-size: 9.5pt; line-height: 1.38; }
+tr { break-inside: avoid; }
+th { background: var(--bleu); color: #fff; font-family: var(--sans); font-weight: 600; font-size: 8.5pt; text-align: left; padding: 5pt 7pt; }
+td { padding: 5pt 7pt; border-bottom: 0.75pt solid var(--trait); vertical-align: top; }
+tbody tr:nth-child(even) td { background: #f7f9fa; }
+td.tete { font-weight: bold; white-space: nowrap; }
+table.centre td { text-align: center; }
+
+/* Deux colonnes */
+.colonnes { display: grid; grid-template-columns: 1fr 1fr; gap: 12pt; break-inside: avoid; }
+.colonnes > div > :last-child { margin-bottom: 0; }
+
+/* Figures */
+figure { margin: 8pt 0 14pt; text-align: center; break-inside: avoid; }
+figure svg { max-width: 100%; height: auto; }
+figcaption { font-family: var(--sans); font-size: 8pt; color: var(--gris-clair); margin-top: 6pt; }
+svg .boite { fill: #e9f1f7; stroke: var(--bleu); stroke-width: 1; }
+svg .boite-accent { fill: #f3f7fb; stroke: #0e6f86; stroke-width: 1.4; }
+svg .trait { stroke: #4a5262; stroke-width: 1.1; fill: none; }
+svg .plein { fill: #4a5262; }
+svg text { font-family: var(--sans); fill: var(--encre); }
+svg .mono { font-family: var(--mono); }
+svg .accent { fill: #0e6f86; }
+svg .t2 { fill: var(--gris-clair); }
+svg .gras { font-weight: 700; }
+
+/* Questions */
+.question { margin: 0 0 9pt; break-inside: avoid; }
+.question .q { font-family: var(--sans); font-weight: 600; font-size: 9.8pt; margin: 0 0 2pt; text-align: left; }
+
+.note-source { font-size: 8.5pt; color: var(--gris); }

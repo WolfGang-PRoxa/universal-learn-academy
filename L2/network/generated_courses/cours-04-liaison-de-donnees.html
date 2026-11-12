@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="reseau">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accès au réseau : la liaison de données · Réseaux L2</title>
+<meta name="description" content="Cours 4 de réseaux (L2) : topologies physiques et logiques, sous-couches LLC et MAC, méthode d'accès CSMA/CD, trame Ethernet, standards Ethernet sur cuivre, adresse MAC, trames unicast et broadcast, concentrateur et commutateur, table MAC, domaines de collision et de broadcast, protocole ARP.">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-04-liaison-de-donnees.html" title="Quiz · Cours 4 · Liaison de données">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="index.html">Réseaux</a>
+    <span aria-current="page">Cours 4 · Liaison de données</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Réseaux</span> Cours 4 · L2 S3</p>
+    <h1>Accès au réseau : la liaison de données</h1>
+    <p class="chapeau">La couche liaison fait circuler les trames entre les équipements d'un même réseau local. Ce chapitre présente les topologies, les deux sous-couches LLC et MAC, la façon de partager un média (CSMA/CD), la trame Ethernet et l'adresse MAC, puis les deux équipements de base, le concentrateur et le commutateur, avec les notions de domaine de collision et de domaine de broadcast. Il finit par ARP, qui fait le lien entre l'adresse IP et l'adresse MAC.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/04%20-%20Acc%C3%A8s%20au%20r%C3%A9seau%20-%20liaison%20de%20donn%C3%A9es.pdf">04 - Accès au réseau - liaison de données.pdf</a> · 46 diapos ; livre Cisco, chapitre « La couche liaison de données »</dd></div>
+      <div><dt>Autre version</dt><dd><a href="../cours/04%20-%20liaison%20de%20donn%C3%A9es.pdf">04 - liaison de données.pdf</a> (11 septembre) : même contenu ; la version du 28 septembre ajoute la place de la couche dans le modèle ARPA</dd></div>
+      <div><dt>Enseignant</dt><dd>Sylvain Meignier</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Distinguer topologie physique et logique ; citer les topologies et leurs avantages.</li>
+        <li>Donner le rôle des sous-couches LLC et MAC, et dérouler l'algorithme CSMA/CD.</li>
+        <li>Décrire la trame Ethernet et lire une adresse MAC (OUI, NIC, broadcast).</li>
+        <li>Expliquer comment un commutateur remplit sa table MAC et choisit le port de sortie.</li>
+        <li>Compter les domaines de collision et de broadcast d'un réseau.</li>
+        <li>Expliquer le fonctionnement d'ARP et la portée d'une requête ARP.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-02-modele-de-communication.html">Cours 2</a> : couches OSI et TCP/IP, encapsulation, broadcast et unicast.</li>
+        <li><a href="cours-03-couche-physique.html">Cours 3</a> : câble à paires torsadées, half-duplex et full-duplex.</li>
+        <li>Hexadécimal et binaire (<a href="cours-01-introduction.html">cours 1</a>).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les topologies <span class="ref">diapos 2–9</span></h2>
+    <p>Avant de voir comment les trames circulent, il faut savoir comment les équipements sont reliés. La forme d'un réseau s'appelle sa topologie. Le plan du réseau de l'université (diapo 3) montre qu'elle peut être complexe, et qu'il n'existe pas d'outil générique pour découvrir un réseau.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Topologie physique et logique</span> <span class="badge examen">Examen</span></p>
+      <p>La <dfn>topologie physique</dfn> est la manière dont les « câbles » sont connectés : l'agencement des équipements, l'aspect physique du réseau. La <dfn>topologie logique</dfn> est la manière dont les données transitent.</p>
+    </div>
+    <p>Les deux peuvent différer : des postes reliés à un concentrateur forment une étoile physique, mais comme le concentrateur répète tout à tout le monde, les données circulent comme sur un bus (diapo 4).</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 700 150" width="700" role="img" aria-labelledby="fig-topo-titre">
+        <title id="fig-topo-titre">Cinq topologies : point à point (deux nœuds reliés), bus (nœuds accrochés à un câble commun), anneau (six nœuds en cercle), étoile (cinq nœuds autour d'un nœud central) et maillée (cinq nœuds tous reliés entre eux).</title>
+        <text x="60" y="140" text-anchor="middle" class="t2">point à point</text>
+        <path class="trait" d="M30 70 H90"/><circle class="plein" cx="30" cy="70" r="7"/><circle class="plein" cx="90" cy="70" r="7"/>
+
+        <text x="200" y="140" text-anchor="middle" class="t2">bus</text>
+        <path class="trait" d="M130 55 H270"/>
+        <path class="trait" d="M145 55 V80 M175 55 V80 M205 55 V80 M235 55 V80 M262 55 V80"/>
+        <circle class="plein" cx="145" cy="85" r="7"/><circle class="plein" cx="175" cy="85" r="7"/><circle class="plein" cx="205" cy="85" r="7"/><circle class="plein" cx="235" cy="85" r="7"/><circle class="plein" cx="262" cy="85" r="7"/>
+
+        <text x="345" y="140" text-anchor="middle" class="t2">anneau</text>
+        <path class="trait" d="M320 35 L370 35 L395 70 L370 105 L320 105 L295 70 Z"/>
+        <circle class="plein" cx="320" cy="35" r="7"/><circle class="plein" cx="370" cy="35" r="7"/><circle class="plein" cx="395" cy="70" r="7"/><circle class="plein" cx="370" cy="105" r="7"/><circle class="plein" cx="320" cy="105" r="7"/><circle class="plein" cx="295" cy="70" r="7"/>
+
+        <text x="490" y="140" text-anchor="middle" class="t2">étoile</text>
+        <path class="trait" d="M490 70 L490 25 M490 70 L535 55 M490 70 L520 110 M490 70 L460 110 M490 70 L445 55"/>
+        <circle class="plein" cx="490" cy="25" r="7"/><circle class="plein" cx="535" cy="55" r="7"/><circle class="plein" cx="520" cy="110" r="7"/><circle class="plein" cx="460" cy="110" r="7"/><circle class="plein" cx="445" cy="55" r="7"/>
+        <circle class="plein-accent" cx="490" cy="70" r="8"/>
+
+        <text x="630" y="140" text-anchor="middle" class="t2">maillée (complète)</text>
+        <path class="trait" d="M630 25 L675 58 L658 110 L602 110 L585 58 Z M630 25 L658 110 M630 25 L602 110 M675 58 L602 110 M675 58 L585 58 M658 110 L585 58"/>
+        <circle class="plein" cx="630" cy="25" r="7"/><circle class="plein" cx="675" cy="58" r="7"/><circle class="plein" cx="658" cy="110" r="7"/><circle class="plein" cx="602" cy="110" r="7"/><circle class="plein" cx="585" cy="58" r="7"/>
+      </svg>
+      <figcaption>Les topologies des diapos 5 à 9 ; dans l'étoile, le nœud central (en couleur) est un concentrateur ou un commutateur.</figcaption>
+    </figure>
+
+    <div class="tableau">
+      <table>
+        <caption>Les topologies, leurs avantages et leurs inconvénients</caption>
+        <thead><tr><th>Topologie</th><th>Principe</th><th>Avantages</th><th>Inconvénients</th></tr></thead>
+        <tbody>
+          <tr><th>Point à point</th><td>connexion de 2 équipements, le cas le plus simple ; par exemple l'interconnexion de réseaux</td><td>simplicité</td><td>—</td></tr>
+          <tr><th>Bus</th><td>tous les équipements sont reliés via un média commun et forment une chaîne ; utilisé dès les premiers standards Ethernet</td><td>topologie simple</td><td>une rupture du média segmente le réseau ; tout le monde peut écouter le média (problème de sécurité)</td></tr>
+          <tr><th>Maillée</th><td>chaque équipement est connecté directement à tous les autres, ou à une partie d'entre eux</td><td>garantie contre les interruptions ; beaucoup de chemins alternatifs (mais comment choisir le chemin ?)</td><td>coûteuse : \(n(n-1)/2\) liens pour un maillage complet de \(n\) équipements</td></tr>
+          <tr><th>Anneau</th><td>un ensemble de liaisons point à point refermé sur lui-même</td><td>pas de liaison bidirectionnelle, il y a un sens de circulation</td><td>longueur des chemins ; lourd à mettre en place physiquement</td></tr>
+          <tr><th>Étoile, arbre</th><td>tous les nœuds sont raccordés à un point central ; c'est la topologie physique des réseaux actuels</td><td>facile à mettre en place dans un bâtiment ; hiérarchisation possible (étoile → arbre), avec redondance des liens</td><td>le nœud central est un élément clé (s'il tombe, tout tombe)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Le coût d'un maillage complet</span></p>
+      <p><span class="badge ajout">Ajout</span> Chaque équipement est relié aux \(n - 1\) autres, et chaque lien est compté deux fois : \(n(n-1)/2\). Pour 5 équipements : 10 liens ; pour 10 : 45 ; pour 100 : 4 950. D'où le choix d'une étoile ou d'un arbre dans un bâtiment, et d'un maillage partiel entre les routeurs d'un opérateur.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les deux sous-couches : LLC et MAC <span class="ref">diapos 10–14, 19</span></h2>
+    <p>Ethernet est le protocole majeur des réseaux locaux depuis plus de 20 ans ; il est normalisé par l'IEEE sous le nom <strong>802.3</strong>. Dans le modèle OSI, il couvre la couche liaison et la couche physique ; dans le modèle TCP/IP, la couche d'accès au réseau.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Rôle de la couche liaison de données</span> <span class="badge examen">Examen</span></p>
+      <p>La couche liaison fournit aux couches supérieures les moyens d'envoyer et de contrôler les données sur le support physique. Elle est responsable de la transmission des données entre deux équipements reliés par un média physique :</p>
+      <ul>
+        <li>contrôler l'accès au média, c'est-à-dire lire et écrire sur le média ;</li>
+        <li>détecter les erreurs de transmission sur le média.</li>
+      </ul>
+    </div>
+
+    <p>Elle se divise en deux sous-couches :</p>
+    <div class="colonnes">
+      <div class="colonne">
+        <p class="colonne-titre">LLC (<span lang="en">Logical Link Control</span>) · IEEE 802.2</p>
+        <ul>
+          <li>Interface avec la couche supérieure, la couche réseau (IPv4, IPv6, ARP), et avec la « couche inférieure », MAC.</li>
+          <li>Contrôle de flux et gestion des erreurs : son rôle historique.</li>
+          <li><strong>Multiplexage</strong> : elle identifie le protocole de niveau supérieur par un numéro, l'<dfn>EtherType</dfn> : <code>0x0800</code> pour IPv4, <code>0x0806</code> pour ARP. Elle permet ainsi d'envoyer le contenu de la trame au bon protocole.</li>
+        </ul>
+      </div>
+      <div class="colonne">
+        <p class="colonne-titre">MAC (<span lang="en">Media Access Control</span>)</p>
+        <ul>
+          <li>Accès au média, propre à chaque technologie : IEEE 802.3 = Ethernet, IEEE 802.11 = Wi-Fi, mais aussi Frame Relay, ATM…</li>
+          <li>Adressage physique : l'adresse MAC.</li>
+          <li>Construction et lecture de la trame.</li>
+        </ul>
+      </div>
+    </div>
+    <p>À l'émission, LLC ajoute au paquet l'identifiant du protocole, puis MAC entoure le tout d'un en-tête et d'une fin pour former la <strong>trame</strong>. À la réception, MAC lit et retire son en-tête et sa fin, puis LLC remet le paquet au bon protocole de la couche Internet.</p>
+
+    <h3>Une trame par technologie</h3>
+    <p>La sous-couche MAC dépend du média : un routeur relié à un réseau Ethernet (802.3) d'un côté et à un réseau ATM de l'autre (diapo 13) parle deux langages de liaison différents. Il lit la trame entrante, la décapsule jusqu'au paquet, puis réencapsule ce paquet sous le nouveau format (diapo 14). Seule la sous-couche MAC change ; LLC fait le lien avec la couche réseau, commune aux deux.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>L'accès au média : CSMA/CD <span class="ref">diapos 15–18</span></h2>
+    <p>Quand plusieurs équipements partagent un média, il faut décider qui peut « parler », et quand. C'est la <dfn>méthode d'accès</dfn> de la sous-couche MAC : lire et écrire sur le média.</p>
+
+    <p>Un nœud accède au média lorsqu'il souhaite parler. Comment régler la prise de parole ? Plusieurs solutions existent :</p>
+    <ul>
+      <li><strong>lever la main</strong> : il faut un ordonnateur, qui donne la parole ;</li>
+      <li>le système du <strong>bâton de parole</strong> (jeton) : il faut définir un ordre et une durée de parole ;</li>
+      <li><strong>si personne ne parle, je parle</strong> : problème de départ simultané (la collision) et d'équité d'accès au média. C'est le choix d'Ethernet, avec CSMA/CD. <span class="badge examen">Examen</span></li>
+    </ul>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Algorithme <span>CSMA/CD (<span lang="en">Carrier Sense Multiple Access with Collision Detection</span>)</span> <span class="badge examen">Examen</span></p>
+<pre><code class="language-pseudo"><b>répéter</b>
+    <b>écouter</b> le média                    <i>// Ça parle ?</i>
+    <b>tant que</b> le média est occupé <b>faire</b> attendre    <i>// attente active</i>
+    transmettre la trame, <b>en écoutant</b> ce qui passe
+    <b>si</b> collision détectée <b>alors</b>
+        attendre un délai aléatoire     <i>// puis on recommence</i>
+<b>jusqu'à</b> ce que la trame parte sans collision   <i>// OK</i></code></pre>
+      <ul>
+        <li><strong>Avant d'émettre</strong> : vérifier que personne n'est déjà en train d'envoyer des informations ; si c'est le cas, attendre ; sinon, émettre.</li>
+        <li><strong>Pendant l'émission</strong> : la source écoute ce qu'elle transmet, pour vérifier que le message envoyé n'est pas entré en collision.</li>
+      </ul>
+    </div>
+    <p>Le chronogramme de la diapo 17 montre trois stations. A émet. B, puis C, écoutent pendant qu'A parle : elles attendent activement. Dès qu'A a fini, B et C émettent en même temps : <strong>collision</strong>. Chacune tire un délai aléatoire : B, au délai le plus court, réécoute la première, trouve le média libre et émet ; C réécoute, trouve B en train d'émettre, attend activement, puis émet à son tour.</p>
+
+    <h3>Propriétés de CSMA/CD</h3>
+    <ul>
+      <li>CSMA/CD <strong>n'empêche pas les collisions</strong>, il les détecte. La détection se fait par comparaison entre le signal envoyé et le signal reçu, par mesure de la puissance du signal (son amplitude), ou par un signal spécial sur le canal ; un délai de garde est respecté.</li>
+      <li>Il garantit le fonctionnement du réseau même en cas de collision.</li>
+      <li>Une seule machine émet à la fois : la bande passante est <strong>partagée</strong>.</li>
+      <li>C'est un système sans ordonnateur, qui fonctionne en « autogestion ».</li>
+    </ul>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi un délai aléatoire, et le Wi-Fi</span></p>
+      <p>Si les deux stations attendaient le même délai fixe, elles réémettraient ensemble et entreraient de nouveau en collision. Ethernet tire le délai au hasard dans un intervalle qui double après chaque collision successive (<span lang="en">binary exponential backoff</span>). En Wi-Fi, une station ne peut pas écouter pendant qu'elle émet : elle cherche donc à <em>éviter</em> les collisions plutôt qu'à les détecter, avec <strong>CSMA/CA</strong> (<span lang="en">Collision Avoidance</span>) et des accusés de réception.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>La trame Ethernet <span class="ref">diapos 20–21, 26</span></h2>
+    <p>La trame est l'unité de données de la couche liaison. Elle ajoute de l'information aux données reçues de la couche supérieure : c'est l'encapsulation du paquet de la couche réseau. Une trame est donc un paquet encapsulé.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Trame</span></p>
+      <p>Une <dfn>trame</dfn> contient :</p>
+      <ul>
+        <li>un <dfn>en-tête</dfn> (<span class="en" lang="en">header</span>) avec l'adresse de la destination et celle de la source ;</li>
+        <li>les données de la couche supérieure (le paquet IP) ;</li>
+        <li>une <dfn>queue</dfn> (<span class="en" lang="en">trailer</span>), qui contient les informations utilisées pour la détection d'erreur.</li>
+      </ul>
+    </div>
+
+    <h3>Structure d'une trame Ethernet</h3>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 680 120" width="680" role="img" aria-labelledby="fig-trame-titre">
+        <title id="fig-trame-titre">Trame Ethernet (RFC 894) : préambule de 8 octets, adresse de destination 6 octets, adresse source 6 octets, type 2 octets, données de 46 à 1500 octets, somme de contrôle 4 octets.</title>
+        <rect class="boite" x="10" y="30" width="80" height="44"/><text x="50" y="57" text-anchor="middle" class="mono">8</text>
+        <rect class="boite-accent" x="90" y="30" width="90" height="44"/><text x="135" y="57" text-anchor="middle" class="mono">6</text>
+        <rect class="boite-accent" x="180" y="30" width="90" height="44"/><text x="225" y="57" text-anchor="middle" class="mono">6</text>
+        <rect class="boite" x="270" y="30" width="50" height="44"/><text x="295" y="57" text-anchor="middle" class="mono">2</text>
+        <rect class="boite" x="320" y="30" width="290" height="44"/><text x="465" y="57" text-anchor="middle" class="mono">46 à 1 500</text>
+        <rect class="boite" x="610" y="30" width="60" height="44"/><text x="640" y="57" text-anchor="middle" class="mono">4</text>
+        <text x="50" y="20" text-anchor="middle" class="t2">préambule</text>
+        <text x="135" y="20" text-anchor="middle" class="t2">MAC dest.</text>
+        <text x="225" y="20" text-anchor="middle" class="t2">MAC source</text>
+        <text x="295" y="20" text-anchor="middle" class="t2">type</text>
+        <text x="465" y="20" text-anchor="middle" class="t2">données (paquet IP, ARP…)</text>
+        <text x="640" y="20" text-anchor="middle" class="t2">CRC</text>
+        <path class="pointille" d="M90 90 H320"/><text x="205" y="108" text-anchor="middle" class="t2">en-tête (14 octets)</text>
+        <text x="640" y="108" text-anchor="middle" class="t2">queue</text>
+      </svg>
+      <figcaption>Encapsulation Ethernet (RFC 894), tailles en octets (diapo 26).</figcaption>
+    </figure>
+    <ul>
+      <li><strong>Préambule de synchronisation</strong> (8 octets) : une suite de bits alternés qui permet au récepteur de caler son horloge, terminée par le délimiteur de début de trame (SFD).</li>
+      <li><strong>Adresse de destination</strong> puis <strong>adresse source</strong> (6 octets chacune) : les adresses MAC des machines destinataire et émettrice.</li>
+      <li><strong>Type des données</strong> (2 octets) : l'EtherType, qui désigne le protocole encapsulé : <code>0800</code> IP, <code>0806</code> ARP, <code>0835</code> RARP, <code>6000</code> et <code>6009</code> DEC, <code>8019</code> DOMAIN…</li>
+      <li><strong>Données</strong> : de 46 à 1 500 octets. Si les données sont trop courtes, des octets de remplissage (<span lang="en">padding</span>) complètent jusqu'à 46.</li>
+      <li><strong>Somme de contrôle</strong> (<span lang="en">checksum</span>, 4 octets) : un code de contrôle (CRC) calculé sur la trame ; le récepteur le recalcule, et rejette la trame s'il ne trouve pas la même valeur.</li>
+    </ul>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Tailles minimale et maximale d'une trame</span></p>
+      <p>Sans le préambule, une trame fait au moins \(6 + 6 + 2 + 46 + 4 = 64\) octets et au plus \(6 + 6 + 2 + 1\,500 + 4 = 1\,518\) octets (72 et 1 526 avec le préambule). Les 1 500 octets de données maximum s'appellent la <dfn>MTU</dfn> (<span lang="en">Maximum Transmission Unit</span>) d'Ethernet : on la retrouve dans la sortie d'<code>ifconfig</code> (<code>mtu 1500</code>) et au chapitre 5 (fragmentation IP). La taille minimale garantit qu'une collision est détectée avant la fin de l'émission.</p>
+    </div>
+
+    <h3>Les standards Ethernet sur cuivre</h3>
+    <div class="tableau compact">
+      <table>
+        <caption>Standards Ethernet sur cuivre (diapo 21, à compléter par le livre Cisco)</caption>
+        <thead><tr><th>Nom</th><th>Norme</th><th>Support</th><th>Longueur</th><th>Paires</th></tr></thead>
+        <tbody>
+          <tr><td>Ethernet, 10BASE-T (10 Mb/s)</td><td>IEEE 802.3</td><td>cuivre cat. 3</td><td>100 m</td><td>2</td></tr>
+          <tr><td>Fast Ethernet, 100BASE-TX (100 Mb/s)</td><td>IEEE 802.3u</td><td>cuivre cat. 5</td><td>100 m</td><td>2</td></tr>
+          <tr><td>Gigabit Ethernet, 1000BASE-T</td><td>IEEE 802.3ab</td><td>cuivre cat. 5 ; pas de concentrateur, détection automatique RX/TX</td><td>100 m</td><td>4</td></tr>
+          <tr><td>10 Gigabit Ethernet, 10GBASE-T</td><td>IEEE 802.3an</td><td>cuivre cat. 6 ; pas de concentrateur</td><td>100 m</td><td>4</td></tr>
+          <tr><td>40 Gigabit Ethernet, 40GBASE-T</td><td>IEEE 802.3bq-2016</td><td>cuivre cat. 8</td><td>30 m</td><td>4</td></tr>
+          <tr><td>100 Gigabit Ethernet, 100GBASE-CR4</td><td>IEEE 802.3bj-2010</td><td>cuivre cat. 8</td><td>7 m</td><td>4</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>L'adresse MAC <span class="ref">diapos 22–28</span></h2>
+    <p>Pour qu'une trame atteigne la bonne machine du réseau local, chaque interface doit avoir une adresse. C'est l'une des fonctions de la sous-couche MAC.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Adresse MAC</span> <span class="badge examen">Examen</span></p>
+      <p>L'<dfn>adresse MAC</dfn> est l'adresse physique d'une interface réseau. Elle fait <strong>48 bits, soit 6 octets</strong>, écrits en hexadécimal :</p>
+      <ul>
+        <li>les 24 premiers bits (3 octets) forment l'<dfn>OUI</dfn> (<span class="en" lang="en">Organizationally Unique Identifier</span>) : le numéro du constructeur, fixé par l'IEEE (<code>00-00-0C</code> = Cisco) ;</li>
+        <li>les 24 bits suivants (3 octets) forment le <dfn>NIC</dfn> (<span class="en" lang="en">Network Interface Identifier</span>) : le numéro d'ordre de la carte chez ce constructeur.</li>
+      </ul>
+      <p>Elle est stockée dans une mémoire de la carte réseau, disponible dès le démarrage de l'équipement, et <strong>unique sur un réseau local</strong>.</p>
+    </div>
+
+    <div class="tableau mono compact centre">
+      <table>
+        <caption>L'adresse MAC 1C-6F-65-C4-C9-8E en binaire (diapo 24)</caption>
+        <thead><tr><th>1C</th><th>6F</th><th>65</th><th>C4</th><th>C9</th><th>8E</th></tr></thead>
+        <tbody>
+          <tr><td>0001 1100</td><td>0110 1111</td><td>0110 0101</td><td>1100 0100</td><td>1100 1001</td><td>1000 1110</td></tr>
+          <tr><td colspan="3">OUI : numéro du fabricant</td><td colspan="3">NIC : numéro de la carte</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Deux bits du premier octet ont un sens particulier : l'un vaut 1 pour une adresse de groupe (dont le broadcast), l'autre vaut 1 quand l'adresse du constructeur a été modifiée (adresse administrée localement).</p>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo place ces deux bits à gauche du premier octet. Dans l'écriture usuelle, ce sont les deux bits de <strong>poids faible</strong> du premier octet : le bit de poids 1 (I/G, individuel ou groupe) et le bit de poids 2 (U/L, universel ou local). Le schéma de la diapo suit l'ordre d'émission, car Ethernet envoie chaque octet en commençant par le bit de poids faible. Pour <code>1C</code> = <code>0001 1100</code>, les deux bits valent 0 : adresse individuelle, attribuée par le constructeur. La diapo écrit aussi « 1 = Broadcast » : c'est plus largement « adresse de groupe » (multicast), le broadcast en étant un cas particulier.</p>
+
+    <h3>Où trouver l'adresse MAC</h3>
+<pre class="terminal"><code>$ ifconfig
+en0: flags=8863&lt;UP,BROADCAST,SMART,RUNNING,SIMPLEX,MULTICAST&gt; mtu 1500
+	ether 3c:15:c2:cb:68:ea
+	inet6 fe80::1c75:3953:35e2:a1a4%en0 prefixlen 64 secured scopeid 0x5
+	inet 172.18.239.49 netmask 0xfffffc00 broadcast 172.18.239.255
+	nd6 options=201&lt;PERFORMNUD,DAD&gt;
+	media: autoselect
+	status: active</code></pre>
+    <p>La ligne <code>ether</code> donne l'adresse MAC, <code>3c:15:c2:cb:68:ea</code>. Son OUI, <code>3C-15-C2</code>, se cherche dans la liste publique de l'IEEE (<code>standards.ieee.org/develop/regauth/oui/oui.txt</code>) : c'est Apple, Inc. (1 Infinite Loop, Cupertino). La ligne <code>inet</code> donne l'adresse IP et son masque, sujet du chapitre 5.</p>
+    <p><span class="badge ajout">Ajout</span> Sous Linux, <code>ip link</code> (ligne <code>link/ether</code>) ; sous Windows, <code>ipconfig /all</code> (« Adresse physique »). Sur un équipement Cisco, l'adresse s'écrit par groupes de 4 chiffres : <code>0060.2F84.4AB6</code>.</p>
+
+    <h3>Trames unicast et broadcast</h3>
+    <div class="colonnes">
+      <div class="colonne">
+        <p class="colonne-titre">Trame unicast <span class="badge examen">Examen</span></p>
+        <ul>
+          <li>Émise par une station à destination d'une seule autre station.</li>
+          <li>Les adresses MAC source et destination doivent être connues.</li>
+          <li>Le mécanisme de découverte de l'adresse de destination est le protocole ARP.</li>
+        </ul>
+      </div>
+      <div class="colonne">
+        <p class="colonne-titre">Trame broadcast <span class="badge examen">Examen</span></p>
+        <ul>
+          <li>Destinée à toutes les stations ; nécessaire au bon fonctionnement des réseaux locaux.</li>
+          <li>Adresse MAC de destination <code>FF-FF-FF-FF-FF-FF</code> : tous les bits à 1.</li>
+          <li>Aucune trame ne peut avoir cette adresse comme <strong>source</strong> : les machines rejettent une trame construite ainsi.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le concentrateur (hub) <span class="ref">diapos 29–32</span></h2>
+    <p>Les premiers réseaux Ethernet en paires torsadées reliaient les postes à un concentrateur. Comprendre ses limites explique pourquoi on l'a remplacé par le commutateur.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Répéteur et concentrateur</span></p>
+      <p>Un <dfn>répéteur</dfn> est un équipement qui régénère un signal entre deux segments du réseau ; son rôle est d'augmenter la distance entre deux périphériques. Un <dfn>concentrateur</dfn> (<span class="en" lang="en">hub</span>) est un répéteur multiports.</p>
+    </div>
+    <ul>
+      <li>Les équipements raccordés à un concentrateur reçoivent <strong>tout le trafic</strong>.</li>
+      <li>Plus il y a d'équipements, plus la probabilité que deux d'entre eux émettent en même temps est grande, ce qui génère des collisions.</li>
+      <li>C'est un équipement de la <strong>couche physique</strong> : il ne lit pas les trames, il répète des signaux.</li>
+      <li>Son but : étendre le circuit électrique entre plusieurs équipements, en créant une topologie physique en étoile.</li>
+    </ul>
+
+    <h3>Le trajet d'un signal dans un concentrateur</h3>
+    <ol class="etapes">
+      <li>La carte réseau envoie une trame sur sa paire d'émission.</li>
+      <li>La carte se renvoie la trame en interne sur sa paire de réception, par son circuit de bouclage : c'est ainsi qu'elle peut comparer ce qu'elle émet à ce qui circule, et détecter une collision.</li>
+      <li>Le signal arrive au concentrateur par le port de l'émetteur.</li>
+      <li>Le câblage interne du concentrateur propage le signal vers tous les autres ports, mais pas vers celui par lequel il est arrivé.</li>
+      <li>Le concentrateur répète le signal sur la paire de réception de chacun des autres équipements.</li>
+    </ol>
+    <p><span class="badge ajout">Ajout</span> La diapo 30 décrit les étapes 1, 2, 4 et 5 ; l'étape 3, numérotée sur le schéma, est l'arrivée du signal au concentrateur.</p>
+
+    <h3>Domaine de collision</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Domaine de collision</span> <span class="badge examen">Examen</span></p>
+      <p>Un <dfn>domaine de collision</dfn> est l'ensemble des équipements dont les trames peuvent entrer en collision.</p>
+    </div>
+    <p>Tous les postes reliés à un concentrateur forment <strong>un seul</strong> domaine de collision. Ils communiquent en <strong>half-duplex</strong> : quand une machine émet, toutes les autres doivent écouter et attendre pour émettre à leur tour. C'est pour ce cas que l'IEEE 802.3 a défini CSMA/CD, le protocole de gestion des réseaux Ethernet filaires ; deux périphériques doivent alors être à moins de 100 m du concentrateur (un rayon de 100 m autour du concentrateur).</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le commutateur (switch) <span class="ref">diapos 33–41</span></h2>
+    <p>Le commutateur lit les adresses des trames et ne les envoie que là où elles doivent aller. C'est l'équipement de base des réseaux locaux actuels.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Commutateur</span> <span class="badge examen">Examen</span></p>
+      <p>Un <dfn>commutateur</dfn> (<span class="en" lang="en">switch</span>) permet de diviser un LAN en plusieurs segments, de diminuer le trafic sur un LAN donné et d'étendre la zone géographique du réseau (au-delà de la limite des 100 m). Il fonctionne au <strong>niveau 2</strong> (liaison) : il a accès aux adresses MAC.</p>
+    </div>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Ce que fait un commutateur à la réception d'une trame</span> <span class="badge examen">Examen</span></p>
+      <ol>
+        <li><strong>Apprentissage</strong> : il mémorise l'adresse MAC <em>source</em> de la trame et le numéro du port d'arrivée, dans sa table MAC.</li>
+        <li><strong>Recherche de la destination</strong> dans la table :
+          <ul>
+            <li>si l'équipement de destination est sur le même segment que la source (même port) : ne rien faire (filtrage) ;</li>
+            <li>s'il est sur un autre segment : transmettre la trame sur ce seul port ;</li>
+            <li>s'il n'est pas connu : transmettre à tous les segments, sauf celui de la source (inondation).</li>
+          </ul>
+        </li>
+      </ol>
+    </div>
+    <p>À l'intérieur, une <strong>matrice de commutation</strong> relie n'importe quel port à n'importe quel autre, sous le contrôle d'un processeur qui tient la table MAC, faite de couples (interface, adresses MAC) : par exemple <code>1 → @A</code>, <code>2 → @B</code>, <code>4 → @E, @F</code> (diapo 34 ; deux adresses sur un port signifient qu'un autre équipement, concentrateur ou commutateur, est branché derrière).</p>
+
+    <h3>Exemple : deux commutateurs qui apprennent</h3>
+    <p>Les diapos 35 à 40 (tirées de reussirsonccna.fr) déroulent l'apprentissage sur le réseau suivant : PC1 (<code>AAAA.AAAA.AAAA</code>) sur le port E0 de SW1, PC2 (<code>BBBB.BBBB.BBBB</code>) sur E1 de SW1 ; PC3 (<code>CCCC.CCCC.CCCC</code>) sur E0 de SW2, PC4 (<code>DDDD.DDDD.DDDD</code>) sur E1 de SW2 ; SW1 et SW2 reliés par leurs ports E2. Les tables sont vides au départ.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Apprentissage des tables MAC, trame par trame</caption>
+        <thead><tr><th>Trame</th><th>SW1 apprend</th><th>SW1 envoie sur</th><th>SW2 apprend</th><th>SW2 envoie sur</th></tr></thead>
+        <tbody>
+          <tr><td>PC1 → PC4</td><td>E0 : AAAA</td><td>E1, E2 (PC4 inconnu)</td><td>E2 : AAAA</td><td>E0, E1 (PC4 inconnu)</td></tr>
+          <tr><td>PC4 → PC1 (réponse)</td><td>E2 : DDDD</td><td>E0 seulement</td><td>E1 : DDDD</td><td>E2 seulement</td></tr>
+          <tr><td>PC2 → PC4</td><td>E1 : BBBB</td><td>E2 seulement</td><td>E2 : BBBB</td><td>E1 seulement</td></tr>
+          <tr><td>PC2 → PC3</td><td>rien de neuf</td><td>E0, E2 (PC3 inconnu)</td><td>rien de neuf</td><td>E0, E1 (PC3 inconnu)</td></tr>
+          <tr><td>PC3 → PC1</td><td>E2 : CCCC</td><td>E0 seulement</td><td>E0 : CCCC</td><td>E2 seulement</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>À la fin, la table de SW1 contient E0 : AAAA ; E1 : BBBB ; E2 : DDDD et CCCC. Celle de SW2 contient E0 : CCCC ; E1 : DDDD ; E2 : AAAA et BBBB. Derrière le port E2 qui relie les deux commutateurs, chacun voit toutes les machines de l'autre.</p>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo 37 est titrée « De PC1 vers PC4 » comme la précédente, mais ses flèches vont de PC4 vers PC1 et ses tables apprennent DDDD : c'est la réponse de PC4.</p>
+
+    <h3>Domaine de collision avec un commutateur</h3>
+    <ul>
+      <li>Un commutateur définit <strong>un domaine de collision par port</strong>, limité au lien entre le commutateur et la machine. <span class="badge examen">Examen</span></li>
+      <li>La liaison est <strong>full-duplex</strong> : communication dans les deux directions, émission et réception en même temps.</li>
+      <li>Il n'y a donc plus de collision, et CSMA/CD est inutile.</li>
+      <li>Topologie : un réseau en étoile, fait de connexions point à point. Seul un port relié à un équipement qui ne gère que le half-duplex (un concentrateur, par exemple) fonctionne encore en half-duplex.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>ARP et le domaine de broadcast <span class="ref">diapos 42–46</span></h2>
+    <p>Chaque machine connaît sa propre adresse MAC : elle peut émettre une trame avec son adresse comme source. Mais comment peut-elle connaître l'adresse MAC de destination, quand elle ne connaît que l'adresse IP du destinataire ?</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>ARP</span> <span class="badge examen">Examen</span></p>
+      <p>Le protocole <dfn>ARP</dfn> (<span class="en" lang="en">Address Resolution Protocol</span>) sert à trouver l'adresse MAC (niveau 2) qui correspond à une adresse IP (niveau 3).</p>
+    </div>
+
+    <ol class="etapes">
+      <li><strong>Requête en broadcast</strong> : A demande à toutes les stations « étant donné l'adresse IP de B, que vaut son adresse physique ? ». La trame est envoyée à <code>FF-FF-FF-FF-FF-FF</code> : X, B et Y la reçoivent.</li>
+      <li>Les machines dont l'adresse IP ne correspond pas (X, Y) ignorent la requête.</li>
+      <li><strong>Réponse en unicast</strong> : B répond directement à A en lui communiquant son adresse physique.</li>
+      <li>A range la correspondance dans sa table ARP, et peut envoyer ses trames à B.</li>
+    </ol>
+
+    <h3>La table ARP</h3>
+    <p>Chaque équipement garde une <dfn>table ARP</dfn> (ou cache ARP) qui stocke les correspondances entre adresse MAC et adresse IP, pour ne pas refaire une requête à chaque trame. Elle existe sur chaque équipement de niveau 2 et plus : commutateur (administrable), ordinateur, serveur, téléphone, routeur.</p>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo 44 parle de correspondances « adresse ARP et adresse IP » : il s'agit des adresses <strong>MAC</strong> et IP. Un commutateur n'a de table ARP que s'il a lui-même une adresse IP (pour son administration) ; pour commuter, il n'utilise que sa table MAC.</p>
+<pre class="terminal"><code>$ arp -a
+? (172.18.236.1) at 0:0:c:7:ac:1 on en0 ifscope [ethernet]
+? (172.18.239.255) at ff:ff:ff:ff:ff:ff on en0 ifscope [ethernet]</code></pre>
+    <p><span class="badge ajout">Ajout</span> Exemple de sortie d'<code>arp -a</code> (macOS ; même commande sous Windows, <code>ip neigh</code> sous Linux), avec des adresses inventées dans le réseau de l'<code>ifconfig</code> ci-dessus. La passerelle a ici un OUI Cisco (<code>00:00:0c</code>). La diapo 45 renvoie aussi à une vidéo YouTube sur ARP.</p>
+
+    <h3>Domaine de broadcast</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Domaine de broadcast</span> <span class="badge examen">Examen</span></p>
+      <p>Le <dfn>domaine de broadcast</dfn> est l'étendue du réseau qu'une requête de type broadcast peut couvrir. C'est en général tout le réseau local, c'est-à-dire toutes les machines connectées aux commutateurs : les routeurs (interconnexion de niveau 3) ne propagent pas le broadcast.</p>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>ARP ne traverse pas les routeurs</span></p>
+      <p>ARP ne peut résoudre qu'une adresse accessible dans son domaine de broadcast. Pour joindre une machine d'un autre réseau, l'émetteur ne cherche pas son adresse MAC : il envoie la trame au routeur (la passerelle), dont il résout l'adresse par ARP, et c'est le routeur qui construit une nouvelle trame de l'autre côté (chapitre 5).</p>
+    </div>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Qui sépare quoi</span></p>
+      <p><span class="badge ajout">Ajout</span> Synthèse des deux notions :</p>
+      <ul>
+        <li>un <strong>concentrateur</strong> ne sépare rien : un seul domaine de collision et un seul domaine de broadcast pour tous ses ports ;</li>
+        <li>un <strong>commutateur</strong> sépare les domaines de collision (un par port) mais pas les domaines de broadcast ;</li>
+        <li>un <strong>routeur</strong> sépare à la fois les domaines de collision et les domaines de broadcast (un par interface).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exercices</h2>
+    <p>Exercices d'entraînement, ajoutés pour s'exercer sur les notions qui tombent le plus souvent.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Compter les domaines</span></p>
+      <p>Un routeur R a deux interfaces. Sur la première, un commutateur S1 relie 4 PC et un concentrateur H, auquel sont branchés 3 autres PC. Sur la seconde, un commutateur S2 relie 5 PC. Combien y a-t-il de domaines de collision ? de domaines de broadcast ?</p>
+      <details class="indice"><summary>Indice</summary><p>Un domaine de collision par port de commutateur ou de routeur utilisé ; un domaine de broadcast par interface de routeur.</p></details>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>Domaines de collision : côté S1, 4 (un par PC) + 1 (le port vers H, qui regroupe H et ses 3 PC) + 1 (le lien S1–R) = 6 ; côté S2, 5 + 1 (lien S2–R) = 6. Total : <strong>12</strong>. Domaines de broadcast : <strong>2</strong>, un par interface du routeur.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Lire une adresse MAC</span></p>
+      <p>Pour l'adresse <code>00-00-0C-12-34-56</code>, donner l'OUI, le constructeur et le NIC. L'adresse <code>01-00-5E-00-00-FB</code> peut-elle être l'adresse source d'une trame ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>OUI <code>00-00-0C</code>, Cisco ; NIC <code>12-34-56</code>. Pour la seconde, le premier octet <code>01</code> a son bit de poids faible à 1 : c'est une adresse de groupe (multicast), qui ne peut être que destination, comme <code>FF-FF-FF-FF-FF-FF</code>.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Table MAC</span></p>
+      <p>Un commutateur neuf a 4 ports : A sur le port 1, B sur le 2, C sur le 3, D sur le 4. Les trames suivantes passent : A → C, C → A, B → A, D → B. Pour chacune, sur quels ports le commutateur l'envoie-t-il ? Que contient la table à la fin ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <ul>
+          <li>A → C : apprend 1 : A ; C inconnu → ports 2, 3, 4.</li>
+          <li>C → A : apprend 3 : C ; A connu → port 1.</li>
+          <li>B → A : apprend 2 : B ; → port 1.</li>
+          <li>D → B : apprend 4 : D ; → port 2.</li>
+        </ul>
+        <p>Table finale : 1 : A, 2 : B, 3 : C, 4 : D.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 4 <span>Taille d'une trame</span></p>
+      <p>Une requête ARP fait 28 octets. Quelle est la taille de la trame Ethernet qui la porte, préambule non compris ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>28 &lt; 46 : on complète par 18 octets de remplissage. La trame fait \(14 + 46 + 4 = 64\) octets, la taille minimale.</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Topologie physique = comment les câbles sont connectés ; logique = comment les données circulent. Les réseaux actuels sont des étoiles ou des arbres ; un maillage complet coûte \(n(n-1)/2\) liens.</li>
+        <li>La couche liaison contrôle l'accès au média et détecte les erreurs. Sous-couches : LLC (802.2, multiplexage par EtherType : 0x0800 IPv4, 0x0806 ARP) et MAC (802.3 Ethernet, 802.11 Wi-Fi).</li>
+        <li>CSMA/CD : écouter avant d'émettre, écouter en émettant ; en cas de collision, attendre un délai aléatoire et recommencer. Il détecte les collisions, il ne les empêche pas.</li>
+        <li>Trame Ethernet : préambule 8, destination 6, source 6, type 2, données 46 à 1 500, CRC 4 octets.</li>
+        <li>Adresse MAC : 48 bits, OUI (constructeur, 3 octets) + NIC (3 octets) ; broadcast = <code>FF-FF-FF-FF-FF-FF</code>, jamais en source.</li>
+        <li>Concentrateur : couche physique, répète tout partout, un seul domaine de collision, half-duplex.</li>
+        <li>Commutateur : couche 2 ; apprend l'adresse source et son port, envoie vers le seul port de destination, inonde si la destination est inconnue ; un domaine de collision par port, full-duplex.</li>
+        <li>ARP trouve l'adresse MAC d'une adresse IP : requête en broadcast, réponse en unicast, résultat gardé dans la table ARP.</li>
+        <li>Le domaine de broadcast s'arrête aux routeurs ; ARP ne résout que les adresses de son domaine de broadcast.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Des postes reliés à un concentrateur : quelle topologie physique, quelle topologie logique ?</summary>
+        <div><p>Étoile physique ; bus logique, car le concentrateur répète chaque signal à tous.</p></div>
+      </details>
+      <details class="carte">
+        <summary>À quoi sert l'EtherType ?</summary>
+        <div><p>À indiquer le protocole encapsulé dans la trame (0x0800 IPv4, 0x0806 ARP), pour la remettre au bon protocole de la couche supérieure : c'est le multiplexage de LLC.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi CSMA/CD est-il inutile sur un commutateur ?</summary>
+        <div><p>Chaque port est un domaine de collision à lui seul, en full-duplex : émission et réception sur des paires distinctes, il ne peut pas y avoir de collision.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un commutateur reçoit une trame pour une adresse MAC qu'il ne connaît pas. Que fait-il ?</summary>
+        <div><p>Il l'envoie sur tous ses ports sauf celui d'arrivée (inondation), après avoir appris l'adresse source.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle adresse MAC de destination porte une requête ARP ? et la réponse ?</summary>
+        <div><p>La requête : <code>FF-FF-FF-FF-FF-FF</code> (broadcast). La réponse : l'adresse MAC du demandeur (unicast).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quel équipement sépare les domaines de broadcast ?</summary>
+        <div><p>Le routeur : il ne propage pas les broadcasts.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que désignent les 3 premiers octets d'une adresse MAC ?</summary>
+        <div><p>L'OUI, le numéro du constructeur attribué par l'IEEE.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-03-couche-physique.html"><small>← Précédent</small>Accès au réseau : la couche physique</a>
+    <a class="suivant" href="cours-05-couche-reseau.html"><small>Suivant →</small>Internet : la couche réseau</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Réseaux · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

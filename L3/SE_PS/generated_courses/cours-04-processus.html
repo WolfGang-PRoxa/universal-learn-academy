@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="se">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les processus · Programmation système L3</title>
+<meta name="description" content="Cours 4 de programmation système (L3) : processus, identifiants getpid et getppid, arborescence des processus, mise en sommeil (sleep, alarm, pause, SIGSTOP et SIGCONT), création par fork, héritage du fils, attente par wait, zombies et statut de fin, fichier core, recouvrement par la famille exec.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-04-processus.html" title="Quiz · Les processus">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-cc2.html" title="Annale · CC2">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">Programmation système</a>
+    <span aria-current="page">Cours 4 · Les processus</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Programmation système</span> Cours 4 · L3 S5</p>
+    <h1>Les processus : fork, wait et exec</h1>
+    <p class="chapeau">Un processus est un programme en cours d'exécution ; sous Unix, chacun est créé par un autre, son père, avec la primitive <code>fork</code>. Ce cours présente les identifiants et l'arborescence des processus, leur mise en sommeil, la création par <code>fork</code> et ce que le fils hérite de son père, l'attente de sa fin par <code>wait</code> et la lecture de son statut, puis le recouvrement d'un processus par un autre programme avec la famille <code>exec</code>.</p>
+    <dl class="meta">
+      <div><dt>Sources</dt><dd>polycopié <a href="../cours/cours_processus.pdf">Notes sur la gestion des processus Unix</a> (10 p.) · notes de séance « Cours SE » (CM 4)</dd></div>
+      <div><dt>TD</dt><dd><a href="../TD/td_processus.pdf">TD sur les processus Unix</a> : code C sur papier</dd></div>
+      <div><dt>Enseignant</dt><dd>B. Jacob</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-31">31 oct. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Désigner un processus et son père par leurs identifiants (<code>getpid</code>, <code>getppid</code>) et lire l'arborescence des processus.</li>
+        <li>Mettre un processus en sommeil avec <code>sleep</code>, <code>alarm</code>, <code>pause</code> ou <code>SIGSTOP</code>.</li>
+        <li>Créer un processus avec <code>fork</code>, et distinguer le père du fils par la valeur renvoyée.</li>
+        <li>Savoir ce que le fils reçoit du père : une copie de la mémoire, du tampon de sortie et des descripteurs ouverts.</li>
+        <li>Attendre la fin d'un fils avec <code>wait</code>, et expliquer ce qu'est un zombie.</li>
+        <li>Lire le statut de fin d'un fils : code de <code>exit</code>, numéro du signal qui l'a tué, création d'un fichier core.</li>
+        <li>Recouvrir un processus par un autre programme avec la famille <code>exec</code>, et choisir la bonne fonction.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Langage C, compilé sous Linux ou dans WSL (voir <a href="../../../_outils/environnements/c.html">Compiler un TP en C</a>).</li>
+        <li><a href="cours-03-signaux.html">Cours 3</a> : les signaux, <code>kill</code> et <code>getpid</code>.</li>
+        <li><a href="cours-01-fichiers-catalogues.html#les-descripteurs-ouverts-d-un-processus">Cours 1</a> : les descripteurs ouverts d'un processus.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc complement">
+    <p class="bloc-titre">Complément <span>D'où vient cette page</span></p>
+    <p>Cette page réunit le polycopié de l'enseignant, <em>Notes sur la gestion des processus Unix</em>, et les notes prises au CM 4 (Google Doc « Cours SE »). Le polycopié couvre tout le chapitre, jusqu'à <code>exec</code> ; les notes y ajoutent l'arborescence des processus, un exemple de <code>fork</code> et le rôle de <code>wait</code> contre les zombies. Les explications et les exemples venus d'ailleurs sont signalés comme ajouts.</p>
+    <p>Tous les programmes ont été compilés et exécutés sous Linux (noyau 6.18, gcc 15.2, dans WSL 2), ceux du polycopié sans modification. Les sorties reproduites sont celles obtenues ; les numéros de processus changent à chaque exécution. Le polycopié ne nomme que <code>ex_wait</code> : les autres noms de fichiers sont choisis ici.</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les processus et leur arborescence <span class="ref">poly., p. 1 · notes CM 4</span></h2>
+    <p>Sur une machine, des dizaines de programmes s'exécutent en même temps : le shell, le terminal, les services du système. Le système d'exploitation les gère comme des processus, qu'il désigne par un numéro et range dans un arbre.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Processus</span> <span class="badge ajout">Ajout</span></p>
+      <p>Un <dfn>processus</dfn> (<span class="en" lang="en">process</span>) est un programme en cours d'exécution : le code du programme, ses données (variables, pile d'appels), et ce que le système lui associe pour le faire tourner, comme l'état du processeur, ses fichiers ouverts et les signaux en attente. Un même programme lancé deux fois donne deux processus.</p>
+    </div>
+
+    <h3>Identifiant et père : getpid, getppid <span class="ref">poly., p. 1 · CM 4</span></h3>
+    <p>Chaque processus a un identifiant, le <dfn>pid</dfn> (<span class="en" lang="en">process identifier</span>), et connaît celui de son père, le processus qui l'a créé. Deux primitives les donnent :</p>
+<pre data-fichier="Prototypes"><code class="language-c">#include &lt;unistd.h&gt;
+
+pid_t getpid(void);     /* identifiant du processus appelant */
+pid_t getppid(void);    /* identifiant de son père           */</code></pre>
+    <p>Le système repère ainsi les processus. Sous System V, le pid est un entier long, de 4 octets.</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Afficher les identifiants</span> <span class="ref">poly., p. 1</span></p>
+<pre data-fichier="ex_pid.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+
+int
+main()
+{
+     printf( "Processus %d, de pere %d, taille d'un pid = %lu octets\n" ,
+             getpid() , getppid() , sizeof(pid_t));
+     return(0);
+}</code></pre>
+<pre class="terminal"><code>$ ./ex_pid
+Processus 642, de pere 581, taille d'un pid = 4 octets</code></pre>
+    </div>
+    <p>Connaître le pid d'un processus permet notamment de lui envoyer un signal, avec <code>kill</code> : voir le cours 3, <a href="cours-03-signaux.html#envoyer-un-signal-kill-et-getpid">Envoyer un signal : kill et getpid</a>.</p>
+
+    <h3>L'arborescence des processus <span class="ref">CM 4</span></h3>
+    <p>Comme tout processus a un père, les processus forment un arbre. Le système d'exploitation est à la racine ; viennent ensuite le shell (<code>sh</code>), le terminal, le système de gestion de fichiers, etc., qui créent chacun leurs sous-processus.</p>
+    <p><span class="badge ajout">Ajout</span> Sous Linux, la racine est le processus de pid 1 (<code>systemd</code> ou <code>init</code>), lancé par le noyau au démarrage. La commande <code>pstree</code> dessine l'arbre ; avec <code>-s</code>, elle montre les ancêtres d'un processus, ici le shell courant (<code>$$</code> est son pid) :</p>
+<pre class="terminal"><code>$ pstree -p -s $$
+systemd(1)---init-systemd(Ub(2)---SessionLeader(343)---Relay(345)(344)---bash(345)---pstree(449)</code></pre>
+    <p>Dans WSL, la chaîne va de <code>systemd</code> (pid 1) aux processus qui relient Windows à Linux, puis au shell <code>bash</code> (345), qui a lui-même créé <code>pstree</code> (449) pour exécuter la commande. Chaque commande lancée depuis un shell est un fils de ce shell.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Mettre un processus en sommeil <span class="ref">poly., p. 1–2</span></h2>
+    <p>Un processus doit parfois s'arrêter de travailler : pour attendre une durée, ou un événement. Il existe plusieurs façons de l'endormir, sans consommer de temps de processeur.</p>
+
+    <h3>sleep, alarm et pause <span class="ref">p. 2</span></h3>
+<pre data-fichier="Prototypes"><code class="language-c">#include &lt;unistd.h&gt;
+
+unsigned int sleep(unsigned int s);
+unsigned int alarm(unsigned int s);
+int pause(void);</code></pre>
+    <table>
+      <caption>Trois fonctions pour le sommeil</caption>
+      <thead><tr><th>Fonction</th><th>Effet</th></tr></thead>
+      <tbody>
+        <tr><td><code>sleep(s)</code></td><td>la plus simple : suspend le processus pendant <code>s</code> secondes</td></tr>
+        <tr><td><code>alarm(s)</code></td><td>envoie le signal <code>SIGALRM</code> au processus au bout de <code>s</code> secondes, mais <strong>ne suspend pas</strong> le processus</td></tr>
+        <tr><td><code>pause()</code></td><td>sommeil jusqu'à un signal</td></tr>
+      </tbody>
+    </table>
+    <p><span class="badge ajout">Ajout</span> <code>alarm</code> et <code>pause</code> vont ensemble : le premier programme un réveil, le second attend. Quelques précisions utiles :</p>
+    <ul>
+      <li>un signal capté interrompt <code>sleep</code>, qui renvoie alors le nombre de secondes qu'il restait à dormir ;</li>
+      <li>un processus n'a qu'une alarme : un nouvel appel remplace la précédente et renvoie les secondes qui lui restaient, et <code>alarm(0)</code> l'annule sans en programmer d'autre ;</li>
+      <li>le traitement par défaut de <code>SIGALRM</code> est la <a href="cours-03-signaux.html#quelques-signaux">terminaison</a> : on installe donc le gestionnaire avant d'appeler <code>alarm</code>.</li>
+    </ul>
+
+    <h3>SIGSTOP et SIGCONT <span class="ref">p. 2</span></h3>
+    <p>On peut aussi mettre à profit le cours sur les <a href="cours-03-signaux.html">signaux Unix</a> : <code>SIGSTOP</code> suspend un processus, et <code>SIGCONT</code> le fait repartir. Un processus peut s'envoyer <code>SIGSTOP</code> à lui-même, mais il ne peut plus se réveiller seul : un autre doit lui envoyer <code>SIGCONT</code>.</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Les différentes méthodes, l'une après l'autre</span> <span class="ref">poly., p. 2</span></p>
+<pre data-fichier="ex_sommeil.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;signal.h&gt;
+#include &lt;sys/types.h&gt;
+
+static
+void hand_alrm( int sig )
+{
+     printf( "Signal ARLM recu\n");
+}
+
+int main( int nbarc , char * argv[] )
+{
+     printf( "Debut Processus %s , pid = %d\n" , argv[0] , getpid() );
+
+     signal( SIGALRM , hand_alrm );
+
+     printf(" Sommeil avec sleep pendant 5 secondes\n");
+     sleep(5);
+
+     printf(" Envoie de SIGALRM dans 5 secondes\n");
+     alarm(5) ;
+
+     printf(" Sommeil avec pause jusqu'au signal SIGALRM\n");
+     pause();
+
+     printf(" Sommeil en s\'envoyant le signal SIGSTOP\n");
+     kill( getpid() , SIGSTOP );
+
+     printf( "Fin Processus %s , pid = %d\n" , argv[0] , getpid() );
+     exit(0);
+}</code></pre>
+      <p><span class="badge ajout">Ajout</span> Exécution, avec les secondes écoulées en commentaire. Le dernier sommeil dure jusqu'au <code>SIGCONT</code>, envoyé depuis un autre terminal :</p>
+<pre class="terminal"><code>$ ./ex_sommeil
+Debut Processus ./ex_sommeil , pid = 643
+ Sommeil avec sleep pendant 5 secondes                   # t = 0 s
+ Envoie de SIGALRM dans 5 secondes                       # t = 5 s
+ Sommeil avec pause jusqu'au signal SIGALRM
+Signal ARLM recu                                         # t = 10 s
+ Sommeil en s'envoyant le signal SIGSTOP</code></pre>
+      <p>Pendant ce dernier sommeil, <code>ps</code> montre l'état <code>T</code> (stoppé). <code>kill -CONT</code> fait repartir le processus, qui reprend juste après son <code>kill</code> :</p>
+<pre class="terminal"><code>$ ps -o stat= -p 643
+T
+$ kill -CONT 643</code></pre>
+      <p>Le premier terminal affiche alors <code>Fin Processus ./ex_sommeil , pid = 643</code>.</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-1">
+      <p class="bloc-titre">Exercice 1 <span>Une alarme sans gestionnaire</span> <span class="badge ajout">Ajout</span></p>
+      <p>On enlève la ligne <code>signal( SIGALRM , hand_alrm );</code> d'un programme qui fait <code>alarm(1); pause(); printf("apres\n");</code>. Que se passe-t-il au bout d'une seconde ? Le texte « apres » s'affiche-t-il ?</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Sans gestionnaire, <code>SIGALRM</code> garde son traitement par défaut, la terminaison. Le processus est tué pendant <code>pause</code>, et « apres » ne s'affiche jamais. Le shell l'indique par le code \(142 = 128 + 14\), 14 étant le numéro de <code>SIGALRM</code> :</p>
+<pre class="terminal"><code>$ ./sans_handler
+Alarm clock
+$ echo $?
+142</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Créer un processus : fork <span class="ref">poly., p. 2–4 · notes CM 4</span></h2>
+    <p>La création des processus est dynamique : un processus en cours d'exécution en crée un autre en appelant la primitive <code>fork</code>.</p>
+
+    <h3>La primitive fork <span class="ref">poly., p. 3 · CM 4</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>fork</span></p>
+<pre><code class="language-c">#include &lt;sys/types.h&gt;
+#include &lt;unistd.h&gt;
+
+pid_t fork(void);</code></pre>
+      <p><code>fork</code> crée dynamiquement un nouveau processus, le <dfn>fils</dfn>, copie conforme du processus qui l'appelle, le <dfn>père</dfn>, et qui s'exécute en parallèle avec lui. Les deux poursuivent leur exécution juste après l'appel, et <code>fork</code> renvoie une valeur différente à chacun :</p>
+      <ul>
+        <li>dans le fils, 0 ;</li>
+        <li>dans le père, le pid du fils ;</li>
+        <li>en cas d'échec (aucun fils n'est créé), −1 au père, avec la cause dans <code>errno</code>.</li>
+      </ul>
+    </div>
+    <p>C'est donc la valeur renvoyée qui permet à un même programme de faire faire au père et au fils des choses différentes. L'exemple du CM 4 l'aiguille avec un <code>switch</code> :</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Le père et le fils se présentent</span> <span class="ref">CM 4</span></p>
+<pre data-fichier="fork_cm4.c"><code class="language-c">/* fork_cm4.c : l'exemple du CM 4 */
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/wait.h&gt;
+
+int main(void)
+{
+    pid_t pid;
+
+    switch (pid = fork()) {
+    case -1:
+        perror("Erreur lors de la création du processus");
+        exit(EXIT_FAILURE);
+
+    case 0:
+        printf("FILS : Je suis le fils (PID: %d, PPID de mon père: %d)\n", getpid(), getppid());
+        exit(EXIT_SUCCESS);
+
+    default:
+        printf("PÈRE : Je suis le père (PID: %d, PID de mon fils: %d)\n", getpid(), pid);
+        wait(NULL); // Sans ça, mon fils peut devenir un processus zombie
+        break;
+    }
+    return 0;
+}</code></pre>
+      <p><span class="badge ajout">Ajout</span> Les notes ne donnent que la fonction <code>main</code> : les <code>#include</code> sont ajoutés. Deux exécutions :</p>
+<pre class="terminal"><code>$ ./fork_cm4
+PÈRE : Je suis le père (PID: 452, PID de mon fils: 453)
+FILS : Je suis le fils (PID: 453, PPID de mon père: 452)
+$ ./fork_cm4
+PÈRE : Je suis le père (PID: 456, PID de mon fils: 457)
+FILS : Je suis le fils (PID: 457, PPID de mon père: 456)</code></pre>
+      <p>Le père (452) reçoit de <code>fork</code> le pid de son fils (453) ; le fils reçoit 0, et retrouve son père avec <code>getppid</code>. Le fils termine par <code>exit</code> : sans cet appel, et faute de <code>break</code>, il passerait dans la branche <code>default</code> du <code>switch</code> et afficherait à son tour le message du père, avec un « fils » de pid 0, la valeur que <code>fork</code> lui a renvoyée :</p>
+<pre class="terminal"><code>$ ./fork_cm4_sans_exit
+PÈRE : Je suis le père (PID: 443, PID de mon fils: 444)
+FILS : Je suis le fils (PID: 444, PPID de mon père: 443)
+PÈRE : Je suis le père (PID: 444, PID de mon fils: 0)</code></pre>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Qui s'exécute en premier ?</span> <span class="badge ajout">Ajout</span></p>
+      <p>Après <code>fork</code>, le père et le fils sont deux processus indépendants, que le système ordonnance comme il l'entend. Ci-dessus, le père a affiché avant le fils, mais rien ne le garantit : un programme ne doit jamais compter sur cet ordre. Pour qu'une action du père ait lieu après la fin du fils, le père attend celui-ci avec <code>wait</code> (section 4).</p>
+    </div>
+
+    <h3>La fourche à deux dents <span class="ref">p. 3</span></h3>
+    <p>On peut visualiser l'exécution du code comme une fourche à deux dents : jusqu'au <code>fork</code>, le programme s'exécute linéairement (le manche), et ensuite dans deux branches parallèles (les deux dents de la fourche).</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 560 150" width="560" role="img" aria-labelledby="fig-fourche-titre">
+        <title id="fig-fourche-titre">La fourche à deux dents. Un seul trait, le manche, représente le processus jusqu'à l'appel de fork. Il se sépare ensuite en deux traits parallèles : le père, à qui fork renvoie le pid du fils, et le fils, à qui fork renvoie 0.</title>
+        <defs>
+          <marker id="fleche-fourche" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <g font-size="13">
+          <text x="110" y="62" text-anchor="middle" class="t2">le manche</text>
+          <path class="trait" d="M30 75 L220 75"/>
+          <rect class="boite-accent" x="220" y="60" width="64" height="30" rx="3"/>
+          <text x="252" y="80" text-anchor="middle" class="mono accent">fork</text>
+          <path class="trait" d="M284 68 L330 30 L520 30" marker-end="url(#fleche-fourche)"/>
+          <path class="trait" d="M284 82 L330 120 L520 120" marker-end="url(#fleche-fourche)"/>
+          <text x="425" y="20" text-anchor="middle">le père</text>
+          <text x="425" y="48" text-anchor="middle" class="mono t2">renvoie le pid du fils</text>
+          <text x="425" y="110" text-anchor="middle">le fils</text>
+          <text x="425" y="138" text-anchor="middle" class="mono t2">renvoie 0</text>
+        </g>
+      </svg>
+      <figcaption>Le manche, puis les deux dents de la fourche : le père et le fils poursuivent chacun depuis le retour de <code>fork</code>.</figcaption>
+    </figure>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>La fourche en action</span> <span class="ref">poly., p. 3–4</span></p>
+<pre data-fichier="ex_fork.c"><code class="language-c">#include &lt;stdio.h&gt;     /* fprintf */
+#include &lt;sys/types.h&gt; /* fork */
+#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;    /* exit */
+
+int
+main()
+{
+  pid_t pid ;
+
+  switch(pid=fork())
+  {
+     case -1 : /* Erreur */
+       fprintf( stderr , "Echec du fork\n");
+       exit(-1);
+       break ;
+
+     case 0 : /* Processus fils */
+       fprintf( stdout , "Fils : Debut fourche branche fils\n");
+       fprintf( stdout , "Fils : Valeur du du fork dans le processus fils = %d\n" , pid);
+       fprintf( stdout , "Fils : Je suis %d , mon pere est %d\n" , getpid() , getppid());
+       sleep(2) ;
+       fprintf( stdout , "Fils : Fin fourche branche fils\n");
+       exit(0);
+       break ;
+
+     default : /* Processus pere */
+       fprintf( stdout , "Pere : Debut fourche branche pere\n");
+       fprintf( stdout , "Pere : Valeur du du fork dans le processus pere = %d\n" , pid);
+       fprintf( stdout , "Pere : Mon fils est %d , je suis %d\n" ,
+                pid , getpid());
+       sleep(1) ;
+       fprintf( stdout , "Pere : Fin fourche branche pere\n");
+       break ;
+  }
+     return(0);
+}</code></pre>
+<pre class="terminal"><code>$ ./ex_fork
+Pere : Debut fourche branche pere
+Pere : Valeur du du fork dans le processus pere = 491
+Pere : Mon fils est 491 , je suis 490
+Fils : Debut fourche branche fils
+Fils : Valeur du du fork dans le processus fils = 0
+Fils : Je suis 491 , mon pere est 490
+Pere : Fin fourche branche pere
+$ Fils : Fin fourche branche fils</code></pre>
+      <p><span class="badge ajout">Ajout</span> Le père dort une seconde et le fils deux : le père se termine le premier, et le shell rend la main alors que le fils tourne encore. Ce programme n'appelle pas <code>wait</code> : c'est ce que corrige <a href="#attendre-la-fin-d-un-fils-wait">la section suivante</a>.</p>
+    </div>
+
+    <h3>Ce que le fils reçoit de son père <span class="ref">p. 3</span></h3>
+    <p>Le processus fils est une copie conforme du processus père. Il a :</p>
+    <ul>
+      <li>le même code ;</li>
+      <li>la même zone de données ;</li>
+      <li>le même environnement ;</li>
+      <li>la même priorité ;</li>
+      <li>les mêmes descripteurs de fichiers courants ;</li>
+      <li>le même traitement des signaux.</li>
+    </ul>
+    <p>Le seul moyen de distinguer le fils du père est la valeur de retour de <code>fork</code>. <span class="badge ajout">Ajout</span> Mais c'est une <strong>copie</strong> : ce que l'un modifie ensuite, l'autre ne le voit pas. Et tout n'est pas copié : le fils a son propre pid, et il ne reçoit ni les signaux en attente de son père, ni ses <a href="cours-02-verrous.html#les-regles-a-connaitre">verrous</a>.</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Chacun sa variable n</span> <span class="badge ajout">Ajout</span></p>
+<pre data-fichier="copie.c"><code class="language-c">/* copie.c : après fork, le père et le fils ont chacun leur copie des variables */
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/wait.h&gt;
+
+int main(void)
+{
+    int n = 10;
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("fork");
+        return 1;
+    }
+    if (pid == 0) {                   /* fils */
+        n = n * 2;
+        printf("fils : n = %d, à l'adresse %p\n", n, (void *) &amp;n);
+        exit(0);
+    }
+    wait(NULL);                       /* père : attendre la fin du fils */
+    printf("père : n = %d, à l'adresse %p\n", n, (void *) &amp;n);
+    return 0;
+}</code></pre>
+<pre class="terminal"><code>$ ./copie
+fils : n = 20, à l'adresse 0x7ffeef3dad74
+père : n = 10, à l'adresse 0x7ffeef3dad74</code></pre>
+      <p>Le fils a doublé sa variable, celle du père vaut toujours 10. Pourtant, les deux variables ont la même adresse : chaque processus a son propre espace d'adressage, et la même adresse y désigne deux emplacements différents de la mémoire physique.</p>
+    </div>
+    <p>Les descripteurs ouverts sont copiés eux aussi, mais la copie renvoie aux mêmes ouvertures : le père et le fils partagent alors la position courante dans le fichier, au deuxième niveau des descripteurs vu au <a href="cours-01-fichiers-catalogues.html#les-descripteurs-ouverts-d-un-processus">cours 1</a>. Ce que l'un lit ou écrit fait avancer la position de l'autre.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Le tampon de printf est copié aussi</span> <span class="badge ajout">Ajout</span></p>
+      <p><code>printf</code> n'écrit pas tout de suite : il remplit un tampon, vidé au saut de ligne (sur un terminal), quand il est plein, ou à la fin du programme. Un texte encore dans le tampon au moment de <code>fork</code> est donc copié, et affiché deux fois :</p>
+<pre data-fichier="tampon.c"><code class="language-c">/* tampon.c : un printf sans saut de ligne, juste avant fork */
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/wait.h&gt;
+
+int main(void)
+{
+    printf("début ");                 /* reste dans le tampon de stdout */
+    if (fork() == 0)
+        printf("fils\n");
+    else {
+        wait(NULL);
+        printf("père\n");
+    }
+    return 0;
+}</code></pre>
+<pre class="terminal"><code>$ ./tampon
+début fils
+début père</code></pre>
+      <p>On vide le tampon avant de créer le processus : <code>fflush(stdout);</code> juste avant <code>fork</code>.</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-2">
+      <p class="bloc-titre">Exercice 2 <span>Trois fork dans une boucle</span> <span class="badge ajout">Ajout</span></p>
+      <p>Combien de processus ce programme crée-t-il, et combien de lignes « bonjour » affiche-t-il en tout ?</p>
+<pre data-fichier="trois.c"><code class="language-c">/* trois.c : trois fork dans une boucle */
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(void)
+{
+    for (int i = 0; i &lt; 3; i++)
+        fork();
+    printf("bonjour de %d\n", getpid());
+    return 0;
+}</code></pre>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Chaque processus qui exécute un tour de boucle se dédouble, et le fils continue la boucle au tour suivant, comme son père.</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Au premier tour, le processus initial se dédouble : 2 processus. Au deuxième, chacun se dédouble : 4. Au troisième : 8. Le programme crée donc 7 processus, et les 8 affichent leur ligne : \(2^3 = 8\) lignes, chacune avec un pid différent.</p>
+<pre class="terminal"><code>$ ./trois | wc -l
+8</code></pre>
+        <p>Dans un terminal, il arrive que l'invite du shell revienne avant certaines lignes : le shell n'attend que le processus initial, et les autres affichent leur ligne quand ils le peuvent, parfois après lui. Compter les lignes dans un tube, comme ici, évite le problème : <code>wc</code> lit jusqu'à ce que les 8 processus aient fermé leur sortie.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Attendre la fin d'un fils : wait <span class="ref">poly., p. 4–7 · notes CM 4</span></h2>
+    <p>Un fils qui se termine laisse une information à son père : comment il s'est terminé. Le père la récupère avec <code>wait</code>, ce qui libère en même temps tout ce qui restait du fils.</p>
+
+    <h3>wait et les processus zombies <span class="ref">poly., p. 4 · CM 4</span></h3>
+<pre data-fichier="Prototype"><code class="language-c">#include &lt;sys/types.h&gt;
+#include &lt;sys/wait.h&gt;
+
+pid_t wait(int *statut);    /* NULL si le statut n'intéresse pas */</code></pre>
+    <p><code>wait</code> suspend l'exécution du processus appelant jusqu'à ce que l'un de ses fils se termine, et range son statut de fin à l'adresse <code>statut</code> (section 4.2), que le polycopié appelle <code>cr</code>, pour code de retour.</p>
+    <ul>
+      <li>Si un fils s'est terminé avant l'appel de <code>wait</code>, le retour est immédiat.</li>
+      <li>S'il n'y a plus de fils, <code>wait</code> renvoie −1.</li>
+      <li>Si <code>wait</code> est débloquée par un fils, elle renvoie le pid de ce fils.</li>
+    </ul>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Une condition à corriger</span></p>
+      <p><span class="badge a-verifier">À vérifier</span> Le polycopié dit (p. 4) : « Si <code>wait</code> renvoie une valeur ≠ 0 alors on peut récupérer dans <code>cr</code> le code de retour ». Or −1 est aussi différent de 0, et dans ce cas <code>cr</code> n'a pas de sens. Le bon test est : si <code>wait</code> renvoie une valeur différente de −1.</p>
+    </div>
+    <p>Dans l'exemple du CM 4, le père appelle <code>wait(NULL)</code> : il attend la fin de son fils, sans s'intéresser à la façon dont il s'est terminé. Le commentaire de l'exemple en donne la raison : sans <code>wait</code>, le fils peut devenir un processus zombie.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Processus zombie</span> <span class="badge ajout">Ajout</span></p>
+      <p>Un <dfn>zombie</dfn> est un processus terminé dont le père n'a pas encore récupéré le statut. Sa mémoire est libérée, mais le système garde son entrée dans la table des processus (son pid, son statut de fin) jusqu'à ce que le père appelle <code>wait</code>.</p>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Voir un zombie</span> <span class="badge ajout">Ajout</span></p>
+<pre data-fichier="zombie.c"><code class="language-c">/* zombie.c : un fils terminé que son père n'a pas encore attendu */
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/wait.h&gt;
+
+int main(void)
+{
+    pid_t pid = fork();
+    if (pid == 0)
+        exit(0);                      /* le fils se termine tout de suite */
+
+    char commande[80];
+    snprintf(commande, sizeof commande, "ps -o pid,ppid,stat,comm -p %d,%d", getpid(), pid);
+    sleep(1);                         /* le père ne l'a pas encore attendu */
+    system(commande);                 /* le fils est un zombie : état Z */
+    wait(NULL);                       /* le père récupère son statut */
+    system(commande);                 /* le zombie a disparu */
+    return 0;
+}</code></pre>
+<pre class="terminal"><code>$ ./zombie
+    PID    PPID STAT COMMAND
+    469     467 Ss+  zombie
+    470     469 Z+   zombie
+    PID    PPID STAT COMMAND
+    469     467 Ss+  zombie</code></pre>
+      <p>Pendant la seconde d'attente, le fils (470) est terminé, mais <code>ps</code> le montre encore, dans l'état <code>Z</code>. Après <code>wait</code>, il a disparu de la table.</p>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Un zombie ne consomme presque rien, mais un programme qui crée des fils sans jamais les attendre en accumule, et finit par épuiser la table des processus. À l'inverse, quand un père se termine avant ses fils, ceux-ci deviennent des <dfn>orphelins</dfn> : un processus du système, en général celui de pid 1, les adopte, et c'est lui qui attendra leur fin.</p>
+
+    <h3>Le statut de fin <span class="ref">poly., p. 4–5 · CM 4</span></h3>
+    <p>Le statut que <code>wait</code> range à l'adresse <code>statut</code> permet de savoir si le fils s'est bien terminé ou non. C'est un entier sur 16 bits, séparé en deux : les 8 bits de poids forts et les 8 bits de poids faibles.</p>
+    <ul>
+      <li><strong>Terminaison normale.</strong> Si le fils s'est terminé par <code>exit(valeur)</code>, les 8 bits de poids faibles de <code>valeur</code> sont affectés aux bits de poids forts du statut. Les autres bits sont à 0.</li>
+      <li><strong>Terminaison anormale.</strong> En général, cela veut dire que le fils a reçu un signal. Le numéro de ce signal est affecté aux 8 bits de poids faibles du statut.</li>
+      <li><strong>Avec un fichier core.</strong> Si le traitement de ce signal crée une image mémoire (un <dfn>fichier core</dfn>), on ajoute la valeur décimale 128 au numéro du signal.</li>
+    </ul>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 500 192" width="500" role="img" aria-labelledby="fig-statut-titre">
+        <title id="fig-statut-titre">Le statut de fin sur 16 bits. Pour un fils terminé par exit(n), l'octet de poids fort (bits 15 à 8) contient les 8 bits de poids faible de n, et l'octet de poids faible vaut 0. Pour un fils tué par le signal s, l'octet de poids fort vaut 0 et l'octet de poids faible contient s. Si un fichier core est créé, l'octet de poids faible contient s plus 128 : SIGQUIT, de numéro 3, donne 131, soit 1000 0011 en binaire.</title>
+        <g font-size="13">
+          <text x="250" y="22" text-anchor="middle" class="t2">bits 15 à 8 (poids fort)</text>
+          <text x="410" y="22" text-anchor="middle" class="t2">bits 7 à 0 (poids faible)</text>
+          <text x="10" y="62">fin par exit(n)</text>
+          <rect class="boite-accent" x="170" y="40" width="160" height="34" rx="3"/>
+          <text x="250" y="62" text-anchor="middle" class="mono accent">n &amp; 0xFF</text>
+          <rect class="boite" x="330" y="40" width="160" height="34" rx="3"/>
+          <text x="410" y="62" text-anchor="middle" class="mono">0</text>
+          <text x="10" y="114">tué par le signal s</text>
+          <rect class="boite" x="170" y="92" width="160" height="34" rx="3"/>
+          <text x="250" y="114" text-anchor="middle" class="mono">0</text>
+          <rect class="boite-accent" x="330" y="92" width="160" height="34" rx="3"/>
+          <text x="410" y="114" text-anchor="middle" class="mono accent">s</text>
+          <text x="10" y="166">tué par s, avec core</text>
+          <rect class="boite" x="170" y="144" width="160" height="34" rx="3"/>
+          <text x="250" y="166" text-anchor="middle" class="mono">0</text>
+          <rect class="boite-accent" x="330" y="144" width="160" height="34" rx="3"/>
+          <text x="410" y="166" text-anchor="middle" class="mono accent">s + 128</text>
+        </g>
+      </svg>
+      <figcaption>Les trois formes du statut de fin, d'après les figures 1 et 2 du polycopié, où <code>SIGQUIT</code> (3) avec core donne <code>1000 0011</code>, soit 131.</figcaption>
+    </figure>
+    <p><span class="badge ajout">Ajout</span> Plutôt que de décaler et masquer soi-même, on lit le statut avec les macros de <code>&lt;sys/wait.h&gt;</code>, qui marchent sur tous les systèmes :</p>
+    <table>
+      <caption>Les macros de lecture du statut</caption>
+      <thead><tr><th>Macro</th><th>Valeur</th></tr></thead>
+      <tbody>
+        <tr><td><code>WIFEXITED(statut)</code></td><td>vrai si le fils s'est terminé normalement, par <code>exit</code> ou par un <code>return</code> de <code>main</code></td></tr>
+        <tr><td><code>WEXITSTATUS(statut)</code></td><td>alors, son code de sortie : les 8 bits de poids faible de la valeur passée à <code>exit</code></td></tr>
+        <tr><td><code>WIFSIGNALED(statut)</code></td><td>vrai si le fils a été tué par un signal</td></tr>
+        <tr><td><code>WTERMSIG(statut)</code></td><td>alors, le numéro de ce signal, sans le 128</td></tr>
+        <tr><td><code>WCOREDUMP(statut)</code></td><td>alors, vrai si un fichier core a été créé (hors de la norme POSIX, mais présent sous Linux)</td></tr>
+      </tbody>
+    </table>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Le programme ex_wait</span> <span class="ref">poly., p. 5–6</span></p>
+      <p>Le paramètre choisit comment le fils se termine : 1 par <code>exit(5)</code>, 2 par un signal. Dans ce cas, le fils tourne sans fin (<code>while(1)</code>), et on le tue depuis un autre terminal.</p>
+<pre data-fichier="ex_wait.c"><code class="language-c">#include &lt;stdio.h&gt;     /* fprintf */
+#include &lt;sys/types.h&gt; /* fork , wait  */
+#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;    /* exit */
+#include &lt;sys/wait.h&gt;  /* wait */
+
+int
+main( int argc , char * argv[] )
+{
+  pid_t pid ;
+  int cr ;
+
+  if( argc != 2 )
+    {
+      fprintf( stderr , "Usage %s &lt;type d'arret fils &gt;\n" , argv[0] ) ;
+      fprintf( stderr , "avec &lt;type d'arret fils &gt; = 1 --&gt; par exit\n" ) ;
+      fprintf( stderr , "                          = 2 --&gt; par signal\n" ) ;
+      exit(1);
+    }
+
+  int type = atoi(argv[1]) ;
+
+  switch(pid=fork())
+  {
+     case -1 : /* Erreur */
+       fprintf( stderr , "Echec du fork\n");
+       exit(1);
+       break ;
+
+     case 0 : /* Processus fils */
+       fprintf( stdout , "Fils : processus %d\n" , getpid() );
+       switch(type)
+         {
+         case 1 :
+           exit(5) ;
+         case 2 :
+           while(1) ;
+           break ;
+         default :
+           fprintf( stderr , "Fils %d : type d'arret inconnu (%d) \n" , getpid() , type ) ;
+           exit(-1) ;
+         }
+
+     default : /* Processus pere */
+       fprintf( stdout , "Pere : processus %d\n" , getpid() );
+       pid=wait(&amp;cr) ;
+       if( type == 1 )
+         cr=cr&gt;&gt;8 ;
+       printf(" Fin du processus fils %d , code  retour = %d\n",
+              pid , cr ) ;
+       break ;
+  }
+    return(0);
+}</code></pre>
+      <p>Le polycopié donne deux exécutions. Avec <code>SIGQUIT</code>, dont le traitement par défaut crée un core, puis avec <code>SIGKILL</code>, qui n'en crée pas :</p>
+<pre class="terminal"><code>$ ex_wait &amp;
+[5] 10420
+$ Pere : processus 10420
+  Fils : processus 10421
+$ kill -3 10421
+  Fin du processus fils 10421 , code  retour = 131
+[5]    Done                            ex_wait
+
+$ ex_wait &amp;
+[5] 10524
+$ Pere : processus 10524
+  Fils : processus 10525
+$ kill -9 10525
+  Fin du processus fils 10525 , code  retour = 9
+[5]    Done                            ex_wait</code></pre>
+      <p>\(131 = 128 + 3\) : le signal 3 avec un core. <code>SIGKILL</code>, lui, donne 9, sans core. Dans le père, <code>cr=cr&gt;&gt;8</code> ramène le code de <code>exit</code> de l'octet de poids fort vers l'octet de poids faible : c'est à la main ce que fait <code>WEXITSTATUS</code>.</p>
+      <p><span class="badge a-verifier">À vérifier</span> Le polycopié lance <code>ex_wait</code> sans paramètre, alors que le programme en exige un : il faut taper <code>./ex_wait 2</code>. Les traces ci-dessus sont celles du polycopié ; les suivantes sont celles obtenues ici.</p>
+<pre class="terminal"><code>$ ./ex_wait 1
+Fils : processus 669
+Pere : processus 668
+ Fin du processus fils 669 , code  retour = 5
+$ ./ex_wait 2 &amp;
+Pere : processus 454
+Fils : processus 456
+$ kill -3 456
+ Fin du processus fils 456 , code  retour = 3</code></pre>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Pas de core sans autorisation</span> <span class="badge ajout">Ajout</span></p>
+      <p>Ci-dessus, <code>kill -3</code> donne 3 et non 131 : sur un Linux actuel, la limite de taille des fichiers core vaut souvent 0, et le système n'en crée aucun. Pour retrouver le résultat du polycopié, on lève cette limite dans le shell qui lance le programme :</p>
+<pre class="terminal"><code>$ ulimit -c unlimited
+$ ./ex_wait 2 &amp;
+Pere : processus 459
+Fils : processus 461
+$ kill -3 461
+ Fin du processus fils 461 , code  retour = 131
+$ ls core*
+core.461</code></pre>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Deux fils, deux fins</span> <span class="badge ajout">Ajout</span></p>
+      <p>Le premier fils se termine par <code>exit(3)</code> ; le second attend un signal (<code>pause</code>), et le père le tue avec <code>kill</code>.</p>
+<pre data-fichier="statut.c"><code class="language-c">/* statut.c : ce que wait rapporte de la fin d'un fils */
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;signal.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/wait.h&gt;
+
+static void afficher(int statut)
+{
+    printf("statut = %4d = 0x%04x : ", statut, statut);
+    if (WIFEXITED(statut))
+        printf("fin normale, exit(%d)\n", WEXITSTATUS(statut));
+    else if (WIFSIGNALED(statut))
+        printf("tué par le signal %d\n", WTERMSIG(statut));
+}
+
+int main(void)
+{
+    int statut;
+
+    if (fork() == 0)                  /* premier fils : se termine par exit(3) */
+        exit(3);
+    wait(&amp;statut);
+    afficher(statut);
+
+    pid_t pid = fork();
+    if (pid == 0) {                   /* second fils : attend un signal */
+        pause();
+        exit(0);
+    }
+    kill(pid, SIGTERM);               /* le père le tue (SIGTERM vaut 15) */
+    wait(&amp;statut);
+    afficher(statut);
+    return 0;
+}</code></pre>
+<pre class="terminal"><code>$ ./statut
+statut =  768 = 0x0300 : fin normale, exit(3)
+statut =   15 = 0x000f : tué par le signal 15</code></pre>
+      <p>On retrouve deux des formes de la figure : 3 dans l'octet de poids fort (\(3 \times 256 = 768\)), puis 15, le numéro de <code>SIGTERM</code>, dans l'octet de poids faible.</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-3">
+      <p class="bloc-titre">Exercice 3 <span>Lire un statut</span> <span class="badge ajout">Ajout</span></p>
+      <p>Comment se sont terminés les fils dont <code>wait</code> a rapporté les statuts <code>0x0200</code>, <code>0x0009</code>, <code>0x0b00</code>, <code>0x000b</code> et <code>0x0083</code> ? Les signaux 3, 9 et 11 sont <code>SIGQUIT</code>, <code>SIGKILL</code> et <code>SIGSEGV</code>.</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <ul>
+          <li><code>0x0200</code> : octet de poids faible nul, fin normale par <code>exit(2)</code>.</li>
+          <li><code>0x0009</code> : tué par le signal 9, <code>SIGKILL</code> (par exemple <code>kill -9</code>).</li>
+          <li><code>0x0b00</code> : fin normale par <code>exit(11)</code>.</li>
+          <li><code>0x000b</code> : tué par le signal 11, <code>SIGSEGV</code>, une erreur de segmentation.</li>
+          <li><code>0x0083</code> : \(131 = 128 + 3\), tué par <code>SIGQUIT</code>, avec création d'un fichier core.</li>
+        </ul>
+        <p>Le même nombre, 11, n'a pas le même sens selon l'octet où il se trouve : c'est pourquoi on passe par <code>WIFEXITED</code> et <code>WIFSIGNALED</code> avant de lire le code ou le signal.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice" id="ex-4">
+      <p class="bloc-titre">Exercice 4 <span>exit(256)</span> <span class="badge ajout">Ajout</span></p>
+      <p>Un fils se termine par <code>exit(256)</code>, un autre par <code>exit(-1)</code>. Que vaut <code>WEXITSTATUS(statut)</code> dans le père, pour chacun ?</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Seuls les 8 bits de poids faible de la valeur passée à <code>exit</code> sont transmis. \(256 = 1\,0000\,0000_2\) a ses 8 bits de poids faible nuls : le père lit 0, comme pour une fin réussie. −1 s'écrit avec tous ses bits à 1 : le père lit \(1111\,1111_2 = 255\). Exécution réelle :</p>
+<pre class="terminal"><code>$ ./exit256
+exit(256) : statut = 0x0000, WEXITSTATUS = 0
+exit(-1)  : statut = 0xff00, WEXITSTATUS = 255</code></pre>
+        <p>Un code de sortie se choisit donc entre 0 et 255 ; par convention, 0 signale une réussite (<code>EXIT_SUCCESS</code>), et toute autre valeur une erreur (<code>EXIT_FAILURE</code> vaut 1). Le shell affiche le code du dernier processus attendu avec <code>echo $?</code>.</p>
+      </details>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Attendre un fils précis : waitpid</span> <span class="badge hors-programme">Hors programme</span></p>
+      <p><code>wait</code> attend n'importe lequel des fils. <code>waitpid(pid, &amp;statut, options)</code> attend celui dont on donne le pid (ou n'importe lequel avec −1), et l'option <code>WNOHANG</code> le rend non bloquant : il renvoie 0 tout de suite si aucun fils n'est encore terminé. Un père qui a d'autres choses à faire peut ainsi récupérer ses fils de temps en temps, sans les laisser à l'état de zombies.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Recouvrir un processus : exec <span class="ref">poly., p. 7–10</span></h2>
+    <p><code>fork</code> crée une copie du même programme. Pour lancer un autre programme, il faut une seconde opération : remplacer le code du processus.</p>
+
+    <h3>Le recouvrement <span class="ref">p. 7</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Recouvrement</span></p>
+      <p>Le <dfn>recouvrement</dfn> (<span class="en" lang="en">overlay</span>) d'un processus est comme un changement de vie de ce processus : le code qu'il est en train d'exécuter est remplacé par celui d'un autre programme, le programme lancé. Il est réalisé par la famille des fonctions <code>exec</code>.</p>
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Retour de exec</span></p>
+      <ul>
+        <li><strong>Pas de retour en cas de succès</strong> : <code>exec</code> remplace le code existant par un autre, et l'appel de <code>exec</code> est donc effacé.</li>
+        <li><strong>−1 en cas d'échec.</strong></li>
+      </ul>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Aucun processus n'est créé : le pid reste le même, et seul le programme change. Tout ce qui suit un <code>exec</code> dans le source ne s'exécute donc qu'en cas d'échec.</p>
+
+    <h3>La famille exec <span class="ref">p. 7–8</span></h3>
+<pre data-fichier="Prototypes"><code class="language-c">#include &lt;unistd.h&gt;
+
+int execl(const char *path, const char *arg0, ..., const char *argn, char * /*NULL*/);
+int execv(const char *path, char *const argv[]);
+int execle(const char *path, const char *arg0, ..., const char *argn, char * /*NULL*/, char *const envp[]);
+int execve(const char *path, char *const argv[], char *const envp[]);
+int execlp(const char *file, const char *arg0, ..., const char *argn, char * /*NULL*/);
+int execvp(const char *file, char *const argv[]);</code></pre>
+    <p>La famille est divisée en deux clans :</p>
+    <dl class="glossaire">
+      <dt>les <code>execl</code></dt>
+      <dd>le nombre de paramètres du programme lancé est connu : ils sont placés dans <code>arg0</code>…<code>argn</code> ;</dd>
+      <dt>les <code>execv</code></dt>
+      <dd>le nombre de paramètres est inconnu a priori : c'est le tableau <code>argv</code> qui les contient, le dernier paramètre étant suivi de <code>NULL</code>.</dd>
+    </dl>
+    <p>À l'intérieur de ces clans, une lettre précise le type d'appel :</p>
+    <table>
+      <caption>La dernière lettre du nom</caption>
+      <thead><tr><th>Lettre</th><th>Fonctions</th><th>Type d'appel</th></tr></thead>
+      <tbody>
+        <tr><td>(rien)</td><td><code>execl</code>, <code>execv</code></td><td>la référence du programme lancé doit être explicite : nom complet depuis le répertoire courant d'où l'on exécute le <code>exec</code></td></tr>
+        <tr><td><code>e</code></td><td><code>execle</code>, <code>execve</code></td><td>comme <code>execl</code> et <code>execv</code>, avec un tableau de variables d'environnement <code>envp</code> transmis au programme lancé</td></tr>
+        <tr><td><code>p</code></td><td><code>execlp</code>, <code>execvp</code></td><td>comme <code>execl</code> et <code>execv</code>, avec recherche du programme lancé dans les chemins connus du système, ceux de <code>$PATH</code></td></tr>
+      </tbody>
+    </table>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Deux oublis classiques</span> <span class="badge ajout">Ajout</span></p>
+      <ul>
+        <li><code>arg0</code> (ou <code>argv[0]</code>) est le nom du programme, pas son premier paramètre. On écrit donc deux fois <code>"ls"</code> : <code>execlp("ls", "ls", "-l", (char *) NULL)</code>.</li>
+        <li>La liste se termine toujours par <code>NULL</code>, converti en <code>char *</code> dans le clan <code>execl</code>.</li>
+      </ul>
+    </div>
+
+    <h3>Exemple : lancer ls de trois façons <span class="ref">p. 8–9</span></h3>
+    <p>Voici les différents appels du clan <code>execv</code> : le fils y remplace son code par celui de <code>ls</code>, avec les paramètres donnés au programme.</p>
+<pre data-fichier="ex_exec.c"><code class="language-c">#include &lt;stdio.h&gt;     /* fprintf */
+#include &lt;sys/types.h&gt; /* fork , wait  */
+#include &lt;unistd.h&gt;    /* exec */
+#include &lt;stdlib.h&gt;    /* exit */
+#include &lt;sys/wait.h&gt;  /* wait */
+#include &lt;strings.h&gt;   /* strncmp , strcat */
+
+int main( int nb_arg  , char * tab_arg[] , char * env[] )
+{
+     pid_t pid ;          /* pid du processus fils */
+     int cr ;             /* Code Retour */
+     int nb_env ;         /* Nombre de variable dans env */
+     int type   ;         /* Type de exec a tester */
+
+     /*------------*/
+
+     if( nb_arg &lt; 2 )
+     {
+          fprintf( stderr , "usage : %s &lt;type exec&gt; &lt;fichier1&gt; &lt;fichier2&gt; ...\n" ,
+                   tab_arg[0] );
+          fprintf( stderr , " avec &lt;type exec&gt; = 0 ---&gt; execv\n" );
+          fprintf( stderr , "                  = 1 ---&gt; execve\n" );
+          fprintf( stderr , "                  = 2 ---&gt; execvp\n" );
+          exit(-1);
+     }
+
+     sscanf( tab_arg[1] , "%d" , &amp;type ) ;
+
+     switch(pid=fork())
+     {
+        case -1 : /* Erreur */
+             fprintf( stderr , "Echec du fork\n");
+             exit(-1);
+             break ;
+
+        case 0 : /* Processus fils */
+             {
+                  char * params[256] ;
+                  int i ;
+
+                  fprintf( stdout , "Fils : processus %d\n" , getpid() );
+
+                  /* Creation du tableau de parametres de exec */
+                  params[0] = "ls" ;
+                  for( i=1 ; tab_arg[i+1] != NULL ; i++)
+                       params[i] = tab_arg[i+1] ;
+                  params[i] = NULL ;
+
+                  /* Aguillage selon le type d'exec a tester */
+                  switch( type )
+                  {
+                     case 0 : /* test de execv */
+                       {
+                         printf("\n\ntest de EXECV\n\n");
+                         if( execv( "/usr/bin/ls" , params ) == -1 )
+                         {
+                           perror( "Echec du lancement par execv" );
+                           exit(-2);
+                         }
+                       }
+                     case 1 : /* test de execve */
+                       {
+                         printf("\n\ntest de EXECVE\n\n");
+                         /* Creation d'une variable d'environnement COLUMNS
+                          * COLUMNS==largeur de colonne
+                          * cette variable est utilisee par "ls"
+                          */
+                         env[nb_env] = "COLUMNS=30" ;
+                         env[nb_env+1] = 0 ;
+
+                         if( execve("/usr/bin/ls" , params , env ) == -1 )
+                         {
+                              perror( "Echec du lancement par execve" );
+                              exit(-3);
+                         }
+                       }
+                     case 2 : /* test de execvp */
+                       {
+                       printf("\n\ntest de EXECVP\n\n");
+                         if( execvp( "ls" , params ) == -1 )
+                         {
+                              perror( "Echec du lancement par execvp" );
+                              exit(-4);
+                         }
+                       }
+                     default : /* type inconnu */
+                       {
+                         fprintf( stderr ,"Type de exec inconnu = %d\n",type);
+                         break ;
+                       }
+                  }
+             }
+
+        default : /* Processus pere */
+          {
+             fprintf( stdout , "Pere : processus %d\n" , getpid() );
+             pid=wait(&amp;cr) ;
+             printf(" Fin du processus fils %d , code  retour = %d\n",
+                    pid , cr ) ;
+             break ;
+          }
+     }
+
+     exit(0);
+}</code></pre>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Deux défauts du programme</span></p>
+      <p><span class="badge a-verifier">À vérifier</span> <code>nb_env</code> n'est jamais calculé. Le cas <code>execve</code> écrit donc à une place quelconque de <code>env</code> : exécuté tel quel, le fils meurt d'une erreur de segmentation, et le père affiche le code 11, le numéro de <code>SIGSEGV</code>. On compte les variables juste avant, en ajoutant cette ligne au-dessus de <code>env[nb_env] = "COLUMNS=30" ;</code> :</p>
+<pre><code class="language-c">for( nb_env=0 ; env[nb_env] != NULL ; nb_env++ ) ;</code></pre>
+      <p><span class="badge a-verifier">À vérifier</span> Pour un type inconnu, <code>break</code> ne quitte que le <code>switch</code> intérieur. Le fils continue alors dans la branche <code>default</code> du <code>switch</code> extérieur, celle du père : il y appelle <code>wait</code>, qui renvoie −1 puisqu'il n'a pas de fils. Il manque un <code>exit</code>.</p>
+    </div>
+    <p>Exécutions, sur un dossier <code>d</code> de huit fichiers (<code>-C d</code> sont les paramètres passés à <code>ls</code>) :</p>
+<pre class="terminal"><code>$ ./ex_exec 0 -C d
+Pere : processus 494
+Fils : processus 496
+
+
+test de EXECV
+
+alpha  beta  delta  epsilon  eta  gamma  theta  zeta
+ Fin du processus fils 496 , code  retour = 0
+$ ./ex_exec 1 -C d
+Pere : processus 499
+Fils : processus 501
+
+
+test de EXECVE
+
+ Fin du processus fils 501 , code  retour = 11
+$ ./ex_exec_corrige 1 -C d
+Pere : processus 509
+Fils : processus 511
+
+
+test de EXECVE
+
+alpha  delta    eta    theta
+beta   epsilon  gamma  zeta
+ Fin du processus fils 511 , code  retour = 0
+$ ./ex_exec 2 -C d
+Pere : processus 504
+Fils : processus 506
+
+
+test de EXECVP
+
+alpha  beta  delta  epsilon  eta  gamma  theta  zeta
+ Fin du processus fils 506 , code  retour = 0</code></pre>
+    <p>Corrigé, <code>execve</code> transmet <code>COLUMNS=30</code> à <code>ls</code>, qui range ses colonnes dans cette largeur. <code>execvp</code> trouve <code>ls</code> grâce à <code>$PATH</code>, alors que <code>execv</code> demande le chemin complet <code>/usr/bin/ls</code>.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>exec efface le tampon de printf</span> <span class="badge ajout">Ajout</span></p>
+      <p>Le tampon de <code>stdout</code> fait partie de la mémoire du processus : un <code>exec</code> réussi le perd. Sur un terminal, le saut de ligne le vide et rien ne se voit. Mais si la sortie est redirigée vers un fichier, le tampon n'est plus vidé à chaque ligne, et les messages disparaissent :</p>
+<pre class="terminal"><code>$ ./ex_exec 0 -C d &gt; f.txt
+$ cat f.txt
+alpha  beta  delta  epsilon  eta  gamma  theta  zeta
+Pere : processus 512
+ Fin du processus fils 513 , code  retour = 0</code></pre>
+      <p>« Fils : processus… » et « test de EXECV » sont perdus. On appelle <code>fflush(stdout);</code> avant <code>exec</code>.</p>
+    </div>
+
+    <h3>Ce qui traverse exec <span class="ref">p. 8</span></h3>
+    <p>Le polycopié ajoute : « le fils hérite des traitements effectués par le père » sur les signaux et sur les fichiers.</p>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Pour les signaux, il faut préciser</span></p>
+      <p><span class="badge a-verifier">À vérifier</span> <span class="badge ajout">Ajout</span> Sur les fichiers, la remarque se vérifie : un descripteur ouvert le reste à travers <code>exec</code>. Sur les signaux, seul ce qui ne dépend pas du code survit. Un signal ignoré reste ignoré, mais un gestionnaire ne peut pas survivre, puisque son code est remplacé : le signal repasse à son traitement par défaut. Ce programme se relance lui-même par <code>exec</code>, et le vérifie :</p>
+<pre data-fichier="heritage.c"><code class="language-c">/* heritage.c : ce qui traverse exec, et ce qui ne le traverse pas */
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;signal.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/wait.h&gt;
+
+static void gestionnaire(int sig)
+{
+    (void) sig;
+}
+
+static const char *traitement(int sig)
+{
+    struct sigaction a;
+    sigaction(sig, NULL, &amp;a);
+    if (a.sa_handler == SIG_DFL) return "defaut";
+    if (a.sa_handler == SIG_IGN) return "ignore";
+    return "gestionnaire";
+}
+
+int main(int argc, char *argv[])
+{
+    if (argc &gt; 1) {                   /* le programme relancé par exec */
+        printf("apres exec : pid = %d, SIGINT : %s, SIGQUIT : %s\n",
+               getpid(), traitement(SIGINT), traitement(SIGQUIT));
+        write(3, "ecrit apres exec\n", 17);
+        return 0;
+    }
+
+    signal(SIGINT, gestionnaire);     /* capté */
+    signal(SIGQUIT, SIG_IGN);         /* ignoré */
+    int fd = open("trace.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    dup2(fd, 3);                      /* le descripteur 3 reste ouvert */
+
+    printf("avant exec : pid = %d, SIGINT : %s, SIGQUIT : %s\n",
+           getpid(), traitement(SIGINT), traitement(SIGQUIT));
+    fflush(stdout);
+    execl(argv[0], argv[0], "relance", (char *) NULL);
+    perror("execl");
+    return 1;
+}</code></pre>
+<pre class="terminal"><code>$ ./heritage
+avant exec : pid = 702, SIGINT : gestionnaire, SIGQUIT : ignore
+apres exec : pid = 702, SIGINT : defaut, SIGQUIT : ignore
+$ cat trace.txt
+ecrit apres exec</code></pre>
+      <p>Le pid n'a pas changé, <code>SIGQUIT</code> reste ignoré, <code>SIGINT</code> a perdu son gestionnaire, et le descripteur 3 écrit toujours dans le fichier ouvert avant <code>exec</code>.</p>
+    </div>
+
+    <h3>Utilisation : fork, puis exec <span class="ref">p. 10</span></h3>
+    <p>En général, les appels à la famille <code>exec</code> sont utilisés après un <code>fork</code>, pour créer dans l'un des deux processus une nouvelle image mémoire différente. Cette création se fait en deux temps :</p>
+    <ol class="etapes">
+      <li><strong>Création de la copie</strong> de l'image du programme courant : <code>fork</code>.</li>
+      <li><strong>Recouvrement de cette copie</strong> : <code>exec</code>.</li>
+    </ol>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le clan execl, et ce que fait un shell</span></p>
+      <p>Le polycopié ne donne d'exemple que pour le clan <code>execv</code>. Avec un nombre de paramètres connu, <code>execlp</code> est plus simple. Ce programme fait ce que fait un shell pour la commande <code>ls -1 d</code> : il crée un fils, le recouvre par <code>ls</code>, et attend sa fin pour lire son code.</p>
+<pre data-fichier="ex_execl.c"><code class="language-c">/* ex_execl.c : le clan execl, à côté du clan execv du polycopié */
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/wait.h&gt;
+
+int main(void)
+{
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("fork");
+        return 1;
+    }
+    if (pid == 0) {
+        execlp("ls", "ls", "-1", "d", (char *) NULL);
+        perror("execlp");             /* on n'arrive ici qu'en cas d'échec */
+        exit(127);
+    }
+    int statut;
+    wait(&amp;statut);
+    if (WIFEXITED(statut))
+        printf("ls a fini par exit(%d)\n", WEXITSTATUS(statut));
+    return 0;
+}</code></pre>
+<pre class="terminal"><code>$ ./ex_execl
+alpha
+beta
+delta
+epsilon
+eta
+gamma
+theta
+zeta
+ls a fini par exit(0)</code></pre>
+    </div>
+
+    <div class="bloc exercice" id="ex-5">
+      <p class="bloc-titre">Exercice 5 <span>Le code après exec</span> <span class="badge ajout">Ajout</span></p>
+      <p>Qu'affiche ce programme sur un terminal ? Et si <code>"echo"</code> est remplacé, aux deux endroits, par un programme qui n'existe pas ?</p>
+<pre data-fichier="fin.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(void)
+{
+    printf("debut\n");
+    execlp("echo", "echo", "milieu", (char *) NULL);
+    printf("fin\n");
+    return 0;
+}</code></pre>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Quand l'appel de <code>exec</code> rend-il la main ?</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Dans le premier cas, <code>exec</code> réussit et ne revient pas : « fin » ne s'affiche jamais. Dans le second, <code>exec</code> échoue et renvoie −1, et le programme continue.</p>
+<pre class="terminal"><code>$ ./fin
+debut
+milieu
+$ ./fin2
+debut
+fin</code></pre>
+        <p>Redirigé vers un fichier, le premier cas n'écrit que « milieu » : le tampon qui contenait « debut » est perdu avec la mémoire du processus.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Un processus est un programme en cours d'exécution ; il a un identifiant, son pid (<code>getpid</code>), et connaît celui de son père (<code>getppid</code>).</li>
+        <li>Les processus forment un arbre, dont la racine est créée par le système au démarrage (pid 1 sous Linux) ; une commande lancée depuis un shell est un fils de ce shell.</li>
+        <li>Pour endormir un processus : <code>sleep</code> pour une durée, <code>pause</code> jusqu'à un signal, <code>alarm</code> qui envoie <code>SIGALRM</code> plus tard sans suspendre, <code>SIGSTOP</code> jusqu'à un <code>SIGCONT</code> venu d'un autre processus.</li>
+        <li><code>fork</code> crée un fils, copie du père ; il renvoie 0 dans le fils, le pid du fils dans le père, −1 en cas d'échec.</li>
+        <li>Après <code>fork</code>, l'ordre d'exécution du père et du fils n'est pas garanti.</li>
+        <li>Le fils reçoit une copie des variables (les modifier ne change pas celles du père), du tampon de <code>printf</code> (d'où <code>fflush</code> avant <code>fork</code>) et des descripteurs ouverts, qui partagent leur position avec ceux du père.</li>
+        <li><code>wait</code> attend la fin d'un fils et récupère son statut ; un fils terminé mais pas encore attendu est un zombie.</li>
+        <li>Statut de fin, sur 16 bits : le code de <code>exit</code> (ses 8 bits de poids faible) dans l'octet de poids fort, ou le numéro du signal qui a tué le fils dans l'octet de poids faible, augmenté de 128 si un fichier core est créé ; on le lit avec <code>WIFEXITED</code>, <code>WEXITSTATUS</code>, <code>WIFSIGNALED</code> et <code>WTERMSIG</code>.</li>
+        <li>La famille <code>exec</code> remplace le code du processus par un autre programme, sans créer de processus : elle ne revient qu'en cas d'échec, avec −1.</li>
+        <li>Dans le nom : <code>l</code> pour une liste de paramètres connue, <code>v</code> pour un tableau, <code>e</code> pour un environnement, <code>p</code> pour une recherche dans <code>$PATH</code>.</li>
+        <li>À travers <code>exec</code>, les descripteurs ouverts et les signaux ignorés sont conservés ; les gestionnaires et le tampon de <code>printf</code> sont perdus.</li>
+        <li>Pour lancer un autre programme : <code>fork</code>, puis <code>exec</code> dans le fils, et <code>wait</code> dans le père.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Que renvoie <code>fork</code>, et à qui ?</summary>
+        <div><p>0 dans le fils, le pid du fils dans le père, et −1 au père si la création échoue. C'est cette valeur qui permet au même programme de faire faire des choses différentes au père et au fils.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Le fils modifie une variable globale après <code>fork</code>. Le père voit-il la nouvelle valeur ?</summary>
+        <div><p>Non : le fils travaille sur une copie de la mémoire du père, même si les adresses sont identiques. Pour échanger des données, il faut un autre moyen (un fichier, un tube, un signal…).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi <code>printf("début "); fork();</code> peut-il afficher « début » deux fois ?</summary>
+        <div><p>Le texte est encore dans le tampon de <code>stdout</code> au moment de <code>fork</code> : le tampon est copié dans le fils, et chaque processus le vide à sa fin. On appelle <code>fflush(stdout)</code> avant <code>fork</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Qu'est-ce qu'un processus zombie, et comment l'éviter ?</summary>
+        <div><p>Un fils terminé dont le père n'a pas encore récupéré le statut : le système garde son entrée (pid, statut). Le père l'évite en appelant <code>wait</code> (ou <code>waitpid</code>) pour chacun de ses fils.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Combien de processus en tout après <code>fork(); fork();</code> ?</summary>
+        <div><p>Quatre : le premier <code>fork</code> donne deux processus, et chacun exécute le second. En général, \(n\) <code>fork</code> exécutés à la suite donnent \(2^n\) processus.</p></div>
+      </details>
+      <details class="carte">
+        <summary><code>wait</code> rapporte le statut <code>0x0300</code>. Comment le fils s'est-il terminé ? Et pour <code>0x000f</code> ?</summary>
+        <div><p><code>0x0300</code> : fin normale par <code>exit(3)</code>, le code étant dans l'octet de poids fort. <code>0x000f</code> : tué par le signal 15, <code>SIGTERM</code>, dans l'octet de poids faible.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle différence entre <code>sleep(5)</code> et <code>alarm(5)</code> ?</summary>
+        <div><p><code>sleep</code> suspend le processus pendant 5 secondes. <code>alarm</code> ne le suspend pas : le processus continue, et reçoit <code>SIGALRM</code> 5 secondes plus tard.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un fils tué par <code>kill -3</code> donne 3 ou 131. D'où vient la différence ?</summary>
+        <div><p>131 vaut 128 + 3 : le système a créé un fichier core. Il n'en crée pas si la limite <code>ulimit -c</code> vaut 0.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que renvoie un <code>exec</code> réussi ?</summary>
+        <div><p>Rien : il ne revient pas, le code qui l'a appelé a été remplacé. Il ne revient qu'en cas d'échec, avec −1.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle fonction choisir pour lancer <code>ls</code>, sans connaître son chemin, avec un nombre de paramètres connu ?</summary>
+        <div><p><code>execlp</code> : <code>l</code> pour une liste, <code>p</code> pour la recherche dans <code>$PATH</code>. Avec un tableau de paramètres, ce serait <code>execvp</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un programme installe un gestionnaire pour <code>SIGINT</code>, puis appelle <code>exec</code>. Le gestionnaire reste-t-il actif ?</summary>
+        <div><p>Non : son code a disparu avec celui du programme, et <code>SIGINT</code> repasse à son traitement par défaut. Un signal ignoré, lui, reste ignoré.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Références</h2>
+    <p>Pages de manuel de Linux, en anglais : <a href="https://man7.org/linux/man-pages/man2/fork.2.html">fork(2)</a> (ce qui est copié dans le fils, et ce qui ne l'est pas), <a href="https://man7.org/linux/man-pages/man2/wait.2.html">wait(2)</a> (<code>waitpid</code> et les macros du statut), <a href="https://man7.org/linux/man-pages/man2/getpid.2.html">getpid(2)</a>, <a href="https://man7.org/linux/man-pages/man3/exit.3.html">exit(3)</a>, <a href="https://man7.org/linux/man-pages/man1/pstree.1.html">pstree(1)</a>, <a href="https://man7.org/linux/man-pages/man3/exec.3.html">exec(3)</a> et <a href="https://man7.org/linux/man-pages/man2/execve.2.html">execve(2)</a> (ce qui traverse <code>exec</code>), <a href="https://man7.org/linux/man-pages/man3/sleep.3.html">sleep(3)</a>, <a href="https://man7.org/linux/man-pages/man2/alarm.2.html">alarm(2)</a>, <a href="https://man7.org/linux/man-pages/man2/pause.2.html">pause(2)</a>, <a href="https://man7.org/linux/man-pages/man5/core.5.html">core(5)</a>.</p>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-03-signaux.html"><small>← Précédent</small>Les signaux Unix</a>
+    <a class="suivant" href="cours-05-tubes.html"><small>Suivant →</small>Les tubes</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Programmation système · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

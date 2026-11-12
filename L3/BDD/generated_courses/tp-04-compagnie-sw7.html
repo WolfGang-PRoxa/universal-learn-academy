@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TP 4 · La compagnie SW7 (suite) · Bases de données L3</title>
+<meta name="description" content="TP 4 de bases de données (L3), dernier TP avant le TP noté : les CTE et les fonctions de fenêtrage sur la base SW7, puis la création d'une table zone, l'exploitation de la base, des fonctions et un trigger. Les 2 feuilles du sujet, et 2 consoles SQL où la base du TP 3 est déjà chargée.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+<script type="application/json" id="atelier-jeux">
+{
+  "sw7": {
+    "titre": "base SW7 du TP 3",
+    "description": "<p>Les schémas <code>sw7</code> et <code>map</code> tels qu'à la question 3 du TP 3, rebâtis à partir de <code>TP/TP3/script.sql</code>, avec les positions du TP 3 une semaine plus tôt. Le <code>search_path</code> est celui par défaut : c'est à la requête de le régler.</p>",
+    "script": "CREATE SCHEMA sw7;\nCREATE SCHEMA map;\nSET search_path TO sw7, map;\nDROP TABLE IF EXISTS position;\nDROP TABLE IF EXISTS plein;\nDROP TABLE IF EXISTS entretien;\nDROP TABLE IF EXISTS habilitation;\nDROP TABLE IF EXISTS chauffeur;\nDROP TABLE IF EXISTS distance;\nDROP TABLE IF EXISTS vehicule;\nDROP TABLE IF EXISTS modele;\nDROP TABLE IF EXISTS permis;\nDROP TABLE IF EXISTS station;\n\nset datestyle='dmy';\n\n-- STATION (id_station, nom_station, nom_zone)                          \nCREATE TABLE station (\n  id_station SERIAL PRIMARY KEY,\n  nom_station VARCHAR(30) NOT NULL,\n  nom_zone VARCHAR(15)\n);\n\nINSERT INTO station VALUES\n  (DEFAULT,'Tatooine','Arkanis'),\n  (DEFAULT,'Geonosis','caadavine'),\n  (DEFAULT,'Naboo','Chommel'),\n  (DEFAULT,'Dagobah','Sluis'),\n  (DEFAULT,'Mustafar','Mayagil'),\n  (DEFAULT,'Coruscant','Core Words');\n\n\n----\n\n-- PERMIS (id_permis, cat_permis, desc_permis)                          \nCREATE TABLE permis (\n  id_permis serial PRIMARY KEY,\n  cat_permis VARCHAR(5) NOT NULL,\n  desc_permis VARCHAR(100)\n);\n\nINSERT INTO permis VALUES\n  (DEFAULT,'CL',NULL),\n  (DEFAULT,'GP',NULL),\n  (DEFAULT,'CC',NULL),\n  (DEFAULT,'SC',NULL),\n  (DEFAULT,'DI',NULL),\n  (DEFAULT,'BG',NULL);\n\n\n----\n\n-- MODELE (id_modele, nom_modele, nb_pers, type_carbu, type_bdv, pds, #id_permis_mod)\nCREATE TABLE modele (\n  id_modele SERIAL PRIMARY KEY,\n  nom_modele VARCHAR(30) UNIQUE NOT NULL,\n  nb_pers INTEGER DEFAULT 1 check (nb_pers between 1 and 121),\n  type_carbu VARCHAR(10),\n  type_bdv VARCHAR(1) check (type_bdv in ('A','M')),\n  pds INTEGER,\n  id_permis_mod BIGINT REFERENCES permis\n );\n\nINSERT INTO modele VALUES\n  (1, 'cargo YT-1300', 6, 'X37', 'M', 1200, (select id_permis from permis where cat_permis='CL')),\n  (2, 'voilier solaire geonosien', 20, 'Z12','A', 8500,(select id_permis from permis where cat_permis='GP')),\n  (11,'corvette corellienne', 120 , 'Z12','A', NULL, (select id_permis from permis where cat_permis='CC')),\n  (12, 'ARC-170 starfighter', 3, 'X37', 'M', 850, (select id_permis from permis where cat_permis='SC'));\n\n\n----\n\n-- VEHICULE (id_vehicule, no_chassis, nom_vehicule, date_mes, #id_station, #id_modele)\nCREATE TABLE vehicule (\n  id_vehicule SERIAL PRIMARY KEY,\n  no_chassis INTEGER NOT NULL,\n  nom_vehicule VARCHAR(30) NOT NULL,\n  date_mes date,\n  id_station BIGINT REFERENCES station,\n  id_modele BIGINT REFERENCES modele\n);\n\nINSERT INTO vehicule VALUES\n  (1,100001, 'Faucon millenium', '11-11-15', (select id_station from station where nom_station='Tatooine'),(select id_modele from modele where nom_modele='cargo YT-1300')),\n  (2,100002,'Geonosis power', '24-01-14', (select id_station from station where nom_station='Geonosis'),(select id_modele from modele where nom_modele='voilier solaire geonosien')),\n  (3,100003,'Geonosis power plus','14-05-15', (select id_station from station where nom_station='Geonosis'),(select id_modele from modele where nom_modele='voilier solaire geonosien')),\n  (4,100004,'Starship troopers','14-06-15', (select id_station from station where nom_station='Geonosis'),(select id_modele from modele where nom_modele='cargo YT-1300')),\n  (5,100005, 'Nebuleuse 300', '20-12-13', (select id_station from station where nom_station='Naboo'),(select id_modele from modele where nom_modele='corvette corellienne')),\n  (6,100006,'Aigle royal','13-11-14',(select id_station from station where nom_station='Naboo'),(select id_modele from modele where nom_modele='cargo YT-1300'));\n\n\n----\n\n--PLEIN (#id_vehicule, id_plein, date_p, nb_bm, qte_carbu)\nCREATE TABLE plein(\n  id_vehicule BIGINT NOT NULL REFERENCES vehicule,\n  id_plein BIGINT NOT NULL ,\n  date_p date,\n  nb_km NUMERIC  ,\n  qte_carbu NUMERIC,\n  PRIMARY KEY (id_vehicule, id_plein)\n);\n\nINSERT INTO plein VALUES\n  (1,1, '7-12-18',300, 30),\n  (2,1, '12-02-17',600, 122),\n  (2,2, '14-04-17',620, 134),\n  (2,3, '21-05-17', 580, 117),\n  (2,4, '15-07-17', 300, 75),\n  (3,1, '12-06-18', 500, 122),\n  (3,2, '14-08-18', 520, 134),\n  (3,3, '21-10-18', 480, 117),\n  (4,1, '15-07-18', 270, 27),\n  (4,2, '14-09-18', 250, 25),\n  (4,3, '21-11-18', 265, 28),\n  (5,1, '21-01-17', 1265, 234),\n  (5,2, '17-02-18', 1005, 203),\n  (6,1, '17-01-18', 270, 24),\n  (6,2, '12-03-18', 256, 26),\n  (6,3, '06-05-18', 291, 28),\n  (6,4, '15-07-18', 234, 25),\n  (6,5, '21-09-18', 287, 20),\n  (6,6, '14-11-18', 301, 26),\n  (6,7, '7-12-18', 241, 24);\n\n\n\n----\n\n--ENTRETIEN (#id_vehicule, id_entretien, date_e, desc)\nCREATE TABLE entretien (\n  id_vehicule BIGINT NOT NULL REFERENCES vehicule,\n  id_entretien BIGINT NOT NULL,\n  date_e date NOT NULL, \n  descr VARCHAR(50),\n  PRIMARY KEY (id_vehicule, id_entretien)\n);\n\n\nINSERT INTO entretien VALUES\n  (2,1,'12-01-18', 'vidange'),\n  (5,1,'10-07-17', 'boite de vitesse'),\n  (5,2,'12-08-18','controle technique'),\n  (6,1,'25-03-18','vidange'),\n  (6,2,'30-11-17','propulsion atomique');\n\n\n----\n\n-- CHAUFFEUR (id_chauffeur, nom, prenom, adr, #id_station)        \nCREATE TABLE chauffeur (\n  id_chauffeur BIGINT PRIMARY KEY,\n  nom VARCHAR(20),\n  prenom VARCHAR(20),\n  adr VARCHAR(30),\n  id_station BIGINT REFERENCES station\n);\n\nINSERT INTO chauffeur VALUES\n  (111, 'Solo','Han',NULL,(select id_station from station where nom_station='Tatooine')),\n  (211,'Organa','Leia','Alderaan',(select id_station from station where nom_station='Geonosis')),\n  (310,'Skywalker','Luke','Tatooine',(select id_station from station where nom_station='Geonosis')),\n  (411,'Windu','Mace','Coruscant',(select id_station from station where nom_station='Geonosis')),\n  (511,'Dark','Sidius','Coruscant',(select id_station from station where nom_station='Geonosis')),\n  (601,'Binks','Jar Jar','Naboo',(select id_station from station where nom_station='Naboo')),\n  (671,'Trooper','Phasma',NULL,(select id_station from station where nom_station='Naboo')),\n  (761,'Kenobi','Obi-Wan','Tatooine',(select id_station from station where nom_station='Dagobah'));\n\n----\n\n-- HABILITATION (#id_chauffeur, #id_permis_chauf)\nCREATE TABLE habilitation (\n  id_chauffeur BIGINT NOT NULL REFERENCES chauffeur,\n  id_permis_chauf BIGINT NOT NULL REFERENCES permis,\n  PRIMARY KEY (id_chauffeur, id_permis_chauf)\n );\n\nINSERT INTO habilitation VALUES\n  (111,(select id_permis from permis where cat_permis='CL')),\n  (111,(select id_permis from permis where cat_permis='GP')),\n  (111,(select id_permis from permis where cat_permis='SC')),\n  (111,(select id_permis from permis where cat_permis='CC')),\n  (211,(select id_permis from permis where cat_permis='GP')),\n  (211,(select id_permis from permis where cat_permis='SC')),\n  (211,(select id_permis from permis where cat_permis='CC')),\n  (310,(select id_permis from permis where cat_permis='CL')),\n  (310,(select id_permis from permis where cat_permis='GP')),\n  (310,(select id_permis from permis where cat_permis='SC')),\n  (310,(select id_permis from permis where cat_permis='CC')),\n  (411,(select id_permis from permis where cat_permis='CL')),\n  (601,(select id_permis from permis where cat_permis='CL')),\n  (601,(select id_permis from permis where cat_permis='CC')),\n  (671,(select id_permis from permis where cat_permis='CC')),\n  (761,(select id_permis from permis where cat_permis='CL'));\n\n\n\n----\n\n-- POSITION (#id_vehicule, date, th, #id_chauffeur, nom_zone)\nCREATE TABLE position (\n  id_vehicule BIGINT REFERENCES vehicule,\n  date date,\n  th integer check (th between 1 and 3),\n  id_chauffeur BIGINT REFERENCES chauffeur,\n  nom_zone varchar(15),\n  CONSTRAINT PK_position PRIMARY KEY (id_vehicule,date,th)\n);\n\n\nINSERT INTO position VALUES\n  (1,(select current_date-interval '2 days'),1,111,NULL),\n  (2,(select current_date-interval '2 days'),1,310,NULL),\n  (3,(select current_date-interval '2 days'),1,211,NULL),\n  (5,(select current_date-interval '2 days'),1,601,NULL),\n  (1,(select current_date-interval '2 days'),2,111,NULL),\n  (2,(select current_date-interval '2 days'),2,310,NULL),\n  (3,(select current_date-interval '2 days'),2,211,NULL),\n  (5,(select current_date-interval '2 days'),2,671,NULL),\n  (6,(select current_date-interval '2 days'),2,601,NULL),\n  (1,(select current_date-interval '2 days'),3,111,NULL),\n  (2,(select current_date-interval '2 days'),3,310,NULL),\n  (3,(select current_date-interval '2 days'),3,211,NULL),\n  (4,(select current_date-interval '2 days'),3,411,NULL),\n  (5,(select current_date-interval '2 days'),3,671,NULL),\n  (6,(select current_date-interval '2 days'),3,601,NULL),\n  (1,(select current_date-interval '1 day'),1,111,NULL),\n  (2,(select current_date-interval '1 day'),1,310,NULL),\n  (3,(select current_date-interval '1 day'),1,211,NULL),\n  (5,(select current_date-interval '1 day'),1,671,NULL),\n  (1,(select current_date-interval '1 day'),2,511,NULL),\n  (2,current_date,2,211,'Core Words'),\n  (3,current_date,2,310,'Chommel'),\n  (5,current_date,2,671,'Mayagil'),\n  (6,current_date,2,601,'Core Words');\n\n\n\n----\n-- Ici Table distance (nom_zone1, nom_zone2, parsec)\nCREATE TABLE map.distance (\n    nom_zone1 varchar(30),\n    nom_zone2 varchar(30),\n    parsec INT,\n    PRIMARY KEY (nom_zone1, nom_zone2)\n);\n\nINSERT INTO distance VALUES\n ('Arkanis'  , 'Cadavine', 1),\n ('Arkanis'  , 'Chommel', 3),\n ('Arkanis'  , 'Sluis', 6),\n ('Arkanis'  , 'Core Words', 11),\n ('Arkanis'  , 'Mayagil', 6),\n ('Cadavine'  , 'Arkanis', 1),\n ('Cadavine'  , 'Chommel', 2),\n ('Cadavine'  , 'Sluis', 5),\n ('Cadavine'  , 'Core Words', 11),\n ('Cadavine'  , 'Mayagil', 5),\n ('Chommel'    , 'Arkanis', 3), \n ('Chommel'    , 'Cadavine', 2),\n ('Chommel'    , 'Chommel', 0),\n ('Chommel'    , 'Sluis', 4),\n ('Chommel'    , 'Core Words', 10),\n ('Chommel'    , 'Mayagil', 4),\n ('Core Words' , 'Arkanis', 11),\n ('Core Words' , 'Cadavine', 11),\n ('Core Words' , 'Chommel', 10),\n ('Core Words' , 'Sluis', 11),\n ('Core Words' , 'Mayagil', 10),\n ('Sluis'     , 'Arkanis', 6),\n ('Sluis'      , 'Cadavine', 5),\n ('Sluis'      , 'Chommel', 4),\n ('Sluis'      , 'Core Words', 11),\n ('Sluis'      , 'Mayagil', 1),\n ('Mayagil'    , 'Arkanis', 6),\n ('Mayagil'    , 'Cadavine', 5),\n ('Mayagil'    , 'Chommel', 4),\n ('Mayagil'    , 'Core Words', 10),\n ('Mayagil'    , 'Sluis', 1);\n-- Les positions du TP 3, une semaine plus tôt : le script du TP 4 peut s'y ajouter\nUPDATE position SET date = date - 7;\nRESET search_path;"
+  }
+}
+</script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">Bases de données</a>
+    <span aria-current="page">TP 4 · La compagnie SW7 (suite)</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> TP 4 · L3 S5</p>
+    <h1>TP 4 : la compagnie SW7 (suite)</h1>
+    <p class="chapeau">Le dernier TP avant le TP noté, en deux feuilles : d'abord les CTE et les fonctions de fenêtrage sur la base du TP 3, puis la compagnie SW7, avec la création d'une table <code>zone</code>, l'exploitation de la base, des fonctions et un trigger. Pour travailler chez soi, deux consoles SQL partent de la base du TP 3 déjà chargée.</p>
+    <dl class="meta">
+      <div><dt>Sources</dt><dd><a href="../TP/TP4/%5B26%5DTP4_CTE_WF.pdf">[26]TP4_CTE_WF.pdf</a> · 1 page ; <a href="../TP/TP4/%5B26%5DTP4_SW7.pdf">[26]TP4_SW7.pdf</a> · 3 pages ; script <a href="../TP/TP4/script.sql">script.sql</a></dd></div>
+      <div><dt>Enseignants</dt><dd>T. Mariotte, N. Camelin</dd></div>
+      <div><dt>TP précédent</dt><dd><a href="tp-03-compagnie-sw7.html">TP 3 · La compagnie SW7</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Écrire des CTE, y compris récursives, et des fonctions de fenêtrage.</li>
+        <li>Faire évoluer une base sans perdre de données : nouvelle table, fonction de remplissage, tables modifiées.</li>
+        <li>S'entraîner seul au TP noté : requêtes, fonctions SQL et PL/pgSQL, trigger.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">À rendre</p>
+      <ul>
+        <li>Comme aux TP précédents, un compte rendu <code>TP4_Monnom.txt</code>, avec les requêtes de chaque question (le sujet ne le redit pas).</li>
+        <li><span class="badge examen">Examen</span> TP noté le 27 novembre 2026.</li>
+        <li>Cours à revoir : <a href="cours-03-sql-avance-plpgsql.html#les-cte-with">les CTE</a>, <a href="cours-03-sql-avance-plpgsql.html#les-cte-recursives">les CTE récursives</a>, <a href="cours-03-sql-avance-plpgsql.html#les-fonctions-de-fenetrage">le fenêtrage</a>, <a href="cours-03-sql-avance-plpgsql.html#le-langage-pl-pgsql">PL/pgSQL</a> et <a href="cours-03-sql-avance-plpgsql.html#les-triggers">les triggers</a>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Consignes <span class="ref">feuille 2, p. 1</span></h2>
+    <p>Ceci est le <strong>dernier TP avant le TP noté</strong>. Pensez à poser vos questions pendant cette séance et bien préparer vos « squelettes » de création d'objets ou de requêtes <code>select</code> pour travailler ensuite en mode copier/coller à adapter.</p>
+    <p>Essayez également de travailler SEUL·E sur cette séance pour vous mettre dans la même condition que lors du TP noté. N'hésitez pas à appeler votre chargé de TP lorsqu'au bout de 5 minutes vous ne voyez pas comment répondre à la question.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Dans quel ordre faire les deux feuilles</span></p>
+      <p>Le sujet tient en deux fichiers. La feuille des CTE est prévue pour 30 minutes et ne modifie rien : on la fait en premier. La question 4 de la feuille SW7 remplace en effet les noms de zone de <code>position</code>, <code>station</code> et <code>distance</code> par des identifiants, alors que la question 5 de la feuille des CTE lit les noms de <code>distance</code>.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Modélisation de SW7 <span class="ref">feuille 2, p. 1</span></h2>
+    <p>Pour rappel, le travail en TD a donné lieu à la modélisation suivante.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Présentation générale</p>
+      <p>La compagnie de transport SW7 a choisi de passer à une gestion informatisée de son activité via une base de données. L'activité couverte par la base de données concerne : le parc de véhicules, son entretien, l'administration des chauffeurs et de leur emploi du temps.</p>
+    </div>
+
+    <h3>Modèle relationnel</h3>
+    <div class="relations">
+      <p><b>PERMIS</b> (id_permis, cat_permis, desc_permis)</p>
+      <p><b>CHAUFFEUR</b> (<u>id_chauffeur</u>, nom, prenom, adr, #id_station)</p>
+      <p><b>ENTRETIEN</b> (<u>#id_vehicule, id_entretien</u>, date_e, desc)</p>
+      <p><b>MODELE</b> (<u>id_modele</u>, nom_modele, nb_pers, type_carbu, type_bdv, pds, #id_permis_mod)</p>
+      <p><b>HABILITATION</b> (<u>#id_chauffeur, #id_permis_chauf</u>)</p>
+      <p><b>PLEIN</b> (<u>#id_vehicule, id_plein</u>, date_p, nb_km, qte_carbu)</p>
+      <p><b>POSITION</b> (<u>#id_vehicule, date, th</u>, #id_chauffeur, nom_zone)</p>
+      <p><b>STATION</b> (<u>id_station</u>, nom_station, nom_zone)</p>
+      <p><b>VEHICULE</b> (<u>id_vehicule</u>, no_chassis, nom_v, date_mes, #id_station, #id_modele)</p>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> Comme au TP 3, <code>id_permis</code> n'est pas souligné, alors que c'est l'identifiant des permis. Le modèle écrit aussi <code>nom_v</code> et <code>desc</code> ce que la base appelle <code>nom_vehicule</code> et <code>descr</code> : c'est le script qui fait foi pour écrire les requêtes.</p>
+
+    <h3>Rappel : compréhension de la table position</h3>
+    <p>Comment fonctionne la table <code>position</code> ? Dans cette table sont répertoriés les chauffeurs <code>id_chauffeur</code> qui travaillent <strong>actuellement (<code>date = current_date</code> et tranche horaire <code>th = 2</code>)</strong> ou ont travaillé (toutes les autres valeurs de <code>date</code>/<code>th</code>) avec une voiture <code>id_vehicule</code>. Lorsque les créneaux sont « terminés », la zone <code>nom_zone</code> est donc à <code>null</code>. Lorsque les chauffeurs sont en train de travailler (<code>date = current_date</code> et tranche horaire <code>th = 2</code>), alors :</p>
+    <ul>
+      <li>s'ils sont disponibles, on connaît leur zone de disponibilité (<code>nom_zone</code> non nul) ;</li>
+      <li>s'ils sont actuellement en course avec un client, alors la zone <code>nom_zone</code> est <code>null</code> et on attend que le chauffeur soit à nouveau disponible pour mettre à jour la valeur <code>nom_zone</code>.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Feuille 1 : CTE et window functions <span class="ref">[26]TP4_CTE_WF.pdf</span></h2>
+    <p>Pour répondre à ces questions, prévues pour 30 minutes, placez-vous dans les schémas SW7 et MAP créés lors du TP 3. On utilisera les tables de ce schéma pour les questions d'exploitation suivantes.</p>
+
+    <h3>CTE</h3>
+    <ol start="1">
+      <li>Afficher le nombre de permis que possède chaque chauffeur en créant une CTE <code>nb_permis</code>. Affichez ensuite le nom et le prénom des chauffeurs, ainsi que le nombre de permis qu'ils possèdent.</li>
+      <li>Complétez la CTE précédente en y ajoutant une seconde, appelée <code>moyenne</code>, qui calcule le nombre de permis moyen par chauffeur. Affichez ensuite les chauffeurs ayant plus de permis que la moyenne.</li>
+    </ol>
+
+    <h3>Window function</h3>
+    <ol start="3">
+      <li>À partir de la table <code>plein</code>, afficher la quantité totale de carburant pour chaque véhicule en utilisant une window function. Triez l'affichage par véhicule et par date croissantes (<code>ORDER BY nom_vehicule, date_p</code>). (Possibilité de faire une CTE pour le plaisir ici !)
+        <ol type="a">
+          <li>Quelle est la différence avec <code>GROUP BY</code> ?</li>
+          <li>Ajoutez désormais une clause <code>ORDER BY date_p ASC</code> dans la window function. Que calcule la requête désormais ?</li>
+        </ol></li>
+      <li>Toujours dans la table <code>plein</code>, afficher la variation de kilomètres parcourus entre les pleins successifs pour chaque véhicule. Triez l'affichage par véhicule et par date.</li>
+      <li>On souhaite savoir l'ordre de proximité entre les zones dans la table <code>distance</code>. Afficher le rang de la distance entre une zone 1 et toutes les zones 2 associées.
+        <ol type="a">
+          <li>Qu'observez-vous sur les valeurs du rang ?</li>
+          <li>Quelle fonction de rang utiliser pour éviter cela ?</li>
+          <li>(Bonus) Afficher uniquement les deux stations les plus proches (CTE + window function).</li>
+        </ol></li>
+    </ol>
+    <p><span class="badge a-verifier">À vérifier</span> La question 5c parle de stations, alors que la table <code>distance</code> ne relie que des zones.</p>
+
+    <h3>CTE récursive (s'il reste du temps)</h3>
+    <ol start="6">
+      <li>Générer un calendrier contenant les 10 jours consécutifs entre le 1<sup>er</sup> et le 10 décembre 2018. (Note : intérêt du <code>WHERE</code> pour arrêter la récursion et éviter une boucle infinie.)</li>
+      <li>(Bonus) Dans le calendrier, ajouter une colonne qui indique le nombre de pleins faits pour chaque jour du calendrier (0 si aucun).</li>
+    </ol>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Feuille 2 : la compagnie SW7 <span class="ref">[26]TP4_SW7.pdf, p. 1–3</span></h2>
+    <p>Les questions du sujet, dans son ordre et avec ses intitulés de parties. Les captures de terminal du sujet sont recopiées en texte.</p>
+
+    <h3>Connexion à la base de données et mise à jour</h3>
+    <ol start="1">
+      <li>Connectez-vous à votre base de données et modifiez votre <code>search_path</code> afin d'accéder aux tables créées le TP précédent.</li>
+      <li>Mettez à jour la table <code>position</code> afin que toutes les <code>nom_zone</code> de la date de votre TP dernier soient <code>NULL</code>.</li>
+      <li>Procédez à nouveau aux <code>insert</code> sur la table <code>position</code>, grâce au nouveau script disponible sur l'UMTICE (<a href="../TP/TP4/script.sql">TP/TP4/script.sql</a>). Cela permet d'avoir à nouveau des personnes en service <strong>aujourd'hui</strong> en <code>th = 2</code>.</li>
+    </ol>
+
+    <h3>Modification de la base de données</h3>
+    <ol start="4">
+      <li>Après avoir exploité quelques temps cette base de données, vous vous êtes rendu compte que certains noms de zone n'étaient pas toujours saisis selon la même orthographe. Afin de corriger ce problème :
+        <ol type="a">
+          <li>Listez tous les noms de zones apparaissant dans les tables <code>position</code>, <code>station</code> et <code>distance</code>, en une seule liste. La valeur <code>NULL</code> ne devra pas apparaître.</li>
+        </ol>
+        <p>Grâce à cette liste, vous remarquez que « Cadavine » est mal écrit « caadavine »… Vous devez donc rectifier cela !</p>
+        <ol type="a" start="2">
+          <li>Modifiez les valeurs des noms de zone qui n'ont pas été saisis correctement.</li>
+        </ol>
+        <p>Une fois ce problème réglé, vous ne souhaitez plus qu'il se reproduise et donc vous allez créer une table <code>zone</code> dans laquelle les noms de zone seront répertoriés et les tables utilisant des noms de zone devront donc y faire référence. D'ailleurs, avec une meilleure analyse de votre MEA, vous auriez dû vous rendre compte que l'attribut <code>nom_zone</code> était présent plusieurs fois et que ceci est aberrant dans un MEA suivant la 4NF !!! (Je ne vous félicite pas !)</p>
+        <ol type="a" start="3">
+          <li>Créez une table <code>ZONE(id_zone, nom_zone)</code>. La valeur de l'identifiant doit se gérer automatiquement.</li>
+          <li>Créez une fonction <strong>PL/pgSQL</strong> permettant de saisir dans <code>ZONE</code> toutes les valeurs de toutes les zones de la base de données.</li>
+          <li>Faites appel de cette fonction !
+<pre data-fichier="psql"><code class="language-plaintext">sw7=# select * from zone;
+ id_zone | nom_zone
+---------+----------
+(0 rows)
+
+sw7=# select f_insert_zone();
+ f_insert_zone
+---------------
+
+(1 row)
+
+sw7=# select * from zone;
+ id_zone |  nom_zone
+---------+------------
+       1 | Chommel
+       2 | Sluis
+       3 | Mayagil
+       4 | Arkanis
+       5 | Core Words
+       6 | Cadavine
+(6 rows)</code></pre></li>
+          <li>Modifiez les tables <code>POSITION</code>, <code>STATION</code> et <code>DISTANCE</code> afin que celles-ci ne contiennent plus le nom de la zone mais l'identifiant correspondant. Attention ! Cette modification ne doit pas entraîner de perte de données !</li>
+        </ol></li>
+    </ol>
+    <p><span class="badge a-verifier">À vérifier</span> Le cours 1 s'arrête à la 3NF ; le sujet parle ici de 4NF.</p>
+
+    <h3>Exploitation</h3>
+    <ol start="5">
+      <li>Afficher TOUTES les stations ainsi que les chauffeurs qui y sont affectés. L'affichage des colonnes devra être EXACTEMENT celui-ci :
+<pre data-fichier="psql"><code class="language-plaintext"> id_station | nom_station | id_zone | id_chauffeur | nom_chauffeur | prenom_chauffeur
+------------+-------------+---------+--------------+---------------+------------------
+          1 | Tatooine    |       4 |          111 | Han           | Solo
+          2 | Geonosis    |       6 |          211 | Organa        | Leia
+          2 | Geonosis    |       6 |          310 | Skywalker     | Luke
+          2 | Geonosis    |       6 |          411 | Windu         | Mace
+          2 | Geonosis    |       6 |          511 | Dark          | Sidius
+          3 | Naboo       |       1 |          601 | Binks         | Jar Jar
+          3 | Naboo       |       1 |          671 | Trooper       | Phasma
+          4 | Dagobah     |       2 |          761 | Kenobi        | Obi-Wan
+          5 | Mustafar    |       3 |              |               |
+          6 | Coruscant   |       5 |              |               |
+(10 rows)</code></pre></li>
+      <li>Quelle est la consommation moyenne d'un « voilier solaire geonosien » ? Aide : somme de la quantité de carburant × 100 / somme des quantités de km parcourus.</li>
+      <li>Quel véhicule a consommé plus de 100 tonnes de quantité de carburant ?</li>
+      <li>Sans aucune jointure, indiquez quelles sont les stations qui ont des véhicules rattachés mais aucun d'entre eux n'a jamais effectué une vidange.</li>
+      <li>Sans aucune sous-requête, indiquez quelles sont les stations qui ont au moins un de leurs chauffeurs rattachés qui est habilité à conduire le faucon millenium.</li>
+      <li>Quel(s) véhicule(s) a (ont) consommé la plus grande quantité de carburant durant ses pleins ?
+<pre data-fichier="psql"><code class="language-plaintext"> id_vehicule | qte consom
+-------------+------------
+           2 |        448
+(1 row)</code></pre></li>
+      <li>Suite à plusieurs appels téléphoniques, vous devez mettre à jour la position des chauffeurs.
+        <ol type="a">
+          <li>Plus aucun véhicule de la station « Geonosis » n'est disponible.</li>
+          <li>« Mace Windu » souhaite prendre son service. Exécutez LA commande qui permet :
+            <ul>
+              <li>d'ajouter MACE WINDU comme chauffeur ACTUELLEMENT disponible ;</li>
+              <li>de lui attribuer le véhicule 1 ;</li>
+              <li>de le rendre disponible dans sa zone de rattachement.</li>
+            </ul></li>
+          <li>« Luke Skywalker » est lui à nouveau disponible dans la zone « Arkanis ».</li>
+        </ol></li>
+      <li>Écrire la fonction <strong>SQL</strong> <code>f_nb_max</code> qui permet de renvoyer le nombre de places au maximum des véhicules que peut conduire un chauffeur donné (nom et prénom).</li>
+      <li>Écrire la fonction <strong>SQL</strong> <code>f_vehi_dispo</code> qui renvoie la liste des identifiants des véhicules <strong>disponibles</strong> que peut conduire un chauffeur donné (id).</li>
+      <li>Quels véhicules sont disponibles pour le chauffeur 411 ?</li>
+      <li>Écrire la fonction <strong>PL/pgSQL</strong> <code>f_dispo_zone</code> qui renvoie pour une zone donnée (nom de la zone en paramètre) la liste des noms des véhicules actuellement disponibles dans cette zone ainsi que le nom du chauffeur et la capacité du véhicule. De plus :
+        <ol type="a">
+          <li>si le nom de la zone n'existe pas, une erreur devra être renvoyée ;</li>
+          <li>si aucun véhicule n'est disponible, un message info indique « NO ONE LEFT ».</li>
+        </ol>
+<pre data-fichier="psql"><code class="language-plaintext">nath=# select * from f_dispo_zone ('Core Words');
+  nom_vehicule  | nom_chauffeur | nb_place
+----------------+---------------+----------
+ Aigle royal    | Binks         |        6
+ Geonosis power | Organa        |       20
+(2 lignes)
+
+nath=# select * from f_dispo_zone ('Core');
+ERREUR:  zone Core invalide
+CONTEXTE : fonction PL/pgSQL f_dispo_zone(character varying), ligne 5 à RAISE
+nath=# select * from f_dispo_zone ('Cadavine');
+INFO:  NO ONE LEFT
+ nom_vehicule | nom_chauffeur | nb_place
+--------------+---------------+----------
+(0 ligne)</code></pre></li>
+      <li>En y regardant de plus près la table <code>position</code>, vous vous rendez compte que la clé primaire ne suffit pas à interdire à un chauffeur de prendre 2 fois le service sur le même créneau !! Aïe !! Vous devez donc créer un trigger qui permet de vérifier que le chauffeur n'est pas actuellement en service. Pour rappel, le fait que le chauffeur puisse conduire ou pas le véhicule est déjà traité dans le trigger du TP 4.</li>
+    </ol>
+    <p><span class="badge a-verifier">À vérifier</span> Le résultat de la question 5 donne « Han » comme nom et « Solo » comme prénom, l'inverse de la base (nom Solo, prénom Han), où les autres chauffeurs sont bien dans l'ordre. La question 16 renvoie au « trigger du TP 4 » : le trigger sur le permis est celui de la <a href="tp-03-compagnie-sw7.html">question 20 du TP 3</a>.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Chez soi : les consoles SQL du TP</h2>
+    <p>Le serveur de la fac n'est pas accessible de chez soi. Les deux consoles ci-dessous exécutent le compte rendu entier sur une base PostgreSQL neuve (PGlite), par le serveur local des quiz : <code>studies/lancer.bat</code>, puis cette page ouverte depuis le portail. Sans le serveur, on peut écrire, mais pas exécuter.</p>
+    <ol class="etapes">
+      <li>Chaque exécution part de la base du TP 3, déjà chargée : on ne colle plus le script SW7, mais on règle le <code>search_path</code>, comme à la fac.</li>
+      <li>Les réponses s'écrivent à la suite, dans l'ordre. <b>Exécuter</b> (ou <kbd>Ctrl</kbd> + <kbd>Entrée</kbd>) rejoue tout et affiche le résultat de la <strong>dernière</strong> requête qui renvoie des lignes, ou la première erreur.</li>
+      <li>Le travail s'enregistre tout seul : dans le navigateur, et, avec le serveur, dans <code>L3/BDD/td_results/</code>. Le menu ⋯ copie le texte, à coller dans <code>TP4_Monnom.txt</code>.</li>
+    </ol>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Ce qui change par rapport à la fac</span></p>
+      <ul>
+        <li>Tant que le <code>search_path</code> n'est pas réglé, tout échoue sur <code>relation "position" does not exist</code>.</li>
+        <li>Dans la console, le TP 3 a eu lieu il y a 7 jours : c'est la « date de votre TP dernier » de la question 2. Sans ce décalage, les scripts du TP 3 et du TP 4 écriraient aux mêmes dates et se heurteraient sur la clé primaire.</li>
+        <li>La base est celle de la question 3 du TP 3 : elle n'a ni Tommy Shelby, ni la vue, ni le trigger des questions suivantes, et <code>type_bdv</code> y est encore. Les résultats du sujet n'en dépendent pas. Pour la question 16, on recopie son trigger du TP 3 en tête du compte rendu.</li>
+        <li>Les commandes du client <code>psql</code> (<code>\dn</code>, <code>\dt</code>, <code>\c</code>) ne sont pas du SQL : la console les refuse.</li>
+        <li>Un <code>RAISE INFO</code> ne s'y voit pas (« NO ONE LEFT », question 15) ; un <code>RAISE EXCEPTION</code> arrête l'exécution et s'affiche comme une erreur.</li>
+      </ul>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Note <span>D'où vient la base</span></p>
+      <p><span class="badge a-verifier">À vérifier</span> La base vient de <a href="../TP/TP3/script.sql">TP/TP3/script.sql</a>, le script d'origine des enseignants (<a href="../TP/TP3/script_sw7.sql">script_sw7.sql</a>, UMTICE) complété à la question 3 du TP 3 : mêmes données, aucune version ne manque. Seule <a href="tp-03-compagnie-sw7.html">la question 7 du TP 3</a> suppose d'autres données (châssis de 17 caractères, mise en service en janvier 2026), celles du TD 2 : c'est une erreur du sujet, à signaler aux enseignants. Sur cette base, les résultats des questions 4e, 5, 10 et 15 du sujet se retrouvent, à l'inversion de Han Solo près.</p>
+      <p><span class="badge a-verifier">À vérifier</span> La dernière ligne de <a href="../TP/TP4/script.sql">TP/TP4/script.sql</a> est un tiret isolé, qui ferait échouer tout le compte rendu dans la console : il est retiré du script déjà placé à la question 3.</p>
+    </div>
+
+    <h3>Feuille 1 : CTE et window functions</h3>
+    <div class="atelier" id="tp4-cte" data-editeur="sql">
+      <script type="application/json">
+{
+  "titre": "Compte rendu : feuille 1",
+  "consigne": "<p>La base du TP 3 est chargée. On règle d'abord le <code>search_path</code>, puis les réponses s'écrivent à la suite. <b>Exécuter</b> rejoue tout, depuis le début, sur une base neuve, et affiche le résultat de la dernière requête qui renvoie des lignes, ou la première erreur.</p>",
+  "options": {
+    "jeu": "sw7",
+    "lignes": 28
+  },
+  "depart": "-- ===== Se placer dans les schémas du TP 3 =====\n\n\n-- ===== CTE =====\n-- 1.\n\n\n-- 2.\n\n\n-- ===== Window functions =====\n-- 3.\n\n\n-- 4.\n\n\n-- 5.\n\n\n-- ===== CTE récursive =====\n-- 6.\n\n\n-- 7.\n"
+}
+      </script>
+    </div>
+
+    <h3>Feuille 2 : la compagnie SW7</h3>
+    <div class="atelier" id="tp4-sw7" data-editeur="sql">
+      <script type="application/json">
+{
+  "titre": "Compte rendu : feuille 2",
+  "consigne": "<p>La base du TP 3 est chargée et le script de la question 3 est déjà à sa place. Les réponses s'écrivent à la suite, dans l'ordre des questions. <b>Exécuter</b> rejoue tout, depuis le début, sur une base neuve, et affiche le résultat de la dernière requête qui renvoie des lignes, ou la première erreur.</p>",
+  "options": {
+    "jeu": "sw7",
+    "lignes": 28
+  },
+  "depart": "-- ===== Connexion à la base de données et mise à jour =====\n-- 1.\n\n\n-- 2.\n\n\n-- 3. Script du TP 4 (TP/TP4/script.sql)\nINSERT INTO position VALUES\n  (1,(select current_date-interval '2 days'),1,111,NULL),\n  (2,(select current_date-interval '2 days'),1,310,NULL),\n  (3,(select current_date-interval '2 days'),1,211,NULL),\n  (5,(select current_date-interval '2 days'),1,601,NULL),\n  (1,(select current_date-interval '2 days'),2,111,NULL),\n  (2,(select current_date-interval '2 days'),2,310,NULL),\n  (3,(select current_date-interval '2 days'),2,211,NULL),\n  (5,(select current_date-interval '2 days'),2,671,NULL),\n  (6,(select current_date-interval '2 days'),2,601,NULL),\n  (1,(select current_date-interval '2 days'),3,111,NULL),\n  (2,(select current_date-interval '2 days'),3,310,NULL),\n  (3,(select current_date-interval '2 days'),3,211,NULL),\n  (4,(select current_date-interval '2 days'),3,411,NULL),\n  (5,(select current_date-interval '2 days'),3,671,NULL),\n  (6,(select current_date-interval '2 days'),3,601,NULL),\n  (1,(select current_date-interval '1 day'),1,111,NULL),\n  (2,(select current_date-interval '1 day'),1,310,NULL),\n  (3,(select current_date-interval '1 day'),1,211,NULL),\n  (5,(select current_date-interval '1 day'),1,671,NULL),\n  (2,current_date,2,211,'Core Words'),\n  (3,current_date,2,310,'Chommel'),\n  (5,current_date,2,671,'Mayagil'),\n  (6,current_date,2,601,'Core Words');\n\n\n-- ===== Modification de la base de données =====\n-- 4.a\n\n\n-- ===== Exploitation =====\n-- 5.\n"
+}
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>C'est le dernier TP avant le TP noté du 27 novembre : on le fait seul, en préparant ses squelettes de requêtes et de création d'objets.</li>
+        <li>Le sujet tient en deux feuilles : les CTE et les window functions, pour 30 minutes, puis la compagnie SW7.</li>
+        <li>Les bases sont celles du TP 3 : toutes les tables dans <code>sw7</code>, sauf <code>distance</code>, dans <code>map</code>, et le <code>search_path</code> doit parcourir les deux.</li>
+        <li>La question 4 change la structure de <code>position</code>, <code>station</code> et <code>distance</code> sans perdre de données : la feuille des CTE se fait avant.</li>
+        <li>Dans <code>position</code>, le service en cours est la tranche 2 du jour ; une zone vide pendant le service signifie que le chauffeur est en course.</li>
+        <li>Chez soi, chaque console repart de la base du TP 3, positions du TP 3 reculées de 7 jours.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi la console répond-elle <code>relation "position" does not exist</code> tant que la première question n'est pas écrite ?</summary>
+        <div><p>Les tables sont dans les schémas <code>sw7</code> et <code>map</code>. Un nom sans préfixe n'est cherché que dans les schémas du <code>search_path</code>, qui ne les contient pas par défaut.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi les positions du TP 3 sont-elles reculées de 7 jours dans la console ?</summary>
+        <div><p>Les deux scripts datent leurs positions par rapport à <code>current_date</code>, pour les mêmes véhicules et les mêmes tranches. À la fac, une semaine sépare les deux exécutions ; sur une base neuve, ils écriraient les mêmes clés.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi chaque feuille a-t-elle sa console ?</summary>
+        <div><p>La question 5 de la feuille 1 lit les noms de zone de <code>distance</code>, que la question 4 de la feuille 2 remplace par des identifiants. Deux consoles gardent chaque feuille sur la base qu'elle attend.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Comment reconnaît-on, dans <code>position</code>, un chauffeur disponible ?</summary>
+        <div><p>Sa ligne est celle du service en cours (<code>date = current_date</code>, <code>th = 2</code>) et sa zone est renseignée. Une zone vide sur cette même ligne signifie qu'il est en course.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un <code>RAISE EXCEPTION</code> attendu arrête la console : comment continuer le compte rendu ?</summary>
+        <div><p>La console rejoue tout d'un bloc et s'arrête à la première erreur. Une fois l'erreur constatée, on met l'appel en commentaire pour que la suite s'exécute.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="tp-03-compagnie-sw7.html"><small>← TP 3</small>La compagnie SW7</a>
+    <a class="suivant" href="index.html"><small>Accueil →</small>Bases de données</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="reseau">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Introduction aux réseaux · Réseaux L2</title>
+<meta name="description" content="Cours 1 de réseaux (L2) : organisation du module, ce qu'est un réseau et Internet, modèles client-serveur et pair à pair, équipements finaux, intermédiaires et de connexion, numération, unités de volume et de débit, codes, opérations logiques et vue d'ensemble de la circulation d'un message.">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-01-introduction.html" title="Quiz · Cours 1 · Introduction">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="index.html">Réseaux</a>
+    <span aria-current="page">Cours 1 · Introduction</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Réseaux</span> Cours 1 · L2 S3</p>
+    <h1>Introduction aux réseaux</h1>
+    <p class="chapeau">Ce premier cours présente le module, puis pose le décor : ce qu'est un réseau, comment Internet s'est construit, quels équipements le composent et comment les machines dialoguent (client-serveur, pair à pair). Il rappelle ensuite les outils de calcul qui servent dans tout le module (binaire, hexadécimal, unités de débit, opérations logiques) et finit par une vue d'ensemble, « le réseau en une diapo », que les chapitres suivants détaillent couche par couche.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/01%20-%20introduction.pdf">01 - introduction.pdf</a> · 28 diapos (numéros de page du PDF)</dd></div>
+      <div><dt>Enseignant</dt><dd>Sylvain Meignier</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Définir un réseau informatique et distinguer équipements finaux, intermédiaires et de connexion.</li>
+        <li>Opposer le modèle client-serveur et le modèle pair à pair.</li>
+        <li>Passer du binaire au décimal et à l'hexadécimal ; dire combien de bits il faut pour coder N symboles.</li>
+        <li>Distinguer kilo et kibi, bits et octets, et convertir un débit.</li>
+        <li>Appliquer AND, OR et XOR bit à bit.</li>
+        <li>Situer les couches application, transport, réseau et accès au réseau, et le nom des données à chacune.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Aucun : c'est le premier chapitre.</li>
+        <li>Algèbre de Boole (L1), utile pour la dernière partie.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Note <span>Les points d'exclamation des diapos</span></p>
+    <p>L'enseignant signale les diapos essentielles par un point d'exclamation vert. Elles portent ici le badge <span class="badge examen">Examen</span> : ce sont les notions à savoir par cœur.</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Organisation du module <span class="ref">diapos 2–5</span></h2>
+    <p>Le module de réseaux de L2 est assuré par Sylvain Meignier. Il compte 8 cours magistraux, 5 TD et 4 TP.</p>
+
+    <h3>Évaluation</h3>
+    <ul>
+      <li>50 % pour le contrôle terminal, une épreuve écrite de 1 h à 1 h 30 ;</li>
+      <li>50 % pour le contrôle continu, qui comprend une évaluation de 10 minutes en CM (lundi 25 septembre, 10 h 15), une évaluation d'une demi-heure en CM et/ou un QCM sur UMTICE, et les rendus de TP.</li>
+    </ul>
+
+    <h3>Supports</h3>
+    <p>Le cours est sur UMTICE (« L2 Informatique - Réseaux et Informatique », clé d'inscription R2023). Il suit deux livres numériques des éditions ENI, accessibles par l'ENT (BU, documents en ligne ; trois accès simultanés seulement) :</p>
+    <ul>
+      <li><cite>CISCO - Notions de base sur les réseaux</cite> (CCNA 200-120), dont les chapitres utiles sont : introduction, présentation des réseaux, concepts fondamentaux, modèles de communication, introduction à l'IOS, couche physique, couche liaison de données, couche réseau, IPv4 (adressage et <span lang="en">subnetting</span>), couche transport et couche application ;</li>
+      <li><cite>CISCO - Routage et commutation</cite> (CCNA 200-125), dont les chapitres utiles sont : les VLAN, les bases des routeurs, le routage statique, le routage inter-VLAN, le routage dynamique, DHCP et la traduction d'adresses (NAT).</li>
+    </ul>
+
+    <h3>L'outil des TP : Cisco Packet Tracer</h3>
+    <p>Les TP se font dans <dfn>Cisco Packet Tracer</dfn>, un simulateur de réseau : on y pose des postes, des concentrateurs (<span lang="en">hubs</span>), des commutateurs et des routeurs, on les relie, on les configure, et l'on observe les paquets circuler. Il existe sous Linux, Windows et macOS. Il faut un compte Netacad pour l'utiliser chez soi, et faire attention à la version de l'outil (les informations sont sur UMTICE).</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Qu'est-ce qu'un réseau ? <span class="ref">diapos 6–10</span></h2>
+    <p>Avant d'entrer dans le détail des protocoles, il faut savoir de quoi l'on parle : ce qu'est un réseau informatique, ce qu'il relie, et ce que le cours cherche à expliquer.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Réseau informatique</span></p>
+      <p>Un <dfn>réseau informatique</dfn> est l'ensemble de ce qui permet d'échanger des données entre des équipements finaux. Le réseau le plus connu est <dfn>Internet</dfn>.</p>
+    </div>
+    <p>Les <dfn>équipements finaux</dfn> sont les postes de travail, les ordinateurs portables, les serveurs, les téléphones et tablettes, les imprimantes, les matériels réseau… Ce sont tous des objets dotés d'une interface (une carte réseau) qui leur donne accès à Internet.</p>
+    <p>Le but du cours est de <strong>comprendre la circulation des informations sur Internet</strong>.</p>
+
+    <h3>Le réseau de Le Mans Université</h3>
+    <p>La diapo 7 montre le plan du réseau du campus (DSI, 2016) : des dizaines de commutateurs (Alcatel 6250, 6850, 6900…) répartis dans les bâtiments (BU, amphis, UFR Sciences, Lettres, Droit, IUT, ENSIM, cité universitaire…), reliés en étoile à des cœurs de réseau dans la salle serveurs de la Maison de l'Université et de l'ETN, par des liens de 100 Mb/s à 10 Gb/s, fibre ou cuivre. Le campus sort sur Internet par <dfn>RENATER</dfn>, le réseau national de l'enseignement et de la recherche (liens vers Nantes, Angers, Tours, Orléans), et rejoint le site de Laval.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Ce qu'il faut voir dans ce plan</span></p>
+      <p>Le plan est illisible dans le détail, mais il montre déjà la structure que le module détaille : des équipements finaux branchés à des commutateurs d'étage ou de bâtiment, des commutateurs reliés entre eux (chapitre 7, VLAN et STP), des routeurs qui relient les réseaux entre eux (chapitre 5), et un accès vers l'extérieur par un opérateur. Les nombres comme <code>194.167.164.128/25</code> sont des adresses de réseau IPv4 (chapitre 5).</p>
+    </div>
+
+    <h3>Internet dans le monde</h3>
+    <p>À l'échelle de la planète, Internet repose sur des câbles sous-marins qui relient les continents (carte de la diapo 8, avec les câbles financés par Google, Facebook, Amazon ou Microsoft). Son ancêtre est <dfn>ARPANET</dfn>, réseau de la défense américaine ; en 1974, il reliait une soixantaine de sites, surtout des universités, des deux côtés des États-Unis.</p>
+
+    <h3>Repères historiques</h3>
+    <p>La diapo 9 renvoie à deux lectures (« Histoire d'Internet » sur Wikipédia et « D'Arpanet à Internet en France : quelques repères ») et donne une frise :</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Frise de la diapo 9</caption>
+        <thead><tr><th>Année</th><th>Événement</th></tr></thead>
+        <tbody>
+          <tr><td>1958</td><td>premier modem</td></tr>
+          <tr><td>1959</td><td>premier routeur <span class="badge a-verifier">À vérifier</span></td></tr>
+          <tr><td>1962</td><td>commutation par paquets</td></tr>
+          <tr><td>1969 – 1990</td><td>ARPANET</td></tr>
+          <tr><td>1971</td><td>transfert de fichiers (FTP)</td></tr>
+          <tr><td>1973</td><td>Ethernet ; définition du protocole TCP/IP</td></tr>
+          <tr><td>1980</td><td>courrier électronique (SMTP)</td></tr>
+          <tr><td>1983</td><td>DNS ; naissance d'Internet (passage d'ARPANET à TCP/IP)</td></tr>
+          <tr><td>1990</td><td>le web (HTTP)</td></tr>
+          <tr><td>1995</td><td>HTTPS</td></tr>
+          <tr><td>1999</td><td>usage de l'ADSL</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> Le « premier routeur » est en général daté de 1969 : c'est l'IMP (<span lang="en">Interface Message Processor</span>), qui reliait les sites d'ARPANET. La date de 1959 de la frise semble être une erreur de placement.</p>
+    <p>Le nombre d'internautes est passé de quelques dizaines de millions en 1995 à près de 5 milliards en 2020 (courbe de la diapo 10), pour une population mondiale de 7,7 milliards d'habitants en 2019.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Modèles de trafic réseau <span class="ref">diapos 11–16</span></h2>
+    <p>Deux machines qui communiquent n'ont pas forcément le même rôle. On distingue deux grands modèles d'organisation des échanges.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Modèle client-serveur</span> <span class="badge examen">Examen</span></p>
+      <p>Dans le modèle <dfn>client-serveur</dfn>, les <strong>serveurs</strong> hébergent les services (stockage, impression, annuaire…), et les <strong>clients</strong> s'adressent aux serveurs pour bénéficier de ces services. C'est le modèle dominant.</p>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 560 170" width="560" role="img" aria-labelledby="fig-cs-titre">
+        <title id="fig-cs-titre">Deux clients web envoient des requêtes HTTP à un serveur web à travers Internet, qui transporte les données avec TCP/IP</title>
+        <defs>
+          <marker id="fleche-cs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein-accent"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="10" y="20" width="110" height="44" rx="6"/>
+        <text x="65" y="47" text-anchor="middle">Client web 1</text>
+        <rect class="boite" x="10" y="106" width="110" height="44" rx="6"/>
+        <text x="65" y="133" text-anchor="middle">Client web 2</text>
+        <ellipse class="boite" cx="280" cy="85" rx="95" ry="45"/>
+        <text x="280" y="80" text-anchor="middle" class="gras">Internet</text>
+        <text x="280" y="100" text-anchor="middle" class="t2 mono">TCP/IP</text>
+        <rect class="boite-accent" x="440" y="60" width="110" height="50" rx="6"/>
+        <text x="495" y="90" text-anchor="middle" class="gras">Serveur web</text>
+        <path class="trait" d="M120 42 L195 70"/>
+        <path class="trait" d="M120 128 L195 100"/>
+        <path class="trait" d="M375 85 H440"/>
+        <path class="accent" d="M120 32 C 220 24, 380 24, 438 62" marker-end="url(#fleche-cs)"/>
+        <text x="280" y="14" text-anchor="middle" class="accent">requête HTTP</text>
+      </svg>
+      <figcaption>Le web suit le modèle client-serveur : le navigateur (client) envoie une requête HTTP au serveur web, qui lui renvoie le document demandé (diapos 12 à 14).</figcaption>
+    </figure>
+
+    <h3>Une application : le World Wide Web</h3>
+    <p>Le <dfn>service web</dfn> repose sur le protocole <dfn>HTTP</dfn> (<span class="en" lang="en">HyperText Transfer Protocol</span>), utilisé pour échanger les documents HTML, et basé sur le principe du client-serveur : le client web (le navigateur) envoie une <strong>requête HTTP</strong> au serveur web, et les données circulent sur le réseau grâce à TCP/IP. <span class="badge examen">Examen</span></p>
+    <p>La diapo 15 donne un exemple de réseau complet : à la maison, un routeur ADSL Wi-Fi relie un ordinateur, une imprimante, une télévision et des téléphones ; chez un fournisseur de service, un commutateur relie des postes et un serveur web, protégé par un pare-feu ; entre les deux, des routeurs d'opérateurs, et une antenne de téléphonie mobile.</p>
+
+    <h3>Le modèle pair à pair</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Modèle pair à pair</span></p>
+      <p>Dans le modèle <dfn>pair à pair</dfn> (<span class="en" lang="en">peer-to-peer</span>, « d'égal à égal »), chaque station est à la fois cliente et serveur : cliente quand elle émet une requête vers une autre station, serveur quand elle répond à une requête d'une autre station. Le but est la mise à disposition de ressources.</p>
+    </div>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="colonne-titre">Client-serveur</p>
+        <ul>
+          <li>Rôles fixes : le serveur sert, le client demande.</li>
+          <li>Gestion centralisée (sauvegardes, droits, mises à jour).</li>
+          <li>Le serveur est un point unique de panne et de saturation.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p class="colonne-titre">Pair à pair</p>
+        <ul>
+          <li>Chaque station joue les deux rôles.</li>
+          <li>Pas de serveur dédié : plus simple et moins cher pour quelques postes, et plus de sources quand le nombre de pairs grandit.</li>
+          <li>Pas d'administration centrale, sécurité plus difficile.</li>
+        </ul>
+      </div>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Le tableau de comparaison ne figure pas dans les diapos ; il reprend le contenu du chapitre « Présentation des réseaux » du livre Cisco. Exemples de pair à pair : le partage de fichiers BitTorrent, ou le partage d'une imprimante entre deux postes d'un petit réseau domestique.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Éléments composant les réseaux <span class="ref">diapos 17–20</span></h2>
+    <p>Un réseau rassemble trois familles d'équipements. Savoir les distinguer et les reconnaître sur un schéma est indispensable pour la suite.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Équipements finaux</span></p>
+      <p>Les <dfn>équipements finaux</dfn> ne fournissent pas de service réseau : ils produisent, utilisent ou stockent des données. Ils sont fixes ou mobiles, avec ou sans interface utilisateur. Exemples : ordinateur (serveur, PC…), tablette, smartphone, prise connectée, imprimante…</p>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Équipements intermédiaires</span></p>
+      <p>Les <dfn>équipements intermédiaires</dfn> assurent la communication : commutateurs (<span lang="en">switches</span>), routeurs, pare-feu (<span lang="en">firewalls</span>), points d'accès Wi-Fi…</p>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Équipements de connexion (médias)</span></p>
+      <p>Les <dfn>équipements de connexion</dfn> sont les liaisons entre équipements intermédiaires et finaux : les supports physiques, ou <dfn>médias</dfn>, de l'échange des données. Ils sont filaires avec des signaux électriques (câble en cuivre), filaires avec des signaux optiques (fibre), ou sans fil, avec des ondes.</p>
+    </div>
+    <p>Les équipements intermédiaires et de connexion ont un seul but : fournir aux équipements finaux les données dont ils ont besoin pour accomplir leurs missions.</p>
+
+    <h3>Les icônes des schémas</h3>
+    <p>Les schémas du cours et de Packet Tracer utilisent les icônes Cisco : un écran pour un poste de travail ou un ordinateur, une tour pour un serveur ; un boîtier plat avec une flèche pour un <strong>concentrateur</strong> (<span lang="en">hub</span>), un boîtier plat avec des flèches croisées pour un <strong>commutateur</strong> (<span lang="en">switch</span>), un cylindre aux flèches en croix pour un <strong>routeur</strong> ; un trait plein ou pointillé pour une liaison. <span class="badge examen">Examen</span></p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les différents types de réseaux</span></p>
+      <p>La diapo 20 demande de lire impérativement deux sections du livre Cisco : « Les éléments composant les réseaux » (résumée ci-dessus) et « Les différents types de réseaux », que voici en bref. On classe les réseaux selon leur étendue :</p>
+      <ul>
+        <li><strong>LAN</strong> (<span lang="en">Local Area Network</span>, réseau local) : une maison, un bâtiment, un campus ; il appartient à une seule organisation qui l'administre, et offre des débits élevés (Ethernet, Wi-Fi) ;</li>
+        <li><strong>WAN</strong> (<span lang="en">Wide Area Network</span>, réseau étendu) : il relie des LAN éloignés, à l'échelle d'un pays ou du monde ; il est en général géré par des opérateurs, et le débit y coûte plus cher ;</li>
+        <li>entre les deux, le <strong>MAN</strong> (une ville), et en dessous le <strong>PAN</strong> (les appareils autour d'une personne, Bluetooth) ; le <strong>WLAN</strong> est un LAN sans fil.</li>
+      </ul>
+      <p>Internet est un réseau de réseaux : des LAN et des WAN interconnectés. Un <strong>intranet</strong> est un réseau privé d'organisation qui utilise les mêmes technologies ; un <strong>extranet</strong> en ouvre une partie à des partenaires extérieurs.</p>
+    </div>
+    <p>En option, le même chapitre traite des grands défis, des tendances et propose une synthèse.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Concepts fondamentaux <span class="ref">diapos 21–26</span></h2>
+    <p>Les adresses, les masques et les débits du module s'écrivent en binaire, en hexadécimal ou en décimal, et se manipulent avec des opérations logiques. Cette partie rappelle ces outils.</p>
+
+    <h3>Systèmes de numération</h3>
+    <ul>
+      <li>Le <dfn>système binaire</dfn> est la base 2. Un <dfn>bit</dfn> vaut 0 ou 1. Un <dfn>octet</dfn> vaut 8 bits, soit \(2^8 = 256\) valeurs possibles.</li>
+      <li>Le <dfn>système hexadécimal</dfn> est la base 16 : 16 valeurs (0 à 9 puis A à F), qui demandent 4 bits chacune. Deux chiffres hexadécimaux font donc un octet.</li>
+      <li>Le <dfn>système décimal</dfn>, la base 10, sert pour l'affichage (les adresses IPv4 s'écrivent octet par octet en décimal).</li>
+    </ul>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Convertir un octet</span></p>
+      <p><span class="badge ajout">Ajout</span> Les poids des bits d'un octet sont, de gauche à droite, 128, 64, 32, 16, 8, 4, 2, 1.</p>
+      <ul>
+        <li><strong>Binaire → décimal</strong> : additionner les poids des bits à 1. \(1100\,0000_2 = 128 + 64 = 192\).</li>
+        <li><strong>Décimal → binaire</strong> : retirer le plus grand poids possible, et recommencer. \(172 = 128 + 32 + 8 + 4\), donc \(1010\,1100_2\).</li>
+        <li><strong>Binaire ↔ hexadécimal</strong> : couper en deux groupes de 4 bits. \(1010\,1100_2 = \mathrm{AC}_{16}\), car \(1010 = 10 = \mathrm{A}\) et \(1100 = 12 = \mathrm{C}\).</li>
+      </ul>
+    </div>
+
+    <h3>Volumétrie : système international ou binaire</h3>
+    <p>Pour les multiples, deux systèmes coexistent, sans consensus : on rencontre les deux.</p>
+    <div class="colonnes">
+      <div class="tableau compact">
+        <table>
+          <caption>Système international (puissances de 10)</caption>
+          <thead><tr><th>Nom</th><th>Symbole</th><th>Valeur</th></tr></thead>
+          <tbody>
+            <tr><td>kilobit</td><td>kbit</td><td>\(10^3\) = 1 000 bits</td></tr>
+            <tr><td>mégabit</td><td>Mbit</td><td>\(10^6\) = 1 000 000 bits</td></tr>
+            <tr><td>gigabit</td><td>Gbit</td><td>\(10^9\) bits</td></tr>
+            <tr><td>térabit</td><td>Tbit</td><td>\(10^{12}\) bits</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tableau compact">
+        <table>
+          <caption>Système binaire (puissances de 2)</caption>
+          <thead><tr><th>Préfixe</th><th>Symbole</th><th>Valeur</th></tr></thead>
+          <tbody>
+            <tr><td>kibi</td><td>Ki</td><td>\(2^{10}\) = 1 024</td></tr>
+            <tr><td>mébi</td><td>Mi</td><td>\(2^{20}\) = 1 048 576</td></tr>
+            <tr><td>gibi</td><td>Gi</td><td>\(2^{30}\) = 1 073 741 824</td></tr>
+            <tr><td>tébi</td><td>Ti</td><td>\(2^{40}\) = 1 099 511 627 776</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="tableau compact">
+      <table>
+        <caption>Écart entre les deux systèmes pour les octets (diapo 23)</caption>
+        <thead><tr><th>SI</th><th>Valeur</th><th>Binaire</th><th>Valeur</th><th>Écart</th></tr></thead>
+        <tbody>
+          <tr><td>kilooctet (ko)</td><td>1 000</td><td>kibioctet (Kio)</td><td>1 024</td><td>2,3 %</td></tr>
+          <tr><td>mégaoctet (Mo)</td><td>1 000 000</td><td>mébioctet (Mio)</td><td>1 048 576</td><td>4,6 %</td></tr>
+          <tr><td>gigaoctet (Go)</td><td>1 000 000 000</td><td>gibioctet (Gio)</td><td>1 073 741 824</td><td>6,8 %</td></tr>
+          <tr><td>téraoctet (To)</td><td>1 000 000 000 000</td><td>tébioctet (Tio)</td><td>1 099 511 627 776</td><td>9 %</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo intitule les colonnes « Valeur en bits » : pour des kilooctets, mégaoctets… ce sont des valeurs en <strong>octets</strong> (1 ko = 1 000 octets = 8 000 bits). L'écart est calculé par rapport à la valeur binaire, et tronqué : \((1\,024 - 1\,000) / 1\,024 ≈ 2{,}34\) %, \(48\,576 / 1\,048\,576 ≈ 4{,}63\) %, \(≈ 6{,}87\) % et \(≈ 9{,}05\) %.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Bits et octets</span></p>
+      <p>Un débit s'exprime en <strong>bits</strong> par seconde (b/s, Mb/s) ; une taille de fichier ou de disque, en <strong>octets</strong> (o, Mo ; en anglais <span lang="en">byte</span>, B). On passe de l'un à l'autre en divisant ou multipliant par 8 : 100 Mb/s = 12,5 Mo/s. Les fabricants de disques comptent en puissances de 10, certains systèmes d'exploitation en puissances de 2 : d'où le « disque de 1 To » affiché à 931 Gio.</p>
+    </div>
+
+    <h3>Vitesses de transmission</h3>
+    <div class="colonnes">
+      <div class="tableau compact">
+        <table>
+          <caption>Réseaux locaux (LAN)</caption>
+          <thead><tr><th>Technologie</th><th>Débit</th><th>En octets</th></tr></thead>
+          <tbody>
+            <tr><td>Ethernet (10BASE-T)</td><td>10 Mb/s</td><td>1,25 Mo/s</td></tr>
+            <tr><td>Fast Ethernet (100BASE-TX)</td><td>100 Mb/s</td><td>12,5 Mo/s</td></tr>
+            <tr><td>Gigabit Ethernet (1000BASE-T)</td><td>1 Gb/s</td><td>125 Mo/s</td></tr>
+            <tr><td>10 Gigabit Ethernet (10GBASE-X)</td><td>10 Gb/s</td><td>1 250 Mo/s</td></tr>
+            <tr><td>40 Gigabit Ethernet (40GBASE-X)</td><td>40 Gb/s</td><td>5 000 Mo/s</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tableau compact">
+        <table>
+          <caption>Réseaux étendus (WAN), en réception</caption>
+          <thead><tr><th>Technologie</th><th>Débit</th><th>En octets</th></tr></thead>
+          <tbody>
+            <tr><td>ADSL2</td><td>1 à 15 Mb/s</td><td>0,125 à 1,875 Mo/s</td></tr>
+            <tr><td>ADSL2+</td><td>jusqu'à 20 Mb/s</td><td>2,5 Mo/s</td></tr>
+            <tr><td>fibre</td><td>300 Mb/s à 2 Gb/s</td><td>37 à 250 Mo/s</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p>Pour comparaison, le stockage interne d'un ordinateur lit de 30 à 50 Mo/s (disque dur, HDD) ou 500 Mo/s (SSD).</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Durée d'un transfert</span></p>
+      <p><span class="badge ajout">Ajout</span> Télécharger un fichier de 700 Mo en Fast Ethernet (100 Mb/s) prend au mieux \(\dfrac{700 \times 8}{100} = 56\) s. En ADSL2+ à 20 Mb/s, il faut \(\dfrac{5\,600}{20} = 280\) s, soit plus de 4 minutes et demie. En pratique, c'est un peu plus long : les en-têtes des protocoles prennent leur part du débit.</p>
+    </div>
+
+    <h3>Codes</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Code</span></p>
+      <p>Un <dfn>code</dfn> est une règle qui permet de convertir une information sous une autre forme.</p>
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Longueur de code</span> <span class="badge examen">Examen</span></p>
+      <p>Pour coder \(N\) symboles, il faut \(n\) bits avec \(N \le 2^n\). Le plus petit \(n\) qui convient est \(n = \lceil \log_2 N \rceil\).</p>
+    </div>
+    <p>Le <dfn>code ASCII</dfn> utilise 7 bits pour coder 128 caractères (\(2^7 = 128\)).</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Combien de bits ?</span></p>
+      <p><span class="badge ajout">Ajout</span> Pour les 26 lettres de l'alphabet : \(2^4 = 16 \lt 26 \le 32 = 2^5\), donc 5 bits. Pour 1 000 valeurs : \(2^9 = 512 \lt 1\,000 \le 1\,024 = 2^{10}\), donc 10 bits. Inversement, une adresse IPv4 de 32 bits permet \(2^{32}\), environ 4,3 milliards, d'adresses.</p>
+    </div>
+
+    <h3>Opérations logiques</h3>
+    <p>Il faut réviser l'algèbre de Boole, et en particulier les fonctions <strong>and</strong> (et), <strong>or</strong> (ou) et <strong>xor</strong> (ou exclusif) :</p>
+    <div class="tableau mono compact centre">
+      <table>
+        <caption>Tables de vérité (diapo 26)</caption>
+        <thead><tr><th>a</th><th>b</th><th>a AND b</th><th>a OR b</th><th>a XOR b</th></tr></thead>
+        <tbody>
+          <tr><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+          <tr><td>0</td><td>1</td><td>0</td><td>1</td><td>1</td></tr>
+          <tr><td>1</td><td>0</td><td>0</td><td>1</td><td>1</td></tr>
+          <tr><td>1</td><td>1</td><td>1</td><td>1</td><td>0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>AND ne vaut 1 que si les deux entrées valent 1 (intersection), OR vaut 1 dès qu'une entrée vaut 1 (réunion), XOR vaut 1 quand les entrées diffèrent (réunion privée de l'intersection).</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>À quoi sert le AND en réseau</span></p>
+      <p>Le ET logique bit à bit entre une adresse IP et un masque donne l'adresse du réseau (chapitre 5) : un bit du masque à 1 laisse passer le bit de l'adresse, un bit à 0 l'efface. Par exemple, \(1010\,1100 \text{ AND } 1111\,0000 = 1010\,0000\) : on garde les 4 bits de gauche. Le XOR, lui, sert aux sommes de contrôle et à la parité (chapitre 4).</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le réseau en une diapo <span class="ref">diapos 27–28</span></h2>
+    <p>La diapo 28, « Points clés », résume tout le module : elle montre comment un message passe d'un poste client à un serveur à travers deux réseaux. Chaque chapitre suivant détaille une de ses couches.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 740 270" width="740" role="img" aria-labelledby="fig-1diapo-titre">
+        <title id="fig-1diapo-titre">Un poste et un serveur ont chacun quatre couches : application, transport, réseau, accès au réseau. Le commutateur du réseau 1 n'a que la couche accès au réseau ; le routeur, entre les réseaux 1 et 2, a la couche réseau et deux couches accès au réseau. Les données circulent entre applications, les datagrammes entre couches transport, les paquets entre couches réseau, les trames entre couches accès voisines.</title>
+        <defs>
+          <marker id="fleche-1diapo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="70" y="18" text-anchor="middle" class="gras">Poste</text>
+        <rect class="boite-accent" x="10" y="30" width="120" height="32" rx="5"/><text x="70" y="51" text-anchor="middle">Application</text>
+        <rect class="boite" x="10" y="72" width="120" height="32" rx="5"/><text x="70" y="93" text-anchor="middle">Transport</text>
+        <rect class="boite" x="10" y="114" width="120" height="32" rx="5"/><text x="70" y="135" text-anchor="middle">Réseau</text>
+        <rect class="boite" x="10" y="156" width="120" height="32" rx="5"/><text x="70" y="177" text-anchor="middle">Accès au réseau</text>
+
+        <text x="225" y="146" text-anchor="middle" class="gras">Commutateur</text>
+        <rect class="boite" x="170" y="156" width="110" height="32" rx="5"/><text x="225" y="177" text-anchor="middle">Accès</text>
+
+        <text x="435" y="104" text-anchor="middle" class="gras">Routeur</text>
+        <rect class="boite" x="340" y="114" width="190" height="32" rx="5"/><text x="435" y="135" text-anchor="middle">Réseau</text>
+        <rect class="boite" x="340" y="156" width="90" height="32" rx="5"/><text x="385" y="177" text-anchor="middle">Accès</text>
+        <rect class="boite" x="440" y="156" width="90" height="32" rx="5"/><text x="485" y="177" text-anchor="middle">Accès</text>
+
+        <text x="670" y="18" text-anchor="middle" class="gras">Serveur</text>
+        <rect class="boite-accent" x="610" y="30" width="120" height="32" rx="5"/><text x="670" y="51" text-anchor="middle">Application</text>
+        <rect class="boite" x="610" y="72" width="120" height="32" rx="5"/><text x="670" y="93" text-anchor="middle">Transport</text>
+        <rect class="boite" x="610" y="114" width="120" height="32" rx="5"/><text x="670" y="135" text-anchor="middle">Réseau</text>
+        <rect class="boite" x="610" y="156" width="120" height="32" rx="5"/><text x="670" y="177" text-anchor="middle">Accès au réseau</text>
+
+        <path class="pointille" d="M130 46 H610"/><text x="370" y="40" text-anchor="middle" class="t2">données</text>
+        <path class="pointille" d="M130 88 H610"/><text x="370" y="82" text-anchor="middle" class="t2">datagrammes (segments)</text>
+        <path class="pointille" d="M130 130 H340"/><text x="235" y="124" text-anchor="middle" class="t2">paquets</text>
+        <path class="pointille" d="M530 130 H610"/><text x="570" y="124" text-anchor="middle" class="t2">paquets</text>
+        <path class="pointille" d="M130 172 H170"/>
+        <path class="pointille" d="M280 172 H340"/>
+        <path class="pointille" d="M530 172 H610"/>
+        <text x="150" y="204" text-anchor="middle" class="t2">trames</text>
+        <text x="310" y="204" text-anchor="middle" class="t2">trames</text>
+        <text x="570" y="204" text-anchor="middle" class="t2">trames</text>
+
+        <path class="accent" d="M70 188 V228 H225 V188" marker-end="url(#fleche-1diapo)"/>
+        <path class="accent" d="M225 188 V236 H385 V188" marker-end="url(#fleche-1diapo)"/>
+        <path class="accent" d="M485 188 V236 H670 V188" marker-end="url(#fleche-1diapo)"/>
+        <text x="200" y="258" text-anchor="middle" class="t2">Réseau 1</text>
+        <text x="580" y="258" text-anchor="middle" class="t2">Réseau 2</text>
+      </svg>
+      <figcaption>« Le réseau en une diapo » (diapo 28), redessiné. En pointillé, les échanges logiques entre couches de même niveau ; en couleur, le trajet physique réel. Adresse IP = adresse logique ; adresse MAC = adresse physique.</figcaption>
+    </figure>
+
+    <p>À retenir de ce schéma, que les chapitres 2 à 6 expliquent :</p>
+    <ul>
+      <li>Les équipements finaux (le poste, le serveur) traversent quatre couches : <strong>application</strong>, <strong>transport</strong> (TCP ou UDP), <strong>réseau</strong> (Internet, IP) et <strong>accès au réseau</strong> (Ethernet).</li>
+      <li>À chaque couche, les données portent un nom : <strong>données</strong> pour l'application, <strong>datagrammes</strong> pour le transport, <strong>paquets</strong> pour le réseau, <strong>trames</strong> pour l'accès au réseau.</li>
+      <li>Un <strong>commutateur</strong> ne travaille qu'avec la couche d'accès au réseau : il fait passer les trames d'un poste à l'autre <strong>dans un même réseau</strong>.</li>
+      <li>Un <strong>routeur</strong> remonte jusqu'à la couche réseau : il fait passer les paquets <strong>d'un réseau à un autre</strong>, en créant une nouvelle trame à chaque réseau traversé.</li>
+      <li>L'<dfn>adresse IP</dfn> est une adresse <strong>logique</strong>, qui désigne la machine d'un bout à l'autre ; l'<dfn>adresse MAC</dfn> est une adresse <strong>physique</strong>, qui désigne une interface dans un réseau local.</li>
+    </ul>
+    <p><span class="badge ajout">Ajout</span> Au niveau transport, le chapitre 6 parle de <strong>segments</strong> pour TCP et de <strong>datagrammes</strong> pour UDP ; la diapo emploie « datagrammes » pour les deux.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exercices</h2>
+    <p>Exercices d'entraînement, ajoutés pour s'approprier les calculs de ce chapitre.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Conversions</span></p>
+      <p>Écrire 10, 168, 255 et 63 en binaire sur 8 bits et en hexadécimal. Écrire en décimal <code>1110 0000</code> et <code>0x7F</code>.</p>
+      <details class="indice"><summary>Indice</summary><p>Poids des bits : 128, 64, 32, 16, 8, 4, 2, 1. Un chiffre hexadécimal = 4 bits.</p></details>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>10 = <code>0000 1010</code> = 0x0A ; 168 = 128 + 32 + 8 = <code>1010 1000</code> = 0xA8 ; 255 = <code>1111 1111</code> = 0xFF ; 63 = <code>0011 1111</code> = 0x3F.</p>
+        <p><code>1110 0000</code> = 128 + 64 + 32 = 224 ; <code>0x7F</code> = <code>0111 1111</code> = 127.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Longueur de code</span></p>
+      <p>Combien de bits faut-il pour numéroter 200 machines ? 1 000 000 de machines ? Combien de valeurs différentes peut-on coder sur 48 bits (taille d'une adresse MAC) ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>200 : \(2^7 = 128 \lt 200 \le 256 = 2^8\), donc 8 bits. 1 000 000 : \(2^{19} = 524\,288 \lt 10^6 \le 1\,048\,576 = 2^{20}\), donc 20 bits. Sur 48 bits : \(2^{48} ≈ 2{,}8 \times 10^{14}\) valeurs.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Débits</span></p>
+      <p>Une box fibre annonce 1 Gb/s en réception. Combien de temps faut-il, au mieux, pour télécharger un jeu de 50 Go ? Et avec un SSD qui écrit à 500 Mo/s, lequel des deux limite le transfert ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>1 Gb/s = 125 Mo/s. \(50\,000 / 125 = 400\) s, soit 6 min 40 s. Le SSD écrit à 500 Mo/s, plus vite que le réseau ne livre : c'est le réseau qui limite.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 4 <span>Opérations bit à bit</span></p>
+      <p>Calculer <code>1100 1010 AND 1111 1000</code>, <code>1100 1010 OR 0000 0101</code> et <code>1100 1010 XOR 1111 1111</code>.</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>AND : <code>1100 1000</code> (les 3 bits de droite sont effacés). OR : <code>1100 1111</code>. XOR avec que des 1 : chaque bit est inversé, <code>0011 0101</code>.</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Un réseau informatique est tout ce qui permet d'échanger des données entre équipements finaux ; Internet est un réseau de réseaux, issu d'ARPANET.</li>
+        <li>Client-serveur (modèle dominant) : le serveur héberge le service, le client le demande. Pair à pair : chaque station est cliente et serveur.</li>
+        <li>Le web repose sur HTTP, protocole client-serveur, transporté par TCP/IP.</li>
+        <li>Trois familles d'équipements : finaux (produisent et consomment les données), intermédiaires (commutateurs, routeurs, pare-feu, points d'accès), de connexion (médias en cuivre, fibre ou ondes).</li>
+        <li>1 octet = 8 bits = 256 valeurs = 2 chiffres hexadécimaux. Pour coder N symboles, il faut n bits avec \(N \le 2^n\).</li>
+        <li>kilo = \(10^3\), kibi = \(2^{10}\). Un débit se compte en bits par seconde ; diviser par 8 pour l'avoir en octets.</li>
+        <li>AND vaut 1 si les deux bits valent 1 ; OR si l'un des deux vaut 1 ; XOR s'ils diffèrent.</li>
+        <li>Quatre couches : application (données), transport (datagrammes), réseau (paquets), accès au réseau (trames). Le commutateur travaille dans un réseau, le routeur entre réseaux.</li>
+        <li>IP = adresse logique ; MAC = adresse physique.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Une imprimante partagée sur le réseau est-elle un équipement final ou intermédiaire ?</summary>
+        <div><p>Un équipement final : elle ne fournit pas de service réseau, elle consomme les données (les documents à imprimer).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Dans un échange BitTorrent, qui est client et qui est serveur ?</summary>
+        <div><p>Chaque pair est les deux : client quand il demande un morceau de fichier, serveur quand il en envoie un. C'est le modèle pair à pair.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Combien de bits pour coder 50 symboles ?</summary>
+        <div><p>6 bits, car \(2^5 = 32 \lt 50 \le 64 = 2^6\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un débit de 100 Mb/s, c'est combien de Mo/s ?</summary>
+        <div><p>12,5 Mo/s : on divise par 8.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi un disque vendu « 1 To » s'affiche-t-il à 931 Go sous Windows ?</summary>
+        <div><p>Le fabricant compte \(10^{12}\) octets, Windows compte en gibioctets (\(2^{30}\)) : \(10^{12} / 2^{30} ≈ 931\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quel équipement doit remonter jusqu'à la couche réseau : le commutateur ou le routeur ?</summary>
+        <div><p>Le routeur, qui fait passer les paquets d'un réseau à un autre. Le commutateur s'arrête à la couche d'accès au réseau.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Comment s'appellent les données à la couche réseau ? à la couche d'accès au réseau ?</summary>
+        <div><p>Des paquets ; des trames.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="index.html"><small>← Accueil</small>Réseaux</a>
+    <a class="suivant" href="cours-02-modele-de-communication.html"><small>Suivant →</small>Modèles de communication</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Réseaux · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

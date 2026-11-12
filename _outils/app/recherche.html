@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Rechercher</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --surface: #ffffff; --bordure: #d8d8d2; --texte: #1f2024; --texte-2: #63646b; --survol: #f1f1ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --surface: #1a1b1f; --bordure: #3a3b42; --texte: #ececee; --texte-2: #a0a1a8; --survol: #2a2b31; }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: transparent; overflow: hidden; }
+  body { padding: 4px; font: 14px "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; color: var(--texte); }
+  form {
+    display: flex; align-items: center; gap: 2px; height: 100%; padding: 0 6px 0 12px;
+    border: 1px solid var(--bordure); border-radius: 8px; background: var(--surface);
+  }
+  input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: inherit; font: inherit; }
+  output { padding: 0 6px; color: var(--texte-2); font-size: 12px; white-space: nowrap; }
+  button {
+    width: 28px; height: 28px; padding: 0; border: 0; border-radius: 6px; background: none;
+    color: var(--texte-2); font: inherit; cursor: pointer;
+  }
+  button:hover { background: var(--survol); color: var(--texte); }
+</style>
+</head>
+<body>
+<form>
+  <input type="text" aria-label="Rechercher dans la page" placeholder="Rechercher dans la page" spellcheck="false">
+  <output></output>
+  <button type="button" data-action="avant" title="Précédent (Maj+Entrée)" aria-label="Précédent">↑</button>
+  <button type="button" data-action="apres" title="Suivant (Entrée)" aria-label="Suivant">↓</button>
+  <button type="button" data-action="fermer" title="Fermer (Échap)" aria-label="Fermer">✕</button>
+</form>
+<script>
+  var champ = document.querySelector("input");
+  var compte = document.querySelector("output");
+
+  function chercher(avant) {
+    window.recherche.chercher(champ.value, avant);
+    if (!champ.value) compte.textContent = "";
+  }
+
+  window.recherche.surOuverture(function () { champ.focus(); champ.select(); });
+  window.recherche.surResultat(function (position, total) {
+    compte.textContent = total ? position + " / " + total : "Aucun résultat";
+  });
+
+  champ.addEventListener("input", function () { chercher(false); });
+  document.querySelector("form").addEventListener("submit", function (e) { e.preventDefault(); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") window.recherche.fermer();
+    if (e.key === "Enter") { e.preventDefault(); chercher(e.shiftKey); }
+  });
+  document.addEventListener("click", function (e) {
+    var action = e.target.dataset.action;
+    if (action === "fermer") window.recherche.fermer();
+    else if (action) { chercher(action === "avant"); champ.focus(); }
+  });
+</script>
+</body>
+</html>

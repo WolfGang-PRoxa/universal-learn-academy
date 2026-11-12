@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="reseau">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · VLAN et STP · Réseaux L2</title>
+<meta name="description" content="Quiz interactif sur les VLAN et le Spanning Tree : domaines de diffusion, VLAN, trunk 802.1Q, routage inter-VLAN, boucles, pont racine, ports racine et désignés (Réseaux, L2).">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="../generated_courses/index.html">Réseaux</a>
+    <span aria-current="page">Quiz · VLAN et STP</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Réseaux</span> Quiz · L2</p>
+    <h1>VLAN et STP</h1>
+    <p class="chapeau">Domaines de collision et de diffusion, VLAN, ports d'accès et trunks, étiquette 802.1Q, routage entre VLAN, boucles Ethernet, algorithme du Spanning Tree et états des ports. 16 questions.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-07-vlan-stp.html">Cours 7 · VLAN et STP</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 novembre 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Réseaux · L2 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "reseau-cours-07-vlan-stp",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 7 · VLAN et STP",
+      "lien": "../generated_courses/cours-07-vlan-stp.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "trous",
+      "theme": "Domaines",
+      "difficulte": 2,
+      "enonce": "<p>Compléter le nombre de domaines pour chaque équipement (sans VLAN).</p>",
+      "texte": "Concentrateur de 8 ports : {{0}} domaine(s) de collision, {{1}} domaine(s) de diffusion\nCommutateur de 8 ports, tous utilisés : {{2}} domaine(s) de collision, {{3}} domaine(s) de diffusion\nRouteur à 3 interfaces utilisées : {{4}} domaine(s) de diffusion",
+      "trous": [
+        {
+          "reponses": [
+            "1"
+          ]
+        },
+        {
+          "reponses": [
+            "1"
+          ]
+        },
+        {
+          "reponses": [
+            "8"
+          ]
+        },
+        {
+          "reponses": [
+            "1"
+          ]
+        },
+        {
+          "reponses": [
+            "3"
+          ]
+        }
+      ],
+      "explication": "<p>Le concentrateur répète tout : un seul domaine de collision. Le commutateur en fait un par port mais laisse passer les diffusions. Le routeur arrête les diffusions : un domaine par interface.</p>",
+      "revoir": {
+        "texte": "Cours 7 · Commutation et domaines",
+        "lien": "../generated_courses/cours-07-vlan-stp.html#commutation-et-domaines"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "numerique",
+      "theme": "Domaines",
+      "difficulte": 3,
+      "enonce": "<p>Un routeur à deux interfaces relie deux commutateurs. Sur le premier : 3 PC et un concentrateur portant 4 PC ; sur le second : 5 PC. Combien y a-t-il de domaines de collision ?</p>",
+      "reponse": 11,
+      "tolerance": 0,
+      "indices": [
+        "<p>Un domaine par port de commutateur utilisé, lien vers le routeur compris.</p>"
+      ],
+      "explication": "<p>Premier commutateur : 3 PC + 1 (le concentrateur et ses 4 PC) + 1 (lien vers le routeur) = 5. Second : 5 + 1 = 6. Total 11. Il n'y a que 2 domaines de diffusion.</p>",
+      "revoir": {
+        "texte": "Cours 7 · Commutation et domaines",
+        "lien": "../generated_courses/cours-07-vlan-stp.html#commutation-et-domaines"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "vrai-faux",
+      "theme": "Domaines",
+      "difficulte": 2,
+      "enonce": "<p>Placer deux sous-réseaux IP sur le même commutateur suffit à séparer leurs diffusions Ethernet.</p>",
+      "reponse": false,
+      "explication": "<p>Le commutateur ne lit que les trames : une requête ARP de 172.30.1.0/24 arrive aussi aux machines de 172.30.2.0/24. Il faut des VLAN pour séparer les domaines de diffusion.</p>",
+      "revoir": {
+        "texte": "Cours 7 · Plusieurs sous-réseaux sur les mêmes commutateurs",
+        "lien": "../generated_courses/cours-07-vlan-stp.html#plusieurs-sous-reseaux-sur-les-memes-commutateurs"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "qcm",
+      "theme": "VLAN",
+      "difficulte": 1,
+      "enonce": "<p>Deux PC branchés sur le même commutateur sont dans deux VLAN différents. Comment peuvent-ils communiquer ?</p>",
+      "choix": [
+        "En passant par un routeur",
+        "Directement, puisqu'ils sont sur le même commutateur",
+        "Par une requête ARP en broadcast",
+        "Ils ne peuvent pas communiquer du tout"
+      ],
+      "reponse": 0,
+      "explication": "<p>Chaque VLAN est un domaine de diffusion séparé, comme un réseau indépendant : il faut un routeur (ou un commutateur de niveau 3) entre eux.</p>",
+      "revoir": {
+        "texte": "Cours 7 · Les VLAN",
+        "lien": "../generated_courses/cours-07-vlan-stp.html#les-vlan"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "qcm-multi",
+      "theme": "VLAN",
+      "difficulte": 2,
+      "enonce": "<p>Quels sont les avantages des VLAN ?</p>",
+      "choix": [
+        "Sécurité : les trames ne vont qu'aux machines du même VLAN",
+        "Une tempête de diffusion reste confinée à un VLAN",
+        "Regrouper les machines par fonction plutôt que par emplacement",
+        "Supprimer le besoin de routeur entre services",
+        "Augmenter le débit de chaque câble"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "explication": "<p>Sécurité, coûts, performances et gestion. Les VLAN ne suppriment pas le routeur : il en faut un pour passer d'un VLAN à l'autre. Ils ne changent pas le débit des liens.</p>",
+      "revoir": {
+        "texte": "Cours 7 · Avantages",
+        "lien": "../generated_courses/cours-07-vlan-stp.html#avantages"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "vrai-faux",
+      "theme": "VLAN",
+      "difficulte": 1,
+      "enonce": "<p>Sur un commutateur Cisco neuf, tous les ports sont dans le VLAN 1.</p>",
+      "reponse": true,
+      "explication": "<p>Le VLAN 1 est le VLAN par défaut. Les VLAN 1002 à 1005 existent aussi toujours, pour des technologies anciennes (FDDI, Token Ring).</p>",
+      "revoir": {
+        "texte": "Cours 7 · Configuration statique ou dynamique",
+        "lien": "../generated_courses/cours-07-vlan-stp.html#configuration-statique-ou-dynamique"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "association",
+      "theme": "Trunk et 802.1Q",
+      "difficulte": 2,
+      "enonce": "<p>Associer chaque notion à sa description.</p>",
+      "paires": [
+        [
+          "Port d'accès",
+          "Un seul VLAN, trames sans étiquette"
+        ],
+        [
+          "Trunk",
+          "Plusieurs VLAN, trames étiquetées"
+        ],
+        [
+          "VLAN natif",
+          "Ses trames passent sans étiquette sur le trunk"
+        ],
+        [
+          "TPID 0x8100",
+          "Signale qu'une étiquette 802.1Q suit"
+        ]
+      ],
+      "explication": "<p>La machine branchée sur un port d'accès ignore qu'elle est dans un VLAN ; seul le trunk porte l'étiquette, sauf pour le VLAN natif.</p>",
+      "revoir": {
+        "texte": "Cours 7 · Trunk et étiquette 802.1Q",
+        "lien": "../generated_courses/cours-07-vlan-stp.html#trunk-et-etiquette-802-1q"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "trous",
+      "theme": "Trunk et 802.1Q",
+      "difficulte": 2,
+      "enonce": "<p>Compléter la description de l'étiquette 802.1Q.</p>",
+      "texte": "L'étiquette fait {{0}} octets, insérés entre l'adresse source et le champ type. Le VID est codé sur {{1}} bits, la priorité sur {{2}} bits.",
+      "trous": [
+        {
+          "reponses": [
+            "4"
+          ]
+        },
+        {
+          "reponses": [
+            "12"
+          ]
+        },
+        {
+          "reponses": [
+            "3"
+          ]
+        }
+      ],
+      "explication": "<p>TPID (2 octets) + TCI (2 octets : priorité 3 bits, CFI 1 bit, VID 12 bits). Il faut ensuite recalculer la FCS de la trame.</p>",
+      "revoir": {
+        "texte": "Cours 7 · Trunk et étiquette 802.1Q",
+        "lien": "../generated_courses/cours-07-vlan-stp.html#trunk-et-etiquette-802-1q"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "numerique",
+      "theme": "Trunk et 802.1Q",
+      "difficulte": 3,
+      "enonce": "<p>Sur un trunk, une trame porte après l'adresse source les octets 81 00 60 14. Quel est son numéro de VLAN ?</p>",
+      "reponse": 20,
+      "tolerance": 0,
+      "indices": [
+        "<p>Écrire 60 14 en binaire : 3 bits de priorité, 1 bit CFI, puis 12 bits de VID.</p>"
+      ],
+      "explication": "<p>81 00 : TPID 802.1Q. 60 14 = 0110 0000 0001 0100 : priorité 011 = 3, CFI 0, VID = 0000 0001 0100 = 20.</p>",
+      "revoir": {
+        "texte": "Cours 7 · Trunk et étiquette 802.1Q",
+        "lien": "../generated_courses/cours-07-vlan-stp.html#trunk-et-etiquette-802-1q"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "qcm",
+      "theme": "Trunk et 802.1Q",
+      "difficulte": 2,
+      "enonce": "<p>Le routage entre VLAN par router-on-a-stick utilise…</p>",
+      "choix": [
+        "Un seul lien en trunk et une sous-interface par VLAN",
+        "Une interface physique du routeur par VLAN",
+        "Un concentrateur entre les VLAN",
+        "Un VLAN natif commun à tous les postes"
+      ],
+      "reponse": 0,
+      "explication": "<p>Un seul câble entre routeur et commutateur, en trunk ; chaque sous-interface (g0/0.10, g0/0.20…) est la passerelle d'un VLAN. L'autre montage, une interface par VLAN, consomme des ports.</p>",
+      "revoir": {
+        "texte": "Cours 7 · Communication entre VLAN",
+        "lien": "../generated_courses/cours-07-vlan-stp.html#communication-entre-vlan"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "qcm",
+      "theme": "Boucles et STP",
+      "difficulte": 2,
+      "enonce": "<p>Pourquoi une boucle est-elle plus grave en Ethernet qu'en IP ?</p>",
+      "choix": [
+        "La trame Ethernet n'a pas de TTL : une diffusion tourne indéfiniment",
+        "Les commutateurs sont plus lents que les routeurs",
+        "Ethernet n'a pas de somme de contrôle",
+        "Les adresses MAC changent à chaque saut"
+      ],
+      "reponse": 0,
+      "explication": "<p>En IP, le TTL décrémenté à chaque routeur finit par détruire le paquet. Une trame n'a rien de tel : tempête de diffusion, et tables MAC incohérentes.</p>",
+      "revoir": {
+        "texte": "Cours 7 · Liens redondants et boucles",
+        "lien": "../generated_courses/cours-07-vlan-stp.html#liens-redondants-et-boucles"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "qcm",
+      "theme": "Boucles et STP",
+      "difficulte": 2,
+      "enonce": "<p>Quatre commutateurs ont pour priorité et adresse MAC : A (32768, …:05), B (32768, …:02), C (28672, …:09), D (32768, …:01). Lequel devient pont racine ?</p>",
+      "choix": [
+        "C",
+        "D",
+        "B",
+        "A"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Le BID commence par la priorité.</p>"
+      ],
+      "explication": "<p>On compare d'abord la priorité : C est le seul en dessous de 32 768, il gagne malgré la plus grande adresse MAC. La MAC ne départage qu'à priorité égale.</p>",
+      "revoir": {
+        "texte": "Cours 7 · Étape 1 : élire le pont racine",
+        "lien": "../generated_courses/cours-07-vlan-stp.html#etape-1-elire-le-pont-racine"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "association",
+      "theme": "Boucles et STP",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque débit à son coût STP (IEEE 802.1D).</p>",
+      "paires": [
+        [
+          "10 Mb/s",
+          "100"
+        ],
+        [
+          "100 Mb/s",
+          "19"
+        ],
+        [
+          "1 Gb/s",
+          "4"
+        ],
+        [
+          "10 Gb/s",
+          "2"
+        ]
+      ],
+      "explication": "<p>Plus le lien est rapide, plus son coût est faible. Le coût d'un chemin vers la racine est la somme des coûts de ses liens.</p>",
+      "revoir": {
+        "texte": "Cours 7 · Coût des liens et BPDU",
+        "lien": "../generated_courses/cours-07-vlan-stp.html#cout-des-liens-et-bpdu"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "numerique",
+      "theme": "Boucles et STP",
+      "difficulte": 3,
+      "enonce": "<p>S1 est racine. S4 lui est relié directement à 100 Mb/s, et aussi par S3–S2–S1 en trois liens à 1 Gb/s. Quel est le coût du chemin racine de S4 ?</p>",
+      "reponse": 12,
+      "tolerance": 0,
+      "indices": [
+        "<p>1 Gb/s coûte 4, 100 Mb/s coûte 19.</p>"
+      ],
+      "explication": "<p>Direct : 19. Par S3, S2, S1 : 4 + 4 + 4 = 12. Le port racine de S4 est celui vers S3 ; le lien lent S4–S1 finit bloqué côté S4.</p>",
+      "revoir": {
+        "texte": "Cours 7 · Étape 2 : choisir les ports racine",
+        "lien": "../generated_courses/cours-07-vlan-stp.html#etape-2-choisir-les-ports-racine"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "qcm-multi",
+      "theme": "Boucles et STP",
+      "difficulte": 2,
+      "enonce": "<p>Quelles affirmations sur l'algorithme STP sont justes ?</p>",
+      "choix": [
+        "Tous les ports du pont racine sont désignés",
+        "Chaque commutateur sauf la racine a un port racine",
+        "Chaque lien a exactement un port désigné",
+        "Le pont racine bloque un de ses ports",
+        "Le port racine est celui de plus grand coût vers la racine"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "explication": "<p>Le port racine offre le chemin le moins cher vers la racine. Les ports qui ne sont ni racine ni désignés sont bloqués, jamais ceux de la racine.</p>",
+      "revoir": {
+        "texte": "Cours 7 · L'algorithme en quatre étapes",
+        "lien": "../generated_courses/cours-07-vlan-stp.html#l-algorithme-en-quatre-etapes"
+      }
+    },
+    {
+      "id": "q16",
+      "type": "ordre",
+      "theme": "Boucles et STP",
+      "difficulte": 2,
+      "enonce": "<p>Remettre dans l'ordre les états que traverse un port avant de transmettre des données.</p>",
+      "elements": [
+        "Blocage",
+        "Écoute",
+        "Apprentissage",
+        "Acheminement"
+      ],
+      "explication": "<p>Blocage (reçoit les BPDU), écoute (calcul des chemins, 15 s), apprentissage (remplit la table MAC, 15 s), acheminement. L'état désactivé est imposé par l'administrateur.</p>",
+      "revoir": {
+        "texte": "Cours 7 · Fonctionnement et états des ports",
+        "lien": "../generated_courses/cours-07-vlan-stp.html#fonctionnement-et-etats-des-ports"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

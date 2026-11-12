@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Annale : contrôle intermédiaire 2022-2023 · Théorie des graphes L3</title>
+<meta name="description" content="Quiz d'annales de théorie des graphes (L3) : le contrôle intermédiaire 2022-2023 du poly, réponses vérifiées avec NetworkX.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="../generated_courses/index.html">Théorie des graphes</a>
+    <span aria-current="page">Quiz · Annale CI 2022-2023</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Théorie des graphes</span> Quiz · L3 · Annales</p>
+    <h1>Annale : contrôle intermédiaire 2022-2023</h1>
+    <p class="chapeau">Le sujet du contrôle intermédiaire de 2022-2023 (sans document), question par question : abonnements Twitter, parcours et connexité, forte connexité, modèle d'Erdős–Rényi. Un graphe orienté et deux arbres à dessiner dans l'atelier.</p>
+    <dl class="meta">
+      <div><dt>Sujet</dt><dd><a href="../cours/_Graphes__Cours_de_graphes_A4__1_-4.pdf">poly de N. Dugué</a>, annales</dd></div>
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-01-notions-de-base.html">Cours 1 · Notions de base</a> ; <a href="../generated_courses/cours-02-connexite-erdos-renyi.html">Cours 2 · Connexité et modèle d'Erdős–Rényi</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 novembre 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Théorie des graphes · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "graphes-annale-ci-2022-2023",
+  "melanger": false,
+  "cours": [
+    {
+      "titre": "Cours 1 · Notions de base",
+      "lien": "../generated_courses/cours-01-notions-de-base.html"
+    },
+    {
+      "titre": "Cours 2 · Connexité et modèle d'Erdős–Rényi",
+      "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html"
+    }
+  ],
+  "questions": [
+    {
+      "type": "qcm",
+      "theme": "Ex. 1 · Abonnements Twitter",
+      "difficulte": 1,
+      "enonce": "<p><strong>Ex. 1, q. 1</strong> (2 points). La Table 1 donne, pour quelques scientifiques, la liste de leurs abonnés (followers) sur Twitter. Avec les notations du cours, quel réseau construire, et à quoi correspondent ses éléments ?</p><div class='tableau centre compact'><table><caption>Abonnements de quelques scientifiques (Table 1 du sujet)</caption><thead><tr><th>Utilisateur</th><th>Followers</th></tr></thead><tbody><tr><td>1-Tim Berners-Lee</td><td>{3-Alain Aspect, 9-Alex}</td></tr><tr><td>2-Albert Barabási</td><td>{5-Aaron Clauset, 3-Alain Aspect, 6-Anna}</td></tr><tr><td>3-Alain Aspect</td><td>{2-Albert Barabási, 5-Aaron Clauset}</td></tr><tr><td>4-Claudia Goldin</td><td>{1-Tim Berners-Lee, 3-Alain Aspect}</td></tr><tr><td>5-Aaron Clauset</td><td>{8-Killian}</td></tr><tr><td>6-Anna</td><td>{7-Ayoub, 9-Alex}</td></tr><tr><td>7-Ayoub</td><td>{6-Anna, 8-Killian}</td></tr><tr><td>8-Killian</td><td>{1-Tim Berners-Lee, 7-Ayoub}</td></tr><tr><td>9-Alex</td><td>–</td></tr></tbody></table></div>",
+      "choix": [
+        "Un graphe orienté \\(G = (V, A)\\) : \\(V\\) les utilisateurs, et un arc \\((u, v) \\in A\\) quand \\(u\\) est abonné à \\(v\\).",
+        "Un graphe non orienté \\(G = (V, E)\\) : \\(V\\) les utilisateurs, une arête entre deux utilisateurs qui se suivent.",
+        "Un graphe orienté pondéré : le poids d'un arc est le nombre d'abonnés.",
+        "Un graphe non orienté dont les sommets sont les abonnements et les arêtes les utilisateurs."
+      ],
+      "reponse": 0,
+      "explication": "<p>S'abonner n'est pas réciproque : Alex suit Tim Berners-Lee sans être suivi en retour. Il faut donc des arcs, \\(G = (V, A)\\) avec \\(A \\subseteq V \\times V\\). Les sommets sont les 9 utilisateurs, chaque arc un abonnement. Le sens inverse (de l'abonné vers le suivi ou l'inverse) est une convention ; on garde ici celui de la liste d'adjacence 1 du sujet : de l'abonné vers la personne suivie.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Graphes orientés",
+        "lien": "../generated_courses/cours-01-notions-de-base.html#graphes-orientes"
+      },
+      "id": "q01"
+    },
+    {
+      "type": "atelier",
+      "editeur": "graphe",
+      "theme": "Ex. 1 · Abonnements Twitter",
+      "difficulte": 2,
+      "enonce": "<p><strong>Ex. 1, q. 2</strong> (2 points). Dessiner le graphe de la Table 1, avec pour sommets les numéros des utilisateurs.</p><div class='tableau centre compact'><table><caption>Abonnements de quelques scientifiques (Table 1 du sujet)</caption><thead><tr><th>Utilisateur</th><th>Followers</th></tr></thead><tbody><tr><td>1-Tim Berners-Lee</td><td>{3-Alain Aspect, 9-Alex}</td></tr><tr><td>2-Albert Barabási</td><td>{5-Aaron Clauset, 3-Alain Aspect, 6-Anna}</td></tr><tr><td>3-Alain Aspect</td><td>{2-Albert Barabási, 5-Aaron Clauset}</td></tr><tr><td>4-Claudia Goldin</td><td>{1-Tim Berners-Lee, 3-Alain Aspect}</td></tr><tr><td>5-Aaron Clauset</td><td>{8-Killian}</td></tr><tr><td>6-Anna</td><td>{7-Ayoub, 9-Alex}</td></tr><tr><td>7-Ayoub</td><td>{6-Anna, 8-Killian}</td></tr><tr><td>8-Killian</td><td>{1-Tim Berners-Lee, 7-Ayoub}</td></tr><tr><td>9-Alex</td><td>–</td></tr></tbody></table></div><p>On note un arc \\((u, v)\\) quand \\(u\\) est abonné à \\(v\\) (« \\(u\\) suit \\(v\\) »). Les sommets sont les numéros des utilisateurs.</p><p>Dans la table du sujet, les followers d'Alain Aspect sont écrits « 2-Albert Barabási, 9-Aaron Clauset » : Aaron Clauset porte le numéro 5, et c'est ainsi qu'on lit cette case.</p>",
+      "depart": [
+        "oriente"
+      ],
+      "solution": [
+        "oriente",
+        "1 -> 4",
+        "1 -> 8",
+        "2 -> 3",
+        "3 -> 1",
+        "3 -> 2",
+        "3 -> 4",
+        "5 -> 2",
+        "5 -> 3",
+        "6 -> 2",
+        "6 -> 7",
+        "7 -> 6",
+        "7 -> 8",
+        "8 -> 5",
+        "8 -> 7",
+        "9 -> 1",
+        "9 -> 6"
+      ],
+      "seuil": 1,
+      "indices": [
+        "<p>La ligne « 1-Tim Berners-Lee : {3, 9} » donne deux arcs qui <em>arrivent</em> en 1 : 3 → 1 et 9 → 1.</p>"
+      ],
+      "explication": "<p>16 arcs : chaque follower \\(f\\) de \\(u\\) donne l'arc \\(f \\to u\\). Quelques abonnements sont réciproques (2 ⇄ 3, 6 ⇄ 7, 7 ⇄ 8), d'où des arcs dans les deux sens. 9 n'a aucun abonné : aucun arc n'arrive sur lui. 4 ne suit personne : aucun arc n'en part.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Graphes orientés",
+        "lien": "../generated_courses/cours-01-notions-de-base.html#graphes-orientes"
+      },
+      "id": "q02"
+    },
+    {
+      "type": "trous",
+      "theme": "Ex. 1 · Abonnements Twitter",
+      "difficulte": 2,
+      "enonce": "<p><strong>Ex. 1, q. 3</strong> (1 point). Le voisinage sortant \\(N^+(u)\\) est l'ensemble des sommets vers lesquels part un arc de \\(u\\) ; le voisinage entrant \\(N^-(u)\\), ceux d'où part un arc vers \\(u\\). Les donner pour 1-Tim Berners-Lee, 5-Aaron Clauset et 9-Alex, par leurs numéros (écrire <code>{}</code> pour un ensemble vide).</p><div class='tableau centre compact'><table><caption>Abonnements de quelques scientifiques (Table 1 du sujet)</caption><thead><tr><th>Utilisateur</th><th>Followers</th></tr></thead><tbody><tr><td>1-Tim Berners-Lee</td><td>{3-Alain Aspect, 9-Alex}</td></tr><tr><td>2-Albert Barabási</td><td>{5-Aaron Clauset, 3-Alain Aspect, 6-Anna}</td></tr><tr><td>3-Alain Aspect</td><td>{2-Albert Barabási, 5-Aaron Clauset}</td></tr><tr><td>4-Claudia Goldin</td><td>{1-Tim Berners-Lee, 3-Alain Aspect}</td></tr><tr><td>5-Aaron Clauset</td><td>{8-Killian}</td></tr><tr><td>6-Anna</td><td>{7-Ayoub, 9-Alex}</td></tr><tr><td>7-Ayoub</td><td>{6-Anna, 8-Killian}</td></tr><tr><td>8-Killian</td><td>{1-Tim Berners-Lee, 7-Ayoub}</td></tr><tr><td>9-Alex</td><td>–</td></tr></tbody></table></div><p>On note un arc \\((u, v)\\) quand \\(u\\) est abonné à \\(v\\) (« \\(u\\) suit \\(v\\) »). Les sommets sont les numéros des utilisateurs.</p><p>Dans la table du sujet, les followers d'Alain Aspect sont écrits « 2-Albert Barabási, 9-Aaron Clauset » : Aaron Clauset porte le numéro 5, et c'est ainsi qu'on lit cette case.</p>",
+      "texte": "N⁺(1) = {{0}}   N⁻(1) = {{1}}\nN⁺(5) = {{2}}   N⁻(5) = {{3}}\nN⁺(9) = {{4}}   N⁻(9) = {{5}}",
+      "code": true,
+      "trous": [
+        {
+          "reponses": [
+            "{4, 8}",
+            "4, 8",
+            "{4,8}",
+            "4,8",
+            "{4 8}",
+            "4 8",
+            "{8, 4}",
+            "8, 4",
+            "{8,4}",
+            "8,4",
+            "{8 4}",
+            "8 4"
+          ]
+        },
+        {
+          "reponses": [
+            "{3, 9}",
+            "3, 9",
+            "{3,9}",
+            "3,9",
+            "{3 9}",
+            "3 9",
+            "{9, 3}",
+            "9, 3",
+            "{9,3}",
+            "9,3",
+            "{9 3}",
+            "9 3"
+          ]
+        },
+        {
+          "reponses": [
+            "{2, 3}",
+            "2, 3",
+            "{2,3}",
+            "2,3",
+            "{2 3}",
+            "2 3",
+            "{3, 2}",
+            "3, 2",
+            "{3,2}",
+            "3,2",
+            "{3 2}",
+            "3 2"
+          ]
+        },
+        {
+          "reponses": [
+            "{8}",
+            "8",
+            "{8}",
+            "8",
+            "{8}",
+            "8"
+          ]
+        },
+        {
+          "reponses": [
+            "{1, 6}",
+            "1, 6",
+            "{1,6}",
+            "1,6",
+            "{1 6}",
+            "1 6",
+            "{6, 1}",
+            "6, 1",
+            "{6,1}",
+            "6,1",
+            "{6 1}",
+            "6 1"
+          ]
+        },
+        {
+          "reponses": [
+            "{}",
+            "∅",
+            "{ }",
+            "aucun",
+            "vide"
+          ]
+        }
+      ],
+      "explication": "<p>Avec les arcs de l'abonné vers le suivi, \\(N^+(u)\\) est l'ensemble des comptes que \\(u\\) suit, \\(N^-(u)\\) celui de ses abonnés (la ligne de \\(u\\) dans la table). 1 suit 4 et 8, et il est suivi par 3 et 9 ; 5 suit 2 et 3, et il est suivi par 8 ; 9 suit 1 et 6, et personne ne le suit. Le sujet écrit « 3-Tim_Berners-Lee » : Tim Berners-Lee est le numéro 1.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Graphes orientés",
+        "lien": "../generated_courses/cours-01-notions-de-base.html#graphes-orientes"
+      },
+      "id": "q03"
+    },
+    {
+      "type": "trous",
+      "theme": "Ex. 1 · Abonnements Twitter",
+      "difficulte": 1,
+      "enonce": "<p><strong>Ex. 1, q. 4</strong>. Quelle mesure sur les sommets permet de déterminer la personne qui a le plus d'abonnés ? Qui est-ce (son numéro) ?</p><div class='tableau centre compact'><table><caption>Abonnements de quelques scientifiques (Table 1 du sujet)</caption><thead><tr><th>Utilisateur</th><th>Followers</th></tr></thead><tbody><tr><td>1-Tim Berners-Lee</td><td>{3-Alain Aspect, 9-Alex}</td></tr><tr><td>2-Albert Barabási</td><td>{5-Aaron Clauset, 3-Alain Aspect, 6-Anna}</td></tr><tr><td>3-Alain Aspect</td><td>{2-Albert Barabási, 5-Aaron Clauset}</td></tr><tr><td>4-Claudia Goldin</td><td>{1-Tim Berners-Lee, 3-Alain Aspect}</td></tr><tr><td>5-Aaron Clauset</td><td>{8-Killian}</td></tr><tr><td>6-Anna</td><td>{7-Ayoub, 9-Alex}</td></tr><tr><td>7-Ayoub</td><td>{6-Anna, 8-Killian}</td></tr><tr><td>8-Killian</td><td>{1-Tim Berners-Lee, 7-Ayoub}</td></tr><tr><td>9-Alex</td><td>–</td></tr></tbody></table></div><p>On note un arc \\((u, v)\\) quand \\(u\\) est abonné à \\(v\\) (« \\(u\\) suit \\(v\\) »). Les sommets sont les numéros des utilisateurs.</p>",
+      "texte": "Mesure : {{0}} ; utilisateur : {{1}}",
+      "trous": [
+        {
+          "choix": [
+            "le degré entrant d⁻",
+            "le degré sortant d⁺",
+            "le degré non orienté d"
+          ],
+          "reponse": 0
+        },
+        {
+          "reponses": [
+            "2",
+            "2-Albert Barabási",
+            "Albert Barabási",
+            "Barabási"
+          ]
+        }
+      ],
+      "explication": "<p>Les abonnés de \\(u\\) sont ses voisins entrants : on compare les \\(d^-(u)\\). Albert Barabási (2) en a 3 (5, 3 et 6) ; tous les autres en ont 2 au plus.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Graphes orientés",
+        "lien": "../generated_courses/cours-01-notions-de-base.html#graphes-orientes"
+      },
+      "id": "q04"
+    },
+    {
+      "type": "trous",
+      "theme": "Ex. 1 · Abonnements Twitter",
+      "difficulte": 1,
+      "enonce": "<p><strong>Ex. 1, q. 5</strong>. En utilisant la notation du cours, quel utilisateur suit le plus grand nombre de scientifiques ?</p><div class='tableau centre compact'><table><caption>Abonnements de quelques scientifiques (Table 1 du sujet)</caption><thead><tr><th>Utilisateur</th><th>Followers</th></tr></thead><tbody><tr><td>1-Tim Berners-Lee</td><td>{3-Alain Aspect, 9-Alex}</td></tr><tr><td>2-Albert Barabási</td><td>{5-Aaron Clauset, 3-Alain Aspect, 6-Anna}</td></tr><tr><td>3-Alain Aspect</td><td>{2-Albert Barabási, 5-Aaron Clauset}</td></tr><tr><td>4-Claudia Goldin</td><td>{1-Tim Berners-Lee, 3-Alain Aspect}</td></tr><tr><td>5-Aaron Clauset</td><td>{8-Killian}</td></tr><tr><td>6-Anna</td><td>{7-Ayoub, 9-Alex}</td></tr><tr><td>7-Ayoub</td><td>{6-Anna, 8-Killian}</td></tr><tr><td>8-Killian</td><td>{1-Tim Berners-Lee, 7-Ayoub}</td></tr><tr><td>9-Alex</td><td>–</td></tr></tbody></table></div><p>On note un arc \\((u, v)\\) quand \\(u\\) est abonné à \\(v\\) (« \\(u\\) suit \\(v\\) »). Les sommets sont les numéros des utilisateurs.</p><p>Dans la table du sujet, les followers d'Alain Aspect sont écrits « 2-Albert Barabási, 9-Aaron Clauset » : Aaron Clauset porte le numéro 5, et c'est ainsi qu'on lit cette case.</p>",
+      "texte": "On compare les {{0}} ; c'est l'utilisateur {{1}}, qui en suit {{2}}.",
+      "trous": [
+        {
+          "choix": [
+            "d⁺(u)",
+            "d⁻(u)",
+            "d(u)"
+          ],
+          "reponse": 0
+        },
+        {
+          "reponses": [
+            "3",
+            "3-Alain Aspect",
+            "Alain Aspect",
+            "Aspect"
+          ]
+        },
+        {
+          "reponses": [
+            "3"
+          ]
+        }
+      ],
+      "explication": "<p>Les comptes que \\(u\\) suit sont ses voisins sortants : on cherche le plus grand \\(d^+(u)\\). Alain Aspect (3) apparaît dans les followers de 1, 2 et 4 : \\(d^+(3) = 3\\). Les autres en suivent au plus 2.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Graphes orientés",
+        "lien": "../generated_courses/cours-01-notions-de-base.html#graphes-orientes"
+      },
+      "id": "q05"
+    },
+    {
+      "type": "qcm",
+      "theme": "Ex. 1 · Abonnements Twitter",
+      "difficulte": 2,
+      "enonce": "<p><strong>Ex. 1, q. 6</strong> (1 point). Laquelle de ces deux listes d'adjacence (figures 1 et 2 du sujet) permet de représenter le graphe ?</p><p>Liste d'adjacence 1 :</p><pre><code class='language-python'>adjacency = {\n  \"1-Tim_Berners-Lee\" : [\"4-Claudia_Goldin\", \"8-Killian\"],\n  \"2-Albert_Barabási\" : [\"3-Alain_Aspect\"],\n  \"3-Alain_Aspect\" : [\"1-Tim_Berners-Lee\", \"2-Albert_Barabási\"],\n  \"4-Claudia_Goldin\" : [],\n  \"5-Aaron_Clauset\" : [\"2-Albert_Barabási\", \"3-Alain_Aspect\"],\n  \"6-Anna\" : [\"2-Albert_Barabási\", \"7-Ayoub\"],\n  \"7-Ayoub\" : [\"6-Anna\", \"8-Killian\"],\n  \"8-Killian\" : [\"5-Aaron_Clauset\", \"7-Ayoub\"],\n  \"9-Alex\" : [\"1-Tim_Berners-Lee\", \"6-Anna\"],\n}</code></pre><p>Liste d'adjacence 2 :</p><pre><code class='language-python'>adjacency = {\n  \"1-Tim_Berners-Lee\" : [\"3-Alain_Aspect\", \"4-Claudia_Goldin\", \"8-Killian\", \"9-Alex\"],\n  \"2-Albert_Barabási\" : [\"3-Alain_Aspect\", \"5-Aaron_Clauset\", \"3-Alain_Aspect\", \"6-Anna\"],\n  \"3-Alain_Aspect\" : [\"1-Tim_Berners-Lee\", \"2-Albert_Barabási\", \"5-Aaron_Clauset\"],\n  \"4-Claudia_Goldin\" : [\"1-Tim_Berners-Lee\", \"3-Alain_Aspect\"],\n  \"5-Aaron_Clauset\" : [\"2-Albert_Barabási\", \"3-Alain_Aspect\", \"8-Killian\"],\n  \"6-Anna\" : [\"2-Albert_Barabási\", \"7-Ayoub\", \"7-Ayoub\", \"8-Alex\"],\n  \"7-Ayoub\" : [\"6-Anna\", \"8-Killian],\n  \"8-Killian\" : [\"1-TimBerners-Lee\", \"5-Aaron_Clauset\", \"7-Ayoub\" ]\n  \"9-Alex\" : [\"1-Tim_Berners-Lee\", \"6-Anna\"]\n}</code></pre><div class='tableau centre compact'><table><caption>Abonnements de quelques scientifiques (Table 1 du sujet)</caption><thead><tr><th>Utilisateur</th><th>Followers</th></tr></thead><tbody><tr><td>1-Tim Berners-Lee</td><td>{3-Alain Aspect, 9-Alex}</td></tr><tr><td>2-Albert Barabási</td><td>{5-Aaron Clauset, 3-Alain Aspect, 6-Anna}</td></tr><tr><td>3-Alain Aspect</td><td>{2-Albert Barabási, 5-Aaron Clauset}</td></tr><tr><td>4-Claudia Goldin</td><td>{1-Tim Berners-Lee, 3-Alain Aspect}</td></tr><tr><td>5-Aaron Clauset</td><td>{8-Killian}</td></tr><tr><td>6-Anna</td><td>{7-Ayoub, 9-Alex}</td></tr><tr><td>7-Ayoub</td><td>{6-Anna, 8-Killian}</td></tr><tr><td>8-Killian</td><td>{1-Tim Berners-Lee, 7-Ayoub}</td></tr><tr><td>9-Alex</td><td>–</td></tr></tbody></table></div>",
+      "choix": [
+        "La liste 1 : le graphe est orienté, et elle donne pour chaque utilisateur les comptes qu'il suit, sans doublon.",
+        "La liste 2 : elle contient tous les liens, dans les deux sens.",
+        "Les deux : elles décrivent le même graphe.",
+        "Aucune : une liste d'adjacence ne peut pas représenter un graphe orienté."
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Le graphe est orienté : la liste de chaque sommet ne doit contenir que ses voisins sortants.</p>"
+      ],
+      "explication": "<p>La liste 1 donne \\(N^+(u)\\) pour chaque \\(u\\) : 1 suit 4 et 8, 9 suit 1 et 6… C'est la représentation d'un graphe orienté. La liste 2 mélange les deux sens comme pour un graphe non orienté, et contient des erreurs : 3-Alain_Aspect en double chez Barabási, 7-Ayoub en double et un « 8-Alex » chez Anna, des guillemets et une virgule manquants. Remarque : la liste 1 oublie un arc, 3 → 4 (Alain Aspect fait partie des followers de Claudia Goldin dans la table).</p>",
+      "revoir": {
+        "texte": "Cours 1 · Liste d'adjacence",
+        "lien": "../generated_courses/cours-01-notions-de-base.html#liste-d-adjacence"
+      },
+      "id": "q06"
+    },
+    {
+      "type": "atelier",
+      "editeur": "graphe",
+      "theme": "Ex. 2.1 · Parcours",
+      "difficulte": 2,
+      "enonce": "<p><strong>Ex. 2.1, q. 1</strong> (2 × 1,5 point, avec la question suivante). Parcourir en <strong>largeur</strong> le graphe G1 en partant de A, et dessiner l'arbre qui en résulte, avec un arc de chaque parent vers son enfant. Les voisins d'un sommet sont examinés dans l'ordre alphabétique.</p><figure class='figure'><svg class='schema' viewBox='15 7 301 248' width='301' role='img' aria-labelledby='g1-q07-titre'><title id='g1-q07-titre'>Graphe G1 (figure 3 du sujet) : arêtes K–L, M–N, M–E, A–B, A–C, A–D, D–E, E–F, F–J, J–I, F–G, F–H, I–H, G–H.</title><path class='trait' d='M206 28 L228 28'/><path class='trait' d='M206 79 L228 79'/><path class='trait' d='M191 94 L191 116'/><path class='trait' d='M176 131 L154 131'/><path class='trait' d='M202 142 L232 172'/><path class='trait' d='M77 120 L47 90'/><path class='trait' d='M77 142 L47 172'/><path class='trait' d='M103 131 L124 131'/><path class='trait' d='M243 168 L243 146'/><path class='trait' d='M243 198 L243 219'/><path class='trait' d='M254 194 L284 223'/><path class='trait' d='M254 142 L284 172'/><path class='trait' d='M295 198 L295 219'/><path class='trait' d='M258 234 L280 234'/><g font-size='14'><circle class='boite' cx='191' cy='28' r='15'/><text x='191' y='33' text-anchor='middle' class='gras'>K</text><circle class='boite' cx='243' cy='28' r='15'/><text x='243' y='33' text-anchor='middle' class='gras'>L</text><circle class='boite' cx='36' cy='79' r='15'/><text x='36' y='84' text-anchor='middle' class='gras'>B</text><circle class='boite' cx='191' cy='79' r='15'/><text x='191' y='84' text-anchor='middle' class='gras'>M</text><circle class='boite' cx='243' cy='79' r='15'/><text x='243' y='84' text-anchor='middle' class='gras'>N</text><circle class='boite' cx='88' cy='131' r='15'/><text x='88' y='136' text-anchor='middle' class='gras'>A</text><circle class='boite' cx='139' cy='131' r='15'/><text x='139' y='136' text-anchor='middle' class='gras'>D</text><circle class='boite' cx='191' cy='131' r='15'/><text x='191' y='136' text-anchor='middle' class='gras'>E</text><circle class='boite' cx='243' cy='131' r='15'/><text x='243' y='136' text-anchor='middle' class='gras'>J</text><circle class='boite' cx='36' cy='183' r='15'/><text x='36' y='188' text-anchor='middle' class='gras'>C</text><circle class='boite' cx='243' cy='183' r='15'/><text x='243' y='188' text-anchor='middle' class='gras'>F</text><circle class='boite' cx='295' cy='183' r='15'/><text x='295' y='188' text-anchor='middle' class='gras'>I</text><circle class='boite' cx='243' cy='234' r='15'/><text x='243' y='239' text-anchor='middle' class='gras'>G</text><circle class='boite' cx='295' cy='234' r='15'/><text x='295' y='239' text-anchor='middle' class='gras'>H</text></g></svg><figcaption>G1, figure 3 du sujet de CI 2022-2023, redessinée.</figcaption></figure>",
+      "depart": [
+        "oriente"
+      ],
+      "solution": [
+        "oriente",
+        "A -> B",
+        "A -> C",
+        "A -> D",
+        "D -> E",
+        "E -> F",
+        "E -> M",
+        "F -> G",
+        "F -> H",
+        "F -> J",
+        "M -> N",
+        "H -> I"
+      ],
+      "seuil": 1,
+      "explication": "<p>A enfile B, C, D ; D enfile E ; E enfile F et M ; F enfile G, H, J ; M enfile N ; H enfile I. Ordre : A, B, C, D, E, F, M, G, H, J, N, I. I est atteint par H (et non par J) parce que H passe avant J dans la file. K et L ne sont pas atteints.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Parcours en largeur (BFS)",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#parcours-en-largeur-bfs"
+      },
+      "id": "q07"
+    },
+    {
+      "type": "atelier",
+      "editeur": "graphe",
+      "theme": "Ex. 2.1 · Parcours",
+      "difficulte": 2,
+      "enonce": "<p><strong>Ex. 2.1, q. 1</strong> (suite). Parcourir en <strong>profondeur</strong> le graphe G1 en partant de A, et dessiner l'arbre qui en résulte, avec un arc de chaque parent vers son enfant. Les voisins d'un sommet sont examinés dans l'ordre alphabétique.</p><figure class='figure'><svg class='schema' viewBox='15 7 301 248' width='301' role='img' aria-labelledby='g1-q08-titre'><title id='g1-q08-titre'>Graphe G1 (figure 3 du sujet) : arêtes K–L, M–N, M–E, A–B, A–C, A–D, D–E, E–F, F–J, J–I, F–G, F–H, I–H, G–H.</title><path class='trait' d='M206 28 L228 28'/><path class='trait' d='M206 79 L228 79'/><path class='trait' d='M191 94 L191 116'/><path class='trait' d='M176 131 L154 131'/><path class='trait' d='M202 142 L232 172'/><path class='trait' d='M77 120 L47 90'/><path class='trait' d='M77 142 L47 172'/><path class='trait' d='M103 131 L124 131'/><path class='trait' d='M243 168 L243 146'/><path class='trait' d='M243 198 L243 219'/><path class='trait' d='M254 194 L284 223'/><path class='trait' d='M254 142 L284 172'/><path class='trait' d='M295 198 L295 219'/><path class='trait' d='M258 234 L280 234'/><g font-size='14'><circle class='boite' cx='191' cy='28' r='15'/><text x='191' y='33' text-anchor='middle' class='gras'>K</text><circle class='boite' cx='243' cy='28' r='15'/><text x='243' y='33' text-anchor='middle' class='gras'>L</text><circle class='boite' cx='36' cy='79' r='15'/><text x='36' y='84' text-anchor='middle' class='gras'>B</text><circle class='boite' cx='191' cy='79' r='15'/><text x='191' y='84' text-anchor='middle' class='gras'>M</text><circle class='boite' cx='243' cy='79' r='15'/><text x='243' y='84' text-anchor='middle' class='gras'>N</text><circle class='boite' cx='88' cy='131' r='15'/><text x='88' y='136' text-anchor='middle' class='gras'>A</text><circle class='boite' cx='139' cy='131' r='15'/><text x='139' y='136' text-anchor='middle' class='gras'>D</text><circle class='boite' cx='191' cy='131' r='15'/><text x='191' y='136' text-anchor='middle' class='gras'>E</text><circle class='boite' cx='243' cy='131' r='15'/><text x='243' y='136' text-anchor='middle' class='gras'>J</text><circle class='boite' cx='36' cy='183' r='15'/><text x='36' y='188' text-anchor='middle' class='gras'>C</text><circle class='boite' cx='243' cy='183' r='15'/><text x='243' y='188' text-anchor='middle' class='gras'>F</text><circle class='boite' cx='295' cy='183' r='15'/><text x='295' y='188' text-anchor='middle' class='gras'>I</text><circle class='boite' cx='243' cy='234' r='15'/><text x='243' y='239' text-anchor='middle' class='gras'>G</text><circle class='boite' cx='295' cy='234' r='15'/><text x='295' y='239' text-anchor='middle' class='gras'>H</text></g></svg><figcaption>G1, figure 3 du sujet de CI 2022-2023, redessinée.</figcaption></figure>",
+      "depart": [
+        "oriente"
+      ],
+      "solution": [
+        "oriente",
+        "A -> B",
+        "A -> C",
+        "A -> D",
+        "D -> E",
+        "E -> F",
+        "F -> G",
+        "G -> H",
+        "H -> I",
+        "I -> J",
+        "E -> M",
+        "M -> N"
+      ],
+      "seuil": 1,
+      "explication": "<p>A → B, retour, A → C, retour, A → D → E → F → G → H → I → J ; J n'a plus de voisin neuf, on remonte jusqu'à E, qui mène à M → N. Ordre : A, B, C, D, E, F, G, H, I, J, M, N. Comparé au BFS, l'arbre est profond : la chaîne F, G, H, I, J.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Parcours en profondeur (DFS)",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#parcours-en-profondeur-dfs"
+      },
+      "id": "q08"
+    },
+    {
+      "type": "qcm",
+      "theme": "Ex. 2.1 · Parcours",
+      "difficulte": 1,
+      "enonce": "<p><strong>Ex. 2.1, q. 2 et 3</strong> (2 points). Qu'est-ce qu'un graphe connexe, et le graphe G1 l'est-il ?</p><figure class='figure'><svg class='schema' viewBox='15 7 301 248' width='301' role='img' aria-labelledby='g1-q09-titre'><title id='g1-q09-titre'>Graphe G1 (figure 3 du sujet) : arêtes K–L, M–N, M–E, A–B, A–C, A–D, D–E, E–F, F–J, J–I, F–G, F–H, I–H, G–H.</title><path class='trait' d='M206 28 L228 28'/><path class='trait' d='M206 79 L228 79'/><path class='trait' d='M191 94 L191 116'/><path class='trait' d='M176 131 L154 131'/><path class='trait' d='M202 142 L232 172'/><path class='trait' d='M77 120 L47 90'/><path class='trait' d='M77 142 L47 172'/><path class='trait' d='M103 131 L124 131'/><path class='trait' d='M243 168 L243 146'/><path class='trait' d='M243 198 L243 219'/><path class='trait' d='M254 194 L284 223'/><path class='trait' d='M254 142 L284 172'/><path class='trait' d='M295 198 L295 219'/><path class='trait' d='M258 234 L280 234'/><g font-size='14'><circle class='boite' cx='191' cy='28' r='15'/><text x='191' y='33' text-anchor='middle' class='gras'>K</text><circle class='boite' cx='243' cy='28' r='15'/><text x='243' y='33' text-anchor='middle' class='gras'>L</text><circle class='boite' cx='36' cy='79' r='15'/><text x='36' y='84' text-anchor='middle' class='gras'>B</text><circle class='boite' cx='191' cy='79' r='15'/><text x='191' y='84' text-anchor='middle' class='gras'>M</text><circle class='boite' cx='243' cy='79' r='15'/><text x='243' y='84' text-anchor='middle' class='gras'>N</text><circle class='boite' cx='88' cy='131' r='15'/><text x='88' y='136' text-anchor='middle' class='gras'>A</text><circle class='boite' cx='139' cy='131' r='15'/><text x='139' y='136' text-anchor='middle' class='gras'>D</text><circle class='boite' cx='191' cy='131' r='15'/><text x='191' y='136' text-anchor='middle' class='gras'>E</text><circle class='boite' cx='243' cy='131' r='15'/><text x='243' y='136' text-anchor='middle' class='gras'>J</text><circle class='boite' cx='36' cy='183' r='15'/><text x='36' y='188' text-anchor='middle' class='gras'>C</text><circle class='boite' cx='243' cy='183' r='15'/><text x='243' y='188' text-anchor='middle' class='gras'>F</text><circle class='boite' cx='295' cy='183' r='15'/><text x='295' y='188' text-anchor='middle' class='gras'>I</text><circle class='boite' cx='243' cy='234' r='15'/><text x='243' y='239' text-anchor='middle' class='gras'>G</text><circle class='boite' cx='295' cy='234' r='15'/><text x='295' y='239' text-anchor='middle' class='gras'>H</text></g></svg><figcaption>G1, figure 3 du sujet de CI 2022-2023, redessinée.</figcaption></figure>",
+      "choix": [
+        "Un graphe où il existe un chemin entre toute paire de sommets ; G1 ne l'est pas, car aucun chemin ne mène de A à K ou à L.",
+        "Un graphe où il existe un chemin entre toute paire de sommets ; G1 l'est, car le parcours depuis A atteint 12 sommets.",
+        "Un graphe où chaque sommet a au moins un voisin ; G1 l'est donc.",
+        "Un graphe où toute paire de sommets est reliée par une arête ; G1 ne l'est pas."
+      ],
+      "reponse": 0,
+      "explication": "<p>Un graphe est connexe s'il existe un chemin entre toute paire de sommets. Les parcours depuis A atteignent 12 sommets sur 14 : K et L, reliés seulement entre eux, forment une seconde composante. Que chaque sommet ait un voisin ne suffit pas, et une arête entre chaque paire définirait un graphe complet.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Graphe connexe",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#graphe-connexe"
+      },
+      "id": "q09"
+    },
+    {
+      "type": "ouverte",
+      "theme": "Ex. 2.2 · Forte connexité",
+      "difficulte": 2,
+      "enonce": "<p><strong>Ex. 2.2, q. 1 et 2</strong> (3 points). Définir les <strong>sommets fortement connectés</strong> d'un graphe orienté. Puis démontrer que, pour trois sommets \\(u, v, w \\in V\\), si \\(u\\) et \\(v\\) sont fortement connectés, et \\(v\\) et \\(w\\) aussi, alors \\(u\\) et \\(w\\) sont fortement connectés.</p><p>Le sujet conclut « alors \\(v\\) et \\(w\\) sont également fortement connectés », ce qui est déjà l'hypothèse : c'est bien \\(u\\) et \\(w\\) qu'il faut lire.</p>",
+      "reponse_modele": "<p>Deux sommets \\(u\\) et \\(v\\) d'un graphe orienté sont fortement connectés s'il existe un chemin de \\(u\\) à \\(v\\) et un chemin de \\(v\\) à \\(u\\). Preuve : par hypothèse, il existe des chemins \\(u \\leadsto v\\), \\(v \\leadsto u\\), \\(v \\leadsto w\\) et \\(w \\leadsto v\\). Le chemin \\(u \\leadsto v\\) suivi de \\(v \\leadsto w\\) va de \\(u\\) à \\(w\\) ; le chemin \\(w \\leadsto v\\) suivi de \\(v \\leadsto u\\) va de \\(w\\) à \\(u\\). Il y a donc un chemin dans chaque sens entre \\(u\\) et \\(w\\) : ils sont fortement connectés.</p>",
+      "criteres": [
+        "Définition : un chemin dans chaque sens.",
+        "Concaténation u → v → w.",
+        "Concaténation w → v → u.",
+        "Conclusion sur u et w."
+      ],
+      "revoir": {
+        "texte": "Cours 2 · Faible et forte connexité",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#faible-et-forte-connexite"
+      },
+      "id": "q10"
+    },
+    {
+      "type": "qcm-multi",
+      "theme": "Ex. 2.2 · Forte connexité",
+      "difficulte": 2,
+      "enonce": "<p><strong>Ex. 2.2, q. 3</strong> (1 point). Cocher les ensembles qui sont des composantes fortement connexes de G2.</p><figure class='figure'><svg class='schema' viewBox='-1 -1 182 252' width='182' role='img' aria-labelledby='g2-q11-titre'><title id='g2-q11-titre'>Graphe orienté G2 (figure 4 du sujet) : arcs A→B, B→C, D→A, B→E, C→F, E→D, E→F, E→I, H→E, I→F, G→H, G→J, H→K, I→L, J↔K, K↔L.</title><defs><marker id='fleche-g2-q11' viewBox='0 0 10 10' refX='9' refY='5' markerWidth='7' markerHeight='7' orient='auto-start-reverse'><path d='M0 0 L10 5 L0 10 z' class='plein'/></marker></defs><path class='trait' d='M35 20 L75 20' marker-end='url(#fleche-g2-q11)'/><path class='trait' d='M105 20 L145 20' marker-end='url(#fleche-g2-q11)'/><path class='trait' d='M90 35 L90 75' marker-end='url(#fleche-g2-q11)'/><path class='trait' d='M160 35 L160 75' marker-end='url(#fleche-g2-q11)'/><path class='trait' d='M20 75 L20 35' marker-end='url(#fleche-g2-q11)'/><path class='trait' d='M75 90 L35 90' marker-end='url(#fleche-g2-q11)'/><path class='trait' d='M105 90 L145 90' marker-end='url(#fleche-g2-q11)'/><path class='trait' d='M101 101 L149 149' marker-end='url(#fleche-g2-q11)'/><path class='trait' d='M160 145 L160 105' marker-end='url(#fleche-g2-q11)'/><path class='trait' d='M160 175 L160 215' marker-end='url(#fleche-g2-q11)'/><path class='trait' d='M90 145 L90 105' marker-end='url(#fleche-g2-q11)'/><path class='trait' d='M90 175 L90 215' marker-end='url(#fleche-g2-q11)'/><path class='trait' d='M35 160 L75 160' marker-end='url(#fleche-g2-q11)'/><path class='trait' d='M20 175 L20 215' marker-end='url(#fleche-g2-q11)'/><path class='trait' d='M35 230 L75 230' marker-end='url(#fleche-g2-q11)' marker-start='url(#fleche-g2-q11)'/><path class='trait' d='M105 230 L145 230' marker-end='url(#fleche-g2-q11)' marker-start='url(#fleche-g2-q11)'/><g font-size='14'><circle class='boite' cx='20' cy='20' r='15'/><text x='20' y='25' text-anchor='middle' class='gras'>A</text><circle class='boite' cx='90' cy='20' r='15'/><text x='90' y='25' text-anchor='middle' class='gras'>B</text><circle class='boite' cx='160' cy='20' r='15'/><text x='160' y='25' text-anchor='middle' class='gras'>C</text><circle class='boite' cx='20' cy='90' r='15'/><text x='20' y='95' text-anchor='middle' class='gras'>D</text><circle class='boite' cx='90' cy='90' r='15'/><text x='90' y='95' text-anchor='middle' class='gras'>E</text><circle class='boite' cx='160' cy='90' r='15'/><text x='160' y='95' text-anchor='middle' class='gras'>F</text><circle class='boite' cx='20' cy='160' r='15'/><text x='20' y='165' text-anchor='middle' class='gras'>G</text><circle class='boite' cx='90' cy='160' r='15'/><text x='90' y='165' text-anchor='middle' class='gras'>H</text><circle class='boite' cx='160' cy='160' r='15'/><text x='160' y='165' text-anchor='middle' class='gras'>I</text><circle class='boite' cx='20' cy='230' r='15'/><text x='20' y='235' text-anchor='middle' class='gras'>J</text><circle class='boite' cx='90' cy='230' r='15'/><text x='90' y='235' text-anchor='middle' class='gras'>K</text><circle class='boite' cx='160' cy='230' r='15'/><text x='160' y='235' text-anchor='middle' class='gras'>L</text></g></svg><figcaption>G2, figure 4 du sujet de CI 2022-2023, redessinée (le sujet la donne tournée d'un quart de tour).</figcaption></figure>",
+      "choix": [
+        "\\(\\{A, B, D, E\\}\\)",
+        "\\(\\{J, K, L\\}\\)",
+        "\\(\\{I\\}\\)",
+        "\\(\\{A, B, C, D, E, F\\}\\)",
+        "\\(\\{H, J, K, L\\}\\)",
+        "\\(\\{E, I, L, K\\}\\)"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "indices": [
+        "<p>A → B → E → D → A est un circuit.</p>"
+      ],
+      "explication": "<p>A → B → E → D → A est un circuit : \\(\\{A, B, D, E\\}\\). J ⇄ K ⇄ L : \\(\\{J, K, L\\}\\). Les autres sommets sont seuls : C et F (aucun retour possible de F, qui n'a pas d'arc sortant), G et H (on peut aller de H à E, mais rien ne revient vers H), I (E → I, mais I ne revient pas vers E). Sept CFC en tout (vérifié avec NetworkX).</p>",
+      "revoir": {
+        "texte": "Cours 2 · Circuits et composantes fortement connexes",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#circuits-et-composantes-fortement-connexes"
+      },
+      "id": "q11"
+    },
+    {
+      "type": "numerique",
+      "theme": "Ex. 2.3 · Erdős–Rényi",
+      "difficulte": 1,
+      "enonce": "<p><strong>Ex. 2.3, q. 1</strong> (1 point). Combien d'arêtes peuvent exister au plus dans un graphe non orienté de 6 sommets (sans boucle) ?</p>",
+      "reponse": 15,
+      "tolerance": 0,
+      "explication": "<p>Une arête par paire de sommets : \\(\\frac{n(n-1)}{2} = \\frac{6 \\times 5}{2} = 15\\).</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le modèle G(n, p)",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#le-modele-g-n-p"
+      },
+      "id": "q12"
+    },
+    {
+      "type": "numerique",
+      "theme": "Ex. 2.3 · Erdős–Rényi",
+      "difficulte": 1,
+      "enonce": "<p><strong>Ex. 2.3, q. 2</strong> (1 point). Dans un graphe d'Erdős–Rényi de paramètres \\(n = 6\\) et \\(p = \\frac14\\), le nombre d'arêtes suit la loi \\(B\\left(\\frac{n(n-1)}{2}, \\frac14\\right)\\). Quel est le nombre moyen d'arêtes attendu ?</p>",
+      "reponse": 3.75,
+      "tolerance": 0.001,
+      "explication": "<p>L'espérance d'une loi \\(B(N, p)\\) vaut \\(Np\\) : \\(15 \\times \\frac14 = 3{,}75\\) arêtes en moyenne.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le nombre d'arêtes",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#le-nombre-d-aretes"
+      },
+      "id": "q13"
+    },
+    {
+      "type": "qcm",
+      "theme": "Ex. 2.3 · Erdős–Rényi",
+      "difficulte": 3,
+      "enonce": "<p><strong>Ex. 2.3, q. 3</strong> (1 point). La fonction \\(f(x) = \\frac{\\ln(x)}{x}\\) vaut environ 0,35 en \\(x = 3\\), puis décroît : environ 0,23 en 10, 0,12 en 30, 0,08 en 50. Que peut-on en dire sur la probabilité d'obtenir un graphe connexe avec \\(G(n, p)\\) ?</p>",
+      "choix": [
+        "Le graphe est très probablement connexe dès que \\(p \\gt \\frac{\\ln n}{n}\\) ; ce seuil décroît avec \\(n\\), donc plus le graphe est grand, plus un petit \\(p\\) suffit. Pour \\(n = 6\\) et \\(p = \\frac14\\), on est sous le seuil (\\(\\approx 0{,}30\\)).",
+        "Le graphe est très probablement connexe dès que \\(p \\lt \\frac{\\ln n}{n}\\).",
+        "Le seuil \\(\\frac{\\ln n}{n}\\) croît avec \\(n\\) : les grands graphes aléatoires sont rarement connexes.",
+        "La connexité ne dépend que de \\(p\\), pas de \\(n\\)."
+      ],
+      "reponse": 0,
+      "explication": "<p>Erdős et Rényi montrent que \\(G(n, p)\\) est presque sûrement connexe pour \\(p \\gt \\frac{\\ln n}{n}\\), et contient des sommets isolés en dessous. Comme \\(\\frac{\\ln x}{x}\\) décroît vers 0, la probabilité de lien nécessaire diminue quand \\(n\\) grandit. Pour \\(n = 6\\), \\(\\frac{\\ln 6}{6} \\approx 0,30\\) : avec \\(p = 0{,}25\\), le graphe a de bonnes chances de ne pas être connexe.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Connexe ou pas connexe ?",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#connexe-ou-pas-connexe"
+      },
+      "id": "q14"
+    }
+  ]
+}
+</script>
+</body>
+</html>

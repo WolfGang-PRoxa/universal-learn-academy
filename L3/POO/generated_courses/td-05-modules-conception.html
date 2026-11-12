@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="poo">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TD 5 · Modules et conception objet · POO L3</title>
+<meta name="description" content="TD 5 interactif d'introduction à la POO (L3) : location de voitures et critères de sélection composables par un module, puis conception du jeu de l'oie (réification, diagramme de classes, code) ; corrections de l'enseignant cachées.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">POO</a>
+    <span aria-current="page">TD 5 · Modules et conception objet</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">POO</span> TD 5 · L3 S5 · interactif</p>
+    <h1>Modules et conception objet</h1>
+    <p class="chapeau">Deux sujets. Une agence de location sélectionne ses voitures avec des critères qui partagent un module et se combinent (et, ou, non). Puis on conçoit un jeu de l'oie : responsabilités des classes, diagramme, et un plateau en liste doublement chaînée où chaque case sait déplacer le joueur.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TD/TD5/TD5%202026.pdf">TD5 2026.pdf</a> · 2 pages</dd></div>
+      <div><dt>Cours</dt><dd><a href="cours-modules-ruby.html">Les modules Ruby</a>, <a href="cours-04-manipuler-des-donnees.html">Cours 4 · Manipuler des données</a>, <a href="cours-03-heritage.html">Cours 3 · L'héritage</a></dd></div>
+      <div><dt>Séance</dt><dd>TD de POO du 18 novembre 2026</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Définir une interface commune par un module (<code>Critere</code>) que des classes sans lien d'héritage incluent.</li>
+        <li>Composer des objets : des critères faits d'autres critères (intersection, union, négation).</li>
+        <li>Répartir les responsabilités entre les classes d'une application (réification), puis les dessiner.</li>
+        <li>Remplacer les tests de type par des messages : c'est la case qui sait déplacer le joueur.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Notions utilisées</p>
+      <ul>
+        <li><a href="cours-modules-ruby.html">Les modules Ruby</a> : <code>include</code>, méthode attendue de la classe hôte</li>
+        <li><a href="cours-04-manipuler-des-donnees.html#detect-find-select-reject"><code>select</code></a>, <code>all?</code>, <code>any?</code>, <a href="cours-04-manipuler-des-donnees.html#les-modules">modules et mixins</a> (cours 4)</li>
+        <li><a href="cours-03-heritage.html">Héritage, redéfinition, <code>super</code>, classes abstraites</a> (cours 3)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Mode d'emploi</p>
+    <ul>
+      <li>Le code s'écrit dans l'éditeur Ruby (Tab indente) ; Ruby ne s'exécute pas ici. Le diagramme se dessine dans l'atelier : double-clic sur le fond pour une classe ; « Les deux » montre aussi la vue texte.</li>
+      <li>Tous les exercices de ce TD ont une correction de l'enseignant, derrière le bouton <strong>Correction</strong> (après confirmation) : <code>LocationVoiture.rb</code>, <code>DiagrammeClasses.html</code> et le dossier <code>CodeJeuOie/</code> de <code>TD/TD5/</code>. Fais l'exercice d'abord. Le code de l'enseignant a été exécuté avec Ruby 3.3.</li>
+      <li>Le travail s'enregistre tout seul. Avec le serveur local (<code>studies/lancer.bat</code>), il va dans <code>td_results/</code> et Claude est disponible pour t'aider ou te corriger.</li>
+    </ul>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Location de voitures <span class="ref">TD, sujet 1</span></h2>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Sujet 1 <span>Location de voitures, questions 1 et 2</span></p>
+      <p>Une agence de vente de voitures offre à ses clients la possibilité de choisir la voiture en fonction de différents critères.</p>
+      <p>Les voitures sont définies par une marque, un nom de modèle, une année de production et un prix de vente. À part le prix de vente, les caractéristiques d'une voiture sont immuables.</p>
+      <p>Une agence est caractérisée par une liste de voitures et dispose d'une méthode permettant d'ajouter une voiture à la liste.</p>
+      <p>Voici un exemple de code permettant de créer une agence et des voitures. Vos réponses aux questions 1 et 2 doivent bien évidemment être compatibles avec ce code :</p>
+      <pre><code class="language-ruby">agence = Agence.new()
+
+agence.ajouteVoiture(Voiture.creer("Renault","Captur",2018,20000))
+agence.ajouteVoiture(Voiture.creer("Citroen","Picasso",2017,22000))
+agence.ajouteVoiture(Voiture.creer("Audi","Q5",2017,32000))
+agence.ajouteVoiture(Voiture.creer("Citroen","Xsara",2015,18000))
+agence.ajouteVoiture(Voiture.creer("Renault","Scénic",2014,21000))
+agence.ajouteVoiture(Voiture.creer("BMW","300",2015,20000))
+agence.ajouteVoiture(Voiture.creer("Renault","Espace",2015,20000))
+
+# Affichage de l'agence
+print agence</code></pre>
+      <p>L'exécution de ce code doit produire l'affichage suivant :</p>
+      <pre class="terminal"><code>Agence : Liste des Voitures
+Je suis la voiture Captur de marque Renault, Année : 2018, Prix : 20000
+Je suis la voiture Picasso de marque Citroen, Année : 2017, Prix : 22000
+Je suis la voiture Q5 de marque Audi, Année : 2017, Prix : 32000
+Je suis la voiture Xsara de marque Citroen, Année : 2015, Prix : 18000
+Je suis la voiture Scénic de marque Renault, Année : 2014, Prix : 21000
+Je suis la voiture 300 de marque BMW, Année : 2015, Prix : 20000
+Je suis la voiture Espace de marque Renault, Année : 2015, Prix : 20000</code></pre>
+      <p><strong>Question 1 :</strong> Donner le code de la classe <code>Voiture</code>.</p>
+      <p><strong>Question 2 :</strong> Donnez le code de la classe <code>Agence</code>.</p>
+    </div>
+    <div class="atelier" id="td5-s1-q1" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "Question 1. La classe Voiture",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "# Question 1 : Donner le code de la classe Voiture",
+          "class Voiture",
+          "  attr_reader :marque, :nom_modele, :annee_production",
+          "  attr_accessor :prix_vente",
+          "",
+          "  # On rend le constructeur `new` privé pour forcer l'utilisation de la méthode de fabrique `creer`.",
+          "  private_class_method :new",
+          "",
+          "  def initialize(marque, nom_modele, annee_production, prix_vente)",
+          "    @marque = marque",
+          "    @nom_modele = nom_modele",
+          "    @annee_production = annee_production",
+          "    @prix_vente = prix_vente",
+          "  end",
+          "",
+          "  # Méthode de fabrique (Factory Method) pour créer des instances de Voiture.",
+          "  def self.creer(marque, nom_modele, annee_production, prix_vente)",
+          "    new(marque, nom_modele, annee_production, prix_vente)",
+          "  end",
+          "",
+          "  def to_s",
+          "    \"Voiture: #{@marque} #{@nom_modele} (#{@annee_production}) - #{@prix_vente}€\"",
+          "  end",
+          "end",
+          ""
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Extrait de la correction de l'enseignant (<code>TD/TD5/LocationVoiture.rb</code>). Seul le prix a un accès en écriture (<code>attr_accessor</code>) : les autres caractéristiques sont immuables (<code>attr_reader</code>). <code>new</code> est privée, on crée par <code>Voiture.creer</code>, comme dans l'exemple. Le <code>to_s</code> de la correction donne « Voiture: Renault Captur (2018) - 20000€ », le format des questions 7 et 8 ; pour celui des premières questions, <code>\"Je suis la voiture #{@nom_modele} de marque #{@marque}, Année : #{@annee_production}, Prix : #{@prix_vente}\"</code>.</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td5-s1-q2" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "Question 2. La classe Agence",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "# Question 2 : Donnez le code la classe Agence.",
+          "class Agence",
+          "  def initialize",
+          "    @voitures = []",
+          "  end",
+          "",
+          "  def ajoute_voiture(voiture)",
+          "    # On s'assure que l'objet est bien une instance de Voiture et n'est pas nil",
+          "    unless voiture.is_a?(Voiture)",
+          "      raise ArgumentError, \"Seules les instances de la classe Voiture peuvent être ajoutées.\"",
+          "    end",
+          "    @voitures << voiture",
+          "    self # Retourne l'instance de l'agence pour permettre le chaînage",
+          "  end",
+          "end",
+          ""
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Extrait de la correction de l'enseignant (<code>TD/TD5/LocationVoiture.rb</code>), sans la méthode de la question 5. La méthode d'ajout s'appelle <code>ajoute_voiture</code> (l'exemple de l'énoncé écrit <code>ajouteVoiture</code>) ; elle refuse ce qui n'est pas une voiture et rend l'agence, ce qui permet d'enchaîner les ajouts : <code>agence.ajoute_voiture(…).ajoute_voiture(…)</code>. La correction n'a pas de <code>to_s</code> : <code>print agence</code> afficherait <code>#&lt;Agence:0x…&gt;</code>. Pour l'affichage de l'énoncé, il faudrait par exemple <code>def to_s = \"Agence : Liste des Voitures\\n\" + @voitures.join(\"\\n\")</code>.</p>"
+      }
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Sujet 1 <span>Les critères, questions 3 à 5</span></p>
+      <p>On souhaite pouvoir sélectionner dans la liste des voitures disponibles toutes les voitures satisfaisant un critère donné. Pour cela, on définit le module <code>Critere</code> ainsi :</p>
+      <pre><code class="language-ruby">module Critere
+  def correspond?(v)
+    return self.estSatisfaitPar?(v)
+  end
+end</code></pre>
+      <p><strong>Question 3 :</strong> Donnez le code de la classe <code>CritereMarque</code> qui permet de définir un critère sur la marque. Ex : <code>monPremierCritere=CritereMarque.new("Renault")</code></p>
+      <p><strong>Question 4 :</strong> Donnez le code de la classe <code>CriterePrixInf</code> qui permet de définir un critère sur le prix. Ex : <code>monSecondCritere=CriterePrixInf.new(20000)</code></p>
+      <p><strong>Question 4bis :</strong> Donnez le code de la classe <code>CriterePrixSup</code> qui permet de définir un critère sur le prix. Ex : <code>monSecondCritere=CriterePrixSup.new(20000)</code></p>
+      <p><strong>Question 5 :</strong> Ajouter à la classe <code>Agence</code> une méthode <code>selectionne(unCritère)</code> permettant de sélectionner dans la liste des voitures celles qui satisfont le critère. Voici un exemple d'utilisation de cette méthode :</p>
+      <pre><code class="language-ruby">puts "Les voitures de Marques Renault"
+monPremierCritere=CritereMarque.new("Renault")
+agence.selectionne(monPremierCritere).each(){|v| puts v}
+puts "Les voitures inférieurs à 20000"
+monSecondCritere=CriterePrixInf.new(20000)
+agence.selectionne(monSecondCritere).each(){|v| puts v}
+puts "Les voitures Supérieures à 21000"
+monTroisiemeCritere=CriterePrixSup.new(21000)
+agence.selectionne(monTroisiemeCritere).each(){|v| puts v}</code></pre>
+      <pre class="terminal"><code>Les voitures de Marques Renault
+Je suis la voiture Captur de marque Renault, Année : 2018, Prix : 20000
+Je suis la voiture Scénic de marque Renault, Année : 2014, Prix : 21000
+Je suis la voiture Espace de marque Renault, Année : 2015, Prix : 20000
+Les voitures inférieurs à 20000
+Je suis la voiture Xsara de marque Citroen, Année : 2015, Prix : 18000
+Les voitures Supérieures à 21000
+Je suis la voiture Picasso de marque Citroen, Année : 2017, Prix : 22000
+Je suis la voiture Q5 de marque Audi, Année : 2017, Prix : 32000</code></pre>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Le module ne définit que <code>correspond?</code>, qui appelle <code>estSatisfaitPar?</code> sur <code>self</code> : c'est la méthode que chaque classe de critère doit fournir. Les exemples fixent les bornes : 20 000 n'est pas « inférieur à 20000 », 21 000 n'est pas « supérieur à 21000 ».</p></div>
+    </details>
+    <div class="atelier" id="td5-s1-q3" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "Question 3. CritereMarque",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "# Question 3 : Donnez le code de la classe CritereMarque",
+          "class CritereMarque",
+          "  include Critere",
+          "",
+          "  def initialize(marque)",
+          "    @marque = marque",
+          "  end",
+          "",
+          "  def estSatisfaitPar?(v)",
+          "    v.marque == @marque",
+          "  end",
+          "",
+          "  def to_s()",
+          "    return \"#{self.class} -> Marque : #{@marque}\"",
+          "  end",
+          "    ",
+          "end",
+          ""
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Extrait de la correction de l'enseignant (<code>TD/TD5/LocationVoiture.rb</code>). La classe inclut <code>Critere</code> et fournit <code>estSatisfaitPar?</code>, la méthode qu'appelle <code>correspond?</code>. Le <code>to_s</code> sert à afficher les critères (complément de fin de fichier).</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td5-s1-q4" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "Question 4. CriterePrixInf",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "# Question 4 : Donnez le code de la classe CriterePrixInf",
+          "# class CriterePrixInf",
+          "#   include Critere",
+          "# ",
+          "#   def initialize(prix)",
+          "#     @prix = prix",
+          "#   end",
+          "# ",
+          "#   def estSatisfaitPar?(v)",
+          "#     v.prix_vente <= @prix",
+          "#   end",
+          "# end",
+          "",
+          "# Question 4bis : Donnez le code de la classe CriterePrixSup",
+          "# class CriterePrixSup",
+          "#   include Critere",
+          "# ",
+          "#   def initialize(prix)",
+          "#     @prix = prix",
+          "#   end",
+          "# ",
+          "#   def estSatisfaitPar?(v)",
+          "#     v.prix_vente >= @prix",
+          "#   end",
+          "# end",
+          "",
+          "# Refactorisation du code précédent des questions 4 et 4bis",
+          "#  avec une classe Abstraite pour les critères prix",
+          "#  Plus de duplication de code",
+          "",
+          "class CriterePrix",
+          "  include Critere",
+          "  ",
+          "  # @prix : Une Variable d'instance qui représente le prix",
+          "",
+          "  #@param m marque ",
+          "  def initialize(lePrix)",
+          "    @prix = lePrix;",
+          "  end",
+          "  ",
+          "  def estSatisfaitPar?(v)",
+          "    raise \"méthode Abstraite\"",
+          "  end",
+          "  ",
+          "  def to_s()",
+          "    return \"#{self.class} -> Prix : #{@prix}\"",
+          "  end",
+          "end",
+          "",
+          "# Question 4 : Donnez le code de la classe CriterePrixInf",
+          "class CriterePrixInf < CriterePrix",
+          "  # @prix représente le prix Maximum",
+          "  def estSatisfaitPar?(v)",
+          "    return v.prix_vente < @prix",
+          "  end",
+          "end",
+          ""
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Correction de l'enseignant (<code>TD/TD5/LocationVoiture.rb</code>) : une première version, en commentaire, recopie la classe pour <code>CriterePrixInf</code> et <code>CriterePrixSup</code> ; la version retenue factorise le prix et l'affichage dans une classe abstraite <code>CriterePrix</code>, dont <code>estSatisfaitPar?</code> lève une exception. Les comparaisons de la version retenue sont strictes (<code>&lt;</code>), comme le veulent les exemples (une voiture à 20 000 n'est pas « inférieure à 20000 ») ; celles de la version en commentaire (<code>&lt;=</code>) ne le sont pas.</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td5-s1-q4bis" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "Question 4bis. CriterePrixSup",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "# Question 4bis : Donnez le code de la classe CriterePrixSup",
+          "class CriterePrixSup < CriterePrix",
+          "  # @prix représente le prix Minimum",
+          "  def estSatisfaitPar?(v)",
+          "    return v.prix_vente > @prix",
+          "  end",
+          "end",
+          ""
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Extrait de la correction de l'enseignant (<code>TD/TD5/LocationVoiture.rb</code>) : grâce à <code>CriterePrix</code>, il ne reste que la comparaison, stricte. Avec 21000, on obtient la Picasso et la Q5, pas la Scénic (21 000).</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td5-s1-q5" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "Question 5. selectionne",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class Agence",
+          "  # Question 5 : Méthode de sélection",
+          "  def selectionne(un_critere)",
+          "    @voitures.select { |v| un_critere.correspond?(v) }",
+          "  end",
+          "end",
+          ""
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Extrait de la correction de l'enseignant (<code>TD/TD5/LocationVoiture.rb</code>), où la méthode est écrite dans la classe <code>Agence</code> (ici, on rouvre la classe). <code>select</code> garde les voitures pour lesquelles le bloc rend vrai ; l'agence ne connaît du critère que <code>correspond?</code>, quel que soit son genre. Sortie obtenue avec Ruby 3.3 : les trois Renault, la Xsara, puis la Picasso et la Q5, comme dans l'énoncé (au format de la correction).</p>"
+      }
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Sujet 1 <span>Combiner les critères, questions 6 à 9</span></p>
+      <p><strong>Question 6 :</strong> On peut naturellement souhaiter faire des intersections, c'est-à-dire appliquer le « et » logique, de critères. On obtient alors un nouveau critère satisfait si tous les critères qui le composent sont satisfaits. Définissez une classe <code>InterCritere</code> qui inclue <code>Critère</code> et permet de définir des critères par intersection d'un nombre quelconque de critères. On demande à pouvoir ajouter un nouveau critère à l'intersection mais pas de pouvoir en retrancher.</p>
+      <pre><code class="language-ruby">puts  "Les voitures Citroen inferieures à 20000"
+ic=InterCritere.new()
+ic.ajouteCritere(CritereMarque.new("Citroen"))
+ic.ajouteCritere(CriterePrixInf.new(20000))
+agence.selectionne(ic).each(){|v| puts v}</code></pre>
+      <pre class="terminal"><code>Les voitures Citroen inferieures à 20000
+Je suis la voiture Xsara de marque Citroen, Année : 2015, Prix : 18000</code></pre>
+      <p><strong>Question 7 :</strong> On souhaite maintenant pouvoir faire des unions de critères. On obtient alors un nouveau critère qui est satisfait si au moins un des critères qui le composent est satisfait. Définissez une classe <code>OuCritere</code> qui inclut le module <code>Critere</code> et permet de définir des critères par union d'un nombre quelconque de critères. Comme pour <code>InterCritere</code>, on doit pouvoir ajouter un nouveau critère à l'union.</p>
+      <pre><code class="language-ruby">puts "Les voitures de marque Renault ou BMW ---"
+critere_ou = OuCritere.new()
+critere_ou.ajouteCritere(CritereMarque.new("Renault"))
+critere_ou.ajouteCritere(CritereMarque.new("BMW"))
+agence.selectionne(critere_ou).each(){|v| puts v}</code></pre>
+      <pre class="terminal"><code>Les voitures de marque Renault ou BMW ---
+Voiture: Renault Captur (2018) - 20000€
+Voiture: Renault Scénic (2014) - 21000€
+Voiture: BMW 300 (2015) - 20000€
+Voiture: Renault Espace (2015) - 20000€</code></pre>
+      <p><strong>Question 8 :</strong> Pour compléter notre système, il serait utile de pouvoir inverser un critère. Par exemple, pour sélectionner toutes les voitures qui ne sont pas d'une certaine marque. Définissez une classe <code>NonCritere</code> qui inclut le module <code>Critere</code>.</p>
+      <pre><code class="language-ruby">puts "Toutes les voitures qui ne sont pas de marque Renault ---"
+critere_non_renault = NonCritere.new(CritereMarque.new("Renault"))
+agence.selectionne(critere_non_renault).each(){|v| puts v}</code></pre>
+      <pre class="terminal"><code>Toutes les voitures qui ne sont pas de marque Renault
+Voiture: Citroen Picasso (2017) - 22000€
+Voiture: Audi Q5 (2017) - 32000€
+Voiture: Citroen Xsara (2015) - 18000€
+Voiture: BMW 300 (2015) - 20000€</code></pre>
+      <p><strong>Question 9 :</strong> En utilisant les classes <code>InterCritere</code>, <code>OuCritere</code> et <code>NonCritere</code> que vous avez définies, écrire le code permettant de sélectionner les voitures correspondant à la demande suivante : « <em>Les voitures de marque Citroën dont le prix est inférieur à 20000€ OU les voitures de marque BMW.</em> »</p>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Deux formats d'affichage</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>Les sorties des questions 1 à 6 écrivent « Je suis la voiture Captur de marque Renault, Année : 2018, Prix : 20000 », celles des questions 7 et 8 « Voiture: Renault Captur (2018) - 20000€ » : c'est le format du <code>to_s</code> de la correction de l'enseignant. De même, l'énoncé appelle <code>ajouteVoiture</code>, la correction <code>ajoute_voiture</code>. Les deux formats conviennent ; il suffit d'en choisir un.</p>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Une intersection <em>est</em> un critère (elle inclut <code>Critere</code>) et <em>a</em> des critères (une liste). <code>all?</code> et <code>any?</code> vérifient une condition sur tous les éléments, ou sur au moins un. Intersection et union ne diffèrent que par là : une superclasse peut porter la liste et <code>ajouteCritere</code>.</p></div>
+    </details>
+    <div class="atelier" id="td5-s1-q6" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "Question 6. InterCritere",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "# Refactorisation du code précédent des questions 6 et 7",
+          "#  avec une classe Abstraite pour les critères composites",
+          "#  Plus de duplication de code",
+          "",
+          "# Classe de base pour les critères qui en contiennent d'autres.",
+          "# Elle factorise le code commun à InterCritere and OuCritere.",
+          "class CritereComposite",
+          "  include Critere",
+          "  ",
+          "  # @lstCriteres: Une Variable d'instance pour representer ",
+          "  # la liste des critères à satisfaire",
+          "",
+          "  # Classe Abstraite",
+          "  private_class_method :new",
+          "  ",
+          "  def initialize",
+          "    @lstCriteres = []",
+          "  end",
+          "",
+          "  def ajouteCritere(critere)",
+          "    @lstCriteres << critere",
+          "    self # Permet de chaîner les appels",
+          "  end",
+          "",
+          "  # Cette méthode est \"abstraite\". Les sous-classes DOIVENT la redéfinir.",
+          "  def estSatisfaitPar?(v)",
+          "    raise NotImplementedError, \"La sous-classe doit implémenter cette méthode\"",
+          "  end",
+          "end",
+          "",
+          "# Question 6 : InterCritere (version refactorisée)",
+          "class InterCritere < CritereComposite",
+          "  # Classe concrete",
+          "  public_class_method :new",
+          "  ",
+          "  def estSatisfaitPar?(v)",
+          "    # La voiture doit satisfaire TOUS les critères de la liste (logique \"ET\").",
+          "    @lstCriteres.all?() { |critere| critere.correspond?(v) }",
+          "  end",
+          "end",
+          ""
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Correction de l'enseignant (<code>TD/TD5/LocationVoiture.rb</code>), dans sa version refactorisée : la liste et <code>ajouteCritere</code> sont dans une classe abstraite <code>CritereComposite</code> (<code>new</code> privée, rendue publique dans les sous-classes concrètes). <code>all?</code> vérifie que tous les critères sont satisfaits. Une version en commentaire du fichier montre trois autres écritures, de la moins à la plus concise : une boucle <code>each</code> avec un booléen (« Bof »), <code>reduce(true) { … }</code> (« C'est mieux »), <code>all?</code> (« C'est encore mieux ») ; et une boucle qui s'arrête au premier critère non satisfait (« Plus efficace »). <code>ajouteCritere</code> rend <code>self</code> (« Attention il faut y penser ») pour enchaîner les ajouts ; on ne peut pas retirer un critère.</p><p>Le fichier se termine par un complément : un <code>attr_reader :lstCriteres</code> rendrait la liste elle-même, à laquelle on pourrait ajouter un critère sans passer par l'interface (« PAS GLOP ») ; la bonne solution rend une copie, <code>@lstCriteres.clone()</code>.</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td5-s1-q7" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "Question 7. OuCritere",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "# Question 7 : OuCritere (version refactorisée)",
+          "class OuCritere < CritereComposite",
+          "  # Classe concrete",
+          "  public_class_method :new",
+          "",
+          "  def estSatisfaitPar?(v)",
+          "    # La voiture doit satisfaire AU MOINS UN des critères de la liste (OU).",
+          "    @lstCriteres.any? { |critere| critere.correspond?(v) }",
+          "  end",
+          "end",
+          ""
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Extrait de la correction de l'enseignant (<code>TD/TD5/LocationVoiture.rb</code>) : même superclasse que l'intersection, avec <code>any?</code> (au moins un critère satisfait). Sortie : Captur, Scénic, BMW 300 et Espace.</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td5-s1-q8" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "Question 8. NonCritere",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "# Question 8 : Négation d'un critère (NON Logique)",
+          "class NonCritere",
+          "  include Critere",
+          "",
+          "  def initialize(critere_a_nier)",
+          "    @critere_a_nier = critere_a_nier",
+          "  end",
+          "",
+          "  def estSatisfaitPar?(v)",
+          "    # On inverse le résultat du critère encapsulé.",
+          "    !@critere_a_nier.correspond?(v)",
+          "  end",
+          "end",
+          ""
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Extrait de la correction de l'enseignant (<code>TD/TD5/LocationVoiture.rb</code>). La négation enveloppe un seul critère, fourni à la création, et inverse sa réponse. Sortie : Picasso, Q5, Xsara et BMW 300.</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td5-s1-q9" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "Question 9. La sélection demandée",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "# Question 9 : Combinaison de critères complexes",
+          "puts \"\\n--- Test Question 9 ---\"",
+          "puts \"\\nLes voitures Citroën < 20000€ OU les BMW\"",
+          "# 1. Critère pour (Citroën ET < 20000€)",
+          "critere_citroen_et_inf_20k = InterCritere.new",
+          "critere_citroen_et_inf_20k.ajouteCritere(CritereMarque.new(\"Citroen\"))",
+          "critere_citroen_et_inf_20k.ajouteCritere(CriterePrixInf.new(20000))",
+          "",
+          "# 2. Critère pour (BMW)",
+          "critere_bmw = CritereMarque.new(\"BMW\")",
+          "",
+          "# 3. On combine les deux avec un OU",
+          "critere_final_q9 = OuCritere.new",
+          "critere_final_q9.ajouteCritere(critere_citroen_et_inf_20k)",
+          "critere_final_q9.ajouteCritere(critere_bmw)",
+          "",
+          "# 4. On sélectionne et on affiche",
+          "agence.selectionne(critere_final_q9).each() { |v| puts v }",
+          ""
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Extrait de la correction de l'enseignant (<code>TD/TD5/LocationVoiture.rb</code>). Un critère composé est un critère : l'intersection (Citroën et moins de 20 000) entre dans une union avec le critère BMW. <code>NonCritere</code> n'est pas nécessaire ici. Sortie obtenue avec Ruby 3.3 : la Xsara (18 000) et la BMW 300.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le jeu de l'oie <span class="ref">TD, sujet 2</span></h2>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Sujet 2 <span>Jeu de l'oie</span></p>
+      <p>On cherche à écrire un petit jeu de l'oie. Le but du jeu est, en partant d'une case initiale (case départ), d'arriver à une case finale (case d'arrivée). Les joueurs tirent les dés à tour de rôle et avancent du nombre de cases indiqué par les dés. Puis ils suivent l'indication de la case. Si le nombre indiqué par les dés est supérieur au nombre de cases restantes pour aller à la case d'arrivée, le joueur repart en arrière à partir de cette dernière. Par exemple, s'il reste 4 cases jusqu'à la case d'arrivée et que le joueur tire un 7, il avance de 4 cases jusqu'à la case d'arrivée, puis il recule de 3 cases à partir de cette dernière. Lorsqu'on recule et que l'on revient à la case départ, on reste sur cette case jusqu'au tour suivant.</p>
+      <p>Plusieurs joueurs peuvent se trouver sur la même case.</p>
+      <p>Les cases (outre les cases de départ et d'arrivée) sont choisies parmi les types suivants :</p>
+      <ul>
+        <li>avancer de n cases (n étant un paramètre de la case),</li>
+        <li>reculer de n cases (n étant un paramètre de la case),</li>
+        <li>aller à la case &lt;titre&gt; (&lt;titre&gt; est le nom d'une case),</li>
+        <li>perdu (le joueur est éliminé),</li>
+        <li>case neutre (rien à faire).</li>
+      </ul>
+      <p>Le sujet illustre l'énoncé par un plateau de jeu de l'oie en spirale, de la case « Start » à la case 63.</p>
+      <p><strong>Question 1 : Réification et spécification des classes.</strong> La réification consiste à transformer en objets informatiques les concepts et entités du domaine. Pour chaque classe identifiée dans votre conception (le gestionnaire du jeu, les joueurs, et les différents types de cases) :</p>
+      <ol>
+        <li>Définir sa <strong>responsabilité principale</strong> au sein de l'application.</li>
+        <li>Énumérer <strong>ce qu'elle connaît</strong> (ses champs, attributs, variables d'instance et relations vers d'autres objets).</li>
+        <li>Décrire <strong>ce qu'elle sait faire</strong> (ses méthodes, paramètres d'entrée, valeurs de retour), <strong>sans écrire de code</strong>.</li>
+      </ol>
+      <p>Vous modéliserez le plateau sous la forme d'une liste doublement chaînée de cases. Chaque case possède une référence vers la case suivante et vers la case précédente.</p>
+      <p><strong>Question 2 : Diagramme de classes.</strong> Proposer un <strong>diagramme de classes complet, lisible et soigné</strong> représentant l'ensemble des classes nécessaires, leurs attributs (avec visibilité et types), leurs méthodes, ainsi que leurs relations.</p>
+      <p><strong>Question 3 : Écriture du code.</strong></p>
+    </div>
+    <div class="atelier" id="td5-s2-q1" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Question 1. Réification et spécification des classes",
+        "options": {
+          "lignes": 16
+        },
+        "solution": [
+          "1.1 Classe Jeu",
+          "  Responsabilités :",
+          "    - Orchestrer le déroulement global de la partie (gestion des tours de jeu, fin de partie).",
+          "    - Maintenir la liste des joueurs participants et la topologie du plateau (point d'entrée vers la première case).",
+          "    - Déclarer le vainqueur ou l'élimination de tous les joueurs.",
+          "  Ce qu'elle connaît :",
+          "    - @caseDepart : Référence vers la première case du plateau (CaseDepart).",
+          "    - @listeDeJoueurs : Collection ordonnée des joueurs encore en jeu.",
+          "    - @leJoueurGagnant : Référence vers le joueur ayant atteint la case finale (Joueur, initialement nil).",
+          "  Ce qu'elle sait faire :",
+          "    - initialize() : Construit le plateau, initialise la chaîne des cases et inscrit les joueurs.",
+          "    - lanceToi() : Lance la boucle principale du jeu tour par tour jusqu'à la victoire ou l'élimination de tous les joueurs.",
+          "    - to_s() : Fournit une description textuelle de l'ensemble du plateau.",
+          "    - ajouteCase(uneCase) (privée) : Insère une nouvelle case à la fin de la chaîne de cases (mise à jour des liens précédent/suivant).",
+          "    - initialiseToi(listeCase, listeJoueur) (privée) : Connecte l'ensemble des cases et enregistre les joueurs.",
+          "",
+          "1.2 Classe Joueur",
+          "  Responsabilités :",
+          "    - Représenter un participant au jeu, son identité, son état courant et sa position sur le plateau.",
+          "    - Lancer les dés et déclencher son déplacement.",
+          "  Ce qu'elle connaît :",
+          "    - @couleur : Nom ou couleur distinctive du joueur (String).",
+          "    - @case : Référence vers la case actuelle sur laquelle se trouve le joueur (Case).",
+          "    - @statut : État courant du joueur (:enjeu, :elimine, :gagnant).",
+          "  Ce qu'elle sait faire :",
+          "    - initialize(uneCouleur, unePosition) : Positionne le joueur sur une case initiale avec le statut :enjeu.",
+          "    - joue() : Lance le tour du joueur s'il est toujours en jeu, en tirant les dés et en demandant à sa case actuelle de le faire avancer.",
+          "    - tireLesDes() : Génère un résultat aléatoire simulant le jet de dés.",
+          "    - estElimine?() : Indique si le joueur a été éliminé de la partie.",
+          "    - to_s() : Retourne la description de la position courante du joueur.",
+          "",
+          "1.3 Hiérarchie des Cases (Case et spécialisations)",
+          "Le plateau est modélisé par une liste doublement chaînée où chaque case est un maillon capable de propager le déplacement de manière récursive.",
+          "",
+          "A. Classe Case (Comportement de base / Case Neutre)",
+          "  Responsabilités :",
+          "    - Servir de brique de base pour le plateau et implémenter le comportement par défaut (case neutre : aucun effet secondaire).",
+          "    - Gérer le chaînage bidirectionnel avec les cases voisines.",
+          "    - Propager récursivement l'avancement et le recul d'un joueur case par case.",
+          "  Ce qu'elle connaît :",
+          "    - @nom : Nom ou intitulé descriptif de la case (String).",
+          "    - @caseSuivante : Référence vers la case suivante (Case).",
+          "    - @casePrecedente : Référence vers la case précédente (Case).",
+          "  Ce qu'elle sait faire :",
+          "    - initialize(unNom) : Initialise le nom de la case.",
+          "    - faitAvancer(unJoueur, nCases) : Déplace récursivement le joueur vers la case suivante jusqu'à épuisement du nombre de cases, puis déclenche traite.",
+          "    - faitReculer(unJoueur, nCases) : Déplace récursivement le joueur vers la case précédente jusqu'à épuisement du nombre de cases, puis déclenche traite.",
+          "    - traite(unJoueur) : Action effectuée lorsque le joueur termine son mouvement sur cette case (affiche la position du joueur ; ne modifie rien pour une case neutre).",
+          "    - afficheTout() : Parcourt récursivement la liste pour afficher l'ensemble des cases du parcours.",
+          "    - to_s() : Affiche le nom de la case.",
+          "",
+          "B. Classe CaseDepart (Spécialisation de Case)",
+          "  Responsabilités :",
+          "    - Servir de butoir au début du jeu.",
+          "  Ce qu'elle connaît :",
+          "    - Hérite des attributs de Case.",
+          "  Ce qu'elle sait faire :",
+          "    - faitReculer(unJoueur, nCases) : Intercepte et bloque tout recul supplémentaire. Le joueur reste sur la case départ.",
+          "",
+          "C. Classe CaseArrivee (Spécialisation de Case)",
+          "  Responsabilités :",
+          "    - Détecter la victoire d'un joueur et gérer le rebond en arrière si le lancer de dés dépasse le nombre de cases restantes.",
+          "    - Notifier le jeu de la victoire.",
+          "  Ce qu'elle connaît :",
+          "    - @leJeu : Référence vers l'instance de Jeu en cours.",
+          "  Ce qu'elle sait faire :",
+          "    - faitAvancer(unJoueur, nCases) : Surcharge l'avancement. Si nCases > 0, fait rebondir le joueur en arrière via self.faitReculer(unJoueur, nCases). Si nCases == 0, le joueur atteint exactement l'arrivée.",
+          "    - traite(unJoueur) : Attribue le statut :gagnant au joueur et met à jour leJoueurGagnant du jeu.",
+          "",
+          "D. Classe CasePerdu (Spécialisation de Case)",
+          "  Responsabilités :",
+          "    - Éliminer le joueur qui atterrit sur cette case.",
+          "  Ce qu'elle connaît :",
+          "    - Hérite des attributs de Case.",
+          "  Ce qu'elle sait faire :",
+          "    - traite(unJoueur) : Modifie le statut du joueur à :elimine.",
+          "",
+          "E. Classe abstraite CaseDeplacer (Spécialisation de Case)",
+          "  Responsabilités :",
+          "    - Modéliser une case provoquant un déplacement forcé relatif (avancer ou reculer d'un nombre donné de cases).",
+          "  Ce qu'elle connaît :",
+          "    - @nbDeCases : Nombre entier de cases du déplacement imposé (Integer).",
+          "  Ce qu'elle sait faire :",
+          "    - initialize(unNom, unEntier) : Initialise le nom et l'amplitude du déplacement.",
+          "",
+          "F. Classe CaseAvancer (Spécialisation de CaseDeplacer)",
+          "  Responsabilités :",
+          "    - Forcer le joueur à avancer immédiatement de @nbDeCases.",
+          "  Ce qu'elle sait faire :",
+          "    - traite(unJoueur) : Fait avancer le joueur de @nbDeCases supplémentaires.",
+          "",
+          "G. Classe CaseReculer (Spécialisation de CaseDeplacer)",
+          "  Responsabilités :",
+          "    - Forcer le joueur à reculer immédiatement de @nbDeCases.",
+          "  Ce qu'elle sait faire :",
+          "    - traite(unJoueur) : Fait reculer le joueur de @nbDeCases.",
+          "",
+          "H. Classe CaseAllerA (Spécialisation de Case)",
+          "  Responsabilités :",
+          "    - Téléporter directement le joueur sur une case cible désignée.",
+          "  Ce qu'elle connaît :",
+          "    - @enCase : Référence vers la case de destination (Case).",
+          "  Ce qu'elle sait faire :",
+          "    - initialize(unNom, uneCase) : Définit le nom et la case destination.",
+          "    - traite(unJoueur) : Déplace le joueur sur @enCase et déclenche le traitement de cette dernière.",
+          ""
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Section 1 du document de l'enseignant <code>TD/TD5/DiagrammeClasses.html</code> (« Spécification des classes »). Le point clé : ce ne sont pas les joueurs qui avancent de case en case en testant leur type, ce sont les cases qui font avancer, reculer ou traiter le joueur, chacune à sa manière. Dans le code de l'enseignant, seule <code>initialiseToi</code> est effectivement privée : <code>ajouteCase</code>, annoncée privée ici, est publique.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Qui doit savoir quoi faire quand un joueur s'arrête sur une case ? Si c'est le joueur, il doit tester le type de la case (départ, arrivée, perdu…). Si c'est la case, chaque type de case le sait : une hiérarchie de cases, et un même message (« traite ce joueur ») que chacune redéfinit.</p></div>
+    </details>
+    <div class="atelier" id="td5-s2-q2" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "Question 2. Diagramme de classes",
+        "options": {
+          "methodes": true
+        },
+        "hauteur": 720,
+        "solution": [
+          "classe Jeu",
+          "  - listeDeJoueurs : Array<Joueur>",
+          "  - caseDepart : CaseDepart",
+          "  + leJoueurGagnant : Joueur",
+          "  + initialize()",
+          "  + to_s() : String",
+          "  + lanceToi()",
+          "  - initialiseToi(listeCase : Array, listeJoueur : Array)",
+          "  - ajouteCase(uneCase : Case)",
+          "classe Joueur",
+          "  + couleur : String",
+          "  + case : Case",
+          "  + statut : Symbol",
+          "  + initialize(uneCouleur : String, unePosition : Case)",
+          "  + estElimine?() : Boolean",
+          "  + joue()",
+          "  + tireLesDes() : Integer",
+          "  + to_s() : String",
+          "classe Case",
+          "  + nom : String",
+          "  + caseSuivante : Case",
+          "  # casePrecedente : Case",
+          "  + initialize(unNom : String)",
+          "  + to_s() : String",
+          "  + afficheTout() : String",
+          "  + faitAvancer(unJoueur : Joueur, nCases : Integer) : Case",
+          "  + faitReculer(unJoueur : Joueur, nCases : Integer) : Case",
+          "  + traite(unJoueur : Joueur) : Case",
+          "classe CaseDepart",
+          "  + faitReculer(unJoueur : Joueur, nCases : Integer) : Case",
+          "classe CasePerdu",
+          "  + traite(unJoueur : Joueur) : Case",
+          "classe abstraite CaseDeplacer",
+          "  # nbDeCases : Integer",
+          "  + initialize(unNom : String, unEntier : Integer)",
+          "classe CaseAvancer",
+          "  + traite(unJoueur : Joueur) : Case",
+          "classe CaseReculer",
+          "  + traite(unJoueur : Joueur) : Case",
+          "classe CaseAllerA",
+          "  - enCase : Case",
+          "  + initialize(unNom : String, uneCase : Case)",
+          "  + traite(unJoueur : Joueur) : Case",
+          "classe CaseArrivee",
+          "  - leJeu : Jeu",
+          "  + initialize(unNom : String, unJeu : Jeu)",
+          "  + faitAvancer(unJoueur : Joueur, nCases : Integer) : Case",
+          "  + traite(unJoueur : Joueur) : Case",
+          "CaseDepart --|> Case : hérite de",
+          "CasePerdu --|> Case : hérite de",
+          "CaseDeplacer --|> Case : hérite de",
+          "CaseAvancer --|> CaseDeplacer : hérite de",
+          "CaseReculer --|> CaseDeplacer : hérite de",
+          "CaseAllerA --|> Case : hérite de",
+          "CaseArrivee --|> Case : hérite de",
+          "Jeu \"1\" o-- \"1..*\" Joueur : gère les participants / listeDeJoueurs",
+          "Jeu \"1\" *-- \"1\" CaseDepart : démarre à / caseDepart",
+          "Jeu \"1\" --> \"0..1\" Joueur : enregistre le vainqueur / leJoueurGagnant",
+          "Joueur \"0..*\" --> \"1\" Case : est positionné sur / case",
+          "Case \"0..1\" --> \"0..1\" Case : caseSuivante",
+          "Case \"0..1\" --> \"0..1\" Case : casePrecedente",
+          "CaseAllerA --> \"1\" Case : téléporte vers / enCase",
+          "CaseArrivee --> \"1\" Jeu : notifie la victoire / leJeu"
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Diagramme Mermaid de l'enseignant, section 2 de <code>TD/TD5/DiagrammeClasses.html</code> (une image du même diagramme est dans <code>Diagramme de Classes du Jeu de lOie.png</code>). La hiérarchie des cases porte tout le comportement : <code>Case</code> est la case neutre, chaque sous-classe redéfinit <code>traite</code>, <code>faitAvancer</code> ou <code>faitReculer</code>. <code>CaseDeplacer</code> est abstraite : elle factorise le nombre de cases du déplacement. Les deux associations réflexives de <code>Case</code> forment la liste doublement chaînée. La case d'arrivée connaît le jeu, pour lui signaler le vainqueur.</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td5-s2-cases" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "Question 3. Les cases (Cases.rb)",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "# ==============================================================================",
+          "# Fichier : Cases.rb",
+          "# Modélisation des cases du Jeu de l'Oie sous forme de liste doublement chaînée.",
+          "# Chaque case est un maillon autonome qui sait propager le déplacement.",
+          "# ==============================================================================",
+          "",
+          "# ==============================================================================",
+          "# Classe Case : Comportement de base du maillon (et case neutre)",
+          "# ==============================================================================",
+          "# Responsabilité :",
+          "#   - Représente une case neutre sans effet particulier à l'arrêt.",
+          "#   - Assure le chaînage bidirectionnel (caseSuivante / casePrecedente).",
+          "#   - Gère la propagation récursive du déplacement (avancer et reculer).",
+          "#",
+          "# Ce qu'elle connaît :",
+          "#   - @nom            : Intitulé de la case (String)",
+          "#   - @casePrecedente : Référence vers la case précédente (Case)",
+          "#   - @caseSuivante   : Référence vers la case suivante (Case)",
+          "# ==============================================================================",
+          "class Case",
+          "  # Les variables d'instances sont :",
+          "  #        @nom @casePrecedente @caseSuivante",
+          "  ",
+          "  # Génération de la méthode d'accès en lecture au nom",
+          "  attr :nom,false",
+          "  # Génération des méthodes d'accès en écriture à caseSuivante et casePrécedente (pour ajouterCase du Jeu) ",
+          "  attr_writer :caseSuivante,:casePrecedente",
+          "  # Génération de la méthode d'accès en lecture à caseSuivante (pour ajouterCase du Jeu) ",
+          "  attr_reader :caseSuivante",
+          "  ",
+          "  # Initialisation d'une case avec son intitulé",
+          "  # @param unNom [String] Le nom de la case",
+          "  def initialize(unNom)",
+          "    @nom = unNom",
+          "  end",
+          "",
+          "  # Affichage textuel de la case",
+          "  def to_s",
+          "     @nom+\"\\n\"",
+          "  end",
+          "  ",
+          "  # Permet d'afficher récursivement toutes les cases du plateau à partir de celle-ci",
+          "  # @return [String] La concaténation des noms de toutes les cases restantes",
+          "  def afficheTout",
+          "    retour=self.to_s   ",
+          "      if @caseSuivante != nil",
+          "         retour+=@caseSuivante.afficheTout()",
+          "      end",
+          "      return retour",
+          "  end",
+          "  ",
+          "  # Fait avancer le joueur de n cases par récursion terminale",
+          "  # - À chaque étape, met à jour la position du joueur sur self.",
+          "  # - Si nCases > 0 : transmet l'ordre à la caseSuivante avec (nCases - 1).",
+          "  # - Si nCases == 0 : point d'arrêt atteint, déclenche l'action traite(unJoueur).",
+          "  # @param unJoueur [Joueur] Le joueur en train d'avancer",
+          "  # @param nCases [Integer] Le nombre de cases restant à parcourir",
+          "  # @return [Case] self",
+          "  def faitAvancer(unJoueur,nCases)",
+          "      unJoueur.case=self",
+          "      if (nCases >0)",
+          "        @caseSuivante.faitAvancer(unJoueur,(nCases-1))",
+          "      else",
+          "        self.traite(unJoueur)",
+          "      end",
+          "      return self",
+          "  end",
+          "  ",
+          "  # Fait reculer un joueur de n cases par récursion terminale",
+          "  # - À chaque étape, met à jour la position du joueur sur self.",
+          "  # - Si nCases > 0 : transmet l'ordre à la casePrecedente avec (nCases - 1).",
+          "  # - Si nCases == 0 : point d'arrêt atteint, déclenche l'action traite(unJoueur).",
+          "  # @param unJoueur [Joueur] Le joueur en train de reculer",
+          "  # @param nCases [Integer] Le nombre de cases restant à reculer",
+          "  # @return [Case] self",
+          "  def faitReculer(unJoueur,nCases)",
+          "      unJoueur.case=self",
+          "      if (nCases > 0)",
+          "        @casePrecedente.faitReculer(unJoueur,(nCases - 1))",
+          "      else",
+          "        self.traite(unJoueur)",
+          "      end",
+          "      return self",
+          "  end",
+          "  ",
+          "  # Traitement d'un joueur terminant son déplacement sur cette case.",
+          "  # Comportement par défaut (neutre) : affiche la nouvelle position du joueur.",
+          "  # @param unJoueur [Joueur] Le joueur arrivé sur la case",
+          "  # @return [Case] self",
+          "  def traite(unJoueur)",
+          "      print unJoueur",
+          "      return self",
+          "  end",
+          "end ",
+          "# Fin de la classe Case",
+          "",
+          "# ==============================================================================",
+          "# Classe CaseDepart : Première case du parcours",
+          "# ==============================================================================",
+          "# Responsabilité :",
+          "#   - Agit comme butoir au départ : si un joueur recule jusqu'ici, il s'arrête.",
+          "# ==============================================================================",
+          "class CaseDepart < Case",
+          "  # On ne peut reculer au-delà de la case départ (règle du jeu de l'oie).",
+          "  # Intercepte tout recul supplémentaire et maintient le joueur sur place.",
+          "  def faitReculer(unJoueur,nCases)",
+          "      # ne rien faire : le recul s'arrête net ici",
+          "      unJoueur.case=self",
+          "      return self",
+          "  end",
+          "end",
+          "",
+          "# ==============================================================================",
+          "# Classe CasePerdu : Case piège éliminatoire",
+          "# ==============================================================================",
+          "# Responsabilité :",
+          "#   - Élimine le joueur dès qu'il atterrit dessus.",
+          "# ==============================================================================",
+          "class CasePerdu < Case",
+          "  # Le traitement positionne le statut du joueur à :elimine",
+          "  def traite(unJoueur)",
+          "     # le joueur a perdu",
+          "     super(unJoueur)",
+          "     unJoueur.statut=:elimine",
+          "     return self",
+          "  end",
+          "end ",
+          "",
+          "# ==============================================================================",
+          "# Classe CaseDeplacer : Classe abstraite pour déplacements forcés",
+          "# ==============================================================================",
+          "# Responsabilité :",
+          "#   - Modélise une case qui impose un déplacement relatif de n cases.",
+          "# Ce qu'elle connaît :",
+          "#   - @nbDeCases : Nombre de cases dont le joueur doit bouger (Integer)",
+          "# ==============================================================================",
+          "class CaseDeplacer < Case ",
+          "  ",
+          "  # une Vi Suppélentaire : le nb de case du déplacement @nbDeCases",
+          "  def initialize(unNom,unEntier)",
+          "    super(unNom)",
+          "    @nbDeCases=unEntier",
+          "  end",
+          "  ",
+          "end",
+          "",
+          "# ==============================================================================",
+          "# Classe CaseAvancer : Case bonus avançant de n cases",
+          "# ==============================================================================",
+          "class CaseAvancer < CaseDeplacer",
+          "  # À l'atterrissage, force le joueur à avancer à nouveau de @nbDeCases",
+          "  def traite(unJoueur)",
+          "    # le traitement est aussi modifié",
+          "    super(unJoueur)",
+          "    self.faitAvancer(unJoueur,@nbDeCases)",
+          "    return self",
+          "  end",
+          "",
+          "end",
+          "",
+          "# ==============================================================================",
+          "# Classe CaseReculer : Case malus reculant de n cases",
+          "# ==============================================================================",
+          "class CaseReculer < CaseDeplacer",
+          "    # À l'atterrissage, force le joueur à reculer de @nbDeCases",
+          "    def traite(unJoueur)",
+          "      super(unJoueur)",
+          "      self.faitReculer(unJoueur,@nbDeCases)",
+          "      return self",
+          "    end",
+          "end",
+          "",
+          "# ==============================================================================",
+          "# Classe CaseAllerA : Téléportation vers une case cible",
+          "# ==============================================================================",
+          "# Responsabilité :",
+          "#   - Téléporte instantanément le joueur sur une case prédéfinie (@enCase).",
+          "# Ce qu'elle connaît :",
+          "#   - @enCase : La case destination (Case)",
+          "# ==============================================================================",
+          "class CaseAllerA < Case",
+          "# Variable d'instance supplémentaire @enCase",
+          "  def initialize(unNom,uneCase)",
+          "    super(unNom)",
+          "    @enCase=uneCase",
+          "  end",
+          "  ",
+          "  # Téléporte le joueur sur la case cible et exécute son traitement",
+          "  def traite(unJoueur)",
+          "     super(unJoueur)",
+          "     unJoueur.case=@enCase",
+          "     @enCase.traite(unJoueur)",
+          "     return self",
+          "  end",
+          "  ",
+          "end",
+          "",
+          "# ==============================================================================",
+          "# Classe CaseArrivee : Case finale du parcours",
+          "# ==============================================================================",
+          "# Responsabilité :",
+          "#   - Gère la victoire d'un joueur (si jet exact).",
+          "#   - Gère le rebond en arrière si le lancer de dés est supérieur au reste à faire.",
+          "#   - Notifie le jeu du vainqueur.",
+          "# Ce qu'elle connaît :",
+          "#   - @leJeu : Instance du jeu pour désigner le vainqueur (Jeu)",
+          "# ==============================================================================",
+          "class CaseArrivee < Case",
+          "",
+          "# Variable d'instance supplémentaire @leJeu",
+          "  def initialize(unNom,unJeu)",
+          "    super(unNom)",
+          "    @leJeu=unJeu",
+          "  end",
+          "   ",
+          "   # Dans le cas de l'arrivée :",
+          "   # Si le joueur doit encore avancer (nCases > 0), il rebrousse chemin en reculant.",
+          "   # Si nCases == 0, le joueur atterrit pile sur l'arrivée.",
+          "   def faitAvancer(unJoueur,nCases)",
+          "     unJoueur.case=self",
+          "     self.faitReculer(unJoueur,nCases)",
+          "     return self",
+          "   end",
+          "   ",
+          "   # Le joueur s'arrête pile sur l'arrivée : il gagne la partie !",
+          "   def traite(unJoueur)",
+          "     super(unJoueur)",
+          "     unJoueur.statut=:gagnant",
+          "     @leJeu.leJoueurGagnant=unJoueur",
+          "     return self",
+          "   end",
+          "   ",
+          "end",
+          ""
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Fichier <code>Cases.rb</code> de l'enseignant (<code>TD/TD5/CodeJeuOie/</code>). Le déplacement est récursif : <code>faitAvancer(joueur, n)</code> pose le joueur sur la case, puis demande à la suivante de le faire avancer de n − 1 ; à 0, la case le <code>traite</code>. Chaque sous-classe ne redéfinit que ce qui change : la case départ arrête le recul, l'arrivée transforme l'avance restante en recul (le rebond) et déclare le vainqueur, les cases avancer et reculer relancent un déplacement depuis elles-mêmes, la case « aller à » pose le joueur sur sa cible et lui confie le traitement. Chaque <code>traite</code> commence par <code>super</code>, qui affiche la position.</p><p><code>attr :nom,false</code> est l'ancienne écriture de <code>attr_reader :nom</code> (avertissement de Ruby 3.3 avec <code>-w</code>).</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td5-s2-joueur" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "Question 3. Le joueur (Joueur.rb)",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "# ==============================================================================",
+          "# Fichier : Joueur.rb",
+          "# Modélisation d'un joueur du Jeu de l'Oie.",
+          "# ==============================================================================",
+          "",
+          "# ==============================================================================",
+          "# Classe Joueur",
+          "# ==============================================================================",
+          "# Responsabilité :",
+          "#   - Représente un joueur (sa couleur, sa position courante et son statut).",
+          "#   - Lance les dés et délègue son déplacement à sa case courante.",
+          "#",
+          "# Ce qu'elle connaît :",
+          "#   - @couleur : Identifiant ou couleur distinctive du joueur (String)",
+          "#   - @case    : Case actuelle occupée par le joueur (Case)",
+          "#   - @statut  : État du joueur (:enjeu, :elimine, :gagnant)",
+          "# ==============================================================================",
+          "class Joueur",
+          "# les variables d'instances @couleur @case @statut '",
+          "",
+          "attr :case,true",
+          "attr :statut, true",
+          "attr :couleur, false",
+          "  ",
+          "  ",
+          "   # retourne vrai si le joueur est elimine",
+          "  def estElimine?",
+          "    return  @statut == :elimine   ",
+          "  end",
+          "   ",
+          "  # Fait jouer son tour au joueur :",
+          "  # Tire les dés et demande à sa case actuelle de le faire avancer du résultat obtenu",
+          "  def joue",
+          "  # le joueur lance les des",
+          "      @case.faitAvancer(self,(self.tireLesDes)) if @statut == :enjeu",
+          "  end",
+          "  ",
+          "   # Simule le jet de 2 dés à 6 faces (résultat entre 2 et 12, sans classe Dé)",
+          "   # @return [Integer] Le résultat obtenu",
+          "   def tireLesDes",
+          "     tt = (rand(6)+1) + (rand(6)+1)",
+          "     print \"\\n\\nLe joueur \" , @couleur , ' a fait : ' , tt",
+          "     return tt",
+          "   end",
+          "   ",
+          "   # Représentation textuelle de l'état du joueur et de sa position",
+          "   def to_s",
+          "        \"\\njoueur \" +@couleur+' a la case ' + @case.nom ",
+          "   end",
+          "    ",
+          "   # Initialisation d'un joueur",
+          "   # @param uneCouleur [String] Le nom ou la couleur du joueur",
+          "   # @param unePosition [Case] La case initiale (généralement la case départ)",
+          "   def initialize(uneCouleur,unePosition)",
+          "      @couleur = uneCouleur",
+          "      @case = unePosition",
+          "      @statut = :enjeu",
+          "   end",
+          "end",
+          ""
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Fichier <code>Joueur.rb</code> de l'enseignant. Le joueur ne fait presque rien lui-même : <code>joue</code> tire les dés et demande à sa case de le faire avancer, s'il est encore en jeu. Son statut est un symbole (<code>:enjeu</code>, <code>:elimine</code>, <code>:gagnant</code>), modifié par les cases. Deux dés (de 2 à 12), sans classe Dé.</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td5-s2-jeu" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "Question 3. Le jeu et le test (Jeu.rb, TestJO.rb)",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "# ==============================================================================",
+          "# Fichier : Jeu.rb",
+          "# Classe principale orchestrant une partie de Jeu de l'Oie.",
+          "# ==============================================================================",
+          "load \"Cases.rb\"",
+          "load \"Joueur.rb\"",
+          "",
+          "# ==============================================================================",
+          "# Classe Jeu",
+          "# ==============================================================================",
+          "# Responsabilité :",
+          "#   - Crée et configure le plateau (chaînage des cases) et les joueurs.",
+          "#   - Anime la boucle de jeu tour par tour en mode round-robin (file d'attente).",
+          "#   - Gère les conditions de victoire et de fin de partie.",
+          "#",
+          "# Ce qu'elle connaît :",
+          "#   - @caseDepart      : Première case du plateau (CaseDepart)",
+          "#   - @listeDeJoueurs  : File des joueurs encore en lice (Array de Joueur)",
+          "#   - @leJoueurGagnant : Le joueur ayant atteint l'arrivée (Joueur)",
+          "# ==============================================================================",
+          "class Jeu",
+          "# Les variables d'instances sont @listeDeCases, @listeDeJoueurs, @leJoueurGagnant",
+          "  ",
+          "  attr :leJoueurGagnant,true",
+          "  ",
+          "  # affichage des cases du jeu",
+          "  def to_s",
+          "   \"Le Jeu est composé des cases suivantes : \\n\"+ @caseDepart.afficheTout",
+          "  end",
+          "  ",
+          "  # Initialisation du plateau et de la liste des joueurs",
+          "  # @param listeCase [Array<Case>] La liste ordonnée des cases à chaîner",
+          "  # @param listeJoueur [Array<Joueur>] La liste des joueurs au départ",
+          "private  def initialiseToi(listeCase,listeJoueur)",
+          "     @listeDeJoueurs=listeJoueur     ",
+          "     listeCase.map &->(c){ajouteCase(c)}",
+          "  end",
+          "   ",
+          "   # Ajoute une case en fin de parcours en maintenant le double chaînage",
+          "   # (mise à jour de caseSuivante de la dernière case et casePrecedente de la nouvelle).",
+          "   # @param uneCase [Case] La case à insérer",
+          "   def ajouteCase(uneCase)",
+          "     if (@caseDepart==nil)",
+          "       @caseDepart=uneCase",
+          "     else",
+          "       caseCourante=@caseDepart",
+          "       while(caseCourante.caseSuivante != nil)",
+          "         caseCourante=caseCourante.caseSuivante",
+          "       end",
+          "       caseCourante.caseSuivante=uneCase",
+          "       uneCase.casePrecedente=caseCourante",
+          "     end",
+          "  end",
+          "  ",
+          "  # Initialise le jeu avec un parcours enrichi (environ 25 cases) et 3 joueurs",
+          "  def initialize()",
+          "    caseDepart = CaseDepart.new(\"Case Départ\")",
+          "    caseBosquet = Case.new(\"Le Bosquet (Case Neutre 12)\")",
+          "",
+          "    initialiseToi([",
+          "        caseDepart,",
+          "        Case.new(\"Case Neutre 1\"),",
+          "        CaseAvancer.new(\"Le Pont (Avancer de 4)\", 4),",
+          "        Case.new(\"Case Neutre 3\"),",
+          "        CaseReculer.new(\"Vent contraire (Reculer de 2)\", 2),",
+          "        CaseAllerA.new(\"Passage secret vers le Bosquet\", caseBosquet),",
+          "        Case.new(\"L'Auberge (Case Neutre 6)\"),",
+          "        CaseAvancer.new(\"Coup de vent (Avancer de 2)\", 2),",
+          "        CasePerdu.new(\"Le Puits (Perdu)\"),",
+          "        Case.new(\"Case Neutre 9\"),",
+          "        CaseReculer.new(\"Fausse manoeuvre (Reculer de 3)\", 3),",
+          "        Case.new(\"Case Neutre 11\"),",
+          "        caseBosquet,",
+          "        CaseAllerA.new(\"Le Labyrinthe (Retour au Départ)\", caseDepart),",
+          "        Case.new(\"Case Neutre 14\"),",
+          "        CaseAvancer.new(\"L'Oie blanche (Avancer de 3)\", 3),",
+          "        Case.new(\"Case Neutre 16\"),",
+          "        CasePerdu.new(\"Le Piège (Perdu)\"),",
+          "        CaseReculer.new(\"Brouillard (Reculer de 4)\", 4),",
+          "        Case.new(\"Case Neutre 19\"),",
+          "        CaseAvancer.new(\"Sprint final (Avancer de 2)\", 2),",
+          "        Case.new(\"Case Neutre 21\"),",
+          "        CaseAllerA.new(\"Bourrasque (Retour au Bosquet)\", caseBosquet),",
+          "        Case.new(\"Dernière halte (Case Neutre 23)\"),",
+          "        CaseArrivee.new(\"Case Arrivée\", self)",
+          "        ], [",
+          "          Joueur.new(\"Rouge\", caseDepart),",
+          "          Joueur.new(\"Vert\", caseDepart),",
+          "          Joueur.new(\"Bleu\", caseDepart)",
+          "        ]",
+          "      )",
+          "  end",
+          "  ",
+          "  # Boucle principale de jeu (tour par tour) :",
+          "  # - Récupère le joueur en tête de file (shift).",
+          "  # - Le fait jouer (lancer de dés et déplacement).",
+          "  # - Le réinsère en queue de file s'il n'est pas éliminé (push).",
+          "  # - Arrêt dès qu'il y a un gagnant ou plus aucun joueur.",
+          "  def lanceToi",
+          "    # Execution du jeu",
+          "",
+          "    while (@leJoueurGagnant == nil) && (@listeDeJoueurs.empty? == false)",
+          "      # Je retire le premier joueur",
+          "      joueur=@listeDeJoueurs.shift",
+          "      joueur.joue",
+          "      # joueur.afficheToi",
+          "      @listeDeJoueurs.push(joueur) unless joueur.estElimine?",
+          "    end",
+          "    if @listeDeJoueurs.empty?",
+          "      print \"\\n\\n !!!!! Tous les joueurs sont éliminés !!!!!\\n\"",
+          "    else ",
+          "      print \"\\n\\n !!!!! Le joueur \", @leJoueurGagnant.couleur, \" a gagne !!!!!\\n\"",
+          "    end",
+          "",
+          "  end",
+          "end",
+          "",
+          "# ==============================================================================",
+          "# Fichier : TestJO.rb",
+          "# Script de test et d'exécution du Jeu de l'Oie.",
+          "# Initialise une partie type, affiche le plateau et lance la simulation.",
+          "# ==============================================================================",
+          "load \"Jeu.rb\"",
+          "",
+          "# Création de l'instance du jeu",
+          "jeu=Jeu.new()",
+          "",
+          "# Affichage de la composition du plateau",
+          "puts jeu",
+          "",
+          "# Lancement de la partie",
+          "jeu.lanceToi",
+          "",
+          "# ==============================================================================",
+          "# Exemple d'exécution attendue (tel que spécifié dans l'énoncé) :",
+          "# ==============================================================================",
+          "=begin",
+          "Le joueur Rouge a fait : 3",
+          "joueur Rouge a la case Case Avancer de 3",
+          "joueur Rouge a la case Case Neutre",
+          "",
+          "Le joueur Vert a fait : 3",
+          "joueur Vert a la case Case Avancer de 3",
+          "joueur Vert a la case Case Neutre",
+          "",
+          "Le joueur Bleu a fait : 3",
+          "joueur Bleu a la case Case Avancer de 3",
+          "joueur Bleu a la case Case Neutre",
+          "",
+          "Le joueur Rouge a fait : 4",
+          "joueur Rouge a la case Case Neutre",
+          "",
+          "Le joueur Vert a fait : 4",
+          "joueur Vert a la case Case Neutre",
+          "",
+          "Le joueur Bleu a fait : 6",
+          "",
+          "Le joueur Rouge a fait : 2",
+          "joueur Rouge a la case Case arrivée",
+          "",
+          " !!!!! Le joueur Rouge a gagne !!!!!",
+          "=end",
+          ""
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Fichiers <code>Jeu.rb</code> et <code>TestJO.rb</code> de l'enseignant, mis bout à bout. <code>ajouteCase</code> va jusqu'à la dernière case et met à jour les deux liens ; le plateau compte 25 cases et trois joueurs. <code>lanceToi</code> fait tourner les joueurs en file : le premier joue, puis repasse en fin de file s'il n'est pas éliminé, jusqu'à un gagnant ou plus aucun joueur.</p><p>Exécuté avec Ruby 3.3 : le plateau s'affiche, puis la partie se déroule (les dés étant aléatoires, chaque partie diffère). L'exemple d'exécution écrit à la fin de <code>TestJO.rb</code> vient d'un plateau plus petit (« Case Avancer de 3 », « Case arrivée ») : avec ce plateau de 25 cases, les noms affichés sont ceux de la liste de <code>initialize</code>.</p>"
+      }
+      </script>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Pour aller plus loin <span>La présentation de l'enseignant</span></p>
+      <p>Les diapositives « Jeu de l'oie » (<code>TD/TD5/Jeu de loie (25 diapos).html</code>) déroulent la correction en séance : une première conception où le joueur avance de case en case en testant leur type, puis le constat « Ceci dénote une erreur de conception objet : ce n'est pas le joueur qui a la responsabilité d'avancer, c'est la case qui le fait avancer », et la conception reprise. À ouvrir après avoir fait l'exercice.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>Un module peut définir une méthode qui en appelle une autre que la classe hôte doit fournir (<code>correspond?</code> appelle <code>estSatisfaitPar?</code>) : il fixe une interface commune à des classes sans lien d'héritage.</li>
+        <li>Un critère composé est lui-même un critère : on combine à volonté (« Citroën et moins de 20 000 », ou « BMW ») sans rien changer à <code>selectionne</code>.</li>
+        <li>Quand deux classes ne diffèrent que par une méthode (intersection et union, prix inférieur et supérieur), une superclasse abstraite factorise le reste.</li>
+        <li>Un accesseur qui rend la liste interne d'un objet laisse la modifier de l'extérieur (une « poignée ») : rendre une copie (<code>clone</code>).</li>
+        <li>Réifier, c'est donner à chaque objet une responsabilité, ce qu'il connaît et ce qu'il sait faire ; un test sur le type d'un objet signale une responsabilité mal placée.</li>
+        <li>Dans une liste chaînée d'objets, un traitement peut se propager par messages récursifs (<code>faitAvancer(joueur, n - 1)</code> envoyé à la case suivante), et chaque sous-classe redéfinit son étape.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Que se passe-t-il si une classe inclut <code>Critere</code> sans définir <code>estSatisfaitPar?</code> ?</summary>
+        <div><p>Elle se charge sans erreur, mais le premier appel de <code>correspond?</code> lève <code>NoMethodError</code> : le module compte sur une méthode que la classe hôte n'a pas.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi <code>ajouteCritere</code> rend-il <code>self</code> ?</summary>
+        <div><p>Pour enchaîner les ajouts : <code>InterCritere.new.ajouteCritere(a).ajouteCritere(b)</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Comment sélectionner « les Citroën à moins de 20 000 €, ou les BMW » ?</summary>
+        <div><p>Un <code>InterCritere</code> (marque Citroën, prix inférieur à 20 000) et un <code>CritereMarque</code> BMW, réunis dans un <code>OuCritere</code> ; on obtient la Xsara et la BMW 300.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Comment la case d'arrivée fait-elle rebondir un joueur qui a tiré trop ?</summary>
+        <div><p>Elle redéfinit <code>faitAvancer</code> : arrivée avec n pas restants, elle le fait reculer de n (<code>faitReculer</code>) ; avec 0, le recul s'arrête aussitôt et la case le déclare gagnant.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi la case départ redéfinit-elle <code>faitReculer</code> ?</summary>
+        <div><p>Pour servir de butoir : un joueur qui recule jusqu'à elle s'y arrête, quel que soit le nombre de cases restantes.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="td-04-classes-ruby-polymorphisme.html"><small>← TD 4</small>Classes Ruby et polymorphisme</a>
+    <a class="suivant" href="index.html"><small>Suivant →</small>Tous les chapitres</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">POO · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

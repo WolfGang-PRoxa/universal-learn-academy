@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="c">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les bases du langage C · Algorithmique 2 L2</title>
+<meta name="description" content="Premier cours de C : histoire et caractéristiques du langage, expressions et instructions, types et littéraux, constantes nommées, getchar et putchar, codage des nombres flottants et des caractères (ASCII, Unicode, UTF-8).">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-bases-du-c.html" title="Quiz · Les bases du C">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="index.html">Algorithmique 2</a>
+    <span aria-current="page">Cours 1 · Les bases du C</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Algorithmique 2</span> Cours 1 · L2 S3</p>
+    <h1>Les bases du langage C</h1>
+    <p class="chapeau">Ce premier cours présente le langage C, ses expressions et ses instructions, ses types et la façon d'écrire des valeurs dans un programme. Il se termine par la manière dont la machine code les nombres à virgule et les caractères, ce qui explique bien des surprises à l'exécution.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd>Notes prises en cours, Google Doc « Cours 1 » (dossier Drive <code>L2/Algo2/cours/</code>, 16 octobre 2024)</dd></div>
+      <div><dt>Part de Claude</dt><dd>environ un cinquième du texte (blocs Complément, badges Ajout), plus les explications qui relient des notes très brèves ; le reste suit les notes, dont la fiabilité n'est pas garantie</dd></div>
+      <div><dt>Enseignant</dt><dd>Non indiqué dans les notes</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Distinguer une expression d'une instruction, et lire une affectation multiple ou une expression conditionnelle.</li>
+        <li>Écrire un entier en base 10, 8 ou 16, un caractère, une séquence d'échappement et une chaîne, en sachant combien d'octets elle occupe.</li>
+        <li>Choisir entre <code>#define</code>, <code>enum</code> et <code>const</code> pour nommer une constante.</li>
+        <li>Lire et recopier l'entrée caractère par caractère avec <code>getchar</code> et <code>putchar</code>.</li>
+        <li>Décoder un <code>float</code> IEEE 754 et coder un caractère en UTF-8.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>L'algorithmique de L1 : variables, conditions, boucles.</li>
+        <li>Le binaire et l'hexadécimal.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Note <span>Une page tirée de notes brèves</span></p>
+    <p>Les supports officiels de l'enseignant ne sont plus accessibles : cette page part des notes prises pendant le cours, qui tiennent en une page et laissent plusieurs points en suspens (<code>putchar</code> sans définition, « finir les exos sur la feuille »). Chaque ligne des notes est reprise ; le reste, explications, exemples, exercices et corrections, est ajouté et signalé comme tel. Les exemples ont été compilés avec <code>gcc</code> sous Linux 64 bits. Deux affirmations des notes, inexactes, sont corrigées avec le badge « À vérifier ».</p>
+  </div>
+
+  <section>
+    <h2>Le langage C <span class="ref">notes, début</span></h2>
+    <p>Avant d'écrire du C, il est utile de savoir d'où vient ce langage et ce qui le distingue : il est ancien, proche de la machine, et presque tous les langages courants lui empruntent leur syntaxe.</p>
+
+    <h3>Origine</h3>
+    <p>Le C date des années 1970. Il a été créé par <strong>Dennis Ritchie</strong>, aux laboratoires Bell, pour écrire le système Unix. Il succède au langage B, d'où son nom. Linux, le noyau libre écrit à partir de 1991, est lui aussi écrit en C.</p>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Unix et le langage B</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>Les notes disent qu'« Unix était écrit en langage B ». La première version d'Unix (1969, Ken Thompson) était en fait écrite en assembleur ; B, conçu par Thompson, a servi d'ébauche, puis Ritchie en a tiré le C, dans lequel le noyau d'Unix a été réécrit en 1973. C'est sans doute ce que disait le cours : le C est né de B pour réécrire Unix.</p>
+    </div>
+
+    <h3>Un langage impératif et typé</h3>
+    <p>Le C est un langage <dfn>impératif</dfn> : un programme est une suite d'ordres qui modifient l'état de la mémoire. Il est aussi <dfn>typé</dfn> : chaque variable a un type, fixé à sa déclaration et vérifié à la compilation. Les notes en donnent la raison : avec un langage non typé, il est difficile de comprendre après coup ce qui s'est passé pendant l'exécution, car rien ne dit ce qu'une variable était censée contenir.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>« Très typé », vraiment ?</span></p>
+      <p>Les notes disent « très typé ». Il faut nuancer : le C est typé <em>statiquement</em> (les types sont connus à la compilation), mais il convertit volontiers d'un type à l'autre sans rien dire. <code>int n = 3.9;</code> compile et donne 3 ; un caractère est un petit entier, sur lequel on fait des additions. On dit souvent que le C est statiquement mais <em>faiblement</em> typé, à la différence de Java ou d'OCaml.</p>
+    </div>
+    <p>Le C est enfin la source de beaucoup d'autres langages pour la syntaxe : accolades, point-virgule, <code>for (i = 0; i &lt; n; i++)</code>, opérateurs <code>==</code>, <code>&amp;&amp;</code>, <code>++</code> se retrouvent en C++, Java, C#, JavaScript ou PHP.</p>
+
+    <h3>Les normes</h3>
+    <p>Les notes indiquent que le C respecte la norme « Kernighan et Ritchie 78 ». Il s'agit du livre <cite>The C Programming Language</cite> de Brian Kernighan et Dennis Ritchie (1978), qui a longtemps tenu lieu de norme : on parle du « C K&amp;R ».</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les normes officielles</span></p>
+      <p>Le C a ensuite été normalisé : ANSI C en 1989 (C89, reprise par l'ISO en 1990 sous le nom C90), puis C99, C11, C17 et C23. C'est la norme ANSI qui a apporté <code>const</code> (voir plus bas) et les prototypes de fonctions. Avec <code>gcc</code>, on choisit la norme par une option : <code>gcc -std=c99 -Wall prog.c -o prog</code>. L'option <code>-Wall</code>, qui active les avertissements, devrait être systématique.</p>
+    </div>
+
+    <h3>Langage généraliste et DSL</h3>
+    <p>Les notes définissent les <dfn>DSL</dfn> (<span class="en" lang="en">domain specific languages</span>) : des langages créés pour un domaine particulier. <span class="badge ajout">Ajout</span> SQL pour les bases de données, HTML pour les pages web ou les <code>Makefile</code> en sont des exemples. Le C, au contraire, est un langage <em>généraliste</em> : il sert à écrire n'importe quel programme, du système d'exploitation au jeu vidéo.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>De la source à l'exécutable</span></p>
+      <p>Un programme C passe par trois étapes, que <code>gcc</code> enchaîne d'un seul appel : le <dfn>préprocesseur</dfn> traite les lignes qui commencent par <code>#</code> (inclusions, constantes) ; le <dfn>compilateur</dfn> traduit le résultat en code machine ; l'<dfn>éditeur de liens</dfn> (<span class="en" lang="en">linker</span>) y joint les fonctions de bibliothèque comme <code>printf</code>.</p>
+<pre class="terminal"><code>$ gcc -Wall bonjour.c -o bonjour
+$ ./bonjour
+Bonjour !</code></pre>
+    </div>
+<pre data-fichier="bonjour.c"><code class="language-c">#include &lt;stdio.h&gt;
+
+int main(void)
+{
+    printf("Bonjour !\n");
+    return 0;
+}</code></pre>
+  </section>
+
+  <section>
+    <h2>Expressions et instructions <span class="ref">notes, début et milieu</span></h2>
+    <p>Un programme C est fait d'instructions, elles-mêmes construites à partir d'expressions. La différence entre les deux explique des écritures propres au C, comme <code>a = b = 1</code>.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Expression, instruction</span></p>
+      <p>Une <dfn>expression</dfn> est une écriture qui a une valeur : <code>3</code>, <code>x + 1</code>, <code>a &gt; b</code>, mais aussi <code>x = 5</code>, dont la valeur est 5.</p>
+      <p>Une <dfn>instruction</dfn> est un ordre exécuté par le programme. La plus simple est une expression suivie d'un point-virgule : <code>x = 5;</code>, <code>printf("ok");</code>.</p>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Ce que disent les notes</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>Les notes écrivent : « Instruction : renvoie une valeur avec un point-virgule ». C'est l'inverse : c'est l'expression qui a une valeur ; le point-virgule en fait une instruction, et la valeur est alors <em>abandonnée</em>. Dans <code>x = 5;</code>, l'expression <code>x = 5</code> vaut 5, mais personne ne récupère ce 5 : seul compte l'effet, ranger 5 dans <code>x</code>.</p>
+    </div>
+
+    <h3>L'affectation est une expression</h3>
+    <p>L'opérateur d'affectation <code>=</code> s'évalue de droite à gauche. Dans <code>a = b = 1;</code>, on range d'abord 1 dans <code>b</code> ; l'expression <code>b = 1</code> vaut 1, valeur que l'on range ensuite dans <code>a</code>.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi c'est utile</span></p>
+      <p>Comme une affectation a une valeur, on peut l'utiliser dans une condition. C'est la forme de la boucle de lecture que l'on écrira plus bas : <code>while ((c = getchar()) != EOF)</code> lit un caractère, le range dans <code>c</code>, puis compare la valeur rangée à <code>EOF</code>. Les parenthèses autour de <code>c = getchar()</code> sont indispensables : <code>!=</code> est prioritaire sur <code>=</code>.</p>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span><code>=</code> n'est pas <code>==</code></span> <span class="badge ajout">Ajout</span></p>
+      <p><code>if (x = 0)</code> range 0 dans <code>x</code> et vaut 0, donc faux : le bloc n'est jamais exécuté, et <code>x</code> est écrasé. La comparaison s'écrit <code>if (x == 0)</code>. Avec <code>-Wall</code>, <code>gcc</code> signale l'erreur.</p>
+    </div>
+
+    <h3>L'opérateur conditionnel</h3>
+    <p>L'expression <code>condition ? valeur_si_vrai : valeur_si_faux</code> choisit entre deux valeurs. Les notes donnent l'exemple du maximum :</p>
+<pre><code class="language-c">max = a &gt; b ? a : b;   /* max reçoit a si a &gt; b, b sinon */</code></pre>
+    <p><span class="badge ajout">Ajout</span> C'est une expression, pas une instruction : elle a une valeur et peut se placer dans un calcul ou un appel, par exemple <code>printf("%d\n", a &gt; b ? a : b);</code>.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les opérateurs courants</span></p>
+      <p>Les notes ne citent que l'affectation et l'opérateur conditionnel. Voici les autres, dont on se sert dès le premier TP.</p>
+    </div>
+    <div class="tableau compact">
+      <table>
+        <caption>Opérateurs du C, par priorité décroissante (ajout)</caption>
+        <thead><tr><th>Famille</th><th>Opérateurs</th><th>Exemple</th></tr></thead>
+        <tbody>
+          <tr><td>Unaires</td><td><code>!</code> <code>-</code> <code>++</code> <code>--</code> <code>sizeof</code></td><td><code>i++</code> ajoute 1 à <code>i</code></td></tr>
+          <tr><td>Multiplicatifs</td><td><code>*</code> <code>/</code> <code>%</code></td><td><code>7 / 2</code> vaut 3, <code>7 % 2</code> vaut 1</td></tr>
+          <tr><td>Additifs</td><td><code>+</code> <code>-</code></td><td><code>c - '0'</code></td></tr>
+          <tr><td>Comparaison</td><td><code>&lt;</code> <code>&lt;=</code> <code>&gt;</code> <code>&gt;=</code>, puis <code>==</code> <code>!=</code></td><td><code>a &gt;= b</code> vaut 1 ou 0</td></tr>
+          <tr><td>Logiques</td><td><code>&amp;&amp;</code>, puis <code>||</code></td><td><code>c &gt;= 'a' &amp;&amp; c &lt;= 'z'</code></td></tr>
+          <tr><td>Conditionnel</td><td><code>? :</code></td><td><code>a &gt; b ? a : b</code></td></tr>
+          <tr><td>Affectation</td><td><code>=</code> <code>+=</code> <code>-=</code> <code>*=</code> <code>/=</code> <code>%=</code></td><td><code>n += 1</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>La division entière</span> <span class="badge ajout">Ajout</span></p>
+      <p>Entre deux entiers, <code>/</code> donne le quotient entier : <code>7 / 2</code> vaut 3, et <code>7 / 2 * 1.0</code> vaut 3.0, car la division est faite avant la multiplication. Pour obtenir 3.5, il faut qu'un des opérandes soit flottant : <code>7.0 / 2</code> ou <code>(double) 7 / 2</code>. Depuis C99, le quotient est arrondi vers zéro : <code>-7 / 2</code> vaut −3 et <code>-7 % 2</code> vaut −1.</p>
+    </div>
+    <p><span class="badge ajout">Ajout</span> En C, il n'y a pas de type booléen de base (il n'existe que depuis C99, dans <code>&lt;stdbool.h&gt;</code>) : une condition est un entier, fausse si elle vaut 0 et vraie sinon. Une comparaison vaut 1 ou 0. Les opérateurs <code>&amp;&amp;</code> et <code>||</code> n'évaluent leur second opérande que si c'est nécessaire.</p>
+  </section>
+
+  <section>
+    <h2>Types, littéraux et identificateurs <span class="ref">notes, milieu</span></h2>
+    <p>Toute valeur écrite dans un programme, un <dfn>littéral</dfn>, a un type, que le compilateur déduit de son écriture. Les notes s'attardent sur les entiers et les caractères.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les types de base</span></p>
+      <p>Les tailles ne sont pas fixées par la norme, seulement des minimums ; celles du tableau sont celles d'un PC actuel (Linux 64 bits, obtenues avec <code>sizeof</code>). Chaque type entier existe aussi en version <code>unsigned</code>, sans signe.</p>
+    </div>
+    <div class="tableau compact">
+      <table>
+        <caption>Types de base du C (ajout)</caption>
+        <thead><tr><th>Type</th><th>Taille</th><th>Contenu</th><th>Format de <code>printf</code></th></tr></thead>
+        <tbody>
+          <tr><td><code>char</code></td><td>1 octet</td><td>un caractère, c'est-à-dire un petit entier</td><td><code>%c</code> (ou <code>%d</code> pour son code)</td></tr>
+          <tr><td><code>short</code></td><td>2 octets</td><td>entier</td><td><code>%hd</code></td></tr>
+          <tr><td><code>int</code></td><td>4 octets</td><td>entier, de −2 147 483 648 à 2 147 483 647</td><td><code>%d</code></td></tr>
+          <tr><td><code>long</code></td><td>8 octets (4 sous Windows)</td><td>entier</td><td><code>%ld</code></td></tr>
+          <tr><td><code>float</code></td><td>4 octets</td><td>flottant simple précision</td><td><code>%f</code></td></tr>
+          <tr><td><code>double</code></td><td>8 octets</td><td>flottant double précision</td><td><code>%f</code> (et <code>%lf</code> dans <code>scanf</code>)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Les entiers et leur base</h3>
+    <p>La base d'un littéral entier se lit à son premier caractère :</p>
+    <ul>
+      <li>s'il commence par un chiffre de 1 à 9, il est en <strong>base 10</strong> : <code>255</code> ;</li>
+      <li>s'il commence par <code>0</code>, il est en <strong>base 8</strong> (octal) : <code>0377</code> ;</li>
+      <li>s'il commence par <code>0x</code>, il est en <strong>base 16</strong> (hexadécimal) : <code>0xFF</code>.</li>
+    </ul>
+    <p>Ces trois littéraux désignent la même valeur, 255.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Le zéro qui change tout</span> <span class="badge ajout">Ajout</span></p>
+      <p><code>printf("%d", 010);</code> affiche 8, et non 10. Aligner des nombres en les complétant par des zéros à gauche (<code>007</code>, <code>010</code>) change donc leur valeur. <code>09</code> est même une erreur de compilation : 9 n'est pas un chiffre octal.</p>
+    </div>
+
+    <h3>Les caractères</h3>
+    <p>Un caractère s'écrit entre apostrophes : <code>'A'</code>. Sa valeur est son code dans la table ASCII, que le C utilise : <code>'A'</code> vaut 65, <code>'a'</code> vaut 97, <code>'0'</code> vaut 48.</p>
+    <p>Certains caractères ne s'impriment pas. On les écrit avec une barre oblique inverse : <code>'\n'</code> (passage à la ligne), <code>'\t'</code> (tabulation), et d'autres. De même pour les caractères qui ont un sens dans la syntaxe : l'apostrophe s'écrit <code>'\''</code>, les guillemets <code>'\"'</code>. Ces <dfn>séquences d'échappement</dfn> correspondent à <strong>une seule</strong> valeur dans la table ASCII, même si on les écrit avec deux caractères.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Calculer avec des caractères</span></p>
+      <p>Comme un caractère est un nombre, on peut calculer avec. Les lettres et les chiffres se suivent dans la table ASCII, d'où deux formules que l'on retrouve dans les TD :</p>
+<pre><code class="language-c">int chiffre = c - '0';           /* '7' - '0' vaut 7 */
+char majuscule = c - 'a' + 'A';  /* 'a' devient 'A' si c est une minuscule */
+int est_minuscule = c &gt;= 'a' &amp;&amp; c &lt;= 'z';</code></pre>
+      <p>La première sert à convertir un nombre lu caractère par caractère : <code>nombre = nombre * 10 + c - '0';</code> (TD 3, exercice 6). La barre oblique inverse elle-même s'écrit <code>'\\'</code>, et le caractère nul <code>'\0'</code> vaut 0.</p>
+    </div>
+
+    <h3>Les chaînes de caractères</h3>
+    <p>Une chaîne s'écrit entre guillemets : <code>"abc"</code>. Une chaîne de \(n\) lettres occupe \(n + 1\) octets en mémoire : le dernier, le \((n+1)\)<sup>e</sup>, est le caractère nul <code>'\0'</code>, qui marque la fin.</p>
+<pre><code class="language-c">printf("%zu\n", sizeof("abc"));   /* 4 : a, b, c et '\0' */
+printf("%zu\n", strlen("abc"));   /* 3 : strlen ne compte pas '\0' */</code></pre>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span><code>'a'</code> n'est pas <code>"a"</code></span> <span class="badge ajout">Ajout</span></p>
+      <p><code>'a'</code> est un caractère : un nombre, 97. <code>"a"</code> est une chaîne de deux octets, <code>'a'</code> puis <code>'\0'</code>, que le programme manipule par son adresse. Comparer un caractère à une chaîne, comme <code>c[i] != "\0"</code>, compare un nombre à une adresse : la condition est toujours vraie. On écrit <code>c[i] != '\0'</code>.</p>
+    </div>
+
+    <h3>Les identificateurs</h3>
+    <p>Les noms des variables, des constantes et des fonctions sont des <dfn>identificateurs</dfn>. Les notes précisent que le caractère <code>_</code> compte comme une lettre : il peut figurer dans un identificateur, et même le commencer.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les règles</span></p>
+      <p>Un identificateur est fait de lettres non accentuées, de chiffres et de <code>_</code>, et ne commence pas par un chiffre : <code>nb_lignes</code> et <code>_tmp</code> sont valides, <code>2x</code> et <code>état</code> ne le sont pas. Majuscules et minuscules sont distinguées (<code>Max</code> et <code>max</code> sont deux noms). Les mots-clés du langage (<code>int</code>, <code>while</code>, <code>return</code>…) sont réservés. Par convention, les constantes s'écrivent en majuscules.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Nommer une constante <span class="ref">notes, milieu</span></h2>
+    <p>Écrire 3.14159 à dix endroits d'un programme est une source d'erreurs : on donne un nom à la valeur. Les notes listent trois façons de le faire.</p>
+
+    <h3>La directive <code>#define</code></h3>
+    <p>Tout ce qui commence par <code>#</code> est une <dfn>directive du préprocesseur</dfn>, lue avant la compilation. Le préprocesseur fait un traitement purement <strong>textuel</strong> : après <code>#define PI 3.14159</code>, il remplace chaque <code>PI</code> du programme par le texte <code>3.14159</code>, sans rien savoir du C.</p>
+    <p>Si l'on écrit <code>#define PI 3.14159;</code>, le point-virgule fait partie du texte remplacé, et le compilateur signale une erreur dès qu'on calcule avec cette constante.</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Le point-virgule de trop</span> <span class="badge ajout">Ajout</span></p>
+<pre><code class="language-c">#define PI 3.14159;
+
+double perimetre = 2 * PI * r;
+/* devient, après le préprocesseur :
+   double perimetre = 2 * 3.14159; * r;
+   « * r; » seul n'a pas de sens : erreur de compilation */</code></pre>
+      <p>Le message d'erreur porte sur la ligne qui utilise <code>PI</code>, pas sur le <code>#define</code>, ce qui le rend difficile à comprendre.</p>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Des parenthèses partout</span> <span class="badge ajout">Ajout</span></p>
+      <p>Le remplacement textuel ignore les priorités. Avec <code>#define CARRE(x) x * x</code>, <code>CARRE(1 + 2)</code> devient <code>1 + 2 * 1 + 2</code>, qui vaut 5 et non 9. On écrit <code>#define CARRE(x) ((x) * (x))</code>.</p>
+    </div>
+
+    <h3>Les énumérations</h3>
+    <p>Les notes disent que <code>enum</code> « sert à faire des listes ». <span class="badge ajout">Ajout</span> Plus précisément, une énumération nomme une liste de constantes entières, numérotées à partir de 0, sauf valeur imposée :</p>
+<pre><code class="language-c">enum couleur { ROUGE, VERT, BLEU = 10, JAUNE };
+/* ROUGE vaut 0, VERT 1, BLEU 10, JAUNE 11 */
+
+enum couleur c = VERT;</code></pre>
+    <p><span class="badge ajout">Ajout</span> Le TP noté de la fourmi de Langton (<code>TP/TP3 éval/</code>) s'en sert pour les directions : <code>typedef enum {sud, ouest, nord, est} t_direction;</code>. Le <code>typedef</code> est présenté au <a href="cours-03-pointeurs-allocation-structures.html#nommer-un-type-typedef">cours 3</a>.</p>
+
+    <h3>Le qualificatif <code>const</code></h3>
+    <p>Depuis la norme ANSI, on peut aussi déclarer une variable dont la valeur ne peut plus changer : <code>const double PI = 3.14159;</code>. <span class="badge ajout">Ajout</span> Contrairement à <code>#define</code>, cette constante a un type, vérifié par le compilateur, et toute tentative de la modifier est une erreur de compilation.</p>
+
+    <div class="tableau compact">
+      <table>
+        <caption>Trois façons de nommer une constante (ajout)</caption>
+        <thead><tr><th></th><th><code>#define</code></th><th><code>enum</code></th><th><code>const</code></th></tr></thead>
+        <tbody>
+          <tr><td>Traité par</td><td>le préprocesseur (texte)</td><td>le compilateur</td><td>le compilateur</td></tr>
+          <tr><td>Type</td><td>aucun</td><td>entier</td><td>quelconque</td></tr>
+          <tr><td>Point-virgule</td><td>non</td><td>après l'accolade</td><td>oui</td></tr>
+          <tr><td>Usage typique</td><td>tailles de tableaux, <code>N</code>, <code>VRAI</code></td><td>ensemble de valeurs nommées</td><td>valeur typée</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Lire et écrire un caractère <span class="ref">notes, milieu</span></h2>
+    <p>Les deux fonctions d'entrée-sortie les plus simples lisent ou écrivent un seul caractère. Elles suffisent pour les premiers TD, où l'on traite un texte lettre par lettre.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>getchar et putchar</span></p>
+      <p><code>getchar()</code> lit un caractère sur l'entrée standard (le clavier, par défaut) et renvoie son code.</p>
+      <p><span class="badge ajout">Ajout</span> <code>putchar(c)</code> écrit le caractère <code>c</code> sur la sortie standard (l'écran). Les deux fonctions sont déclarées dans <code>&lt;stdio.h&gt;</code>. Les notes laissent la définition de <code>putchar</code> en blanc.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La fin du fichier : EOF</span></p>
+      <p>Quand il n'y a plus rien à lire, <code>getchar</code> renvoie la constante <code>EOF</code> (<span class="en" lang="en">end of file</span>), qui vaut −1. Au clavier, on la provoque avec Ctrl+D sous Linux, Ctrl+Z puis Entrée sous Windows. C'est pourquoi le résultat de <code>getchar</code> se range dans un <code>int</code>, et non dans un <code>char</code> : il faut pouvoir représenter les 256 caractères <em>et</em> la valeur −1, qui ne se confond avec aucun. Le <a href="cours-02-entrees-sorties-controle.html#la-fin-du-flux-eof">cours 2</a> y revient.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Recopier l'entrée (TD 3, exercice 1)</span></p>
+      <p>Le programme le plus court qui utilise ces deux fonctions recopie son entrée sur sa sortie, caractère par caractère, jusqu'à la fin :</p>
+<pre data-fichier="copie.c"><code class="language-c">#include &lt;stdio.h&gt;
+
+int main(void)
+{
+    int c;
+    while ((c = getchar()) != EOF)
+        putchar(c);
+    return 0;
+}</code></pre>
+<pre class="terminal"><code>$ gcc -Wall copie.c -o copie
+$ echo "Bonjour" | ./copie
+Bonjour</code></pre>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Compter les lignes (TD 3, exercice 3)</span></p>
+<pre data-fichier="lignes.c"><code class="language-c">#include &lt;stdio.h&gt;
+
+int main(void)
+{
+    int c, nl = 0;
+    while ((c = getchar()) != EOF)
+        if (c == '\n')
+            nl++;
+    printf("%d lignes\n", nl);
+    return 0;
+}</code></pre>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Deux erreurs vues dans les TD</span> <span class="badge ajout">Ajout</span></p>
+      <p><strong>Compteur non initialisé.</strong> Dans <code>int c, nsp, ntab, nl = 0;</code>, seul <code>nl</code> reçoit 0 : <code>nsp</code> et <code>ntab</code> contiennent n'importe quoi, et le programme affiche des nombres absurdes. Chaque variable s'initialise à part : <code>int nsp = 0, ntab = 0, nl = 0;</code>.</p>
+      <p><strong><code>void main()</code>.</strong> La norme impose <code>int main(void)</code> : la valeur renvoyée par <code>main</code> est le code de retour du programme, lu par le système (0 si tout va bien). Le <a href="cours-03-pointeurs-allocation-structures.html#codes-de-retour-et-exit">cours 3</a> en parle.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Coder les nombres et les caractères <span class="ref">notes, fin</span></h2>
+    <p>La mémoire ne contient que des bits. La dernière partie du cours montre comment on y range un nombre à virgule, un chiffre décimal ou un caractère de n'importe quelle langue.</p>
+
+    <h3>Les nombres flottants : la norme IEEE 754</h3>
+    <p>Un <code>float</code> (« simple ») est codé sur 32 bits, un <code>double</code> sur 64 bits. Les 32 bits d'un <code>float</code> se découpent ainsi : 1 bit pour le signe, 8 bits pour l'exposant, 23 bits pour la mantisse.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 560 110" width="560" role="img" aria-labelledby="fig-float-titre">
+        <title id="fig-float-titre">Les 32 bits d'un float : 1 bit de signe, 8 bits d'exposant, 23 bits de mantisse</title>
+        <rect class="boite-accent" x="10" y="20" width="40" height="44" rx="4"/>
+        <rect class="boite" x="50" y="20" width="140" height="44" rx="4"/>
+        <rect class="boite" x="190" y="20" width="360" height="44" rx="4"/>
+        <text x="30" y="47" text-anchor="middle" class="mono gras">s</text>
+        <text x="120" y="47" text-anchor="middle" class="mono">exposant e</text>
+        <text x="370" y="47" text-anchor="middle" class="mono">mantisse m</text>
+        <text x="30" y="88" text-anchor="middle" class="t2">1 bit</text>
+        <text x="120" y="88" text-anchor="middle" class="t2">8 bits</text>
+        <text x="370" y="88" text-anchor="middle" class="t2">23 bits</text>
+        <text x="12" y="13" class="t2 mono">31</text>
+        <text x="186" y="13" text-anchor="end" class="t2 mono">23</text>
+        <text x="548" y="13" text-anchor="end" class="t2 mono">0</text>
+      </svg>
+      <figcaption>Disposition d'un <code>float</code> (bit 31 à gauche).</figcaption>
+    </figure>
+
+    <p>La valeur se décode avec la formule des notes, où « 1,mantisse » désigne le nombre binaire formé d'un 1, de la virgule, puis des 23 bits de la mantisse :</p>
+    <div class="encadre">\[ \text{nombre} = (-1)^{s} \times 1{,}m \times 2^{\,e - 127} \]</div>
+    <p><span class="badge ajout">Ajout</span> Les notes écrivent « signe × 1,mantisse × … » : le signe vaut +1 si le bit \(s\) est 0, −1 s'il est 1. Le 1 avant la virgule n'est pas stocké, puisqu'il est toujours là : c'est le <dfn>bit caché</dfn>. Le décalage de 127 permet de coder des exposants négatifs avec un champ sans signe.</p>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Coder −6,5</span> <span class="badge ajout">Ajout</span></p>
+      <ol class="etapes">
+        <li>Signe : le nombre est négatif, donc \(s = 1\).</li>
+        <li>En binaire, \(6{,}5 = 110{,}1_2 = 1{,}101_2 \times 2^{2}\).</li>
+        <li>Exposant stocké : \(e = 2 + 127 = 129 = 1000\,0001_2\).</li>
+        <li>Mantisse : les bits après la virgule, <code>101</code>, complétés par des zéros jusqu'à 23 bits.</li>
+        <li>On assemble : <code>1 10000001 10100000000000000000000</code>, soit <code>C0D00000</code> en hexadécimal, ce que confirme un programme qui affiche les octets du <code>float</code> −6.5f.</li>
+      </ol>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>0,1 n'existe pas en binaire</span> <span class="badge ajout">Ajout</span></p>
+      <p>Comme 1/3 en décimal, 0,1 a une écriture binaire infinie : le <code>float</code> le plus proche vaut 0,1000000015, et en <code>double</code>, <code>0.1 + 0.2 == 0.3</code> est faux (la somme vaut 0,30000000000000004). On ne compare donc jamais deux flottants avec <code>==</code>, mais leur écart : <code>fabs(x - y) &lt; 1e-9</code>.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le double et les valeurs spéciales</span></p>
+      <p>Un <code>double</code> a 1 bit de signe, 11 bits d'exposant (décalage 1023) et 52 bits de mantisse, soit environ 16 chiffres décimaux significatifs contre 7 pour un <code>float</code>. Un exposant tout à 0 ou tout à 1 est réservé : zéro et les très petits nombres d'un côté, l'infini et <code>NaN</code> (<span class="en" lang="en">not a number</span>, résultat de 0.0/0.0) de l'autre.</p>
+    </div>
+
+    <h3>Le BCD</h3>
+    <p>Le <dfn>BCD</dfn> (<span class="en" lang="en">binary coded decimal</span>, décimal codé en binaire) code chaque chiffre décimal sur 4 bits. Ce codage sert à commander des afficheurs 7 segments. <span class="badge ajout">Ajout</span> Par exemple, 59 se code <code>0101 1001</code> : un groupe de 4 bits par chiffre, alors qu'en binaire pur 59 s'écrit <code>0011 1011</code>. Le BCD gaspille de la place (les combinaisons 1010 à 1111 ne servent pas) mais évite toute conversion pour afficher.</p>
+
+    <h3>Les caractères : ASCII, Unicode et UTF-8</h3>
+    <p><span class="badge ajout">Ajout</span> La table ASCII code 128 caractères sur 7 bits : lettres non accentuées, chiffres, ponctuation et caractères de contrôle. C'est trop peu pour le français, et à plus forte raison pour les autres écritures.</p>
+    <p>La norme <dfn>Unicode</dfn>, ou ISO/CEI 10646, recense tous les caractères (les glyphes) inventés par l'humanité et attribue un numéro à chacun. Pour des raisons de compatibilité, elle a repris la table ASCII au début (numéros 0 à 127), puis la table ISO 8859-1, dite Latin-1 (numéros 128 à 255, où figurent é, è, à, ç…).</p>
+    <p>Reste à ranger ces numéros en mémoire. <dfn>UTF-8</dfn> (<span class="en" lang="en">Unicode Transformation Format</span>) est un codage de <strong>longueur variable</strong>. Les notes le décrivent par une image de train : une <em>locomotive</em> seule commence toujours par un 0 ; une locomotive suivie de wagons commence par une série de 1 suivie d'un 0.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Locomotives et wagons</span></p>
+      <p>Le nombre de 1 en tête de la locomotive donne le nombre total d'octets du caractère ; chaque wagon commence par <code>10</code>. Les bits notés <code>x</code> portent le numéro Unicode.</p>
+    </div>
+    <div class="tableau mono compact">
+      <table>
+        <caption>Les quatre formes d'un caractère en UTF-8 (ajout)</caption>
+        <thead><tr><th>Numéros Unicode</th><th>Octets</th><th>Locomotive</th><th>Wagons</th></tr></thead>
+        <tbody>
+          <tr><td>0 à 127 (ASCII)</td><td>1</td><td>0xxxxxxx</td><td>aucun</td></tr>
+          <tr><td>128 à 2 047</td><td>2</td><td>110xxxxx</td><td>10xxxxxx</td></tr>
+          <tr><td>2 048 à 65 535</td><td>3</td><td>1110xxxx</td><td>10xxxxxx ×2</td></tr>
+          <tr><td>65 536 à 1 114 111</td><td>4</td><td>11110xxx</td><td>10xxxxxx ×3</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Coder « é » en UTF-8</span> <span class="badge ajout">Ajout</span></p>
+      <ol class="etapes">
+        <li>« é » porte le numéro U+00E9, soit 233, en binaire <code>1110 1001</code>.</li>
+        <li>233 est entre 128 et 2 047 : il faut deux octets, soit 11 bits utiles. On écrit 233 sur 11 bits : <code>000 1110 1001</code>.</li>
+        <li>Les 5 premiers bits vont dans la locomotive, <code>110 00011</code> ; les 6 derniers dans le wagon, <code>10 101001</code>.</li>
+        <li>Résultat : <code>C3 A9</code>. Un fichier source en UTF-8 contenant <code>"é"</code> donne bien ces deux octets, et <code>strlen("é")</code> vaut 2.</li>
+      </ol>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Pourquoi ce codage est malin</span> <span class="badge ajout">Ajout</span></p>
+      <p>Un texte en ASCII est déjà un texte UTF-8 valide. Et comme un wagon commence toujours par <code>10</code>, on retrouve le début d'un caractère en partant de n'importe quel octet. Le revers, en C : un <code>char</code> est un octet, pas un caractère. Les lettres accentuées occupent plusieurs <code>char</code>, et un programme qui compte les lettres d'un texte français en comptant les octets se trompe.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Exercices <span class="ref">ajout</span></h2>
+    <p>Les notes se terminent par « finir les exos sur la feuille », mais la feuille n'est pas sur le Drive. Les exercices suivants portent sur les mêmes notions ; les solutions sont proposées, pas celles de l'enseignant.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Littéraux</span></p>
+      <p>Que vaut chacune des expressions suivantes : <code>017</code>, <code>0x2A</code>, <code>'B' - 'A'</code>, <code>'5' - '0'</code>, <code>sizeof("C\n")</code> ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>15 (octal : \(8 + 7\)) ; 42 (\(2 \times 16 + 10\)) ; 1 ; 5 ; 3 (<code>'C'</code>, <code>'\n'</code>, qui compte pour un seul caractère, et <code>'\0'</code>).</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Décoder un float</span></p>
+      <p>Quelle valeur représente le <code>float</code> <code>41 20 00 00</code> (en hexadécimal) ?</p>
+      <details class="indice"><summary>Indice</summary><p>Écrire les 32 bits, puis séparer 1, 8 et 23 bits.</p></details>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>En binaire : <code>0 10000010 01000000000000000000000</code>. Signe 0, donc positif ; exposant \(130 - 127 = 3\) ; mantisse \(1{,}01_2 = 1{,}25\). Valeur : \(1{,}25 \times 2^3 = 10\).</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>UTF-8</span></p>
+      <p>Le symbole de l'euro, €, porte le numéro U+20AC. Combien d'octets occupe-t-il en UTF-8, et lesquels ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>0x20AC vaut 8 364, entre 2 048 et 65 535 : trois octets. Sur 16 bits : <code>0010 000010 101100</code>. Locomotive <code>1110 0010</code>, wagons <code>10 000010</code> et <code>10 101100</code> : <code>E2 82 AC</code>.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 4 <span>En majuscules</span></p>
+      <p>Écrire un programme qui recopie son entrée en remplaçant chaque minuscule non accentuée par la majuscule correspondante, sans utiliser <code>toupper</code>.</p>
+      <details class="indice"><summary>Indice</summary><p>Partir de la boucle de recopie et transformer <code>c</code> avant <code>putchar</code> quand il est entre <code>'a'</code> et <code>'z'</code>.</p></details>
+      <details class="solution"><summary>Solution proposée</summary>
+<pre data-fichier="majuscules.c"><code class="language-c">#include &lt;stdio.h&gt;
+
+int main(void)
+{
+    int c;
+    while ((c = getchar()) != EOF) {
+        if (c &gt;= 'a' &amp;&amp; c &lt;= 'z')
+            c = c - 'a' + 'A';
+        putchar(c);
+    }
+    return 0;
+}</code></pre>
+        <p>La version du TD 3 (exercice 5) teste <code>(c = getchar()) + 'A' - 'a' != EOF</code> et écrit <code>putchar(c)</code> dans les deux branches : la boucle ne s'arrête plus au bon moment et rien n'est converti. Il vaut mieux tester <code>EOF</code> seul et convertir dans le corps.</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Le C (Dennis Ritchie, années 1970) est impératif, compilé, statiquement typé ; sa syntaxe a inspiré C++, Java, JavaScript…</li>
+        <li>Une expression a une valeur ; suivie d'un <code>;</code>, elle devient une instruction et sa valeur est perdue. L'affectation est une expression, évaluée de droite à gauche.</li>
+        <li>Un littéral entier qui commence par <code>0</code> est en octal, par <code>0x</code> en hexadécimal.</li>
+        <li>Un caractère est un petit entier (son code ASCII) ; <code>'\n'</code> est un seul caractère. Une chaîne de \(n\) lettres occupe \(n+1\) octets, le dernier étant <code>'\0'</code>.</li>
+        <li><code>#define</code> fait un remplacement textuel avant la compilation : ni point-virgule, et des parenthèses autour des expressions.</li>
+        <li><code>enum</code> nomme des constantes entières, <code>const</code> déclare une variable non modifiable et typée.</li>
+        <li><code>getchar</code> renvoie un <code>int</code>, qui vaut <code>EOF</code> en fin de flux ; la boucle <code>while ((c = getchar()) != EOF)</code> traite toute l'entrée.</li>
+        <li>Un <code>float</code> : 1 bit de signe, 8 d'exposant, 23 de mantisse ; valeur \((-1)^s \times 1{,}m \times 2^{e-127}\). On ne compare pas deux flottants avec <code>==</code>.</li>
+        <li>UTF-8 code chaque caractère Unicode sur 1 à 4 octets : la locomotive annonce le nombre d'octets par ses 1 de tête, chaque wagon commence par <code>10</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Que vaut l'expression <code>x = 5</code>, et que devient cette valeur dans l'instruction <code>x = 5;</code> ?</summary>
+        <div><p>Elle vaut 5. Dans l'instruction, cette valeur est abandonnée : seul compte l'effet de bord, ranger 5 dans <code>x</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi <code>printf("%d", 012)</code> affiche-t-il 10 ?</summary>
+        <div><p>Le zéro de tête fait lire 012 en base 8 : \(1 \times 8 + 2 = 10\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Combien d'octets occupe <code>"Bonjour"</code> en mémoire ?</summary>
+        <div><p>Huit : les sept lettres et le caractère nul final <code>'\0'</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Avec <code>#define N 10;</code>, pourquoi <code>int t[N];</code> ne compile-t-il pas ?</summary>
+        <div><p>Le préprocesseur remplace <code>N</code> par le texte <code>10;</code> : on obtient <code>int t[10;];</code>, qui n'a pas de sens.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi ranger le résultat de <code>getchar()</code> dans un <code>int</code> plutôt que dans un <code>char</code> ?</summary>
+        <div><p>Pour pouvoir distinguer <code>EOF</code> (−1) de tous les caractères possibles : un <code>char</code> ne peut pas représenter les 256 valeurs d'octet plus une 257<sup>e</sup>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que vaut le <code>float</code> dont les bits sont <code>0 01111111 000…0</code> ?</summary>
+        <div><p>Exposant \(127 - 127 = 0\), mantisse \(1{,}0\) : la valeur est \(1\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>En UTF-8, que dit l'octet <code>1110xxxx</code> ?</summary>
+        <div><p>C'est une locomotive suivie de deux wagons : le caractère occupe trois octets.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="index.html"><small>← Accueil</small>Algorithmique 2</a>
+    <a class="suivant" href="cours-02-entrees-sorties-controle.html"><small>Suivant →</small>Entrées-sorties et structures de contrôle</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Algorithmique 2 · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

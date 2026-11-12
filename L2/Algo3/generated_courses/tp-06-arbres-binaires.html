@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="c">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TP 6 · Arbres binaires · Algorithmique 3 L2</title>
+<meta name="description" content="TP 6 d'Algorithmique 3 (L2) : un TDA d'arbre binaire générique en C (noeud_t, ab_t), testé sur des individus, des fractions et des chaînes, puis un jeu de classification des animaux. Sujet, fichiers fournis, commandes pour compiler, lancer les tests et chercher les fuites de mémoire sous Linux et sous Windows (WSL).">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-05-arbres-binaires.html" title="Quiz · Arbres binaires">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/langues/dos.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="index.html">Algorithmique 3</a>
+    <span aria-current="page">TP 6 · Arbres binaires</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Algorithmique 3</span> TP 6 · L2 Informatique</p>
+    <h1>Arbres binaires</h1>
+    <p class="chapeau">On écrit un type abstrait d'arbre binaire générique, capable de stocker des objets d'un type inconnu à l'avance (individus, fractions, chaînes), puis on s'en sert pour un petit jeu qui devine un animal en posant des questions, et qui apprend de ses erreurs. Cette page reprend le sujet et donne les commandes pour compiler, lancer les programmes de test fournis et chercher les fuites de mémoire.</p>
+    <dl class="meta">
+      <div><dt>Sujet</dt><dd><a href="../TP/TP6/sujet_TP_AB.pdf">sujet_TP_AB.pdf</a> · 5 pages</dd></div>
+      <div><dt>Fichiers</dt><dd><a href="../TP/TP6/TP6_AB/Exercice/">TP/TP6/TP6_AB/Exercice/</a> : modules, programmes de test, <code>Makefile</code> et <code>Fichiers/</code> fournis ; <code>run.sh</code> et <code>run.bat</code> (ajoutés, dans <code>TP/TP6/</code>)</dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Écrire les primitives d'un nœud et d'un arbre binaire génériques, à pointeurs <code>void *</code> et fonctions passées en paramètre (<a href="cours-05-arbres-binaires.html#specifications-et-primitives">cours 5</a>).</li>
+        <li>Vérifier l'absence de fuite de mémoire avec valgrind.</li>
+        <li>Parcourir et modifier un arbre de décision : le jeu des animaux.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Pointeurs génériques et pointeurs de fonctions (<a href="cours-01-pointeurs.html">cours 1</a>).</li>
+        <li>Arbres binaires, parcours, mise en œuvre par pointeurs (<a href="cours-05-arbres-binaires.html">cours 5</a>).</li>
+      </ul>
+    </div>
+  </div>
+
+  <section>
+    <h2>Le sujet <span class="ref">p. 1–5</span></h2>
+    <p>Le TDA <code>ab_t</code> stocke des objets homogènes dont on ne connaît pas le type a priori. Pour le tester, les trois types du TP précédent sont fournis : <code>individu_t</code>, <code>fraction_t</code> et <code>string_t</code> (programmes <code>test_individu</code>, <code>test_fraction</code>, <code>test_mystring</code>) ; on peut en créer d'autres. Le but est de faire un arbre de chacun de ces types avec le même TDA. Les modules de liste du TP précédent sont aussi présents.</p>
+    <ol class="etapes">
+      <li><strong>Nœud</strong> (<code>noeud.[ch]</code>). Compléter les primitives de <code>noeud_t</code>, sauf le chargement et la sauvegarde. Tester avec <code>test_noeud</code>, et vérifier qu'il n'y a pas de fuite de mémoire.</li>
+      <li><strong>Arbre binaire</strong> (<code>ab.[ch]</code>). Compléter les primitives de <code>ab_t</code>, sauf le chargement et la sauvegarde. Les programmes <code>test_ab_fractions</code>, <code>test_ab_individus</code> et <code>test_ab_mystrings</code> construisent des arbres complets de \(2^N - 1\) objets ; ils prennent \(N\) et l'ordre de parcours de l'affichage (<code>PRE</code>, <code>SYM</code> ou <code>POST</code>). Vérifier qu'aucun des trois ne fuit.</li>
+      <li><strong>Classification des animaux</strong> (<code>animaux.c</code>, <code>ab_animaux.[ch]</code>). Le programme charge un <code>ab_t</code> de <code>string_t</code> : les nœuds internes sont des questions, les feuilles des animaux ; un « oui » mène au fils gauche, un « non » au fils droit.
+        <ol>
+          <li>Écrire <code>ab_animaux_afficher</code>, qui affiche l'arbre en mode terminal.</li>
+          <li>Écrire <code>ab_animaux_reconnaitre</code>, qui identifie un animal en posant les questions.</li>
+          <li>L'enrichir quand la réponse n'a pas été trouvée : animal incorrect (demander le bon animal et une question qui les distingue, puis réorganiser l'arbre), question sans « non » ou sans « oui » (demander l'animal qui manque).</li>
+        </ol>
+      </li>
+    </ol>
+    <p>Le module <code>ab_fonctions.[ch]</code>, testé par <code>test_ab_fonctions</code>, contient en plus <code>ab_ancetres_afficher</code>, l'exemple des ancêtres d'un nœud vu au <a href="cours-05-arbres-binaires.html#exemple-afficher-les-ancetres">cours 5</a>.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Fichiers de données</caption>
+        <thead><tr><th>Fichier</th><th>Contenu</th></tr></thead>
+        <tbody>
+          <tr><td><code>Exercice/Fichiers/classif_animaux.txt</code></td><td>l'arbre de classification du sujet, un nœud par ligne</td></tr>
+          <tr><td><code>TP6/classif_animaux_test.txt</code></td><td>la même classification avec des fils manquants, pour les cas « question sans oui » et « sans non »</td></tr>
+          <tr><td><code>TP6/classif_test.txt</code></td><td>un petit arbre de questions Q1, Q2…</td></tr>
+          <tr><td><code>Exercice/Fichiers/*.fich</code></td><td>les sauvegardes produites par les programmes de test</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><span class="badge a-verifier">À vérifier</span> <code>classif_animaux.txt</code> est encodé en Latin-1 : dans un terminal en UTF-8 (Linux récent, WSL), « vertébré » s'affiche mal. Ce n'est pas une erreur du programme.</p>
+  </section>
+
+  <section>
+    <h2>Compiler et lancer</h2>
+    <p>Le sujet dit de compiler par <code>make -f Makefile all</code>. Le <code>Makefile.compilation</code> fourni vise macOS par défaut (<code>ARCH=apple</code>) : sous Linux, l'édition de liens échoue alors sur <code>powf</code>, faute de la bibliothèque mathématique. Il faut <code>make ARCH=linux all</code>, ce que fait <code>run.sh</code> sans toucher aux fichiers de l'enseignant. Tant que les primitives ne sont pas écrites, tout compile, mais les tests échouent (<code>--&gt;KO</code>).</p>
+    <h3>À la fac, sous Linux</h3>
+<pre class="terminal"><code>$ cd TP/TP6
+$ ./run.sh                               # compile tout
+$ ./run.sh tests                         # cible « tests » du Makefile : types, listes, noeud_t
+$ ./run.sh test_noeud
+$ ./run.sh test_ab_fractions 3 SYM       # arbre de 2^3 - 1 = 7 fractions, affichage infixe
+$ ./run.sh fuites test_ab_individus 3 PRE
+$ ./run.sh animaux                       # puis donner Fichiers/classif_animaux.txt</code></pre>
+    <p><code>./run.sh fuites …</code> lance le programme sous <code>valgrind --leak-check=full</code> : le résumé final doit dire <code>All heap blocks were freed</code>. <code>./run.sh clean</code> supprime les fichiers compilés. On peut aussi travailler directement dans <code>TP6_AB/Exercice/</code> avec <code>make ARCH=linux all</code>.</p>
+    <h3>Chez soi, sous Windows</h3>
+    <p><code>run.bat</code> lance le même script dans WSL (Ubuntu), après avoir monté le lecteur de Google Drive. Une seule fois, installer gcc, make et valgrind dans WSL :</p>
+<pre class="terminal"><code>$ sudo apt install build-essential valgrind</code></pre>
+    <p>Puis, dans une invite de commandes ouverte dans <code>TP\TP6</code> :</p>
+<pre><code class="language-dos">run.bat fuites test_noeud</code></pre>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'environnement</p>
+      <ul>
+        <li>On écrit dans <code>noeud.c</code>, <code>ab.c</code> et <code>ab_animaux.c</code> (passages <code>A FAIRE</code>) ; les programmes de test sont ceux de l'enseignant.</li>
+        <li>Sous Linux, compiler avec <code>ARCH=linux</code> : c'est ce que fait <code>run.sh</code>.</li>
+        <li>Chaque test se relance sous valgrind avec <code>./run.sh fuites &lt;programme&gt;</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi <code>ab_t</code> reçoit-il des fonctions en paramètre ?</summary>
+        <div><p>Il ne connaît pas le type des objets qu'il stocke (des <code>void *</code>) : pour les afficher, les détruire ou les sauvegarder, il appelle les fonctions propres à ce type.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Combien d'objets compte l'arbre construit par <code>test_ab_fractions 4 SYM</code> ?</summary>
+        <div><p>\(2^4 - 1 = 15\) : un arbre complet de hauteur 4.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Dans le jeu des animaux, où mène la réponse « non » ?</summary>
+        <div><p>Au fils droit ; « oui » mène au fils gauche.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Comment savoir qu'un programme de test ne fuit pas ?</summary>
+        <div><p><code>./run.sh fuites &lt;programme&gt; …</code> : valgrind doit finir par <code>All heap blocks were freed</code>, sans octet « definitely lost ».</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="tp-05-loup-bergerie.html"><small>← Précédent</small>TP 5 · Le loup et la bergerie</a>
+    <a class="suivant" href="index.html"><small>Suivant →</small>Accueil d'Algorithmique 3</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Algorithmique 3 · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

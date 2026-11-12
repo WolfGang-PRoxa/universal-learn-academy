@@ -1,0 +1,159 @@
+
+# ============================================================
+# Programme de démonstration
+# ============================================================
+
+pikachu = Sportif.new("Pikachu", 18, 0.85, 2, 120)
+salameche = Casanier.new("Salameche", 12, 0.65, 2, 8)
+rondoudou = Marin.new("Rondoudou", 45, 2)
+bulbizarre = Croisiere.new("Bulbizarre", 15, 3)
+
+maCollec = CollectionPokemons.new
+
+maCollec
+  .ajouter(pikachu)
+  .ajouter(salameche)
+  .ajouter(rondoudou)
+  .ajouter(bulbizarre)
+
+puts "\n=== Affichage de la collection ==="
+puts maCollec
+
+puts "\n=== Comparaison par vitesse ==="
+puts "Pikachu > Salameche : #{pikachu > salameche}"
+puts "Rondoudou > Bulbizarre : #{rondoudou > bulbizarre}"
+
+puts "\n=== Moyenne des vitesses ==="
+puts "#{maCollec.moyenne.round(2)} km/h"
+
+# affichage des deux tris sous le bon titre.
+puts "\n=== Collection triée par vitesse ==="
+puts maCollec.sort.collect(&:to_s).join("\n")
+
+puts "\n=== Collection triée par poids ==="
+puts maCollec.sort { |a, b| a.poids <=> b.poids }
+             .collect(&:to_s)
+             .join("\n")
+
+
+# ============================================================
+#  démonstration de la nouvelle fonctionnalité
+# ============================================================
+
+puts "\n=== Avant toute séance de détente ==="
+
+puts "Salameche : #{salameche.nombre_seances} séance(s), #{salameche.duree_totale_detente} minute(s)"
+
+puts "Bulbizarre : #{bulbizarre.nombre_seances} séance(s), #{bulbizarre.duree_totale_detente} minute(s)"
+
+
+puts "\n=== Enregistrement de séances ==="
+
+salameche.enregistrer_detente(30)
+salameche.enregistrer_detente(45)
+
+bulbizarre.enregistrer_detente(20)
+
+puts "Salameche : #{salameche.nombre_seances} séance(s), #{salameche.duree_totale_detente} minute(s)"
+# => Salameche : 2 séance(s), 75 minute(s)
+
+puts "Bulbizarre : #{bulbizarre.nombre_seances} séance(s), #{bulbizarre.duree_totale_detente} minute(s)"
+# => Bulbizarre : 1 séance(s), 20 minute(s)
+
+
+autre_casanier = Casanier.new("Ronflex", 100, 2.0, 2, 10)
+
+puts "\n=== Un autre Casanier n'a encore aucune séance ==="
+
+puts "Ronflex : #{autre_casanier.nombre_seances} séance(s), #{autre_casanier.duree_totale_detente} minute(s)"
+# => Ronflex : 0 séance(s), 0 minute(s)
+
+
+# Vérifie que les autres catégories ne proposent pas cette fonctionnalité.
+puts "\n=== Disponibilité de la fonctionnalité ==="
+
+maCollec.each do |pokemon|
+  puts "#{pokemon.class} : " \
+       "#{pokemon.respond_to?(:enregistrer_detente)}"
+end
+
+# Sportif : false
+# Casanier : true
+# Marin : false
+# Croisiere : true
+
+
+# Tests automatiques simples.
+# On déclenche un RunTime error si les résultats ne sont pas ceux Attendus
+# première ébauche de tests unitaires
+raise "Compteur incorrect" unless salameche.nombre_seances == 2
+raise "Durée incorrecte" unless salameche.duree_totale_detente == 75
+
+raise "États non indépendants" unless bulbizarre.nombre_seances == 1
+raise "États non indépendants" unless autre_casanier.nombre_seances == 0
+
+raise "Sportif ne doit pas avoir cette capacité" if pikachu.respond_to?(:enregistrer_detente)
+raise "Marin ne doit pas avoir cette capacité" if rondoudou.respond_to?(:enregistrer_detente)
+
+puts "\nTous les tests de détente ont réussi."
+
+
+# Exemple de rejet d'une durée invalide.
+begin
+  salameche.enregistrer_detente(-10)
+rescue ArgumentError => e
+  puts "\nErreur attendue : #{e.message}"
+end
+
+
+
+#############################################################################################
+#                                  RESULTAT DE L'ÉXÉCUTION                                  #
+#############################################################################################
+=begin
+=== Affichage de la collection ===
+Je suis le pokémon Sportif 'Pikachu' mon poids est de 18kg, ma vitesse est de 5.1 km/h j'ai 2 pattes, ma taille est de 0.85m, ma fréquence cardiaque est de 120 pulsations à la minute.
+Je suis le pokémon Casanier 'Salameche' mon poids est de 12kg, ma vitesse est de 3.9 km/h j'ai 2 pattes, ma taille est de 0.65m je regarde la télé 8h par jour
+Je suis le pokémon Marin 'Rondoudou' mon poids est de 45kg, ma vitesse est de 3.6 km/h j'ai 2 nageoires.
+Je suis le pokémon Croisiere 'Bulbizarre' mon poids est de 15kg, ma vitesse est de 0.9 km/h j'ai 3 nageoires.
+
+=== Comparaison par vitesse ===
+Pikachu > Salameche : true
+Rondoudou > Bulbizarre : true
+
+=== Moyenne des vitesses ===
+3.38 km/h
+
+=== Collection triée par vitesse ===
+Je suis le pokémon Croisiere 'Bulbizarre' mon poids est de 15kg, ma vitesse est de 0.9 km/h j'ai 3 nageoires.
+Je suis le pokémon Marin 'Rondoudou' mon poids est de 45kg, ma vitesse est de 3.6 km/h j'ai 2 nageoires.
+Je suis le pokémon Casanier 'Salameche' mon poids est de 12kg, ma vitesse est de 3.9 km/h j'ai 2 pattes, ma taille est de 0.65m je regarde la télé 8h par jour
+Je suis le pokémon Sportif 'Pikachu' mon poids est de 18kg, ma vitesse est de 5.1 km/h j'ai 2 pattes, ma taille est de 0.85m, ma fréquence cardiaque est de 120 pulsations à la minute.
+
+=== Collection triée par poids ===
+Je suis le pokémon Casanier 'Salameche' mon poids est de 12kg, ma vitesse est de 3.9 km/h j'ai 2 pattes, ma taille est de 0.65m je regarde la télé 8h par jour
+Je suis le pokémon Croisiere 'Bulbizarre' mon poids est de 15kg, ma vitesse est de 0.9 km/h j'ai 3 nageoires.
+Je suis le pokémon Sportif 'Pikachu' mon poids est de 18kg, ma vitesse est de 5.1 km/h j'ai 2 pattes, ma taille est de 0.85m, ma fréquence cardiaque est de 120 pulsations à la minute.
+Je suis le pokémon Marin 'Rondoudou' mon poids est de 45kg, ma vitesse est de 3.6 km/h j'ai 2 nageoires.
+
+=== Avant toute séance de détente ===
+Salameche : 0 séance(s), 0 minute(s)
+Bulbizarre : 0 séance(s), 0 minute(s)
+
+=== Enregistrement de séances ===
+Salameche : 2 séance(s), 75 minute(s)
+Bulbizarre : 1 séance(s), 20 minute(s)
+
+=== Un autre Casanier n'a encore aucune séance ===
+Ronflex : 0 séance(s), 0 minute(s)
+
+=== Disponibilité de la fonctionnalité ===
+Sportif : false
+Casanier : true
+Marin : false
+Croisiere : true
+
+Tous les tests de détente ont réussi.
+
+Erreur attendue : La durée d'une séance doit être un nombre strictement positif.
+=end

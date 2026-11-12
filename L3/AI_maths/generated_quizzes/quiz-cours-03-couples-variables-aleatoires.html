@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Couples de variables aléatoires · Mathématiques et IA L3</title>
+<meta name="description" content="Quiz interactif sur le cours 3 de Mathématiques et IA (L3) : densité, formule de Bayes, loi jointe, lois marginales et conditionnelles, indépendance, espérance, variance et covariance.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="../generated_courses/index.html">Mathématiques et IA</a>
+    <span aria-current="page">Quiz · Couples de variables aléatoires</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Mathématiques et IA</span> Quiz · L3 S5</p>
+    <h1>Quiz : couples de variables aléatoires</h1>
+    <p class="chapeau">Le cours 3 sur des tableaux et des densités à deux variables : formule de Bayes et probabilités totales, loi jointe, marginales, conditionnelles comme vues en coupe, indépendance, espérance généralisée, variance et covariance. Deux fonctions Python, les marginales et la covariance d'un tableau, sont exécutées et corrigées automatiquement ; numpy y est permis s'il est installé.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-03-couples-variables-aleatoires.html">Cours 3 · Couples de variables aléatoires</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-01">1er nov. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Mathématiques et IA · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "maths-cours-03-couples",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 3 · Couples de variables aléatoires",
+      "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html"
+    }
+  ],
+  "questions": [
+    {
+      "type": "vrai-faux",
+      "theme": "Variables aléatoires",
+      "difficulte": 1,
+      "enonce": "<p>La densité de probabilité \\(f\\) d'une variable aléatoire continue ne peut pas dépasser 1.</p>",
+      "reponse": false,
+      "explication": "<p>Faux : \\(f(x)\\) n'est pas une probabilité. Seule l'aire sous la courbe en est une, \\(P(a \\le X \\le b) = \\int_a^b f(x)\\,dx\\), et l'intégrale totale vaut 1. Une loi uniforme sur \\([0 ; 0{,}5]\\) a une densité égale à 2.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Le cas continu",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#le-cas-continu"
+      },
+      "id": "q01"
+    },
+    {
+      "type": "numerique",
+      "theme": "Variables aléatoires",
+      "difficulte": 1,
+      "enonce": "<p>Le couple \\((X, Y)\\) suit une loi uniforme sur le rectangle \\([0, 2] \\times [0, 3]\\) : sa densité vaut une constante \\(a\\) sur le rectangle, et 0 ailleurs. Que vaut \\(a\\) ? Arrondir au millième.</p>",
+      "reponse": 0.167,
+      "tolerance": 0.001,
+      "explication": "<p>L'intégrale de la densité vaut 1 : \\(\\int_0^2\\int_0^3 a\\,dy\\,dx = 6a = 1\\), donc \\(a = \\frac16 \\approx 0{,}167\\). La constante est l'inverse de l'aire du domaine.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Probabilité jointe",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#probabilite-jointe"
+      },
+      "id": "q02"
+    },
+    {
+      "type": "numerique",
+      "theme": "Conditionnelles, Bayes, indépendance",
+      "difficulte": 3,
+      "enonce": "<p>Une maladie touche 1 % de la population. Un test la détecte chez 90 % des malades, mais il est aussi positif chez 5 % des personnes saines. Une personne a un test positif : quelle est la probabilité qu'elle soit malade ? Arrondir au millième.</p>",
+      "reponse": 0.154,
+      "tolerance": 0.002,
+      "indices": [
+        "<p>On cherche \\(P(M \\mid T)\\), alors qu'on connaît \\(P(T \\mid M)\\) : c'est la formule de Bayes.</p>",
+        "<p>Le dénominateur \\(P(T)\\) se calcule par la formule des probabilités totales, avec le système complet \\(\\{M, \\bar M\\}\\).</p>"
+      ],
+      "explication": "<p>\\(P(T) = P(T \\mid M)P(M) + P(T \\mid \\bar M)P(\\bar M) = 0{,}9 \\times 0{,}01 + 0{,}05 \\times 0{,}99 = 0{,}0585\\). Donc \\(P(M \\mid T) = \\frac{0{,}009}{0{,}0585} \\approx 0{,}154\\). Malgré un test « fiable à 90 % », la probabilité reste faible, car la maladie est rare : la probabilité a priori pèse lourd. Confondre \\(P(M \\mid T)\\) et \\(P(T \\mid M)\\) donnerait 0,9.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Probabilités conditionnelles et indépendance",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#probabilites-conditionnelles-et-independance"
+      },
+      "id": "q03"
+    },
+    {
+      "type": "association",
+      "theme": "Conditionnelles, Bayes, indépendance",
+      "difficulte": 2,
+      "enonce": "<p>Dans la formule de Bayes écrite pour la classification, \\(P(y = c \\mid x) = \\dfrac{P(x \\mid y = c)\\,P(y = c)}{P(x)}\\), où \\(c\\) est une classe et \\(x\\) les attributs, associer chaque terme à son nom.</p>",
+      "paires": [
+        [
+          "\\(P(x \\mid y = c)\\)",
+          "La vraisemblance"
+        ],
+        [
+          "\\(P(y = c)\\)",
+          "La probabilité a priori"
+        ],
+        [
+          "\\(P(y = c \\mid x)\\)",
+          "La probabilité a posteriori"
+        ],
+        [
+          "\\(P(x)\\)",
+          "L'évidence"
+        ]
+      ],
+      "intrus": [
+        "La probabilité marginale de la classe sachant les attributs"
+      ],
+      "explication": "<p>A priori : ce qu'on sait de la classe avant de voir la donnée. Vraisemblance : la probabilité d'observer ces attributs si la classe est \\(c\\). A posteriori : la probabilité de la classe une fois la donnée vue, celle qu'on cherche. L'évidence \\(P(x)\\) normalise, et ne dépend pas de la classe. Ce vocabulaire est celui du classifieur bayésien naïf et de l'examen de 2023.</p>",
+      "revoir": {
+        "texte": "Cours 3 · La formule de Bayes",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#la-formule-de-bayes"
+      },
+      "id": "q04"
+    },
+    {
+      "type": "qcm-multi",
+      "theme": "Conditionnelles, Bayes, indépendance",
+      "difficulte": 2,
+      "enonce": "<p>Cocher les affirmations <strong>vraies</strong> pour deux variables aléatoires \\(X\\) et \\(Y\\).</p>",
+      "choix": [
+        "Si \\(X\\) et \\(Y\\) sont indépendantes, \\(\\operatorname{Cov}(X, Y) = 0\\)",
+        "Le coefficient de corrélation \\(\\rho(X, Y)\\) est toujours compris entre −1 et 1",
+        "Si \\(\\operatorname{Cov}(X, Y) = 0\\), \\(X\\) et \\(Y\\) sont indépendantes",
+        "\\(V(X + Y) = V(X) + V(Y)\\) pour toutes variables \\(X\\) et \\(Y\\)",
+        "Pour des variables indépendantes, \\(P(x, y) = P(x)\\,P(y)\\) pour tout couple \\((x, y)\\)"
+      ],
+      "reponses": [
+        0,
+        1,
+        4
+      ],
+      "explication": "<p>L'indépendance entraîne une covariance nulle, mais pas l'inverse : avec \\(X\\) uniforme sur \\(\\{-1, 0, 1\\}\\) et \\(Y = X^2\\), la covariance est nulle alors que \\(Y\\) dépend entièrement de \\(X\\). En général, \\(V(X + Y) = V(X) + 2\\operatorname{Cov}(X, Y) + V(Y)\\) : le terme de covariance ne disparaît que si elle est nulle.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Covariance et corrélation",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#covariance-et-correlation"
+      },
+      "id": "q05"
+    },
+    {
+      "type": "numerique",
+      "theme": "Espérance et covariance",
+      "difficulte": 2,
+      "enonce": "<p>On sait que \\(V(X) = 1\\), \\(V(Y) = 4\\) et \\(\\operatorname{Cov}(X, Y) = 0{,}5\\). Calculer \\(V(2X - Y)\\).</p>",
+      "reponse": 6,
+      "tolerance": 0.001,
+      "indices": [
+        "<p>\\(V(aX + bY) = a^2 V(X) + 2ab\\operatorname{Cov}(X, Y) + b^2 V(Y)\\), ici avec \\(b = -1\\).</p>"
+      ],
+      "explication": "<p>\\(V(2X - Y) = 4 \\times 1 + 2 \\times 2 \\times (-1) \\times 0{,}5 + 1 \\times 4 = 4 - 2 + 4 = 6\\). Les erreurs fréquentes : oublier le carré de \\(a\\) (on trouverait 4), ou le signe du terme croisé (on trouverait 10).</p>",
+      "revoir": {
+        "texte": "Cours 3 · Covariance et corrélation",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#covariance-et-correlation"
+      },
+      "id": "q06"
+    },
+    {
+      "type": "numerique",
+      "theme": "Espérance et covariance",
+      "difficulte": 1,
+      "enonce": "<p>On sait que \\(\\operatorname{Cov}(X, Y) = 1{,}2\\), \\(V(X) = 4\\) et \\(V(Y) = 1\\). Calculer le coefficient de corrélation \\(\\rho(X, Y)\\).</p>",
+      "reponse": 0.6,
+      "tolerance": 0.001,
+      "explication": "<p>\\(\\rho = \\frac{\\operatorname{Cov}(X, Y)}{\\sqrt{V(X)\\,V(Y)}} = \\frac{1{,}2}{\\sqrt{4}} = 0{,}6\\). On divise par le produit des écarts-types, pas des variances : \\(\\frac{1{,}2}{4} = 0{,}3\\) serait faux.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Covariance et corrélation",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#covariance-et-correlation"
+      },
+      "id": "q07"
+    },
+    {
+      "type": "trous",
+      "theme": "Loi jointe et marginales",
+      "difficulte": 1,
+      "enonce": "<p>Le couple \\((X, Y)\\) a la loi suivante.</p><table><caption>Loi du couple \\((X, Y)\\)</caption><thead><tr><th>\\(X\\) ; \\(Y\\)</th><th>0</th><th>1</th><th>2</th></tr></thead><tbody><tr><th>0</th><td>0,10</td><td>0,20</td><td>0,10</td></tr><tr><th>1</th><td>0,30</td><td>0,05</td><td>0,25</td></tr></tbody></table><p>Compléter les lois marginales.</p>",
+      "texte": "P(X = 0) = {{0}}, P(X = 1) = {{1}} ; P(Y = 0) = {{2}}, P(Y = 1) = {{3}}, P(Y = 2) = {{4}}.",
+      "trous": [
+        {
+          "reponses": [
+            "0,4",
+            "0,40",
+            "0.4",
+            "0.40"
+          ]
+        },
+        {
+          "reponses": [
+            "0,6",
+            "0,60",
+            "0.6",
+            "0.60"
+          ]
+        },
+        {
+          "reponses": [
+            "0,4",
+            "0,40",
+            "0.4",
+            "0.40"
+          ]
+        },
+        {
+          "reponses": [
+            "0,25",
+            "0.25"
+          ]
+        },
+        {
+          "reponses": [
+            "0,35",
+            "0.35"
+          ]
+        }
+      ],
+      "indices": [
+        "<p>La marginale de \\(X\\) s'obtient en sommant chaque ligne, celle de \\(Y\\) en sommant chaque colonne.</p>"
+      ],
+      "explication": "<p>\\(P(X = x) = \\sum_y P(x, y)\\) : les lignes donnent 0,40 et 0,60, les colonnes 0,40, 0,25 et 0,35. Chaque marginale a pour somme 1. Ces totaux s'écrivent dans les marges du tableau, d'où le nom.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Lois marginales",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#lois-marginales"
+      },
+      "id": "q08"
+    },
+    {
+      "type": "numerique",
+      "theme": "Lois conditionnelles",
+      "difficulte": 2,
+      "enonce": "<p>Avec la même loi :</p><table><caption>Loi du couple \\((X, Y)\\)</caption><thead><tr><th>\\(X\\) ; \\(Y\\)</th><th>0</th><th>1</th><th>2</th></tr></thead><tbody><tr><th>0</th><td>0,10</td><td>0,20</td><td>0,10</td></tr><tr><th>1</th><td>0,30</td><td>0,05</td><td>0,25</td></tr></tbody></table><p>Calculer \\(P(X = 1 \\mid Y = 0)\\).</p>",
+      "reponse": 0.75,
+      "tolerance": 0.001,
+      "indices": [
+        "<p>\\(P(x \\mid y) = \\frac{P(x, y)}{P(y)}\\) : on prend la colonne \\(Y = 0\\) et on la normalise.</p>"
+      ],
+      "explication": "<p>\\(P(X = 1 \\mid Y = 0) = \\frac{P(1, 0)}{P(Y = 0)} = \\frac{0{,}30}{0{,}40} = 0{,}75\\). La colonne \\(Y = 0\\), divisée par son total, donne la loi conditionnelle \\((0{,}25 ; 0{,}75)\\). Répondre 0,30 confond la probabilité jointe et la conditionnelle.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Lois conditionnelles et formule de Bayes",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#lois-conditionnelles-et-formule-de-bayes"
+      },
+      "id": "q09"
+    },
+    {
+      "type": "qcm",
+      "theme": "Loi jointe et marginales",
+      "difficulte": 2,
+      "enonce": "<p>Avec la même loi :</p><table><caption>Loi du couple \\((X, Y)\\)</caption><thead><tr><th>\\(X\\) ; \\(Y\\)</th><th>0</th><th>1</th><th>2</th></tr></thead><tbody><tr><th>0</th><td>0,10</td><td>0,20</td><td>0,10</td></tr><tr><th>1</th><td>0,30</td><td>0,05</td><td>0,25</td></tr></tbody></table><p>\\(X\\) et \\(Y\\) sont-elles indépendantes ?</p>",
+      "choix": [
+        "Non : \\(P(X = 0, Y = 0) = 0{,}10\\), alors que \\(P(X = 0)\\,P(Y = 0) = 0{,}16\\)",
+        "Oui : chaque marginale a pour somme 1",
+        "Oui : aucune probabilité jointe n'est nulle",
+        "On ne peut pas le savoir sans la covariance"
+      ],
+      "reponse": 0,
+      "explication": "<p>L'indépendance exige \\(P(x, y) = P(x)\\,P(y)\\) pour <em>tous</em> les couples ; un seul couple qui échoue suffit à la réfuter. Ici \\(0{,}10 \\ne 0{,}40 \\times 0{,}40\\). La covariance ne trancherait pas dans le sens de l'indépendance : nulle, elle ne prouve rien.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Indépendance de deux variables",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#independance-de-deux-variables"
+      },
+      "id": "q10"
+    },
+    {
+      "type": "numerique",
+      "theme": "Espérance et covariance",
+      "difficulte": 3,
+      "enonce": "<p>Avec la même loi :</p><table><caption>Loi du couple \\((X, Y)\\)</caption><thead><tr><th>\\(X\\) ; \\(Y\\)</th><th>0</th><th>1</th><th>2</th></tr></thead><tbody><tr><th>0</th><td>0,10</td><td>0,20</td><td>0,10</td></tr><tr><th>1</th><td>0,30</td><td>0,05</td><td>0,25</td></tr></tbody></table><p>Calculer \\(\\operatorname{Cov}(X, Y)\\).</p>",
+      "reponse": -0.02,
+      "tolerance": 0.001,
+      "indices": [
+        "<p>\\(\\operatorname{Cov}(X, Y) = E(XY) - E(X)\\,E(Y)\\).</p>",
+        "<p>Dans \\(E(XY) = \\sum x\\,y\\,P(x, y)\\), seuls les couples où \\(x\\) et \\(y\\) sont non nuls comptent.</p>"
+      ],
+      "explication": "<p>\\(E(X) = 0{,}6\\), \\(E(Y) = 0{,}25 + 2 \\times 0{,}35 = 0{,}95\\), \\(E(XY) = 1 \\times 1 \\times 0{,}05 + 1 \\times 2 \\times 0{,}25 = 0{,}55\\). Donc \\(\\operatorname{Cov} = 0{,}55 - 0{,}6 \\times 0{,}95 = -0{,}02\\). Elle est faible, mais les variables ne sont pas indépendantes pour autant : la covariance ne mesure que le lien linéaire.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Covariance et corrélation",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#covariance-et-correlation"
+      },
+      "id": "q11"
+    },
+    {
+      "type": "numerique",
+      "theme": "Lois conditionnelles",
+      "difficulte": 2,
+      "enonce": "<p>Le couple \\((X, Y)\\) a la loi suivante, en cinquantièmes (c'est le tableau de la diapo 25).</p><table><thead><tr><th>\\(X\\) ; \\(Y\\)</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead><tbody><tr><th>1</th><td>2</td><td>0</td><td>4</td><td>1</td><td>8</td><td>0</td></tr><tr><th>2</th><td>0</td><td>1</td><td>2</td><td>5</td><td>0</td><td>1</td></tr><tr><th>3</th><td>3</td><td>2</td><td>4</td><td>0</td><td>4</td><td>3</td></tr><tr><th>4</th><td>1</td><td>3</td><td>0</td><td>2</td><td>1</td><td>3</td></tr></tbody></table><p>Calculer \\(P(X = 3 \\mid Y = 5)\\). Arrondir au millième.</p>",
+      "reponse": 0.308,
+      "tolerance": 0.002,
+      "explication": "<p>La colonne \\(Y = 5\\) contient 8, 0, 4 et 1 cinquantièmes, soit \\(P(Y = 5) = \\frac{13}{50}\\). Donc \\(P(X = 3 \\mid Y = 5) = \\frac{4/50}{13/50} = \\frac{4}{13} \\approx 0{,}308\\). Les cinquantièmes se simplifient : il suffit de normaliser la colonne.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Lois conditionnelles et formule de Bayes",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#lois-conditionnelles-et-formule-de-bayes"
+      },
+      "id": "q12"
+    },
+    {
+      "type": "ordre",
+      "theme": "Lois conditionnelles",
+      "difficulte": 1,
+      "enonce": "<p>Remettre dans l'ordre les étapes du calcul de la loi conditionnelle \\(P(X \\mid Y = y_0)\\) à partir du tableau de la loi jointe.</p>",
+      "elements": [
+        "Prendre la colonne du tableau où \\(Y = y_0\\)",
+        "Faire la somme de cette colonne : c'est \\(P(Y = y_0)\\)",
+        "Diviser chaque case de la colonne par cette somme",
+        "Vérifier que les valeurs obtenues ont pour somme 1"
+      ],
+      "explication": "<p>Une loi conditionnelle est une vue en coupe de la loi jointe, normalisée pour que son total vaille 1 : \\(P(x \\mid y_0) = \\frac{P(x, y_0)}{P(y_0)}\\), où \\(P(y_0)\\) est la marginale, la somme de la coupe.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Lois conditionnelles et formule de Bayes",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#lois-conditionnelles-et-formule-de-bayes"
+      },
+      "id": "q13"
+    },
+    {
+      "type": "qcm",
+      "theme": "Loi jointe et marginales",
+      "difficulte": 2,
+      "enonce": "<p>La densité du couple \\((X, Y)\\) est \\(f(x, y) = x + y\\) sur le carré \\([0, 1] \\times [0, 1]\\), et 0 ailleurs. Quelle est la densité marginale de \\(X\\) sur \\([0, 1]\\) ?</p>",
+      "choix": [
+        "\\(f_X(x) = x + \\frac12\\)",
+        "\\(f_X(x) = x\\)",
+        "\\(f_X(x) = x + y\\)",
+        "\\(f_X(x) = \\frac{x}{2} + 1\\)"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>\\(f_X(x) = \\int f(x, y)\\,dy\\) : on intègre par rapport à \\(y\\), sur \\([0, 1]\\).</p>"
+      ],
+      "explication": "<p>\\(f_X(x) = \\int_0^1 (x + y)\\,dy = x + \\frac12\\). Une marginale ne dépend plus de \\(y\\) : la troisième réponse ne peut pas convenir. On vérifie que c'est une densité : \\(\\int_0^1 \\left(x + \\frac12\\right) dx = \\frac12 + \\frac12 = 1\\).</p>",
+      "revoir": {
+        "texte": "Cours 3 · Lois marginales",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#lois-marginales"
+      },
+      "id": "q14"
+    },
+    {
+      "type": "numerique",
+      "theme": "Espérance et covariance",
+      "difficulte": 3,
+      "enonce": "<p>Avec la même densité, \\(f(x, y) = x + y\\) sur \\([0, 1]^2\\), calculer \\(E[XY]\\). Arrondir au millième.</p>",
+      "reponse": 0.333,
+      "tolerance": 0.002,
+      "indices": [
+        "<p>\\(E[h(X, Y)] = \\iint h(x, y)\\,f(x, y)\\,dx\\,dy\\), avec \\(h(x, y) = xy\\).</p>",
+        "<p>Développer \\(xy(x + y) = x^2 y + x y^2\\) : chaque terme se sépare en un produit d'intégrales simples.</p>"
+      ],
+      "explication": "<p>\\(E[XY] = \\iint (x^2 y + x y^2)\\,dx\\,dy = \\frac13 \\cdot \\frac12 + \\frac12 \\cdot \\frac13 = \\frac13 \\approx 0{,}333\\). C'est le théorème de transfert à deux variables : on intègre \\(h\\) pondérée par la densité.</p>",
+      "revoir": {
+        "texte": "Cours 3 · À plusieurs variables",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#a-plusieurs-variables"
+      },
+      "id": "q15"
+    },
+    {
+      "type": "numerique",
+      "theme": "Espérance et covariance",
+      "difficulte": 2,
+      "enonce": "<p>\\(X\\) prend les valeurs 0, 1 et 2 avec les probabilités 0,2, 0,5 et 0,3. Calculer \\(V(X)\\).</p>",
+      "reponse": 0.49,
+      "tolerance": 0.001,
+      "indices": [
+        "<p>\\(V(X) = E[X^2] - E[X]^2\\).</p>"
+      ],
+      "explication": "<p>\\(E[X] = 0{,}5 + 0{,}6 = 1{,}1\\) et \\(E[X^2] = 0{,}5 + 4 \\times 0{,}3 = 1{,}7\\). Donc \\(V(X) = 1{,}7 - 1{,}21 = 0{,}49\\). Oublier de mettre les valeurs au carré dans \\(E[X^2]\\) donnerait un résultat négatif, ce qui est impossible pour une variance.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Rappels à une dimension",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#rappels-a-une-dimension"
+      },
+      "id": "q16"
+    },
+    {
+      "type": "trous",
+      "theme": "Espérance et covariance",
+      "difficulte": 2,
+      "enonce": "<p>L'espérance généralisée \\(E[h(X)]\\) donne plusieurs grandeurs selon la fonction \\(h\\). Compléter.</p>",
+      "texte": "Avec h(x) = x, on obtient {{0}}. Avec h(x) = (x − µ)², on obtient {{1}}. Avec h(x) = (x − µ)³, on obtient {{2}}. Avec h(x, y) = (x − µx)(y − µy), on obtient {{3}}.",
+      "trous": [
+        {
+          "choix": [
+            "la moyenne",
+            "la variance",
+            "le moment d'ordre 2"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "la variance",
+            "l'écart-type",
+            "le kurtosis"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "la skewness (asymétrie)",
+            "le kurtosis (aplatissement)",
+            "la covariance"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "la covariance",
+            "la corrélation",
+            "la variance de X + Y"
+          ],
+          "reponse": 0
+        }
+      ],
+      "explication": "<p>Le théorème de transfert, \\(E[h(X)] = \\sum h(x_i)\\,p_i\\) ou \\(\\int h(x)\\,f(x)\\,dx\\), donne tout le tableau de la diapo 40 : moyenne, variance (moment centré d'ordre 2), skewness (ordre 3, l'asymétrie), kurtosis (ordre 4, l'aplatissement) et, à deux variables, la covariance. L'écart-type est la racine de la variance, pas une espérance.</p>",
+      "revoir": {
+        "texte": "Cours 3 · L'espérance généralisée",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#l-esperance-generalisee"
+      },
+      "id": "q17"
+    },
+    {
+      "type": "qcm",
+      "theme": "Conditionnelles, Bayes, indépendance",
+      "difficulte": 2,
+      "enonce": "<p>On lance une fléchette sur une cible circulaire, uniformément. \\((X, Y)\\) sont les coordonnées cartésiennes du point d'impact, \\((R, \\theta)\\) ses coordonnées polaires. Quelle affirmation est juste ?</p>",
+      "choix": [
+        "\\(X\\) et \\(Y\\) ne sont pas indépendantes, mais \\(R\\) et \\(\\theta\\) le sont",
+        "\\(X\\) et \\(Y\\) sont indépendantes, mais \\(R\\) et \\(\\theta\\) ne le sont pas",
+        "Les deux couples sont indépendants, car la loi est uniforme",
+        "Aucun des deux couples n'est indépendant"
+      ],
+      "reponse": 0,
+      "explication": "<p>Connaître \\(x\\) limite \\(y\\) à une corde du disque : la densité \\(\\frac{1}{\\pi a^2}\\) ne se factorise pas en un produit de marginales. En polaires, la densité devient \\(\\frac{r}{\\pi a^2} = \\frac{2r}{a^2} \\times \\frac{1}{2\\pi}\\), un terme en \\(r\\) fois une constante en \\(\\theta\\) : \\(R\\) et \\(\\theta\\) sont indépendantes. L'uniformité ne suffit pas, c'est la forme du domaine qui compte.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Indépendance de deux variables",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#independance-de-deux-variables"
+      },
+      "id": "q18"
+    },
+    {
+      "type": "code",
+      "langage": "python",
+      "theme": "Loi jointe et marginales",
+      "difficulte": 2,
+      "enonce": "<p>Une loi jointe discrète est donnée par un tableau <code>P</code> (liste de listes) : <code>P[i][j]</code> est \\(P(X = x_i, Y = y_j)\\). Écrire <code>marginales(P)</code>, qui renvoie le couple <code>(px, py)</code> des deux lois marginales, sous forme de listes. Les tests affichent chaque liste sur une ligne, avec quatre décimales.</p>",
+      "depart": "def marginales(P):\n    ",
+      "solution": "def marginales(P):\n    px = [sum(ligne) for ligne in P]\n    py = [sum(ligne[j] for ligne in P) for j in range(len(P[0]))]\n    return px, py",
+      "harnais": "import json\npx, py = marginales(json.loads(input()))\nprint(' '.join(f'{v:.4f}' for v in px))\nprint(' '.join(f'{v:.4f}' for v in py))",
+      "tests": [
+        {
+          "nom": "tableau 2 × 3",
+          "entree": "[[0.1, 0.2, 0.1], [0.3, 0.05, 0.25]]\n",
+          "sortie": "0.4000 0.6000\n0.4000 0.2500 0.3500\n"
+        },
+        {
+          "nom": "une seule case",
+          "entree": "[[1]]\n",
+          "sortie": "1.0000\n1.0000\n"
+        },
+        {
+          "nom": "tableau de la diapo 25",
+          "entree": "[[0.04, 0, 0.08, 0.02, 0.16, 0], [0, 0.02, 0.04, 0.1, 0, 0.02], [0.06, 0.04, 0.08, 0, 0.08, 0.06], [0.02, 0.06, 0, 0.04, 0.02, 0.06]]\n",
+          "sortie": "0.3000 0.1800 0.3200 0.2000\n0.1200 0.1200 0.2000 0.1600 0.2600 0.1400\n"
+        }
+      ],
+      "indices": [
+        "<p>La marginale de \\(X\\) somme chaque ligne, celle de \\(Y\\) chaque colonne. Avec numpy : <code>np.sum(P, axis=1)</code> et <code>np.sum(P, axis=0)</code>, comme dans le notebook du cours.</p>"
+      ],
+      "explication": "<p>\\(P(X = x_i) = \\sum_j P(x_i, y_j)\\) : somme de la ligne \\(i\\) ; \\(P(Y = y_j)\\) : somme de la colonne \\(j\\). Avec numpy, <code>axis=1</code> réduit les colonnes (une valeur par ligne) et <code>axis=0</code> les lignes ; le notebook du cours écrit <code>np.sum(fxy, axis=0)</code> pour la marginale de \\(x\\) parce que sa grille a \\(x\\) en colonnes.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Lois marginales",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#lois-marginales"
+      },
+      "id": "q19"
+    },
+    {
+      "type": "code",
+      "langage": "python",
+      "theme": "Espérance et covariance",
+      "difficulte": 3,
+      "enonce": "<p>Avec le même format, écrire <code>covariance(P, xs, ys)</code>, qui renvoie \\(\\operatorname{Cov}(X, Y)\\) quand <code>xs</code> et <code>ys</code> sont les listes des valeurs de \\(X\\) (une par ligne) et de \\(Y\\) (une par colonne). Les tests affichent le résultat avec quatre décimales.</p>",
+      "depart": "def covariance(P, xs, ys):\n    ",
+      "solution": "def covariance(P, xs, ys):\n    ex = sum(xs[i] * P[i][j] for i in range(len(xs)) for j in range(len(ys)))\n    ey = sum(ys[j] * P[i][j] for i in range(len(xs)) for j in range(len(ys)))\n    exy = sum(xs[i] * ys[j] * P[i][j] for i in range(len(xs)) for j in range(len(ys)))\n    return exy - ex * ey",
+      "harnais": "import json\nP, xs, ys = json.loads(input())\nprint(f'{covariance(P, xs, ys):.4f}')",
+      "tests": [
+        {
+          "nom": "tableau 2 × 3",
+          "entree": "[[[0.1, 0.2, 0.1], [0.3, 0.05, 0.25]], [0, 1], [0, 1, 2]]\n",
+          "sortie": "-0.0200\n"
+        },
+        {
+          "nom": "Y = X",
+          "entree": "[[[0.5, 0], [0, 0.5]], [0, 1], [0, 1]]\n",
+          "sortie": "0.2500\n"
+        },
+        {
+          "nom": "tableau de la diapo 25",
+          "entree": "[[[0.04, 0, 0.08, 0.02, 0.16, 0], [0, 0.02, 0.04, 0.1, 0, 0.02], [0.06, 0.04, 0.08, 0, 0.08, 0.06], [0.02, 0.06, 0, 0.04, 0.02, 0.06]], [1, 2, 3, 4], [1, 2, 3, 4, 5, 6]]\n",
+          "sortie": "-0.0708\n"
+        }
+      ],
+      "indices": [
+        "<p>\\(\\operatorname{Cov}(X, Y) = E(XY) - E(X)\\,E(Y)\\), chaque espérance étant une somme sur toutes les cases du tableau.</p>"
+      ],
+      "explication": "<p>On calcule \\(E(X) = \\sum_{i,j} x_i P_{ij}\\), \\(E(Y) = \\sum_{i,j} y_j P_{ij}\\) et \\(E(XY) = \\sum_{i,j} x_i y_j P_{ij}\\), puis la différence. La forme \\(E[(X - E X)(Y - E Y)]\\) donne le même résultat. Pour \\(Y = X\\), on retrouve \\(V(X) = 0{,}25\\), la variance d'une Bernoulli de paramètre \\(\\frac12\\).</p>",
+      "revoir": {
+        "texte": "Cours 3 · Covariance et corrélation",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#covariance-et-correlation"
+      },
+      "id": "q20"
+    },
+    {
+      "type": "ouverte",
+      "theme": "Lois conditionnelles",
+      "difficulte": 2,
+      "enonce": "<p>Expliquer pourquoi l'on dit qu'une loi conditionnelle \\(P(y \\mid x = x_0)\\) est une « vue en coupe normalisée » de la loi jointe, et ce que deviennent ces coupes quand \\(X\\) et \\(Y\\) sont indépendantes.</p>",
+      "reponse_modele": "<p>Fixer \\(x = x_0\\) revient à couper la distribution jointe \\(P(x, y)\\) à cet endroit : on obtient une fonction de \\(y\\) seul, \\(y \\mapsto P(x_0, y)\\). Son aire (ou sa somme) vaut \\(P(x_0)\\), la marginale, et non 1 : on la divise donc par \\(P(x_0)\\), ce qui donne \\(P(y \\mid x_0) = \\frac{P(x_0, y)}{P(x_0)}\\). Si \\(X\\) et \\(Y\\) sont indépendantes, \\(P(x_0, y) = P(x_0)\\,P(y)\\), donc toutes les coupes normalisées sont identiques et égales à \\(P(y)\\) : connaître \\(x\\) n'apprend rien sur \\(y\\).</p>",
+      "criteres": [
+        "fixer x = x0 revient à couper la loi jointe, ce qui donne une fonction de y",
+        "on divise par P(x0), l'aire de la coupe, pour que le total vaille 1",
+        "en cas d'indépendance, toutes les coupes ont la même forme, égale à P(y)"
+      ],
+      "revoir": {
+        "texte": "Cours 3 · Lois conditionnelles et formule de Bayes",
+        "lien": "../generated_courses/cours-03-couples-variables-aleatoires.html#lois-conditionnelles-et-formule-de-bayes"
+      },
+      "id": "q21"
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

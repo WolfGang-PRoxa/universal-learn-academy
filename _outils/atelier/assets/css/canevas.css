@@ -1,0 +1,161 @@
+@charset "utf-8";
+/* Atelier · dessins SVG : surface, classes UML, liens, graphes, arbres, séquences.
+   Aucune couleur en dur : tout vient des jetons de la charte. */
+
+.atelier-canevas {
+  position: relative;
+  height: var(--hauteur, var(--at-hauteur));
+  min-height: 13.75rem;
+  overflow: hidden;
+  background: var(--surface);
+  touch-action: none;
+  outline: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.atelier-canevas:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); }
+.atelier-canevas.glisse { cursor: grabbing; }
+.atelier-canevas.mode-lier, .atelier-canevas.mode-lier [data-noeud] { cursor: crosshair; }
+.atelier-svg { display: block; font-family: var(--police-texte); }
+/* La charte impose height: auto aux svg ; le canevas, lui, remplit sa zone */
+.atelier-canevas > svg.atelier-svg { width: 100%; height: 100%; max-width: none; }
+.atelier-svg text { fill: var(--texte); }
+.cv-point-grille { fill: var(--bordure); }
+.cv-fond { fill-opacity: 1; }
+.cv-fond-monde { fill: transparent; }
+[data-noeud] { cursor: pointer; }
+[data-noeud][data-mobile] { cursor: move; }
+.lecture [data-noeud][data-mobile] { cursor: pointer; }
+.cv-elastique { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 6 4; }
+
+.atelier-zoom {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  display: flex;
+  gap: 0.25rem;
+  z-index: 2;
+}
+.atelier .atelier-mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.9rem;
+  height: 1.9rem;
+  padding: 0 0.35rem;
+  border: 1px solid var(--bordure-forte);
+  border-radius: var(--rayon-petit);
+  background: var(--surface);
+  color: var(--texte-2);
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.atelier .atelier-mini:hover:not(:disabled) { color: var(--accent-fort); border-color: var(--accent); }
+.atelier .atelier-mini:disabled { opacity: 0.4; cursor: default; }
+.atelier-canevas-aide {
+  position: absolute;
+  left: 50%;
+  top: 0.6rem;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  background: var(--accent-fort);
+  color: var(--surface);
+  font-size: 0.82rem;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Éléments communs */
+.cv-boite { fill: var(--surface); stroke: var(--bordure-forte); stroke-width: 1.4; }
+.cv-trait { fill: none; stroke: var(--texte-2); stroke-width: 1.5; }
+.cv-pointille { stroke-dasharray: 6 4; }
+.cv-zone-clic { fill: none; stroke: transparent; stroke-width: 12; }
+.cv-zone-clic-rect { fill: transparent; }
+.cv-pointe { fill: var(--surface); stroke: var(--texte-2); stroke-width: 1.5; stroke-linejoin: round; }
+.cv-pointe.pleine { fill: var(--texte-2); }
+.cv-pointe.ouverte { fill: none; }
+
+/* Classes UML */
+.cv-classe .cv-entete { fill: var(--accent-doux); stroke: none; }
+.cv-classe .cv-separateur { stroke: var(--bordure-forte); stroke-width: 1.2; }
+.cv-nom { font-weight: 650; font-size: 14px; }
+.cv-classe.abstraite .cv-nom { font-style: italic; }
+.cv-classe.objet .cv-nom { text-decoration: underline; }
+.cv-stereo { font-size: 11.5px; fill: var(--texte-2); }
+.cv-membre { font-family: var(--police-code); font-size: 12.5px; }
+.cv-cle { text-decoration: underline; font-weight: 600; }
+.cv-mult { font-size: 12.5px; font-weight: 650; fill: var(--texte); }
+.cv-role { font-size: 12px; font-style: italic; fill: var(--texte-2); }
+.cv-nom-lien { font-size: 12.5px; fill: var(--texte-2); }
+.atelier-svg .cv-mult, .atelier-svg .cv-role, .atelier-svg .cv-nom-lien, .atelier-svg .cv-etiquette-arc, .atelier-svg .cv-texte-message {
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+.atelier-svg .cv-mult { fill: var(--texte); }
+.atelier-svg .cv-role, .atelier-svg .cv-nom-lien { fill: var(--texte-2); }
+
+/* Graphes et automates */
+.cv-cercle { fill: var(--surface); }
+.cv-etat.initial .cv-cercle { fill: var(--accent-doux); }
+.cv-cercle-interieur { fill: none; stroke: var(--bordure-forte); stroke-width: 1.4; }
+.cv-nom-noeud { font-weight: 600; font-size: 14px; }
+.cv-date-etape { font-family: var(--police-code); font-size: 12.5px; }
+.atelier-svg .cv-etiquette-arc { font-family: var(--police-code); font-size: 12.5px; fill: var(--texte); }
+
+/* Arbres de processus */
+.cv-processus .cv-boite { fill: var(--accent-doux); stroke: var(--accent-trait); }
+.cv-etiquette-processus { font-family: var(--police-code); font-size: 11.5px; fill: var(--texte-2); }
+.atelier-svg .cv-etiquette-processus { fill: var(--texte-2); }
+
+/* Séquences */
+.cv-ligne-vie { stroke: var(--bordure-forte); stroke-width: 1.3; stroke-dasharray: 5 5; }
+.cv-nom-participant { font-weight: 600; font-size: 13.5px; }
+.cv-participant.objet .cv-boite { fill: var(--accent-doux); }
+.atelier-svg .cv-texte-message { font-family: var(--police-code); font-size: 12.5px; fill: var(--texte); }
+.cv-cadre-fragment { fill: none; stroke: var(--texte-3); stroke-width: 1.2; }
+.cv-onglet-fragment { fill: var(--surface-2); stroke: var(--texte-3); stroke-width: 1.2; }
+.cv-titre-fragment { font-weight: 700; font-size: 12px; }
+.atelier-svg .cv-garde { font-family: var(--police-code); font-size: 12px; fill: var(--texte-2); }
+.cv-separateur-fragment { stroke: var(--texte-3); stroke-width: 1.1; stroke-dasharray: 6 4; }
+
+/* Cas d'utilisation */
+.cv-systeme { fill: none; stroke: var(--texte-3); stroke-width: 1.4; }
+.cv-nom-systeme { font-weight: 700; font-size: 13.5px; }
+.cv-ellipse { fill: var(--accent-doux); }
+.cv-nom-cas { font-weight: 600; font-size: 13px; }
+
+/* Sélection */
+.selectionne .cv-boite, .selectionne .cv-cercle { stroke: var(--accent); stroke-width: 2.6; }
+.selectionne .cv-trait { stroke: var(--accent); stroke-width: 2.4; }
+.selectionne .cv-pointe { stroke: var(--accent); }
+.selectionne .cv-pointe.pleine { fill: var(--accent); }
+.cv-ligne-vie.selectionne { stroke: var(--accent); }
+
+/* Surlignage : erreurs, écarts, remarques de Claude, annotations */
+.surligne.surligne-erreur .cv-boite, .surligne.surligne-manque .cv-boite, .surligne.surligne-erreur .cv-cercle { stroke: oklch(var(--ton-vif) var(--at-erreur)); stroke-width: 3; }
+.surligne.surligne-attention .cv-boite, .surligne.surligne-different .cv-boite, .surligne.surligne-attention .cv-cercle, .surligne.surligne-different .cv-cercle { stroke: oklch(var(--ton-vif) var(--at-attention)); stroke-width: 3; }
+.surligne.surligne-exces .cv-boite, .surligne.surligne-exces .cv-cercle { stroke: oklch(var(--ton-vif) var(--at-exces)); stroke-width: 3; }
+.surligne.surligne-remarque .cv-boite, .surligne.surligne-annotation .cv-boite, .surligne.surligne-remarque .cv-cercle, .surligne.surligne-annotation .cv-cercle { stroke: oklch(var(--ton-vif) var(--at-claude)); stroke-width: 3; }
+.surligne.surligne-erreur .cv-trait { stroke: oklch(var(--ton-vif) var(--at-erreur)); stroke-width: 2.6; }
+.surligne.surligne-attention .cv-trait, .surligne.surligne-different .cv-trait { stroke: oklch(var(--ton-vif) var(--at-attention)); stroke-width: 2.6; }
+.surligne.surligne-exces .cv-trait { stroke: oklch(var(--ton-vif) var(--at-exces)); stroke-width: 2.6; }
+.surligne.surligne-remarque .cv-trait, .surligne.surligne-annotation .cv-trait { stroke: oklch(var(--ton-vif) var(--at-claude)); stroke-width: 2.6; }
+text.surligne { font-weight: 700; }
+text.surligne-erreur, text.surligne-manque { fill: oklch(var(--ton-fort) var(--at-erreur)); }
+text.surligne-attention, text.surligne-different { fill: oklch(var(--ton-fort) var(--at-attention)); }
+text.surligne-exces { fill: oklch(var(--ton-fort) var(--at-exces)); }
+text.surligne-remarque, text.surligne-annotation { fill: oklch(var(--ton-fort) var(--at-claude)); }
+.surligne.surligne-focus .cv-boite, .surligne.surligne-focus .cv-cercle, .surligne.surligne-focus .cv-trait { stroke-width: 4; animation: atelier-pulse 0.9s ease-in-out 2; }
+text.surligne-focus { animation: atelier-pulse 0.9s ease-in-out 2; }
+@keyframes atelier-pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .surligne-focus, text.surligne-focus { animation: none !important; } }
+
+/* Rendu statique (solution, revue) */
+.atelier-svg.statique { height: auto; max-width: 100%; }

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="reseau">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accès au réseau : la couche physique · Réseaux L2</title>
+<meta name="description" content="Cours 3 de réseaux (L2) : modèle de la communication, canal simplex, half-duplex et full-duplex, transmission série et parallèle, médias (cuivre, fibre, radio), analogique et numérique, atténuation et bruit, échantillonnage, horloge, débit et valence, erreurs de transmission, paires torsadées UTP et STP/FTP, normes T568A et T568B, câbles droits et croisés, catégories de câbles.">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-03-couche-physique.html" title="Quiz · Cours 3 · Couche physique">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="index.html">Réseaux</a>
+    <span aria-current="page">Cours 3 · Couche physique</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Réseaux</span> Cours 3 · L2 S3</p>
+    <h1>Accès au réseau : la couche physique</h1>
+    <p class="chapeau">La couche physique est la plus basse des modèles OSI et TCP/IP : elle transforme les bits en signaux et les fait voyager sur un support, cuivre, fibre ou ondes radio. Ce chapitre décrit le canal de transmission, la conversion entre analogique et numérique, les grandeurs qui fixent un débit, puis le câble Ethernet en paires torsadées, ses normes de câblage et le choix entre câble droit et câble croisé, qu'on retrouve dans chaque TP.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/03%20-%20Acc%C3%A8s%20au%20r%C3%A9seau%20-%20support%20physique.pdf">03 - Accès au réseau - support physique.pdf</a> · 21 diapos ; livre Cisco, chapitre « La couche physique »</dd></div>
+      <div><dt>Autre version</dt><dd><a href="../cours/03%20-%20couche%20physique.pdf">03 - couche physique.pdf</a> (5 septembre) : même contenu, sans la diapo 2 qui situe la couche dans les modèles</dd></div>
+      <div><dt>Enseignant</dt><dd>Sylvain Meignier</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Décrire une chaîne de transmission : source, canal, destination ; simplex, half-duplex, full-duplex.</li>
+        <li>Distinguer transmission série et parallèle, signal analogique et numérique.</li>
+        <li>Définir atténuation, bruit, échantillonnage, horloge, débit et valence.</li>
+        <li>Connaître le câble à paires torsadées : UTP et STP/FTP, connecteur RJ45, normes T568A et T568B.</li>
+        <li>Choisir entre câble droit et câble croisé pour relier deux équipements.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-02-modele-de-communication.html">Cours 2</a> : modèles OSI et TCP/IP, encapsulation.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Place de la couche physique <span class="ref">diapo 2</span></h2>
+    <p>La diapo 2 reprend le schéma « Points clés » du chapitre précédent et encadre la couche du bas. Dans le modèle OSI, c'est la couche 1, <strong>physique</strong> ; dans le modèle TCP/IP, elle forme avec la couche liaison la couche d'<strong>accès au réseau</strong>.</p>
+    <p>À ce niveau, la trame n'est plus qu'une suite de bits, transformée en <strong>signal</strong> : tension électrique, impulsions lumineuses ou ondes radio. La couche physique ne connaît ni adresses ni trames, seulement des bits à émettre et à recevoir.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le canal de transmission <span class="ref">diapos 3–7</span></h2>
+    <p>Toute communication met en jeu un émetteur, un récepteur et, entre eux, un support qui transporte le signal.</p>
+
+    <h3>Le modèle de la communication</h3>
+    <ul>
+      <li>Les <strong>matériels communicants</strong> : la <dfn>source</dfn> (l'émetteur) génère les valeurs à transmettre ; la <dfn>destination</dfn> (le récepteur) reçoit les valeurs transmises.</li>
+      <li>Le <strong>système de transmission</strong> transforme les valeurs en onde électromagnétique (électricité, ondes radio) et transporte les signaux : c'est le <dfn>canal de transmission</dfn>.</li>
+    </ul>
+
+    <h3>Sens de la transmission</h3>
+    <p>Les diapos 4 et 5 montrent deux machines A et B, chacune émettrice et réceptrice. Elles peuvent disposer de deux canaux, un par sens, ou d'un seul canal partagé, qu'il faut alors utiliser chacun son tour.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Simplex, half-duplex, full-duplex</span></p>
+      <p>Les diapos montrent les situations sans les nommer. Le vocabulaire usuel, que le chapitre 4 emploie :</p>
+      <ul>
+        <li><dfn>simplex</dfn> : un seul sens possible (la radio FM, une télécommande) ;</li>
+        <li><dfn>half-duplex</dfn> : les deux sens, mais pas en même temps, sur un canal partagé (talkie-walkie, Wi-Fi, Ethernet sur concentrateur) ;</li>
+        <li><dfn>full-duplex</dfn> : les deux sens en même temps, avec un canal par sens (téléphone, Ethernet commuté avec deux paires distinctes pour émettre et recevoir).</li>
+      </ul>
+    </div>
+
+    <h3>Transmission parallèle ou série</h3>
+    <div class="colonnes">
+      <div class="colonne">
+        <p class="colonne-titre">En parallèle</p>
+        <p>N valeurs sont transmises simultanément sur N supports (A, B, C et D en même temps sur quatre fils).</p>
+      </div>
+      <div class="colonne">
+        <p class="colonne-titre">En série</p>
+        <p>Les valeurs sont transmises successivement sur un seul support physique (A, puis B, puis C, puis D).</p>
+      </div>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Les réseaux transmettent en série : un seul canal par sens, moins de fils, et pas de problème de décalage entre fils sur de longues distances.</p>
+
+    <h3>Le média</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Média</span></p>
+      <p>Le <dfn>média</dfn> est le support physique, c'est-à-dire le canal de transmission. Trois familles :</p>
+      <ul>
+        <li><strong>l'électricité, sur câble en cuivre</strong> : câble coaxial, câble RJ45 à paires torsadées ;</li>
+        <li><strong>la lumière, sur fibre optique</strong> : par exemple la connexion externe des box ;</li>
+        <li><strong>les ondes radio, dans l'air</strong> : le Wi-Fi.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le signal <span class="ref">diapos 8–12</span></h2>
+    <p>Les ordinateurs manipulent des valeurs discrètes, des bits ; le canal transporte une grandeur physique continue. Il faut passer de l'un à l'autre, et compter avec les défauts du canal.</p>
+
+    <h3>Analogique et numérique</h3>
+    <div class="colonnes">
+      <div class="colonne">
+        <p class="colonne-titre">Analogique</p>
+        <p>Une grandeur physique (température, pression, luminosité…) représentée par une <strong>fonction continue</strong> : une onde électromagnétique.</p>
+      </div>
+      <div class="colonne">
+        <p class="colonne-titre">Numérique</p>
+        <p>La même grandeur représentée par des <strong>valeurs discrètes</strong>.</p>
+      </div>
+    </div>
+    <p>Dans une chaîne de transmission, l'émetteur et le récepteur sont numériques, mais le canal est analogique : le signal qui y circule est une grandeur physique.</p>
+
+    <h3>Atténuation et bruit</h3>
+    <p>L'émetteur envoie par exemple <code>01001</code> sous la forme de créneaux de +5 V et −5 V. À l'arrivée, les créneaux sont arrondis et plus faibles : il faut encore reconnaître <code>01001</code>.</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Tout signal se dégrade</span></p>
+      <p>Tout signal transmis se dégrade au cours du transport :</p>
+      <ul>
+        <li>l'<dfn>affaiblissement</dfn> (ou <dfn>atténuation</dfn>) est la diminution relative de la puissance d'un signal au cours de sa transmission ; il croît avec la longueur du câble ;</li>
+        <li>le <dfn>bruit</dfn> perturbe le signal (interférences électromagnétiques, diaphonie entre fils voisins) ; il déforme le signal : c'est la <dfn>distorsion</dfn>.</li>
+      </ul>
+    </div>
+    <p><span class="badge ajout">Ajout</span> C'est pour cela que chaque média a une longueur maximale (100 m pour un câble Ethernet en paires torsadées, voir plus bas) : au-delà, le récepteur ne distingue plus les 0 des 1.</p>
+
+    <h3>Échantillonnage et codage</h3>
+    <p>Pour numériser un signal analogique (un son, par exemple, jusqu'au fichier WAV de la diapo 10), on procède en deux temps :</p>
+    <ol class="etapes">
+      <li><strong>Échantillonner</strong> : prélever de façon régulière des échantillons de l'information analogique. La fréquence d'échantillonnage s'exprime en hertz : 48 kHz = 48 000 valeurs par seconde.</li>
+      <li><strong>Coder</strong> (quantifier) : convertir chaque échantillon en la valeur numérique correspondante, sur un nombre de bits fixé.</li>
+    </ol>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Le débit d'un son numérisé</span></p>
+      <p><span class="badge ajout">Ajout</span> Un son stéréo échantillonné à 48 kHz, codé sur 16 bits par échantillon, produit \(48\,000 \times 16 \times 2 = 1\,536\,000\) bits par seconde, soit 1,536 Mb/s (192 ko/s) avant compression.</p>
+    </div>
+
+    <h3>Horloge, débit, valence</h3>
+    <ul>
+      <li>L'<dfn>horloge</dfn> synchronise les écritures et les lectures des valeurs : elle fixe l'intervalle de temps consacré à chaque émission et réception d'une valeur. Émetteur et récepteur doivent être d'accord sur ce rythme.</li>
+      <li>Le <dfn>débit</dfn> est la quantité d'informations émises pendant une unité de temps :
+        \[ D = \frac{\text{nombre de valeurs}}{\text{durée de la transmission}} \]</li>
+      <li>La <dfn>valence</dfn> est le nombre d'états possibles que peut prendre le signal. Un signal à deux niveaux (+5 V et −5 V) a une valence de 2.</li>
+    </ul>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Débit, rapidité de modulation et valence</span></p>
+      <p>Si le signal change d'état \(R\) fois par seconde (la <dfn>rapidité de modulation</dfn>, en bauds) et qu'il a une valence \(V\), chaque état porte \(\log_2 V\) bits, et le débit binaire vaut :</p>
+      <div class="encadre">\[ D = R \times \log_2 V \quad \text{(en bits par seconde)} \]</div>
+      <p>Avec 2 niveaux, un état porte 1 bit ; avec 4 niveaux, 2 bits ; avec 16 niveaux, 4 bits. Augmenter la valence augmente le débit sans changer d'état plus souvent, mais les niveaux, plus proches, résistent moins au bruit.</p>
+    </div>
+
+    <h3>Les erreurs de transmission</h3>
+    <p>Transporter de l'information, c'est transporter un flux numérique, une séquence de bits. Une séquence (ou une partie) mal transportée est perdue. Deux questions se posent :</p>
+    <ul>
+      <li><strong>Comment détecter l'erreur ?</strong> En ajoutant de l'information de contrôle (bit de parité, somme de contrôle, CRC : <a href="cours-04-liaison-de-donnees.html">chapitre 4</a>).</li>
+      <li><strong>Doit-on retransmettre la séquence ?</strong> Cela suppose que le récepteur avertisse l'émetteur : il faut un mécanisme de validation des transmissions (les acquittements de TCP, <a href="cours-06-couche-transport.html">chapitre 6</a>). Est-ce possible ? Oui pour les documents ; non pour la téléphonie et la télévision, à cause de la contrainte de temps : une image retransmise arriverait trop tard.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le câble en cuivre à paires torsadées <span class="ref">diapos 13–20</span></h2>
+    <p>Le câble Ethernet est le média des réseaux locaux filaires et de tous les TP. Il faut connaître sa composition, ses normes de câblage et savoir quel câble poser entre deux équipements.</p>
+
+    <h3>Le câble Ethernet</h3>
+    <p>Le câble Ethernet est composé de <strong>4 paires de fils torsadées</strong>. Il est peu coûteux et bon conducteur. Il se termine par un connecteur <dfn>RJ45</dfn> (<span class="en" lang="en">Registered Jack</span> numéro 45), à 8 broches. <span class="badge examen">Examen</span></p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi torsader les fils ?</span></p>
+      <p>Les deux fils d'une paire portent des signaux opposés. En les torsadant, on expose les deux fils aux mêmes perturbations, qui s'annulent quand le récepteur fait la différence des deux signaux ; la torsade limite aussi la <dfn>diaphonie</dfn>, le signal d'une paire qui déborde sur sa voisine. Chaque paire a son propre pas de torsade.</p>
+    </div>
+
+    <h3>UTP et STP / FTP</h3>
+    <div class="colonnes">
+      <div class="colonne contre">
+        <p class="colonne-titre">UTP : non blindé</p>
+        <p>Les paires torsadées non blindées (<span lang="en">Unshielded Twisted Pair</span>), jusqu'à 100 Mb/s, sont sensibles aux interférences.</p>
+      </div>
+      <div class="colonne pour">
+        <p class="colonne-titre">STP / FTP : blindé</p>
+        <p>Les paires torsadées blindées (<span lang="en">Shielded / Foiled Twisted Pair</span>) ont un blindage : une tresse métallique (STP) ou une mince feuille d'aluminium (FTP). Par rapport à l'UTP : débits plus rapides, distances plus longues.</p>
+      </div>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> La limite de 100 Mb/s vaut pour l'UTP de catégorie 5 ancienne ; l'UTP de catégorie 5e et 6 transporte le gigabit Ethernet (1000BASE-T) sur 100 m, et c'est le câble le plus répandu dans les bâtiments.</p>
+
+    <h3>Les normes de câblage T568A et T568B</h3>
+    <p>Le câble est normalisé par la <strong>TIA</strong> et l'<strong>EIA</strong> (<span lang="en">Telecommunications Industry Association, Electronic Industries Alliance</span>). Deux normes fixent l'ordre des fils dans le connecteur : <strong>T568A</strong> et <strong>T568B</strong>. <span class="badge examen">Examen</span></p>
+    <div class="tableau compact">
+      <table>
+        <caption>Code couleur des broches du RJ45 (diapo 15)</caption>
+        <thead><tr><th>Broche</th><th>T568A : couleur</th><th>Paire</th><th>T568B : couleur</th><th>Paire</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>blanc-vert</td><td>3</td><td>blanc-orange</td><td>2</td></tr>
+          <tr><td>2</td><td>vert</td><td>3</td><td>orange</td><td>2</td></tr>
+          <tr><td>3</td><td>blanc-orange</td><td>2</td><td>blanc-vert</td><td>3</td></tr>
+          <tr><td>4</td><td>bleu</td><td>1</td><td>bleu</td><td>1</td></tr>
+          <tr><td>5</td><td>blanc-bleu</td><td>1</td><td>blanc-bleu</td><td>1</td></tr>
+          <tr><td>6</td><td>orange</td><td>2</td><td>vert</td><td>3</td></tr>
+          <tr><td>7</td><td>blanc-brun</td><td>4</td><td>blanc-brun</td><td>4</td></tr>
+          <tr><td>8</td><td>brun</td><td>4</td><td>brun</td><td>4</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Les deux normes ne diffèrent que par l'échange des paires verte (paire 3) et orange (paire 2) : broches 1 et 2 contre 3 et 6.</p>
+
+    <h3>Câble droit et câble croisé</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Câble droit, câble croisé</span> <span class="badge examen">Examen</span></p>
+      <p>Un <dfn>câble droit</dfn> a la même norme aux deux bouts : T568A ↔ T568A, ou T568B ↔ T568B. Un <dfn>câble croisé</dfn> a une norme différente à chaque bout : T568A ↔ T568B.</p>
+    </div>
+    <p>Pourquoi deux câbles ? En Ethernet 10 et 100 Mb/s, seules deux paires servent : un poste <strong>émet</strong> sur les broches 1 et 2 et <strong>reçoit</strong> sur les broches 3 et 6. Un commutateur fait l'inverse : il reçoit sur 1 et 2, émet sur 3 et 6. Entre un poste et un commutateur, un câble droit relie donc directement l'émission de l'un à la réception de l'autre. Entre deux postes, les deux émettent sur 1 et 2 : il faut croiser les paires, et c'est ce que fait le câble croisé (1 ↔ 3, 2 ↔ 6).</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 200" width="640" role="img" aria-labelledby="fig-cable-titre">
+        <title id="fig-cable-titre">À gauche, câble droit entre un PC qui émet sur les broches 1 et 2 et un commutateur qui reçoit sur 1 et 2 : les fils vont tout droit. À droite, câble croisé entre deux PC : la broche 1 va à la 3, la 2 à la 6, la 3 à la 1, la 6 à la 2.</title>
+        <defs>
+          <marker id="fleche-cable" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+          <marker id="fleche-cable-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein-accent"/>
+          </marker>
+        </defs>
+        <text x="150" y="18" text-anchor="middle" class="gras">Câble droit</text>
+        <rect class="boite" x="10" y="30" width="70" height="150" rx="5"/><text x="45" y="50" text-anchor="middle" class="gras">PC</text>
+        <rect class="boite" x="220" y="30" width="80" height="150" rx="5"/><text x="260" y="50" text-anchor="middle" class="gras">Switch</text>
+        <text x="45" y="80" text-anchor="middle" class="mono">1 2 TX</text><text x="45" y="140" text-anchor="middle" class="mono">3 6 RX</text>
+        <text x="260" y="80" text-anchor="middle" class="mono">1 2 RX</text><text x="260" y="140" text-anchor="middle" class="mono">3 6 TX</text>
+        <path class="accent" d="M80 76 H218" marker-end="url(#fleche-cable-a)"/>
+        <path class="trait" d="M220 136 H82" marker-end="url(#fleche-cable)"/>
+
+        <text x="480" y="18" text-anchor="middle" class="gras">Câble croisé</text>
+        <rect class="boite" x="340" y="30" width="70" height="150" rx="5"/><text x="375" y="50" text-anchor="middle" class="gras">PC A</text>
+        <rect class="boite" x="560" y="30" width="70" height="150" rx="5"/><text x="595" y="50" text-anchor="middle" class="gras">PC B</text>
+        <text x="375" y="80" text-anchor="middle" class="mono">1 2 TX</text><text x="375" y="140" text-anchor="middle" class="mono">3 6 RX</text>
+        <text x="595" y="80" text-anchor="middle" class="mono">1 2 TX</text><text x="595" y="140" text-anchor="middle" class="mono">3 6 RX</text>
+        <path class="accent" d="M410 76 L558 136" marker-end="url(#fleche-cable-a)"/>
+        <path class="trait" d="M560 76 L412 136" marker-end="url(#fleche-cable)"/>
+      </svg>
+      <figcaption>Émission (TX) et réception (RX) sur les broches du RJ45 (diapos 17 et 18) : le câble droit suffit entre équipements de familles différentes ; entre deux équipements de même famille, il faut croiser.</figcaption>
+    </figure>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Droit ou croisé ?</span> <span class="badge examen">Examen</span></p>
+      <p>On range les équipements en deux familles :</p>
+      <ul>
+        <li>ceux qui émettent sur 1-2 : <strong>PC, serveur, routeur, point d'accès</strong> ;</li>
+        <li>ceux qui émettent sur 3-6 : <strong>commutateur (switch), concentrateur (hub)</strong>.</li>
+      </ul>
+      <p>Entre deux familles différentes : <strong>câble droit</strong>. Dans la même famille : <strong>câble croisé</strong>. Attention en particulier aux liaisons commutateur–commutateur, PC–routeur et routeur–routeur, qui demandent un câble croisé.</p>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Le réseau de la diapo 19 (Packet Tracer)</span></p>
+      <p>Dans Packet Tracer, un câble droit est un trait plein, un câble croisé un trait pointillé. Sur la diapo 19 :</p>
+      <ul>
+        <li>câbles <strong>droits</strong> : PC4–Switch1, Switch1–Router1, Server1–Switch2, Server0–Switch2 ;</li>
+        <li>câbles <strong>croisés</strong> : Hub0–Switch1, Switch1–Switch2, Router1–Router0, Router0–PC2, Server0–Server1.</li>
+      </ul>
+      <p>Les points verts aux extrémités indiquent un lien actif ; les points rouges, un lien inactif (ici côté routeurs, dont les interfaces ne sont pas encore activées).</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Auto-MDIX</span></p>
+      <p>La plupart des cartes et commutateurs récents détectent la paire d'émission et inversent eux-mêmes les paires si besoin (fonction <dfn>Auto-MDIX</dfn>) : un câble droit marche alors partout. En gigabit Ethernet, les 4 paires servent dans les deux sens. Mais la règle droit/croisé reste demandée en TD, et Packet Tracer l'applique : un mauvais câble y laisse le lien rouge.</p>
+    </div>
+
+    <h3>Longueur et catégories</h3>
+    <p>La longueur maximale d'un canal dépend de la catégorie des composants et de la classe (la fréquence) validée :</p>
+    <div class="tableau compact mono">
+      <table>
+        <caption>Longueurs théoriques du canal (diapo 20)</caption>
+        <thead><tr><th>Classe</th><th>Fréquence</th><th>Cat. 3</th><th>Cat. 4</th><th>Cat. 5</th><th>Cat. 6</th><th>Cat. 7</th></tr></thead>
+        <tbody>
+          <tr><td>A</td><td>0,1 MHz</td><td>2 000 m</td><td>3 000 m</td><td>3 000 m</td><td>nd</td><td>3 000 m</td></tr>
+          <tr><td>B</td><td>1 MHz</td><td>200 m</td><td>260 m</td><td>260 m</td><td>nd</td><td>290 m</td></tr>
+          <tr><td>C</td><td>16 MHz</td><td>100 m</td><td>150 m</td><td>160 m</td><td>nd</td><td>180 m</td></tr>
+          <tr><td>D</td><td>100 MHz</td><td></td><td></td><td>100 m</td><td>nd</td><td>120 m</td></tr>
+          <tr><td>E</td><td>250 MHz</td><td></td><td></td><td></td><td>100 m</td><td>110 m</td></tr>
+          <tr><td>F</td><td>600 MHz</td><td></td><td></td><td></td><td></td><td>100 m</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Plus la fréquence est élevée, plus la longueur possible est courte, et plus il faut une catégorie élevée. La règle pratique à retenir pour Ethernet en paires torsadées est <strong>100 m</strong> au plus.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les autres médias <span class="ref">diapo 21</span></h2>
+    <p>Pour le média optique, la diapo 21 renvoie au livre Cisco. En voici l'essentiel.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La fibre optique</span></p>
+      <p>La <dfn>fibre optique</dfn> transporte des impulsions de lumière dans un cœur de verre très fin. Elle est insensible aux perturbations électromagnétiques, porte des débits très élevés sur de longues distances, et ne rayonne pas (difficile à espionner). Elle coûte plus cher et se pose plus délicatement que le cuivre. Il faut une fibre par sens (souvent un câble à deux fibres).</p>
+      <ul>
+        <li>La fibre <strong>monomode</strong> (cœur très fin, laser) va jusqu'à des dizaines de kilomètres : liaisons entre bâtiments, opérateurs.</li>
+        <li>La fibre <strong>multimode</strong> (cœur plus large, LED) va jusqu'à quelques centaines de mètres : réseaux de campus, salles serveurs.</li>
+      </ul>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le sans-fil</span></p>
+      <p>Le Wi-Fi (normes IEEE 802.11) utilise les ondes radio, dans l'air, sur les bandes de 2,4 GHz et 5 GHz. Le média est partagé par tous les postes d'une cellule et se traverse en half-duplex : le chapitre 4 montre comment le Wi-Fi évite les collisions (CSMA/CA). Le signal s'affaiblit vite avec la distance et les murs, et il est facile à capter : il faut le chiffrer (WPA2, WPA3).</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exercices</h2>
+    <p>Exercices d'entraînement, ajoutés pour s'exercer sur le câblage et les débits.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Quel câble ?</span></p>
+      <p>Indiquer s'il faut un câble droit ou croisé pour relier : (a) un PC à un commutateur ; (b) un commutateur à un routeur ; (c) deux commutateurs ; (d) un PC directement à un routeur ; (e) deux PC ; (f) un concentrateur à un commutateur.</p>
+      <details class="indice"><summary>Indice</summary><p>Famille 1 : PC, serveur, routeur. Famille 2 : commutateur, concentrateur. Même famille → croisé.</p></details>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>(a) droit ; (b) droit ; (c) croisé ; (d) croisé ; (e) croisé ; (f) croisé.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Sertir un câble</span></p>
+      <p>Un bout d'un câble est serti en T568B. Donner l'ordre des couleurs, broches 1 à 8, à l'autre bout pour obtenir un câble croisé.</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>L'autre bout est en T568A : blanc-vert, vert, blanc-orange, bleu, blanc-bleu, orange, blanc-brun, brun.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Valence et débit</span></p>
+      <p>Un signal change d'état 1 000 fois par seconde. Quel débit obtient-on avec une valence de 2 ? de 4 ? de 16 ? Quelle valence faut-il pour atteindre 6 000 b/s ?</p>
+      <details class="indice"><summary>Indice</summary><p>Chaque état porte \(\log_2 V\) bits.</p></details>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>\(V = 2\) : 1 bit par état, 1 000 b/s. \(V = 4\) : 2 bits, 2 000 b/s. \(V = 16\) : 4 bits, 4 000 b/s. Pour 6 000 b/s, il faut 6 bits par état, donc \(V = 2^6 = 64\).</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>La couche physique transmet des bits sous forme de signal sur un média : cuivre (électricité), fibre (lumière), air (ondes radio).</li>
+        <li>Les réseaux transmettent en série ; un canal partagé impose d'émettre chacun son tour (half-duplex), deux canaux permettent le full-duplex.</li>
+        <li>Tout signal se dégrade : atténuation avec la distance, bruit qui le déforme. D'où des longueurs maximales (100 m en paires torsadées).</li>
+        <li>Numériser = échantillonner (fréquence en Hz) puis coder chaque échantillon.</li>
+        <li>Débit = quantité d'information par unité de temps ; valence = nombre d'états du signal ; \(D = R \log_2 V\).</li>
+        <li>Une erreur se détecte par de l'information de contrôle ; on ne retransmet que si le temps le permet (pas en téléphonie).</li>
+        <li>Câble Ethernet : 4 paires torsadées, connecteur RJ45 ; UTP non blindé, STP/FTP blindé.</li>
+        <li>T568A et T568B échangent les paires verte et orange. Câble droit : même norme aux deux bouts ; croisé : A d'un côté, B de l'autre.</li>
+        <li>PC, serveur, routeur d'un côté ; commutateur, concentrateur de l'autre : familles différentes → droit ; même famille → croisé.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Quels sont les trois types de médias ?</summary>
+        <div><p>Le cuivre (signal électrique : coaxial, paires torsadées), la fibre optique (lumière) et l'air (ondes radio, Wi-Fi).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Qu'est-ce que l'affaiblissement d'un signal ?</summary>
+        <div><p>La diminution relative de sa puissance au cours de sa transmission ; il augmente avec la distance parcourue.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que signifie « échantillonner à 48 kHz » ?</summary>
+        <div><p>Prélever 48 000 valeurs du signal analogique par seconde.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi ne retransmet-on pas les données perdues en téléphonie ?</summary>
+        <div><p>À cause de la contrainte de temps : la donnée retransmise arriverait trop tard pour être utile.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle différence entre UTP et FTP ?</summary>
+        <div><p>L'UTP n'est pas blindé et craint les interférences ; le FTP a une feuille d'aluminium autour des paires, qui permet des débits plus rapides et des distances plus longues.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Câble droit ou croisé entre deux routeurs ? entre un routeur et un commutateur ?</summary>
+        <div><p>Croisé entre deux routeurs (même famille) ; droit entre un routeur et un commutateur.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Qu'est-ce qui distingue T568A de T568B ?</summary>
+        <div><p>Les paires verte et orange sont échangées (broches 1-2 et 3-6) ; les paires bleue et brune ne bougent pas.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-02-modele-de-communication.html"><small>← Précédent</small>Modèles de communication</a>
+    <a class="suivant" href="cours-04-liaison-de-donnees.html"><small>Suivant →</small>Accès au réseau : la liaison de données</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Réseaux · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

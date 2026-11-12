@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fonctions, regroupements et évolution d'une base · Bases de données L2</title>
+<meta name="description" content="Cours 4 de bases de données (L2) : fonctions prédéfinies (caractères, mathématiques, dates), choix des types, fonctions d'agrégation, ORDER BY, GROUP BY, HAVING, LIMIT et OFFSET, ordre d'exécution du SELECT, UPDATE et DELETE utilisant d'autres tables, et modification d'une relation sans perte de données.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-sql-code.html" title="Quiz · SQL à écrire">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+<script type="application/json" id="atelier-jeux">
+{
+  "entreprise": {
+    "titre": "Base Entreprise du TP 1 (emp, dep, grade)",
+    "description": "<p><code>emp(id_emp, nom_emp, metier, #id_chef, date_emb, sal, comm, #id_dep)</code> : 14 employés ; <code>comm</code> n'est renseignée que pour les quatre vendeurs.</p><p><code>dep(id_dep, nom_dep, loc)</code> : 10 Comptable, 20 Recherche, 30 Ventes, 40 Operations (sans employé).</p><p><code>grade(id_grade, min_sal, max_sal)</code> : cinq tranches de salaire.</p>",
+    "script": "CREATE TABLE dep (\n    id_dep  integer PRIMARY KEY,\n    nom_dep varchar(20) NOT NULL,\n    loc     varchar(20)\n);\nCREATE TABLE emp (\n    id_emp   integer PRIMARY KEY,\n    nom_emp  varchar(10) NOT NULL,\n    metier   varchar(10) CHECK (metier IN ('Analyste', 'President', 'Manager', 'Secretaire', 'Vendeur')),\n    id_chef  integer REFERENCES emp (id_emp),\n    date_emb date,\n    sal      numeric(7,2),\n    comm     numeric(7,2),\n    id_dep   integer REFERENCES dep (id_dep)\n);\nINSERT INTO dep VALUES\n    (10, 'Comptable', 'New York'),\n    (20, 'Recherche', 'Dallas'),\n    (30, 'Ventes', 'Chicago'),\n    (40, 'Operations', 'Boston');\nINSERT INTO emp VALUES\n    (7839, 'KING',   'President',  NULL, '1981-11-17', 5000.00, NULL,    10),\n    (7566, 'JONES',  'Manager',    7839, '1981-04-02', 2975.24, NULL,    20),\n    (7902, 'FORD',   'Analyste',   7566, '1981-12-03', 3056.33, NULL,    20),\n    (7369, 'SMITH',  'Secretaire', 7902, '1980-12-17', 1212.24, NULL,    20),\n    (7698, 'BLAKE',  'Manager',    7839, '1981-05-01', 2852.56, NULL,    30),\n    (7499, 'ALLEN',  'Vendeur',    7698, '1981-02-20', 1845.85, 300.00,  30),\n    (7521, 'WARD',   'Vendeur',    7698, '1981-02-22', 1253.12, 500.00,  30),\n    (7654, 'MARTIN', 'Vendeur',    7698, '1981-09-28', 1251.45, 1400.00, 30),\n    (7782, 'CLARK',  'Manager',    7839, '1981-06-09', 2655.92, NULL,    10),\n    (7788, 'SCOTT',  'Analyste',   7566, '1982-12-09', 3234.62, NULL,    20),\n    (7844, 'TURNER', 'Vendeur',    7698, '1981-09-08', 1778.45, 0.00,    30),\n    (7876, 'ADAMS',  'Secretaire', 7788, '1983-01-12', 1304.67, NULL,    20),\n    (7900, 'JAMES',  'Secretaire', 7698, '1981-12-03', 1253.65, NULL,    30),\n    (7934, 'MILLER', 'Secretaire', 7782, '1982-01-23', 1505.45, NULL,    10);\nCREATE TABLE grade (\n    id_grade integer PRIMARY KEY,\n    min_sal  numeric(7,2) NOT NULL,\n    max_sal  numeric(9,2) NOT NULL\n);\nINSERT INTO grade VALUES\n    (1, 1200, 1400),\n    (2, 1401, 1600),\n    (3, 1601, 2000),\n    (4, 2001, 3500),\n    (5, 3501, 100000);"
+  },
+  "avions": {
+    "titre": "Base Avions, première version (TP 2)",
+    "description": "<p><code>avion(id_avion, nom_type, nb_place, nom_aero_ratt)</code> : 14 avions ; <code>pilote(id_pilote, nom_pilote, nom_aero)</code> : 9 pilotes ; <code>vol(id_vol, #id_pilote, #id_avion, nom_aero_dep, nom_aero_arr, heure_dep, heure_arr)</code> : 14 vols. Les aéroports sont de simples noms, comme « Paris Orly ».</p>",
+    "script": "CREATE TABLE avion (\n    id_avion      integer PRIMARY KEY,\n    nom_type      varchar(20),\n    nb_place      integer,\n    nom_aero_ratt varchar(30)\n);\nCREATE TABLE pilote (\n    id_pilote  serial PRIMARY KEY,\n    nom_pilote varchar(30) NOT NULL,\n    nom_aero   varchar(30)\n);\nCREATE TABLE vol (\n    id_vol       integer PRIMARY KEY,\n    id_pilote    integer REFERENCES pilote (id_pilote),\n    id_avion     integer REFERENCES avion (id_avion),\n    nom_aero_dep varchar(30),\n    nom_aero_arr varchar(30),\n    heure_dep    time,\n    heure_arr    time\n);\nINSERT INTO avion VALUES (123,'A300',300,'Paris Orly');\nINSERT INTO avion VALUES (102,'A320',320,'Paris Orly');\nINSERT INTO avion VALUES (103,'A300',300,'Marseille Marignane');\nINSERT INTO avion VALUES (104,'A320',320,'Paris Roissy');\nINSERT INTO avion VALUES (105,'A300',300,'Toulouse');\nINSERT INTO avion VALUES (106,'B747',248,'Paris Orly');\nINSERT INTO avion VALUES (107,'B747',248,'Bordeaux');\nINSERT INTO avion VALUES (108,'ATR44',144,'Avignon');\nINSERT INTO avion VALUES (109,'ATR44',144,'Nancy');\nINSERT INTO avion VALUES (110,'Foker100',100,'Paris Orly');\nINSERT INTO avion VALUES (111,'Foker100',100,'Avignon');\nINSERT INTO avion VALUES (112,'B747',248,'Avignon');\nINSERT INTO avion VALUES (100,'A300',300,'Marseille Marignane');\nINSERT INTO avion VALUES (101,'A310',310,'Strasbourg');\nINSERT INTO pilote VALUES (default,'Pierre','Paris Orly');\nINSERT INTO pilote VALUES (default,'Paul','Paris Orly');\nINSERT INTO pilote VALUES (default,'Jacques','Paris Roissy');\nINSERT INTO pilote VALUES (default,'Fernande','Avignon');\nINSERT INTO pilote VALUES (default,'Marie','Toulouse');\nINSERT INTO pilote VALUES (default,'Philippe','Avignon');\nINSERT INTO pilote VALUES (default,'Frederic','Nancy');\nINSERT INTO pilote VALUES (default,'Cecile','Strasbourg');\nINSERT INTO pilote VALUES (default,'Jean','Lyon');\nINSERT INTO vol VALUES (1000,(select id_pilote from pilote where nom_pilote like 'Pierre'),101,'Paris Orly','Toulouse','10:05','12:53');\nINSERT INTO vol VALUES (1001,(select id_pilote from pilote where nom_pilote like 'Pierre'),101,'Toulouse','Paris Orly','14:25','17:07');\nINSERT INTO vol VALUES (1002,(select id_pilote from pilote where nom_pilote like 'Paul'),102,'Paris Orly','Marseille Marignane','08:35','09:30');\nINSERT INTO vol VALUES (1003,(select id_pilote from pilote where nom_pilote like 'Paul'),103,'Marseille Marignane','Strasbourg','13:15','14:48');\nINSERT INTO vol VALUES (1004,(select id_pilote from pilote where nom_pilote like 'Philippe'),104,'Paris Orly','Toulouse','18:24','20:06');\nINSERT INTO vol VALUES (1005,(select id_pilote from pilote where nom_pilote like 'Fernande'),105,'Toulouse','Nancy','11:05','13:53');\nINSERT INTO vol VALUES (1006,(select id_pilote from pilote where nom_pilote like 'Cecile'),110,'Avignon','Paris Orly','07:35','08:22');\nINSERT INTO vol VALUES (1007,(select id_pilote from pilote where nom_pilote like 'Marie'),108,'Paris Roissy','Nancy','07:05','07:55');\nINSERT INTO vol VALUES (1008,(select id_pilote from pilote where nom_pilote like 'Fernande'),123,'Lyon','Avignon','06:55','07:35');\nINSERT INTO vol VALUES (1009,(select id_pilote from pilote where nom_pilote like 'Frederic'),100,'Paris Orly','Lyon','10:05','10:43');\nINSERT INTO vol VALUES (1010,(select id_pilote from pilote where nom_pilote like 'Marie'),100,'Lyon','Paris Orly','15:18','16:03');\nINSERT INTO vol VALUES (1011,(select id_pilote from pilote where nom_pilote like 'Jacques'),112,'Lyon','Avignon','19:20','20:05');\nINSERT INTO vol VALUES (1012,(select id_pilote from pilote where nom_pilote like 'Fernande'),112,'Paris Roissy','Lyon','17:15','18:02');\nINSERT INTO vol VALUES (1013,(select id_pilote from pilote where nom_pilote like 'Jacques'),112,'Avignon','Paris Roissy','21:45','22:38');"
+  }
+}
+</script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="index.html">Bases de données</a>
+    <span aria-current="page">Cours 4 · Fonctions et regroupements</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> Cours 4 · L2</p>
+    <h1>Fonctions, regroupements et évolution d'une base</h1>
+    <p class="chapeau">Jusqu'ici, une requête renvoyait des lignes de la base. Ce dernier cours apprend à les transformer (fonctions), à les résumer (agrégats, <code>GROUP BY</code>, <code>HAVING</code>) et à les trier ou les paginer. Il termine par la modification d'une base en service : mettre à jour des données à partir d'autres tables, et corriger un modèle mal conçu sans perdre de données.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/CM4%20-%20SQL.pdf">CM4 - SQL.pdf</a> · 49 diapos</dd></div>
+      <div><dt>Enseignant</dt><dd>Sylvain Meignier</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-25">25 sept. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Utiliser les fonctions de caractères et de calcul, et choisir un type adapté (<code>numeric</code> ou <code>float</code>, <code>date</code>).</li>
+        <li>Calculer des agrégats (<code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code>) en maîtrisant <code>*</code>, <code>DISTINCT</code> et <code>NULL</code>.</li>
+        <li>Regrouper avec <code>GROUP BY</code>, filtrer les groupes avec <code>HAVING</code>, trier avec <code>ORDER BY</code>, paginer avec <code>LIMIT</code> et <code>OFFSET</code>.</li>
+        <li>Connaître l'ordre d'exécution d'un <code>SELECT</code>.</li>
+        <li>Écrire un <code>UPDATE</code> ou un <code>DELETE</code> qui dépend d'une autre table, et restructurer une relation en cinq étapes.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-03-cles-sous-requetes-jointures.html">Cours 3</a> : clés, sous-requêtes, jointures.</li>
+        <li>Les TP 1 (base Entreprise) et 2 (base Avions).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Note <span>Les résultats affichés</span></p>
+    <p>Les exemples portent sur la base Entreprise du TP 1 (14 employés) et, en section 7, sur la base Avions du TP 2. Chaque requête a été exécutée sous PostgreSQL et ses résultats sont reportés. Certaines captures des diapos ont été faites sur une autre version de la table <code>emp</code> (15 employés, ou d'autres salaires) : l'écart est alors signalé.</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Rappels <span class="ref">diapos 1–5</span></h2>
+    <p>Le cours s'ouvre sur une correction (« OUPS ! ») et sur le rappel des catégories de commandes.</p>
+    <ul>
+      <li><strong>Diapo 2</strong> : <code>SERIAL</code> n'est pas reconnu par la norme SQL:1999 ; il faut lui préférer la propriété de colonne <code>GENERATED AS IDENTITY</code>, avec sa syntaxe et l'exemple <code>id_emp INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY</code>. Tout est détaillé au <a href="cours-03-cles-sous-requetes-jointures.html#generated-as-identity">cours 3</a>.</li>
+      <li><strong>Diapos 4–5</strong> : les cinq catégories de commandes (DDL, DML, DQL, DCL, SQL intégré), vues au <a href="cours-02-sql-postgresql.html#cinq-categories-de-commandes">cours 2</a>. Ce cours reste dans le DML.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les fonctions prédéfinies <span class="ref">diapos 6–11</span></h2>
+    <p>Une colonne n'est pas toujours affichable telle quelle : on veut un nom en minuscules, les trois premières lettres d'un métier, une date décalée de trente ans. Les fonctions transforment les valeurs ligne par ligne.</p>
+
+    <h3>Trois catégories <span class="ref">diapos 6–7</span></h3>
+    <ul>
+      <li><strong>Les fonctions prédéfinies classiques</strong> : voir la documentation, <a href="http://docs.postgresql.fr/14/functions.html">docs.postgresql.fr/14/functions.html</a>.</li>
+      <li><strong>Les fonctions d'agrégation</strong>, très pratiques dans les <code>SELECT</code> avec <code>GROUP BY</code> (section 3).</li>
+      <li><strong>Les fonctions définies par l'utilisateur</strong>, qui sont des objets du SGBD : elles seront vues en L3.</li>
+    </ul>
+    <p>PostgreSQL offre un grand nombre de fonctions, dont beaucoup hors du standard SQL, ce qui pose un problème de compatibilité avec les autres SGBD. Ces fonctions sont « typées » : chacune attend des arguments d'un certain type, et renvoie une valeur d'un certain type.</p>
+
+    <h3>Fonctions mathématiques et de caractères <span class="ref">diapos 8–10</span></h3>
+    <ul>
+      <li><strong>Mathématiques</strong> : valeur absolue <code>ABS</code>, arrondi <code>ROUND</code>, racine carrée <code>SQRT</code>, puissance <code>POWER</code>, <code>SIN(x)</code>, <code>COS(x)</code>, <code>TAN(x)</code>, <code>EXP(x)</code>, <code>LOG(x)</code>…</li>
+      <li><strong>Sur les caractères</strong>, et aussi de formatage des types, de dates, de géométrie…</li>
+    </ul>
+    <div class="tableau compact">
+      <table>
+        <caption>Quelques fonctions de caractères (diapo 9), avec leur résultat sous PostgreSQL</caption>
+        <thead><tr><th>Rôle</th><th>Fonction</th><th>Exemple</th><th>Résultat</th></tr></thead>
+        <tbody>
+          <tr><td>Remplacement de caractères</td><td><code>TRANSLATE(chaine, val1, val2)</code></td><td><code>translate('Hélène', 'éè', 'ee')</code></td><td><code>Helene</code></td></tr>
+          <tr><td>Remplacement d'une sous-chaîne</td><td><code>REPLACE(chaine, ch1, ch2)</code></td><td><code>replace('Paris Orly', 'Orly', 'Roissy')</code></td><td><code>Paris Roissy</code></td></tr>
+          <tr><td>Modification de la casse</td><td><code>UPPER(chaine)</code>, <code>LOWER(chaine)</code></td><td><code>upper('Dallas')</code></td><td><code>DALLAS</code></td></tr>
+          <tr><td>Extraction d'une sous-chaîne</td><td><code>SUBSTRING(chaine FROM départ FOR longueur)</code>, <code>SUBSTR(chaine, départ, longueur)</code></td><td><code>substring('Recherche' FROM 1 FOR 4)</code></td><td><code>Rech</code></td></tr>
+          <tr><td>Les <em>n</em> derniers caractères</td><td><code>RIGHT(chaine, longueur)</code></td><td><code>right('Recherche', 3)</code></td><td><code>che</code></td></tr>
+          <tr><td>Longueur</td><td><code>LENGTH(chaine)</code></td><td><code>length('Recherche')</code></td><td><code>9</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>La diapo précise que <code>TRANSLATE</code> et <code>REPLACE</code> ne sont pas standard (SQL 2003), et que les <em>n</em> derniers caractères s'obtiennent aussi, en SQL standard, par <code>SUBSTRING(str FROM CHAR_LENGTH(str) - n + 1 FOR n)</code>.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>TRANSLATE ou REPLACE</span></p>
+      <p><code>TRANSLATE</code> travaille caractère par caractère : chaque caractère de <code>val1</code> est remplacé par le caractère de même rang dans <code>val2</code>, et supprimé si <code>val2</code> est plus courte. <code>REPLACE</code> remplace une sous-chaîne entière. Ainsi <code>translate('abcabc', 'bc', 'X')</code> donne <code>aXaX</code> (b devient X, c disparaît), comme <code>replace('abcabc', 'bc', 'X')</code>, mais pour une autre raison.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Deux requêtes</span> <span class="ref">diapo 10</span></p>
+<pre class="terminal"><code>nath=# SELECT nom_emp, substr(metier,1,3) FROM emp WHERE sal&gt;2000;
+ nom_emp | substr
+---------+--------
+ KING    | Pre
+ JONES   | Man
+ FORD    | Ana
+ BLAKE   | Man
+ CLARK   | Man
+ SCOTT   | Ana
+(6 lignes)
+
+nath=# SELECT distinct lower(translate(nom_dep,'a','x')) FROM dep;
+   lower
+------------
+ comptxble
+ operxtions
+ recherche
+ ventes
+(4 lignes)</code></pre>
+      <p>La colonne calculée porte le nom de la fonction (<code>substr</code>, <code>lower</code>) : on la renomme avec <code>AS</code>.</p>
+    </div>
+
+    <h3>Bien choisir son type <span class="ref">diapo 11</span></h3>
+    <p>Le type d'une colonne décide des fonctions qu'on pourra lui appliquer. Exemple du TP 1 :</p>
+    <ul>
+      <li><code>date_emb</code> est de type <code>date</code> : on accède aux intervalles (<code>INTERVAL</code>). La question 10 du TP 1 (« donner un coup de jeune » en ajoutant 30 ans aux dates d'embauche) s'écrit <code>date_emb + INTERVAL '30 years'</code> : KING passe du 17 novembre 1981 au 17 novembre 2011.</li>
+      <li>Type <code>numeric</code> ou <code>float</code> ?</li>
+    </ul>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="colonne-titre">numeric</p>
+        <ul>
+          <li>++ exactitude (attention aux arrondis) ;</li>
+          <li>bien pour les calculs en euros, dont la plus petite unité est le centime ;</li>
+          <li>-- calcul lent.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p class="colonne-titre">float ou real</p>
+        <ul>
+          <li>-- exactitude variable ;</li>
+          <li>++ calcul plus rapide.</li>
+        </ul>
+      </div>
+    </div>
+    <p>Pour en savoir plus : <a href="https://docs.postgresql.fr/14/datatype-numeric.html">docs.postgresql.fr/14/datatype-numeric.html</a>.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>L'exactitude, concrètement</span></p>
+      <p>Un <code>float</code> stocke les nombres en binaire, où 0,1 n'a pas d'écriture exacte. Sous PostgreSQL, <code>0.1::float8 + 0.2::float8</code> vaut <code>0.30000000000000004</code>, et le test <code>= 0.3</code> est faux ; avec <code>numeric</code>, il est vrai. Pour des salaires, un centime perdu à chaque calcul finit par se voir : d'où <code>numeric(7,2)</code> dans la table <code>emp</code>.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les fonctions d'agrégation <span class="ref">diapos 12–16</span></h2>
+    <p>Combien d'employés ? Quel salaire moyen ? Ces questions ne portent pas sur une ligne, mais sur un ensemble de lignes. Les fonctions d'agrégation calculent <strong>une seule valeur</strong> à partir d'un ensemble de valeurs.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Fonction d'agrégation</span> <span class="ref">diapo 12</span></p>
+      <p>Une <dfn>fonction d'agrégation</dfn> (<span class="en" lang="en">aggregate function</span>) calcule une seule valeur à partir d'un ensemble de valeurs en entrée. Elle s'écrit <code>nom_agrégat(expression)</code>, <code>nom_agrégat(ALL expression)</code>, <code>nom_agrégat(DISTINCT expression)</code> ou <code>nom_agrégat(*)</code>, et s'utilise dans la clause <code>SELECT</code> et dans la clause <code>HAVING</code>.</p>
+    </div>
+
+    <div class="tableau compact">
+      <table>
+        <caption>Les fonctions d'agrégation les plus fréquentes (diapo 13), et leur valeur sur la table emp</caption>
+        <thead><tr><th>Fonction</th><th>Calcule</th><th>Sur emp</th></tr></thead>
+        <tbody>
+          <tr><td><code>COUNT</code></td><td>le nombre de valeurs non <code>NULL</code></td><td><code>count(DISTINCT metier)</code> = 5</td></tr>
+          <tr><td><code>SUM</code></td><td>la somme de valeurs numériques ou d'intervalles</td><td><code>sum(sal)</code> = 31179.55</td></tr>
+          <tr><td><code>AVG</code></td><td>la moyenne de valeurs numériques ou d'intervalles</td><td><code>avg(comm)</code> = 550</td></tr>
+          <tr><td><code>MIN</code>, <code>MAX</code></td><td>la plus petite ou la plus grande valeur (nombres, chaînes ou dates)</td><td><code>min(date_emb)</code> = 1980-12-17</td></tr>
+          <tr><td><code>STDDEV</code></td><td>l'écart-type de valeurs numériques</td><td></td></tr>
+          <tr><td><code>VARIANCE</code></td><td>la variance de valeurs numériques</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Documentation : <a href="https://docs.postgresql.fr/14/functions-aggregate.html">fonctions d'agrégat</a> et <a href="https://docs.postgresql.fr/14/tutorial-agg.html">tutoriel</a>.</p>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Le choix de l'expression à agréger</span> <span class="ref">diapo 14</span></p>
+      <ul>
+        <li><code>agrégation(*)</code> représente le tuple complet : les lignes qui contiennent des <code>NULL</code> sont comptées.</li>
+        <li><code>agrégation(colonne)</code> porte sur un attribut : elle ignore les <code>NULL</code>.</li>
+        <li><code>DISTINCT</code> est appliqué avant la fonction.</li>
+        <li>La fonction d'agrégation ne renvoie qu'une seule valeur, donc une seule ligne de résultat.</li>
+      </ul>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Compter avec COUNT</span> <span class="ref">diapos 15–16</span></p>
+<pre><code class="language-sql">SELECT count(id_chef)          AS manager,
+       count(DISTINCT id_chef) AS nombre_manager,
+       count(*)                AS toutes_lignes
+FROM emp;</code></pre>
+      <div class="tableau compact mono centre">
+        <table>
+          <caption>Résultat</caption>
+          <thead><tr><th>manager</th><th>nombre_manager</th><th>toutes_lignes</th></tr></thead>
+          <tbody><tr><td>13</td><td>6</td><td>14</td></tr></tbody>
+        </table>
+      </div>
+      <p>14 lignes en tout ; 13 employés ont un chef (KING n'en a pas, son <code>id_chef</code> est <code>NULL</code>) ; ces 13 employés n'ont que 6 chefs différents.</p>
+      <p>De même, <code>SELECT count(DISTINCT metier) FROM emp;</code> donne 5, et <code>SELECT avg(comm) FROM emp;</code> donne 550 : la moyenne ne porte que sur les quatre commissions renseignées, \((300 + 500 + 1400 + 0) / 4\), et pas sur les 14 employés.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Trier et regrouper : ORDER BY, GROUP BY, HAVING <span class="ref">diapos 17–33</span></h2>
+    <p>Des neuf clauses de <code>SELECT</code>, on connaît <code>SELECT</code>, <code>FROM</code>, <code>WHERE</code> et les opérations ensemblistes. Restent le tri, les regroupements et la restriction des groupes.</p>
+
+    <h3>La clause ORDER BY <span class="ref">diapos 18–20</span></h3>
+    <p><strong>Sans</strong> <code>ORDER BY</code>, l'ordre des lignes est aléatoire et non garanti. La clause trie les lignes du résultat :</p>
+<pre><code class="language-sql">ORDER BY expression [ASC | DESC] [, ...]</code></pre>
+    <ul>
+      <li><code>expression</code> : un champ, un ordinal (numéro de colonne du résultat) ou une opération mathématique de base ;</li>
+      <li><code>ASC</code> : ordre ascendant, tri croissant (par défaut) ; <code>DESC</code> : ordre descendant, tri décroissant ;</li>
+      <li>on peut trier selon plusieurs champs, dans l'ordre précisé.</li>
+    </ul>
+    <p><code>SELECT * FROM emp ORDER BY nom_emp;</code> range les 14 employés par ordre alphabétique : ADAMS, ALLEN, BLAKE, CLARK, FORD, JAMES, JONES, KING, MARTIN, MILLER, SCOTT, SMITH, TURNER, WARD (diapo 19).</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Trier selon deux colonnes</span> <span class="ref">diapo 20</span></p>
+<pre><code class="language-sql">SELECT sal, comm FROM emp ORDER BY 2, 1;</code></pre>
+      <p>Tri par commission (colonne 2), puis, à commission égale, par salaire (colonne 1). <strong>La valeur <code>NULL</code> est considérée comme supérieure à toute autre valeur</strong> : les dix employés sans commission viennent en dernier, triés par salaire.</p>
+      <div class="tableau compact mono centre">
+        <table>
+          <caption>Résultat sur la base du TP (la diapo montre une autre version de la table)</caption>
+          <thead><tr><th>sal</th><th>comm</th></tr></thead>
+          <tbody>
+            <tr><td>1778.45</td><td>0.00</td></tr>
+            <tr><td>1845.85</td><td>300.00</td></tr>
+            <tr><td>1253.12</td><td>500.00</td></tr>
+            <tr><td>1251.45</td><td>1400.00</td></tr>
+            <tr><td>1212.24</td><td></td></tr>
+            <tr><td>1253.65</td><td></td></tr>
+            <tr><td>1304.67</td><td></td></tr>
+            <tr><td>…</td><td></td></tr>
+            <tr><td>5000.00</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><span class="badge ajout">Ajout</span> En ordre décroissant, les <code>NULL</code> passent donc en tête : <code>ORDER BY comm DESC</code> commence par les dix employés sans commission. <code>NULLS LAST</code> (<code>ORDER BY comm DESC NULLS LAST</code>) les renvoie à la fin.</p>
+    </div>
+
+    <h3>La clause GROUP BY <span class="ref">diapos 21–26</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>GROUP BY</span> <span class="ref">diapo 21</span></p>
+      <p><code>GROUP BY expression [, ...]</code> classe les données par <strong>groupes</strong>. Un groupe est le sous-ensemble des lignes qui ont la même valeur pour les attributs précisés. L'expression est un nom de colonne en entrée, un nom ou un numéro de colonne en sortie, ou une expression sur les champs en entrée. La clause se place après <code>WHERE</code> et avant <code>ORDER BY</code>.</p>
+      <ul>
+        <li>Chaque attribut de la clause <code>SELECT</code> doit se trouver dans la clause <code>GROUP BY</code>, ou être dans une fonction d'agrégation.</li>
+        <li>Une seule ligne est produite par groupe.</li>
+      </ul>
+    </div>
+
+    <p>Les diapos 22 à 26 construisent l'idée pas à pas. <code>SELECT avg(sal) FROM emp;</code> calcule le salaire moyen de toute l'entreprise : une seule valeur, 2227.11. Avec <code>GROUP BY metier</code>, la moyenne est calculée au sein de chaque groupe :</p>
+<pre><code class="language-sql">SELECT avg(sal) FROM emp GROUP BY metier;</code></pre>
+    <div class="tableau compact mono centre">
+      <table>
+        <caption>Salaire moyen par métier (métier ajouté pour la lecture)</caption>
+        <thead><tr><th>metier</th><th>avg(sal)</th></tr></thead>
+        <tbody>
+          <tr><td>Secretaire</td><td>1319.00</td></tr>
+          <tr><td>Vendeur</td><td>1532.22</td></tr>
+          <tr><td>Manager</td><td>2827.91</td></tr>
+          <tr><td>Analyste</td><td>3145.48</td></tr>
+          <tr><td>President</td><td>5000.00</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Note <span>Remarques de la diapo 24</span></p>
+      <ul>
+        <li>Une seule ligne est retournée par groupe, et la fonction est appliquée au sein de chaque groupe.</li>
+        <li>La colonne calculée ne porte que le nom de la fonction (<code>avg</code>), sans indication d'attribut.</li>
+        <li>Si l'attribut groupé n'est pas indiqué dans le <code>SELECT</code>, on ne comprend pas forcément l'affichage : cinq moyennes, mais de quels métiers ? D'où <code>SELECT metier, avg(sal) … GROUP BY metier</code>.</li>
+      </ul>
+      <p><span class="badge a-verifier">À vérifier</span> Les diapos 30 à 32 affichent 3145,46 pour les analystes ; le calcul donne \((3056{,}33 + 3234{,}62) / 2 = 3145{,}475\), soit 3145,48 en arrondissant.</p>
+    </div>
+
+    <p>Même démarche pour compter (diapos 25–26) : <code>SELECT count(*) FROM emp;</code> compte toutes les lignes, et avec <code>GROUP BY id_dep</code>, les lignes de chaque département.</p>
+<pre><code class="language-sql">SELECT count(*), id_dep FROM emp GROUP BY id_dep;</code></pre>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 660 236" width="660" role="img" aria-labelledby="fig-groupes-titre">
+        <title id="fig-groupes-titre">GROUP BY id_dep : les 14 employés sont répartis en trois groupes, 10 (KING, CLARK, MILLER), 20 (JONES, FORD, SMITH, SCOTT, ADAMS) et 30 (BLAKE, ALLEN, WARD, MARTIN, TURNER, JAMES) ; count(*) produit une ligne par groupe : 3, 5 et 6.</title>
+        <defs>
+          <marker id="fleche-groupes" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="20" y="16" class="t2" font-size="12">Lignes de emp, regroupées par id_dep</text>
+        <text x="540" y="16" class="t2" font-size="12">Résultat</text>
+        <rect class="boite" x="490" y="28" width="150" height="26"/>
+        <text x="530" y="46" text-anchor="middle" class="gras mono" font-size="12">count</text>
+        <text x="600" y="46" text-anchor="middle" class="gras mono" font-size="12">id_dep</text>
+        <rect class="boite-accent" x="20" y="34" width="420" height="54" rx="6"/>
+        <text x="30" y="52" class="gras" font-size="12">id_dep = 10</text>
+        <text x="30" y="74" class="mono" font-size="12">KING</text>
+        <text x="98" y="74" class="mono" font-size="12">CLARK</text>
+        <text x="166" y="74" class="mono" font-size="12">MILLER</text>
+        <rect class="boite-accent" x="490" y="54" width="150" height="30"/>
+        <text x="530" y="74" text-anchor="middle" class="mono" font-size="12">3</text>
+        <text x="600" y="74" text-anchor="middle" class="mono" font-size="12">10</text>
+        <path class="trait" d="M444 61 L486 69" marker-end="url(#fleche-groupes)"/>
+        <rect class="boite" x="20" y="100" width="420" height="54" rx="6"/>
+        <text x="30" y="118" class="gras" font-size="12">id_dep = 20</text>
+        <text x="30" y="140" class="mono" font-size="12">JONES</text>
+        <text x="98" y="140" class="mono" font-size="12">FORD</text>
+        <text x="166" y="140" class="mono" font-size="12">SMITH</text>
+        <text x="234" y="140" class="mono" font-size="12">SCOTT</text>
+        <text x="302" y="140" class="mono" font-size="12">ADAMS</text>
+        <rect class="boite" x="490" y="88" width="150" height="30"/>
+        <text x="530" y="108" text-anchor="middle" class="mono" font-size="12">5</text>
+        <text x="600" y="108" text-anchor="middle" class="mono" font-size="12">20</text>
+        <path class="trait" d="M444 127 L486 103" marker-end="url(#fleche-groupes)"/>
+        <rect class="boite-accent" x="20" y="166" width="420" height="54" rx="6"/>
+        <text x="30" y="184" class="gras" font-size="12">id_dep = 30</text>
+        <text x="30" y="206" class="mono" font-size="12">BLAKE</text>
+        <text x="98" y="206" class="mono" font-size="12">ALLEN</text>
+        <text x="166" y="206" class="mono" font-size="12">WARD</text>
+        <text x="234" y="206" class="mono" font-size="12">MARTIN</text>
+        <text x="302" y="206" class="mono" font-size="12">TURNER</text>
+        <text x="370" y="206" class="mono" font-size="12">JAMES</text>
+        <rect class="boite-accent" x="490" y="122" width="150" height="30"/>
+        <text x="530" y="142" text-anchor="middle" class="mono" font-size="12">6</text>
+        <text x="600" y="142" text-anchor="middle" class="mono" font-size="12">30</text>
+        <path class="trait" d="M444 193 L486 137" marker-end="url(#fleche-groupes)"/>
+      </svg>
+      <figcaption>GROUP BY id_dep : un groupe par département, une ligne de résultat par groupe (d'après la diapo 26). <span class="badge a-verifier">À vérifier</span> Les captures des diapos 25 et 26 ont été faites sur une table de 15 employés (<code>count</code> = 15, et 7 au département 30) ; sur les 14 employés de la table affichée, on obtient 14, puis 3, 5 et 6.</figcaption>
+    </figure>
+
+    <h3>GROUP BY avec WHERE, et les sous-groupes <span class="ref">diapos 27–28</span></h3>
+    <p>On combine <code>GROUP BY</code> avec un <code>WHERE</code>, à placer avant : le <code>WHERE</code> choisit d'abord les lignes, qui sont ensuite regroupées.</p>
+<pre><code class="language-sql">SELECT metier, avg(sal) FROM emp
+WHERE nom_emp LIKE '%A%'
+GROUP BY metier;</code></pre>
+    <div class="tableau compact mono centre">
+      <table>
+        <caption>Salaire moyen par métier, parmi les employés dont le nom contient un A</caption>
+        <thead><tr><th>metier</th><th>avg(sal)</th></tr></thead>
+        <tbody>
+          <tr><td>Secretaire</td><td>1279.16</td></tr>
+          <tr><td>Vendeur</td><td>1450.14</td></tr>
+          <tr><td>Manager</td><td>2754.24</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Aux attributs utilisés dans quelle clause</span> <span class="ref">diapo 27</span></p>
+<pre><code class="language-sql">SELECT nom_emp, metier, avg(sal) FROM emp
+WHERE nom_emp LIKE '%A%'
+GROUP BY metier;</code></pre>
+      <p>Cette requête ne fonctionne pas : il existe plusieurs valeurs de <code>nom_emp</code> par métier, et une ligne par groupe ne peut en afficher qu'une. PostgreSQL : <code>column "emp.nom_emp" must appear in the GROUP BY clause or be used in an aggregate function</code>. Sur la diapo, les apostrophes de <code>‘%A%’</code> sont typographiques ; il faut <code>'%A%'</code>.</p>
+    </div>
+    <p>On peut former des <strong>sous-groupes</strong> en regroupant selon plusieurs colonnes, et l'ordre des colonnes du <code>GROUP BY</code> n'a pas d'importance (diapo 28) : <code>GROUP BY metier, id_chef</code> et <code>GROUP BY id_chef, metier</code> donnent les mêmes quatre groupes, aux mêmes moyennes.</p>
+<pre><code class="language-sql">SELECT id_chef, metier, avg(sal) FROM emp
+WHERE nom_emp LIKE '%A%'
+GROUP BY metier, id_chef;</code></pre>
+    <div class="tableau compact mono centre">
+      <table>
+        <caption>Quatre sous-groupes (moyennes arrondies)</caption>
+        <thead><tr><th>id_chef</th><th>metier</th><th>avg(sal)</th></tr></thead>
+        <tbody>
+          <tr><td>7698</td><td>Vendeur</td><td>1450.14</td></tr>
+          <tr><td>7698</td><td>Secretaire</td><td>1253.65</td></tr>
+          <tr><td>7839</td><td>Manager</td><td>2754.24</td></tr>
+          <tr><td>7788</td><td>Secretaire</td><td>1304.67</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>La clause HAVING <span class="ref">diapos 29–33</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>HAVING</span> <span class="ref">diapo 29</span></p>
+      <p><code>HAVING</code> applique une restriction sur les <strong>groupes</strong> : <code>HAVING</code> est à <code>GROUP BY</code> ce que <code>WHERE</code> est à <code>SELECT</code>.</p>
+      <ul>
+        <li><code>WHERE</code> restreint les enregistrements ; <code>HAVING</code> restreint les groupes.</li>
+        <li>Même syntaxe que <code>WHERE</code>, mais on n'y trouve que des fonctions d'agrégation et des expressions qui figurent dans la clause <code>GROUP BY</code>.</li>
+      </ul>
+    </div>
+<pre><code class="language-sql">SELECT avg(sal) FROM emp GROUP BY metier HAVING avg(sal) &gt; 1500;</code></pre>
+    <p>Parmi les cinq moyennes par métier, <code>HAVING</code> ne garde que celles qui dépassent 1 500 : les secrétaires (1319.00) disparaissent, il reste Vendeur, Manager, Analyste et President (diapos 30–31).</p>
+
+    <div class="bloc exercice" id="ex-1">
+      <p class="bloc-titre">Exercice 1 <span>Problème ?</span> <span class="ref">diapo 32</span></p>
+      <p>Parmi ces quatre requêtes, lesquelles provoquent une erreur, et pourquoi ? Que renvoient les autres ?</p>
+<pre><code class="language-sql">SELECT metier, avg(sal) FROM emp GROUP BY metier HAVING avg(sal) &gt; 1500;
+SELECT avg(sal) FROM emp HAVING nom_emp LIKE '%A%';
+SELECT nom_emp FROM emp GROUP BY metier HAVING nom_emp LIKE '%A%';
+SELECT metier, avg(sal) FROM emp GROUP BY metier HAVING metier LIKE '%A%';</code></pre>
+      <details class="indice"><summary>Indice</summary><p>Dans le <code>HAVING</code> et le <code>SELECT</code> d'une requête groupée, une colonne doit être groupée ou agrégée. Sans <code>GROUP BY</code> mais avec un agrégat, toute la table forme un seul groupe.</p></details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <ul>
+          <li><strong>1</strong> : correcte. Quatre lignes : Vendeur 1532.22, Manager 2827.91, Analyste 3145.48, President 5000.00 (le tableau de la diapo).</li>
+          <li><strong>2</strong> : erreur. Sans <code>GROUP BY</code>, toute la table forme un seul groupe, et <code>nom_emp</code> n'y a pas une valeur unique. Pour ne moyenner que les employés dont le nom contient un A, la condition porte sur les lignes : elle va dans un <code>WHERE</code>.</li>
+          <li><strong>3</strong> : erreur, pour la même raison : <code>nom_emp</code> n'est ni groupé ni agrégé, ni dans le <code>SELECT</code>, ni dans le <code>HAVING</code>.</li>
+          <li><strong>4</strong> : correcte, car <code>metier</code> est groupé. Mais <code>LIKE</code> distingue les majuscules : seul « Analyste » contient un A majuscule, et le résultat n'a qu'une ligne. Avec <code>ILIKE</code>, on obtient Manager, Analyste et Secretaire. Une condition sur une colonne groupée pourrait d'ailleurs aller dans le <code>WHERE</code>.</li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Le métier au salaire moyen le plus élevé</span> <span class="ref">diapo 33</span></p>
+      <p>Quel est le métier qui a en moyenne le salaire le plus élevé ? La requête groupée donne les cinq moyennes, et c'est la plus forte que l'on veut. On copie-colle cette requête comme sous-requête dans le <code>HAVING</code> :</p>
+<pre><code class="language-sql">SELECT metier, avg(sal) FROM emp GROUP BY metier
+HAVING avg(sal) &gt;= ALL (SELECT avg(sal) FROM emp GROUP BY metier);</code></pre>
+      <p>La sous-requête renvoie la colonne des cinq moyennes. On compare la moyenne de chaque groupe à celles de tous les groupes, et la plus forte l'emporte : President, 5000.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>LIMIT, OFFSET et l'ordre d'exécution <span class="ref">diapos 34–37</span></h2>
+    <p>Il reste deux clauses pour limiter l'affichage, puis une vue d'ensemble : dans quel ordre PostgreSQL exécute-t-il réellement toutes ces clauses ?</p>
+
+    <h3>Les clauses LIMIT et OFFSET <span class="ref">diapos 34–35</span></h3>
+<pre><code class="language-sql">LIMIT {ALL | nombre}
+OFFSET début</code></pre>
+    <p>Elles restreignent le nombre de lignes renvoyées : <code>ALL</code> (par défaut) les garde toutes ; <code>nombre</code> est le nombre total de lignes à afficher ; <code>début</code> est le nombre de lignes à sauter avant d'afficher.</p>
+<pre><code class="language-sql">SELECT * FROM emp ORDER BY nom_emp LIMIT 4 OFFSET 2;</code></pre>
+    <p>Dans l'ordre alphabétique, on saute ADAMS et ALLEN, puis on affiche quatre employés : BLAKE, CLARK, FORD et JAMES.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Pas à la place d'un MAX</span> <span class="ref">diapo 34</span></p>
+      <p>Il ne faut pas utiliser <code>LIMIT</code> à la place d'un <code>MAX</code> : risque d'incohérence. <span class="badge ajout">Ajout</span> Exemple : le dernier embauché de 1981. <code>… ORDER BY date_emb DESC LIMIT 1</code> renvoie FORD seul, alors que FORD et JAMES ont été embauchés le même jour, le 3 décembre 1981. La version avec <code>WHERE date_emb = (SELECT max(date_emb) FROM emp WHERE …)</code> renvoie les deux.</p>
+    </div>
+
+    <h3>Récapitulatif de la commande SELECT <span class="ref">diapo 36</span></h3>
+    <div class="tableau compact">
+      <table>
+        <caption>Rôle de chaque clause (diapo 36)</caption>
+        <thead><tr><th>Clause</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td><code>SELECT</code></td><td>les noms des colonnes à afficher</td></tr>
+          <tr><td><code>FROM</code></td><td>la table contenant les lignes</td></tr>
+          <tr><td><code>WHERE</code></td><td>les conditions à remplir par les lignes</td></tr>
+          <tr><td><code>GROUP BY</code></td><td>les critères de regroupement des lignes</td></tr>
+          <tr><td><code>HAVING</code></td><td>les conditions à remplir par les groupes</td></tr>
+          <tr><td><code>ORDER BY</code></td><td>l'ordre d'affichage</td></tr>
+          <tr><td><code>LIMIT</code></td><td>le nombre de lignes à afficher</td></tr>
+          <tr><td><code>OFFSET</code></td><td>la première ligne affichée</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>L'ordre d'exécution <span class="ref">diapo 37</span></h3>
+    <p>Les clauses ne s'exécutent pas dans l'ordre où on les écrit. D'après la diapo :</p>
+    <ol class="etapes">
+      <li><code>FROM</code> : les données de départ, jointures comprises ;</li>
+      <li><code>WHERE</code> : le filtre des lignes ;</li>
+      <li>les fonctions de groupe et <code>GROUP BY</code> ;</li>
+      <li><code>HAVING</code> : le filtre des groupes ;</li>
+      <li><code>SELECT</code> : le calcul des colonnes affichées ;</li>
+      <li><code>UNION</code>, <code>INTERSECT</code>, <code>EXCEPT</code> ;</li>
+      <li><code>ORDER BY</code> ;</li>
+      <li><code>DISTINCT</code> ;</li>
+      <li><code>OFFSET</code> ;</li>
+      <li><code>LIMIT</code>.</li>
+    </ol>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Ce que cet ordre explique</span></p>
+      <ul>
+        <li>Un alias défini dans le <code>SELECT</code> (étape 5) n'existe pas encore dans le <code>WHERE</code> (étape 2) : <code>WHERE tot &gt; 2000</code> échoue. Il est en revanche utilisable dans <code>ORDER BY</code>.</li>
+        <li>Un agrégat ne peut pas figurer dans le <code>WHERE</code>, exécuté avant le regroupement : c'est le rôle du <code>HAVING</code>.</li>
+        <li><span class="badge a-verifier">À vérifier</span> La documentation de PostgreSQL (commande <code>SELECT</code>) place l'élimination des doublons par <code>DISTINCT</code> avec le calcul du <code>SELECT</code>, donc avant les opérations ensemblistes et <code>ORDER BY</code>, et non après comme sur la diapo. Le résultat est le même dans les cas courants.</li>
+      </ul>
+    </div>
+
+    <div class="bloc exercice" id="ex-2">
+      <p class="bloc-titre">Exercice 2 <span>Agrégats et regroupements sur EMP</span></p>
+      <ol>
+        <li>Pour chaque métier, le nombre d'employés et le salaire moyen arrondi au centime.</li>
+        <li>Les noms des départements qui comptent au moins 5 employés.</li>
+        <li>L'effectif de chaque département, y compris ceux qui n'ont aucun employé (0).</li>
+        <li>Le métier dont le salaire moyen est le plus bas.</li>
+        <li>Les trois employés les mieux payés, du plus payé au moins payé.</li>
+      </ol>
+      <details class="indice"><summary>Indice</summary><p>Question 3 : une jointure externe, puis <code>count</code> d'une colonne de <code>emp</code>, qui ignore les <code>NULL</code>. <code>count(*)</code> compterait 1 pour Operations.</p></details>
+    </div>
+    <div class="atelier" id="c4-ex2-q1" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 1 · Effectif et salaire moyen par métier",
+        "consigne": "<p>Colonnes attendues : <code>metier</code>, le nombre d'employés, le salaire moyen arrondi à 2 décimales.</p>",
+        "options": {
+          "jeu": "entreprise"
+        },
+        "depart": "SELECT ",
+        "solution": "SELECT metier, count(*), round(avg(sal), 2)\nFROM emp\nGROUP BY metier;",
+        "explication": "<p>Un groupe par métier ; <code>count(*)</code> et <code>avg(sal)</code> sont calculés dans chaque groupe, <code>round(…, 2)</code> arrondit au centime. Cinq lignes, de Secretaire (4 employés, 1319.00) à President (1, 5000.00).</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="c4-ex2-q2" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 2 · Départements d'au moins 5 employés",
+        "consigne": "<p>Colonne attendue : <code>nom_dep</code>.</p>",
+        "options": {
+          "jeu": "entreprise"
+        },
+        "depart": "SELECT ",
+        "solution": "SELECT d.nom_dep\nFROM dep AS d\nJOIN emp AS e ON e.id_dep = d.id_dep\nGROUP BY d.nom_dep\nHAVING count(*) >= 5;",
+        "explication": "<p>La jointure donne une ligne par employé avec son département ; on regroupe par département, et <code>HAVING</code> garde les groupes d'au moins 5 lignes : Recherche (5) et Ventes (6). La condition porte sur un agrégat : elle ne peut pas aller dans le <code>WHERE</code>.</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="c4-ex2-q3" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 3 · Effectif de chaque département",
+        "consigne": "<p>Colonnes attendues : <code>nom_dep</code>, l'effectif (0 pour un département vide).</p>",
+        "options": {
+          "jeu": "entreprise"
+        },
+        "depart": "SELECT ",
+        "solution": "SELECT d.nom_dep, count(e.id_emp)\nFROM dep AS d\nLEFT JOIN emp AS e ON e.id_dep = d.id_dep\nGROUP BY d.nom_dep;",
+        "explication": "<p>La jointure externe garde Operations, avec des colonnes de <code>emp</code> à <code>NULL</code>. <code>count(e.id_emp)</code> ignore ce <code>NULL</code> et donne 0 ; <code>count(*)</code> compterait la ligne et donnerait 1. Comptable 3, Operations 0, Recherche 5, Ventes 6.</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="c4-ex2-q4" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 4 · Le métier au salaire moyen le plus bas",
+        "consigne": "<p>Colonne attendue : <code>metier</code>.</p>",
+        "options": {
+          "jeu": "entreprise"
+        },
+        "depart": "SELECT ",
+        "solution": "SELECT metier\nFROM emp\nGROUP BY metier\nHAVING avg(sal) <= ALL (SELECT avg(sal) FROM emp GROUP BY metier);",
+        "explication": "<p>Même idée que la diapo 33, avec <code>&lt;= ALL</code> : la moyenne du groupe est inférieure ou égale à toutes les moyennes. Secretaire, à 1319.00. Un <code>ORDER BY avg(sal) LIMIT 1</code> donnerait ici le même métier, mais en perdrait un en cas d'égalité.</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="c4-ex2-q5" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 5 · Les trois mieux payés",
+        "consigne": "<p>Colonnes attendues : <code>nom_emp</code>, <code>sal</code>, du plus payé au moins payé.</p>",
+        "options": {
+          "jeu": "entreprise",
+          "ordre": true
+        },
+        "depart": "SELECT ",
+        "solution": "SELECT nom_emp, sal\nFROM emp\nORDER BY sal DESC\nLIMIT 3;",
+        "explication": "<p>On trie par salaire décroissant, puis on garde les trois premières lignes : KING, SCOTT, FORD. L'ordre compte ici, car l'énoncé le demande ; sans <code>ORDER BY</code>, <code>LIMIT 3</code> renverrait trois employés quelconques.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>UPDATE et DELETE à partir d'autres tables <span class="ref">diapos 38–42</span></h2>
+    <p><code>UPDATE</code> et <code>DELETE</code> ont accès à tous les attributs de la table qu'ils modifient. Mais comment tenir compte d'une information rangée dans une autre table ?</p>
+    <ul>
+      <li><strong>Norme SQL</strong> : faire une sous-requête.</li>
+      <li><strong>PostgreSQL</strong> : <code>FROM … WHERE …</code> pour <code>UPDATE</code>, <code>USING … WHERE …</code> pour <code>DELETE</code>. C'est une jointure écrite dans la commande de modification.</li>
+    </ul>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Enregistrer un directeur</span> <span class="ref">diapos 39, 41</span></p>
+      <p>Au lieu d'une sous-requête par directeur (cours 3), on peut utiliser le <code>FROM</code> pour prendre l'information dans <code>emp</code> :</p>
+<pre><code class="language-sql">-- SQL99 : sous-requête
+UPDATE dep SET id_dir = (SELECT id_emp FROM emp WHERE nom_emp = 'KING')
+WHERE nom_dep = 'Comptable';
+
+-- PostgreSQL : FROM
+UPDATE dep SET id_dir = id_emp FROM emp
+WHERE nom_dep = 'Comptable' AND nom_emp = 'KING'
+  AND dep.id_dep = emp.id_dep;</code></pre>
+      <p>Il faut faire de même avec les autres directeurs. <span class="badge a-verifier">À vérifier</span> Sur la diapo 41, la sous-requête s'écrit <code>(SELECT id_emp FROM emp nom_emp='KING’)</code>, sans <code>WHERE</code> et avec une apostrophe typographique : corrigée ici.</p>
+      <p><span class="badge ajout">Ajout</span> La condition <code>dep.id_dep = emp.id_dep</code> ajoute une exigence que la sous-requête n'a pas : le directeur doit appartenir au département qu'il dirige. C'est vrai pour KING, FORD et BLAKE ; pour un directeur venu d'un autre département, cet <code>UPDATE</code> ne modifierait aucune ligne.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Doubler des salaires selon la ville</span> <span class="ref">diapo 40</span></p>
+      <p>Objectif : doubler le salaire des personnes qui travaillent dans une ville dont le nom comporte un C.</p>
+<pre><code class="language-sql">-- SQL99
+UPDATE emp SET sal = sal * 2
+WHERE id_dep IN (SELECT id_dep FROM dep WHERE loc LIKE '%C%');
+
+-- Version PostgreSQL (pas dans la norme)
+UPDATE emp SET sal = sal * 2 FROM dep
+WHERE loc LIKE '%C%' AND emp.id_dep = dep.id_dep;</code></pre>
+      <p>Les deux commandes modifient les 6 employés de Chicago, seule ville avec un C majuscule. Dans la seconde, la condition de jointure <code>emp.id_dep = dep.id_dep</code> est indispensable ; sans préfixe, <code>id_dep = id_dep</code> est refusé comme ambigu.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Les DELETE</span> <span class="ref">diapo 42</span></p>
+<pre><code class="language-sql">-- Suppression de tous les enregistrements
+DELETE FROM emp;
+-- Suppression selon une condition
+DELETE FROM emp WHERE date_emb &gt;= '2001-01-01';
+-- Suppression selon un attribut issu d'une autre table, SQL99
+DELETE FROM emp WHERE id_dep IN (SELECT id_dep FROM dep WHERE loc = 'CHICAGO');
+-- La même, PostgreSQL
+DELETE FROM emp USING dep
+WHERE dep.id_dep = emp.id_dep AND loc = 'CHICAGO';</code></pre>
+      <p><span class="badge a-verifier">À vérifier</span> Dans la base du TP, la ville s'écrit <code>'Chicago'</code> : avec <code>'CHICAGO'</code>, ces deux commandes ne suppriment <strong>aucune</strong> ligne, puisque la comparaison respecte la casse (cours 3). Avec <code>'Chicago'</code>, elles suppriment les 6 employés du département 30. Les apostrophes typographiques de la diapo sont aussi à remplacer.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Modifier une relation sans perdre de données <span class="ref">diapos 43–49</span></h2>
+    <p>Une erreur de modélisation découverte après coup ne se corrige pas en supprimant la table : elle contient des données. On la corrige par étapes, en respectant deux règles.</p>
+
+    <h3>Le principe <span class="ref">diapos 43–45</span></h3>
+    <p>La relation implémentée est <code>R1(a:int, b1:varchar, b2:varchar, c:varchar)</code>. C'est une mauvaise modélisation : <code>b1</code> et <code>b2</code> doivent être dans une relation à part. On veut obtenir <code>R1(a:int, #b:int, c:varchar)</code> et <code>R2(b:int, b1:varchar, b2:varchar)</code>.</p>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Restructurer une relation en cinq étapes</span> <span class="ref">diapos 43–45</span></p>
+      <p>Deux règles : <strong>on ne perd pas les données</strong> ; <strong>on assure les contraintes de clé étrangère</strong>.</p>
+      <ol>
+        <li><strong>Création de la nouvelle table</strong> R2 (structure), avec une clé primaire de type entier : <code>GENERATED ALWAYS AS IDENTITY</code>.</li>
+        <li><strong>Insertion des enregistrements</strong> dans R2 : on liste les insertions si l'on connaît les données a priori, ou on les extrait de R1 par un <code>INSERT INTO … SELECT</code>, grâce au <code>GENERATED ALWAYS AS IDENTITY</code> qui numérote seul.</li>
+        <li><strong>Insertion d'une nouvelle colonne</strong> dans R1, de type <code>INTEGER</code>, avec une clé étrangère vers R2.</li>
+        <li><strong>Mise à jour des enregistrements</strong> : on remplit la nouvelle colonne avec les bonnes informations.</li>
+        <li><strong>Suppression des colonnes redondantes</strong> de R1, après s'être assuré que l'étape 4 est correcte.</li>
+      </ol>
+    </div>
+
+    <h3>Exemple avec les avions <span class="ref">diapos 46–49</span></h3>
+    <p>Dans la première version de la base Avions (TP 2), il y a des aéroports partout.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 660 270" width="660" role="img" aria-labelledby="fig-avions-titre">
+        <title id="fig-avions-titre">Première version de la base Avions : Vol (id_vol, nom_aero_dep, nom_aero_arr, heure_dep, heure_arr) est relié à Pilote (id_pilote, nom_pilote, nom_aero) et à Avion (id_avion, nom_type, nb_place, nom_aero_ratt), 0..* côté Vol et 1..1 côté Pilote et Avion. Les noms d'aéroports, en couleur, apparaissent dans quatre attributs de trois entités.</title>
+        <rect class="boite" x="245" y="10" width="170" height="134" rx="3"/>
+        <path class="boite" d="M245 38 H415"/>
+        <text x="330" y="29" text-anchor="middle" class="gras" font-size="14">Vol</text>
+        <text x="253" y="56" font-size="13" text-decoration="underline">id_vol</text>
+        <text x="253" y="76" class="accent" font-size="13">nom_aero_dep</text>
+        <text x="253" y="96" class="accent" font-size="13">nom_aero_arr</text>
+        <text x="253" y="116" font-size="13">heure_dep</text>
+        <text x="253" y="136" font-size="13">heure_arr</text>
+        <rect class="boite" x="20" y="160" width="150" height="94" rx="3"/>
+        <path class="boite" d="M20 188 H170"/>
+        <text x="95" y="179" text-anchor="middle" class="gras" font-size="14">Pilote</text>
+        <text x="28" y="206" font-size="13" text-decoration="underline">id_pilote</text>
+        <text x="28" y="226" font-size="13">nom_pilote</text>
+        <text x="28" y="246" class="accent" font-size="13">nom_aero</text>
+        <rect class="boite" x="490" y="150" width="150" height="114" rx="3"/>
+        <path class="boite" d="M490 178 H640"/>
+        <text x="565" y="169" text-anchor="middle" class="gras" font-size="14">Avion</text>
+        <text x="498" y="196" font-size="13" text-decoration="underline">id_avion</text>
+        <text x="498" y="216" font-size="13">nom_type</text>
+        <text x="498" y="236" font-size="13">nb_place</text>
+        <text x="498" y="256" class="accent" font-size="13">nom_aero_ratt</text>
+        <path class="trait" d="M245 90 H95 V160"/>
+        <text x="237" y="83" text-anchor="end" class="gras" font-size="13">0..*</text>
+        <text x="103" y="153" class="gras" font-size="13">1..1</text>
+        <path class="trait" d="M415 90 H565 V150"/>
+        <text x="423" y="83" class="gras" font-size="13">0..*</text>
+        <text x="573" y="143" class="gras" font-size="13">1..1</text>
+      </svg>
+      <figcaption>Le modèle conceptuel de la première version (redessiné d'après la diapo 46) ; en couleur, les quatre attributs qui contiennent un nom d'aéroport.</figcaption>
+    </figure>
+    <p>Ce n'est pas possible : cela va forcément entraîner des erreurs lors de la saisie, avec ou sans majuscules, avec ou sans accents… Il faut créer une entité <strong>Aéroport</strong> pour uniformiser les noms. On applique les cinq étapes.</p>
+    <ol class="etapes">
+      <li><strong>Création de la table aéroport</strong> (diapo 47).
+<pre><code class="language-sql">CREATE TABLE aeroport (
+    nom_aero  varchar(30),
+    nom_ville varchar(30),
+    id_aero   INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY
+);</code></pre></li>
+      <li><strong>Insertion des aéroports existants</strong> : la liste de tous les aéroports trouvés dans la base (diapo 47).
+<pre><code class="language-sql">INSERT INTO aeroport
+    SELECT nom_aero FROM pilote
+    UNION SELECT nom_aero_ratt FROM avion
+    UNION SELECT nom_aero_dep FROM vol
+    UNION SELECT nom_aero_arr FROM vol;</code></pre></li>
+      <li><strong>Modification des tables concernées</strong>, par exemple Pilote : on ajoute une <em>autre</em> colonne pour l'<code>id_aero</code> (diapo 48).
+<pre><code class="language-sql">ALTER TABLE pilote ADD COLUMN id_aero int REFERENCES aeroport;</code></pre></li>
+      <li><strong>Mise à jour des données de Pilote</strong> (diapo 48).
+<pre><code class="language-sql">UPDATE pilote SET id_aero = (SELECT aeroport.id_aero FROM aeroport
+                             WHERE pilote.nom_aero = aeroport.nom_aero);</code></pre></li>
+      <li><strong>Finalisation de la structure de Pilote</strong> : suppression de la colonne <code>nom_aero</code> (diapo 49). Il faut faire de même avec toutes les autres tables qui utilisent des noms d'aéroports.
+<pre><code class="language-sql">ALTER TABLE pilote DROP COLUMN nom_aero;</code></pre></li>
+    </ol>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi cela marche, et ce qu'il faut vérifier</span></p>
+      <ul>
+        <li>L'identifiant est placé en <strong>dernière</strong> colonne : l'<code>INSERT … SELECT</code> d'une seule colonne remplit <code>nom_aero</code>, et <code>id_aero</code> est généré. <code>UNION</code> élimine les doublons : sur les données du TP 2, on obtient 9 aéroports.</li>
+        <li>L'<code>UPDATE</code> contient une sous-requête <em>corrélée</em> : elle fait référence à <code>pilote.nom_aero</code>, la ligne en cours de mise à jour, et elle est donc évaluée pour chaque pilote.</li>
+        <li>Avant l'étape 5, on vérifie : <code>SELECT * FROM pilote WHERE id_aero IS NULL;</code> ne doit rien renvoyer. Un pilote resté à <code>NULL</code> aurait un nom d'aéroport absent de la table, et le supprimer effacerait cette information.</li>
+        <li>La table Vol a deux aéroports : elle reçoit deux clés étrangères, <code>id_aero_dep</code> et <code>id_aero_arr</code>, vers la même table. C'est ce que demande la deuxième version du TP 2.</li>
+        <li><span class="badge a-verifier">À vérifier</span> La diapo 48 écrit <code>REFERNCES</code>, que PostgreSQL refuse (<code>syntax error at or near "REFERNCES"</code>) : il faut <code>REFERENCES</code>. Il manque aussi le point-virgule après le <code>CREATE TABLE</code> de la diapo 47.</li>
+      </ul>
+    </div>
+
+    <div class="bloc exercice" id="ex-3">
+      <p class="bloc-titre">Exercice 3 <span>Migrer les aéroports des pilotes</span> <span class="ref">diapos 46–49</span></p>
+      <p>Sur la première version de la base Avions, écrire le script complet qui crée la table <code>aeroport</code> (identifiant généré), y insère tous les aéroports cités dans la base, relie chaque pilote à son aéroport par une clé étrangère <code>id_aero</code>, puis supprime la colonne <code>nom_aero</code> de <code>pilote</code>.</p>
+      <details class="indice"><summary>Indice</summary><p>Les cinq étapes, dans l'ordre. Les noms d'aéroports sont dans <code>pilote.nom_aero</code>, <code>avion.nom_aero_ratt</code>, <code>vol.nom_aero_dep</code> et <code>vol.nom_aero_arr</code>.</p></details>
+    </div>
+    <div class="atelier" id="c4-ex3-aeroports" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Script : la table aeroport et la migration de pilote",
+        "consigne": "<p>Le script s'exécute sur la première version de la base Avions. « Comparer » lance ensuite des tests : aéroports créés, pilotes reliés, colonne supprimée, clé étrangère.</p>",
+        "options": {
+          "jeu": "avions",
+          "mode": "script"
+        },
+        "depart": "-- 1. Création de la table aeroport\n\n-- 2. Insertion des aéroports existants\n\n-- 3. Nouvelle colonne dans pilote\n\n-- 4. Mise à jour de pilote\n\n-- 5. Suppression de la colonne redondante\n",
+        "solution": "-- 1. Création de la table aeroport\nCREATE TABLE aeroport (\n    nom_aero  varchar(30),\n    nom_ville varchar(30),\n    id_aero   INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY\n);\n\n-- 2. Insertion des aéroports existants\nINSERT INTO aeroport\n    SELECT nom_aero FROM pilote\n    UNION SELECT nom_aero_ratt FROM avion\n    UNION SELECT nom_aero_dep FROM vol\n    UNION SELECT nom_aero_arr FROM vol;\n\n-- 3. Nouvelle colonne dans pilote\nALTER TABLE pilote ADD COLUMN id_aero int REFERENCES aeroport;\n\n-- 4. Mise à jour de pilote\nUPDATE pilote SET id_aero = (SELECT aeroport.id_aero FROM aeroport\n                             WHERE pilote.nom_aero = aeroport.nom_aero);\n\n-- 5. Suppression de la colonne redondante\nALTER TABLE pilote DROP COLUMN nom_aero;",
+        "tests": [
+          {
+            "nom": "Tous les aéroports de la base",
+            "requete": "SELECT nom_aero FROM aeroport;",
+            "resultat": true
+          },
+          {
+            "nom": "Chaque pilote est relié à son aéroport",
+            "requete": "SELECT p.nom_pilote, a.nom_aero FROM pilote p JOIN aeroport a ON a.id_aero = p.id_aero;",
+            "resultat": true
+          },
+          {
+            "nom": "La colonne nom_aero a disparu de pilote",
+            "requete": "SELECT nom_aero FROM pilote;",
+            "doit": "echouer"
+          },
+          {
+            "nom": "id_aero est une clé étrangère",
+            "requete": "UPDATE pilote SET id_aero = 999 WHERE id_pilote = 1;",
+            "doit": "echouer"
+          },
+          {
+            "nom": "L'identifiant d'un aéroport est généré",
+            "requete": "INSERT INTO aeroport (nom_aero, nom_ville) VALUES ('Nantes Atlantique', 'Nantes');",
+            "doit": "reussir"
+          }
+        ],
+        "explication": "<p>Les cinq étapes de la diapo 45, sans jamais perdre de donnée : la table est créée, remplie par un <code>INSERT … SELECT</code> dont <code>UNION</code> retire les doublons (9 aéroports), puis <code>pilote</code> reçoit sa clé étrangère, remplie par une sous-requête corrélée ; la colonne <code>nom_aero</code> n'est supprimée qu'à la fin. Placer <code>id_aero</code> en dernière colonne permet l'<code>INSERT</code> sans liste de colonnes ; sinon, on écrit <code>INSERT INTO aeroport (nom_aero) SELECT …</code>.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Les fonctions transforment chaque valeur : <code>UPPER</code>, <code>LOWER</code>, <code>SUBSTRING</code>, <code>REPLACE</code>, <code>TRANSLATE</code>, <code>LENGTH</code>, <code>ROUND</code>… Le type d'une colonne décide des fonctions utilisables : <code>date</code> donne accès à <code>INTERVAL</code>, <code>numeric</code> est exact, <code>float</code> rapide mais approché.</li>
+        <li>Un agrégat (<code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code>) réduit un ensemble de lignes à une valeur. <code>count(*)</code> compte les lignes ; <code>count(colonne)</code> et les autres agrégats ignorent les <code>NULL</code> ; <code>DISTINCT</code> s'applique avant.</li>
+        <li><code>ORDER BY</code> est le seul moyen d'obtenir un ordre garanti ; <code>NULL</code> est trié après toutes les valeurs en ordre croissant.</li>
+        <li><code>GROUP BY</code> produit une ligne par groupe ; toute colonne du <code>SELECT</code> est groupée ou agrégée.</li>
+        <li><code>WHERE</code> filtre les lignes avant le regroupement, <code>HAVING</code> filtre les groupes après ; un agrégat ne va jamais dans le <code>WHERE</code>.</li>
+        <li><code>LIMIT n OFFSET k</code> saute <em>k</em> lignes puis en garde <em>n</em> ; il ne remplace pas un <code>MAX</code>, qui garde les ex æquo.</li>
+        <li>Ordre d'exécution : <code>FROM</code>, <code>WHERE</code>, <code>GROUP BY</code>, <code>HAVING</code>, <code>SELECT</code>, opérations ensemblistes, <code>ORDER BY</code>, <code>OFFSET</code>, <code>LIMIT</code>.</li>
+        <li>Pour modifier selon une autre table : une sous-requête (norme), ou <code>UPDATE … FROM</code> et <code>DELETE … USING</code> (PostgreSQL), sans oublier la condition de jointure.</li>
+        <li>Restructurer une relation : créer la table, la remplir à partir des données existantes, ajouter la clé étrangère, la remplir, vérifier, puis supprimer les anciennes colonnes.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Sur emp, que valent <code>count(*)</code>, <code>count(comm)</code> et <code>count(DISTINCT id_dep)</code> ?</summary>
+        <div><p>14 lignes ; 4 commissions renseignées ; 3 départements différents (10, 20 et 30). <code>count(colonne)</code> ignore les <code>NULL</code>, <code>DISTINCT</code> retire les doublons avant de compter.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi <code>avg(comm)</code> vaut-il 550 et pas \(2200 / 14\) ?</summary>
+        <div><p>Parce que <code>AVG</code> ignore les <code>NULL</code> : la moyenne porte sur les 4 commissions renseignées, \(2200 / 4 = 550\). Pour la moyenne sur tous les employés, on écrit <code>avg(COALESCE(comm, 0))</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi <code>SELECT nom_emp, avg(sal) FROM emp GROUP BY metier;</code> échoue-t-il ?</summary>
+        <div><p>Un groupe (un métier) contient plusieurs noms, et la ligne du groupe ne peut en afficher qu'un. Toute colonne du <code>SELECT</code> doit être dans le <code>GROUP BY</code> ou dans un agrégat.</p></div>
+      </details>
+      <details class="carte">
+        <summary>WHERE ou HAVING pour « les métiers dont le salaire moyen dépasse 2 000 » ?</summary>
+        <div><p><code>HAVING avg(sal) &gt; 2000</code> : la condition porte sur un groupe et contient un agrégat, calculé après le <code>WHERE</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que renvoie <code>ORDER BY nom_emp LIMIT 3 OFFSET 3</code> ?</summary>
+        <div><p>Les 4e, 5e et 6e employés par ordre alphabétique : CLARK, FORD, JAMES (après ADAMS, ALLEN et BLAKE).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Dans quel ordre créer la colonne <code>id_aero</code> et supprimer <code>nom_aero</code> ?</summary>
+        <div><p>Créer <code>id_aero</code> (avec sa clé étrangère), la remplir par un <code>UPDATE</code>, vérifier qu'aucun pilote n'est resté à <code>NULL</code>, et seulement ensuite supprimer <code>nom_aero</code> : sinon l'information est perdue.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi <code>DELETE … WHERE loc = 'CHICAGO'</code> ne supprime-t-il rien sur la base du TP ?</summary>
+        <div><p>La ville est enregistrée <code>'Chicago'</code>, et la comparaison de chaînes respecte la casse. Une condition qui ne correspond à aucune ligne n'est pas une erreur : la commande répond <code>DELETE 0</code>.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-03-cles-sous-requetes-jointures.html"><small>← Précédent</small>Clés, sous-requêtes et jointures</a>
+    <a class="suivant" href="index.html"><small>Matière →</small>Bases de données</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

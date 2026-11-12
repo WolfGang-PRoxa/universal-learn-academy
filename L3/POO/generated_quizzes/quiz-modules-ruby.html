@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="poo">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Les modules Ruby · POO L3</title>
+<meta name="description" content="Quiz interactif sur les modules Ruby (POO, L3) : include et ordre de recherche, variables d'instance d'un module, super et initialize, initialisation paresseuse, prepend, extend.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="../generated_courses/index.html">POO</a>
+    <span aria-current="page">Quiz · Les modules Ruby</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">POO</span> Quiz · L3</p>
+    <h1>Les modules Ruby</h1>
+    <p class="chapeau">include, prepend et extend, l'ordre de recherche des méthodes, et les façons d'initialiser les variables d'instance d'un module : lecture de code surtout, toutes les réponses vérifiées à l'exécution (Ruby 3.3).</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-modules-ruby.html">Les modules Ruby</a> (complément au cours 4)</dd></div>
+      <div><dt>Questions</dt><dd>14</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 nov. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">POO · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+ "id": "poo-modules-ruby",
+ "melanger": true,
+ "cours": [
+  {
+   "titre": "Les modules Ruby (complément au cours 4)",
+   "lien": "../generated_courses/cours-modules-ruby.html"
+  }
+ ],
+ "questions": [
+  {
+   "id": "q01",
+   "type": "qcm",
+   "theme": "include et ordre de recherche",
+   "difficulte": 1,
+   "enonce": "<p>Après ce code, que vaut <code>Commande.ancestors</code> ?</p><pre><code class='language-ruby'>module Tracable\n  def horodatage = \"Créé le #{Time.now}\"\nend\nclass Commande\n  include Tracable\nend</code></pre>",
+   "choix": [
+    "<code>[Commande, Tracable, Object, Kernel, BasicObject]</code>",
+    "<code>[Tracable, Commande, Object, Kernel, BasicObject]</code>",
+    "<code>[Commande, Object, Tracable, Kernel, BasicObject]</code>",
+    "<code>[Commande, Object, Kernel, BasicObject]</code>"
+   ],
+   "reponse": 0,
+   "explication": "<p>Avec <code>include</code>, le module se place juste après la classe, avant sa superclasse <code>Object</code>. Il figure bien dans <code>ancestors</code> : c'est ainsi que Ruby y trouve <code>horodatage</code>. Le module devant la classe, c'est <code>prepend</code>.</p>",
+   "revoir": {
+    "texte": "Les modules Ruby · L'ordre de recherche des méthodes",
+    "lien": "../generated_courses/cours-modules-ruby.html#l-ordre-de-recherche-des-methodes"
+   }
+  },
+  {
+   "id": "q02",
+   "type": "vrai-faux",
+   "theme": "include et ordre de recherche",
+   "difficulte": 1,
+   "enonce": "<p>Une classe <code>Commande</code> inclut un module <code>Tracable</code>, et les deux définissent une méthode <code>to_s</code>. <code>puts Commande.new</code> utilise le <code>to_s</code> du module.</p>",
+   "reponse": false,
+   "explication": "<p>Faux : la classe passe avant le module inclus dans l'ordre de recherche (<code>[Commande, Tracable, …]</code>), sa méthode est trouvée la première. Le module ne l'emporterait qu'avec <code>prepend</code>.</p>",
+   "revoir": {
+    "texte": "Les modules Ruby · L'ordre de recherche des méthodes",
+    "lien": "../generated_courses/cours-modules-ruby.html#l-ordre-de-recherche-des-methodes"
+   }
+  },
+  {
+   "id": "q03",
+   "type": "qcm",
+   "theme": "Variables d'instance d'un module",
+   "difficulte": 1,
+   "enonce": "<p>Le module <code>Tracable</code>, inclus par <code>Document</code>, affecte <code>@cree_le</code>. Où cette variable d'instance est-elle stockée ?</p>",
+   "choix": [
+    "Dans chaque objet <code>Document</code> qui a exécuté l'affectation",
+    "Dans le module <code>Tracable</code>, partagée par tous les documents",
+    "Dans la classe <code>Document</code>, comme une variable de classe",
+    "Nulle part : un module ne peut pas avoir de variable d'instance"
+   ],
+   "reponse": 0,
+   "explication": "<p>Un module fournit du comportement, pas un état propre : les variables d'instance appartiennent à l'objet. Chaque document a son propre <code>@cree_le</code>. Il n'y a pas de variable « du module » partagée.</p>",
+   "revoir": {
+    "texte": "Les modules Ruby · Solution 1 : une méthode d'initialisation explicite",
+    "lien": "../generated_courses/cours-modules-ruby.html#solution-1-une-methode-d-initialisation-explicite"
+   }
+  },
+  {
+   "id": "q04",
+   "type": "qcm",
+   "theme": "super et initialize",
+   "difficulte": 2,
+   "enonce": "<p>Que se passe-t-il à l'exécution de <code>Commande.new(\"Robert\")</code> ?</p><pre><code class='language-ruby'>module Tracable\n  def initialize\n    @cree_le = Time.now\n    super\n  end\nend\nclass Commande\n  include Tracable\n  def initialize(client)\n    @client = client\n    super\n  end\nend</code></pre>",
+   "choix": [
+    "Ruby lève <code>ArgumentError</code> : <code>super</code> transmet <code>client</code> à <code>Tracable#initialize</code>, qui n'attend rien",
+    "La commande est créée, avec <code>@client</code> et <code>@cree_le</code>",
+    "La commande est créée, mais <code>@cree_le</code> vaut <code>nil</code>",
+    "Ruby lève <code>NoMethodError</code> : un module ne peut pas définir <code>initialize</code>"
+   ],
+   "reponse": 0,
+   "indices": [
+    "<p>Écrit sans parenthèses, que transmet <code>super</code> à la méthode qu'il appelle ?</p>"
+   ],
+   "explication": "<p><code>super</code> seul retransmet tous les arguments reçus : ici <code>client</code>. <code>Tracable#initialize</code> n'en accepte aucun : « wrong number of arguments (given 1, expected 0) ». Il fallait écrire <code>super()</code>. Sans aucun <code>super</code>, la commande serait créée avec <code>@cree_le</code> à <code>nil</code> (troisième choix).</p>",
+   "revoir": {
+    "texte": "Les modules Ruby · Solution 2 : un initialize dans le module",
+    "lien": "../generated_courses/cours-modules-ruby.html#solution-2-un-initialize-dans-le-module"
+   }
+  },
+  {
+   "id": "q05",
+   "type": "trous",
+   "theme": "super et initialize",
+   "difficulte": 2,
+   "enonce": "<p>Compléter pour que le module initialise <code>@cree_le</code> à la création d'une commande.</p>",
+   "texte": "module Tracable\n  def initialize\n    @cree_le = Time.now\n    super\n  end\nend\nclass Commande\n  include Tracable\n  def initialize(client)\n    @client = client\n    {{0}}\n  end\nend",
+   "code": true,
+   "trous": [
+    {
+     "choix": [
+      "super()",
+      "super",
+      "Tracable.initialize",
+      "initialize()"
+     ],
+     "reponse": 0
+    }
+   ],
+   "explication": "<p>L'<code>initialize</code> du module n'est pas appelé automatiquement : la classe doit l'appeler par <code>super</code>, et avec des parenthèses vides, car il n'attend pas d'argument. <code>super</code> seul lui passerait <code>client</code> ; <code>initialize()</code> rappellerait celui de <code>Commande</code> (sans son argument).</p>",
+   "revoir": {
+    "texte": "Les modules Ruby · Solution 2 : un initialize dans le module",
+    "lien": "../generated_courses/cours-modules-ruby.html#solution-2-un-initialize-dans-le-module"
+   }
+  },
+  {
+   "id": "q06",
+   "type": "qcm-multi",
+   "theme": "super et initialize",
+   "difficulte": 2,
+   "enonce": "<p>Pourquoi un <code>initialize</code> dans un module inclus est-il jugé fragile ? Cocher toutes les raisons données par le cours.</p>",
+   "choix": [
+    "Il n'est exécuté que si la classe hôte appelle <code>super</code>",
+    "Un oubli de <code>super</code> laisse les variables du module à <code>nil</code>",
+    "Les arguments doivent être transmis correctement",
+    "Avec plusieurs modules, la chaîne d'appels devient difficile à suivre",
+    "Ruby interdit de définir <code>initialize</code> dans un module"
+   ],
+   "reponses": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "explication": "<p>Les quatre premières raisons sont celles de la diapo 7. Ruby n'interdit rien : un module peut définir <code>initialize</code>, mais rien ne garantit qu'il sera appelé. D'où la bonne pratique : préférer une méthode <code>init_xxx</code> appelée par la classe.</p>",
+   "revoir": {
+    "texte": "Les modules Ruby · Solution 2 : un initialize dans le module",
+    "lien": "../generated_courses/cours-modules-ruby.html#solution-2-un-initialize-dans-le-module"
+   }
+  },
+  {
+   "id": "q07",
+   "type": "qcm",
+   "theme": "Variables d'instance d'un module",
+   "difficulte": 2,
+   "enonce": "<p>Avec ce module, que vaut <code>c.instance_variables</code> juste après <code>c = Commande.new(\"Robert\")</code>, puis après <code>c.horodatage</code> ?</p><pre><code class='language-ruby'>module Tracable\n  def cree_le\n    @cree_le ||= Time.now\n  end\n  def horodatage\n    \"Créé le #{cree_le()}\"\n  end\nend\nclass Commande\n  include Tracable\n  def initialize(client)\n    @client = client\n  end\nend</code></pre>",
+   "choix": [
+    "<code>[:@client]</code>, puis <code>[:@client, :@cree_le]</code>",
+    "<code>[:@client, :@cree_le]</code> dans les deux cas",
+    "<code>[:@client]</code> dans les deux cas",
+    "<code>[:@cree_le, :@client]</code>, puis <code>[:@client]</code>"
+   ],
+   "reponse": 0,
+   "explication": "<p>C'est l'initialisation paresseuse : <code>@cree_le</code> n'est créée qu'au premier appel de <code>cree_le</code>, ici par <code>horodatage</code>. Conséquence : la date enregistrée est celle du premier accès, pas celle de la création de l'objet.</p>",
+   "revoir": {
+    "texte": "Les modules Ruby · Solution 3 : l'initialisation paresseuse",
+    "lien": "../generated_courses/cours-modules-ruby.html#solution-3-l-initialisation-paresseuse"
+   }
+  },
+  {
+   "id": "q08",
+   "type": "reponse-courte",
+   "theme": "Variables d'instance d'un module",
+   "difficulte": 1,
+   "enonce": "<p>Quel opérateur d'affectation permet d'écrire une initialisation paresseuse en une ligne : <code>@nombre_seances ___ 0</code> ?</p>",
+   "reponses": [
+    "||="
+   ],
+   "casse": false,
+   "explication": "<p><code>@x ||= v</code> vaut <code>@x || (@x = v)</code> : la variable garde sa valeur si elle en a une, sinon elle reçoit <code>v</code>. C'est ce qui donne 0 séance à un pokémon qui ne s'est jamais détendu (TD 4).</p>",
+   "revoir": {
+    "texte": "Les modules Ruby · Solution 3 : l'initialisation paresseuse",
+    "lien": "../generated_courses/cours-modules-ruby.html#solution-3-l-initialisation-paresseuse"
+   }
+  },
+  {
+   "id": "q09",
+   "type": "qcm",
+   "theme": "prepend",
+   "difficulte": 1,
+   "enonce": "<p>Avec <code>prepend Tracable</code> dans la classe <code>Commande</code>, que vaut <code>Commande.ancestors</code> ?</p>",
+   "choix": [
+    "<code>[Tracable, Commande, Object, Kernel, BasicObject]</code>",
+    "<code>[Commande, Tracable, Object, Kernel, BasicObject]</code>",
+    "<code>[Commande, Object, Kernel, BasicObject, Tracable]</code>",
+    "<code>[Object, Tracable, Commande, Kernel, BasicObject]</code>"
+   ],
+   "reponse": 0,
+   "explication": "<p><code>prepend</code> place le module avant la classe : ses méthodes sont trouvées les premières, et il rend la main à celles de la classe par <code>super</code>. C'est l'inverse d'<code>include</code>.</p>",
+   "revoir": {
+    "texte": "Les modules Ruby · Solution 4 : prepend",
+    "lien": "../generated_courses/cours-modules-ruby.html#solution-4-prepend"
+   }
+  },
+  {
+   "id": "q10",
+   "type": "ordre",
+   "theme": "prepend",
+   "difficulte": 2,
+   "enonce": "<p>On appelle <code>Tache.new.enregistrer(\"rapport\")</code>. Remettre les étapes dans l'ordre d'exécution.</p><pre><code class='language-ruby'>module Journal\n  def enregistrer(message)\n    puts \"[LOG] #{message}\"\n    super\n  end\nend\nclass Tache\n  prepend Journal\n  def enregistrer(message)\n    puts \"Enregistrement : #{message}\"\n  end\nend</code></pre>",
+   "elements": [
+    "<code>new</code> crée la tâche, puis l'appel trouve d'abord <code>Journal#enregistrer</code>",
+    "Affichage de « [LOG] rapport »",
+    "<code>super</code> appelle <code>Tache#enregistrer</code>",
+    "Affichage de « Enregistrement : rapport »"
+   ],
+   "explication": "<p>Le module, placé devant la classe, est trouvé le premier : il affiche sa ligne, puis <code>super</code> appelle <code>Tache#enregistrer</code>. Avec <code>include</code>, seule la méthode de la classe serait exécutée, et la ligne « [LOG] » n'apparaîtrait pas.</p>",
+   "revoir": {
+    "texte": "Les modules Ruby · prepend : cas d'usage",
+    "lien": "../generated_courses/cours-modules-ruby.html#prepend-cas-d-usage"
+   }
+  },
+  {
+   "id": "q11",
+   "type": "qcm",
+   "theme": "prepend",
+   "difficulte": 3,
+   "enonce": "<p>Que se passe-t-il à l'exécution de <code>Commande.new(\"Robert\")</code> ?</p><pre><code class='language-ruby'>module Tracable\n  def initialize()\n    @cree_le = Time.now\n    super\n  end\nend\nclass Commande\n  prepend Tracable\n  def initialize(client)\n    @client = client\n  end\nend</code></pre>",
+   "choix": [
+    "<code>ArgumentError</code> : c'est <code>Tracable#initialize</code>, sans paramètre, qui reçoit <code>\"Robert\"</code>",
+    "La commande est créée avec <code>@cree_le</code> et <code>@client</code>",
+    "La commande est créée avec <code>@client</code> seulement : l'<code>initialize</code> du module est ignoré",
+    "<code>ArgumentError</code> : <code>Commande#initialize</code> ne reçoit pas son argument"
+   ],
+   "reponse": 0,
+   "indices": [
+    "<p>Avec <code>prepend</code>, quel <code>initialize</code> est trouvé en premier par <code>new</code> ?</p>"
+   ],
+   "explication": "<p><code>new</code> appelle le premier <code>initialize</code> trouvé, celui du module, avec l'argument <code>\"Robert\"</code> : il n'en accepte aucun. C'est l'exemple de la diapo 10 tel quel ; il faut <code>def initialize(...)</code> (ou <code>*args</code>), et le <code>super</code> sans parenthèses retransmet alors l'argument à <code>Commande#initialize</code>. Le quatrième choix serait vrai si le module acceptait l'argument et appelait <code>super()</code>.</p>",
+   "revoir": {
+    "texte": "Les modules Ruby · Solution 4 : prepend",
+    "lien": "../generated_courses/cours-modules-ruby.html#solution-4-prepend"
+   }
+  },
+  {
+   "id": "q12",
+   "type": "qcm",
+   "theme": "extend",
+   "difficulte": 2,
+   "enonce": "<p>Que vaut <code>rap.exporter</code> ?</p><pre><code class='language-ruby'>module Exportable\n  def exporter\n    \"Export de #{@titre}\"\n  end\nend\nclass Document\n  def initialize(titre)\n    @titre = titre\n  end\nend\ndoc = Document.new(\"Notes\")\ndoc.extend(Exportable)\nrap = Document.new(\"Rapport\")</code></pre>",
+   "choix": [
+    "<code>NoMethodError</code> : seul <code>doc</code> a reçu <code>exporter</code>",
+    "<code>\"Export de Rapport\"</code>",
+    "<code>\"Export de Notes\"</code>",
+    "<code>\"Export de \"</code>"
+   ],
+   "reponse": 0,
+   "explication": "<p><code>extend</code> appliqué à un objet ne donne les méthodes du module qu'à cet objet (dans sa classe singleton). <code>doc.exporter</code> rend <code>\"Export de Notes\"</code> ; les autres documents n'ont pas la méthode.</p>",
+   "revoir": {
+    "texte": "Les modules Ruby · Une autre utilisation : extend",
+    "lien": "../generated_courses/cours-modules-ruby.html#une-autre-utilisation-extend"
+   }
+  },
+  {
+   "id": "q13",
+   "type": "association",
+   "theme": "Choisir un mécanisme",
+   "difficulte": 2,
+   "enonce": "<p>Associer chaque besoin au mécanisme qui convient.</p>",
+   "paires": [
+    [
+     "Donner une capacité commune à toutes les instances d'une classe",
+     "<code>include</code>"
+    ],
+    [
+     "Journaliser chaque appel d'une méthode existante sans modifier la classe",
+     "<code>prepend</code>"
+    ],
+    [
+     "Ajouter une méthode à un seul objet",
+     "<code>extend</code> sur l'objet"
+    ],
+    [
+     "Ajouter des méthodes de classe",
+     "<code>extend</code> dans la classe"
+    ]
+   ],
+   "explication": "<p>Tableau de la diapo 12 : <code>include</code> pour une capacité commune, <code>prepend</code> pour intercepter ou enrichir, <code>extend</code> pour un comportement ponctuel (un objet, ou la classe elle-même, dont il ajoute alors des méthodes de classe).</p>",
+   "revoir": {
+    "texte": "Les modules Ruby · Quelle solution choisir ?",
+    "lien": "../generated_courses/cours-modules-ruby.html#quelle-solution-choisir"
+   }
+  },
+  {
+   "id": "q14",
+   "type": "ouverte",
+   "theme": "Choisir un mécanisme",
+   "difficulte": 3,
+   "enonce": "<p>Les pokémons casaniers et de croisière (mais pas les sportifs ni les marins) peuvent enregistrer des séances de détente ; un pokémon sans séance doit avoir 0 séance et 0 minute. Expliquer comment réaliser cette capacité avec un module, et comment initialiser ses compteurs sans modifier les <code>initialize</code> des classes.</p>",
+   "reponse_modele": "<p>Casanier et Croisière n'ont pas d'ancêtre commun propre (leur seul ancêtre commun, Pokemon, est aussi celui des sportifs et des marins) : la capacité va dans un module <code>Detente</code>, que seules ces deux classes incluent (<code>include Detente</code>). Les compteurs sont des variables d'instance du module, donc de chaque pokémon. Pour les initialiser sans toucher aux <code>initialize</code>, on utilise une initialisation paresseuse : <code>def nombre_seances = @nombre_seances ||= 0</code>, et de même pour la durée ; les méthodes du module passent par ces accesseurs.</p>",
+   "criteres": [
+    "Un module inclus dans Casanier et Croisière seulement",
+    "Justifie le module par l'absence d'ancêtre commun propre (pas d'héritage multiple)",
+    "Les compteurs sont des variables d'instance propres à chaque objet",
+    "Initialisation paresseuse (||=), ou méthode d'initialisation appelée explicitement"
+   ],
+   "revoir": {
+    "texte": "Les modules Ruby · Solution 3 : l'initialisation paresseuse",
+    "lien": "../generated_courses/cours-modules-ruby.html#solution-3-l-initialisation-paresseuse"
+   }
+  }
+ ]
+}
+</script>
+</body>
+</html>

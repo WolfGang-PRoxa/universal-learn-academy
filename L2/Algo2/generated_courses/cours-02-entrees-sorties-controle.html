@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="c">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrées-sorties et structures de contrôle · Algorithmique 2 L2</title>
+<meta name="description" content="Deuxième cours de C : flux d'entrée et de sortie, printf et ses formats, scanf et ses pièges, EOF et fflush, blocs, conditions, boucles while, do-while et for, break, continue et switch, puis fonctions et passage par valeur.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-bases-du-c.html" title="Quiz · Les bases du C">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="index.html">Algorithmique 2</a>
+    <span aria-current="page">Cours 2 · Entrées-sorties et contrôle</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Algorithmique 2</span> Cours 2 · L2 S3</p>
+    <h1>Entrées-sorties et structures de contrôle</h1>
+    <p class="chapeau">Un programme lit des données, les traite et affiche des résultats. Ce cours présente les flux d'entrée et de sortie du C, les fonctions <code>printf</code> et <code>scanf</code> avec leurs pièges, puis les structures qui organisent le traitement : blocs, conditions, boucles, <code>switch</code> et fonctions.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd>Notes prises en cours, Google Doc « Cours 2 » (dossier Drive <code>L2/Algo2/cours/</code>, 23 octobre 2024)</dd></div>
+      <div><dt>Part de Claude</dt><dd>plus d'un tiers du texte (blocs Complément, badges Ajout), plus les explications qui relient des notes très brèves ; le reste suit les notes, dont la fiabilité n'est pas garantie</dd></div>
+      <div><dt>Enseignant</dt><dd>Non indiqué dans les notes</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Afficher des valeurs avec <code>printf</code> en choisissant le bon format.</li>
+        <li>Lire des valeurs avec <code>scanf</code>, contrôler sa valeur de retour et vider l'entrée de façon portable.</li>
+        <li>Tester la fin de l'entrée avec <code>EOF</code>.</li>
+        <li>Choisir entre <code>while</code>, <code>do … while</code> et <code>for</code>, et utiliser <code>break</code>, <code>continue</code> et <code>switch</code>.</li>
+        <li>Écrire une fonction, et comprendre pourquoi <code>scanf</code> a besoin de <code>&amp;</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-01-bases-du-c.html">Cours 1</a> : types, littéraux, <code>getchar</code> et <code>putchar</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Note <span>Une page tirée de notes brèves</span></p>
+    <p>Comme pour le cours 1, la source est une page de notes. Elle s'arrête sur « switch : », sans rien après : le <code>switch</code> est donc entièrement rédigé ici, ainsi que les conditions, la boucle <code>for</code> et les fonctions, dont les TP 1 et 3 se servent. Deux affirmations des notes, sur <code>printf</code> et sur <code>fflush(stdin)</code>, sont nuancées avec le badge « À vérifier ».</p>
+  </div>
+
+  <section>
+    <h2>Les flux d'entrée et de sortie <span class="ref">notes, début</span></h2>
+    <p>Les notes ouvrent sur une définition : l'informatique est le <dfn>traitement automatique de l'information</dfn>. Un programme reçoit donc de l'information, en entrée, et en produit, en sortie.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Flux</span></p>
+      <p>En C, les entrées et les sorties sont des <dfn>flux de caractères</dfn> (<span class="en" lang="en">streams</span>), semblables à des fichiers : on y lit ou on y écrit des caractères, les uns après les autres.</p>
+      <p>Il existe une entrée et une sortie standards : <code>stdin</code>, le clavier, et <code>stdout</code>, l'écran.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>stderr et les redirections</span></p>
+      <p>Un troisième flux, <code>stderr</code>, reçoit les messages d'erreur : il s'affiche aussi à l'écran, mais reste séparé de <code>stdout</code>. Comme les flux standards sont des fichiers, le shell peut les brancher sur de vrais fichiers sans changer le programme :</p>
+<pre class="terminal"><code>$ ./lignes &lt; texte.txt
+$ ./copie &lt; texte.txt &gt; copie.txt
+$ echo "12 30" | ./somme</code></pre>
+      <p>C'est la façon la plus simple de tester un programme qui lit jusqu'à <code>EOF</code>, comme ceux du TD 3 : on prépare l'entrée dans un fichier.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Afficher : printf <span class="ref">notes, début</span></h2>
+    <p><code>printf</code> réalise une <dfn>impression formatée</dfn> : elle affiche un texte dans lequel des <em>formats</em>, introduits par <code>%</code>, sont remplacés par les valeurs qui suivent.</p>
+<pre><code class="language-c">int age = 20;
+float taille = 1.82;
+printf("%s a %d ans et mesure %f m\n", "Ada", age, taille);
+/* Ada a 20 ans et mesure 1.820000 m */</code></pre>
+    <p>Les notes citent trois formats : <code>%d</code> pour un entier en décimal, <code>%f</code> pour un flottant, <code>%s</code> pour une chaîne de caractères.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>D'autres formats et des options</span></p>
+      <p>Entre le <code>%</code> et la lettre, on peut préciser une largeur et une précision : <code>%5d</code> aligne à droite sur 5 caractères, <code>%-5d</code> à gauche, <code>%.2f</code> garde deux décimales (TP 0 : <code>printf("%.2f euros", montant)</code>).</p>
+    </div>
+    <div class="tableau mono compact">
+      <table>
+        <caption>Formats courants de printf (ajout)</caption>
+        <thead><tr><th>Format</th><th>Affiche</th><th>Exemple</th><th>Résultat</th></tr></thead>
+        <tbody>
+          <tr><td>%d</td><td>un int en décimal</td><td>printf("%d", 42)</td><td>42</td></tr>
+          <tr><td>%ld</td><td>un long</td><td>printf("%ld", 42L)</td><td>42</td></tr>
+          <tr><td>%f</td><td>un float ou un double</td><td>printf("%.1f", 3.14159)</td><td>3.1</td></tr>
+          <tr><td>%c</td><td>un caractère</td><td>printf("%c", 65)</td><td>A</td></tr>
+          <tr><td>%s</td><td>une chaîne</td><td>printf("%s", "ok")</td><td>ok</td></tr>
+          <tr><td>%x</td><td>un entier en hexadécimal</td><td>printf("%x", 255)</td><td>ff</td></tr>
+          <tr><td>%%</td><td>le caractère %</td><td>printf("100%%")</td><td>100%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>La valeur renvoyée par printf</h3>
+    <p>Les notes expliquent que <code>printf</code> utilise <code>putchar</code>, et que c'est ainsi qu'elle peut renvoyer le nombre de caractères écrits : si le texte contient 20 caractères, <code>printf</code> effectue 20 <code>putchar</code>.</p>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Une image, pas l'implémentation</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>Le résultat est exact : <code>printf</code> renvoie bien le nombre de caractères écrits (ou une valeur négative en cas d'erreur). Le mécanisme est une image : les bibliothèques réelles ne passent pas par <code>putchar</code>, elles remplissent un tampon qu'elles écrivent d'un bloc. On retient seulement que <code>printf</code> se comporte comme une suite de <code>putchar</code>, ce qui explique aussi qu'elle partage le tampon de <code>stdout</code> (voir <code>fflush</code> plus bas).</p>
+    </div>
+<pre><code class="language-c">int n = printf("Bonjour\n");
+printf("%d\n", n);     /* 8 : sept lettres et le passage à la ligne */</code></pre>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Le format doit correspondre au type</span> <span class="badge ajout">Ajout</span></p>
+      <p><code>printf("%d", 3.5)</code> ou <code>printf("%f", 3)</code> affichent n'importe quoi : <code>printf</code> croit le format sur parole et lit les octets reçus comme s'ils avaient le type annoncé. Avec <code>-Wall</code>, <code>gcc</code> signale ces discordances.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Lire : scanf <span class="ref">notes, début et milieu</span></h2>
+    <p><code>scanf</code> fait le travail inverse de <code>printf</code> : elle lit sur l'entrée standard des caractères qu'elle convertit selon un format, et range les valeurs obtenues dans des variables.</p>
+<pre><code class="language-c">int a;
+scanf("%d", &amp;a);</code></pre>
+    <p>La variable <code>a</code> doit être déclarée avant. L'opérateur <code>&amp;</code> sert à donner à <code>scanf</code> la variable <code>a</code> elle-même, et non sa valeur.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Ce que fait <code>&amp;</code></span></p>
+      <p><code>&amp;a</code> est l'<em>adresse</em> de <code>a</code>, l'endroit de la mémoire où elle se trouve. En C, une fonction reçoit toujours une <em>copie</em> de ses arguments (voir <a href="#passage-par-valeur">le passage par valeur</a>) : avec <code>scanf("%d", a)</code>, elle recevrait la valeur actuelle de <code>a</code>, quelconque, sans moyen de modifier <code>a</code>. Avec l'adresse, elle sait où écrire. C'est la première rencontre avec les pointeurs, sujet du <a href="cours-03-pointeurs-allocation-structures.html">cours 3</a>.</p>
+    </div>
+
+    <h3>Où s'arrête scanf</h3>
+    <p><code>scanf</code> s'arrête de lire dès qu'elle reçoit un caractère qui ne correspond plus au format : avec <code>%d</code>, une lettre par exemple.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le caractère qui reste et la valeur de retour</span></p>
+      <p>Deux précisions comptent en pratique. D'abord, le caractère qui a arrêté la lecture n'est pas consommé : il reste dans le flux et sera le premier lu ensuite. Si l'on tape <code>12abc</code>, <code>scanf("%d", &amp;a)</code> range 12 dans <code>a</code>, et le prochain <code>getchar()</code> renvoie <code>'a'</code>.</p>
+      <p>Ensuite, <code>scanf</code> renvoie le nombre de valeurs qu'elle a pu ranger : 1 ici, 0 si l'entrée commence par une lettre (et <code>a</code> n'est pas modifiée), <code>EOF</code> si l'entrée est terminée. C'est le seul moyen de savoir si la saisie a réussi.</p>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>La boucle sans fin</span> <span class="badge ajout">Ajout</span></p>
+      <p>Une boucle qui redemande un nombre tant qu'il est nul (TP 1, exercice 4) tourne sans fin si l'on tape une lettre : <code>scanf</code> échoue sans consommer la lettre, qui l'arrête de nouveau au tour suivant. Il faut tester la valeur de retour et vider le reste de la ligne avant de redemander :</p>
+<pre><code class="language-c">int n;
+printf("Saisir un entier : ");
+while (scanf("%d", &amp;n) != 1) {
+    int c;
+    while ((c = getchar()) != '\n' &amp;&amp; c != EOF)
+        ;                       /* jette le reste de la ligne */
+    printf("Ce n'est pas un entier, recommencer : ");
+}</code></pre>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Trois pièges de format</span></p>
+      <ul>
+        <li>Pour un <code>double</code>, <code>scanf</code> demande <code>%lf</code>, alors que <code>printf</code> se contente de <code>%f</code>.</li>
+        <li><code>%d</code> et <code>%f</code> sautent les espaces et les passages à la ligne, mais <code>%c</code> lit le caractère suivant, quel qu'il soit, souvent le <code>'\n'</code> laissé par la saisie précédente. On écrit <code>scanf(" %c", &amp;c)</code> : l'espace du format saute les blancs (c'est ce que fait le TP 0).</li>
+        <li>Pour lire une chaîne, <code>%s</code> s'arrête au premier espace ; <code>%c</code> ne lit qu'un caractère. Le <a href="cours-03-pointeurs-allocation-structures.html#les-chaines-de-caracteres">cours 3</a> y revient.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>La fin du flux et les tampons <span class="ref">notes, milieu</span></h2>
+    <p>Lire « jusqu'au bout » demande de savoir quand le flux est terminé ; afficher au bon moment demande de savoir que les sorties passent par une mémoire intermédiaire.</p>
+
+    <h3>La fin du flux : EOF</h3>
+    <p><code>EOF</code> signifie <span class="en" lang="en">End Of File</span>, fin de fichier.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Comment l'utiliser</span></p>
+      <p><code>EOF</code> est une constante de <code>&lt;stdio.h&gt;</code>, qui vaut −1. <code>getchar</code> la renvoie quand il n'y a plus rien à lire, <code>scanf</code> aussi quand l'entrée se termine avant la première conversion. Au clavier, on signale la fin avec Ctrl+D (Linux) ou Ctrl+Z puis Entrée (Windows) ; avec une redirection <code>&lt; fichier</code>, elle arrive à la fin du fichier. EOF n'est pas un caractère stocké dans le fichier : c'est une valeur de retour qui dit « il n'y a plus rien ».</p>
+<pre data-fichier="somme.c"><code class="language-c">#include &lt;stdio.h&gt;
+
+/* additionne tous les entiers de l'entrée */
+int main(void)
+{
+    int x, somme = 0;
+    while (scanf("%d", &amp;x) == 1)
+        somme += x;
+    printf("%d\n", somme);
+    return 0;
+}</code></pre>
+<pre class="terminal"><code>$ echo "12 30 -2" | ./somme
+40</code></pre>
+    </div>
+
+    <h3>Vider un flux : fflush</h3>
+    <p>Les notes indiquent que <code>fflush(stdin);</code> vide le flux d'entrée standard, et que <code>fflush(stdout);</code> existe aussi pour vider la sortie standard.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span><code>fflush(stdin)</code> n'est pas portable</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>La norme du C ne définit <code>fflush</code> que pour un flux de <strong>sortie</strong>. Sur <code>stdin</code>, le comportement est indéfini : l'ancienne bibliothèque de Microsoft vidait l'entrée, mais sous Linux (glibc), <code>fflush(stdin)</code> ne fait en général rien, et un programme qui compte dessus se comporte différemment à la fac et à la maison. Pour jeter le reste d'une ligne, on lit les caractères jusqu'au <code>'\n'</code> :</p>
+<pre><code class="language-c">int c;
+while ((c = getchar()) != '\n' &amp;&amp; c != EOF)
+    ;</code></pre>
+      <p>Si l'enseignant a présenté <code>fflush(stdin)</code> en cours, c'est sans doute avec cette réserve ; à l'examen, la boucle ci-dessus est la réponse sûre.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi <code>fflush(stdout)</code> est utile</span></p>
+      <p>Les sorties passent par un <dfn>tampon</dfn> (<span class="en" lang="en">buffer</span>) : vers un terminal, <code>stdout</code> n'est en général écrit qu'à chaque <code>'\n'</code>. Un <code>printf("Calcul en cours...")</code> sans passage à la ligne, suivi d'un long calcul ou d'une pause, n'apparaît donc qu'après. <code>fflush(stdout)</code> force l'écriture immédiate. C'est utile pour une animation comme le jeu de la vie du TP 2 (<code>TP/TP2/</code>), qui affiche une grille puis attend avec <code>usleep</code>.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Blocs et conditions <span class="ref">notes, milieu · ajout</span></h2>
+    <p>Les structures de contrôle décident de ce qui s'exécute et combien de fois. Elles s'appliquent à une instruction, qui peut être un bloc.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Bloc</span></p>
+      <p>Une <dfn>instruction composée</dfn>, ou <dfn>bloc</dfn>, commence par <code>{</code> et se termine par <code>}</code>. Elle regroupe plusieurs instructions en une seule, là où la syntaxe n'en attend qu'une.</p>
+      <p><span class="badge ajout">Ajout</span> Une variable déclarée dans un bloc n'existe que dans ce bloc.</p>
+    </div>
+
+    <h3>if et else</h3>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La conditionnelle</span></p>
+      <p><code>if (condition) instruction1 else instruction2</code> exécute la première instruction si la condition est non nulle, la seconde sinon ; le <code>else</code> est facultatif. Les conditions s'enchaînent avec <code>else if</code>.</p>
+<pre><code class="language-c">if (note &gt;= 16)
+    printf("Très bien\n");
+else if (note &gt;= 10)
+    printf("Admis\n");
+else
+    printf("Ajourné\n");</code></pre>
+      <p>Un <code>else</code> se rapporte au dernier <code>if</code> sans <code>else</code>, quelle que soit l'indentation. Mettre des accolades dès qu'il y a un <code>if</code> imbriqué évite toute ambiguïté.</p>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>« différent de e ou différent de f »</span> <span class="badge ajout">Ajout</span></p>
+      <p>Le TP 0 redemande la monnaie avec <code>while (monaie != 'e' || monaie != 'f')</code>. Cette condition est <em>toujours</em> vraie : si la monnaie vaut <code>'e'</code>, elle est différente de <code>'f'</code>, et inversement. La boucle ne s'arrête jamais. « Ni e ni f » s'écrit <code>monaie != 'e' &amp;&amp; monaie != 'f'</code>, ce que donne la loi de De Morgan : \(\lnot(A \lor B) = \lnot A \land \lnot B\).</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Les boucles <span class="ref">notes, milieu et fin</span></h2>
+    <p>Une boucle répète une instruction tant qu'une condition est vraie. Le C en a trois, qui diffèrent par le moment où la condition est testée.</p>
+
+    <h3>while</h3>
+    <p><span class="badge ajout">Ajout</span> <code>while (condition) instruction</code> teste la condition <em>avant</em> chaque tour : si elle est fausse dès le départ, le corps n'est jamais exécuté. C'est la boucle de lecture <code>while ((c = getchar()) != EOF)</code>.</p>
+
+    <h3>do … while</h3>
+    <p>La boucle <code>do { … } while (condition);</code> permet d'exécuter le corps une fois sans se soucier de la condition : celle-ci n'est testée qu'<em>après</em> chaque tour.</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Saisie contrôlée</span> <span class="badge ajout">Ajout</span></p>
+      <p>C'est la boucle naturelle d'une saisie, puisqu'il faut demander au moins une fois :</p>
+<pre><code class="language-c">int op2;
+do {
+    printf("Saisir l'opérande 2 (non nulle) : ");
+    scanf("%d", &amp;op2);
+} while (op2 == 0);</code></pre>
+      <p>Le TP 1 (exercice 4) obtient le même effet avec <code>while</code>, en initialisant <code>op2</code> à 0 pour entrer une première fois dans la boucle. Le point-virgule après <code>while (…)</code> est obligatoire.</p>
+    </div>
+
+    <h3>for</h3>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La boucle à compteur</span></p>
+      <p><code>for (initialisation; condition; pas) instruction</code> équivaut à <code>initialisation; while (condition) { instruction pas; }</code>. On l'emploie quand le nombre de tours est connu.</p>
+<pre><code class="language-c">for (int i = 1; i &lt;= 10; i++)
+    printf("%d x 7 = %d\n", i, i * 7);</code></pre>
+      <p>Déclarer le compteur dans le <code>for</code> (<code>int i = 1</code>) est permis depuis C99 ; il n'existe alors que dans la boucle.</p>
+    </div>
+
+    <h3>break et continue</h3>
+    <p><code>break</code> fait sortir de force d'une boucle. <code>continue</code> la fait reboucler de force : placé au milieu d'une boucle, il saute la fin du corps, qui n'est donc pas exécutée pour ce tour.</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Les deux ensemble</span> <span class="badge ajout">Ajout</span></p>
+<pre><code class="language-c">for (int i = 0; i &lt; 10; i++) {
+    if (i % 2 != 0)
+        continue;      /* nombre impair : on passe au tour suivant */
+    if (i &gt; 6)
+        break;         /* au-delà de 6 : on quitte la boucle */
+    printf("%d ", i);
+}
+/* affiche : 0 2 4 6 */</code></pre>
+      <p>Dans un <code>for</code>, <code>continue</code> exécute quand même le pas (<code>i++</code>) avant de tester de nouveau la condition.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Le choix multiple : switch <span class="ref">notes, fin · ajout</span></h2>
+    <p>Les notes s'arrêtent sur le mot « switch ». Cette instruction remplace une cascade de <code>if</code> quand on compare une même valeur entière à plusieurs constantes, par exemple pour un menu.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Syntaxe et fonctionnement</span></p>
+<pre><code class="language-c">switch (expression) {
+    case constante1:
+        instructions
+        break;
+    case constante2:
+    case constante3:
+        instructions
+        break;
+    default:
+        instructions
+}</code></pre>
+      <p>L'expression doit être entière (un <code>char</code> convient) et chaque <code>case</code> porte une constante. Le programme saute au <code>case</code> égal à la valeur, ou à <code>default</code> s'il n'y en a aucun, puis exécute <em>tout ce qui suit</em>, jusqu'à un <code>break</code> ou la fin du <code>switch</code>.</p>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Nombre de jours d'un mois</span> <span class="badge ajout">Ajout</span></p>
+<pre><code class="language-c">switch (mois) {
+    case 2:
+        printf("28 ou 29 jours\n");
+        break;
+    case 4: case 6: case 9: case 11:
+        printf("30 jours\n");
+        break;
+    default:
+        printf("31 jours\n");
+}</code></pre>
+      <p>Plusieurs <code>case</code> à la suite partagent les mêmes instructions.</p>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Le break oublié</span> <span class="badge ajout">Ajout</span></p>
+      <p>Sans <code>break</code>, l'exécution « tombe » dans le cas suivant. Avec <code>k</code> valant 1, le code ci-dessous affiche <code>un deux</code> :</p>
+<pre><code class="language-c">switch (k) {
+    case 1: printf("un ");
+    case 2: printf("deux "); break;
+    case 3: printf("trois ");
+}</code></pre>
+      <p>Un <code>switch</code> ne compare qu'à des constantes : pas d'intervalle (<code>case 1..5</code> n'existe pas en C standard), pas de chaîne.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Les fonctions <span class="ref">ajout · TP 1 et 3</span></h2>
+    <p>Les notes du cours 2 ne parlent pas des fonctions, mais les TP en écrivent dès le début (Fibonacci récursif et itératif au TP 3, fonctions de chaînes au TD 6). Cette partie en donne l'essentiel.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Définir et appeler une fonction</span></p>
+<pre><code class="language-c">int max(int a, int b)        /* type du résultat, nom, paramètres */
+{
+    return a &gt; b ? a : b;    /* return : renvoie le résultat et quitte */
+}
+
+int main(void)
+{
+    printf("%d\n", max(3, 8));   /* appel : affiche 8 */
+    return 0;
+}</code></pre>
+      <p>Une fonction qui ne renvoie rien a le type <code>void</code>. Une fonction doit être déclarée avant son premier appel : soit on la définit plus haut dans le fichier, soit on écrit son <dfn>prototype</dfn>, <code>int max(int a, int b);</code>, en tête du fichier (ou dans un <code>.h</code>).</p>
+    </div>
+
+    <h3>Passage par valeur</h3>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La fonction reçoit une copie</span></p>
+      <p>En C, les paramètres sont passés <strong>par valeur</strong> : la fonction reçoit une copie des arguments, et modifier un paramètre ne change rien chez l'appelant.</p>
+<pre><code class="language-c">void raz(int x) { x = 0; }
+
+int n = 5;
+raz(n);
+printf("%d\n", n);   /* 5 : seule la copie a été mise à 0 */</code></pre>
+      <p>Pour qu'une fonction modifie une variable de l'appelant, il faut lui passer l'adresse de la variable : c'est exactement ce que fait <code>scanf("%d", &amp;n)</code>. Le <a href="cours-03-pointeurs-allocation-structures.html#modifier-une-variable-dans-une-fonction">cours 3</a> montre comment écrire une telle fonction.</p>
+    </div>
+
+    <h3>Récursivité</h3>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Une fonction qui s'appelle</span></p>
+      <p>Une fonction peut s'appeler elle-même, à condition de prévoir un cas d'arrêt. Le TP 3 compare deux versions de la suite de Fibonacci :</p>
+<pre><code class="language-c">int fib(int n)               /* récursive */
+{
+    if (n &lt;= 1)
+        return n;            /* cas d'arrêt : fib(0) = 0, fib(1) = 1 */
+    return fib(n - 1) + fib(n - 2);
+}
+
+int fib_iter(int n)          /* itérative */
+{
+    int u0 = 0, u1 = 1;
+    for (int i = 0; i &lt; n; i++) {
+        int u = u0 + u1;
+        u0 = u1;
+        u1 = u;
+    }
+    return u0;
+}</code></pre>
+      <p>La version récursive recalcule sans cesse les mêmes valeurs : son nombre d'appels croît comme \(\varphi^n\) (\(\varphi \approx 1{,}618\)), alors que la version itérative fait \(n\) tours. La récursivité est approfondie en <a href="../../Algo3/generated_courses/cours-03-recursivite.html">Algorithmique 3</a>.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Exercices <span class="ref">ajout</span></h2>
+    <p>Exercices proposés pour s'entraîner sur ce cours ; les solutions ne viennent pas de l'enseignant.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Que se passe-t-il ?</span></p>
+      <p>L'utilisateur tape <code>7 x</code> puis Entrée. Qu'affiche ce programme ?</p>
+<pre><code class="language-c">int a = 0, b = 0, r;
+r = scanf("%d %d", &amp;a, &amp;b);
+printf("%d %d %d\n", r, a, b);</code></pre>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p><code>1 7 0</code> : la première conversion réussit, la seconde échoue sur <code>x</code>, qui reste dans le flux ; <code>b</code> garde sa valeur initiale et <code>scanf</code> renvoie 1.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Compter les mots</span></p>
+      <p>Écrire un programme qui lit son entrée avec <code>getchar</code> et affiche son nombre de mots, un mot étant une suite de caractères autres que l'espace, la tabulation et le passage à la ligne.</p>
+      <details class="indice"><summary>Indice</summary><p>Garder dans une variable l'information « je suis dans un mot » : on compte un mot à chaque fois qu'on y entre.</p></details>
+      <details class="solution"><summary>Solution proposée</summary>
+<pre data-fichier="mots.c"><code class="language-c">#include &lt;stdio.h&gt;
+
+int main(void)
+{
+    int c, dans_mot = 0, nb = 0;
+    while ((c = getchar()) != EOF) {
+        if (c == ' ' || c == '\t' || c == '\n')
+            dans_mot = 0;
+        else if (!dans_mot) {
+            dans_mot = 1;
+            nb++;
+        }
+    }
+    printf("%d\n", nb);
+    return 0;
+}</code></pre>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Menu</span></p>
+      <p>Écrire une boucle qui affiche un menu (<code>1</code> : afficher, <code>2</code> : ajouter, <code>0</code> : quitter), lit le choix et le traite avec un <code>switch</code>, jusqu'à ce que l'utilisateur tape 0. Un choix inconnu affiche un message d'erreur.</p>
+      <details class="solution"><summary>Solution proposée</summary>
+<pre><code class="language-c">int choix;
+do {
+    printf("1 : afficher\n2 : ajouter\n0 : quitter\nVotre choix : ");
+    if (scanf("%d", &amp;choix) != 1) {
+        int c;
+        while ((c = getchar()) != '\n' &amp;&amp; c != EOF)
+            ;
+        choix = -1;
+    }
+    switch (choix) {
+        case 1: printf("Affichage\n"); break;
+        case 2: printf("Ajout\n"); break;
+        case 0: printf("Au revoir\n"); break;
+        default: printf("Choix inconnu\n");
+    }
+} while (choix != 0);</code></pre>
+        <p>Le menu du TP 6 noté (« mots ») est construit sur ce modèle.</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Les entrées et sorties sont des flux de caractères ; <code>stdin</code> est le clavier, <code>stdout</code> l'écran.</li>
+        <li><code>printf</code> remplace chaque format (<code>%d</code>, <code>%f</code>, <code>%s</code>, <code>%c</code>…) par une valeur du bon type, et renvoie le nombre de caractères écrits.</li>
+        <li><code>scanf</code> reçoit l'<em>adresse</em> des variables (<code>&amp;a</code>), s'arrête au premier caractère qui ne convient pas, le laisse dans le flux, et renvoie le nombre de valeurs rangées : on la teste.</li>
+        <li><code>EOF</code> (−1) signale la fin du flux ; Ctrl+D sous Linux, Ctrl+Z sous Windows.</li>
+        <li><code>fflush(stdout)</code> force l'affichage ; <code>fflush(stdin)</code> n'est pas défini par la norme : on vide l'entrée en lisant jusqu'au <code>'\n'</code>.</li>
+        <li><code>while</code> teste avant chaque tour, <code>do … while</code> après (au moins un tour), <code>for</code> sert quand le nombre de tours est connu.</li>
+        <li><code>break</code> quitte la boucle, <code>continue</code> passe au tour suivant.</li>
+        <li><code>switch</code> compare une valeur entière à des constantes ; sans <code>break</code>, l'exécution continue dans le cas suivant.</li>
+        <li>Les paramètres d'une fonction sont passés par valeur : pour modifier une variable de l'appelant, il faut son adresse.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi écrit-on <code>scanf("%d", &amp;n)</code> et pas <code>scanf("%d", n)</code> ?</summary>
+        <div><p>Une fonction reçoit une copie de ses arguments : avec <code>n</code>, <code>scanf</code> recevrait sa valeur et ne pourrait pas modifier la variable. <code>&amp;n</code> lui donne l'adresse où ranger le nombre lu.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que renvoie <code>scanf("%d", &amp;n)</code> si l'utilisateur tape <code>abc</code> ?</summary>
+        <div><p>0 : aucune valeur n'a été rangée, <code>n</code> n'a pas changé, et <code>abc</code> est encore dans le flux.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle différence entre <code>while (c) { … }</code> et <code>do { … } while (c);</code> ?</summary>
+        <div><p>La première peut ne faire aucun tour ; la seconde en fait toujours au moins un, car elle teste la condition après le corps.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi <code>fflush(stdin)</code> est-il à éviter ?</summary>
+        <div><p>La norme ne définit <code>fflush</code> que pour les flux de sortie : sur <code>stdin</code>, le comportement dépend du système (rien sous Linux). On lit plutôt les caractères jusqu'au <code>'\n'</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi <code>while (x != 1 || x != 2)</code> ne s'arrête-t-il jamais ?</summary>
+        <div><p>Quelle que soit <code>x</code>, l'une des deux comparaisons est vraie. « Ni 1 ni 2 » s'écrit <code>x != 1 &amp;&amp; x != 2</code> (loi de De Morgan).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que fait un <code>case</code> sans <code>break</code> ?</summary>
+        <div><p>Après ses instructions, l'exécution continue dans le <code>case</code> suivant, jusqu'au prochain <code>break</code> ou à la fin du <code>switch</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Combien de caractères <code>printf("%d\n", 1000)</code> renvoie-t-il ?</summary>
+        <div><p>Cinq : les quatre chiffres et le passage à la ligne.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-01-bases-du-c.html"><small>← Précédent</small>Les bases du langage C</a>
+    <a class="suivant" href="cours-03-pointeurs-allocation-structures.html"><small>Suivant →</small>Pointeurs, allocation dynamique et structures</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Algorithmique 2 · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

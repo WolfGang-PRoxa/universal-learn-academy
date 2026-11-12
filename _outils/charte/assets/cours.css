@@ -1,0 +1,1603 @@
+@charset "utf-8";
+/* ==========================================================================
+   Charte des cours — feuille de style commune
+   --------------------------------------------------------------------------
+   Toutes les pages de cours de studies/ utilisent ce fichier, et lui seul.
+   Aucune page ne contient de <style> ni d'attribut style="" : pour changer
+   l'apparence, on modifie ce fichier, puis on vérifie composants.html.
+
+    1. Jetons (couleurs, typographie, dimensions) et thème sombre
+    2. Teintes des matières
+    3. Base et typographie
+    4. Mise en page : barre, sommaire, colonne de lecture
+    5. En-tête de cours et cadre d'introduction
+    6. Blocs : définition, théorème, exemple, méthode, attention…
+    7. Code, terminal, coloration syntaxique
+    8. Maths, tableaux, figures, schémas SVG
+    9. Composants divers : étapes, colonnes, glossaire, cartes, badges…,
+       contrôles de formulaire des outils
+   10. Page d'index d'une matière
+   11. Impression et accessibilité
+   12. Mouvement : défilement doux, apparitions, dépliants, transitions
+   ========================================================================== */
+
+
+/* 1. Jetons ================================================================ */
+
+:root {
+  color-scheme: light;
+
+  /* Teinte de la matière (0–360, OKLCH). Surchargée par data-matiere. */
+  --hue: 255;
+
+  /* Tons OKLCH « luminosité chroma » : la teinte est ajoutée à l'usage,
+     ce qui permet de décliner n'importe quelle couleur dans les deux thèmes. */
+  --ton-fort: 44% 0.14;     /* texte coloré : titres de blocs, liens */
+  --ton-vif: 56% 0.16;      /* filets épais, icônes, numéros */
+  --ton-trait: 87% 0.05;    /* bordures légères */
+  --ton-doux: 96.8% 0.02;   /* fonds teintés */
+
+  --accent: oklch(var(--ton-vif) var(--hue));
+  --accent-fort: oklch(var(--ton-fort) var(--hue));
+  --accent-trait: oklch(var(--ton-trait) var(--hue));
+  --accent-doux: oklch(var(--ton-doux) var(--hue));
+
+  /* Surfaces et texte */
+  --fond: #fafaf8;
+  --surface: #ffffff;
+  --surface-2: #f1f1ee;
+  --bordure: #e2e2dd;
+  --bordure-forte: #c6c6bf;
+  --texte: #1c1d21;
+  --texte-2: #54575e;
+  --texte-3: #80838a;
+  --surligne: oklch(93% 0.09 95);
+  --ombre: 0 1px 2px rgb(0 0 0 / 0.04), 0 6px 20px rgb(0 0 0 / 0.05);
+
+  /* Code (thème clair) */
+  --code-fond: #f6f7f9;
+  --code-entete: #eef0f3;
+  --code-bordure: #e0e3e8;
+  --code-texte: #1f2328;
+  --code-commentaire: #6a737d;
+  --code-mot-cle: oklch(47% 0.2 305);
+  --code-chaine: oklch(47% 0.12 150);
+  --code-nombre: oklch(52% 0.15 50);
+  --code-fonction: oklch(47% 0.16 260);
+  --code-type: oklch(49% 0.1 205);
+  --code-meta: oklch(50% 0.17 15);
+  --code-variable: oklch(48% 0.15 340);
+
+  /* Typographie : polices système, aucune dépendance réseau */
+  --police-texte: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Roboto, Arial, sans-serif;
+  --police-titre: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Roboto, Arial, sans-serif;
+  --police-code: "Cascadia Mono", "Cascadia Code", "JetBrains Mono", "Fira Code", "SF Mono", Menlo, Consolas, monospace;
+  --taille-texte: 1.0625rem;
+  --interligne: 1.7;
+
+  /* Dimensions */
+  --mesure: 46rem;              /* largeur de la colonne de lecture */
+  --largeur-sommaire: 15rem;
+  --hauteur-barre: 3.25rem;
+  --rayon: 10px;
+  --rayon-petit: 6px;
+
+  /* Icône du bouton de thème : une lune en clair, un soleil en sombre */
+  --icone-theme: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z'/%3E%3C/svg%3E");
+}
+
+/* Thème sombre : suit le système, sauf choix explicite (bouton de la barre).
+   Les deux blocs ci-dessous doivent rester identiques. Ils sont limités à
+   l'écran, si bien que l'impression se fait toujours en clair. */
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme="clair"]) {
+    color-scheme: dark;
+    --ton-fort: 83% 0.1;
+    --ton-vif: 72% 0.14;
+    --ton-trait: 39% 0.06;
+    --ton-doux: 25% 0.03;
+    --fond: #131417;
+    --surface: #1a1b1f;
+    --surface-2: #222328;
+    --bordure: #2d2f35;
+    --bordure-forte: #464951;
+    --texte: #e6e6e3;
+    --texte-2: #a8abb1;
+    --texte-3: #7b7e86;
+    --surligne: oklch(42% 0.08 95);
+    --ombre: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px rgb(0 0 0 / 0.25);
+    --code-fond: #16171b;
+    --code-entete: #1c1e22;
+    --code-bordure: #2b2d33;
+    --code-texte: #e1e3e6;
+    --code-commentaire: #8b919b;
+    --code-mot-cle: oklch(76% 0.14 305);
+    --code-chaine: oklch(78% 0.13 145);
+    --code-nombre: oklch(80% 0.12 65);
+    --code-fonction: oklch(77% 0.12 250);
+    --code-type: oklch(80% 0.1 200);
+    --code-meta: oklch(74% 0.14 15);
+    --code-variable: oklch(76% 0.12 340);
+    --icone-theme: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Cpath d='M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41'/%3E%3C/svg%3E");
+  }
+}
+@media screen {
+  :root[data-theme="sombre"] {
+    color-scheme: dark;
+    --ton-fort: 83% 0.1;
+    --ton-vif: 72% 0.14;
+    --ton-trait: 39% 0.06;
+    --ton-doux: 25% 0.03;
+    --fond: #131417;
+    --surface: #1a1b1f;
+    --surface-2: #222328;
+    --bordure: #2d2f35;
+    --bordure-forte: #464951;
+    --texte: #e6e6e3;
+    --texte-2: #a8abb1;
+    --texte-3: #7b7e86;
+    --surligne: oklch(42% 0.08 95);
+    --ombre: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px rgb(0 0 0 / 0.25);
+    --code-fond: #16171b;
+    --code-entete: #1c1e22;
+    --code-bordure: #2b2d33;
+    --code-texte: #e1e3e6;
+    --code-commentaire: #8b919b;
+    --code-mot-cle: oklch(76% 0.14 305);
+    --code-chaine: oklch(78% 0.13 145);
+    --code-nombre: oklch(80% 0.12 65);
+    --code-fonction: oklch(77% 0.12 250);
+    --code-type: oklch(80% 0.1 200);
+    --code-meta: oklch(74% 0.14 15);
+    --code-variable: oklch(76% 0.12 340);
+    --icone-theme: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Cpath d='M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41'/%3E%3C/svg%3E");
+  }
+}
+
+
+/* 2. Teintes des matières ===================================================
+   <html data-matiere="…"> choisit la teinte d'accent de toute la page.
+   L'attribut fonctionne aussi sur n'importe quel élément (carte, pastille),
+   ce qui permet de mélanger plusieurs matières sur une même page.
+   Pour une nouvelle matière : ajouter une ligne ici, dans le README et dans
+   le nuancier de composants.html, avec une teinte éloignée d'au moins ~20°
+   de ses voisines. */
+
+[data-matiere] {
+  --accent: oklch(var(--ton-vif) var(--hue));
+  --accent-fort: oklch(var(--ton-fort) var(--hue));
+  --accent-trait: oklch(var(--ton-trait) var(--hue));
+  --accent-doux: oklch(var(--ton-doux) var(--hue));
+}
+[data-matiere="codage"]        { --hue: 268; } /* indigo     */
+[data-matiere="bd"]            { --hue: 162; } /* vert       */
+[data-matiere="se"]            { --hue: 48;  } /* orange     */
+[data-matiere="poo"]           { --hue: 18;  } /* rubis      */
+[data-matiere="anglais"]       { --hue: 328; } /* magenta    */
+[data-matiere="c"]             { --hue: 232; } /* bleu       */
+[data-matiere="securite"]      { --hue: 181; } /* sarcelle   */
+[data-matiere="reseau"]        { --hue: 200; } /* cyan       */
+[data-matiere="archi"]         { --hue: 88;  } /* ocre       */
+[data-matiere="gl"]            { --hue: 108; } /* olive      */
+[data-matiere="unix"]          { --hue: 128; } /* vert-jaune */
+[data-matiere="web"]           { --hue: 305; } /* violet     */
+[data-matiere="maths"]         { --hue: 285; } /* pourpre    */
+[data-matiere="communication"] { --hue: 350; } /* rose       */
+[data-matiere="licence"]       { --hue: 68;  } /* ambre : pages de niveau (L1, L2, L3) */
+
+
+/* 3. Base et typographie =================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-padding-top: calc(var(--hauteur-barre) + 1rem);
+}
+
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+  font-family: var(--police-texte);
+  font-size: var(--taille-texte);
+  line-height: var(--interligne);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--police-titre);
+  color: var(--texte);
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+h2 {
+  font-size: 1.55rem;
+  letter-spacing: -0.01em;
+  margin: 3.25rem 0 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--bordure);
+}
+h3 { font-size: 1.22rem; margin: 2.25rem 0 0.75rem; }
+/* Pas de double filet quand une section suit directement l'en-tête (index) */
+.entete + section > h2:first-child,
+.entete + h2 { margin-top: 0; padding-top: 0; border-top: 0; }
+h4 { font-size: 1.02rem; margin: 1.75rem 0 0.5rem; }
+
+p, ul, ol, dl, blockquote { margin: 0 0 1rem; }
+ul, ol { padding-left: 1.4rem; }
+li { margin: 0.3rem 0; }
+li > ul, li > ol { margin: 0.3rem 0 0; }
+li::marker { color: var(--texte-3); }
+ol > li::marker { font-weight: 600; }
+
+a {
+  color: var(--accent-fort);
+  text-decoration: underline;
+  text-decoration-color: var(--accent-trait);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.18em;
+}
+a:hover { text-decoration-color: currentColor; }
+a[href^="http"]::after {
+  content: "↗";
+  font-size: 0.75em;
+  margin-left: 0.15em;
+  text-decoration: none;
+  display: inline-block;
+}
+
+strong, b { font-weight: 650; }
+small { font-size: 0.85em; }
+mark { background: var(--surligne); color: inherit; padding: 0 0.15em; border-radius: 3px; }
+
+/* Terme défini dans la phrase, et son équivalent anglais */
+dfn { font-style: normal; font-weight: 650; color: var(--accent-fort); }
+.en { font-style: italic; color: var(--texte-2); }
+
+code, kbd, samp {
+  font-family: var(--police-code);
+  font-variant-ligatures: none;
+}
+:not(pre) > code {
+  font-size: 0.86em;
+  padding: 0.12em 0.38em;
+  border-radius: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--bordure);
+  /* Passe à la ligne aux espaces, et coupe un mot trop long plutôt que de
+     déborder de la colonne (téléphone, cartes, colonnes étroites). */
+  overflow-wrap: break-word;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+kbd {
+  font-size: 0.8em;
+  padding: 0.1em 0.45em;
+  border: 1px solid var(--bordure-forte);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--surface);
+  white-space: nowrap;
+}
+
+blockquote {
+  margin: 1.5rem 0;
+  padding: 0.25rem 0 0.25rem 1.1rem;
+  border-left: 3px solid var(--bordure-forte);
+  color: var(--texte-2);
+  font-style: italic;
+}
+
+hr { border: 0; border-top: 1px solid var(--bordure); margin: 2.5rem 0; }
+img, svg, video { max-width: 100%; height: auto; }
+
+::selection { background: var(--accent-trait); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+[id] { scroll-margin-top: calc(var(--hauteur-barre) + 1rem); }
+
+
+/* 4. Mise en page ========================================================== */
+
+/* Barre de progression de lecture (injectée par cours.js) */
+.progression {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 3px;
+  z-index: 40;
+  background: var(--accent);
+  transform-origin: 0 50%;
+  transform: scaleX(var(--p, 0));
+}
+
+/* Barre du haut : fil d'Ariane + boutons (sommaire, thème) */
+.barre {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  height: var(--hauteur-barre);
+  padding: 0 max(1rem, calc((100vw - 80rem) / 2));
+  background: color-mix(in oklab, var(--fond) 86%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--bordure);
+}
+
+.fil {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.875rem;
+  color: var(--texte-2);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.fil > * { flex: none; }
+/* Fenêtre étroite : les maillons longs (matière, page) se raccourcissent,
+   « studies » et le niveau restent entiers */
+.fil > a {
+  flex: 0 1 auto;
+  min-width: 2.2em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fil .pastille + a, .fil .pastille + a + a { flex-shrink: 0; min-width: auto; }
+/* Téléphone : la page courante, qui est le titre juste en dessous, laisse la
+   place à « studies », au niveau et à la matière */
+@media (max-width: 40rem) {
+  .fil a + a ~ [aria-current] { display: none; }
+}
+.fil > * + *::before { content: "›"; margin-right: 0.45rem; color: var(--texte-3); }
+.fil a { color: inherit; text-decoration: none; }
+.fil a:hover { color: var(--accent-fort); }
+.fil [aria-current] {
+  flex: 0 1 auto;
+  min-width: 3.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--texte);
+  font-weight: 600;
+}
+.fil .pastille {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.fil .pastille + *::before { content: none; }
+
+.bouton-icone {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--texte-2);
+  cursor: pointer;
+}
+.bouton-icone:hover { color: var(--texte); border-color: var(--bordure-forte); }
+.bouton-icone::before {
+  content: "";
+  width: 1.1rem;
+  height: 1.1rem;
+  background: currentColor;
+  -webkit-mask: var(--icone) center / contain no-repeat;
+  mask: var(--icone) center / contain no-repeat;
+}
+.bouton-theme { --icone: var(--icone-theme); }
+/* Lien vers l'accueil général (index.html à la racine), ajouté par cours.js */
+.bouton-accueil {
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z'/%3E%3C/svg%3E");
+  text-decoration: none;
+}
+
+/* Précédent et suivant : application de bureau seulement (_outils/app), ajoutés par cours.js */
+.bouton-precedent { --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 18l-6-6 6-6'/%3E%3C/svg%3E"); }
+.bouton-suivant { --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18l6-6-6-6'/%3E%3C/svg%3E"); margin-left: -0.4rem; }
+.bouton-icone:disabled { color: var(--texte-3); border-color: var(--bordure); cursor: default; }
+
+/* Lien vers le ou les quiz de la page (<link rel="quiz">, ajouté par cours.js) */
+.bouton-quiz {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 2.25rem;
+  padding: 0 0.85rem;
+  border: 1px solid var(--accent-trait);
+  border-radius: 8px;
+  background: var(--accent-doux);
+  color: var(--accent-fort);
+  font-size: 0.85rem;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+  list-style: none;
+}
+.bouton-quiz::-webkit-details-marker { display: none; }
+.bouton-quiz:hover { border-color: var(--accent); }
+.menu-quiz { position: relative; flex: none; }
+.menu-quiz > ul {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  z-index: 40;
+  min-width: 16rem;
+  margin: 0;
+  padding: 0.4rem;
+  list-style: none;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-petit);
+  background: var(--surface);
+  box-shadow: var(--ombre);
+}
+.menu-quiz li { margin: 0; }
+.menu-quiz li a { display: block; padding: 0.4rem 0.6rem; border-radius: 6px; color: var(--texte); text-decoration: none; font-size: 0.9rem; }
+.menu-quiz li a:hover { background: var(--accent-doux); }
+.bouton-sommaire {
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6h18M3 12h18M3 18h12'/%3E%3C/svg%3E");
+  display: none;
+}
+
+/* Grand écran : au-delà de 90rem (1 440 px), la taille de base suit la largeur
+   de la fenêtre. Toutes les tailles de la charte et des outils étant en rem, la
+   page grandit d'un bloc (textes, colonnes, marges, boutons) et garde sur un
+   grand écran les proportions qu'elle a à 1 440 px, au lieu de rester petite
+   au milieu de marges vides. Dans une requête média, 90rem vaut toujours
+   1 440 px ; l'impression n'est pas concernée. */
+@media screen and (min-width: 90rem) {
+  html { font-size: calc(100vw / 90); }
+}
+
+/* Grille : colonne de lecture seule, ou sommaire + lecture (classe ajoutée
+   par cours.js quand il construit le sommaire). */
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, var(--mesure));
+  grid-template-areas: "contenu";
+  justify-content: center;
+  column-gap: 3.5rem;
+  padding: 2.75rem 1.5rem 5rem;
+}
+.page.avec-sommaire {
+  grid-template-columns: var(--largeur-sommaire) minmax(0, var(--mesure));
+  grid-template-areas: "sommaire contenu";
+}
+.cours { grid-area: contenu; min-width: 0; }
+
+/* Sommaire (construit par cours.js à partir des h2/h3) */
+.sommaire {
+  grid-area: sommaire;
+  position: sticky;
+  top: calc(var(--hauteur-barre) + 2rem);
+  align-self: start;
+  max-height: calc(100vh - var(--hauteur-barre) - 4rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  scrollbar-width: thin;
+}
+.sommaire-titre {
+  margin: 0 0 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texte-3);
+}
+.sommaire ol { list-style: none; margin: 0; padding: 0; }
+.sommaire li { margin: 0; }
+.sommaire a {
+  display: flex;
+  gap: 0.45rem;
+  padding: 0.3rem 0.6rem;
+  border-left: 2px solid var(--bordure);
+  color: var(--texte-2);
+  text-decoration: none;
+}
+.sommaire a::after { content: none; }
+.sommaire ol ol a { padding-left: 1.35rem; font-size: 0.82rem; }
+.sommaire a:hover { color: var(--texte); border-left-color: var(--bordure-forte); }
+.sommaire a.actif {
+  color: var(--accent-fort);
+  border-left-color: var(--accent);
+  background: var(--accent-doux);
+  font-weight: 600;
+}
+.sommaire .num { flex: none; color: var(--texte-3); font-variant-numeric: tabular-nums; }
+.sommaire a.actif .num { color: inherit; }
+
+.voile { display: none; }
+
+@media (max-width: 64rem) {
+  .page,
+  .page.avec-sommaire {
+    grid-template-columns: minmax(0, var(--mesure));
+    grid-template-areas: "contenu";
+    padding: 1.75rem 1rem 4rem;
+  }
+  .bouton-sommaire { display: inline-grid; }
+  .sommaire {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+    width: min(20rem, 85vw);
+    max-height: none;
+    padding: 1.25rem 1rem;
+    background: var(--surface);
+    border-right: 1px solid var(--bordure);
+    box-shadow: var(--ombre);
+    transform: translateX(-105%);
+    transition: transform 0.2s ease;
+  }
+  .sommaire-ouvert .sommaire { transform: none; }
+  .sommaire-ouvert .voile {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    background: rgb(0 0 0 / 0.35);
+  }
+}
+
+@media (max-width: 40rem) {
+  body { --taille-texte: 1rem; }
+  h2 { font-size: 1.35rem; }
+  h3 { font-size: 1.12rem; }
+}
+
+/* Numérotation automatique des sections (1., 1.1) ; le sommaire reprend les
+   mêmes numéros. h2.sans-numero / h3.sans-numero : titre non numéroté.
+   .cours.sans-numeros : aucune numérotation (pages d'index). */
+.cours { counter-reset: titre2 titre3 figure tableau; }
+/* counter-set (et non counter-reset) : un reset sur le h2 créerait un compteur
+   imbriqué que les h3 frères n'héritent pas. */
+.cours:not(.sans-numeros) h2:not(.sans-numero) { counter-increment: titre2; counter-set: titre3 0; }
+.cours:not(.sans-numeros) h3:not(.sans-numero) { counter-increment: titre3; }
+.cours:not(.sans-numeros) h2:not(.sans-numero)::before {
+  content: counter(titre2) ".";
+  margin-right: 0.55rem;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.cours:not(.sans-numeros) h3:not(.sans-numero)::before {
+  content: counter(titre2) "." counter(titre3);
+  margin-right: 0.55rem;
+  color: var(--texte-3);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ancre « # » ajoutée par cours.js au survol des titres */
+.ancre {
+  margin-left: 0.45rem;
+  color: var(--texte-3);
+  font-weight: 400;
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+:is(h2, h3):hover .ancre, .ancre:focus-visible { opacity: 1; }
+
+/* Navigation entre chapitres, en bas de page */
+.pagination {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--bordure);
+}
+.pagination a {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  color: var(--texte);
+  text-decoration: none;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.pagination a:hover { border-color: var(--accent); }
+.pagination small {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texte-3);
+}
+.pagination .suivant { grid-column: 2; text-align: right; }
+
+.pied {
+  padding: 2rem 1rem 3rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--texte-3);
+}
+.pied a { color: inherit; }
+
+
+/* 5. En-tête de cours ====================================================== */
+
+.entete {
+  margin-bottom: 2.25rem;
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--bordure);
+}
+.surtitre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  margin: 0 0 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--texte-2);
+}
+.entete h1 {
+  margin: 0 0 0.8rem;
+  font-size: clamp(1.8rem, 1.15rem + 2.3vw, 2.5rem);
+  line-height: 1.12;
+  letter-spacing: -0.022em;
+}
+.chapeau {
+  margin: 0 0 1.4rem;
+  font-size: 1.15rem;
+  line-height: 1.55;
+  color: var(--texte-2);
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 2rem;
+  margin: 0;
+  font-size: 0.86rem;
+}
+.meta > div { display: flex; flex-direction: column; gap: 0.05rem; }
+.meta dt {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texte-3);
+}
+.meta dd { margin: 0; }
+
+/* Objectifs / prérequis, juste après l'en-tête */
+.cadre-intro {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 1rem;
+  margin: 0 0 2.5rem;
+}
+.cadre-intro > div {
+  padding: 1rem 1.2rem;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+}
+.cadre-intro ul { margin: 0; padding-left: 1.1rem; font-size: 0.95rem; }
+.cadre-titre {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-fort);
+}
+
+
+/* 6. Blocs ==================================================================
+   <div class="bloc TYPE">
+     <p class="bloc-titre">Libellé <span>Nom facultatif</span></p>
+     …contenu…
+   </div>
+   Chaque type fixe sa teinte (--h) et son icône (--icone). Le libellé est
+   écrit dans le HTML : « Propriété », « Lemme », « Corollaire » réutilisent
+   le type theoreme, « Algorithme » réutilise methode, etc. */
+
+.bloc {
+  --h: var(--hue);
+  --b-fort: oklch(var(--ton-fort) var(--h));
+  --b-vif: oklch(var(--ton-vif) var(--h));
+  --b-trait: oklch(var(--ton-trait) var(--h));
+  --b-doux: oklch(var(--ton-doux) var(--h));
+  margin: 1.6rem 0;
+  padding: 0.95rem 1.2rem 1rem;
+  background: var(--b-doux);
+  border: 1px solid var(--b-trait);
+  border-left: 4px solid var(--b-vif);
+  border-radius: var(--rayon-petit);
+}
+.bloc > :last-child { margin-bottom: 0; }
+.bloc a { color: var(--b-fort); }
+.bloc :not(pre) > code { background: var(--surface); }
+
+.bloc-titre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.55rem;
+  margin: 0 0 0.55rem;
+  font-size: 0.74rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  color: var(--b-fort);
+}
+.bloc-titre::before {
+  content: "";
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  background: var(--b-vif);
+  -webkit-mask: var(--icone) center / contain no-repeat;
+  mask: var(--icone) center / contain no-repeat;
+}
+.bloc-titre > span {
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--texte);
+}
+
+/* Référence ou badge placés dans un titre de bloc : garder leur propre style */
+.bloc-titre > .ref { font-size: 0.7rem; font-weight: 500; color: var(--texte-3); }
+.bloc-titre > .badge { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.03em; color: var(--texte-2); }
+
+.bloc.definition {
+  --h: 255;
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 7v14'/%3E%3Cpath d='M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z'/%3E%3C/svg%3E");
+}
+.bloc.theoreme {
+  --h: 300;
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 7V5a1 1 0 0 0-1-1H6.5a.5.5 0 0 0-.4.8l4.5 6a2 2 0 0 1 0 2.4l-4.5 6a.5.5 0 0 0 .4.8H17a1 1 0 0 0 1-1v-2'/%3E%3C/svg%3E");
+}
+.bloc.exemple {
+  --h: 150;
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2'/%3E%3Cpath d='M8.5 2h7'/%3E%3Cpath d='M7 16h10'/%3E%3C/svg%3E");
+}
+.bloc.methode {
+  --h: 195;
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 17 2 2 4-4'/%3E%3Cpath d='m3 7 2 2 4-4'/%3E%3Cpath d='M13 6h8'/%3E%3Cpath d='M13 12h8'/%3E%3Cpath d='M13 18h8'/%3E%3C/svg%3E");
+}
+.bloc.attention {
+  --h: 25;
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E");
+}
+.bloc.astuce {
+  --h: 85;
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5'/%3E%3Cpath d='M9 18h6'/%3E%3Cpath d='M10 22h4'/%3E%3C/svg%3E");
+}
+.bloc.exercice {
+  --h: 345;
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z'/%3E%3Cpath d='m15 5 4 4'/%3E%3C/svg%3E");
+}
+.bloc.retenir {
+  --h: var(--hue); /* couleur de la matière */
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z'/%3E%3C/svg%3E");
+  border: 1px solid var(--b-trait);
+  border-top: 4px solid var(--b-vif);
+  box-shadow: var(--ombre);
+}
+.bloc.note {
+  --b-fort: var(--texte-2);
+  --b-vif: var(--texte-3);
+  --b-trait: var(--bordure);
+  --b-doux: var(--surface-2);
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4'/%3E%3Cpath d='M12 8h.01'/%3E%3C/svg%3E");
+}
+/* Complément : ce qui n'est PAS dans le cours d'origine (ajout d'explication,
+   d'exemple, de contexte). Bordure pointillée pour le distinguer au premier
+   coup d'œil du contenu de l'enseignant. */
+.bloc.complement {
+  --b-fort: var(--texte-2);
+  --b-vif: var(--bordure-forte);
+  --b-trait: var(--bordure-forte);
+  --b-doux: transparent;
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M8 12h8'/%3E%3Cpath d='M12 8v8'/%3E%3C/svg%3E");
+  border-style: dashed;
+  border-left-style: dashed;
+  border-left-width: 2px;
+}
+
+/* Dépliants : preuve, indice, solution, ou tout <details class="depliant"> */
+.cours summary {
+  position: relative;
+  display: block;
+  padding-left: 1.2rem;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+}
+.cours summary::-webkit-details-marker { display: none; }
+.cours summary::before {
+  content: "";
+  position: absolute;
+  left: 0.1rem;
+  top: 0.85em;
+  width: 0.42em;
+  height: 0.42em;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-50%) rotate(-45deg);
+  transition: transform 0.15s;
+  opacity: 0.75;
+}
+.cours details[open] > summary::before { transform: translateY(-75%) rotate(45deg); }
+.cours details > :last-child { margin-bottom: 0; }
+
+.bloc details {
+  margin: 0.9rem 0 0;
+  padding-top: 0.7rem;
+  border-top: 1px dashed var(--b-trait);
+}
+.bloc details > summary { color: var(--b-fort); font-size: 0.95rem; }
+.bloc details[open] > summary { margin-bottom: 0.6rem; }
+.bloc details.solution > summary { color: oklch(var(--ton-fort) 150); }
+
+details.depliant {
+  margin: 1.25rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-petit);
+}
+details.depliant[open] > summary { margin-bottom: 0.6rem; }
+
+
+/* 7. Code, terminal, coloration syntaxique =================================
+   Écrire <pre><code class="language-c">…</code></pre> (avec data-fichier="x.c"
+   sur le <pre> si utile). cours.js enveloppe chaque <pre> dans
+   <figure class="code"> avec un en-tête (fichier, langage, bouton Copier). */
+
+figure.code {
+  margin: 1.5rem 0;
+  background: var(--code-fond);
+  border: 1px solid var(--code-bordure);
+  border-radius: var(--rayon-petit);
+  overflow: hidden;
+  color: var(--code-texte);
+}
+figure.code > figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 2.2rem;
+  padding: 0.2rem 0.4rem 0.2rem 0.9rem;
+  background: var(--code-entete);
+  border-bottom: 1px solid var(--code-bordure);
+  font-size: 0.78rem;
+  color: var(--code-commentaire);
+}
+.code-titre { display: flex; align-items: baseline; gap: 0.6rem; min-width: 0; }
+.code-fichier {
+  font-family: var(--police-code);
+  font-weight: 600;
+  color: var(--code-texte);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.code-langue { font-weight: 600; letter-spacing: 0.04em; }
+.bouton-copier {
+  flex: none;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bouton-copier:hover { border-color: var(--code-bordure); color: var(--code-texte); }
+.bouton-copier.ok { color: var(--code-chaine); }
+
+pre {
+  margin: 1.5rem 0;
+  padding: 0.95rem 1.1rem;
+  overflow-x: auto;
+  font-family: var(--police-code);
+  font-size: 0.86rem;
+  line-height: 1.6;
+  tab-size: 4;
+  font-variant-ligatures: none;
+  background: var(--code-fond);
+  color: var(--code-texte);
+  border-radius: var(--rayon-petit);
+}
+figure.code > pre { margin: 0; border-radius: 0; background: none; }
+pre code { font-size: inherit; background: none; padding: 0; border: 0; white-space: pre; }
+
+/* Pseudo-code : mots-clés en <b> (pas de coloration automatique) */
+.language-pseudo b { color: var(--code-mot-cle); font-weight: 650; }
+.language-pseudo i { color: var(--code-commentaire); }
+
+/* Terminal : toujours sombre, quel que soit le thème */
+.terminal {
+  --code-fond: #111215;
+  --code-entete: #1a1b1f;
+  --code-bordure: #2a2c31;
+  --code-texte: #dfe1e5;
+  --code-commentaire: #8a9099;
+  --code-mot-cle: oklch(76% 0.14 305);
+  --code-chaine: oklch(78% 0.13 145);
+  --code-nombre: oklch(80% 0.12 65);
+  --code-fonction: oklch(77% 0.12 250);
+  --code-type: oklch(80% 0.1 200);
+  --code-meta: oklch(74% 0.14 15);
+  --code-variable: oklch(76% 0.12 340);
+  color-scheme: dark;
+}
+
+/* Correspondance highlight.js → jetons de la charte */
+.hljs-comment, .hljs-quote { color: var(--code-commentaire); font-style: italic; }
+.hljs-keyword, .hljs-selector-tag, .hljs-doctag, .hljs-template-tag, .hljs-name { color: var(--code-mot-cle); }
+.hljs-string, .hljs-regexp, .hljs-addition, .hljs-selector-attr, .hljs-selector-pseudo, .hljs-char.escape_ { color: var(--code-chaine); }
+.hljs-number, .hljs-literal, .hljs-symbol, .hljs-bullet, .hljs-link { color: var(--code-nombre); }
+.hljs-title, .hljs-title.function_, .hljs-section, .hljs-selector-id, .hljs-selector-class { color: var(--code-fonction); }
+.hljs-type, .hljs-built_in, .hljs-title.class_, .hljs-title.class_.inherited__ { color: var(--code-type); }
+.hljs-meta, .hljs-meta .hljs-keyword { color: var(--code-meta); }
+.hljs-meta .hljs-string { color: var(--code-chaine); }
+.hljs-variable, .hljs-template-variable, .hljs-attr, .hljs-attribute, .hljs-property { color: var(--code-variable); }
+.hljs-deletion { color: var(--code-meta); }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 700; }
+.hljs-meta.prompt_ { color: var(--code-commentaire); -webkit-user-select: none; user-select: none; }
+
+
+/* 8. Maths, tableaux, figures, schémas ===================================== */
+
+/* KaTeX : \( … \) en ligne, \[ … \] en bloc */
+.katex { font-size: 1.08em; }
+.katex-display {
+  margin: 1.25rem 0;
+  padding: 0.25rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+/* auto-render enveloppe chaque formule dans un <span> : pas de marge
+   résiduelle quand la formule termine un bloc */
+:is(.bloc, .colonne, details, details > div) > :last-child > .katex-display { margin-bottom: 0; }
+
+/* Tableaux : cours.js place tout <table> nu dans un <div class="tableau">.
+   Variantes : .mono (binaire, tables de vérité), .centre, .compact. */
+.tableau {
+  margin: 1.6rem 0;
+  overflow-x: auto;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-petit);
+  background: var(--surface);
+}
+.tableau table { width: 100%; border-collapse: collapse; font-size: 0.93rem; line-height: 1.5; }
+.tableau caption {
+  caption-side: top;
+  padding: 0.7rem 0.9rem;
+  text-align: left;
+  font-size: 0.875rem;
+  color: var(--texte-2);
+  border-bottom: 1px solid var(--bordure);
+  counter-increment: tableau;
+}
+.tableau caption::before { content: "Tableau " counter(tableau) " — "; font-weight: 650; color: var(--texte); }
+.tableau th, .tableau td {
+  padding: 0.55rem 0.9rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--bordure);
+}
+.tableau thead th {
+  background: var(--surface-2);
+  font-size: 0.85rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.tableau tbody th { font-weight: 600; }
+.tableau tbody tr:last-child > * { border-bottom: 0; }
+.tableau.mono td, .tableau.mono th { font-family: var(--police-code); text-align: center; font-variant-ligatures: none; }
+.tableau.centre td, .tableau.centre th { text-align: center; }
+.tableau.compact th, .tableau.compact td { padding: 0.3rem 0.6rem; }
+.tableau td.oui, .tableau td.non { font-weight: 650; }
+.tableau td.oui { color: oklch(var(--ton-fort) 150); }
+.tableau td.non { color: oklch(var(--ton-fort) 25); }
+
+/* Figures : schéma SVG en ligne ou image, légende numérotée automatiquement */
+.figure {
+  margin: 1.75rem 0;
+  padding: 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-petit);
+  text-align: center;
+}
+.figure > img, .figure > svg { display: block; margin: 0 auto; }
+.figure figcaption {
+  margin-top: 0.85rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--texte-2);
+  counter-increment: figure;
+}
+.figure figcaption::before { content: "Figure " counter(figure) " — "; font-weight: 650; color: var(--texte); }
+
+/* Écoute : piste audio fournie par l'enseignant (langues : TOEIC, accents),
+   lecteur du navigateur sur toute la largeur, légende au-dessus (titre en
+   texte, source en <small>), transcription ou corrigé dans un dépliant. */
+.ecoute {
+  margin: 1.5rem 0;
+  padding: 0.85rem 1.1rem 0.95rem;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--rayon-petit);
+}
+.ecoute > figcaption { margin: 0 0 0.6rem; font-weight: 650; line-height: 1.4; }
+.ecoute > figcaption small { display: block; font-weight: 400; font-size: 0.85em; color: var(--texte-2); }
+.ecoute audio { display: block; width: 100%; min-height: 2.5rem; }
+.ecoute video { display: block; width: 100%; height: auto; border-radius: var(--rayon-petit); background: #000; }
+.ecoute > details { margin-top: 0.75rem; }
+.ecoute > details > :last-child { margin-bottom: 0; }
+
+/* Schémas SVG : dessiner avec ces classes pour que le schéma suive le thème.
+   Jamais de couleur en dur dans un schéma. Donner à <svg> un attribut width
+   égal à la largeur du viewBox : le schéma garde sa taille, et rétrécit
+   seulement sur petit écran. */
+svg.schema {
+  max-width: 100%;
+  height: auto;
+  font-family: var(--police-texte);
+  font-size: 14px;
+  color: var(--texte);
+  overflow: visible;
+}
+.schema text { fill: var(--texte); }
+.schema .t2 { fill: var(--texte-2); }
+.schema .mono { font-family: var(--police-code); }
+.schema .gras { font-weight: 650; }
+.schema .trait { fill: none; stroke: var(--texte-2); stroke-width: 1.5; }
+.schema .pointille { fill: none; stroke: var(--texte-3); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.schema .boite { fill: var(--surface-2); stroke: var(--bordure-forte); stroke-width: 1.5; }
+.schema .boite-accent { fill: var(--accent-doux); stroke: var(--accent); stroke-width: 1.5; }
+.schema .accent { fill: none; stroke: var(--accent); stroke-width: 2; }
+.schema .plein { fill: var(--texte-2); stroke: none; }
+.schema .plein-accent { fill: var(--accent); stroke: none; }
+.schema text.accent { fill: var(--accent-fort); stroke: none; }
+
+
+/* 9. Composants divers ===================================================== */
+
+/* Badges : type de document, importance, statut */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.08rem 0.55rem;
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--texte-2);
+  font-family: var(--police-texte);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 1.6;
+  white-space: nowrap;
+  vertical-align: 0.15em;
+}
+.badge.matiere {
+  background: var(--accent-doux);
+  border-color: var(--accent-trait);
+  color: var(--accent-fort);
+}
+.badge.examen {
+  background: oklch(var(--ton-doux) 25);
+  border-color: oklch(var(--ton-trait) 25);
+  color: oklch(var(--ton-fort) 25);
+}
+.badge.hors-programme { background: transparent; border-style: dashed; color: var(--texte-3); }
+/* Ajout : phrase ajoutée par Claude à l'intérieur d'un bloc issu de la source */
+.badge.ajout { background: transparent; border-style: dashed; border-color: var(--bordure-forte); color: var(--texte-2); }
+.badge.a-verifier {
+  background: oklch(var(--ton-doux) 85);
+  border-color: oklch(var(--ton-trait) 85);
+  color: oklch(var(--ton-fort) 85);
+}
+
+/* Référence à la source : diapo, page, section du PDF d'origine */
+.ref {
+  display: inline-block;
+  margin-left: 0.3rem;
+  padding: 0 0.35rem;
+  border: 1px solid var(--bordure);
+  border-radius: 4px;
+  font-family: var(--police-texte);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.55;
+  color: var(--texte-3);
+  white-space: nowrap;
+  vertical-align: 0.2em;
+  text-transform: none;
+}
+h2 .ref, h3 .ref { vertical-align: 0.35em; }
+
+/* Étapes numérotées d'une procédure */
+ol.etapes {
+  list-style: none;
+  counter-reset: etape;
+  margin: 1.5rem 0;
+  padding: 0;
+}
+ol.etapes > li {
+  position: relative;
+  counter-increment: etape;
+  margin: 0;
+  padding: 0.1rem 0 1.1rem 2.9rem;
+}
+ol.etapes > li::before {
+  content: counter(etape);
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 1px solid var(--accent-trait);
+  border-radius: 50%;
+  background: var(--accent-doux);
+  color: var(--accent-fort);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+ol.etapes > li::after {
+  content: "";
+  position: absolute;
+  left: calc(0.95rem - 0.5px);
+  top: 2.15rem;
+  bottom: 0.25rem;
+  width: 1px;
+  background: var(--accent-trait);
+}
+ol.etapes > li:last-child { padding-bottom: 0; }
+ol.etapes > li:last-child::after { content: none; }
+ol.etapes > li > :first-child { margin-top: 0; }
+ol.etapes > li > :last-child { margin-bottom: 0; }
+
+/* Colonnes : comparer deux notions, deux codes, avant/après */
+.colonnes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.colonnes > * { margin: 0; min-width: 0; }
+.colonne {
+  padding: 0.95rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-petit);
+}
+.colonne > :last-child { margin-bottom: 0; }
+.colonne-titre { margin: 0 0 0.5rem; font-weight: 650; }
+.colonne.pour { border-top: 3px solid oklch(var(--ton-vif) 150); }
+.colonne.contre { border-top: 3px solid oklch(var(--ton-vif) 25); }
+
+/* Glossaire / vocabulaire (terme, équivalent anglais, définition courte) */
+dl.glossaire {
+  display: grid;
+  grid-template-columns: minmax(9rem, max-content) 1fr;
+  gap: 0.55rem 1.5rem;
+  margin: 1.5rem 0;
+}
+dl.glossaire dt { font-weight: 650; }
+dl.glossaire dt .en { display: block; font-weight: 400; font-size: 0.85em; }
+dl.glossaire dd { margin: 0; color: var(--texte-2); }
+@media (max-width: 40rem) {
+  dl.glossaire { grid-template-columns: 1fr; gap: 0.1rem; }
+  dl.glossaire dd { margin-bottom: 0.7rem; }
+}
+
+/* Cartes d'auto-évaluation (question → réponse dépliable) */
+.cartes { display: grid; gap: 0.6rem; margin: 1.5rem 0; }
+details.carte {
+  padding: 0.8rem 1.05rem;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-petit);
+}
+details.carte > summary { font-weight: 600; }
+details.carte[open] { border-color: var(--accent-trait); }
+details.carte > div {
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--bordure);
+}
+details.carte > div > :last-child { margin-bottom: 0; }
+
+/* Schéma relationnel : une relation par ligne, nom en <b>, clé primaire
+   soulignée avec <u>, clé étrangère préfixée par #, commentaire en <i>. */
+.relations {
+  margin: 1.25rem 0;
+  padding: 0.75rem 1.1rem;
+  overflow-x: auto;
+  background: var(--code-fond);
+  border: 1px solid var(--code-bordure);
+  border-radius: var(--rayon-petit);
+  color: var(--code-texte);
+  font-family: var(--police-code);
+  font-size: 0.88rem;
+  line-height: 1.75;
+  font-variant-ligatures: none;
+}
+.relations > p { margin: 0; white-space: nowrap; }
+.relations b { color: var(--accent-fort); font-weight: 650; }
+.relations u { text-decoration-thickness: 1.5px; text-underline-offset: 0.22em; }
+.relations i { margin-left: 0.5rem; font-family: var(--police-texte); font-size: 0.85em; color: var(--code-commentaire); }
+.bloc .relations { background: var(--surface); }
+
+/* Formule ou résultat encadré, mis en exergue */
+.encadre {
+  margin: 1.5rem auto;
+  padding: 0.4rem 1.25rem;
+  width: fit-content;
+  max-width: 100%;
+  border: 1.5px solid var(--accent);
+  border-radius: var(--rayon-petit);
+  background: var(--surface);
+  text-align: center;
+}
+.encadre .katex-display { margin: 0.5rem 0; }
+
+
+/* Nuancier : pastilles de matières (index général, catalogue) */
+.nuancier {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+  gap: 0.5rem;
+  margin: 1.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+.nuancier > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.55rem;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--accent-doux);
+  border: 1px solid var(--accent-trait);
+  border-radius: var(--rayon-petit);
+  color: var(--accent-fort);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.nuancier > li::before {
+  content: "";
+  flex: none;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.nuancier code { margin-left: auto; font-size: 0.72rem; font-weight: 500; }
+
+/* Contrôles de formulaire des outils (quiz, atelier) : cases à cocher, boutons
+   radio, listes déroulantes. Sélecteurs sans poids (:where) : un outil ajuste
+   taille et marges sans lutter contre ces règles. Couleurs : jetons du thème
+   et teinte de la matière. */
+:where(input[type="checkbox"], input[type="radio"]) {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: none;
+  display: inline-grid;
+  place-content: center;
+  width: 1.15em;
+  height: 1.15em;
+  font-size: inherit;
+  margin: 0;
+  border: 1.5px solid var(--bordure-forte);
+  border-radius: 0.3em;
+  background: var(--surface);
+  color: var(--accent-fort);
+  vertical-align: -0.15em;
+  cursor: pointer;
+  transition: background-color 0.12s, border-color 0.12s;
+}
+:where(input[type="radio"]) { border-radius: 50%; }
+:where(input[type="checkbox"], input[type="radio"])::before {
+  content: "";
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  background: currentColor;
+  transform: scale(0);
+  transition: transform 0.12s ease-out;
+}
+:where(input[type="checkbox"])::before {
+  width: 0.72em;
+  height: 0.72em;
+  border-radius: 0;
+  background: var(--surface);
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0, 43% 62%);
+}
+:where(input[type="checkbox"]):checked { background: var(--accent-fort); border-color: var(--accent-fort); }
+:where(input[type="radio"]):checked { border-color: var(--accent-fort); }
+:where(input[type="checkbox"], input[type="radio"]):checked::before { transform: scale(1); }
+:where(input[type="checkbox"], input[type="radio"]):hover:not(:disabled) { border-color: var(--accent); }
+:where(input[type="checkbox"], input[type="radio"]):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:where(input[type="checkbox"], input[type="radio"]):disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Liste déroulante : bouton aux couleurs de la charte. Là où le navigateur le
+   permet (appearance: base-select), la liste des options l'est aussi ; sinon,
+   la flèche est dessinée par deux dégradés. */
+:where(select) {
+  -webkit-appearance: none;
+  appearance: none;
+  max-width: 100%;
+  padding: 0.35em 2em 0.35em 0.65em;
+  border: 1.5px solid var(--bordure-forte);
+  border-radius: var(--rayon-petit);
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--texte-2) 50%),
+    linear-gradient(135deg, var(--texte-2) 50%, transparent 50%);
+  background-position: right 0.95em top 55%, right 0.6em top 55%;
+  background-size: 0.35em 0.35em;
+  background-repeat: no-repeat;
+  color: var(--texte);
+  font: inherit;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+:where(select):hover:not(:disabled) { border-color: var(--accent); }
+:where(select):focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-trait); }
+:where(select):disabled { opacity: 0.55; cursor: not-allowed; }
+@supports (appearance: base-select) {
+  :where(select) {
+    appearance: base-select;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6em;
+    padding-inline-end: 0.65em;
+    background-image: none;
+  }
+  :where(select)::picker-icon {
+    content: "";
+    width: 0.38em;
+    height: 0.38em;
+    margin: 0 0.1em;
+    border-right: 1.5px solid var(--texte-2);
+    border-bottom: 1.5px solid var(--texte-2);
+    transform: translateY(-25%) rotate(45deg);
+    transition: transform 0.15s ease;
+  }
+  :where(select):open::picker-icon { transform: translateY(25%) rotate(225deg); }
+  :where(select)::picker(select) {
+    appearance: base-select;
+    margin-block: 0.3rem;
+    padding: 0.3rem;
+    border: 1px solid var(--bordure-forte);
+    border-radius: var(--rayon);
+    background: var(--surface);
+    color: var(--texte);
+    box-shadow: var(--ombre);
+  }
+  :where(select) option {
+    gap: 0.5em;
+    padding: 0.4em 0.75em 0.4em 0.55em;
+    border-radius: var(--rayon-petit);
+    cursor: pointer;
+  }
+  :where(select) option::checkmark { color: var(--accent); }
+  :where(select) option:hover, :where(select) option:focus-visible {
+    outline: none;
+    background: var(--accent-doux);
+    color: var(--accent-fort);
+  }
+  :where(select) option:checked { font-weight: 650; }
+  :where(select) option:disabled { opacity: 0.5; cursor: default; }
+}
+
+
+/* 10. Page d'index d'une matière =========================================== */
+
+ol.chapitres {
+  list-style: none;
+  display: grid;
+  gap: 0.6rem;
+  margin: 1rem 0 2.5rem;
+  padding: 0;
+}
+ol.chapitres > li { margin: 0; }
+.chapitre {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  color: inherit;
+  text-decoration: none;
+}
+a.chapitre:hover { border-color: var(--accent); box-shadow: var(--ombre); }
+.chapitre-num {
+  font-family: var(--police-code);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.chapitre-titre { display: block; font-weight: 650; color: var(--texte); line-height: 1.35; }
+.chapitre-resume { display: block; margin-top: 0.15rem; font-size: 0.9rem; line-height: 1.45; color: var(--texte-2); }
+.a-venir .chapitre { border-style: dashed; background: transparent; }
+.a-venir .chapitre-num, .a-venir .chapitre-titre { color: var(--texte-3); }
+/* Numéro vide : pastille de la matière (accueil général, li data-matiere) */
+.chapitre-num:empty::before {
+  content: "";
+  display: block;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-left: 0.2rem;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.a-venir .chapitre-num:empty::before { background: var(--accent-trait); }
+
+/* Accueils sans sommaire (matière, accueil général) : sur grand écran, la page
+   prend la largeur de la barre du haut et les fiches se rangent sur plusieurs
+   colonnes ; les paragraphes gardent la largeur de lecture. */
+@media (min-width: 72rem) {
+  .page:has(> .sans-sommaire) { grid-template-columns: minmax(0, 80rem); }
+  .sans-sommaire .chapeau, .sans-sommaire > section > :is(p, ul) { max-width: var(--mesure); }
+  .sans-sommaire ol.chapitres { grid-template-columns: repeat(auto-fill, minmax(min(100%, 30rem), 1fr)); }
+  .sans-sommaire ol.chapitres > li > .chapitre { height: 100%; }
+}
+
+/* Accueil général (div.annees) : sur grand écran, les années côte à côte. */
+.entete + .annees > section:first-child > h2:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+@media (min-width: 72rem) {
+  .annees {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 2.25rem;
+    align-items: start;
+  }
+  .annees > section > h2:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+  .annees ol.chapitres { margin-bottom: 0; }
+}
+@media (max-width: 40rem) {
+  .chapitre { grid-template-columns: 2rem 1fr; }
+  .chapitre > .badge { grid-column: 2; justify-self: start; }
+}
+
+
+/* 11. Impression et accessibilité ========================================== */
+
+@media print {
+  @page { margin: 15mm 14mm; }
+  body { background: #fff; font-size: 10.5pt; line-height: 1.5; }
+  .barre, .sommaire, .progression, .voile, .pagination, .bouton-copier, .ancre, .ecoute audio, .ecoute video { display: none !important; }
+  .page, .page.avec-sommaire { display: block; padding: 0; }
+  a { color: inherit; text-decoration: none; }
+  a[href^="http"]::after { content: none; }
+  h2 { break-before: auto; break-after: avoid; }
+  h3, h4, .bloc-titre, summary { break-after: avoid; }
+  .bloc, .figure, .ecoute, .tableau, .cadre-intro > div, details.carte, ol.etapes > li { break-inside: avoid; }
+  figure.code > figcaption { break-after: avoid; }
+  .bloc, figure.code, .badge, .tableau thead th, mark, .retenir {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .retenir { box-shadow: none; }
+  pre { white-space: pre-wrap; word-break: break-word; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
+}
+
+
+/* 12. Mouvement ============================================================
+   Effets communs à toutes les pages, sans rien à écrire dans le HTML :
+   défilement doux, arrivée de l'en-tête, apparition des blocs au défilement,
+   dépliants qui s'ouvrent en douceur, micro-interactions, fondu d'une page à
+   l'autre (avec le serveur local) et bascule du thème en cercle (cours.js).
+   Tout est coupé à l'impression et quand le système demande de réduire les
+   animations. Jamais sur les ateliers : leurs dessins sont mesurés par script. */
+
+@keyframes charte-monter {
+  from { opacity: 0; transform: translateY(0.75rem); }
+}
+@keyframes charte-apparaitre {
+  from { opacity: 0; }
+}
+
+@media screen and (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+    --courbe-sortie: cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  /* Arrivée sur la page : l'en-tête monte en fondu, élément par élément,
+     puis le cadre Objectifs / Prérequis et le sommaire */
+  .entete > * { animation: charte-monter 0.55s var(--courbe-sortie) both; }
+  .entete > :nth-child(2) { animation-delay: 0.06s; }
+  .entete > :nth-child(3) { animation-delay: 0.12s; }
+  .entete > :nth-child(n+4) { animation-delay: 0.18s; }
+  .cadre-intro { animation: charte-monter 0.55s 0.24s var(--courbe-sortie) both; }
+  @media (min-width: 64.01rem) {
+    .sommaire { animation: charte-apparaitre 0.6s 0.2s both; }
+  }
+
+  /* Apparition au défilement : chaque bloc glisse en fondu en entrant dans la
+     fenêtre. Animation liée au défilement, sans script ; un navigateur qui ne
+     la connaît pas affiche simplement tout. */
+  @supports (animation-timeline: view()) {
+    .cours :is(.bloc, figure, .tableau, details.depliant, .colonnes, .relations, dl.glossaire,
+               ol.etapes > li, ol.chapitres > li, .cartes > .carte, .pagination):not(:is(.bloc, .colonnes, .atelier, details) *) {
+      animation: charte-monter linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+  }
+
+  /* Dépliants (preuve, indice, solution, carte…) : ouverture et fermeture en douceur */
+  @supports (interpolate-size: allow-keywords) {
+    .cours { interpolate-size: allow-keywords; }
+    .cours details:not(.atelier details)::details-content {
+      block-size: 0;
+      overflow-y: clip;
+      transition: block-size 0.3s var(--courbe-sortie), content-visibility 0.3s allow-discrete;
+    }
+    .cours details[open]:not(.atelier details)::details-content { block-size: auto; }
+  }
+  .cours summary::before { transition: transform 0.25s var(--courbe-sortie); }
+
+  /* Micro-interactions */
+  a { transition: color 0.2s, text-decoration-color 0.2s, text-underline-offset 0.2s; }
+  .cours :is(p, li, dd, td) > a:hover { text-underline-offset: 0.3em; }
+  a.chapitre, details.carte { transition: transform 0.2s var(--courbe-sortie), box-shadow 0.2s, border-color 0.2s; }
+  a.chapitre:hover { transform: translateY(-2px); }
+  details.carte:hover { border-color: var(--accent-trait); box-shadow: var(--ombre); }
+  .bouton-icone, .bouton-quiz { transition: color 0.15s, border-color 0.15s, background-color 0.15s, transform 0.1s; }
+  .bouton-icone:active, .bouton-quiz:active { transform: scale(0.93); }
+  .sommaire a { transition: color 0.2s, background-color 0.2s, border-color 0.2s; }
+
+  /* D'une page à l'autre (même origine, donc avec le serveur local) : fondu
+     enchaîné, la barre du haut restant en place */
+  @view-transition { navigation: auto; }
+  .barre { view-transition-name: barre; }
+}
+
+/* Bascule du thème (cours.js) : la nouvelle page s'étend en cercle depuis le
+   bouton ; la barre bascule avec le reste. */
+html.bascule-theme::view-transition-old(root),
+html.bascule-theme::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+html.bascule-theme .barre { view-transition-name: none; }

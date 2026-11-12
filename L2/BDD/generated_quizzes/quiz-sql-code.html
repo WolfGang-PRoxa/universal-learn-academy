@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · SQL à écrire · Bases de données L2</title>
+<meta name="description" content="Dix-sept requêtes SQL à écrire, exécutées et corrigées automatiquement, sur les bases Entreprise et Avions du cours de bases de données (L2) : sélection, fonctions, NULL, jointures internes, externes et auto-jointures, sous-requêtes, regroupements.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="../generated_courses/index.html">Bases de données</a>
+    <span aria-current="page">Quiz · SQL à écrire</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> Quiz · L2</p>
+    <h1>SQL à écrire</h1>
+    <p class="chapeau">Dix-sept requêtes à écrire, exécutées sur PostgreSQL et corrigées automatiquement, sur les bases Entreprise (emp, dep, grade) et Avions (avion, pilote, vol) du cours : sélection et fonctions, NULL, jointures internes, externes et auto-jointures, sous-requêtes, regroupements. Aucune question ne reprend celles des TP.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-02-sql-postgresql.html">Cours 2</a>, <a href="../generated_courses/cours-03-cles-sous-requetes-jointures.html">3</a> et <a href="../generated_courses/cours-04-fonctions-regroupements.html">4</a></dd></div>
+      <div><dt>Questions</dt><dd>17</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 nov. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L2 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+ "id": "bd-l2-sql-code",
+ "melanger": true,
+ "cours": [
+  {
+   "titre": "Cours 2 · SQL et PostgreSQL",
+   "lien": "../generated_courses/cours-02-sql-postgresql.html"
+  },
+  {
+   "titre": "Cours 3 · Clés, sous-requêtes et jointures",
+   "lien": "../generated_courses/cours-03-cles-sous-requetes-jointures.html"
+  },
+  {
+   "titre": "Cours 4 · Fonctions et regroupements",
+   "lien": "../generated_courses/cours-04-fonctions-regroupements.html"
+  }
+ ],
+ "jeux": {
+  "entreprise": {
+   "titre": "Base Entreprise (emp, dep, grade)",
+   "description": "<p><code>emp(id_emp, nom_emp, metier, #id_chef, date_emb, sal, comm, #id_dep)</code> : 14 employés ; <code>comm</code> n'est renseignée que pour les quatre vendeurs.</p><p><code>dep(id_dep, nom_dep, loc)</code> : 10 Comptable, 20 Recherche, 30 Ventes, 40 Operations (sans employé).</p><p><code>grade(id_grade, min_sal, max_sal)</code> : cinq tranches de salaire.</p>",
+   "script": "CREATE TABLE dep (\n    id_dep  integer PRIMARY KEY,\n    nom_dep varchar(20) NOT NULL,\n    loc     varchar(20)\n);\nCREATE TABLE emp (\n    id_emp   integer PRIMARY KEY,\n    nom_emp  varchar(10) NOT NULL,\n    metier   varchar(10) CHECK (metier IN ('Analyste', 'President', 'Manager', 'Secretaire', 'Vendeur')),\n    id_chef  integer REFERENCES emp (id_emp),\n    date_emb date,\n    sal      numeric(7,2),\n    comm     numeric(7,2),\n    id_dep   integer REFERENCES dep (id_dep)\n);\nINSERT INTO dep VALUES\n    (10, 'Comptable', 'New York'),\n    (20, 'Recherche', 'Dallas'),\n    (30, 'Ventes', 'Chicago'),\n    (40, 'Operations', 'Boston');\nINSERT INTO emp VALUES\n    (7839, 'KING',   'President',  NULL, '1981-11-17', 5000.00, NULL,    10),\n    (7566, 'JONES',  'Manager',    7839, '1981-04-02', 2975.24, NULL,    20),\n    (7902, 'FORD',   'Analyste',   7566, '1981-12-03', 3056.33, NULL,    20),\n    (7369, 'SMITH',  'Secretaire', 7902, '1980-12-17', 1212.24, NULL,    20),\n    (7698, 'BLAKE',  'Manager',    7839, '1981-05-01', 2852.56, NULL,    30),\n    (7499, 'ALLEN',  'Vendeur',    7698, '1981-02-20', 1845.85, 300.00,  30),\n    (7521, 'WARD',   'Vendeur',    7698, '1981-02-22', 1253.12, 500.00,  30),\n    (7654, 'MARTIN', 'Vendeur',    7698, '1981-09-28', 1251.45, 1400.00, 30),\n    (7782, 'CLARK',  'Manager',    7839, '1981-06-09', 2655.92, NULL,    10),\n    (7788, 'SCOTT',  'Analyste',   7566, '1982-12-09', 3234.62, NULL,    20),\n    (7844, 'TURNER', 'Vendeur',    7698, '1981-09-08', 1778.45, 0.00,    30),\n    (7876, 'ADAMS',  'Secretaire', 7788, '1983-01-12', 1304.67, NULL,    20),\n    (7900, 'JAMES',  'Secretaire', 7698, '1981-12-03', 1253.65, NULL,    30),\n    (7934, 'MILLER', 'Secretaire', 7782, '1982-01-23', 1505.45, NULL,    10);\nCREATE TABLE grade (\n    id_grade integer PRIMARY KEY,\n    min_sal  numeric(7,2) NOT NULL,\n    max_sal  numeric(9,2) NOT NULL\n);\nINSERT INTO grade VALUES\n    (1, 1200, 1400),\n    (2, 1401, 1600),\n    (3, 1601, 2000),\n    (4, 2001, 3500),\n    (5, 3501, 100000);"
+  },
+  "avions": {
+   "titre": "Base Avions, première version (avion, pilote, vol)",
+   "description": "<p><code>avion(id_avion, nom_type, nb_place, nom_aero_ratt)</code> : 14 avions ; <code>pilote(id_pilote, nom_pilote, nom_aero)</code> : 9 pilotes ; <code>vol(id_vol, #id_pilote, #id_avion, nom_aero_dep, nom_aero_arr, heure_dep, heure_arr)</code> : 14 vols. Les aéroports sont de simples noms, comme « Paris Orly ».</p>",
+   "script": "CREATE TABLE avion (\n    id_avion      integer PRIMARY KEY,\n    nom_type      varchar(20),\n    nb_place      integer,\n    nom_aero_ratt varchar(30)\n);\nCREATE TABLE pilote (\n    id_pilote  serial PRIMARY KEY,\n    nom_pilote varchar(30) NOT NULL,\n    nom_aero   varchar(30)\n);\nCREATE TABLE vol (\n    id_vol       integer PRIMARY KEY,\n    id_pilote    integer REFERENCES pilote (id_pilote),\n    id_avion     integer REFERENCES avion (id_avion),\n    nom_aero_dep varchar(30),\n    nom_aero_arr varchar(30),\n    heure_dep    time,\n    heure_arr    time\n);\nINSERT INTO avion VALUES (123,'A300',300,'Paris Orly');\nINSERT INTO avion VALUES (102,'A320',320,'Paris Orly');\nINSERT INTO avion VALUES (103,'A300',300,'Marseille Marignane');\nINSERT INTO avion VALUES (104,'A320',320,'Paris Roissy');\nINSERT INTO avion VALUES (105,'A300',300,'Toulouse');\nINSERT INTO avion VALUES (106,'B747',248,'Paris Orly');\nINSERT INTO avion VALUES (107,'B747',248,'Bordeaux');\nINSERT INTO avion VALUES (108,'ATR44',144,'Avignon');\nINSERT INTO avion VALUES (109,'ATR44',144,'Nancy');\nINSERT INTO avion VALUES (110,'Foker100',100,'Paris Orly');\nINSERT INTO avion VALUES (111,'Foker100',100,'Avignon');\nINSERT INTO avion VALUES (112,'B747',248,'Avignon');\nINSERT INTO avion VALUES (100,'A300',300,'Marseille Marignane');\nINSERT INTO avion VALUES (101,'A310',310,'Strasbourg');\nINSERT INTO pilote VALUES (default,'Pierre','Paris Orly');\nINSERT INTO pilote VALUES (default,'Paul','Paris Orly');\nINSERT INTO pilote VALUES (default,'Jacques','Paris Roissy');\nINSERT INTO pilote VALUES (default,'Fernande','Avignon');\nINSERT INTO pilote VALUES (default,'Marie','Toulouse');\nINSERT INTO pilote VALUES (default,'Philippe','Avignon');\nINSERT INTO pilote VALUES (default,'Frederic','Nancy');\nINSERT INTO pilote VALUES (default,'Cecile','Strasbourg');\nINSERT INTO pilote VALUES (default,'Jean','Lyon');\nINSERT INTO vol VALUES (1000,(select id_pilote from pilote where nom_pilote like 'Pierre'),101,'Paris Orly','Toulouse','10:05','12:53');\nINSERT INTO vol VALUES (1001,(select id_pilote from pilote where nom_pilote like 'Pierre'),101,'Toulouse','Paris Orly','14:25','17:07');\nINSERT INTO vol VALUES (1002,(select id_pilote from pilote where nom_pilote like 'Paul'),102,'Paris Orly','Marseille Marignane','08:35','09:30');\nINSERT INTO vol VALUES (1003,(select id_pilote from pilote where nom_pilote like 'Paul'),103,'Marseille Marignane','Strasbourg','13:15','14:48');\nINSERT INTO vol VALUES (1004,(select id_pilote from pilote where nom_pilote like 'Philippe'),104,'Paris Orly','Toulouse','18:24','20:06');\nINSERT INTO vol VALUES (1005,(select id_pilote from pilote where nom_pilote like 'Fernande'),105,'Toulouse','Nancy','11:05','13:53');\nINSERT INTO vol VALUES (1006,(select id_pilote from pilote where nom_pilote like 'Cecile'),110,'Avignon','Paris Orly','07:35','08:22');\nINSERT INTO vol VALUES (1007,(select id_pilote from pilote where nom_pilote like 'Marie'),108,'Paris Roissy','Nancy','07:05','07:55');\nINSERT INTO vol VALUES (1008,(select id_pilote from pilote where nom_pilote like 'Fernande'),123,'Lyon','Avignon','06:55','07:35');\nINSERT INTO vol VALUES (1009,(select id_pilote from pilote where nom_pilote like 'Frederic'),100,'Paris Orly','Lyon','10:05','10:43');\nINSERT INTO vol VALUES (1010,(select id_pilote from pilote where nom_pilote like 'Marie'),100,'Lyon','Paris Orly','15:18','16:03');\nINSERT INTO vol VALUES (1011,(select id_pilote from pilote where nom_pilote like 'Jacques'),112,'Lyon','Avignon','19:20','20:05');\nINSERT INTO vol VALUES (1012,(select id_pilote from pilote where nom_pilote like 'Fernande'),112,'Paris Roissy','Lyon','17:15','18:02');\nINSERT INTO vol VALUES (1013,(select id_pilote from pilote where nom_pilote like 'Jacques'),112,'Avignon','Paris Roissy','21:45','22:38');"
+  }
+ },
+ "questions": [
+  {
+   "type": "code",
+   "langage": "sql",
+   "jeu": "entreprise",
+   "theme": "Sélection, tri, fonctions",
+   "difficulte": 1,
+   "enonce": "<p>Afficher le nom et la date d'embauche des employés embauchés en 1981, par date d'embauche croissante, puis par nom (deux colonnes).</p>",
+   "depart": "SELECT ",
+   "solution": "SELECT nom_emp, date_emb\nFROM emp\nWHERE date_emb BETWEEN '1981-01-01' AND '1981-12-31'\nORDER BY date_emb, nom_emp;",
+   "ordre": true,
+   "explication": "<p>Dix employés. Une date se compare à une chaîne au format ISO (<code>'1981-01-01'</code>), que PostgreSQL convertit en <code>date</code> ; <code>BETWEEN</code> inclut ses deux bornes. <code>EXTRACT(YEAR FROM date_emb) = 1981</code> marche aussi. FORD et JAMES ont la même date : le second critère de tri, <code>nom_emp</code>, les départage.</p>",
+   "revoir": {
+    "texte": "Cours 2 · La clause WHERE",
+    "lien": "../generated_courses/cours-02-sql-postgresql.html#la-clause-where"
+   },
+   "id": "q01"
+  },
+  {
+   "type": "code",
+   "langage": "sql",
+   "jeu": "entreprise",
+   "theme": "Sélection, tri, fonctions",
+   "difficulte": 1,
+   "enonce": "<p>Afficher le nom et le salaire des trois employés les mieux payés, du mieux payé au moins bien payé (deux colonnes).</p>",
+   "depart": "SELECT ",
+   "solution": "SELECT nom_emp, sal\nFROM emp\nORDER BY sal DESC\nLIMIT 3;",
+   "ordre": true,
+   "explication": "<p><code>LIMIT</code> ne garde que les premières lignes du résultat trié : il s'applique après <code>ORDER BY</code>, sans quoi les trois lignes seraient quelconques. KING (5000), SCOTT (3234,62) et FORD (3056,33).</p>",
+   "revoir": {
+    "texte": "Cours 4 · Les clauses LIMIT et OFFSET",
+    "lien": "../generated_courses/cours-04-fonctions-regroupements.html#les-clauses-limit-et-offset"
+   },
+   "id": "q02"
+  },
+  {
+   "type": "code",
+   "langage": "sql",
+   "jeu": "entreprise",
+   "theme": "Sélection, tri, fonctions",
+   "difficulte": 2,
+   "enonce": "<p>Pour chaque employé du département 30, afficher son nom et son revenu mensuel : le salaire plus la commission, une commission inconnue comptant pour 0 (deux colonnes).</p>",
+   "depart": "SELECT ",
+   "solution": "SELECT nom_emp, sal + COALESCE(comm, 0) AS revenu\nFROM emp\nWHERE id_dep = 30;",
+   "indices": [
+    "<p>Que vaut <code>1253.65 + NULL</code> ?</p>"
+   ],
+   "explication": "<p>Toute opération avec <code>NULL</code> donne <code>NULL</code> : <code>sal + comm</code> vaudrait <code>NULL</code> pour BLAKE et JAMES, qui n'ont pas de commission. <code>COALESCE(comm, 0)</code> remplace la valeur manquante par 0. TURNER a une commission de 0, ce qui n'est pas la même chose que pas de commission.</p>",
+   "revoir": {
+    "texte": "Cours 2 · La valeur NULL",
+    "lien": "../generated_courses/cours-02-sql-postgresql.html#la-valeur-null"
+   },
+   "id": "q03"
+  },
+  {
+   "type": "code",
+   "langage": "sql",
+   "jeu": "entreprise",
+   "theme": "Sélection, tri, fonctions",
+   "difficulte": 1,
+   "enonce": "<p>Afficher, en minuscules, le nom des employés dont le nom compte exactement quatre lettres (une colonne).</p>",
+   "depart": "SELECT ",
+   "solution": "SELECT lower(nom_emp)\nFROM emp\nWHERE length(nom_emp) = 4;",
+   "explication": "<p><code>length</code> donne le nombre de caractères et <code>lower</code> met en minuscules : king, ward et ford. Le motif <code>LIKE '____'</code> (quatre soulignés, un par caractère) donnerait le même filtre.</p>",
+   "revoir": {
+    "texte": "Cours 4 · Fonctions mathématiques et de caractères",
+    "lien": "../generated_courses/cours-04-fonctions-regroupements.html#fonctions-mathematiques-et-de-caracteres"
+   },
+   "id": "q04"
+  },
+  {
+   "type": "code",
+   "langage": "sql",
+   "jeu": "entreprise",
+   "theme": "Jointures",
+   "difficulte": 2,
+   "enonce": "<p>Pour chaque employé qui gagne plus de 2500 euros, afficher son nom, le nom de son département et la ville de ce département (trois colonnes).</p>",
+   "depart": "SELECT ",
+   "solution": "SELECT e.nom_emp, d.nom_dep, d.loc\nFROM emp e\nJOIN dep d ON e.id_dep = d.id_dep\nWHERE e.sal > 2500;",
+   "explication": "<p>Le nom du département est dans <code>dep</code> : une jointure interne sur la clé étrangère <code>id_dep</code>. Six employés : KING et CLARK (Comptable, New York), JONES, FORD et SCOTT (Recherche, Dallas), BLAKE (Ventes, Chicago). <code>JOIN dep USING (id_dep)</code> convient aussi.</p>",
+   "revoir": {
+    "texte": "Cours 3 · La jointure interne",
+    "lien": "../generated_courses/cours-03-cles-sous-requetes-jointures.html#la-jointure-interne"
+   },
+   "id": "q05"
+  },
+  {
+   "type": "code",
+   "langage": "sql",
+   "jeu": "entreprise",
+   "theme": "Jointures",
+   "difficulte": 3,
+   "enonce": "<p>Afficher le nom de <strong>chaque</strong> employé et le nom de son chef, y compris l'employé qui n'a pas de chef (deux colonnes ; le chef de celui-ci est vide).</p>",
+   "depart": "SELECT ",
+   "solution": "SELECT e.nom_emp, c.nom_emp AS chef\nFROM emp e\nLEFT JOIN emp c ON e.id_chef = c.id_emp;",
+   "indices": [
+    "<p>Il faut deux exemplaires de la table <code>emp</code> : l'un pour l'employé, l'autre pour son chef.</p>",
+    "<p>Avec un <code>JOIN</code> ordinaire, combien de lignes obtient-on, et qui manque ?</p>"
+   ],
+   "explication": "<p>Le chef est lui-même un employé : on joint <code>emp</code> à elle-même, avec deux alias (auto-jointure). Une jointure interne perdrait KING, dont <code>id_chef</code> est <code>NULL</code> ; la jointure externe gauche garde toutes les lignes de <code>e</code> et complète par <code>NULL</code> : 14 lignes.</p>",
+   "revoir": {
+    "texte": "Cours 3 · Les jointures externes",
+    "lien": "../generated_courses/cours-03-cles-sous-requetes-jointures.html#les-jointures-externes"
+   },
+   "id": "q06"
+  },
+  {
+   "type": "code",
+   "langage": "sql",
+   "jeu": "entreprise",
+   "theme": "Jointures",
+   "difficulte": 2,
+   "enonce": "<p>Afficher le nom des employés qui gagnent plus que leur chef, et le nom de ce chef (deux colonnes).</p>",
+   "depart": "SELECT ",
+   "solution": "SELECT e.nom_emp, c.nom_emp AS chef\nFROM emp e\nJOIN emp c ON e.id_chef = c.id_emp\nWHERE e.sal > c.sal;",
+   "indices": [
+    "<p>Comparer deux salaires d'une même table demande de les avoir sur la même ligne.</p>"
+   ],
+   "explication": "<p>L'auto-jointure met sur une même ligne l'employé et son chef : on peut alors comparer leurs salaires. FORD et SCOTT, analystes, gagnent plus que leur chef JONES.</p>",
+   "revoir": {
+    "texte": "Cours 3 · La jointure interne",
+    "lien": "../generated_courses/cours-03-cles-sous-requetes-jointures.html#la-jointure-interne"
+   },
+   "id": "q07"
+  },
+  {
+   "type": "code",
+   "langage": "sql",
+   "jeu": "entreprise",
+   "theme": "Jointures",
+   "difficulte": 2,
+   "enonce": "<p>Pour chaque grade, afficher son numéro et le nombre d'employés dont le salaire est compris entre ses bornes (deux colonnes).</p>",
+   "depart": "SELECT ",
+   "solution": "SELECT g.id_grade, count(e.id_emp)\nFROM grade g\nLEFT JOIN emp e ON e.sal BETWEEN g.min_sal AND g.max_sal\nGROUP BY g.id_grade;",
+   "explication": "<p>La jointure ne se fait pas sur une égalité de clés, mais sur un intervalle : <code>e.sal BETWEEN g.min_sal AND g.max_sal</code>. Résultat : 5, 1, 2, 5 et 1 employés. La jointure externe et <code>count(e.id_emp)</code> (et non <code>count(*)</code>) donneraient 0 pour un grade sans employé.</p>",
+   "revoir": {
+    "texte": "Cours 3 · La jointure interne",
+    "lien": "../generated_courses/cours-03-cles-sous-requetes-jointures.html#la-jointure-interne"
+   },
+   "id": "q08"
+  },
+  {
+   "type": "code",
+   "langage": "sql",
+   "jeu": "entreprise",
+   "theme": "Sous-requêtes",
+   "difficulte": 2,
+   "enonce": "<p>Afficher le numéro et le nom des départements qui n'ont aucun employé (deux colonnes).</p>",
+   "depart": "SELECT ",
+   "solution": "SELECT id_dep, nom_dep\nFROM dep\nWHERE id_dep NOT IN (SELECT id_dep FROM emp);",
+   "explication": "<p>La sous-requête renvoie les départements qui ont au moins un employé ; <code>NOT IN</code> garde les autres : 40, Operations. Attention : si <code>emp.id_dep</code> contenait un <code>NULL</code>, <code>NOT IN</code> ne renverrait rien. Autre solution : <code>LEFT JOIN emp</code> puis <code>WHERE emp.id_emp IS NULL</code>.</p>",
+   "revoir": {
+    "texte": "Cours 3 · IN, NOT IN, ANY et ALL",
+    "lien": "../generated_courses/cours-03-cles-sous-requetes-jointures.html#in-not-in-any-et-all"
+   },
+   "id": "q09"
+  },
+  {
+   "type": "code",
+   "langage": "sql",
+   "jeu": "entreprise",
+   "theme": "Sous-requêtes",
+   "difficulte": 3,
+   "enonce": "<p>Pour chaque département, afficher le nom, le salaire et le numéro de département de l'employé le mieux payé du département (trois colonnes).</p>",
+   "depart": "SELECT ",
+   "solution": "SELECT e.nom_emp, e.sal, e.id_dep\nFROM emp e\nWHERE e.sal = (SELECT max(x.sal) FROM emp x WHERE x.id_dep = e.id_dep);",
+   "indices": [
+    "<p>Le maximum à atteindre dépend du département de l'employé examiné.</p>",
+    "<p>Dans la sous-requête, donner un autre alias à <code>emp</code> et la relier à la ligne de la requête principale.</p>"
+   ],
+   "explication": "<p>La sous-requête est corrélée : elle cite <code>e.id_dep</code>, la ligne en cours de la requête principale, et calcule le maximum de son département. KING (10), SCOTT (20) et BLAKE (30). Un <code>GROUP BY id_dep</code> avec <code>max(sal)</code> donne les maximums, mais pas le nom de l'employé.</p>",
+   "revoir": {
+    "texte": "Cours 3 · Les sous-requêtes dans WHERE",
+    "lien": "../generated_courses/cours-03-cles-sous-requetes-jointures.html#les-sous-requetes-dans-where"
+   },
+   "id": "q10"
+  },
+  {
+   "type": "code",
+   "langage": "sql",
+   "jeu": "entreprise",
+   "theme": "Regroupements",
+   "difficulte": 2,
+   "enonce": "<p>Pour chaque département qui a des employés, afficher son nom, son nombre d'employés et leur salaire moyen arrondi à deux décimales (trois colonnes).</p>",
+   "depart": "SELECT ",
+   "solution": "SELECT d.nom_dep, count(*), round(avg(e.sal), 2)\nFROM dep d\nJOIN emp e ON e.id_dep = d.id_dep\nGROUP BY d.nom_dep;",
+   "explication": "<p>Une ligne par groupe : chaque colonne du <code>SELECT</code> est soit dans le <code>GROUP BY</code>, soit une agrégation. Comptable : 3 employés, 3053,79 ; Recherche : 5, 2356,62 ; Ventes : 6, 1705,85. <code>round(x, 2)</code> arrondit à deux décimales.</p>",
+   "revoir": {
+    "texte": "Cours 4 · La clause GROUP BY",
+    "lien": "../generated_courses/cours-04-fonctions-regroupements.html#la-clause-group-by"
+   },
+   "id": "q11"
+  },
+  {
+   "type": "code",
+   "langage": "sql",
+   "jeu": "entreprise",
+   "theme": "Regroupements",
+   "difficulte": 3,
+   "enonce": "<p>Afficher les métiers dont le salaire moyen dépasse le salaire moyen de toute l'entreprise, avec ce salaire moyen arrondi à deux décimales (deux colonnes).</p>",
+   "depart": "SELECT ",
+   "solution": "SELECT metier, round(avg(sal), 2)\nFROM emp\nGROUP BY metier\nHAVING avg(sal) > (SELECT avg(sal) FROM emp);",
+   "indices": [
+    "<p>Où va une condition qui porte sur <code>avg(sal)</code> ?</p>"
+   ],
+   "explication": "<p>La condition porte sur un groupe (le salaire moyen d'un métier) : elle va dans <code>HAVING</code>, pas dans <code>WHERE</code>, qui filtre les lignes avant le regroupement. La moyenne de l'entreprise (2227,11) est une sous-requête. Trois métiers : President, Analyste et Manager.</p>",
+   "revoir": {
+    "texte": "Cours 4 · La clause HAVING",
+    "lien": "../generated_courses/cours-04-fonctions-regroupements.html#la-clause-having"
+   },
+   "id": "q12"
+  },
+  {
+   "type": "code",
+   "langage": "sql",
+   "jeu": "avions",
+   "theme": "Regroupements",
+   "difficulte": 1,
+   "enonce": "<p>Pour chaque aéroport d'où partent au moins deux vols, afficher son nom et le nombre de vols au départ (deux colonnes).</p>",
+   "depart": "SELECT ",
+   "solution": "SELECT nom_aero_dep, count(*)\nFROM vol\nGROUP BY nom_aero_dep\nHAVING count(*) >= 2;",
+   "explication": "<p>On regroupe les vols par aéroport de départ, puis <code>HAVING</code> filtre les groupes. Paris Orly (4), Lyon (3), Avignon, Paris Roissy et Toulouse (2) ; Marseille Marignane, avec un seul vol, est écarté.</p>",
+   "revoir": {
+    "texte": "Cours 4 · La clause HAVING",
+    "lien": "../generated_courses/cours-04-fonctions-regroupements.html#la-clause-having"
+   },
+   "id": "q13"
+  },
+  {
+   "type": "code",
+   "langage": "sql",
+   "jeu": "avions",
+   "theme": "Jointures",
+   "difficulte": 2,
+   "enonce": "<p>Afficher le numéro des vols dont le pilote n'est pas rattaché à l'aéroport de départ du vol, avec le nom de ce pilote (deux colonnes).</p>",
+   "depart": "SELECT ",
+   "solution": "SELECT v.id_vol, p.nom_pilote\nFROM vol v\nJOIN pilote p ON p.id_pilote = v.id_pilote\nWHERE p.nom_aero <> v.nom_aero_dep;",
+   "explication": "<p>La jointure met sur une même ligne le vol et son pilote, ce qui permet de comparer deux colonnes de tables différentes. Douze vols sur quatorze : seuls 1000 et 1002 partent de l'aéroport de leur pilote (Paris Orly).</p>",
+   "revoir": {
+    "texte": "Cours 3 · La jointure interne",
+    "lien": "../generated_courses/cours-03-cles-sous-requetes-jointures.html#la-jointure-interne"
+   },
+   "id": "q14"
+  },
+  {
+   "type": "code",
+   "langage": "sql",
+   "jeu": "avions",
+   "theme": "Sous-requêtes",
+   "difficulte": 3,
+   "enonce": "<p>Afficher le numéro et la durée (<code>heure_arr - heure_dep</code>) du ou des vols les plus longs (deux colonnes).</p>",
+   "depart": "SELECT ",
+   "solution": "SELECT id_vol, heure_arr - heure_dep AS duree\nFROM vol\nWHERE heure_arr - heure_dep = (SELECT max(heure_arr - heure_dep) FROM vol);",
+   "indices": [
+    "<p>Que fait <code>LIMIT 1</code> quand deux vols ont la même durée ?</p>"
+   ],
+   "explication": "<p>La différence de deux <code>time</code> est un <code>interval</code>, qui se compare et s'agrège comme un nombre. Deux vols durent 2 h 48 : 1000 et 1005. <code>ORDER BY duree DESC LIMIT 1</code> n'en donnerait qu'un, choisi au hasard : le maximum calculé par une sous-requête garde les ex aequo.</p>",
+   "revoir": {
+    "texte": "Cours 3 · Les sous-requêtes dans WHERE",
+    "lien": "../generated_courses/cours-03-cles-sous-requetes-jointures.html#les-sous-requetes-dans-where"
+   },
+   "id": "q15"
+  },
+  {
+   "type": "code",
+   "langage": "sql",
+   "jeu": "avions",
+   "theme": "Regroupements",
+   "difficulte": 3,
+   "enonce": "<p>Pour chaque avion rattaché à un aéroport de Paris (Orly ou Roissy), afficher son numéro et le nombre de vols qu'il assure, 0 compris (deux colonnes).</p>",
+   "depart": "SELECT ",
+   "solution": "SELECT a.id_avion, count(v.id_vol)\nFROM avion a\nLEFT JOIN vol v ON v.id_avion = a.id_avion\nWHERE a.nom_aero_ratt LIKE 'Paris%'\nGROUP BY a.id_avion;",
+   "indices": [
+    "<p>Un avion sans vol n'a aucune ligne correspondante dans <code>vol</code>. Quelle jointure le garde ?</p>",
+    "<p><code>count(*)</code> compte les lignes, <code>count(colonne)</code> les valeurs non nulles.</p>"
+   ],
+   "explication": "<p>Cinq avions parisiens : 102, 104, 110 et 123 assurent un vol, 106 aucun. Pour qu'il apparaisse avec 0, il faut une jointure externe (une jointure interne le ferait disparaître) et <code>count(v.id_vol)</code>, qui ne compte pas les <code>NULL</code> ; <code>count(*)</code> compterait 1 pour la ligne complétée.</p>",
+   "revoir": {
+    "texte": "Cours 3 · Un exemple de jointure externe",
+    "lien": "../generated_courses/cours-03-cles-sous-requetes-jointures.html#un-exemple-de-jointure-externe"
+   },
+   "id": "q16"
+  },
+  {
+   "type": "code",
+   "langage": "sql",
+   "jeu": "avions",
+   "theme": "Sous-requêtes",
+   "difficulte": 2,
+   "enonce": "<p>Afficher, sans doublon, tous les aéroports cités comme départ ou comme arrivée d'un vol (une colonne).</p>",
+   "depart": "SELECT ",
+   "solution": "SELECT nom_aero_dep FROM vol\nUNION\nSELECT nom_aero_arr FROM vol;",
+   "explication": "<p><code>UNION</code> réunit les résultats de deux requêtes de même forme et supprime les doublons (<code>UNION ALL</code> les garderait). Huit aéroports : Avignon, Lyon, Marseille Marignane, Nancy, Paris Orly, Paris Roissy, Strasbourg et Toulouse.</p>",
+   "revoir": {
+    "texte": "Cours 4 · Récapitulatif de la commande SELECT",
+    "lien": "../generated_courses/cours-04-fonctions-regroupements.html#recapitulatif-de-la-commande-select"
+   },
+   "id": "q17"
+  }
+ ]
+}
+</script>
+
+</body>
+</html>

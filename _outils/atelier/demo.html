@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Démonstration de l'atelier · Charte des cours</title>
+<meta name="description" content="Chaque éditeur de l'atelier en situation : diagramme de classes, repérage d'erreurs, modèle relationnel, table, SQL, automate, arbre de processus, chronogramme, diagramme de séquence, rédaction.">
+<link rel="stylesheet" href="../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="assets/atelier.css">
+<script defer src="../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../_outils/charte/assets/cours.js"></script>
+<script defer src="assets/atelier.js"></script>
+<script type="application/json" id="atelier-jeux">
+{
+  "dingo": {
+    "titre": "Dingo Fringo (cours 3 de BDD)",
+    "description": "<p>Deux tables : <code>vendeurs(id, nom, id_parrain)</code> et <code>articles(id, nom, categorie, prix, id_vendeur, date_vente)</code>.</p>",
+    "script": "CREATE TABLE vendeurs (id INT PRIMARY KEY, nom VARCHAR(50), id_parrain INT REFERENCES vendeurs (id));\nCREATE TABLE articles (id INT PRIMARY KEY, nom VARCHAR(100), categorie VARCHAR(30), prix NUMERIC(6,2), id_vendeur INT REFERENCES vendeurs (id), date_vente DATE);\nINSERT INTO vendeurs VALUES (1, 'Julie', NULL), (2, 'Marc', 1), (3, 'Sophie', 1), (4, 'Karim', 2), (5, 'Lea', 2), (6, 'Nadia', 3);\nINSERT INTO articles VALUES\n(1, 'Jean Levis', 'Vêtements', 25.00, 1, '2024-01-10'), (2, 'Robe fleurie', 'Vêtements', 18.00, 2, '2024-01-15'),\n(3, 'Manteau laine', 'Vêtements', 45.00, 3, '2024-02-05'), (4, 'T-shirt Nike', 'Vêtements', 12.00, 4, '2024-02-20'),\n(5, 'Pull col roulé', 'Vêtements', 18.00, 5, '2024-03-01'), (6, 'Baskets Adidas', 'Chaussures', 30.00, 1, '2024-01-12'),\n(7, 'Bottines cuir', 'Chaussures', 40.00, 2, '2024-02-08'), (8, 'Sandales été', 'Chaussures', 15.00, 3, '2024-03-10'),\n(9, 'Sac à main vintage', 'Accessoires', 22.00, 4, '2024-01-25'), (10, 'Écharpe laine', 'Accessoires', 9.00, 5, '2024-02-14'),\n(11, 'Ceinture cuir', 'Accessoires', 9.00, 6, '2024-03-05'), (12, 'Chapeau feutre', 'Accessoires', 14.00, 1, '2024-03-20');"
+  }
+}
+</script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../index.html">studies</a>
+    <span>Atelier</span>
+    <span aria-current="page">Démonstration</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Atelier</span> Démonstration · à ouvrir depuis le serveur local</p>
+    <h1>Démonstration de l'atelier</h1>
+    <p class="chapeau">Chaque éditeur de l'atelier en situation d'exercice, tel qu'il apparaît dans un TD interactif. Le balisage de cette page sert de modèle : on copie un bloc <code>&lt;div class="atelier"&gt;</code> d'ici pour l'adapter.</p>
+    <dl class="meta">
+      <div><dt>Outil</dt><dd><code>_outils/atelier/</code> · voir son README</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-23">23 sept. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Mode d'emploi</p>
+      <ul>
+        <li>Construire la réponse sur le dessin, ou dans la vue texte (bouton « Les deux »).</li>
+        <li>« Vérifier » contrôle la forme ; « Comparer » mesure l'écart avec la solution ; « Solution » l'affiche.</li>
+        <li>« Claude » répond aux questions ou corrige le travail (serveur local : <code>studies/lancer.bat</code>).</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Sur le dessin</p>
+      <ul>
+        <li>Double-clic sur le fond : nouvel élément ; sur un élément : le modifier.</li>
+        <li>« Relier », puis glisser d'un élément à l'autre. Suppr efface la sélection.</li>
+        <li>Glisser le fond déplace la vue ; Ctrl + molette zoome.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Diagramme de classes</h2>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Bibliothèque</span></p>
+      <p>Une bibliothèque prête des exemplaires de livres à ses adhérents. Un adhérent a un numéro et un nom. Un livre a un ISBN et un titre ; il existe en un ou plusieurs exemplaires, chacun identifié par un code. Un exemplaire est emprunté par au plus un adhérent à la fois, et on retient la date de l'emprunt. Proposer le diagramme de classes.</p>
+    </div>
+    <div class="atelier" id="demo-classes" data-editeur="classes">
+      <script type="application/json">
+      {
+        "options": { "bdd": true },
+        "solution": [
+          "classe Adherent", "  numero : int {PK}", "  nom : varchar",
+          "classe Exemplaire", "  code : varchar {PK}",
+          "classe Livre", "  isbn : varchar {PK}", "  titre : varchar",
+          "classe Emprunt", "  date_emprunt : date",
+          "Adherent \"0..1\" -- \"*\" Exemplaire : emprunte > [Emprunt]",
+          "Livre \"1\" -- \"1..*\" Exemplaire : existe en >"
+        ],
+        "explication": "<p>La date dépend du couple adhérent–exemplaire : elle va dans une classe d'association. Côté adhérent, la multiplicité 0..1 traduit « au plus un adhérent à la fois ».</p>"
+      }
+      </script>
+    </div>
+
+    <h3>Repérer les erreurs d'un diagramme</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Films et cinéma (TD 1)</span></p>
+      <p>Voici une modélisation qui pose de nombreux problèmes. Identifier les erreurs de modélisation et les incohérences : cliquer sur un élément pour y poser une remarque.</p>
+    </div>
+    <div class="atelier" id="demo-annoter" data-editeur="classes">
+      <script type="application/json">
+      {
+        "mode": "annoter",
+        "hauteur": 460,
+        "options": { "bdd": true },
+        "depart": [
+          "classe Acteur", "  _Nom_ : VARCHAR [1]", "  Prénom : VARCHAR [0..1] {PK}", "  Adresses : ADRESSE [1..*]", "  Agent : VARCHAR [0..*]",
+          "classe Distribution", "  rôle : VARCHAR [1]",
+          "classe Film", "  Titre : VARCHAR [1] {PK}", "  Année : INTEGER [1]", "  Genre : VARCHAR [0..*]",
+          "classe Salle", "  Nom : VARCHAR [1] {PK}", "  Date : INTEGER [1]", "  Heure : VARCHAR [0..*]", "  Durée_film : VARCHAR [0..*]", "  Version : VARCHAR [0..*]",
+          "classe Capacité", "  nb_places : INTEGER [1]",
+          "classe Cinéma", "  Nom : VARCHAR [1] {PK}", "  Adresse : ADRESSE [1]",
+          "classe Réalisateur", "  Nom : VARCHAR [1] {PK}", "  Prénom : VARCHAR [0..1] {PK}", "  Adresses : ADRESSE [1..5]",
+          "Acteur \"2..*\" -- \"*\" Film : Joue [Distribution]",
+          "Film \"*\" -- \"*\" Salle : Projette",
+          "Cinéma \"1..1\" -- \"2..20\" Salle : Possède [Capacité]",
+          "Réalisateur \"*\" -- \"*\" Film : Réalise",
+          "Acteur \"*\" -- \"*\" Réalisateur : JoueDansFilmDe"
+        ],
+        "disposition": {
+          "Distribution": [300, 0], "Acteur": [40, 70], "Film": [430, 70], "Salle": [780, 190],
+          "Capacité": [790, 400], "Cinéma": [430, 380], "Réalisateur": [40, 420]
+        },
+        "attendu": [
+          { "cible": "Acteur.Prénom", "texte": "Un identifiant ne peut pas être facultatif ([0..1]). Le couple nom–prénom n'identifie d'ailleurs pas une personne (homonymes) : ajouter un identifiant." },
+          { "cible": "Acteur.Adresses", "texte": "Attribut multivalué ([1..*]) et de type composé (ADRESSE) : il n'est pas atomique. En faire une classe Adresse liée." },
+          { "cible": "Acteur.Agent", "texte": "Attribut multivalué ([0..*]) : un attribut doit avoir une seule valeur." },
+          { "cible": "Film.Genre", "texte": "Attribut multivalué : en faire une classe Genre associée à Film." },
+          { "cible": "Film.Titre", "texte": "Le titre seul n'identifie pas un film (remakes) : titre et année, ou un identifiant." },
+          { "cible": "Salle.Date", "texte": "Date, heure et version décrivent une séance, pas une salle : classe d'association Séance sur « Projette ». La durée est une propriété du film." },
+          { "cible": "Cinéma--Salle", "texte": "Le nombre de places dépend de la salle seule : c'est un attribut de Salle, pas une classe d'association. Une salle appartient à un seul cinéma (composition) ; « 1..1 » s'écrit « 1 »." },
+          { "cible": "Acteur--Réalisateur", "texte": "« JoueDansFilmDe » est redondante : elle se déduit de « Joue » et de « Réalise »." },
+          { "cible": "Réalisateur", "texte": "Même structure qu'Acteur (nom, prénom, adresses) : factoriser dans une classe Personne, une personne pouvant jouer et réaliser." }
+        ]
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Modèle relationnel</h2>
+    <p>Le diagramme de Dingo Fringo, affiché en lecture seule (mode « lecture ») :</p>
+    <div class="atelier" id="demo-lecture" data-editeur="classes">
+      <script type="application/json">
+      {
+        "mode": "lecture",
+        "titre": "Dingo Fringo",
+        "hauteur": 260,
+        "depart": [
+          "classe Vendeur·se", "  id : int {PK}", "  nom : varchar",
+          "classe Articles", "  id : int {PK}", "  nom : varchar", "  categorie", "  prix : numeric", "  date_vente",
+          "Vendeur·se \"1\" -- \"*\" Articles : vend >",
+          "Vendeur·se \"0..1\" -- \"*\" Vendeur·se : parraine"
+        ]
+      }
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Traduction</span></p>
+      <p>Écrire le modèle relationnel associé à ce diagramme. L'ordre des relations doit être celui d'une implémentation.</p>
+    </div>
+    <div class="atelier" id="demo-relationnel" data-editeur="relationnel">
+      <script type="application/json">
+      {
+        "solution": ["Vendeurs(_id_, nom, #id_parrain(Vendeurs.id))", "Articles(_id_, nom, categorie, prix, date_vente, #id_vendeur(Vendeurs.id))"],
+        "explication": "<p>L'association 1–* « vend » devient une clé étrangère côté Articles ; l'association réflexive « parraine », une clé étrangère renommée dans Vendeurs.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Table</h2>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 4 <span>Table de vérité</span></p>
+      <p>Compléter la table de vérité du ou exclusif.</p>
+    </div>
+    <div class="atelier" id="demo-table" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "Table de vérité",
+        "options": { "verrou": "depart", "lignes": false, "ordre": true, "mono": true },
+        "depart": ["| a | b | a ⊕ b |", "| 0 | 0 |  |", "| 0 | 1 |  |", "| 1 | 0 |  |", "| 1 | 1 |  |"],
+        "solution": ["| a | b | a ⊕ b |", "| 0 | 0 | 0 |", "| 0 | 1 | 1 |", "| 1 | 0 | 1 |", "| 1 | 1 | 0 |"]
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>SQL</h2>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 5 <span>Requête</span></p>
+      <p>Afficher le nom des vendeurs qui ont vendu au moins un article de la catégorie Chaussures.</p>
+    </div>
+    <div class="atelier" id="demo-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "options": { "jeu": "dingo" },
+        "depart": "SELECT ",
+        "solution": "SELECT DISTINCT v.nom FROM vendeurs v JOIN articles a ON a.id_vendeur = v.id WHERE a.categorie = 'Chaussures';"
+      }
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 6 <span>Contraintes</span></p>
+      <p>Créer la table <code>produit(id, nom, prix)</code> : identifiant entier clé primaire, nom obligatoire, prix positif ou nul.</p>
+    </div>
+    <div class="atelier" id="demo-sql-script" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Script SQL",
+        "options": { "mode": "script" },
+        "depart": "CREATE TABLE produit (\n  \n);",
+        "solution": "CREATE TABLE produit (\n  id integer PRIMARY KEY,\n  nom varchar(50) NOT NULL,\n  prix numeric(6,2) CHECK (prix >= 0)\n);",
+        "tests": [
+          { "nom": "Produit valide", "requete": "INSERT INTO produit VALUES (1, 'Stylo', 1.50);", "doit": "reussir" },
+          { "nom": "Nom absent", "requete": "INSERT INTO produit VALUES (2, NULL, 3);", "doit": "echouer" },
+          { "nom": "Prix négatif", "requete": "INSERT INTO produit VALUES (3, 'Gomme', -1);", "doit": "echouer" },
+          { "nom": "Identifiant en double", "requete": "INSERT INTO produit VALUES (4, 'A', 1); INSERT INTO produit VALUES (4, 'B', 2);", "doit": "echouer" }
+        ]
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Graphe et automate</h2>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 7 <span>Automate</span></p>
+      <p>Construire un automate fini déterministe sur l'alphabet {a, b} qui reconnaît les mots commençant par <code>ab</code>.</p>
+    </div>
+    <div class="atelier" id="demo-automate" data-editeur="graphe">
+      <script type="application/json">
+      {
+        "titre": "Automate",
+        "options": { "deterministe": true },
+        "depart": ["automate"],
+        "solution": ["automate", "initial q0", "final q2", "q0 -> q1 : a", "q1 -> q2 : b", "q2 -> q2 : a, b"],
+        "tests": { "acceptes": ["ab", "aba", "abbb"], "rejetes": ["", "a", "ba", "bab"] }
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Arbre de processus</h2>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 8 <span>fork()</span></p>
+      <p>Dessiner l'arbre des processus créés par ce programme. Combien de fois « x » est-il affiché ?</p>
+<pre><code class="language-c">int main(void) {
+    fork();
+    if (fork() == 0)
+        fork();
+    printf("x\n");
+    return 0;
+}</code></pre>
+    </div>
+    <div class="atelier" id="demo-pert" data-editeur="graphe">
+      <script type="application/json">
+      {
+        "titre": "PERT potentiel-étapes",
+        "options": { "pert": true },
+        "consigne": "<p>A (3 j) puis B (2 j) ; C (4 j) dépend de A ; D (1 j) dépend de B et de C.</p>",
+        "solution": ["etape Debut 0 0", "etape E1 3 3", "etape E2 5 7", "etape E3 7 7", "etape Fin 8 8", "Debut -> E1 : A 3", "E1 -> E2 : B 2", "E1 -> E3 : C 4", "E2 -> E3 : fictive", "E3 -> Fin : D 1"],
+        "explication": "<p>Chaque étape porte sa date au plus tôt et sa date au plus tard. B et C ne vont pas directement à la même étape : deux tâches ne relient pas deux mêmes étapes, d'où la tâche fictive.</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="demo-organigramme" data-editeur="processus">
+      <script type="application/json">
+      {
+        "titre": "Organigramme WBS",
+        "options": { "organigramme": true },
+        "solution": ["Site web", "  1 Analyse", "    1.1 Besoins : 1 analyste, 3 j", "  2 Réalisation", "    2.1 Pages : 2 dév., 8 j", "    2.2 Base : 1 dév., 4 j", "  3 Recette : 1 testeur, 2 j"]
+      }
+      </script>
+    </div>
+    <div class="atelier" id="demo-processus" data-editeur="processus">
+      <script type="application/json">
+      {
+        "solution": ["P1", "  P2", "    P5", "      P6", "  P3", "    P4"],
+        "explication": "<p>Après le premier <code>fork()</code>, deux processus exécutent la suite. Chacun crée un fils au second <code>fork()</code>, et ce fils (qui reçoit 0) en crée un autre : 6 processus, donc 6 « x ».</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Chronogramme</h2>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 9 <span>Ordonnancement FIFO</span></p>
+      <p>Trois processus arrivent sur un processeur : P1 à t = 0 (durée 3), P2 à t = 1 (durée 2), P3 à t = 2 (durée 4). Tracer le chronogramme de l'ordonnancement FIFO (x : exécution, p : prêt).</p>
+    </div>
+    <div class="atelier" id="demo-chrono" data-editeur="chronogramme">
+      <script type="application/json">
+      {
+        "options": { "processeurs": 1, "durees": { "P1": 3, "P2": 2, "P3": 4 } },
+        "depart": ["temps 0..10", "P1 :", "P2 :", "P3 :"],
+        "solution": ["temps 0..10", "P1 : x 0-3", "P2 : p 1-3, x 3-5", "P3 : p 2-5, x 5-9"]
+      }
+      </script>
+    </div>
+    <p>Quand une case ne vaut pas une unité de temps, on donne sa durée avec <code>pas</code> : ici, une case dure 50 µs, et les segments s'écrivent en microsecondes.</p>
+    <div class="atelier" id="demo-chrono-pas" data-editeur="chronogramme">
+      <script type="application/json">
+      {
+        "titre": "Une tâche de fond préemptée (temps en µs)",
+        "mode": "lecture",
+        "vue": "dessin",
+        "depart": ["temps 0..600 pas 50", "etat x Exécution", "etat p Prêt", "T1 : x 200-350", "Fond : x 0-200, p 200-350, x 350-600"]
+      }
+      </script>
+    </div>
+    <p>Pour un code en ligne, l'option <code>niveaux</code> dessine chaque ligne comme un signal, <code>marques</code> écrit les repères B et V sur les impulsions, et <code>graduations</code> met les bits à coder au-dessus des colonnes. Le champ <code>papier</code> reprend une réponse faite sur papier : la page s'ouvre avec elle tant que rien d'autre n'est enregistré (menu ⋯, « Reprendre ma copie papier »).</p>
+    <div class="atelier" id="demo-chrono-signal" data-editeur="chronogramme">
+      <script type="application/json">
+      {
+        "titre": "Bipolaire et HDB2 de 1 0 0 0 1 0 0 0",
+        "consigne": "<p>Choisir un niveau, puis cliquer sous chaque bit ; une colonne vide est au niveau 0. Premier « 1 » positif, dernière violation négative.</p>",
+        "options": { "debut": 0, "fin": 8, "graduations": "1 0 0 0 1 0 0 0", "niveaux": { "p": 1, "n": -1, "V": 1, "v": -1, "B": 1, "b": -1 }, "marques": { "V": "V+", "v": "V−", "B": "B+", "b": "B−" } },
+        "depart": ["temps 0..8", "etat p +V", "etat n −V", "etat B B+ (bourrage)", "etat b B− (bourrage)", "etat V V+ (violation)", "etat v V− (violation)", "Bipolaire :", "HDB2 :"],
+        "solution": ["temps 0..8", "etat p +V", "etat n −V", "etat B B+ (bourrage)", "etat b B− (bourrage)", "etat V V+ (violation)", "etat v V− (violation)", "Bipolaire : p...n...", "HDB2 : p..Vn..v"],
+        "papier": { "texte": ["temps 0..8", "etat p +V", "etat n −V", "etat B B+ (bourrage)", "etat b B− (bourrage)", "etat V V+ (violation)", "etat v V− (violation)", "Bipolaire : p...n...", "HDB2 : p..Vn.v."], "source": "copie fictive de démonstration", "date": "2026-10-09", "note": "exemple de saisie d'une copie papier." }
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Diagramme de séquence</h2>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 10 <span>Retrait d'argent</span></p>
+      <p>Un client insère sa carte dans un distributeur, qui demande à la banque de vérifier le code. Si le solde est suffisant, le distributeur rend les billets ; sinon, il affiche un refus.</p>
+    </div>
+    <div class="atelier" id="demo-sequence" data-editeur="sequence">
+      <script type="application/json">
+      {
+        "solution": ["acteur Client", "objet d : Distributeur", "objet b : Banque", "Client -> d : insererCarte()", "d -> b : verifier(code)", "b --> d : resultat", "alt solde suffisant", "  d --> Client : billets", "sinon", "  d --> Client : refus", "fin"]
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Cas d'utilisation</h2>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 10 bis <span>Retrait d'argent</span></p>
+      <p>Un porteur de carte retire de l'argent à un guichet automatique : il saisit toujours son code, le système d'autorisation de la banque intervient, et il peut demander un ticket.</p>
+    </div>
+    <div class="atelier" id="demo-cas" data-editeur="cas">
+      <script type="application/json">
+      {
+        "solution": ["systeme Guichet automatique", "acteur Porteur", "acteur <<actor>> Banque", "cas Retirer de l'argent", "cas Saisir son code", "cas Imprimer un ticket", "Porteur -- Retirer de l'argent", "Banque -- Retirer de l'argent : secondaire", "Retirer de l'argent ..> Saisir son code : include", "Imprimer un ticket ..> Retirer de l'argent : extend"]
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Rédaction</h2>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 11 <span>Question de cours</span></p>
+      <p>Pourquoi ne déclare-t-on jamais une clé étrangère avec le type <code>SERIAL</code> ?</p>
+    </div>
+    <div class="atelier" id="demo-texte" data-editeur="texte">
+      <script type="application/json">
+      {
+        "solution": "Une clé étrangère doit contenir l'identifiant d'une ligne qui existe déjà dans la table référencée. Une colonne SERIAL génère ses propres valeurs, sans rapport avec cette table : on déclare la clé étrangère avec le type entier correspondant (integer pour un serial)."
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Un atelier est un bloc <code>&lt;div class="atelier" id="…" data-editeur="…"&gt;</code> qui contient ses données en JSON.</li>
+        <li>Dessin et vue texte sont synchronisés : on peut construire à la souris ou au clavier.</li>
+        <li>« Vérifier » contrôle la forme, « Comparer » l'écart avec la solution, Claude corrige sur le fond.</li>
+        <li>Le travail est enregistré dans le navigateur et, avec le serveur local, dans <code>td_results/</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Quelle différence entre « Vérifier » et « Comparer » ?</summary>
+        <div><p>« Vérifier » contrôle la forme du travail (clé primaire manquante, multiplicité invalide…) sans rien dévoiler ; « Comparer » mesure l'écart avec la solution et liste les différences.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un écart avec la solution est-il forcément une erreur ?</summary>
+        <div><p>Non : un modèle admet souvent plusieurs réponses justes. La comparaison signale ce qui diffère ; en cas de doute, « Claude » juge sur le fond.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Où va le travail quand le serveur local tourne ?</summary>
+        <div><p>Dans <code>&lt;Niveau&gt;/&lt;Matière&gt;/td_results/&lt;page&gt;.json</code>, un fichier par page ; sans serveur, il reste dans le navigateur.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="../../_outils/charte/composants.html"><small>← Charte</small>Catalogue des composants</a>
+    <a class="suivant" href="../../_outils/quiz/demo.html"><small>Quiz →</small>Démonstration des quiz</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Atelier · <code>studies/_outils/atelier</code></footer>
+
+</body>
+</html>

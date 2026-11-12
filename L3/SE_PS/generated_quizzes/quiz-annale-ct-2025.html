@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="se">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Annale : l'examen de décembre 2024 · Programmation système L3</title>
+<meta name="description" content="Quiz d'annale de programmation système (L3) : l'examen du 18 décembre 2024, catalogue, open atomique, verrous, interblocage, handlers et masques exécutés, conception du processus vision.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="../generated_courses/index.html">Programmation système</a>
+    <span aria-current="page">Quiz · Annale CT</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Programmation système</span> Quiz · L3 S5</p>
+    <h1>Annale : l'examen de décembre 2024</h1>
+    <p class="chapeau">L'examen du 18 décembre 2024, dans sa forme, avec des variantes : fichiers, verrous, signaux, et les questions de TP sur la route. Le barème vient d'une copie corrigée. Les deux programmes de signaux sont exécutés et corrigés automatiquement. Les questions de TP se terminent par le code de <code>vision</code> et d'une voiture qui communiquent par une file de messages (QTP 2 et 3), exécuté lui aussi.</p>
+    <dl class="meta">
+      <div><dt>Sujet</dt><dd><a href="../annales/CT_2025.pdf">Examen du 18 décembre 2024</a></dd></div>
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-01-fichiers-catalogues.html">Cours 1</a> · <a href="../generated_courses/cours-02-verrous.html">Cours 2</a> · <a href="../generated_courses/cours-03-signaux.html">Cours 3</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-31">31 oct. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Programmation système · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "se-annale-ct-2025",
+  "melanger": false,
+  "cours": [
+    {
+      "titre": "Cours 1 · Fichiers et catalogues",
+      "lien": "../generated_courses/cours-01-fichiers-catalogues.html"
+    },
+    {
+      "titre": "Cours 2 · Les verrous sur les fichiers",
+      "lien": "../generated_courses/cours-02-verrous.html"
+    },
+    {
+      "titre": "Cours 3 · Les signaux Unix",
+      "lien": "../generated_courses/cours-03-signaux.html"
+    },
+    {
+      "titre": "Cours 5 · Les tubes",
+      "lien": "../generated_courses/cours-05-tubes.html"
+    },
+    {
+      "titre": "Cours 6 · Les files de messages",
+      "lien": "../generated_courses/cours-06-files-de-messages.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "ouverte",
+      "theme": "Questions de cours",
+      "difficulte": 1,
+      "enonce": "<p><strong>CT, QC 1 a (2 points avec le b).</strong> Quel est le rôle d'un catalogue ?</p>",
+      "reponse_modele": "<p>Un catalogue associe un <strong>nom symbolique</strong> à l'emplacement physique d'un fichier. On désigne ainsi un fichier par son nom, et le SGF le retrouve à partir de ce nom. Sous Unix, une entrée associe un nom à un numéro d'i-nœud.</p>",
+      "criteres": [
+        "associe un nom symbolique",
+        "à l'adresse physique du fichier, ou à son i-nœud"
+      ],
+      "revoir": {
+        "texte": "Cours 1 · Rôle du catalogue",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#role-du-catalogue"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "ouverte",
+      "theme": "Questions de cours",
+      "difficulte": 1,
+      "enonce": "<p><strong>CT, QC 1 b.</strong> Quelle doit être la particularité de la primitive <code>open</code> ? Pourquoi ?</p>",
+      "reponse_modele": "<p><code>open</code> doit être <strong>atomique</strong> : l'ouverture se fait d'un bloc, sans qu'un autre processus puisse s'intercaler. Sinon, deux processus pourraient vérifier en même temps qu'un fichier n'existe pas, et le créer tous les deux. C'est ce qui permet de bâtir un verrou externe avec <code>O_CREAT | O_EXCL</code>.</p>",
+      "criteres": [
+        "open est atomique",
+        "explique le risque : deux processus s'intercalent entre le test et la création"
+      ],
+      "revoir": {
+        "texte": "Cours 2 · Poser et lever un verrou externe",
+        "lien": "../generated_courses/cours-02-verrous.html#poser-et-lever-un-verrou-externe"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "qcm",
+      "theme": "Questions de cours",
+      "difficulte": 2,
+      "enonce": "<p>Un programme teste si <code>f.lck</code> existe avec <code>stat</code>, puis le crée avec <code>open</code> s'il n'existe pas. Pourquoi cela ne protège-t-il rien ?</p>",
+      "choix": [
+        "Un autre processus peut s'intercaler entre les deux appels, et croire lui aussi que le fichier n'existe pas.",
+        "<code>stat</code> ne fonctionne pas sur un fichier vide.",
+        "<code>open</code> échoue toujours sur un fichier qui se termine par <code>.lck</code>.",
+        "Le fichier est supprimé par le système à la fin de <code>stat</code>."
+      ],
+      "reponse": 0,
+      "explication": "<p>Un test suivi d'une création, en deux appels, n'est pas atomique. <code>open</code> avec <code>O_CREAT | O_EXCL</code> fait les deux en un seul appel : un seul processus peut réussir.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Poser et lever un verrou externe",
+        "lien": "../generated_courses/cours-02-verrous.html#poser-et-lever-un-verrou-externe"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "ouverte",
+      "theme": "Questions de cours",
+      "difficulte": 2,
+      "enonce": "<p><strong>CT, QC 2 a (2 points avec le b).</strong> Verrous bloquants : entre un verrou interne et un verrou externe, quel est le plus efficace ? Pourquoi ?</p>",
+      "reponse_modele": "<p>Le verrou <strong>interne</strong>. Il ne demande pas d'attente active : le processus dort jusqu'à ce que le verrou soit libre, alors qu'un verrou externe doit retenter <code>open</code> en boucle. Il ne risque pas non plus de rester en place : le système le lève si le processus se termine anormalement, alors qu'un fichier verrou resterait.</p>",
+      "criteres": [
+        "le verrou interne",
+        "pas d'attente active",
+        "levé à la mort du processus"
+      ],
+      "revoir": {
+        "texte": "Cours 2 · Comparaison des mécanismes",
+        "lien": "../generated_courses/cours-02-verrous.html#comparaison-des-mecanismes"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "ouverte",
+      "theme": "Questions de cours",
+      "difficulte": 2,
+      "enonce": "<p><strong>CT, QC 2 b.</strong> Quel que soit le type, quel problème peut se produire ? Peut-on le détecter ?</p>",
+      "reponse_modele": "<p>L'<strong>interblocage</strong> : deux processus attendent chacun un verrou tenu par l'autre. Avec les verrous internes, le système peut le détecter, car il connaît le propriétaire de chaque verrou : la demande qui fermerait le cycle échoue avec <code>EDEADLK</code>. Avec les verrous externes, il ne le peut pas.</p>",
+      "criteres": [
+        "l'interblocage",
+        "détectable pour les verrous internes",
+        "pas pour les verrous externes"
+      ],
+      "revoir": {
+        "texte": "Cours 2 · L'interblocage",
+        "lien": "../generated_courses/cours-02-verrous.html#l-interblocage"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "code",
+      "langage": "c-posix",
+      "theme": "Signaux",
+      "difficulte": 3,
+      "enonce": "<p><strong>CT, QC 3 a (3 points).</strong> À la réception de <code>SIGUSR1</code>, un programme affiche une série de <code>-</code> ; à la réception de <code>SIGUSR2</code>, une série de <code>+</code>. Règles :</p><ul><li>une série de <code>-</code> peut être interrompue par une série de <code>+</code> ;</li><li>une série de <code>+</code> ne peut pas être interrompue par une série de <code>-</code> ;</li><li>une série de <code>-</code> doit se terminer avant d'entamer une autre série de <code>-</code> ;</li><li>une série de <code>+</code> peut être interrompue par une autre série de <code>+</code>.</li></ul><p>Le handler <code>serie</code> est fourni : pour aller plus vite, il écrit trois caractères espacés de 0,2 s, au lieu de dix en dix secondes, et encadre chaque série par des crochets. Écrire <code>installer</code>. Le programme de test lit deux signaux, et les envoie à 0,3 s d'intervalle. Une série interrompue se lit dans les crochets : <code>[--[+++]-]</code>.</p>",
+      "depart": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n\nstatic void serie(int sig)\n{\n    char c = (sig == SIGUSR1) ? '-' : '+';\n    write(1, \"[\", 1);\n    for (int i = 0; i < 3; i++) {\n        write(1, &c, 1);\n        usleep(200000);\n    }\n    write(1, \"]\", 1);\n}\n\nvoid installer(void)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n\nstatic void serie(int sig)\n{\n    char c = (sig == SIGUSR1) ? '-' : '+';\n    write(1, \"[\", 1);\n    for (int i = 0; i < 3; i++) {\n        write(1, &c, 1);\n        usleep(200000);\n    }\n    write(1, \"]\", 1);\n}\n\nvoid installer(void)\n{\n    struct sigaction a;\n    a.sa_handler = serie;\n\n    sigemptyset(&a.sa_mask);          /* une série de - peut être interrompue par + */\n    a.sa_flags = 0;                   /* et pas par - : le signal se masque lui-même */\n    sigaction(SIGUSR1, &a, NULL);\n\n    sigemptyset(&a.sa_mask);\n    sigaddset(&a.sa_mask, SIGUSR1);   /* une série de + ne peut pas l'être par - */\n    a.sa_flags = SA_NODEFER;          /* mais peut l'être par + */\n    sigaction(SIGUSR2, &a, NULL);\n}\n",
+      "harnais": "\n#include <time.h>\n#include <sys/wait.h>\n\nstatic int numero(char c) { return c == '-' ? SIGUSR1 : SIGUSR2; }\n\nint main(void)\n{\n    char s[3];\n    struct timespec t0, t;\n    scanf(\"%2s\", s);\n    installer();\n    if (fork() == 0) {\n        kill(getppid(), numero(s[0]));\n        usleep(300000);\n        kill(getppid(), numero(s[1]));\n        _exit(0);\n    }\n    clock_gettime(CLOCK_MONOTONIC, &t0);\n    do {\n        usleep(10000);\n        clock_gettime(CLOCK_MONOTONIC, &t);\n    } while ((t.tv_sec - t0.tv_sec) * 1000 + (t.tv_nsec - t0.tv_nsec) / 1000000 < 1600);\n    wait(NULL);\n    write(1, \"\\n\", 1);\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "- interrompu par +",
+          "entree": "-+\n",
+          "sortie": "[--[+++]-]\n"
+        },
+        {
+          "nom": "+ non interrompu par -",
+          "entree": "+-\n",
+          "sortie": "[+++][---]\n"
+        },
+        {
+          "nom": "- attend la fin de -",
+          "entree": "--\n",
+          "sortie": "[---][---]\n"
+        },
+        {
+          "nom": "+ interrompu par +",
+          "entree": "++\n",
+          "sortie": "[++[+++]+]\n"
+        }
+      ],
+      "explication": "<p>Chaque règle se traduit par un réglage. <code>sa_mask</code> de <code>SIGUSR2</code> contient <code>SIGUSR1</code> : le <code>-</code> attend. <code>SA_NODEFER</code> sur <code>SIGUSR2</code> laisse un <code>+</code> interrompre un <code>+</code>. Avec <code>sa_flags = 0</code> sur <code>SIGUSR1</code>, le signal se masque pendant son handler : un <code>-</code> attend la fin du <code>-</code>. Le <code>sa_mask</code> vide de <code>SIGUSR1</code> laisse passer le <code>+</code>. Un même handler sert aux deux signaux, grâce à son paramètre.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Définition de sigaction",
+        "lien": "../generated_courses/cours-03-signaux.html#definition-de-sigaction"
+      },
+      "indices": [
+        "<p>Reprendre les règles une par une : laquelle touche <code>sa_mask</code>, laquelle <code>sa_flags</code> ? Deux <code>struct sigaction</code> sont nécessaires.</p>"
+      ]
+    },
+    {
+      "id": "q07",
+      "type": "association",
+      "theme": "Signaux",
+      "difficulte": 2,
+      "enonce": "<p>Pour la question précédente, associer chaque règle au réglage qui l'assure :</p>",
+      "paires": [
+        [
+          "- peut être interrompu par +",
+          "sa_mask de SIGUSR1 sans SIGUSR2"
+        ],
+        [
+          "+ ne peut pas être interrompu par -",
+          "SIGUSR1 dans le sa_mask de SIGUSR2"
+        ],
+        [
+          "- doit finir avant un autre -",
+          "sa_flags = 0 pour SIGUSR1"
+        ],
+        [
+          "+ peut être interrompu par +",
+          "SA_NODEFER pour SIGUSR2"
+        ]
+      ],
+      "explication": "<p>Pendant un handler, le masque vaut \\(M \\cup \\mathtt{sa\\_mask} \\cup \\{\\mathit{sig}\\}\\), sans \\(\\{\\mathit{sig}\\}\\) avec <code>SA_NODEFER</code>. C'est ainsi qu'on choisit qui peut interrompre qui.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Définition de sigaction",
+        "lien": "../generated_courses/cours-03-signaux.html#definition-de-sigaction"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "code",
+      "langage": "c-posix",
+      "theme": "Signaux",
+      "difficulte": 2,
+      "enonce": "<p><strong>CT, QC 3 b (3 points).</strong> On suppose que l'on a une fonction <code>Fonction_CT</code> dont le corps est déjà écrit. Rendez-la ininterruptible, à part par les signaux <code>SIGKILL</code>, <code>SIGSTOP</code> et <code>SIGCONT</code>, en l'encapsulant dans <code>Fonction_CT_bis</code>. Le masque d'avant doit être rétabli exactement : le programme de test lit 1 s'il bloque déjà <code>SIGUSR2</code>, 0 sinon. La fonction s'envoie deux signaux, qui ne doivent être pris en compte qu'une fois qu'elle est finie : le test affiche le nombre de signaux traités pendant, puis après.</p>",
+      "depart": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n\nstatic volatile sig_atomic_t vus = 0;\n\n/* le corps de la fonction est fourni : on ne le modifie pas */\nstatic void Fonction_CT(void)\n{\n    printf(\"debut\\n\");\n    raise(SIGINT);\n    raise(SIGUSR1);\n    printf(\"pendant : %d\\n\", (int) vus);\n}\n\nvoid Fonction_CT_bis(void)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n\nstatic volatile sig_atomic_t vus = 0;\n\n/* le corps de la fonction est fourni : on ne le modifie pas */\nstatic void Fonction_CT(void)\n{\n    printf(\"debut\\n\");\n    raise(SIGINT);\n    raise(SIGUSR1);\n    printf(\"pendant : %d\\n\", (int) vus);\n}\n\nvoid Fonction_CT_bis(void)\n{\n    sigset_t tous, ancien;\n    sigfillset(&tous);\n    sigprocmask(SIG_SETMASK, &tous, &ancien);\n    Fonction_CT();\n    sigprocmask(SIG_SETMASK, &ancien, NULL);\n}\n",
+      "harnais": "\nstatic void note(int sig) { vus++; }\n\nint main(void)\n{\n    int b;\n    sigset_t e, m;\n    scanf(\"%d\", &b);\n    signal(SIGINT, note);\n    signal(SIGUSR1, note);\n    sigemptyset(&e);\n    sigaddset(&e, SIGUSR2);\n    if (b)\n        sigprocmask(SIG_BLOCK, &e, NULL);\n    Fonction_CT_bis();\n    sigprocmask(SIG_BLOCK, NULL, &m);\n    printf(\"apres : %d\\n\", (int) vus);\n    printf(\"SIGUSR2 bloque : %d\\n\", sigismember(&m, SIGUSR2));\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "rien de bloqué avant",
+          "entree": "0\n",
+          "sortie": "debut\npendant : 0\napres : 2\nSIGUSR2 bloque : 0\n"
+        },
+        {
+          "nom": "SIGUSR2 bloqué avant : il le reste",
+          "entree": "1\n",
+          "sortie": "debut\npendant : 0\napres : 2\nSIGUSR2 bloque : 1\n"
+        }
+      ],
+      "explication": "<p><code>sigfillset</code> met tous les signaux dans l'ensemble, et le système ignore la demande pour ceux qu'on ne peut pas bloquer. On sauvegarde l'ancien masque, et on le rétablit avec <code>SIG_SETMASK</code> : <code>SIG_UNBLOCK</code> débloquerait aussi ce que l'appelant bloquait déjà. Les signaux arrivés entre-temps sont pris en compte au rétablissement. L'énoncé cite <code>SIGCONT</code> : sous Linux, il peut être bloqué, mais il relance toujours un processus suspendu.</p>",
+      "revoir": {
+        "texte": "Cours 3 · La primitive générale : sigprocmask",
+        "lien": "../generated_courses/cours-03-signaux.html#la-primitive-generale-sigprocmask"
+      },
+      "indices": [
+        "<p>Quelle fonction remplit un ensemble en une fois ?</p>"
+      ]
+    },
+    {
+      "id": "q09",
+      "type": "qcm",
+      "theme": "Signaux",
+      "difficulte": 2,
+      "enonce": "<p>Dans une copie, on lit une boucle <code>for (i = 0; i &lt; NSIG; i++) sigaddset(&amp;masque, i);</code>. Quel appel fait la même chose, plus simplement ?</p>",
+      "choix": [
+        "<code>sigfillset(&amp;masque);</code>",
+        "<code>sigemptyset(&amp;masque);</code>",
+        "<code>sigpending(&amp;masque);</code>",
+        "<code>sigprocmask(SIG_BLOCK, NULL, &amp;masque);</code>"
+      ],
+      "reponse": 0,
+      "explication": "<p><code>sigfillset</code> met tous les signaux dans l'ensemble. La boucle marche aussi : <code>sigaddset</code> renvoie seulement une erreur pour le numéro 0, qui n'est pas un signal.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Les ensembles de signaux",
+        "lien": "../generated_courses/cours-03-signaux.html#les-ensembles-de-signaux-sigset-t"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "ouverte",
+      "theme": "Questions de TP",
+      "difficulte": 3,
+      "enonce": "<p><strong>CT, section 2.2.</strong> Dans une variante du TP Route, le processus <code>vision</code> doit à la fois traiter les demandes des voitures et lire un caractère tapé à tout instant par le Maître du jeu. Il ne doit pas rester bloqué en attente de ce caractère, et les appels système ne doivent pas être rendus non bloquants. Proposer une solution.</p>",
+      "reponse_modele": "<p>On dédouble le travail : <code>vision</code> crée un <strong>fils</strong>, qui se bloque sur la lecture du clavier. À chaque caractère, le fils l'écrit dans un <strong>tube</strong> et envoie un <strong>signal</strong> à son père. Le handler du père lit le tube et garde le caractère. Le père ne lit donc le tube que lorsqu'un caractère y est, et ne se bloque jamais dessus.</p>",
+      "criteres": [
+        "un processus fils lit le clavier",
+        "un tube transmet le caractère",
+        "un signal prévient le père, qui ne lit le tube que lorsque le caractère est là"
+      ],
+      "revoir": {
+        "texte": "Cours 5 · Tube vide, tube plein, tube sans lecteur",
+        "lien": "../generated_courses/cours-05-tubes.html#tube-vide-tube-plein-tube-sans-lecteur"
+      },
+      "explication": "<p>Une copie notée 9 sur 10 sur cette partie a perdu son point ici. Elle lisait le tube directement dans la boucle de <code>vision</code>, et le correcteur a écrit « NON car bloquant » et « + signal ». Ce schéma a été programmé et exécuté sous Linux.</p>"
+    },
+    {
+      "id": "q11",
+      "type": "qcm",
+      "theme": "Questions de TP",
+      "difficulte": 2,
+      "enonce": "<p>Dans une copie, le fils de <code>vision</code> écrit les caractères dans un tube, et <code>vision</code> fait <code>read(tube[0], &amp;c, 1)</code> avant de traiter chaque demande. Pourquoi le correcteur refuse-t-il ce <code>read</code> ?</p>",
+      "choix": [
+        "S'il n'y a pas de caractère dans le tube, <code>read</code> bloque <code>vision</code>, qui ne traite plus les demandes.",
+        "Un tube ne peut pas contenir de caractères.",
+        "Seul le fils a le droit de lire un tube.",
+        "<code>read</code> ne fonctionne pas sur un tube après <code>fork</code>."
+      ],
+      "reponse": 0,
+      "explication": "<p>Le tube vide bloque le lecteur, ce que l'énoncé interdit : le problème n'a fait que changer de place. Le signal du fils permet de ne lire que lorsqu'un caractère attend.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Tube vide, tube plein, tube sans lecteur",
+        "lien": "../generated_courses/cours-05-tubes.html#tube-vide-tube-plein-tube-sans-lecteur"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "ouverte",
+      "theme": "Questions de TP",
+      "difficulte": 2,
+      "enonce": "<p><strong>CT, QTP 1.</strong> Donner les structures de messages qui transitent entre <code>vision</code> et les voitures, par une file de messages. Le type <code>corps_t</code> décrit la position d'une voiture.</p>",
+      "reponse_modele": "<p>Deux messages, qui commencent chacun par un <code>long</code>, leur type, obligatoire dans une file de messages.</p><ul><li>Demande : le pid de la voiture, et ses coordonnées. Son type vaut le pid de <code>vision</code>.</li><li>Réponse : les nouvelles coordonnées, et un indicateur d'arrivée. Son type vaut le pid de la voiture.</li></ul><p>Le type sert d'adresse : chaque voiture ne reçoit que ses réponses.</p>",
+      "criteres": [
+        "un champ long pour le type",
+        "la demande contient l'identité de la voiture et ses coordonnées",
+        "la réponse contient les nouvelles coordonnées et l'arrivée"
+      ],
+      "revoir": {
+        "texte": "Cours 6 · Les messages échangés",
+        "lien": "../generated_courses/cours-06-files-de-messages.html#les-messages-echanges"
+      },
+      "explication": "<p>La taille passée à <code>msgsnd</code> et <code>msgrcv</code> ne compte pas le <code>long</code> du type. C'est le schéma de l'exemple du cours 6 : les requêtes portent un type fixe, celui du serveur, et les réponses le pid du client. Les questions QTP 2 et QTP 3 qui suivent reprennent ces structures.</p>"
+    },
+    {
+      "id": "q13",
+      "type": "ordre",
+      "theme": "Questions de TP",
+      "difficulte": 1,
+      "enonce": "<p>D'après l'énoncé (section 2.3), remettre dans l'ordre le travail d'un processus voiture :</p>",
+      "elements": [
+        "faire une demande pour se positionner sur la route",
+        "attendre que vision lui indique ses coordonnées initiales",
+        "faire une demande de déplacement avec ses coordonnées",
+        "attendre la réponse de vision avec ses nouvelles coordonnées",
+        "s'arrêter une fois arrivée"
+      ],
+      "explication": "<p>Les deux étapes du milieu se répètent jusqu'à l'arrivée. <code>vision</code> crée et détruit la file de messages, et la voiture ne fait que s'y raccorder.</p>",
+      "revoir": {
+        "texte": "TP Route · Le sujet",
+        "lien": "../generated_courses/tp-01-route.html#le-sujet"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "code",
+      "langage": "c-posix",
+      "theme": "Questions de TP",
+      "difficulte": 3,
+      "enonce": "<p><strong>CT, QTP 2.</strong> Écrire le cœur du processus <code>vision</code> : <code>traiter_requete(fileid, fd)</code> extrait <strong>une</strong> requête de la file (type <code>VISION</code>) et la traite.</p><ul><li>Demande <code>PLACER</code> : <code>creer_voiture</code> choisit la position initiale ; la réponse a <code>ok</code> à 1 et cette position, ou <code>ok</code> à 0 s'il n'y a plus de place.</li><li>Demande <code>DEPLACER</code> : <code>calcul_deplacement</code> calcule, avec le caractère <code>car_maitre</code>, la nouvelle position et l'arrivée ; <code>ecrire_deplacement</code> l'écrit dans la route ; si la voiture est arrivée, <code>detruire_voiture</code> l'efface. La réponse a <code>ok</code> à 1, la nouvelle position et l'arrivée.</li><li>Dans les deux cas, la route est affichée par <code>route_afficher</code>, puis la réponse est envoyée à la voiture, avec son pid pour type.</li></ul><p>Les structures des messages (réponse à QTP 1) et les fonctions de l'énoncé sont données en tête du code ; <code>car_maitre</code> est tenu à jour par le handler de la question précédente. Le test simule ces fonctions, qui affichent leurs appels, envoie les requêtes lues sur l'entrée (<code>P pid</code>, <code>D pid x y</code> ; <code>C c</code> change le caractère du Maître du jeu), appelle <code>traiter_requete</code> après chacune et affiche la réponse reçue.</p><p><span class='badge ajout'>Ajout</span> L'énoncé ne définit ni <code>corps_t</code> ni la forme des messages : ils sont fixés ici, et <code>calcul_deplacement</code> reçoit l'adresse de la nouvelle position (l'énoncé la passe par valeur).</p>",
+      "depart": "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <unistd.h>\n#include <sys/wait.h>\n#include <sys/msg.h>\n\n/* ---- Donne : types et fonctions de l'enonce (simplifies) ---- */\ntypedef enum { FAUX = 0, VRAI = 1 } booleen_t;\ntypedef struct { int x, y; } corps_t;              /* position d'une voiture */\n\n#define VISION 1L                                 /* type des requetes */\ntypedef enum { PLACER, DEPLACER } demande_t;\n\ntypedef struct { pid_t pid; demande_t demande; corps_t pos; } req_corps_t;\ntypedef struct { long type; req_corps_t corps; } requete_t;   /* type = VISION */\n\ntypedef struct { int ok; corps_t pos; booleen_t arrivee; } rep_corps_t;\ntypedef struct { long type; rep_corps_t corps; } reponse_t;   /* type = pid de la voiture */\n\nint  creer_voiture(int fd, corps_t *pos);           /* 0, ou -1 si plus de place */\nvoid detruire_voiture(int fd, corps_t pos);\nvoid calcul_deplacement(int fd, char c, corps_t pos, corps_t *new_pos, booleen_t *arrivee);\nvoid ecrire_deplacement(int fd, corps_t old_pos, corps_t new_pos);\nvoid route_afficher(int fd);\nextern char car_maitre;     /* dernier caractere du Maitre du jeu (mis a jour par un handler) */\n/* ------------------------------------------------------------- */\n\n/* Extrait UNE requete de la file et la traite */\nvoid traiter_requete(int fileid, int fd)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <unistd.h>\n#include <sys/wait.h>\n#include <sys/msg.h>\n\n/* ---- Donne : types et fonctions de l'enonce (simplifies) ---- */\ntypedef enum { FAUX = 0, VRAI = 1 } booleen_t;\ntypedef struct { int x, y; } corps_t;              /* position d'une voiture */\n\n#define VISION 1L                                 /* type des requetes */\ntypedef enum { PLACER, DEPLACER } demande_t;\n\ntypedef struct { pid_t pid; demande_t demande; corps_t pos; } req_corps_t;\ntypedef struct { long type; req_corps_t corps; } requete_t;   /* type = VISION */\n\ntypedef struct { int ok; corps_t pos; booleen_t arrivee; } rep_corps_t;\ntypedef struct { long type; rep_corps_t corps; } reponse_t;   /* type = pid de la voiture */\n\nint  creer_voiture(int fd, corps_t *pos);           /* 0, ou -1 si plus de place */\nvoid detruire_voiture(int fd, corps_t pos);\nvoid calcul_deplacement(int fd, char c, corps_t pos, corps_t *new_pos, booleen_t *arrivee);\nvoid ecrire_deplacement(int fd, corps_t old_pos, corps_t new_pos);\nvoid route_afficher(int fd);\nextern char car_maitre;     /* dernier caractere du Maitre du jeu (mis a jour par un handler) */\n/* ------------------------------------------------------------- */\n\n/* Extrait UNE requete de la file et la traite */\nvoid traiter_requete(int fileid, int fd)\n{\n    requete_t requete;\n    reponse_t reponse;\n\n    if (msgrcv(fileid, &requete, sizeof(req_corps_t), VISION, 0) == -1)\n        return;\n\n    reponse.type = requete.corps.pid;\n    reponse.corps.arrivee = FAUX;\n    if (requete.corps.demande == PLACER) {\n        reponse.corps.ok = (creer_voiture(fd, &reponse.corps.pos) == 0);\n    } else {\n        calcul_deplacement(fd, car_maitre, requete.corps.pos,\n                           &reponse.corps.pos, &reponse.corps.arrivee);\n        ecrire_deplacement(fd, requete.corps.pos, reponse.corps.pos);\n        if (reponse.corps.arrivee)\n            detruire_voiture(fd, reponse.corps.pos);\n        reponse.corps.ok = 1;\n    }\n    route_afficher(fd);\n    msgsnd(fileid, &reponse, sizeof(rep_corps_t), 0);\n}\n",
+      "harnais": "\n#include <signal.h>\n\n/* garde-fou du test : supprime la file si le programme reste bloque */\nstatic int id_test;\nstatic void delai(int sig)\n{\n    static const char msg[] = \"bloque : delai de 3 s depasse\\n\";\n    write(1, msg, sizeof msg - 1);\n    msgctl(id_test, IPC_RMID, NULL);\n}\n\n/* fonctions de l'enonce, simulees par le test */\nchar car_maitre = '1';\nstatic int nb_voitures = 0;\nint creer_voiture(int fd, corps_t *pos)\n{\n    if (nb_voitures == 2) { printf(\"creer_voiture : plus de place\\n\"); return -1; }\n    pos->x = nb_voitures++; pos->y = 0;\n    printf(\"creer_voiture : (%d,%d)\\n\", pos->x, pos->y);\n    return 0;\n}\nvoid detruire_voiture(int fd, corps_t pos) { printf(\"detruire_voiture : (%d,%d)\\n\", pos.x, pos.y); }\nvoid calcul_deplacement(int fd, char c, corps_t pos, corps_t *new_pos, booleen_t *arrivee)\n{\n    new_pos->x = pos.x; new_pos->y = pos.y + (c - '0');\n    *arrivee = (new_pos->y >= 10);\n    printf(\"calcul_deplacement : '%c', (%d,%d) -> (%d,%d)\\n\", c, pos.x, pos.y, new_pos->x, new_pos->y);\n}\nvoid ecrire_deplacement(int fd, corps_t o, corps_t n) { printf(\"ecrire_deplacement : (%d,%d) -> (%d,%d)\\n\", o.x, o.y, n.x, n.y); }\nvoid route_afficher(int fd) { printf(\"route_afficher\\n\"); }\n\nint main(void)\n{\n    int fileid = msgget(IPC_PRIVATE, 0600);\n    char ligne[64], action;\n    requete_t r;\n    reponse_t rep;\n    int pid, x, y;\n\n    id_test = fileid;\n    signal(SIGALRM, delai);\n    alarm(3);\n    while (fgets(ligne, sizeof ligne, stdin) != NULL) {\n        if (sscanf(ligne, \"C %c\", &car_maitre) == 1)\n            continue;\n        if (sscanf(ligne, \"%c %d %d %d\", &action, &pid, &x, &y) < 2)\n            continue;\n        r.type = VISION;\n        r.corps.pid = pid;\n        r.corps.demande = (action == 'P') ? PLACER : DEPLACER;\n        r.corps.pos.x = x; r.corps.pos.y = y;\n        msgsnd(fileid, &r, sizeof(req_corps_t), 0);\n        traiter_requete(fileid, 3);\n        if (msgrcv(fileid, &rep, sizeof(rep_corps_t), pid, IPC_NOWAIT) == -1)\n            printf(\"-> pas de reponse de type %d\\n\", pid);\n        else if (!rep.corps.ok)\n            printf(\"-> %d : refus\\n\", pid);\n        else\n            printf(\"-> %d : (%d,%d)%s\\n\", pid, rep.corps.pos.x, rep.corps.pos.y,\n                   rep.corps.arrivee ? \" arrivee\" : \"\");\n    }\n    msgctl(fileid, IPC_RMID, NULL);\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "placer deux voitures, refuser la troisième",
+          "entree": "P 101\nP 102\nP 103\n",
+          "sortie": "creer_voiture : (0,0)\nroute_afficher\n-> 101 : (0,0)\ncreer_voiture : (1,0)\nroute_afficher\n-> 102 : (1,0)\ncreer_voiture : plus de place\nroute_afficher\n-> 103 : refus\n"
+        },
+        {
+          "nom": "un déplacement avec le caractère du Maître du jeu",
+          "entree": "C 3\nD 101 0 2\n",
+          "sortie": "calcul_deplacement : '3', (0,2) -> (0,5)\necrire_deplacement : (0,2) -> (0,5)\nroute_afficher\n-> 101 : (0,5)\n"
+        },
+        {
+          "nom": "arrivée : la voiture est effacée",
+          "entree": "C 4\nD 205 1 7\nD 206 0 1\n",
+          "sortie": "calcul_deplacement : '4', (1,7) -> (1,11)\necrire_deplacement : (1,7) -> (1,11)\ndetruire_voiture : (1,11)\nroute_afficher\n-> 205 : (1,11) arrivee\ncalcul_deplacement : '4', (0,1) -> (0,5)\necrire_deplacement : (0,1) -> (0,5)\nroute_afficher\n-> 206 : (0,5)\n"
+        }
+      ],
+      "indices": [
+        "<p>Un seul <code>msgrcv</code> du type <code>VISION</code>, avec <code>sizeof(req_corps_t)</code> ; la réponse prend pour type <code>requete.corps.pid</code>.</p>",
+        "<p>Les longueurs passées à <code>msgrcv</code> et <code>msgsnd</code> sont celles des corps : <code>sizeof(req_corps_t)</code> et <code>sizeof(rep_corps_t)</code>.</p>"
+      ],
+      "explication": "<p>Toutes les requêtes arrivent avec le même type, <code>VISION</code> ; chaque réponse part avec le pid de la voiture, qui l'attend avec ce type : une seule file sert ainsi toutes les voitures, comme dans l'exemple du client et des serveurs du cours 6. Le caractère du Maître du jeu n'est jamais lu ici : le fils de <code>vision</code> le lit au clavier, et le handler du père le range dans <code>car_maitre</code> (question précédente), si bien que <code>vision</code> ne se bloque que sur la file. Dans le vrai programme, <code>traiter_requete</code> est appelée dans une boucle sans fin, et la file est détruite par <code>msgctl(fileid, IPC_RMID, NULL)</code> à l'arrêt.</p>",
+      "revoir": {
+        "texte": "Cours 6 · Exemple : un client et deux serveurs",
+        "lien": "../generated_courses/cours-06-files-de-messages.html#exemple-un-client-et-deux-serveurs"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "code",
+      "langage": "c-posix",
+      "theme": "Questions de TP",
+      "difficulte": 3,
+      "enonce": "<p><strong>CT, QTP 3.</strong> Écrire le processus voiture : <code>voiture(fileid)</code> envoie à <code>vision</code> une demande <code>PLACER</code> et attend sa réponse. S'il n'y a pas de place, elle affiche <code>pas de place</code> et s'arrête. Sinon, elle affiche <code>depart en (x,y)</code>, puis répète : demande <code>DEPLACER</code> avec sa position actuelle, attente de la réponse, affichage <code>en (x,y)</code> de la nouvelle position ; jusqu'à l'arrivée, où elle affiche <code>arrivee</code>.</p><p>Les structures des messages sont données en tête du code. La voiture s'identifie par son pid, qui sert de type aux réponses de <code>vision</code>. Le test lance une fausse <code>vision</code> dans un processus fils, qui place la voiture en (4,0), puis l'avance du pas lu sur l'entrée jusqu'à 10 ; l'entrée donne aussi s'il reste de la place (1 ou 0).</p>",
+      "depart": "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <unistd.h>\n#include <sys/wait.h>\n#include <sys/msg.h>\n\n/* ---- Donne : types et fonctions de l'enonce (simplifies) ---- */\ntypedef enum { FAUX = 0, VRAI = 1 } booleen_t;\ntypedef struct { int x, y; } corps_t;              /* position d'une voiture */\n\n#define VISION 1L                                 /* type des requetes */\ntypedef enum { PLACER, DEPLACER } demande_t;\n\ntypedef struct { pid_t pid; demande_t demande; corps_t pos; } req_corps_t;\ntypedef struct { long type; req_corps_t corps; } requete_t;   /* type = VISION */\n\ntypedef struct { int ok; corps_t pos; booleen_t arrivee; } rep_corps_t;\ntypedef struct { long type; rep_corps_t corps; } reponse_t;   /* type = pid de la voiture */\n\nint  creer_voiture(int fd, corps_t *pos);           /* 0, ou -1 si plus de place */\nvoid detruire_voiture(int fd, corps_t pos);\nvoid calcul_deplacement(int fd, char c, corps_t pos, corps_t *new_pos, booleen_t *arrivee);\nvoid ecrire_deplacement(int fd, corps_t old_pos, corps_t new_pos);\nvoid route_afficher(int fd);\nextern char car_maitre;     /* dernier caractere du Maitre du jeu (mis a jour par un handler) */\n/* ------------------------------------------------------------- */\n\n/* Le processus voiture : se place, puis se deplace jusqu'a l'arrivee */\nvoid voiture(int fileid)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <unistd.h>\n#include <sys/wait.h>\n#include <sys/msg.h>\n\n/* ---- Donne : types et fonctions de l'enonce (simplifies) ---- */\ntypedef enum { FAUX = 0, VRAI = 1 } booleen_t;\ntypedef struct { int x, y; } corps_t;              /* position d'une voiture */\n\n#define VISION 1L                                 /* type des requetes */\ntypedef enum { PLACER, DEPLACER } demande_t;\n\ntypedef struct { pid_t pid; demande_t demande; corps_t pos; } req_corps_t;\ntypedef struct { long type; req_corps_t corps; } requete_t;   /* type = VISION */\n\ntypedef struct { int ok; corps_t pos; booleen_t arrivee; } rep_corps_t;\ntypedef struct { long type; rep_corps_t corps; } reponse_t;   /* type = pid de la voiture */\n\nint  creer_voiture(int fd, corps_t *pos);           /* 0, ou -1 si plus de place */\nvoid detruire_voiture(int fd, corps_t pos);\nvoid calcul_deplacement(int fd, char c, corps_t pos, corps_t *new_pos, booleen_t *arrivee);\nvoid ecrire_deplacement(int fd, corps_t old_pos, corps_t new_pos);\nvoid route_afficher(int fd);\nextern char car_maitre;     /* dernier caractere du Maitre du jeu (mis a jour par un handler) */\n/* ------------------------------------------------------------- */\n\n/* Le processus voiture : se place, puis se deplace jusqu'a l'arrivee */\nvoid voiture(int fileid)\n{\n    requete_t requete;\n    reponse_t reponse;\n\n    requete.type = VISION;\n    requete.corps.pid = getpid();\n    requete.corps.demande = PLACER;\n    msgsnd(fileid, &requete, sizeof(req_corps_t), 0);\n    if (msgrcv(fileid, &reponse, sizeof(rep_corps_t), getpid(), 0) == -1)\n        return;\n    if (!reponse.corps.ok) {\n        printf(\"pas de place\\n\");\n        return;\n    }\n    printf(\"depart en (%d,%d)\\n\", reponse.corps.pos.x, reponse.corps.pos.y);\n\n    requete.corps.demande = DEPLACER;\n    do {\n        requete.corps.pos = reponse.corps.pos;\n        msgsnd(fileid, &requete, sizeof(req_corps_t), 0);\n        if (msgrcv(fileid, &reponse, sizeof(rep_corps_t), getpid(), 0) == -1)\n            return;\n        printf(\"en (%d,%d)\\n\", reponse.corps.pos.x, reponse.corps.pos.y);\n    } while (!reponse.corps.arrivee);\n    printf(\"arrivee\\n\");\n}\n",
+      "harnais": "\n#include <signal.h>\n\n/* garde-fou du test : supprime la file si le programme reste bloque */\nstatic int id_test;\nstatic void delai(int sig)\n{\n    static const char msg[] = \"bloque : delai de 3 s depasse\\n\";\n    write(1, msg, sizeof msg - 1);\n    msgctl(id_test, IPC_RMID, NULL);\n}\n\n/* inutilisees ici : c'est vision qui s'en sert */\nchar car_maitre = '1';\nint  creer_voiture(int fd, corps_t *pos) { return -1; }\nvoid detruire_voiture(int fd, corps_t pos) { }\nvoid calcul_deplacement(int fd, char c, corps_t pos, corps_t *n, booleen_t *a) { }\nvoid ecrire_deplacement(int fd, corps_t o, corps_t n) { }\nvoid route_afficher(int fd) { }\n\n/* vision simulee par le test : place la voiture en (4,0), puis avance de \"pas\" */\nstatic void fausse_vision(int fileid, int place, int pas)\n{\n    requete_t r;\n    reponse_t rep;\n    int n = 0;\n\n    while (msgrcv(fileid, &r, sizeof(req_corps_t), VISION, 0) != -1) {\n        n++;\n        rep.type = r.corps.pid;\n        rep.corps.arrivee = FAUX;\n        if (r.corps.demande == PLACER) {\n            rep.corps.ok = place;\n            rep.corps.pos.x = 4; rep.corps.pos.y = 0;\n        } else {\n            rep.corps.ok = 1;\n            rep.corps.pos.x = r.corps.pos.x;\n            rep.corps.pos.y = r.corps.pos.y + pas;\n            rep.corps.arrivee = (rep.corps.pos.y >= 10);\n        }\n        msgsnd(fileid, &rep, sizeof(rep_corps_t), 0);\n        if (!place || rep.corps.arrivee)\n            break;\n    }\n    exit(n);\n}\n\nint main(void)\n{\n    int fileid = msgget(IPC_PRIVATE, 0600);\n    int place = 1, pas = 4, statut;\n    pid_t pid;\n\n    scanf(\"%d %d\", &place, &pas);\n    fflush(stdout);\n    if ((pid = fork()) == 0)\n        fausse_vision(fileid, place, pas);\n    id_test = fileid;\n    signal(SIGALRM, delai);\n    alarm(3);\n    voiture(fileid);\n    fflush(stdout);\n    for (int i = 0; i < 20 && waitpid(pid, &statut, WNOHANG) != pid; i++)\n        usleep(50000);                  /* laisse a vision le temps de finir */\n    if (kill(pid, 0) == -1 && WIFEXITED(statut))\n        printf(\"vision a traite %d requete(s)\\n\", WEXITSTATUS(statut));\n    else {\n        printf(\"vision attend encore une requete\\n\");\n        kill(pid, SIGKILL);\n    }\n    msgctl(fileid, IPC_RMID, NULL);\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "trois déplacements",
+          "entree": "1 4\n",
+          "sortie": "depart en (4,0)\nen (4,4)\nen (4,8)\nen (4,12)\narrivee\nvision a traite 4 requete(s)\n"
+        },
+        {
+          "nom": "arrivée au premier déplacement",
+          "entree": "1 10\n",
+          "sortie": "depart en (4,0)\nen (4,10)\narrivee\nvision a traite 2 requete(s)\n"
+        },
+        {
+          "nom": "pas de place",
+          "entree": "0 4\n",
+          "sortie": "pas de place\nvision a traite 1 requete(s)\n"
+        }
+      ],
+      "indices": [
+        "<p>Chaque envoi a pour type <code>VISION</code> ; chaque attente a pour type <code>getpid()</code>.</p>",
+        "<p>La nouvelle position renvoyée par <code>vision</code> devient la position envoyée avec la demande suivante.</p>"
+      ],
+      "explication": "<p>La voiture se raccorde à la file créée par <code>vision</code> et n'y prend que les messages de type égal à son pid : plusieurs voitures peuvent attendre en même temps sans se voler leurs réponses. La boucle s'arrête sur l'indicateur d'arrivée ; une voiture qui renverrait une demande après son arrivée laisserait une requête sans réponse, ce que le test détecte. La voiture ne détruit pas la file : c'est le rôle de <code>vision</code>.</p>",
+      "revoir": {
+        "texte": "Cours 6 · Le client",
+        "lien": "../generated_courses/cours-06-files-de-messages.html#le-client"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

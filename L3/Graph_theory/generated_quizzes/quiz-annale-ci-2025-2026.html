@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Annale : contrôle intermédiaire 2025-2026 · Théorie des graphes L3</title>
+<meta name="description" content="Quiz d'annales de théorie des graphes (L3) : le contrôle intermédiaire 2025-2026 du poly, réponses vérifiées avec NetworkX.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="../generated_courses/index.html">Théorie des graphes</a>
+    <span aria-current="page">Quiz · Annale CI 2025-2026</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Théorie des graphes</span> Quiz · L3 · Annales</p>
+    <h1>Annale : contrôle intermédiaire 2025-2026</h1>
+    <p class="chapeau">Le sujet du contrôle intermédiaire de 2025-2026 (1 h 30, sans document ni calculatrice), question par question : chaîne alimentaire, modèle d'Erdős–Rényi, parcours et composantes connexes, forte connexité. Un graphe et deux arbres à dessiner dans l'atelier.</p>
+    <dl class="meta">
+      <div><dt>Sujet</dt><dd><a href="../cours/_Graphes__Cours_de_graphes_A4__1_-4.pdf">poly de N. Dugué</a>, annales</dd></div>
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-01-notions-de-base.html">Cours 1 · Notions de base</a> ; <a href="../generated_courses/cours-02-connexite-erdos-renyi.html">Cours 2 · Connexité et modèle d'Erdős–Rényi</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 novembre 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Théorie des graphes · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "graphes-annale-ci-2025-2026",
+  "melanger": false,
+  "cours": [
+    {
+      "titre": "Cours 1 · Notions de base",
+      "lien": "../generated_courses/cours-01-notions-de-base.html"
+    },
+    {
+      "titre": "Cours 2 · Connexité et modèle d'Erdős–Rényi",
+      "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html"
+    }
+  ],
+  "questions": [
+    {
+      "type": "qcm",
+      "theme": "Ex. 1 · Chaîne alimentaire",
+      "difficulte": 1,
+      "enonce": "<p><strong>Ex. 1, q. 1</strong> (2 points). La Table 1 présente les relations prédateur/proie d'une forêt. Quel type de graphe choisir pour décrire ces données ?</p><div class='tableau centre compact'><table><caption>Chaîne alimentaire observée dans la forêt (Table 1 du sujet)</caption><thead><tr><th>Proie</th><th>Prédateurs</th></tr></thead><tbody><tr><td>1-Graminée</td><td>{2-Sauterelle, 3-Mulot, 4-Lapin}</td></tr><tr><td>2-Sauterelle</td><td>{5-Moineau, 6-Grenouille}</td></tr><tr><td>3-Mulot</td><td>{8-Faucon, 9-Renard, 10-Chouette}</td></tr><tr><td>4-Lapin</td><td>{8-Faucon, 9-Renard}</td></tr><tr><td>5-Moineau</td><td>{7-Serpent}</td></tr><tr><td>6-Grenouille</td><td>{10-Chouette}</td></tr><tr><td>7-Serpent</td><td>{8-Faucon}</td></tr><tr><td>8-Faucon</td><td>–</td></tr><tr><td>9-Renard</td><td>–</td></tr><tr><td>10-Chouette</td><td>–</td></tr></tbody></table></div>",
+      "choix": [
+        "Un graphe orienté non pondéré \\(G = (V, A)\\) : manger n'est pas une relation symétrique, et la table ne donne aucune intensité.",
+        "Un graphe non orienté \\(G = (V, E)\\) : une arête relie deux animaux qui interagissent.",
+        "Un graphe orienté pondéré : le poids de chaque arc est le nombre de prédateurs de la proie.",
+        "Un graphe non orienté pondéré par la taille des populations."
+      ],
+      "reponse": 0,
+      "explication": "<p>Le faucon mange le mulot, pas l'inverse : la relation a un sens, il faut des arcs. Rien dans la table ne mesure une intensité (quantité mangée, fréquence) : pas de poids. Un graphe non orienté perdrait l'information essentielle, qui mange qui. Les sommets sont les 10 espèces, les arcs les 14 relations de la table.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Graphes orientés",
+        "lien": "../generated_courses/cours-01-notions-de-base.html#graphes-orientes"
+      },
+      "id": "q01"
+    },
+    {
+      "type": "atelier",
+      "editeur": "graphe",
+      "theme": "Ex. 1 · Chaîne alimentaire",
+      "difficulte": 1,
+      "enonce": "<p><strong>Ex. 1, q. 1</strong> (suite). Dessiner le graphe de la Table 1, en nommant les sommets par l'espèce (sans le numéro).</p><div class='tableau centre compact'><table><caption>Chaîne alimentaire observée dans la forêt (Table 1 du sujet)</caption><thead><tr><th>Proie</th><th>Prédateurs</th></tr></thead><tbody><tr><td>1-Graminée</td><td>{2-Sauterelle, 3-Mulot, 4-Lapin}</td></tr><tr><td>2-Sauterelle</td><td>{5-Moineau, 6-Grenouille}</td></tr><tr><td>3-Mulot</td><td>{8-Faucon, 9-Renard, 10-Chouette}</td></tr><tr><td>4-Lapin</td><td>{8-Faucon, 9-Renard}</td></tr><tr><td>5-Moineau</td><td>{7-Serpent}</td></tr><tr><td>6-Grenouille</td><td>{10-Chouette}</td></tr><tr><td>7-Serpent</td><td>{8-Faucon}</td></tr><tr><td>8-Faucon</td><td>–</td></tr><tr><td>9-Renard</td><td>–</td></tr><tr><td>10-Chouette</td><td>–</td></tr></tbody></table></div><p>On oriente chaque arc de la proie vers son prédateur, dans le sens de lecture de la table (la Table 1 est alors la liste des successeurs de chaque sommet).</p>",
+      "depart": [
+        "oriente"
+      ],
+      "solution": [
+        "oriente",
+        "Graminée -> Sauterelle",
+        "Graminée -> Mulot",
+        "Graminée -> Lapin",
+        "Sauterelle -> Moineau",
+        "Sauterelle -> Grenouille",
+        "Mulot -> Faucon",
+        "Mulot -> Renard",
+        "Mulot -> Chouette",
+        "Lapin -> Faucon",
+        "Lapin -> Renard",
+        "Moineau -> Serpent",
+        "Grenouille -> Chouette",
+        "Serpent -> Faucon"
+      ],
+      "seuil": 1,
+      "indices": [
+        "<p>Chaque ligne de la table donne les arcs qui partent de la proie : la Graminée a trois arcs sortants.</p>"
+      ],
+      "explication": "<p>14 arcs, un par couple (proie, prédateur) de la table. La Graminée n'a que des arcs sortants (elle n'est mangée par personne de la table, elle ne mange personne) ; Faucon, Renard et Chouette n'ont que des arcs entrants : ce sont les sommets du haut de la chaîne. Le graphe n'a pas de circuit, comme toute chaîne alimentaire.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Graphes orientés",
+        "lien": "../generated_courses/cours-01-notions-de-base.html#graphes-orientes"
+      },
+      "id": "q02"
+    },
+    {
+      "type": "trous",
+      "theme": "Ex. 1 · Chaîne alimentaire",
+      "difficulte": 1,
+      "enonce": "<p><strong>Ex. 1, q. 2</strong> (1 point). Le degré entrant \\(d^-(u)\\) d'un sommet est le nombre d'arcs qui arrivent en \\(u\\), c'est-à-dire le nombre de ses voisins entrants \\(|N^-(u)|\\). Le calculer pour trois sommets du graphe de la Table 1.</p><div class='tableau centre compact'><table><caption>Chaîne alimentaire observée dans la forêt (Table 1 du sujet)</caption><thead><tr><th>Proie</th><th>Prédateurs</th></tr></thead><tbody><tr><td>1-Graminée</td><td>{2-Sauterelle, 3-Mulot, 4-Lapin}</td></tr><tr><td>2-Sauterelle</td><td>{5-Moineau, 6-Grenouille}</td></tr><tr><td>3-Mulot</td><td>{8-Faucon, 9-Renard, 10-Chouette}</td></tr><tr><td>4-Lapin</td><td>{8-Faucon, 9-Renard}</td></tr><tr><td>5-Moineau</td><td>{7-Serpent}</td></tr><tr><td>6-Grenouille</td><td>{10-Chouette}</td></tr><tr><td>7-Serpent</td><td>{8-Faucon}</td></tr><tr><td>8-Faucon</td><td>–</td></tr><tr><td>9-Renard</td><td>–</td></tr><tr><td>10-Chouette</td><td>–</td></tr></tbody></table></div><p>On oriente chaque arc de la proie vers son prédateur, dans le sens de lecture de la table (la Table 1 est alors la liste des successeurs de chaque sommet).</p>",
+      "texte": "d⁻(Graminée) = {{0}} ; d⁻(Mulot) = {{1}} ; d⁻(Moineau) = {{2}}",
+      "trous": [
+        {
+          "reponses": [
+            "0"
+          ]
+        },
+        {
+          "reponses": [
+            "1"
+          ]
+        },
+        {
+          "reponses": [
+            "1"
+          ]
+        }
+      ],
+      "explication": "<p>Dans ce sens, un arc entrant vient d'une proie : la Graminée n'en a aucune (0), le Mulot mange la Graminée (1), le Moineau mange la Sauterelle (1). Avec le sens inverse (prédateur → proie), on trouverait 3, 3 et 1 : la convention d'orientation se dit toujours sur la copie.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Graphes orientés",
+        "lien": "../generated_courses/cours-01-notions-de-base.html#graphes-orientes"
+      },
+      "id": "q03"
+    },
+    {
+      "type": "trous",
+      "theme": "Ex. 1 · Chaîne alimentaire",
+      "difficulte": 2,
+      "enonce": "<p><strong>Ex. 1, q. 3</strong> (1 point). Quelle mesure permet de connaître les plus grands prédateurs, ceux qui mangent la plus grande variété de proies ? Donner sa valeur pour le Faucon et la Chouette.</p><div class='tableau centre compact'><table><caption>Chaîne alimentaire observée dans la forêt (Table 1 du sujet)</caption><thead><tr><th>Proie</th><th>Prédateurs</th></tr></thead><tbody><tr><td>1-Graminée</td><td>{2-Sauterelle, 3-Mulot, 4-Lapin}</td></tr><tr><td>2-Sauterelle</td><td>{5-Moineau, 6-Grenouille}</td></tr><tr><td>3-Mulot</td><td>{8-Faucon, 9-Renard, 10-Chouette}</td></tr><tr><td>4-Lapin</td><td>{8-Faucon, 9-Renard}</td></tr><tr><td>5-Moineau</td><td>{7-Serpent}</td></tr><tr><td>6-Grenouille</td><td>{10-Chouette}</td></tr><tr><td>7-Serpent</td><td>{8-Faucon}</td></tr><tr><td>8-Faucon</td><td>–</td></tr><tr><td>9-Renard</td><td>–</td></tr><tr><td>10-Chouette</td><td>–</td></tr></tbody></table></div><p>On oriente chaque arc de la proie vers son prédateur, dans le sens de lecture de la table (la Table 1 est alors la liste des successeurs de chaque sommet).</p>",
+      "texte": "Mesure : {{0}} ; Faucon : {{1}} ; Chouette : {{2}}",
+      "trous": [
+        {
+          "choix": [
+            "le degré entrant d⁻",
+            "le degré sortant d⁺",
+            "le degré non orienté d"
+          ],
+          "reponse": 0
+        },
+        {
+          "reponses": [
+            "3"
+          ]
+        },
+        {
+          "reponses": [
+            "2"
+          ]
+        }
+      ],
+      "indices": [
+        "<p>Les proies d'un animal sont les sommets d'où partent les arcs qui arrivent sur lui.</p>"
+      ],
+      "explication": "<p>Les proies de \\(u\\) sont ses voisins entrants \\(N^-(u)\\) : c'est \\(d^-(u)\\) qui compte la variété de son régime. Le Faucon mange le Mulot, le Lapin et le Serpent (3), la Chouette le Mulot et la Grenouille (2). Le degré non orienté mélangerait proies et prédateurs.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Graphes orientés",
+        "lien": "../generated_courses/cours-01-notions-de-base.html#graphes-orientes"
+      },
+      "id": "q04"
+    },
+    {
+      "type": "trous",
+      "theme": "Ex. 1 · Chaîne alimentaire",
+      "difficulte": 1,
+      "enonce": "<p><strong>Ex. 1, q. 4</strong> (1 point). Donner la liste d'adjacence (voisins sortants) des sommets Sauterelle, Faucon et Graminée, dans l'ordre de la table ; écrire <code>[]</code> pour une liste vide.</p><div class='tableau centre compact'><table><caption>Chaîne alimentaire observée dans la forêt (Table 1 du sujet)</caption><thead><tr><th>Proie</th><th>Prédateurs</th></tr></thead><tbody><tr><td>1-Graminée</td><td>{2-Sauterelle, 3-Mulot, 4-Lapin}</td></tr><tr><td>2-Sauterelle</td><td>{5-Moineau, 6-Grenouille}</td></tr><tr><td>3-Mulot</td><td>{8-Faucon, 9-Renard, 10-Chouette}</td></tr><tr><td>4-Lapin</td><td>{8-Faucon, 9-Renard}</td></tr><tr><td>5-Moineau</td><td>{7-Serpent}</td></tr><tr><td>6-Grenouille</td><td>{10-Chouette}</td></tr><tr><td>7-Serpent</td><td>{8-Faucon}</td></tr><tr><td>8-Faucon</td><td>–</td></tr><tr><td>9-Renard</td><td>–</td></tr><tr><td>10-Chouette</td><td>–</td></tr></tbody></table></div><p>On oriente chaque arc de la proie vers son prédateur, dans le sens de lecture de la table (la Table 1 est alors la liste des successeurs de chaque sommet).</p>",
+      "texte": "Sauterelle : {{0}}\nFaucon : {{1}}\nGraminée : {{2}}",
+      "code": true,
+      "trous": [
+        {
+          "reponses": [
+            "[Moineau, Grenouille]",
+            "[Moineau,Grenouille]",
+            "Moineau, Grenouille",
+            "Moineau,Grenouille"
+          ]
+        },
+        {
+          "reponses": [
+            "[]",
+            "[ ]"
+          ]
+        },
+        {
+          "reponses": [
+            "[Sauterelle, Mulot, Lapin]",
+            "[Sauterelle,Mulot,Lapin]",
+            "Sauterelle, Mulot, Lapin",
+            "Sauterelle,Mulot,Lapin"
+          ]
+        }
+      ],
+      "explication": "<p>Avec les arcs proie → prédateur, la liste d'adjacence de chaque sommet est exactement la colonne « Prédateurs » de la table : Sauterelle : [Moineau, Grenouille], Faucon : [] (il n'est la proie de personne), Graminée : [Sauterelle, Mulot, Lapin].</p>",
+      "revoir": {
+        "texte": "Cours 1 · Liste d'adjacence",
+        "lien": "../generated_courses/cours-01-notions-de-base.html#liste-d-adjacence"
+      },
+      "id": "q05"
+    },
+    {
+      "type": "qcm",
+      "theme": "Ex. 1 · Chaîne alimentaire",
+      "difficulte": 2,
+      "enonce": "<p><strong>Ex. 1, q. 5</strong> (1 point). Quelle structure de données est la plus adaptée au transfert d'un graphe (par mail, par exemple), et laquelle est la plus adaptée à un parcours en profondeur ?</p>",
+      "choix": [
+        "La liste d'arêtes pour le transfert ; la liste d'adjacence pour le parcours.",
+        "La matrice d'adjacence pour les deux.",
+        "La liste d'adjacence pour le transfert ; la matrice d'adjacence pour le parcours.",
+        "La liste d'arêtes pour les deux."
+      ],
+      "reponse": 0,
+      "explication": "<p>La liste d'arêtes est le format d'échange usuel : un simple fichier texte, une ligne par arête, \\(m\\) couples sans aucun zéro. Mais trouver les voisins d'un sommet y demande de parcourir toute la liste. Le DFS demande sans cesse « les voisins de \\(u\\) » : la liste d'adjacence les donne directement, alors que la matrice oblige à lire toute une ligne de \\(n\\) cases, zéros compris.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Liste d'arêtes",
+        "lien": "../generated_courses/cours-01-notions-de-base.html#liste-d-aretes"
+      },
+      "id": "q06"
+    },
+    {
+      "type": "qcm",
+      "theme": "Ex. 2 · Erdős–Rényi",
+      "difficulte": 1,
+      "enonce": "<p><strong>Ex. 2, q. 1</strong> (1,25 point). On veut modéliser un graphe du réel de \\(n\\) sommets et \\(m\\) arêtes par un graphe d'Erdős–Rényi \\(G(n, p)\\). Quels paramètres choisir ?</p>",
+      "choix": [
+        "\\(n\\) sommets, et \\(p = \\dfrac{m}{n(n-1)/2} = \\dfrac{2m}{n(n-1)}\\), la densité du graphe réel.",
+        "\\(n\\) sommets, et \\(p = \\dfrac{m}{n}\\).",
+        "\\(n\\) sommets, et \\(p = \\dfrac{m}{n(n-1)}\\).",
+        "\\(m\\) sommets, et \\(p = \\dfrac{n}{m}\\)."
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Le nombre moyen d'arêtes de \\(G(n, p)\\) doit valoir \\(m\\).</p>"
+      ],
+      "explication": "<p>On garde le même nombre de sommets, et l'on choisit \\(p\\) pour que l'espérance du nombre d'arêtes, \\(\\frac{n(n-1)}{2} p\\), soit égale à \\(m\\) : \\(p = \\frac{2m}{n(n-1)}\\), qui est la densité du graphe réel. \\(\\frac{m}{n(n-1)}\\) serait la densité d'un graphe orienté : il manque le facteur 2.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le nombre d'arêtes",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#le-nombre-d-aretes"
+      },
+      "id": "q07"
+    },
+    {
+      "type": "qcm",
+      "theme": "Ex. 2 · Erdős–Rényi",
+      "difficulte": 2,
+      "enonce": "<p><strong>Ex. 2, q. 2</strong> (1,5 point). On a généré un graphe d'Erdős–Rényi à 100 sommets et obtenu 25 sommets de degré 1, puis 10 sommets de chacun des degrés 2, 3, 4, 5 et 6, et 25 sommets de degré 7. Cette distribution semble-t-elle loin de la distribution théorique ?</p>",
+      "choix": [
+        "Oui : la loi du degré est une binomiale en cloche, concentrée autour du degré moyen (ici 4) ; elle ne peut pas mettre un quart des sommets à chaque extrémité, en 1 et en 7.",
+        "Non : le degré moyen vaut 4, comme il se doit pour un graphe d'Erdős–Rényi de même densité.",
+        "Non : la distribution est symétrique autour de 4, exactement comme la loi binomiale.",
+        "Oui : un graphe d'Erdős–Rényi ne contient jamais de sommet de degré 1."
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Quelle est l'allure de la loi \\(B(n-1, p)\\) ? Où sont ses valeurs les plus probables ?</p>"
+      ],
+      "explication": "<p>La distribution observée est en U : plate au milieu, avec deux pics de 25 % en 1 et en 7. Or le degré suit \\(B(99, p)\\), avec ici \\(p \\approx 4/99\\) : une cloche dont les valeurs les plus probables sont 3 et 4 (environ 20 % chacune), et qui ne donne qu'environ 7 % de sommets de degré 1 et 6 % de degré 7. La moyenne est bonne, mais pas la forme. Pour la dessiner : le degré en abscisse, le nombre (ou la part) de sommets en ordonnée, un bâton par degré. Valeurs calculées avec la loi binomiale.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La loi du degré",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#la-loi-du-degre"
+      },
+      "id": "q08"
+    },
+    {
+      "type": "qcm",
+      "theme": "Ex. 2 · Erdős–Rényi",
+      "difficulte": 1,
+      "enonce": "<p><strong>Ex. 2, q. 3</strong> (1,25 point). Dans un graphe aléatoire \\(G(n, p)\\), que modélise la loi binomiale \\(B\\left(\\frac{n(n-1)}{2}, p\\right)\\), et que vaut son espérance ?</p>",
+      "choix": [
+        "Le nombre d'arêtes du graphe ; son espérance \\(\\frac{n(n-1)}{2} p\\) est le nombre moyen d'arêtes.",
+        "Le degré d'un sommet ; son espérance \\((n-1)p\\) est le degré moyen.",
+        "Le nombre d'arêtes ; son espérance vaut \\(\\frac{n(n-1)}{2}(1-p)\\).",
+        "Le nombre de composantes connexes ; son espérance vaut \\(np\\)."
+      ],
+      "reponse": 0,
+      "explication": "<p>Chacune des \\(\\frac{n(n-1)}{2}\\) arêtes possibles est une épreuve de Bernoulli de succès \\(p\\), indépendante des autres : le nombre de succès, donc d'arêtes, suit cette binomiale, d'espérance « nombre d'épreuves × \\(p\\) ». Le degré d'un sommet suit, lui, \\(B(n-1, p)\\) : il n'a que \\(n - 1\\) arêtes possibles.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le nombre d'arêtes",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#le-nombre-d-aretes"
+      },
+      "id": "q09"
+    },
+    {
+      "type": "ouverte",
+      "theme": "Ex. 2 · Erdős–Rényi",
+      "difficulte": 2,
+      "enonce": "<p><strong>Ex. 2, q. 4</strong> (1,5 point). Dans un graphe du réel, on observe des <em>hubs</em>, des sommets connectés à une grande partie du réseau. Est-ce compatible avec les graphes générés par Erdős–Rényi ? Expliquer.</p>",
+      "reponse_modele": "<p>Non. Dans \\(G(n, p)\\), le degré de chaque sommet suit la loi binomiale \\(B(n-1, p)\\) : une cloche concentrée autour du degré moyen \\((n-1)p\\), dont les probabilités décroissent très vite quand on s'en éloigne. Un sommet relié à une grande partie des \\(n\\) sommets aurait un degré des dizaines de fois supérieur à la moyenne, ce qui est d'une probabilité infime. Les graphes d'Erdős–Rényi sont donc homogènes : tous les sommets ont à peu près le même degré, alors que les graphes réels ont une distribution très hétérogène, avec beaucoup de petits degrés et quelques hubs.</p>",
+      "criteres": [
+        "La réponse est non.",
+        "Le degré suit une loi binomiale B(n − 1, p), centrée sur (n − 1)p.",
+        "Les grands écarts à la moyenne y sont extrêmement improbables : pas de hubs.",
+        "Opposition entre graphes aléatoires homogènes et graphes réels hétérogènes."
+      ],
+      "revoir": {
+        "texte": "Cours 2 · La loi du degré",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#la-loi-du-degre"
+      },
+      "id": "q10"
+    },
+    {
+      "type": "atelier",
+      "editeur": "graphe",
+      "theme": "Ex. 3 · Parcours",
+      "difficulte": 2,
+      "enonce": "<p><strong>Ex. 3, q. 1</strong> (2,5 points, avec les trois questions suivantes). Parcourir en <strong>largeur</strong> le graphe G1 en partant de A, et dessiner l'arbre qui en résulte, avec un arc de chaque parent vers son enfant. Les voisins d'un sommet sont examinés dans l'ordre alphabétique.</p><figure class='figure'><svg class='schema' viewBox='2 5 301 302' width='301' role='img' aria-labelledby='g1-q11-titre'><title id='g1-q11-titre'>Graphe G1 (figure 1 du sujet) : arêtes K–L, K–M, K–N, L–M, L–N, M–N, B–D, A–C, C–D, A–I, D–E, E–G, I–J, J–F, F–H, F–G, H–I, H–G.</title><path class='trait' d='M233 26 L267 26'/><path class='trait' d='M218 41 L218 77'/><path class='trait' d='M228 37 L272 81'/><path class='trait' d='M272 37 L228 81'/><path class='trait' d='M282 41 L282 77'/><path class='trait' d='M233 92 L267 92'/><path class='trait' d='M36 99 L140 149'/><path class='trait' d='M140 163 L36 215'/><path class='trait' d='M168 156 L203 156'/><path class='trait' d='M77 167 L34 211'/><path class='trait' d='M101 163 L205 215'/><path class='trait' d='M228 211 L272 167'/><path class='trait' d='M218 237 L218 271'/><path class='trait' d='M225 169 L275 273'/><path class='trait' d='M282 271 L282 237'/><path class='trait' d='M267 286 L233 286'/><path class='trait' d='M282 171 L282 207'/><path class='trait' d='M271 233 L229 275'/><g font-size='14'><circle class='boite' cx='218' cy='26' r='15'/><text x='218' y='31' text-anchor='middle' class='gras'>K</text><circle class='boite' cx='282' cy='26' r='15'/><text x='282' y='31' text-anchor='middle' class='gras'>L</text><circle class='boite' cx='218' cy='92' r='15'/><text x='218' y='97' text-anchor='middle' class='gras'>M</text><circle class='boite' cx='282' cy='92' r='15'/><text x='282' y='97' text-anchor='middle' class='gras'>N</text><circle class='boite' cx='23' cy='92' r='15'/><text x='23' y='97' text-anchor='middle' class='gras'>B</text><circle class='boite' cx='88' cy='156' r='15'/><text x='88' y='161' text-anchor='middle' class='gras'>A</text><circle class='boite' cx='153' cy='156' r='15'/><text x='153' y='161' text-anchor='middle' class='gras'>D</text><circle class='boite' cx='218' cy='156' r='15'/><text x='218' y='161' text-anchor='middle' class='gras'>E</text><circle class='boite' cx='282' cy='156' r='15'/><text x='282' y='161' text-anchor='middle' class='gras'>J</text><circle class='boite' cx='23' cy='222' r='15'/><text x='23' y='227' text-anchor='middle' class='gras'>C</text><circle class='boite' cx='218' cy='222' r='15'/><text x='218' y='227' text-anchor='middle' class='gras'>I</text><circle class='boite' cx='282' cy='222' r='15'/><text x='282' y='227' text-anchor='middle' class='gras'>F</text><circle class='boite' cx='218' cy='286' r='15'/><text x='218' y='291' text-anchor='middle' class='gras'>H</text><circle class='boite' cx='282' cy='286' r='15'/><text x='282' y='291' text-anchor='middle' class='gras'>G</text></g></svg><figcaption>G1, figure 1 du sujet de CI 2025-2026, redessinée.</figcaption></figure>",
+      "depart": [
+        "oriente"
+      ],
+      "solution": [
+        "oriente",
+        "A -> C",
+        "A -> I",
+        "C -> D",
+        "I -> H",
+        "I -> J",
+        "D -> B",
+        "D -> E",
+        "H -> F",
+        "H -> G"
+      ],
+      "seuil": 1,
+      "indices": [
+        "<p>A a deux voisins, C et I : ce sont ses deux enfants. On traite ensuite C, puis I, avant les voisins de C.</p>"
+      ],
+      "explication": "<p>File : A ; A enfile C et I ; C enfile D ; I enfile H et J ; D enfile B et E ; H enfile F et G. Ordre de visite : A, C, I, D, H, J, B, E, F, G. L'arbre a 9 arcs pour 10 sommets. K, L, M et N ne sont pas atteints : ils forment une autre composante connexe.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Parcours en largeur (BFS)",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#parcours-en-largeur-bfs"
+      },
+      "id": "q11"
+    },
+    {
+      "type": "ordre",
+      "theme": "Ex. 3 · Parcours",
+      "difficulte": 2,
+      "enonce": "<p><strong>Ex. 3, q. 1</strong> (suite). Numéroter les sommets dans l'ordre du parcours en <strong>largeur</strong> de G1 depuis A : les remettre dans l'ordre de visite. Les voisins d'un sommet sont examinés dans l'ordre alphabétique.</p><figure class='figure'><svg class='schema' viewBox='2 5 301 302' width='301' role='img' aria-labelledby='g1-q12-titre'><title id='g1-q12-titre'>Graphe G1 (figure 1 du sujet) : arêtes K–L, K–M, K–N, L–M, L–N, M–N, B–D, A–C, C–D, A–I, D–E, E–G, I–J, J–F, F–H, F–G, H–I, H–G.</title><path class='trait' d='M233 26 L267 26'/><path class='trait' d='M218 41 L218 77'/><path class='trait' d='M228 37 L272 81'/><path class='trait' d='M272 37 L228 81'/><path class='trait' d='M282 41 L282 77'/><path class='trait' d='M233 92 L267 92'/><path class='trait' d='M36 99 L140 149'/><path class='trait' d='M140 163 L36 215'/><path class='trait' d='M168 156 L203 156'/><path class='trait' d='M77 167 L34 211'/><path class='trait' d='M101 163 L205 215'/><path class='trait' d='M228 211 L272 167'/><path class='trait' d='M218 237 L218 271'/><path class='trait' d='M225 169 L275 273'/><path class='trait' d='M282 271 L282 237'/><path class='trait' d='M267 286 L233 286'/><path class='trait' d='M282 171 L282 207'/><path class='trait' d='M271 233 L229 275'/><g font-size='14'><circle class='boite' cx='218' cy='26' r='15'/><text x='218' y='31' text-anchor='middle' class='gras'>K</text><circle class='boite' cx='282' cy='26' r='15'/><text x='282' y='31' text-anchor='middle' class='gras'>L</text><circle class='boite' cx='218' cy='92' r='15'/><text x='218' y='97' text-anchor='middle' class='gras'>M</text><circle class='boite' cx='282' cy='92' r='15'/><text x='282' y='97' text-anchor='middle' class='gras'>N</text><circle class='boite' cx='23' cy='92' r='15'/><text x='23' y='97' text-anchor='middle' class='gras'>B</text><circle class='boite' cx='88' cy='156' r='15'/><text x='88' y='161' text-anchor='middle' class='gras'>A</text><circle class='boite' cx='153' cy='156' r='15'/><text x='153' y='161' text-anchor='middle' class='gras'>D</text><circle class='boite' cx='218' cy='156' r='15'/><text x='218' y='161' text-anchor='middle' class='gras'>E</text><circle class='boite' cx='282' cy='156' r='15'/><text x='282' y='161' text-anchor='middle' class='gras'>J</text><circle class='boite' cx='23' cy='222' r='15'/><text x='23' y='227' text-anchor='middle' class='gras'>C</text><circle class='boite' cx='218' cy='222' r='15'/><text x='218' y='227' text-anchor='middle' class='gras'>I</text><circle class='boite' cx='282' cy='222' r='15'/><text x='282' y='227' text-anchor='middle' class='gras'>F</text><circle class='boite' cx='218' cy='286' r='15'/><text x='218' y='291' text-anchor='middle' class='gras'>H</text><circle class='boite' cx='282' cy='286' r='15'/><text x='282' y='291' text-anchor='middle' class='gras'>G</text></g></svg><figcaption>G1, figure 1 du sujet de CI 2025-2026, redessinée.</figcaption></figure>",
+      "elements": [
+        "A",
+        "C",
+        "I",
+        "D",
+        "H",
+        "J",
+        "B",
+        "E",
+        "F",
+        "G"
+      ],
+      "explication": "<p>On visite d'abord A, puis ses voisins (C, I), puis les voisins de C (D) et de I (H, J), puis ceux de D (B, E) et de H (F, G) : A, C, I, D, H, J, B, E, F, G. Les sommets sont rangés par distance croissante à A.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Parcours en largeur (BFS)",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#parcours-en-largeur-bfs"
+      },
+      "id": "q12"
+    },
+    {
+      "type": "atelier",
+      "editeur": "graphe",
+      "theme": "Ex. 3 · Parcours",
+      "difficulte": 2,
+      "enonce": "<p><strong>Ex. 3, q. 1</strong> (suite). Parcourir en <strong>profondeur</strong> le graphe G1 en partant de A, et dessiner l'arbre qui en résulte, avec un arc de chaque parent vers son enfant. Les voisins d'un sommet sont examinés dans l'ordre alphabétique.</p><figure class='figure'><svg class='schema' viewBox='2 5 301 302' width='301' role='img' aria-labelledby='g1-q13-titre'><title id='g1-q13-titre'>Graphe G1 (figure 1 du sujet) : arêtes K–L, K–M, K–N, L–M, L–N, M–N, B–D, A–C, C–D, A–I, D–E, E–G, I–J, J–F, F–H, F–G, H–I, H–G.</title><path class='trait' d='M233 26 L267 26'/><path class='trait' d='M218 41 L218 77'/><path class='trait' d='M228 37 L272 81'/><path class='trait' d='M272 37 L228 81'/><path class='trait' d='M282 41 L282 77'/><path class='trait' d='M233 92 L267 92'/><path class='trait' d='M36 99 L140 149'/><path class='trait' d='M140 163 L36 215'/><path class='trait' d='M168 156 L203 156'/><path class='trait' d='M77 167 L34 211'/><path class='trait' d='M101 163 L205 215'/><path class='trait' d='M228 211 L272 167'/><path class='trait' d='M218 237 L218 271'/><path class='trait' d='M225 169 L275 273'/><path class='trait' d='M282 271 L282 237'/><path class='trait' d='M267 286 L233 286'/><path class='trait' d='M282 171 L282 207'/><path class='trait' d='M271 233 L229 275'/><g font-size='14'><circle class='boite' cx='218' cy='26' r='15'/><text x='218' y='31' text-anchor='middle' class='gras'>K</text><circle class='boite' cx='282' cy='26' r='15'/><text x='282' y='31' text-anchor='middle' class='gras'>L</text><circle class='boite' cx='218' cy='92' r='15'/><text x='218' y='97' text-anchor='middle' class='gras'>M</text><circle class='boite' cx='282' cy='92' r='15'/><text x='282' y='97' text-anchor='middle' class='gras'>N</text><circle class='boite' cx='23' cy='92' r='15'/><text x='23' y='97' text-anchor='middle' class='gras'>B</text><circle class='boite' cx='88' cy='156' r='15'/><text x='88' y='161' text-anchor='middle' class='gras'>A</text><circle class='boite' cx='153' cy='156' r='15'/><text x='153' y='161' text-anchor='middle' class='gras'>D</text><circle class='boite' cx='218' cy='156' r='15'/><text x='218' y='161' text-anchor='middle' class='gras'>E</text><circle class='boite' cx='282' cy='156' r='15'/><text x='282' y='161' text-anchor='middle' class='gras'>J</text><circle class='boite' cx='23' cy='222' r='15'/><text x='23' y='227' text-anchor='middle' class='gras'>C</text><circle class='boite' cx='218' cy='222' r='15'/><text x='218' y='227' text-anchor='middle' class='gras'>I</text><circle class='boite' cx='282' cy='222' r='15'/><text x='282' y='227' text-anchor='middle' class='gras'>F</text><circle class='boite' cx='218' cy='286' r='15'/><text x='218' y='291' text-anchor='middle' class='gras'>H</text><circle class='boite' cx='282' cy='286' r='15'/><text x='282' y='291' text-anchor='middle' class='gras'>G</text></g></svg><figcaption>G1, figure 1 du sujet de CI 2025-2026, redessinée.</figcaption></figure>",
+      "depart": [
+        "oriente"
+      ],
+      "solution": [
+        "oriente",
+        "A -> C",
+        "C -> D",
+        "D -> B",
+        "D -> E",
+        "E -> G",
+        "G -> F",
+        "F -> H",
+        "H -> I",
+        "I -> J"
+      ],
+      "seuil": 1,
+      "indices": [
+        "<p>Depuis A, on part vers C, puis vers le premier voisin non visité de C, et ainsi de suite.</p>"
+      ],
+      "explication": "<p>A → C → D → B ; B n'a pas d'autre voisin, retour à D → E → G → F → H → I → J. Ordre : A, C, D, B, E, G, F, H, I, J. L'arbre est presque une chaîne : le DFS s'enfonce aussi loin que possible avant de revenir en arrière.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Parcours en profondeur (DFS)",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#parcours-en-profondeur-dfs"
+      },
+      "id": "q13"
+    },
+    {
+      "type": "ordre",
+      "theme": "Ex. 3 · Parcours",
+      "difficulte": 2,
+      "enonce": "<p><strong>Ex. 3, q. 1</strong> (suite). Remettre les sommets dans l'ordre du parcours en <strong>profondeur</strong> de G1 depuis A. Les voisins d'un sommet sont examinés dans l'ordre alphabétique.</p><figure class='figure'><svg class='schema' viewBox='2 5 301 302' width='301' role='img' aria-labelledby='g1-q14-titre'><title id='g1-q14-titre'>Graphe G1 (figure 1 du sujet) : arêtes K–L, K–M, K–N, L–M, L–N, M–N, B–D, A–C, C–D, A–I, D–E, E–G, I–J, J–F, F–H, F–G, H–I, H–G.</title><path class='trait' d='M233 26 L267 26'/><path class='trait' d='M218 41 L218 77'/><path class='trait' d='M228 37 L272 81'/><path class='trait' d='M272 37 L228 81'/><path class='trait' d='M282 41 L282 77'/><path class='trait' d='M233 92 L267 92'/><path class='trait' d='M36 99 L140 149'/><path class='trait' d='M140 163 L36 215'/><path class='trait' d='M168 156 L203 156'/><path class='trait' d='M77 167 L34 211'/><path class='trait' d='M101 163 L205 215'/><path class='trait' d='M228 211 L272 167'/><path class='trait' d='M218 237 L218 271'/><path class='trait' d='M225 169 L275 273'/><path class='trait' d='M282 271 L282 237'/><path class='trait' d='M267 286 L233 286'/><path class='trait' d='M282 171 L282 207'/><path class='trait' d='M271 233 L229 275'/><g font-size='14'><circle class='boite' cx='218' cy='26' r='15'/><text x='218' y='31' text-anchor='middle' class='gras'>K</text><circle class='boite' cx='282' cy='26' r='15'/><text x='282' y='31' text-anchor='middle' class='gras'>L</text><circle class='boite' cx='218' cy='92' r='15'/><text x='218' y='97' text-anchor='middle' class='gras'>M</text><circle class='boite' cx='282' cy='92' r='15'/><text x='282' y='97' text-anchor='middle' class='gras'>N</text><circle class='boite' cx='23' cy='92' r='15'/><text x='23' y='97' text-anchor='middle' class='gras'>B</text><circle class='boite' cx='88' cy='156' r='15'/><text x='88' y='161' text-anchor='middle' class='gras'>A</text><circle class='boite' cx='153' cy='156' r='15'/><text x='153' y='161' text-anchor='middle' class='gras'>D</text><circle class='boite' cx='218' cy='156' r='15'/><text x='218' y='161' text-anchor='middle' class='gras'>E</text><circle class='boite' cx='282' cy='156' r='15'/><text x='282' y='161' text-anchor='middle' class='gras'>J</text><circle class='boite' cx='23' cy='222' r='15'/><text x='23' y='227' text-anchor='middle' class='gras'>C</text><circle class='boite' cx='218' cy='222' r='15'/><text x='218' y='227' text-anchor='middle' class='gras'>I</text><circle class='boite' cx='282' cy='222' r='15'/><text x='282' y='227' text-anchor='middle' class='gras'>F</text><circle class='boite' cx='218' cy='286' r='15'/><text x='218' y='291' text-anchor='middle' class='gras'>H</text><circle class='boite' cx='282' cy='286' r='15'/><text x='282' y='291' text-anchor='middle' class='gras'>G</text></g></svg><figcaption>G1, figure 1 du sujet de CI 2025-2026, redessinée.</figcaption></figure>",
+      "elements": [
+        "A",
+        "C",
+        "D",
+        "B",
+        "E",
+        "G",
+        "F",
+        "H",
+        "I",
+        "J"
+      ],
+      "explication": "<p>A, C, D, B, E, G, F, H, I, J : depuis G, les voisins sont E (vu), F et H ; on prend F, dont le voisin H n'est pas visité, puis I et J depuis H.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Parcours en profondeur (DFS)",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#parcours-en-profondeur-dfs"
+      },
+      "id": "q14"
+    },
+    {
+      "type": "qcm",
+      "theme": "Ex. 3 · Parcours",
+      "difficulte": 1,
+      "enonce": "<p><strong>Ex. 3, q. 2</strong> (1 point). Lister les composantes connexes de G1.</p><figure class='figure'><svg class='schema' viewBox='2 5 301 302' width='301' role='img' aria-labelledby='g1-q15-titre'><title id='g1-q15-titre'>Graphe G1 (figure 1 du sujet) : arêtes K–L, K–M, K–N, L–M, L–N, M–N, B–D, A–C, C–D, A–I, D–E, E–G, I–J, J–F, F–H, F–G, H–I, H–G.</title><path class='trait' d='M233 26 L267 26'/><path class='trait' d='M218 41 L218 77'/><path class='trait' d='M228 37 L272 81'/><path class='trait' d='M272 37 L228 81'/><path class='trait' d='M282 41 L282 77'/><path class='trait' d='M233 92 L267 92'/><path class='trait' d='M36 99 L140 149'/><path class='trait' d='M140 163 L36 215'/><path class='trait' d='M168 156 L203 156'/><path class='trait' d='M77 167 L34 211'/><path class='trait' d='M101 163 L205 215'/><path class='trait' d='M228 211 L272 167'/><path class='trait' d='M218 237 L218 271'/><path class='trait' d='M225 169 L275 273'/><path class='trait' d='M282 271 L282 237'/><path class='trait' d='M267 286 L233 286'/><path class='trait' d='M282 171 L282 207'/><path class='trait' d='M271 233 L229 275'/><g font-size='14'><circle class='boite' cx='218' cy='26' r='15'/><text x='218' y='31' text-anchor='middle' class='gras'>K</text><circle class='boite' cx='282' cy='26' r='15'/><text x='282' y='31' text-anchor='middle' class='gras'>L</text><circle class='boite' cx='218' cy='92' r='15'/><text x='218' y='97' text-anchor='middle' class='gras'>M</text><circle class='boite' cx='282' cy='92' r='15'/><text x='282' y='97' text-anchor='middle' class='gras'>N</text><circle class='boite' cx='23' cy='92' r='15'/><text x='23' y='97' text-anchor='middle' class='gras'>B</text><circle class='boite' cx='88' cy='156' r='15'/><text x='88' y='161' text-anchor='middle' class='gras'>A</text><circle class='boite' cx='153' cy='156' r='15'/><text x='153' y='161' text-anchor='middle' class='gras'>D</text><circle class='boite' cx='218' cy='156' r='15'/><text x='218' y='161' text-anchor='middle' class='gras'>E</text><circle class='boite' cx='282' cy='156' r='15'/><text x='282' y='161' text-anchor='middle' class='gras'>J</text><circle class='boite' cx='23' cy='222' r='15'/><text x='23' y='227' text-anchor='middle' class='gras'>C</text><circle class='boite' cx='218' cy='222' r='15'/><text x='218' y='227' text-anchor='middle' class='gras'>I</text><circle class='boite' cx='282' cy='222' r='15'/><text x='282' y='227' text-anchor='middle' class='gras'>F</text><circle class='boite' cx='218' cy='286' r='15'/><text x='218' y='291' text-anchor='middle' class='gras'>H</text><circle class='boite' cx='282' cy='286' r='15'/><text x='282' y='291' text-anchor='middle' class='gras'>G</text></g></svg><figcaption>G1, figure 1 du sujet de CI 2025-2026, redessinée.</figcaption></figure>",
+      "choix": [
+        "\\(\\{A, B, C, D, E, F, G, H, I, J\\}\\) et \\(\\{K, L, M, N\\}\\)",
+        "Une seule : le graphe est connexe.",
+        "\\(\\{A, B, C, D\\}\\), \\(\\{E, F, G, H, I, J\\}\\) et \\(\\{K, L, M, N\\}\\)",
+        "\\(\\{A, B, C, D, E\\}\\), \\(\\{F, G, H, I, J\\}\\) et \\(\\{K, L, M, N\\}\\)"
+      ],
+      "reponse": 0,
+      "explication": "<p>Le parcours depuis A atteint les dix sommets de A à J (l'arête A–I et l'arête E–G relient les deux moitiés du bas) ; K, L, M, N forment une clique isolée. Deux composantes, donc G1 n'est pas connexe.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Sous-graphe induit et composante connexe",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#sous-graphe-induit-et-composante-connexe"
+      },
+      "id": "q15"
+    },
+    {
+      "type": "qcm",
+      "theme": "Ex. 3 · Parcours",
+      "difficulte": 3,
+      "enonce": "<p><strong>Ex. 3, q. 3</strong> (1,5 point). Quel est le nombre maximal d'arêtes d'un graphe non orienté à \\(n\\) sommets ayant 2 composantes connexes ?</p>",
+      "choix": [
+        "\\(\\dfrac{(n-1)(n-2)}{2}\\)",
+        "\\(\\dfrac{n(n-1)}{2} - 1\\)",
+        "\\(\\dfrac{n(n-1)}{4}\\)",
+        "\\(2 \\cdot \\dfrac{(n/2)(n/2 - 1)}{2}\\)"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Chaque composante a intérêt à être complète. Comparer une clique de \\(n - 1\\) sommets plus un sommet isolé, et deux cliques de \\(n/2\\) sommets.</p>"
+      ],
+      "explication": "<p>Avec des composantes de \\(k\\) et \\(n - k\\) sommets, le maximum est atteint par deux cliques : \\(\\frac{k(k-1)}{2} + \\frac{(n-k)(n-k-1)}{2}\\) arêtes. Cette somme est convexe en \\(k\\) : elle est maximale aux bords, pour \\(k = 1\\), une clique de \\(n - 1\\) sommets et un sommet isolé, soit \\(\\frac{(n-1)(n-2)}{2}\\). Deux cliques de \\(n/2\\) en ont moins. Retirer une seule arête d'un graphe complet ne suffit pas à le déconnecter (\\(\\frac{n(n-1)}{2} - 1\\) est faux dès \\(n \\ge 3\\)).</p>",
+      "revoir": {
+        "texte": "Cours 2 · Graphe connexe",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#graphe-connexe"
+      },
+      "id": "q16"
+    },
+    {
+      "type": "ouverte",
+      "theme": "Ex. 4 · Forte connexité",
+      "difficulte": 3,
+      "enonce": "<p><strong>Ex. 4, q. 1</strong> (1,5 point). Démontrer la transitivité de la forte connexité : dans un graphe orienté, si \\(u\\) et \\(v\\) sont fortement connectés et \\(v\\) et \\(w\\) aussi, alors \\(u\\) et \\(w\\) sont fortement connectés.</p>",
+      "reponse_modele": "<p>\\(u\\) et \\(v\\) fortement connectés : il existe un chemin \\(u \\leadsto v\\) et un chemin \\(v \\leadsto u\\). De même, il existe \\(v \\leadsto w\\) et \\(w \\leadsto v\\). En mettant bout à bout \\(u \\leadsto v\\) et \\(v \\leadsto w\\) (la cible du premier est la source du second), on obtient un chemin de \\(u\\) à \\(w\\). De même, \\(w \\leadsto v\\) suivi de \\(v \\leadsto u\\) donne un chemin de \\(w\\) à \\(u\\). Il existe donc un chemin dans chaque sens : \\(u\\) et \\(w\\) sont fortement connectés.</p>",
+      "criteres": [
+        "La définition est rappelée : un chemin dans chaque sens.",
+        "Concaténation de u → v et v → w pour aller de u à w.",
+        "Concaténation de w → v et v → u pour revenir.",
+        "Conclusion explicite sur u et w."
+      ],
+      "revoir": {
+        "texte": "Cours 2 · Faible et forte connexité",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#faible-et-forte-connexite"
+      },
+      "id": "q17"
+    },
+    {
+      "type": "qcm-multi",
+      "theme": "Ex. 4 · Forte connexité",
+      "difficulte": 2,
+      "enonce": "<p><strong>Ex. 4, q. 2</strong> (2 points). Cocher les ensembles qui sont des composantes fortement connexes de G2.</p><figure class='figure'><svg class='schema' viewBox='-1 -1 182 252' width='182' role='img' aria-labelledby='g2-q18-titre'><title id='g2-q18-titre'>Graphe orienté G2 (figure 2 du sujet) : arcs A→B, B→C, A→D, B→E, C→F, E→D, E→F, E→L, I→F, J→G, G→K, K→H, H→J, K→L et L→K.</title><defs><marker id='fleche-g2-q18' viewBox='0 0 10 10' refX='9' refY='5' markerWidth='7' markerHeight='7' orient='auto-start-reverse'><path d='M0 0 L10 5 L0 10 z' class='plein'/></marker></defs><path class='trait' d='M35 20 L75 20' marker-end='url(#fleche-g2-q18)'/><path class='trait' d='M20 35 L20 75' marker-end='url(#fleche-g2-q18)'/><path class='trait' d='M105 20 L145 20' marker-end='url(#fleche-g2-q18)'/><path class='trait' d='M90 35 L90 75' marker-end='url(#fleche-g2-q18)'/><path class='trait' d='M160 35 L160 75' marker-end='url(#fleche-g2-q18)'/><path class='trait' d='M75 90 L35 90' marker-end='url(#fleche-g2-q18)'/><path class='trait' d='M105 90 L145 90' marker-end='url(#fleche-g2-q18)'/><path class='trait' d='M97 103 L153 217' marker-end='url(#fleche-g2-q18)'/><path class='trait' d='M145 230 L105 230' marker-end='url(#fleche-g2-q18)' marker-start='url(#fleche-g2-q18)'/><path class='trait' d='M160 145 L160 105' marker-end='url(#fleche-g2-q18)'/><path class='trait' d='M20 215 L20 175' marker-end='url(#fleche-g2-q18)'/><path class='trait' d='M31 171 L79 219' marker-end='url(#fleche-g2-q18)'/><path class='trait' d='M90 215 L90 175' marker-end='url(#fleche-g2-q18)'/><path class='trait' d='M79 171 L31 219' marker-end='url(#fleche-g2-q18)'/><g font-size='14'><circle class='boite' cx='20' cy='20' r='15'/><text x='20' y='25' text-anchor='middle' class='gras'>A</text><circle class='boite' cx='90' cy='20' r='15'/><text x='90' y='25' text-anchor='middle' class='gras'>B</text><circle class='boite' cx='160' cy='20' r='15'/><text x='160' y='25' text-anchor='middle' class='gras'>C</text><circle class='boite' cx='20' cy='90' r='15'/><text x='20' y='95' text-anchor='middle' class='gras'>D</text><circle class='boite' cx='90' cy='90' r='15'/><text x='90' y='95' text-anchor='middle' class='gras'>E</text><circle class='boite' cx='160' cy='90' r='15'/><text x='160' y='95' text-anchor='middle' class='gras'>F</text><circle class='boite' cx='20' cy='160' r='15'/><text x='20' y='165' text-anchor='middle' class='gras'>G</text><circle class='boite' cx='90' cy='160' r='15'/><text x='90' y='165' text-anchor='middle' class='gras'>H</text><circle class='boite' cx='160' cy='160' r='15'/><text x='160' y='165' text-anchor='middle' class='gras'>I</text><circle class='boite' cx='20' cy='230' r='15'/><text x='20' y='235' text-anchor='middle' class='gras'>J</text><circle class='boite' cx='90' cy='230' r='15'/><text x='90' y='235' text-anchor='middle' class='gras'>K</text><circle class='boite' cx='160' cy='230' r='15'/><text x='160' y='235' text-anchor='middle' class='gras'>L</text></g></svg><figcaption>G2, figure 2 du sujet de CI 2025-2026, redessinée.</figcaption></figure>",
+      "choix": [
+        "\\(\\{G, H, J, K, L\\}\\)",
+        "\\(\\{G, H, J, K\\}\\)",
+        "\\(\\{A\\}\\)",
+        "\\(\\{A, B, C, D, E, F\\}\\)",
+        "\\(\\{E, L, K\\}\\)",
+        "\\(\\{I\\}\\)"
+      ],
+      "reponses": [
+        0,
+        2,
+        5
+      ],
+      "indices": [
+        "<p>Chercher les circuits : deux sommets d'un même circuit sont dans la même CFC.</p>"
+      ],
+      "explication": "<p>G → K → H → J → G est un circuit, et K ⇄ L en forme un autre qui partage K : \\(\\{G, H, J, K, L\\}\\) est une CFC (la transitivité de la question 1 permet de réunir les deux circuits). Aucun autre arc ne revient en arrière : A, B, C, D, E, F et I sont chacun seuls dans leur CFC. E mène à L, mais L ne revient jamais à E. G2 a donc 8 composantes fortement connexes (calcul vérifié avec NetworkX).</p>",
+      "revoir": {
+        "texte": "Cours 2 · Circuits et composantes fortement connexes",
+        "lien": "../generated_courses/cours-02-connexite-erdos-renyi.html#circuits-et-composantes-fortement-connexes"
+      },
+      "id": "q18"
+    }
+  ]
+}
+</script>
+</body>
+</html>

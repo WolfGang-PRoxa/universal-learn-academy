@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="c">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Les arguments variables · Algorithmique 3 L2</title>
+<meta name="description" content="Quiz interactif sur les fonctions à nombre variable d'arguments en C : prototype à points de suspension, méthode argc/argv, stdarg.h, promotions, méthode printf (Algorithmique 3, L2).">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L2</a>
+    <a href="../generated_courses/index.html">Algorithmique 3</a>
+    <span aria-current="page">Quiz · Les arguments variables</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Algorithmique 3</span> Quiz · L2</p>
+    <h1>Fonctions à nombre variable d'arguments</h1>
+    <p class="chapeau">Écrire un prototype variadique, parcourir les arguments avec stdarg.h sans oublier les promotions de types, et choisir la bonne méthode pour savoir où s'arrêter ; trois fonctions à écrire et exécuter.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-02-arguments-variables.html">Cours 2 · Fonctions à nombre variable d'arguments</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 novembre 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Algorithmique 3 · L2 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "algo3-cours-02-arguments-variables",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 2 · Fonctions à nombre variable d'arguments",
+      "lien": "../generated_courses/cours-02-arguments-variables.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "qcm-multi",
+      "theme": "Prototype",
+      "difficulte": 1,
+      "enonce": "<p>Parmi ces prototypes, lesquels sont acceptés par un compilateur C99 ?</p>",
+      "choix": [
+        "<code>int max( int n , ... ) ;</code>",
+        "<code>void trace( char * format , ... ) ;</code>",
+        "<code>void f( ... ) ;</code>",
+        "<code>void g( ... , int n ) ;</code>"
+      ],
+      "reponses": [
+        0,
+        1
+      ],
+      "explication": "<p>Les points de suspension viennent en dernier, après au moins un paramètre formel : <code>va_start</code> a besoin du dernier paramètre nommé pour situer le premier argument en surnombre. C23 accepte désormais <code>void f( ... )</code>, mais pas le cours, ni gcc en C99 ou C11.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le prototype avec points de suspension",
+        "lien": "../generated_courses/cours-02-arguments-variables.html#le-prototype-avec-points-de-suspension"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "vrai-faux",
+      "theme": "Prototype",
+      "difficulte": 1,
+      "enonce": "<p>Pour les arguments placés dans les <code>...</code>, le compilateur vérifie le nombre et le type des valeurs passées.</p>",
+      "reponse": false,
+      "explication": "<p>Faux : il ne connaît que les paramètres nommés. C'est au programmeur de savoir combien d'arguments suivent et de quels types ils sont ; une erreur donne un comportement indéfini, sans message.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le problème",
+        "lien": "../generated_courses/cours-02-arguments-variables.html#le-probleme"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "ordre",
+      "theme": "stdarg.h",
+      "difficulte": 1,
+      "enonce": "<p>Remettre dans l'ordre les étapes du parcours des arguments avec <code>&lt;stdarg.h&gt;</code> :</p>",
+      "elements": [
+        "déclarer <code>va_list ap ;</code>",
+        "initialiser avec <code>va_start( ap , dernier ) ;</code>",
+        "lire chaque argument avec <code>va_arg( ap , type )</code>",
+        "terminer avec <code>va_end( ap ) ;</code>"
+      ],
+      "explication": "<p><code>va_start</code> se place sur le premier argument en surnombre, <code>va_arg</code> lit un argument du type indiqué et avance, <code>va_end</code> fait le ménage avant le retour.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La méthode de la pile",
+        "lien": "../generated_courses/cours-02-arguments-variables.html#la-methode-de-la-pile"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "qcm",
+      "theme": "stdarg.h",
+      "difficulte": 1,
+      "enonce": "<p>Dans <code>int somme( int n , ... )</code>, que passe-t-on comme second argument de <code>va_start</code> ?</p>",
+      "choix": [
+        "<code>n</code>",
+        "le nombre d'arguments en surnombre",
+        "le type du premier argument",
+        "<code>&amp;n</code>"
+      ],
+      "reponse": 0,
+      "explication": "<p>Le nom du dernier paramètre formel, celui qui précède les <code>...</code> : c'est à partir de lui que <code>va_start</code> repère le premier argument variable.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La méthode de la pile",
+        "lien": "../generated_courses/cours-02-arguments-variables.html#la-methode-de-la-pile"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "qcm",
+      "theme": "Promotions",
+      "difficulte": 2,
+      "enonce": "<p>L'appel <code>moyenne( 2 , 1.5f , 2.5f )</code> passe deux <code>float</code> dans les <code>...</code>. Comment la fonction doit-elle les lire ?</p>",
+      "choix": [
+        "<code>va_arg( ap , double )</code>",
+        "<code>va_arg( ap , float )</code>",
+        "<code>va_arg( ap , float * )</code>",
+        "<code>(float) va_arg( ap , int )</code>"
+      ],
+      "reponse": 0,
+      "explication": "<p>Les arguments en surnombre subissent les promotions par défaut : un <code>float</code> arrive en <code>double</code>. <code>va_arg( ap , float )</code> est un comportement indéfini, et gcc le signale.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les promotions de types",
+        "lien": "../generated_courses/cours-02-arguments-variables.html#les-promotions-de-types"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "qcm-multi",
+      "theme": "Promotions",
+      "difficulte": 2,
+      "enonce": "<p>L'appelant passe dans les <code>...</code> la valeur indiquée. Quelles lectures sont correctes ?</p>",
+      "choix": [
+        "un <code>char</code> : <code>va_arg( ap , int )</code>",
+        "un <code>short</code> : <code>va_arg( ap , short )</code>",
+        "un <code>float</code> : <code>va_arg( ap , double )</code>",
+        "une chaîne : <code>va_arg( ap , char * )</code>",
+        "un <code>float</code> : <code>va_arg( ap , float )</code>"
+      ],
+      "reponses": [
+        0,
+        2,
+        3
+      ],
+      "explication": "<p>Les entiers plus petits qu'un <code>int</code> (<code>char</code>, <code>short</code>) sont promus en <code>int</code>, le <code>float</code> en <code>double</code> ; les pointeurs, les <code>int</code> et les <code>double</code> arrivent tels quels. Lire un type promu sous son type d'origine est un comportement indéfini.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les promotions de types",
+        "lien": "../generated_courses/cours-02-arguments-variables.html#les-promotions-de-types"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "qcm",
+      "theme": "Méthodes",
+      "difficulte": 2,
+      "enonce": "<p>Une fonction <code>afficher( char * premier , ... )</code> s'arrête quand elle lit le pointeur <code>NULL</code>. Que se passe-t-il si l'appelant écrit <code>afficher( \"a\" , \"b\" )</code> ?</p>",
+      "choix": [
+        "La fonction continue de lire au-delà des arguments réels : comportement indéfini",
+        "Le compilateur refuse l'appel",
+        "La fonction s'arrête après <code>\"b\"</code>, faute d'argument",
+        "<code>va_arg</code> renvoie <code>NULL</code> à la fin des arguments"
+      ],
+      "reponse": 0,
+      "explication": "<p><code>va_arg</code> ne sait pas combien d'arguments ont été passés : il lit la place suivante, quelle qu'elle soit. Sans sentinelle, la fonction affiche n'importe quoi ou plante. gcc avertit seulement si la fonction est déclarée avec <code>__attribute__((sentinel))</code>.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La méthode de la pile",
+        "lien": "../generated_courses/cours-02-arguments-variables.html#la-methode-de-la-pile"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "association",
+      "theme": "Méthodes",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque méthode à sa caractéristique :</p>",
+      "paires": [
+        [
+          "Méthode argc, argv",
+          "du C ordinaire, portable, mais un tableau à construire avant chaque appel"
+        ],
+        [
+          "Méthode de la pile",
+          "<code>stdarg.h</code>, un nombre ou une sentinelle pour s'arrêter, arguments d'un même type"
+        ],
+        [
+          "Méthode printf",
+          "une chaîne de format décrit le nombre et le type d'arguments hétérogènes"
+        ]
+      ],
+      "intrus": [
+        "le compilateur vérifie le type de chaque argument"
+      ],
+      "explication": "<p>Les trois méthodes du cours règlent différemment la même question : comment la fonction sait combien d'arguments elle a reçus, et de quels types.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La méthode printf",
+        "lien": "../generated_courses/cours-02-arguments-variables.html#la-methode-printf"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "numerique",
+      "theme": "stdarg.h",
+      "difficulte": 1,
+      "enonce": "<p><code>int max( int n , ... )</code> renvoie le plus grand de ses <code>n</code> arguments en surnombre. Que vaut <code>max( 4 , 3 , 9 , 2 , 7 )</code> ?</p>",
+      "reponse": 9,
+      "explication": "<p>Le premier argument, 4, est le nombre de valeurs qui suivent : 3, 9, 2 et 7. Le plus grand est 9 ; le 4 n'est pas une des valeurs comparées.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La méthode de la pile",
+        "lien": "../generated_courses/cours-02-arguments-variables.html#la-methode-de-la-pile"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "code",
+      "langage": "c",
+      "theme": "Code",
+      "difficulte": 1,
+      "enonce": "<p>Écrire <code>int somme( int n , ... )</code>, qui renvoie la somme de ses <code>n</code> arguments <code>int</code> en surnombre (0 si <code>n</code> vaut 0).</p>",
+      "depart": "#include <stdarg.h>\n\nint somme( int n , ... )\n{\n  \n}\n",
+      "solution": "#include <stdarg.h>\n\nint somme( int n , ... )\n{\n  va_list ap ;\n  int s = 0 ;\n  va_start( ap , n ) ;\n  for( int i = 0 ; i < n ; i++ )\n    s += va_arg( ap , int ) ;\n  va_end( ap ) ;\n  return s ;\n}\n",
+      "harnais": "\n#include <stdio.h>\nint main( void )\n{\n  printf( \"%d\\n\" , somme( 3 , 1 , 2 , 3 ) ) ;\n  printf( \"%d\\n\" , somme( 0 ) ) ;\n  printf( \"%d\\n\" , somme( 5 , 10 , -4 , 7 , 0 , 100 ) ) ;\n  printf( \"%d\\n\" , somme( 1 , 42 ) ) ;\n  return 0 ;\n}\n",
+      "tests": [
+        {
+          "nom": "quatre appels",
+          "entree": "",
+          "sortie": "6\n0\n113\n42\n"
+        }
+      ],
+      "indices": [
+        "<p><code>va_list ap ; va_start( ap , n ) ;</code>, puis une boucle de <code>n</code> tours sur <code>va_arg( ap , int )</code>, et <code>va_end( ap )</code> avant le <code>return</code>.</p>"
+      ],
+      "explication": "<p>Le nombre d'arguments est passé en premier : la boucle sait exactement combien de <code>va_arg</code> faire. C'est l'exercice proposé à la fin du cours.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La méthode de la pile",
+        "lien": "../generated_courses/cours-02-arguments-variables.html#la-methode-de-la-pile"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "code",
+      "langage": "c",
+      "theme": "Code",
+      "difficulte": 2,
+      "enonce": "<p>Écrire <code>int longueur_totale( const char * premier , ... )</code>, qui renvoie la somme des longueurs des chaînes passées, la liste se terminant par <code>NULL</code> (<code>premier</code> peut lui-même être <code>NULL</code>).</p>",
+      "depart": "#include <stdarg.h>\n#include <string.h>\n\nint longueur_totale( const char * premier , ... )\n{\n  \n}\n",
+      "solution": "#include <stdarg.h>\n#include <string.h>\n\nint longueur_totale( const char * premier , ... )\n{\n  va_list ap ;\n  int total = 0 ;\n  va_start( ap , premier ) ;\n  for( const char * s = premier ; s != NULL ; s = va_arg( ap , const char * ) )\n    total += strlen( s ) ;\n  va_end( ap ) ;\n  return total ;\n}\n",
+      "harnais": "\n#include <stdio.h>\nint main( void )\n{\n  printf( \"%d\\n\" , longueur_totale( \"abc\" , \"de\" , \"\" , \"fghij\" , (char *)NULL ) ) ;\n  printf( \"%d\\n\" , longueur_totale( (char *)NULL ) ) ;\n  printf( \"%d\\n\" , longueur_totale( \"bonjour\" , (char *)NULL ) ) ;\n  return 0 ;\n}\n",
+      "tests": [
+        {
+          "nom": "trois appels",
+          "entree": "",
+          "sortie": "10\n0\n7\n"
+        }
+      ],
+      "indices": [
+        "<p>Le premier argument est nommé : le traiter avant de lire les suivants avec <code>va_arg( ap , const char * )</code>.</p>",
+        "<p>Une boucle qui s'arrête quand la chaîne courante vaut <code>NULL</code>.</p>"
+      ],
+      "explication": "<p>C'est la méthode de la pile avec sentinelle : la fonction lit des chaînes jusqu'au <code>NULL</code>. L'appelant écrit <code>(char *)NULL</code> : dans les <code>...</code>, un <code>NULL</code> défini comme <code>0</code> serait passé comme un <code>int</code>, qui n'a pas forcément la taille d'un pointeur.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La méthode de la pile",
+        "lien": "../generated_courses/cours-02-arguments-variables.html#la-methode-de-la-pile"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "code",
+      "langage": "c",
+      "theme": "Code",
+      "difficulte": 3,
+      "enonce": "<p>À la manière de <code>printf</code>, écrire <code>void afficher( const char * format , ... )</code> : chaque caractère du format annonce un argument, <code>'d'</code> un <code>int</code>, <code>'f'</code> un <code>double</code> (affiché avec <code>%g</code>), <code>'s'</code> une chaîne. La fonction affiche chaque argument sur sa propre ligne.</p><p>Exemple : <code>afficher( \"dsf\" , 12 , \"abc\" , 2.5 )</code> affiche 12, abc et 2.5 sur trois lignes.</p>",
+      "depart": "#include <stdio.h>\n#include <stdarg.h>\n\nvoid afficher( const char * format , ... )\n{\n  \n}\n",
+      "solution": "#include <stdio.h>\n#include <stdarg.h>\n\nvoid afficher( const char * format , ... )\n{\n  va_list ap ;\n  va_start( ap , format ) ;\n  for( const char * f = format ; *f != '\\0' ; f++ ) {\n    switch( *f ) {\n      case 'd' : printf( \"%d\\n\" , va_arg( ap , int ) ) ; break ;\n      case 'f' : printf( \"%g\\n\" , va_arg( ap , double ) ) ; break ;\n      case 's' : printf( \"%s\\n\" , va_arg( ap , char * ) ) ; break ;\n    }\n  }\n  va_end( ap ) ;\n}\n",
+      "harnais": "\nint main( void )\n{\n  afficher( \"dsf\" , 12 , \"abc\" , 2.5 ) ;\n  afficher( \"\" ) ;\n  afficher( \"ffd\" , 0.125 , -3.0 , -7 ) ;\n  afficher( \"s\" , \"fin\" ) ;\n  return 0 ;\n}\n",
+      "tests": [
+        {
+          "nom": "quatre formats",
+          "entree": "",
+          "sortie": "12\nabc\n2.5\n0.125\n-3\n-7\nfin\n"
+        }
+      ],
+      "indices": [
+        "<p>Parcourir le format caractère par caractère ; un <code>switch</code> choisit le type passé à <code>va_arg</code> et le format de <code>printf</code>.</p>"
+      ],
+      "explication": "<p>La chaîne de format joue le rôle du compteur et dit en plus le type de chaque argument : les arguments peuvent être hétérogènes. C'est la méthode printf du cours ; <code>vprintf</code> et <code>vfprintf</code> acceptent même directement une <code>va_list</code>.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La méthode printf",
+        "lien": "../generated_courses/cours-02-arguments-variables.html#la-methode-printf"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "vrai-faux",
+      "theme": "Méthodes",
+      "difficulte": 1,
+      "enonce": "<p>La méthode argc, argv est totalement portable, car elle n'utilise que du C ordinaire.</p>",
+      "reponse": true,
+      "explication": "<p>Vrai : un nombre et un tableau de chaînes, sans macro particulière. Son défaut est ailleurs : il faut construire le tableau avant chaque appel, et les valeurs non textuelles doivent être converties en chaînes puis relues.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La méthode argc, argv",
+        "lien": "../generated_courses/cours-02-arguments-variables.html#la-methode-argc-argv"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "ouverte",
+      "theme": "Méthodes",
+      "difficulte": 2,
+      "enonce": "<p>Une fonction variadique doit savoir où s'arrêter. Décrire les deux façons de le lui indiquer vues avec la méthode de la pile, et un risque de chacune.</p>",
+      "reponse_modele": "<p>Soit l'appelant passe le <strong>nombre</strong> d'arguments en premier paramètre (<code>somme( 3 , 1 , 2 , 3 )</code>) : s'il se trompe dans le compte, la fonction lit trop ou trop peu. Soit il termine la liste par une <strong>sentinelle</strong>, en général <code>NULL</code> pour des pointeurs : s'il l'oublie, la fonction lit au-delà des arguments réels ; et la sentinelle ne doit pas être une valeur possible des données.</p>",
+      "criteres": [
+        "un compteur passé en paramètre",
+        "une sentinelle en fin de liste (<code>NULL</code>)",
+        "un risque : mauvais compte, ou sentinelle oubliée, lecture au-delà des arguments"
+      ],
+      "revoir": {
+        "texte": "Cours 2 · La méthode de la pile",
+        "lien": "../generated_courses/cours-02-arguments-variables.html#la-methode-de-la-pile"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

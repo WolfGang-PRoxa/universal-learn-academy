@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="codage">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Annale temps réel · Codage L3</title>
+<meta name="description" content="Quiz interactif sur l'annale « Notions et principes du temps réel » de codage de l'information (L3), travaillée au TD 4 : attente active, résultat juste et valable, états bloqué et prêt, exclusion mutuelle, taux d'occupation, et les deux graphes d'activités de l'exercice 2 à compléter, avec un sémaphore puis par modification de la priorité.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="../generated_courses/index.html">Codage</a>
+    <span aria-current="page">Quiz · Annale temps réel</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Codage</span> Quiz · L3 S5</p>
+    <h1>Annale : notions et principes du temps réel</h1>
+    <p class="chapeau">Le sujet travaillé au TD 4, un sujet de deux heures, dans sa forme d'examen : les quatre questions de cours de l'exercice 1, à rédiger, puis l'exercice 2 sur l'exclusion mutuelle entre une tâche de fond et deux tâches déclenchées par des interruptions, avec ses deux graphes d'activités à compléter et le code des tâches. Des variantes prolongent chaque question. Le sujet n'a pas de corrigé : les réponses de l'exercice 2 sont proposées, et les graphes vérifiés par une simulation de l'ordonnancement.</p>
+    <dl class="meta">
+      <div><dt>Sujet</dt><dd><a href="../TD/TD4/TD4_real_time.pdf">TD4_real_time.pdf</a> · 2 pages, dont la feuille des graphes d'activités</dd></div>
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-05-executifs-temps-reel.html">Cours 5 · Exécutifs temps réel</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-02">2 oct. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Codage · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "codage-annale-temps-reel",
+  "melanger": false,
+  "cours": [
+    {
+      "titre": "Cours 5 · Exécutifs temps réel",
+      "lien": "../generated_courses/cours-05-executifs-temps-reel.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "ouverte",
+      "theme": "Exercice 1 · Principes",
+      "difficulte": 2,
+      "enonce": "<p><strong>Annale, exercice 1, Q1.</strong> Dans une application multitâche monoprocesseur, peut-on utiliser une attente active ? Préciser, justifier.</p>",
+      "reponse_modele": "<p>En <strong>attente active</strong>, la tâche garde le processeur pendant qu'elle attend : elle teste en boucle une condition, un verrou par exemple, au lieu de se bloquer pour laisser le processeur aux autres comme dans une attente passive (<code>Wait</code> sur un sémaphore). Sur un monoprocesseur, on peut l'utiliser, mais à une condition : qu'elle n'empêche pas de s'exécuter une tâche plus importante, et surtout pas celle qui doit faire cesser l'attente. Si la tâche qui boucle est plus prioritaire que celle qui tient la ressource, cette dernière n'obtient plus le processeur et ne libère jamais la ressource : toute l'application se bloque. Même sans blocage, le temps passé à boucler est perdu pour les autres tâches. On la réserve donc aux attentes très courtes, et on lui préfère l'attente passive.</p>",
+      "criteres": [
+        "définit l'attente active : la tâche attend en occupant le processeur (boucle de test), au lieu de se bloquer comme en attente passive",
+        "répond oui, sous condition : l'attente ne doit pas empêcher l'exécution d'une tâche plus importante (elle ne doit pas être bloquante)",
+        "cite le risque sur un monoprocesseur : la tâche qui boucle, plus prioritaire, prive du processeur celle qui tient la ressource, et l'application se bloque",
+        "conclut que le processeur est gaspillé pendant l'attente, et que l'attente passive (sémaphore) est préférable"
+      ],
+      "explication": "<p>Réponse notée en séance : « oui, à la seule condition que cette attente active n'empêche pas l'exécution d'autre chose qui serait plus important ; elle ne doit pas être bloquante ». Le cours ajoute le scénario du blocage complet sur un monoprocesseur (diapo 63).</p>",
+      "revoir": {
+        "texte": "Cours 5 · Attente active",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#attente-active"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "qcm",
+      "theme": "Exercice 1 · Principes",
+      "difficulte": 2,
+      "enonce": "<p>Sur un monoprocesseur à priorités fixes, sans temps partagé, la tâche A boucle sur un verrou (attente active) que tient la tâche B. Dans quel cas B finit-elle quand même par libérer le verrou ?</p>",
+      "choix": [
+        "Quand A est moins prioritaire que B : dès que B est prête, elle préempte A, termine et libère le verrou",
+        "Quand A est plus prioritaire que B : A obtient le processeur en premier, donc le verrou plus vite",
+        "Dans tous les cas : entre deux tests du verrou, A laisse la main à B",
+        "Dans aucun cas : sur un monoprocesseur, une attente active bloque toujours l'application"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Une tâche qui boucle n'est pas bloquée : elle reste prête ou en cours. Laquelle des deux tâches l'ordonnanceur élit-il quand les deux sont prêtes ?</p>"
+      ],
+      "explication": "<p>Une tâche en attente active ne rend jamais le processeur d'elle-même. Si A est plus prioritaire, B n'est plus jamais élue et ne libère pas le verrou : toute l'application est bloquée (diapo 63). Si A est moins prioritaire, B la préempte dès qu'elle redevient prête, termine sa section critique et libère le verrou ; A a seulement gaspillé du temps processeur. C'est la condition donnée en TD : l'attente active ne doit pas empêcher l'exécution d'une tâche plus importante.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Attente active",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#attente-active"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "ouverte",
+      "theme": "Exercice 1 · Principes",
+      "difficulte": 1,
+      "enonce": "<p><strong>Annale, exercice 1, Q2.</strong> Dans une application temps réel, quelle(s) condition(s) est (sont) nécessaire(s) pour que le résultat d'un calcul soit considéré comme juste et valable ?</p>",
+      "reponse_modele": "<p>Deux conditions, toutes deux nécessaires. La <strong>valeur</strong> du résultat doit être correcte, et il doit être fourni <strong>à temps</strong> : dans la fenêtre temporelle que fixe la contrainte de temps, entre un délai minimal et un délai maximal. Une réponse exacte fournie hors de cette fenêtre est considérée comme fausse, quelle que soit sa valeur, parce que le procédé commandé n'attend pas. En temps réel dur, aucun dépassement n'est admis ; en temps réel souple, on en tolère un certain pourcentage.</p>",
+      "criteres": [
+        "la valeur du résultat doit être correcte",
+        "le résultat doit respecter les contraintes de temps : être fourni dans la fenêtre temporelle prévue (avant l'échéance)",
+        "les deux conditions sont nécessaires ensemble : un résultat exact mais hors délai est considéré comme faux"
+      ],
+      "explication": "<p>C'est la dernière ligne de la synthèse du cours : résultat correct ≡ valeur correcte <strong>et</strong> contraintes de temps respectées. Réponse notée en séance : « la réponse doit être vraie et arriver dans une fenêtre temporelle définie par le développeur ».</p>",
+      "revoir": {
+        "texte": "Cours 5 · Spécificités des applications temps réel",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#specificites-des-applications-temps-reel"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "vrai-faux",
+      "theme": "Exercice 1 · Principes",
+      "difficulte": 1,
+      "enonce": "<p>En temps réel, une réponse dont la valeur est juste reste correcte si elle est fournie <strong>avant</strong> le début de sa fenêtre temporelle : seul le retard est une faute.</p>",
+      "reponse": false,
+      "explication": "<p>Faux. Une contrainte de temps fixe des limites minimale <em>et</em> maximale : la sortie doit évoluer dans la fenêtre autorisée, entre le délai minimal et le délai maximal qui suivent l'événement de référence (diapo 5). Une réponse fournie hors de cette fenêtre est considérée comme fausse, qu'elle arrive trop tard ou trop tôt. Le but n'est pas d'aller le plus vite possible, mais d'être prédictible.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Exemples de contraintes de temps",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#exemples-de-contraintes-de-temps"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "ouverte",
+      "theme": "Exercice 1 · Principes",
+      "difficulte": 1,
+      "enonce": "<p><strong>Annale, exercice 1, Q3.</strong> Indiquer les différences entre les états Bloqué et Prêt pour une tâche dans une application gérée par un exécutif temps réel.</p>",
+      "reponse_modele": "<p>Une tâche <strong>prête</strong> a tout ce qu'il lui faut pour s'exécuter, sauf le processeur, qu'occupe une autre tâche. Elle est dans la liste des tâches prêtes, et c'est l'ordonnanceur qui la rendra active, selon sa politique : sa priorité, par exemple. Une tâche <strong>bloquée</strong> (en attente) attend une condition : un événement, un sémaphore, un message, une ressource ou un délai. Même si le processeur est libre, elle ne peut pas s'exécuter. Elle s'est bloquée elle-même, en appelant une primitive (<code>Wait</code>, <code>Receive</code>, <code>Request</code>) alors que la condition était absente ; quand la condition survient (<code>Signal</code> d'une autre tâche ou d'une interruption), elle passe à l'état prêt, et non directement en cours.</p>",
+      "criteres": [
+        "prête : il ne lui manque que le processeur ; l'ordonnanceur décide quand elle s'exécute, selon sa priorité",
+        "bloquée : elle attend une condition (événement, sémaphore, message, ressource, délai) et ne peut pas s'exécuter, même si le processeur est libre",
+        "la tâche se bloque elle-même par une primitive d'attente ; l'occurrence de la condition la rend prête, pas active"
+      ],
+      "explication": "<p>Les notes de séance disent qu'une tâche bloquée « doit attendre de donner son résultat à une autre tâche » : c'est un cas particulier. Le cours est plus général : elle attend une condition, quelle qu'elle soit. Pour la tâche prête, les notes rejoignent le cours : « elle peut se lancer, le gestionnaire décide ensuite si c'est à elle, selon sa priorité ».</p>",
+      "revoir": {
+        "texte": "Cours 5 · Les états d'une tâche",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#les-etats-d-une-tache"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "trous",
+      "theme": "Exercice 1 · Principes",
+      "difficulte": 1,
+      "enonce": "<p>Deux tâches sur un monoprocesseur, en priorité fixe. Compléter avec l'état de chaque tâche :</p>",
+      "texte": "T1 (priorité 6) s'exécute ; T2 (priorité 4) attend le processeur : T2 est {{0}}. T1 exécute <code>Wait</code> sur un sémaphore qui vaut 0 : elle devient {{1}}, et T2 passe {{2}}. Une interruption exécute <code>Signal</code> sur ce sémaphore : T1 devient {{3}} ; plus prioritaire, elle est aussitôt élue, et T2, préemptée, redevient {{4}}.",
+      "trous": [
+        {
+          "choix": [
+            "prête",
+            "bloquée",
+            "en cours",
+            "non opérationnelle"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "prête",
+            "bloquée",
+            "en cours",
+            "non opérationnelle"
+          ],
+          "reponse": 1
+        },
+        {
+          "choix": [
+            "prête",
+            "bloquée",
+            "en cours",
+            "non opérationnelle"
+          ],
+          "reponse": 2
+        },
+        {
+          "choix": [
+            "prête",
+            "bloquée",
+            "en cours",
+            "non opérationnelle"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "prête",
+            "bloquée",
+            "en cours",
+            "non opérationnelle"
+          ],
+          "reponse": 0
+        }
+      ],
+      "explication": "<p>Une tâche qui n'attend que le processeur est prête. <code>Wait</code> sur un sémaphore nul bloque la tâche en cours, et l'ordonnanceur élit la tâche prête la plus prioritaire : T2. Le <code>Signal</code> ne rend pas T1 active directement : il la rend <strong>prête</strong>, et c'est l'ordonnanceur qui, la voyant plus prioritaire que T2, préempte T2. Une tâche préemptée n'est pas bloquée : elle repasse à l'état prêt.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Les états d'une tâche",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#les-etats-d-une-tache"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "ouverte",
+      "theme": "Exercice 1 · Principes",
+      "difficulte": 2,
+      "enonce": "<p><strong>Annale, exercice 1, Q4.</strong> Expliquer le principe d'implantation de l'exclusion mutuelle.</p>",
+      "reponse_modele": "<p>L'<strong>exclusion mutuelle</strong> garantit qu'une seule tâche à la fois exécute une <strong>section critique</strong>, c'est-à-dire la portion de code qui accède à une ressource commune, comme une variable partagée. Chaque tâche encadre son accès par une demande et une libération : <code>Request(Res)</code>, accès, <code>Release(Res)</code>. Tant qu'une tâche est entre les deux, toute autre tâche qui demande la ressource attend. Pour une section courte, on peut invalider les interruptions ou élever temporairement la priorité de la tâche. Sinon, on contrôle l'exécution des tâches : par un verrou testé en boucle (attente active, avec une instruction indivisible comme <code>TAS</code>), ou mieux par un sémaphore d'exclusion mutuelle initialisé à 1 (attente passive), avec <code>Request</code> ≡ <code>Wait(Mutex)</code> et <code>Release</code> ≡ <code>Signal(Mutex)</code>.</p>",
+      "criteres": [
+        "une ressource commune (variable partagée) ne doit être manipulée que par une tâche à la fois : son accès est une section critique",
+        "chaque tâche encadre l'accès par une demande et une libération ; les autres demandeurs attendent",
+        "cite au moins une implantation juste : sémaphore initialisé à 1 (Wait avant, Signal après), verrou et attente active, masquage des interruptions, ou élévation temporaire de la priorité"
+      ],
+      "explication": "<p>Les notes de séance retiennent l'idée de départ : « une ressource commune accédée par deux threads différents ». L'exercice 2 du sujet fait appliquer deux des implantations : le sémaphore, puis la modification de priorité.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Section critique",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#section-critique"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "association",
+      "theme": "Exercice 1 · Principes",
+      "difficulte": 2,
+      "enonce": "<p>Une tâche de fond, la moins prioritaire, est au milieu de son accès à une variable partagée V quand une interruption réveille T1, la tâche la plus prioritaire, qui va elle aussi accéder à V. Associer chaque façon de protéger V à ce qui se passe alors :</p>",
+      "paires": [
+        [
+          "Sémaphore d'exclusion mutuelle",
+          "T1 prend le processeur, puis se bloque en demandant V ; la tâche de fond finit son accès et la réveille"
+        ],
+        [
+          "Élévation de la priorité de la tâche de fond pendant l'accès",
+          "T1 reste prête, sans s'exécuter, jusqu'à la fin de l'accès de la tâche de fond"
+        ],
+        [
+          "Interruptions invalidées pendant l'accès",
+          "L'interruption n'est prise en compte qu'à la fin de l'accès, au risque d'être perdue"
+        ],
+        [
+          "Verrou testé en boucle (attente active)",
+          "T1 prend le processeur et boucle sur le verrou : la tâche de fond ne s'exécute plus, tout est bloqué"
+        ]
+      ],
+      "intrus": [
+        "T1 prend le processeur et modifie V au milieu de l'accès de la tâche de fond"
+      ],
+      "explication": "<p>Avec un sémaphore, T1 s'exécute jusqu'à sa demande de V, puis attend passivement : la tâche de fond peut finir. En élevant la priorité de la tâche de fond au-dessus de celle de T1, on empêche T1 de démarrer avant la fin de l'accès. Interruptions invalidées, le réveil lui-même est retardé, et une seconde interruption arrivée entre-temps serait perdue. L'attente active est le cas dangereux du cours : T1, plus prioritaire, boucle et prive du processeur la tâche qui tient le verrou. L'intrus décrit ce qui se passe <em>sans</em> protection : V se retrouve dans un état incohérent.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Section critique courte ou longue",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#section-critique-courte-ou-longue"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "numerique",
+      "theme": "Exercice 2 · Taux d'occupation",
+      "difficulte": 2,
+      "enonce": "<p><strong>Annale, exercice 2, Q1.</strong> Définir le taux d'occupation Tx de cette application. Peut-on faire une application mono-processeur ?</p><p>Trois tâches partagent un processeur, sous un exécutif temps réel à priorités fixes. Les interruptions IT1 et IT2 sont implantées par des sémaphores. Fond et T1 accèdent à une variable partagée V, qui doit être protégée par exclusion mutuelle.</p><div class='tableau compact'><table><thead><tr><th>Tâche</th><th>Priorité</th><th>Au démarrage</th><th>Ensuite</th></tr></thead><tbody><tr><th>T1</th><td>6, la plus forte</td><td>Op1 (50 µs)</td><td>à chaque IT1 : Op10 (100 µs), puis accesV (200 µs)</td></tr><tr><th>T2</th><td>4</td><td>Op2 (50 µs)</td><td>à chaque IT2 : Op20 (200 µs)</td></tr><tr><th>Fond</th><td>la plus faible</td><td>—</td><td>sans fin : OpFond (300 µs), puis accesV (200 µs)</td></tr></tbody></table></div><p>Le sujet précise « les tâches T1 (1 ms) et T2 (500 µs) », sans dire s'il s'agit de leur période d'activation ou de leur échéance : on prend ici ces durées pour les deux (tâches à échéance sur requête). Calculer le taux d'occupation Tx du processeur par T1 et T2. La seconde partie de la question fait l'objet de la question suivante.</p>",
+      "reponse": 70,
+      "tolerance": 0.5,
+      "unite": "%",
+      "indices": [
+        "<p>Le taux d'occupation d'une tâche est sa charge, le temps d'exécution d'un cycle, divisée par son échéance ; celui de l'application est la somme des taux.</p>",
+        "<p>Un cycle de T1 comprend Op10 <em>et</em> accesV. Op1 et Op2 ne s'exécutent qu'une fois.</p>"
+      ],
+      "explication": "<p>Le taux d'occupation d'une tâche est \\(D_i = C_i / d_i\\) (diapo 39), où l'échéance \\(d_i\\) vaut la période pour une tâche à échéance sur requête. T1 : \\((100 + 200) / 1000 = 30\\,\\%\\). T2 : \\(200 / 500 = 40\\,\\%\\). Le taux d'occupation de l'application est leur somme : 70 %. Op1 et Op2 ne s'exécutent qu'au démarrage et ne comptent pas. La tâche de fond n'a ni période ni échéance : elle prend le temps qui reste. Erreur fréquente : oublier accesV dans la charge de T1, ce qui donnerait 50 %.</p><p>Le sujet n'a pas de corrigé, et cette lecture de « T1 (1 ms) et T2 (500 µs) » est à confirmer auprès de l'enseignant. Sur la feuille des graphes d'activités, les interruptions n'arrivent d'ailleurs pas à ces périodes (IT1 à 500, 1000 et 1850 µs, IT2 à 800 et 1800 µs) : ce scénario est un cas particulier, choisi pour faire apparaître les blocages.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Caractérisation temporelle d'une tâche",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#caracterisation-temporelle-d-une-tache"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "qcm",
+      "theme": "Exercice 2 · Taux d'occupation",
+      "difficulte": 1,
+      "enonce": "<p><strong>Annale, exercice 2, Q1 (suite).</strong> Une application compte deux tâches périodiques, T1 (charge 300 µs, période 1 ms) et T2 (charge 200 µs, période 500 µs), soit un taux d'occupation de 70 %, et une tâche de fond qui enchaîne sans fin des cycles de 500 µs. Peut-on en faire une application monoprocesseur ?</p>",
+      "choix": [
+        "Oui : T1 et T2 occupent moins de 100 % du processeur, et la tâche de fond dispose des 30 % restants",
+        "Non : en comptant le cycle de la tâche de fond, le taux d'occupation dépasse 100 %",
+        "Non : il faut un processeur par tâche déclenchée par une interruption",
+        "Oui, mais seulement en supprimant la tâche de fond, qui occuperait le processeur en permanence"
+      ],
+      "reponse": 0,
+      "explication": "<p>La condition nécessaire est un taux d'occupation inférieur à 100 % : avec 70 %, un processeur suffit. La tâche de fond n'a pas d'échéance : elle s'exécute quand T1 et T2 sont bloquées, et son cycle s'étale sur le temps qui reste ; la compter comme une tâche périodique n'a pas de sens. 70 % est aussi sous la borne de 82,8 % du cours pour deux tâches en priorité fixe. Cette borne suppose toutefois des priorités données selon la fréquence (IFP) et des tâches indépendantes : ici, T1, la moins fréquente, est la plus prioritaire, et la section critique de la tâche de fond peut retarder les deux autres, comme le montrent les graphes d'activités du sujet.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Ordonnancement à priorité fixe",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#ordonnancement-a-priorite-fixe"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "atelier",
+      "editeur": "chronogramme",
+      "theme": "Exercice 2 · Sémaphore",
+      "difficulte": 3,
+      "titre": "Graphe d'activités avec un sémaphore (temps en µs)",
+      "enonce": "<p><strong>Annale, exercice 2, Q2.</strong> Implantation de l'exclusion mutuelle à l'aide d'un sémaphore (mutex) : compléter le graphe d'activités.</p><p>Trois tâches partagent un processeur, sous un exécutif temps réel à priorités fixes. Les interruptions IT1 et IT2 sont implantées par des sémaphores. Fond et T1 accèdent à une variable partagée V, qui doit être protégée par exclusion mutuelle.</p><div class='tableau compact'><table><thead><tr><th>Tâche</th><th>Priorité</th><th>Au démarrage</th><th>Ensuite</th></tr></thead><tbody><tr><th>T1</th><td>6, la plus forte</td><td>Op1 (50 µs)</td><td>à chaque IT1 : Op10 (100 µs), puis accesV (200 µs)</td></tr><tr><th>T2</th><td>4</td><td>Op2 (50 µs)</td><td>à chaque IT2 : Op20 (200 µs)</td></tr><tr><th>Fond</th><td>la plus faible</td><td>—</td><td>sans fin : OpFond (300 µs), puis accesV (200 µs)</td></tr></tbody></table></div><p>Les trois tâches démarrent à t = 0. Sur la grille du sujet, IT1 arrive à 500 µs, 1000 µs et 1850 µs, et IT2 à 800 µs et 1800 µs. On néglige la durée des primitives et des changements de contexte.</p><p>V est protégée par un sémaphore <code>Mutex</code>, initialisé à 1 : <code>Wait(Mutex)</code> avant accesV, <code>Signal(Mutex)</code> après. Tracer, de 0 à 3000 µs, les cases où chaque tâche s'exécute (F est la tâche de fond) et celles où le mutex est pris.</p>",
+      "consigne": "<p>Une case dure 50 µs. Choisir « Exécution » dans la palette et peindre les cases où la tâche a le processeur ; choisir « Mutex pris » pour la ligne Mutex. Laisser vide le reste du temps.</p>",
+      "vue": "dessin",
+      "options": {
+        "processeurs": 1,
+        "durees": {
+          "T1": 950,
+          "T2": 450,
+          "F": 1600
+        }
+      },
+      "depart": [
+        "temps 0..3000 pas 50",
+        "etat x Exécution",
+        "etat m Mutex pris",
+        "T1 :",
+        "T2 :",
+        "F :",
+        "Mutex :"
+      ],
+      "solution": [
+        "temps 0..3000 pas 50",
+        "etat x Exécution",
+        "etat m Mutex pris",
+        "T1 : x 0-50, x 500-600, x 700-900, x 1000-1300, x 1850-1950, x 2200-2400",
+        "T2 : x 50-100, x 900-1000, x 1300-1400, x 1800-1850, x 1950-2100",
+        "F : x 100-500, x 600-700, x 1400-1800, x 2100-2200, x 2400-3000",
+        "Mutex : m 400-900, m 1100-1300, m 1700-2400, m 2700-2900"
+      ],
+      "indices": [
+        "<p>Au démarrage, la tâche la plus prioritaire passe la première : T1 exécute Op1 et se bloque sur IT1, puis T2 fait de même avec Op2 et IT2. Fond commence alors son cycle : à quelle date prend-elle le mutex ?</p>",
+        "<p>À 500 µs, T1 préempte Fond en pleine section critique. Après Op10, elle demande le mutex : que devient-elle, et qui reprend le processeur ? Même question à 1950 µs, où deux tâches moins prioritaires ont du travail.</p>"
+      ],
+      "explication": "<p>Au démarrage, T1 exécute Op1 (0–50) et se bloque sur IT1 ; T2 exécute Op2 (50–100) et se bloque sur IT2 ; Fond déroule OpFond (100–400), prend le mutex et entre dans accesV à 400.</p><p>À 500, IT1 réveille T1, qui préempte Fond en pleine section critique : Op10 (500–600), puis <code>Wait(Mutex)</code> la bloque. Fond finit accesV (600–700) ; son <code>Signal</code> donne le mutex à T1, qui reprend aussitôt le processeur : accesV (700–900). IT2, arrivée à 800, laisse T2 prête jusqu'à 900. T2 commence Op20 (900–1000) ; à 1000, IT1 relance T1, qui la préempte : Op10 (1000–1100), puis accesV (1100–1300), le mutex étant libre. T2 finit Op20 (1300–1400).</p><p>Fond reprend : OpFond (1400–1700), accesV à partir de 1700. À 1800, T2 la préempte (1800–1850) ; à 1850, T1 préempte T2 : Op10 (1850–1950), puis elle se bloque sur le mutex. C'est T2 qui reprend (1950–2100), puis Fond finit son accès (2100–2200), et T1 fait enfin le sien (2200–2400). Fond termine la grille : OpFond (2400–2700), accesV (2700–2900), OpFond.</p><p>Le mutex est pris de 400 à 900 (Fond, puis T1 sans interruption), de 1100 à 1300, de 1700 à 2400 et de 2700 à 2900. Entre 1950 et 2100, T1 attend pendant que s'exécute T2, moins prioritaire et étrangère à V : c'est une inversion de priorité.</p><p>Sur la grille du sujet, le dernier repère IT1 est décalé d'une demi-colonne après IT2 : il est lu ici comme 1850 µs. Le sujet n'a pas de corrigé ; ce graphe a été vérifié par une simulation de l'ordonnancement.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Attente passive : le sémaphore d'exclusion mutuelle",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#attente-passive-le-semaphore-d-exclusion-mutuelle"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "trous",
+      "theme": "Exercice 2 · Sémaphore",
+      "difficulte": 2,
+      "enonce": "<p><strong>Annale, exercice 2, Q2 (code).</strong> Donner le code C des trois tâches, l'exclusion mutuelle étant réalisée par un sémaphore.</p><p>Trois tâches partagent un processeur, sous un exécutif temps réel à priorités fixes. Les interruptions IT1 et IT2 sont implantées par des sémaphores. Fond et T1 accèdent à une variable partagée V, qui doit être protégée par exclusion mutuelle.</p><div class='tableau compact'><table><thead><tr><th>Tâche</th><th>Priorité</th><th>Au démarrage</th><th>Ensuite</th></tr></thead><tbody><tr><th>T1</th><td>6, la plus forte</td><td>Op1 (50 µs)</td><td>à chaque IT1 : Op10 (100 µs), puis accesV (200 µs)</td></tr><tr><th>T2</th><td>4</td><td>Op2 (50 µs)</td><td>à chaque IT2 : Op20 (200 µs)</td></tr><tr><th>Fond</th><td>la plus faible</td><td>—</td><td>sans fin : OpFond (300 µs), puis accesV (200 µs)</td></tr></tbody></table></div><p>Compléter le code, écrit avec les primitives du cours : <code>Wait</code> et <code>Signal</code> sur un sémaphore. Les routines des interruptions IT1 et IT2 exécutent <code>Signal(IT1)</code> et <code>Signal(IT2)</code>.</p>",
+      "code": true,
+      "texte": "Semaphore IT1, IT2;             /* initialisés à 0 */\nSemaphore Mutex;                /* initialisé à {{0}} */\n\nvoid T1(void)                   /* priorité 6 */\n{\n    Op1();\n    while (1) {\n        {{1}}(IT1);\n        Op10();\n        {{2}}(Mutex);\n        accesV();\n        {{3}}(Mutex);\n    }\n}\n\nvoid T2(void)                   /* priorité 4 */\n{\n    Op2();\n    while (1) {\n        Wait({{4}});\n        Op20();\n    }\n}\n\nvoid Fond(void)                 /* tâche de fond */\n{\n    while (1) {\n        OpFond();\n        {{5}}(Mutex);\n        accesV();\n        {{6}}(Mutex);\n    }\n}",
+      "trous": [
+        {
+          "reponses": [
+            "1",
+            "un"
+          ]
+        },
+        {
+          "choix": [
+            "Wait",
+            "Signal"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "Wait",
+            "Signal"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "Wait",
+            "Signal"
+          ],
+          "reponse": 1
+        },
+        {
+          "reponses": [
+            "IT2"
+          ]
+        },
+        {
+          "choix": [
+            "Wait",
+            "Signal"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "Wait",
+            "Signal"
+          ],
+          "reponse": 1
+        }
+      ],
+      "indices": [
+        "<p>Deux usages du sémaphore : attendre un événement (le compteur part de 0, l'interruption le signale), et protéger une ressource (le compteur part du nombre de tâches admises en même temps).</p>"
+      ],
+      "explication": "<p>Chaque tâche déclenchée par une interruption attend son sémaphore en tête de cycle : <code>Wait(IT1)</code> bloque T1 jusqu'au <code>Signal(IT1)</code> de la routine d'interruption, et le compteur mémorise une interruption arrivée pendant que la tâche travaillait encore. Pour l'exclusion mutuelle, <code>Mutex</code> part de 1, un seul jeton : <code>Wait(Mutex)</code> le prend avant accesV, <code>Signal(Mutex)</code> le rend après, dans T1 comme dans Fond. T2 n'utilise pas V : elle ne touche pas au mutex.</p><p>Le sujet demande ce code « sur un exécutif temps réel XEC86 ». Ses primitives ne figurent dans aucun support du cours : celles-ci sont les primitives génériques des diapos 35 et 58. Leurs noms exacts sous XEC86 sont à demander à l'enseignant.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Principe d'implantation",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#principe-d-implantation"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "numerique",
+      "theme": "Exercice 2 · Sémaphore",
+      "difficulte": 2,
+      "enonce": "<p>Trois tâches partagent un processeur, sous un exécutif temps réel à priorités fixes. Les interruptions IT1 et IT2 sont implantées par des sémaphores. Fond et T1 accèdent à une variable partagée V, qui doit être protégée par exclusion mutuelle.</p><div class='tableau compact'><table><thead><tr><th>Tâche</th><th>Priorité</th><th>Au démarrage</th><th>Ensuite</th></tr></thead><tbody><tr><th>T1</th><td>6, la plus forte</td><td>Op1 (50 µs)</td><td>à chaque IT1 : Op10 (100 µs), puis accesV (200 µs)</td></tr><tr><th>T2</th><td>4</td><td>Op2 (50 µs)</td><td>à chaque IT2 : Op20 (200 µs)</td></tr><tr><th>Fond</th><td>la plus faible</td><td>—</td><td>sans fin : OpFond (300 µs), puis accesV (200 µs)</td></tr></tbody></table></div><p>V est protégée par un sémaphore <code>Mutex</code>. À t = 1700 µs, T1 et T2 sont bloquées sur leurs interruptions, et Fond vient de prendre le mutex et de commencer accesV. IT2 arrive à 1800 µs, puis IT1 à 1850 µs ; aucune autre interruption ne suit. À quelle date T1 termine-t-elle son accès à V ?</p>",
+      "reponse": 2400,
+      "tolerance": 0,
+      "unite": "µs",
+      "indices": [
+        "<p>À 1850 µs, T1 préempte T2 et exécute Op10 jusqu'à 1950 µs. Elle demande alors le mutex, que tient Fond : qui s'exécute ensuite, Fond ou T2 ?</p>",
+        "<p>Il reste alors 150 µs de Op20 à T2, puis 100 µs de accesV à Fond, avant que T1 obtienne le mutex.</p>"
+      ],
+      "explication": "<p>À 1800, T2 préempte Fond, qui a fait 100 µs de accesV sur 200. À 1850, T1 préempte T2, qui a fait 50 µs de Op20 sur 200. T1 exécute Op10 (1850–1950), puis se bloque sur <code>Wait(Mutex)</code>. La tâche prête la plus prioritaire est T2 : elle finit Op20 (1950–2100). Fond finit ensuite accesV (2100–2200) et rend le mutex à T1, qui fait son accès de 2200 à 2400 µs. T1 a mis 550 µs à traiter une interruption qui demande 300 µs de travail. Avec la protection par changement de priorité, elle aurait fini à 2200 µs.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Attente passive : le sémaphore d'exclusion mutuelle",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#attente-passive-le-semaphore-d-exclusion-mutuelle"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "qcm",
+      "theme": "Exercice 2 · Sémaphore",
+      "difficulte": 3,
+      "enonce": "<p>Trois tâches partagent un processeur, sous un exécutif temps réel à priorités fixes. Les interruptions IT1 et IT2 sont implantées par des sémaphores. Fond et T1 accèdent à une variable partagée V, qui doit être protégée par exclusion mutuelle.</p><div class='tableau compact'><table><thead><tr><th>Tâche</th><th>Priorité</th><th>Au démarrage</th><th>Ensuite</th></tr></thead><tbody><tr><th>T1</th><td>6, la plus forte</td><td>Op1 (50 µs)</td><td>à chaque IT1 : Op10 (100 µs), puis accesV (200 µs)</td></tr><tr><th>T2</th><td>4</td><td>Op2 (50 µs)</td><td>à chaque IT2 : Op20 (200 µs)</td></tr><tr><th>Fond</th><td>la plus faible</td><td>—</td><td>sans fin : OpFond (300 µs), puis accesV (200 µs)</td></tr></tbody></table></div><p>V est protégée par un sémaphore <code>Mutex</code>. Fond est au milieu de accesV quand IT2 réveille T2 (1800 µs), puis IT1 réveille T1 (1850 µs). T1 exécute Op10, demande le mutex à 1950 µs… et c'est T2 qui s'exécute de 1950 à 2100 µs. Pourquoi T1, la plus prioritaire, attend-elle pendant que T2 s'exécute ?</p>",
+      "choix": [
+        "T1 est bloquée sur le mutex que tient Fond, et Fond ne peut pas le rendre tant que T2, plus prioritaire qu'elle, occupe le processeur",
+        "T2 a été réveillée avant T1 : l'ordonnanceur sert les tâches dans l'ordre d'arrivée de leurs interruptions",
+        "T1 a épuisé sa tranche de temps : le processeur passe à la tâche prête suivante",
+        "T1 est prête, mais l'exécutif ne préempte jamais une tâche qui a commencé son traitement"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Dans quel état est T1 après son <code>Wait(Mutex)</code> : prête, ou bloquée ? Qui peut la débloquer, et qu'est-ce qui empêche cette tâche de s'exécuter ?</p>"
+      ],
+      "explication": "<p>T1 n'est pas prête mais bloquée : il lui manque le mutex, que seule Fond peut rendre. Or Fond, la moins prioritaire, ne retrouve le processeur que lorsque T2 a fini. T1 attend donc T2, une tâche moins prioritaire qu'elle et qui n'a rien à voir avec V : c'est l'inversion de priorité, signalée en complément du cours. Les autres réponses sont fausses : en priorité fixe, l'ordre d'arrivée ne compte pas et il n'y a pas de tranche de temps ; et l'exécutif préempte bien, puisque T1 a pris le processeur à T2 dès 1850 µs. Le remède du sujet est la question 3 : pendant son accès, Fond prend une priorité supérieure à toutes les autres.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Section critique courte ou longue",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#section-critique-courte-ou-longue"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "atelier",
+      "editeur": "chronogramme",
+      "theme": "Exercice 2 · Priorité",
+      "difficulte": 3,
+      "titre": "Graphe d'activités avec modification de la priorité (temps en µs)",
+      "enonce": "<p><strong>Annale, exercice 2, Q3.</strong> Implantation de l'exclusion mutuelle par modification de la priorité : compléter le graphe d'activités.</p><p>Trois tâches partagent un processeur, sous un exécutif temps réel à priorités fixes. Les interruptions IT1 et IT2 sont implantées par des sémaphores. Fond et T1 accèdent à une variable partagée V, qui doit être protégée par exclusion mutuelle.</p><div class='tableau compact'><table><thead><tr><th>Tâche</th><th>Priorité</th><th>Au démarrage</th><th>Ensuite</th></tr></thead><tbody><tr><th>T1</th><td>6, la plus forte</td><td>Op1 (50 µs)</td><td>à chaque IT1 : Op10 (100 µs), puis accesV (200 µs)</td></tr><tr><th>T2</th><td>4</td><td>Op2 (50 µs)</td><td>à chaque IT2 : Op20 (200 µs)</td></tr><tr><th>Fond</th><td>la plus faible</td><td>—</td><td>sans fin : OpFond (300 µs), puis accesV (200 µs)</td></tr></tbody></table></div><p>Les trois tâches démarrent à t = 0. Sur la grille du sujet, IT1 arrive à 500 µs, 1000 µs et 1850 µs, et IT2 à 800 µs et 1800 µs. On néglige la durée des primitives et des changements de contexte.</p><p>Il n'y a plus de sémaphore sur V : pendant accesV, la tâche prend une priorité supérieure à toutes les autres (7, par exemple), puis reprend la sienne. Tracer, de 0 à 3000 µs, les cases où chaque tâche s'exécute (F est la tâche de fond).</p>",
+      "consigne": "<p>Une case dure 50 µs. Peindre les cases où chaque tâche a le processeur ; laisser vide le reste du temps.</p>",
+      "vue": "dessin",
+      "options": {
+        "processeurs": 1,
+        "durees": {
+          "T1": 950,
+          "T2": 450,
+          "F": 1600
+        }
+      },
+      "depart": [
+        "temps 0..3000 pas 50",
+        "etat x Exécution",
+        "T1 :",
+        "T2 :",
+        "F :"
+      ],
+      "solution": [
+        "temps 0..3000 pas 50",
+        "etat x Exécution",
+        "T1 : x 0-50, x 600-900, x 1000-1300, x 1900-2200",
+        "T2 : x 50-100, x 900-1000, x 1300-1400, x 2200-2400",
+        "F : x 100-600, x 1400-1900, x 2400-3000"
+      ],
+      "indices": [
+        "<p>Pendant accesV, Fond a la priorité la plus haute : ni T1 ni T2 ne peuvent la préempter. Une tâche réveillée entre-temps reste prête.</p>",
+        "<p>À 1900 µs, Fond reprend sa priorité, et deux tâches sont prêtes : laquelle l'ordonnanceur choisit-il ?</p>"
+      ],
+      "explication": "<p>Le début ne change pas : Op1 (0–50), Op2 (50–100), puis OpFond (100–400). À 400, Fond passe à la priorité 7 et exécute accesV <strong>sans interruption</strong> jusqu'à 600 : IT1, arrivée à 500, rend T1 prête, mais T1 (priorité 6) ne peut pas préempter. À 600, Fond reprend sa priorité, et T1 enchaîne Op10 et accesV (600–900). T2, prête depuis 800, commence Op20 (900–1000) ; T1, relancée à 1000, la préempte (1000–1300), puis T2 finit (1300–1400).</p><p>Fond reprend : OpFond (1400–1700), puis accesV à la priorité 7 (1700–1900). IT2 (1800) et IT1 (1850) rendent T2 et T1 prêtes, sans effet immédiat. À 1900, la plus prioritaire passe : T1 (1900–2200), puis T2 (2200–2400), puis Fond jusqu'à la fin.</p><p>Comparaison avec le sémaphore : T1 termine son troisième traitement à 2200 µs au lieu de 2400, car plus aucune tâche ne s'intercale pendant qu'elle attend V. En revanche T2, qui n'utilise pas V, termine à 2400 µs au lieu de 2100 : elle a attendu la fin de la section critique de Fond. C'est l'inconvénient que le cours donne à cette méthode : le retard de tâches non concernées par la ressource.</p><p>Le sujet n'a pas de corrigé ; ce graphe a été vérifié par une simulation de l'ordonnancement.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Section critique courte ou longue",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#section-critique-courte-ou-longue"
+      }
+    },
+    {
+      "id": "q16",
+      "type": "trous",
+      "theme": "Exercice 2 · Priorité",
+      "difficulte": 1,
+      "enonce": "<p><strong>Annale, exercice 2, Q3 (code).</strong> Donner le code C des trois tâches, l'exclusion mutuelle étant réalisée par modification de la priorité.</p><p>Trois tâches partagent un processeur, sous un exécutif temps réel à priorités fixes. Les interruptions IT1 et IT2 sont implantées par des sémaphores. Fond et T1 accèdent à une variable partagée V, qui doit être protégée par exclusion mutuelle.</p><div class='tableau compact'><table><thead><tr><th>Tâche</th><th>Priorité</th><th>Au démarrage</th><th>Ensuite</th></tr></thead><tbody><tr><th>T1</th><td>6, la plus forte</td><td>Op1 (50 µs)</td><td>à chaque IT1 : Op10 (100 µs), puis accesV (200 µs)</td></tr><tr><th>T2</th><td>4</td><td>Op2 (50 µs)</td><td>à chaque IT2 : Op20 (200 µs)</td></tr><tr><th>Fond</th><td>la plus faible</td><td>—</td><td>sans fin : OpFond (300 µs), puis accesV (200 µs)</td></tr></tbody></table></div><p>Compléter le code de la tâche de fond, écrit avec les primitives du cours : <code>Set_priority(p)</code> donne la priorité <code>p</code> à la tâche qui l'appelle, <code>Reset_priority()</code> lui rend sa priorité d'origine.</p>",
+      "code": true,
+      "texte": "void Fond(void)                 /* tâche de fond, la moins prioritaire */\n{\n    while (1) {\n        OpFond();\n        {{0}}({{1}});\n        accesV();\n        {{2}}();\n    }\n}\n\nvoid T1(void)                   /* priorité 6 : la plus forte */\n{\n    Op1();\n    while (1) {\n        Wait(IT1);\n        Op10();\n        accesV();               /* personne ne peut préempter T1 */\n    }\n}",
+      "trous": [
+        {
+          "choix": [
+            "Set_priority",
+            "Reset_priority",
+            "Wait",
+            "Signal"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "7",
+            "5",
+            "4",
+            "0"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "Reset_priority",
+            "Set_priority",
+            "Signal",
+            "Wait"
+          ],
+          "reponse": 0
+        }
+      ],
+      "explication": "<p>Pour que son accès à V ne soit pas interrompu par T1, Fond doit prendre une priorité supérieure à celle de T1 : 7. Avec 5, elle passerait devant T2, mais T1 (priorité 6) pourrait encore la préempter et modifier V au milieu de son accès. La priorité d'origine est rendue juste après l'accès, pour retarder les autres tâches le moins longtemps possible. T1 est déjà la tâche la plus prioritaire : sur un monoprocesseur, aucune tâche ne peut la préempter pendant accesV. L'encadrer aussi par <code>Set_priority(7)</code> et <code>Reset_priority()</code> ne change rien ici, et garderait le code juste si une tâche plus prioritaire était ajoutée. T2 garde le code de la question précédente.</p><p>Ces primitives sont celles de l'exécutif Turbo Pascal de la diapo 50. Celles d'XEC86, que cite le sujet, ne figurent dans aucun support : leurs noms sont à demander à l'enseignant.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Les primitives",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#les-primitives"
+      }
+    },
+    {
+      "id": "q17",
+      "type": "qcm",
+      "theme": "Exercice 2 · Priorité",
+      "difficulte": 2,
+      "enonce": "<p>Trois tâches partagent un processeur, sous un exécutif temps réel à priorités fixes. Les interruptions IT1 et IT2 sont implantées par des sémaphores. Fond et T1 accèdent à une variable partagée V, qui doit être protégée par exclusion mutuelle.</p><div class='tableau compact'><table><thead><tr><th>Tâche</th><th>Priorité</th><th>Au démarrage</th><th>Ensuite</th></tr></thead><tbody><tr><th>T1</th><td>6, la plus forte</td><td>Op1 (50 µs)</td><td>à chaque IT1 : Op10 (100 µs), puis accesV (200 µs)</td></tr><tr><th>T2</th><td>4</td><td>Op2 (50 µs)</td><td>à chaque IT2 : Op20 (200 µs)</td></tr><tr><th>Fond</th><td>la plus faible</td><td>—</td><td>sans fin : OpFond (300 µs), puis accesV (200 µs)</td></tr></tbody></table></div><p>V est protégée par modification de la priorité : pendant accesV, Fond prend la priorité 7. Elle commence accesV à 1700 µs. IT2 arrive à 1800 µs, puis IT1 à 1850 µs. T2 ne termine Op20 qu'à 2400 µs, alors qu'avec un sémaphore sur V elle aurait fini à 2100 µs. Quel inconvénient de cette implantation ce retard illustre-t-il ?</p>",
+      "choix": [
+        "Elle retarde des tâches qui n'utilisent pas la ressource partagée",
+        "Elle peut faire perdre des interruptions",
+        "Elle fait attendre la tâche la plus prioritaire derrière une tâche moins prioritaire qui n'utilise pas la ressource",
+        "Elle occupe le processeur à tester un verrou pendant toute l'attente"
+      ],
+      "reponse": 0,
+      "explication": "<p>T2 n'accède pas à V. Pourtant, réveillée à 1800 µs, elle doit attendre la fin de la section critique de Fond (1900), puis T1 (1900–2200), et ne s'exécute que de 2200 à 2400 µs : la priorité élevée de Fond bloque toutes les tâches, concernées ou non. C'est l'inconvénient que donne la diapo 60 : le retard dans le traitement de tâches non concernées par la ressource. Perdre des interruptions est le défaut de l'invalidation des interruptions ; faire attendre T1 derrière T2 est l'inversion de priorité, le défaut du sémaphore, que cette méthode supprime justement ; tester un verrou en boucle est l'attente active.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Section critique courte ou longue",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#section-critique-courte-ou-longue"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

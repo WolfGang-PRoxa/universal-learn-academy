@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TD 1 · Vocabulaire, degrés et représentations · Théorie des graphes L3</title>
+<meta name="description" content="TD 1 interactif de théorie des graphes (L3) : modéliser un réseau d'influence et un réseau de co-publications, voisinages et degrés, degré pondéré, liste d'arêtes, matrice et liste d'adjacence, mémoire nécessaire, questions de modélisation sur le réseau des dauphins.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="index.html">Théorie des graphes</a>
+    <span aria-current="page">TD 1 · Vocabulaire et représentations</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Théorie des graphes</span> TD 1 · L3 S5 · interactif</p>
+    <h1>Vocabulaire, degrés et représentations</h1>
+    <p class="chapeau">On modélise deux petits systèmes réels par des graphes, un orienté et un pondéré, on y calcule voisinages et degrés, puis on les stocke de trois façons et l'on compare la mémoire de chacune. Le dernier exercice prend du recul sur ce qu'un graphe montre d'un réseau réel. Le TD met en œuvre le cours 1.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TD/Graphes__TD1_Graphes-6.pdf">TD n° 1 · Graphes et applications</a> · Nicolas Dugué, 2026-2027</dd></div>
+      <div><dt>Cours</dt><dd><a href="cours-01-notions-de-base.html">Cours 1 · Notions de base</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Comprendre et savoir définir le vocabulaire de base en théorie des graphes.</li>
+        <li>Décrire un graphe et maîtriser les notations associées.</li>
+        <li>Modéliser sous forme de graphe un système du réel décrit textuellement.</li>
+        <li>Comprendre les différences entre graphe non orienté, orienté, pondéré.</li>
+        <li>Manipuler trois structures de stockage d'un graphe et apprécier leurs différences.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Notions utilisées</p>
+      <ul>
+        <li><a href="cours-01-notions-de-base.html#voisinage-et-degre">Voisinage et degré</a>, <a href="cours-01-notions-de-base.html#graphes-orientes">graphes orientés</a>, <a href="cours-01-notions-de-base.html#graphes-ponderes">graphes pondérés</a></li>
+        <li><a href="cours-01-notions-de-base.html#representer-un-graphe">Représenter un graphe</a> : liste d'arêtes, matrice d'adjacence, liste d'adjacence</li>
+        <li><a href="cours-01-notions-de-base.html#un-modele">Un modèle ?</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Mode d'emploi</p>
+    <ul>
+      <li>La réponse se construit sur le dessin ou dans la vue texte (« Les deux ») ; les deux restent synchronisés.</li>
+      <li>« Vérifier » contrôle la forme sans rien dévoiler, « Comparer » mesure l'écart avec la solution proposée, « Claude » répond aux questions et corrige.</li>
+      <li>Le travail s'enregistre tout seul. Avec le serveur local (<code>studies/lancer.bat</code>), il va dans <code>td_results/</code> et Claude est disponible.</li>
+    </ul>
+  </div>
+
+  <div class="bloc complement">
+    <p class="bloc-titre">Conventions de saisie</p>
+    <p>Pour que « Comparer » puisse lire les réponses : dans un tableau, les sommets d'une liste s'écrivent dans l'ordre alphabétique, séparés par des virgules, et l'ensemble vide s'écrit <code>∅</code> (ou une case vide) ; un nombre décimal s'écrit avec deux chiffres après la virgule. Les questions qui demandent une définition ou une justification se rédigent dans un cadre de texte : leur solution est une proposition, que Claude peut discuter.</p>
+  </div>
+
+  <section>
+    <h2>Exercice 1 · Micmac au conseil d'administration <span class="ref">TD, p. 1</span></h2>
+    <p>Un premier graphe orienté : qui influence qui dans un petit conseil d'administration. On y lit les voisinages et les degrés, entrants et sortants.</p>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Énoncé</span></p>
+      <p>Le conseil d'administration de l'entreprise X est composé de 7 personnes : A, M, N, J, T, L et V. Chacune de ces personnes influence certains membres du conseil conformément à la table 1.</p>
+      <div class="tableau centre compact">
+        <table>
+          <caption>Table 1 · Tableau des influences au conseil d'administration de l'entreprise X (adapté de H. Kassel, B. Velikson, H. Barbot, <i>Théorie des graphes</i>, EFREI)</caption>
+          <thead><tr><th>Mme ou M.</th><th>Influence</th></tr></thead>
+          <tbody>
+            <tr><td>A</td><td>{M, L}</td></tr>
+            <tr><td>M</td><td>–</td></tr>
+            <tr><td>N</td><td>{M}</td></tr>
+            <tr><td>J</td><td>{T, V}</td></tr>
+            <tr><td>T</td><td>{N}</td></tr>
+            <tr><td>L</td><td>{J, T}</td></tr>
+            <tr><td>V</td><td>{N, T}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Question 1</span></p>
+      <p>En utilisant les notations vues en cours, explicitez le type de réseau d'influence pouvant être construit et ce à quoi correspondent les nœuds et les liens de ce dernier.</p>
+    </div>
+    <div class="atelier" id="td1-ex1-q1" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Type de réseau",
+  "options": {
+    "lignes": 5
+  },
+  "solution": "Un graphe orienté G = (V, A), non pondéré.\nV = {A, M, N, J, T, L, V} : un sommet par membre du conseil (n = 7).\nA ⊆ V × V : un arc (u, v) quand u influence v. L'influence n'est pas réciproque (A influence M, mais M n'influence pas A), d'où l'orientation ; la table ne donne pas d'intensité, d'où l'absence de poids.\nIci m = |A| = 10 arcs.",
+  "explication": "<p>Le sens de l'arc compte : il va de celui qui influence vers celui qui est influencé. Un graphe non orienté perdrait cette information.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Question 2</span></p>
+      <p>En vous appuyant sur les informations données dans la table 1, dessinez le graphe d'influence.</p>
+    </div>
+    <div class="atelier" id="td1-ex1-q2" data-editeur="graphe">
+      <script type="application/json">
+{
+  "titre": "Graphe d'influence",
+  "options": {
+    "oriente": true
+  },
+  "depart": [
+    "oriente",
+    "noeuds A M N J T L V"
+  ],
+  "solution": [
+    "oriente",
+    "A -> L",
+    "A -> M",
+    "J -> T",
+    "J -> V",
+    "L -> J",
+    "L -> T",
+    "N -> M",
+    "T -> N",
+    "V -> N",
+    "V -> T"
+  ],
+  "explication": "<p>Dix arcs, un par couple (influenceur, influencé) de la table. M n'a aucun arc sortant ; A n'a aucun arc entrant.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Question 3</span></p>
+      <p>Qu'appelle-t-on voisinage entrant et sortant d'un sommet ? Donnez la définition sous forme de notation mathématique. Listez pour chaque sommet son voisinage entrant et son voisinage sortant.</p>
+    </div>
+    <div class="atelier" id="td1-ex1-q3-def" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Voisinages : définitions",
+  "options": {
+    "lignes": 4
+  },
+  "solution": "Soit G = (V, A) un graphe orienté et u ∈ V.\nVoisinage sortant : N⁺(u) = { v ∈ V | (u, v) ∈ A }, les sommets que u influence.\nVoisinage entrant : N⁻(u) = { v ∈ V | (v, u) ∈ A }, les sommets qui influencent u."
+}
+      </script>
+    </div>
+    <div class="atelier" id="td1-ex1-q3" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "Voisinages de chaque membre",
+  "options": {
+    "verrou": "depart",
+    "lignes": false,
+    "complet": true
+  },
+  "consigne": "<p>Sommets dans l'ordre alphabétique, séparés par des virgules ; <code>∅</code> pour un voisinage vide.</p>",
+  "depart": [
+    "| Sommet | N⁺ (sortant) | N⁻ (entrant) |",
+    "|---|---|---|",
+    "| A |  |  |",
+    "| M |  |  |",
+    "| N |  |  |",
+    "| J |  |  |",
+    "| T |  |  |",
+    "| L |  |  |",
+    "| V |  |  |"
+  ],
+  "solution": [
+    "| Sommet | N⁺ (sortant) | N⁻ (entrant) |",
+    "|---|---|---|",
+    "| A | L, M | ∅ |",
+    "| M | ∅ | A, N |",
+    "| N | M | T, V |",
+    "| J | T, V | L |",
+    "| T | N | J, L, V |",
+    "| L | J, T | A |",
+    "| V | N, T | J |"
+  ],
+  "explication": "<p>Le voisinage sortant se lit directement dans la table 1 ; le voisinage entrant s'obtient en la lisant à l'envers (qui cite ce membre ?). Chaque arc compte une fois dans un N⁺ et une fois dans un N⁻ : les deux colonnes contiennent chacune 10 noms.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Question 4</span></p>
+      <p>À partir des voisinages extraits à la question précédente, donnez la définition du degré d'un sommet, puis calculez-le pour chacun des membres du conseil d'administration.</p>
+    </div>
+    <div class="atelier" id="td1-ex1-q4-def" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Degré : définition",
+  "options": {
+    "lignes": 3
+  },
+  "solution": "d⁺(u) = |N⁺(u)| (degré sortant), d⁻(u) = |N⁻(u)| (degré entrant), et le degré d(u) = d⁺(u) + d⁻(u).\nPour tout graphe orienté, Σ d⁺(u) = Σ d⁻(u) = m."
+}
+      </script>
+    </div>
+    <div class="atelier" id="td1-ex1-q4" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "Degrés",
+  "options": {
+    "verrou": "depart",
+    "lignes": false,
+    "complet": true,
+    "types": {
+      "Sortant d⁺": "entier",
+      "Entrant d⁻": "entier",
+      "Total d": "entier"
+    }
+  },
+  "depart": [
+    "| Sommet | Sortant d⁺ | Entrant d⁻ | Total d |",
+    "|---|---|---|---|",
+    "| A |  |  |  |",
+    "| M |  |  |  |",
+    "| N |  |  |  |",
+    "| J |  |  |  |",
+    "| T |  |  |  |",
+    "| L |  |  |  |",
+    "| V |  |  |  |"
+  ],
+  "solution": [
+    "| Sommet | Sortant d⁺ | Entrant d⁻ | Total d |",
+    "|---|---|---|---|",
+    "| A | 2 | 0 | 2 |",
+    "| M | 0 | 2 | 2 |",
+    "| N | 1 | 2 | 3 |",
+    "| J | 2 | 1 | 3 |",
+    "| T | 1 | 3 | 4 |",
+    "| L | 2 | 1 | 3 |",
+    "| V | 2 | 1 | 3 |"
+  ],
+  "explication": "<p>Contrôle : la colonne d⁺ et la colonne d⁻ font chacune 10, le nombre d'arcs, et la colonne d fait 20 = 2m.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Question 5</span></p>
+      <p>Quelle mesure sur les sommets du graphe permet de déterminer la ou les personnes ayant le plus d'influence et celle(s) ayant le moins d'influence directe (via un arc) au sein du conseil d'administration ?</p>
+    </div>
+    <div class="atelier" id="td1-ex1-q5" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Mesure de l'influence directe",
+  "options": {
+    "lignes": 4
+  },
+  "solution": "Le degré sortant d⁺ : il compte les personnes qu'un membre influence directement.\nLe plus d'influence directe : A, J, L et V (d⁺ = 2). Le moins : M (d⁺ = 0), qui n'influence personne ; N et T n'influencent qu'une personne.\nLe degré entrant mesure au contraire à quel point un membre est influencé : T (d⁻ = 3) l'est le plus, A (d⁻ = 0) pas du tout.",
+  "explication": "<p>Le degré total d mélange les deux sens et ne répond pas à la question. Une influence indirecte (A influence L, qui influence J) ne compte pas ici : c'est l'objet des mesures de centralité du cours 5.</p>"
+}
+      </script>
+    </div>
+  </section>
+
+  <section>
+    <h2>Exercice 2 · Réseau de co-auteurs, co-autrices <span class="ref">TD, p. 1–2</span></h2>
+    <p>Un graphe non orienté et pondéré, cette fois : les co-publications d'une équipe de recherche. On y distingue le nombre de co-auteurs d'un chercheur et le nombre de ses collaborations, puis on le stocke de trois façons.</p>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Énoncé</span></p>
+      <p>On cherche à modéliser la co-publication d'articles scientifiques dans un groupe de recherche. On désigne les chercheurs par leurs initiales : VP, TP, ND, NC, SM, ML et AL. Dans le détail, les co-publications de ce groupe s'organisent ainsi ces trois dernières années :</p>
+      <ol>
+        <li>VP et TP ont co-publié deux articles, dont un avec NC et ND ;</li>
+        <li>VP a co-publié sept articles avec NC et AL, dont quatre auxquels SM a participé ;</li>
+        <li>TP a également publié deux articles avec ND, NC et SM ;</li>
+        <li>ML a co-publié trois articles avec SM et AL.</li>
+      </ol>
+    </div>
+
+    <h3>Représentation sous forme de graphe</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>2.1, question 1</span></p>
+      <p>À partir des quatre affirmations de la description, construire un graphe des co-publications au sein de l'équipe de recherche. Détailler ce que représentent les nœuds et les liens du réseau ainsi que les propriétés générales de celui-ci.</p>
+    </div>
+    <div class="atelier" id="td1-ex2-q11-modele" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Nœuds, liens et propriétés",
+  "options": {
+    "lignes": 5
+  },
+  "solution": "Nœuds : les 7 chercheurs (n = 7).\nLiens : une arête entre deux chercheurs qui ont publié au moins un article ensemble ; son poids est le nombre d'articles qu'ils ont co-signés.\nPropriétés : graphe non orienté (co-publier est symétrique), pondéré, simple (pas de boucle), à m = 15 arêtes ; il est connexe.",
+  "explication": "<p>Un article à k auteurs crée une arête entre chacune de ses k(k − 1)/2 paires d'auteurs. Le poids d'une arête additionne les articles : VP et NC co-signent l'article à quatre de l'affirmation 1, puis les sept de l'affirmation 2, soit 8 articles.</p>"
+}
+      </script>
+    </div>
+    <div class="atelier" id="td1-ex2-q11" data-editeur="graphe">
+      <script type="application/json">
+{
+  "titre": "Graphe des co-publications",
+  "options": {
+    "pondere": true
+  },
+  "consigne": "<p>Une arête par paire de co-auteurs, avec pour poids le nombre d'articles co-signés.</p>",
+  "depart": [
+    "non oriente",
+    "noeuds AL ML NC ND SM TP VP"
+  ],
+  "solution": [
+    "non oriente",
+    "AL -- ML : 3",
+    "AL -- NC : 7",
+    "AL -- SM : 7",
+    "AL -- VP : 7",
+    "ML -- SM : 3",
+    "NC -- ND : 3",
+    "NC -- SM : 6",
+    "NC -- TP : 3",
+    "NC -- VP : 8",
+    "ND -- SM : 2",
+    "ND -- TP : 3",
+    "ND -- VP : 1",
+    "SM -- TP : 2",
+    "SM -- VP : 4",
+    "TP -- VP : 2"
+  ],
+  "explication": "<p>Détail des poids : l'affirmation 1 donne un article {VP, TP} et un article {VP, TP, NC, ND} ; l'affirmation 2, trois articles {VP, NC, AL} et quatre {VP, NC, AL, SM} ; l'affirmation 3, deux articles {TP, ND, NC, SM} ; l'affirmation 4, trois articles {ML, SM, AL}. On additionne, paire par paire.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>2.1, question 2</span></p>
+      <p>Donnez le voisinage des nœuds SM et ND.</p>
+    </div>
+    <div class="atelier" id="td1-ex2-q12" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "Voisinages de SM et ND",
+  "options": {
+    "verrou": "depart",
+    "lignes": false,
+    "complet": true
+  },
+  "consigne": "<p>Sommets dans l'ordre alphabétique, séparés par des virgules.</p>",
+  "depart": [
+    "| Sommet | N(u) |",
+    "|---|---|",
+    "| SM |  |",
+    "| ND |  |"
+  ],
+  "solution": [
+    "| Sommet | N(u) |",
+    "|---|---|",
+    "| SM | AL, ML, NC, ND, TP, VP |",
+    "| ND | NC, SM, TP, VP |"
+  ],
+  "explication": "<p>Dans un graphe non orienté, N(u) = { v | {u, v} ∈ E } : il n'y a qu'un voisinage. SM est relié à tous les autres chercheurs.</p>"
+}
+      </script>
+    </div>
+
+    <h3>Mesures sur les sommets du graphe</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>2.2, questions 1 à 5</span></p>
+      <ol>
+        <li>Quelle mesure permet de savoir combien de co-auteurs a chaque auteur ? Présentez les valeurs dans un tableau.</li>
+        <li>Quel est l'auteur ayant le plus de co-auteurs ?</li>
+        <li>Combien en moyenne un auteur a-t-il de co-auteurs ?</li>
+        <li>Quelle mesure permet de déterminer combien de collaborations totales a un auteur ? Complétez le tableau construit en 1.</li>
+        <li>Combien en moyenne un auteur a-t-il de collaborations ?</li>
+      </ol>
+    </div>
+    <div class="atelier" id="td1-ex2-q2-mesures" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Les deux mesures (questions 1 et 4)",
+  "options": {
+    "lignes": 3
+  },
+  "solution": "Nombre de co-auteurs : le degré d(u) = |N(u)|.\nNombre de collaborations : le degré pondéré (ou force) d_w(u) = Σ_{v ∈ N(u)} w(u, v), la somme des poids des arêtes de u."
+}
+      </script>
+    </div>
+    <div class="atelier" id="td1-ex2-q2-table" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "Degrés et degrés pondérés (questions 1 et 4)",
+  "options": {
+    "verrou": "depart",
+    "lignes": false,
+    "complet": true,
+    "types": {
+      "Co-auteurs d(u)": "entier",
+      "Collaborations d_w(u)": "entier"
+    }
+  },
+  "depart": [
+    "| Auteur | Co-auteurs d(u) | Collaborations d_w(u) |",
+    "|---|---|---|",
+    "| AL |  |  |",
+    "| ML |  |  |",
+    "| NC |  |  |",
+    "| ND |  |  |",
+    "| SM |  |  |",
+    "| TP |  |  |",
+    "| VP |  |  |"
+  ],
+  "solution": [
+    "| Auteur | Co-auteurs d(u) | Collaborations d_w(u) |",
+    "|---|---|---|",
+    "| AL | 4 | 24 |",
+    "| ML | 2 | 6 |",
+    "| NC | 5 | 27 |",
+    "| ND | 4 | 9 |",
+    "| SM | 6 | 24 |",
+    "| TP | 4 | 10 |",
+    "| VP | 5 | 22 |"
+  ],
+  "explication": "<p>La colonne des degrés fait 30 = 2m, celle des degrés pondérés 122 = deux fois la somme des poids. Le degré pondéré compte une collaboration par co-auteur et par article : VP a 9 articles, mais 22 collaborations, car un article à quatre auteurs lui en donne trois.</p>"
+}
+      </script>
+    </div>
+    <div class="atelier" id="td1-ex2-q2-reponses" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "Réponses (questions 2, 3 et 5)",
+  "options": {
+    "verrou": "depart",
+    "lignes": false,
+    "complet": true,
+    "tolerance": 0.01
+  },
+  "consigne": "<p>Les moyennes avec deux chiffres après la virgule.</p>",
+  "depart": [
+    "| Question | Réponse |",
+    "|---|---|",
+    "| 2. Auteur ayant le plus de co-auteurs |  |",
+    "| 3. Nombre moyen de co-auteurs |  |",
+    "| 5. Nombre moyen de collaborations |  |"
+  ],
+  "solution": [
+    "| Question | Réponse |",
+    "|---|---|",
+    "| 2. Auteur ayant le plus de co-auteurs | SM |",
+    "| 3. Nombre moyen de co-auteurs | 4,29 |",
+    "| 5. Nombre moyen de collaborations | 17,43 |"
+  ],
+  "explication": "<p>Degré moyen : 2m / n = 30 / 7 ≈ 4,29. Degré pondéré moyen : 121 / 7 ≈ 17,43. SM a 6 co-auteurs, c'est-à-dire tous les autres membres de l'équipe ; en collaborations, c'est NC qui arrive en tête (27).</p>"
+}
+      </script>
+    </div>
+
+    <h3>Représenter un graphe</h3>
+    <p>Outre la représentation graphique du réseau, il est pratique de les stocker sous forme de structures de données facilement manipulables informatiquement.</p>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>2.3, question 1</span></p>
+      <p>Projetez le graphe sous forme de liste d'arêtes (15 arêtes).</p>
+    </div>
+    <div class="atelier" id="td1-ex2-q31" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "Liste d'arêtes",
+  "options": {
+    "types": {
+      "poids": "entier"
+    },
+    "complet": true
+  },
+  "consigne": "<p>Une arête par ligne, chacune une seule fois, ses deux extrémités dans l'ordre alphabétique (<code>u</code> avant <code>v</code>). L'ordre des lignes est libre.</p>",
+  "depart": [
+    "| u | v | poids |",
+    "|---|---|---|",
+    "|  |  |  |"
+  ],
+  "solution": [
+    "| u | v | poids |",
+    "|---|---|---|",
+    "| AL | ML | 3 |",
+    "| AL | NC | 7 |",
+    "| AL | SM | 7 |",
+    "| AL | VP | 7 |",
+    "| ML | SM | 3 |",
+    "| NC | ND | 3 |",
+    "| NC | SM | 6 |",
+    "| NC | TP | 3 |",
+    "| NC | VP | 8 |",
+    "| ND | SM | 2 |",
+    "| ND | TP | 3 |",
+    "| ND | VP | 1 |",
+    "| SM | TP | 2 |",
+    "| SM | VP | 4 |",
+    "| TP | VP | 2 |"
+  ],
+  "explication": "<p>Dans un graphe non orienté, (u, v) et (v, u) sont la même arête : on ne l'écrit qu'une fois. La liste contient m = 15 triplets.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>2.3, question 2</span></p>
+      <p>Projetez le graphe sous forme de matrice d'adjacence.</p>
+    </div>
+    <div class="atelier" id="td1-ex2-q32" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "Matrice d'adjacence",
+  "options": {
+    "verrou": "depart",
+    "lignes": false,
+    "complet": true,
+    "mono": true
+  },
+  "consigne": "<p>À la ligne u, colonne v : le poids de l'arête {u, v}, ou 0 s'il n'y en a pas.</p>",
+  "depart": [
+    "|   | AL | ML | NC | ND | SM | TP | VP |",
+    "|---|---|---|---|---|---|---|---|",
+    "| AL |  |  |  |  |  |  |  |",
+    "| ML |  |  |  |  |  |  |  |",
+    "| NC |  |  |  |  |  |  |  |",
+    "| ND |  |  |  |  |  |  |  |",
+    "| SM |  |  |  |  |  |  |  |",
+    "| TP |  |  |  |  |  |  |  |",
+    "| VP |  |  |  |  |  |  |  |"
+  ],
+  "solution": [
+    "|   | AL | ML | NC | ND | SM | TP | VP |",
+    "|---|---|---|---|---|---|---|---|",
+    "| AL | 0 | 3 | 7 | 0 | 7 | 0 | 7 |",
+    "| ML | 3 | 0 | 0 | 0 | 3 | 0 | 0 |",
+    "| NC | 7 | 0 | 0 | 3 | 6 | 3 | 8 |",
+    "| ND | 0 | 0 | 3 | 0 | 2 | 3 | 1 |",
+    "| SM | 7 | 3 | 6 | 2 | 0 | 2 | 4 |",
+    "| TP | 0 | 0 | 3 | 3 | 2 | 0 | 2 |",
+    "| VP | 7 | 0 | 8 | 1 | 4 | 2 | 0 |"
+  ],
+  "explication": "<p>La matrice est symétrique, puisque le graphe n'est pas orienté, et sa diagonale est nulle (pas de boucle). Sur ses 49 cases, 30 sont non nulles : chaque arête apparaît deux fois.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>2.3, question 3</span></p>
+      <p>Projetez le graphe sous forme de liste d'adjacence.</p>
+    </div>
+    <div class="atelier" id="td1-ex2-q33" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "Liste d'adjacence",
+  "options": {
+    "verrou": "depart",
+    "lignes": false,
+    "complet": true
+  },
+  "consigne": "<p>Pour chaque sommet, ses voisins dans l'ordre alphabétique, chacun suivi de deux-points et du poids, sans espace : <code>X:3, Y:1</code>.</p>",
+  "depart": [
+    "| Sommet | Voisins (poids) |",
+    "|---|---|",
+    "| AL |  |",
+    "| ML |  |",
+    "| NC |  |",
+    "| ND |  |",
+    "| SM |  |",
+    "| TP |  |",
+    "| VP |  |"
+  ],
+  "solution": [
+    "| Sommet | Voisins (poids) |",
+    "|---|---|",
+    "| AL | ML:3, NC:7, SM:7, VP:7 |",
+    "| ML | AL:3, SM:3 |",
+    "| NC | AL:7, ND:3, SM:6, TP:3, VP:8 |",
+    "| ND | NC:3, SM:2, TP:3, VP:1 |",
+    "| SM | AL:7, ML:3, NC:6, ND:2, TP:2, VP:4 |",
+    "| TP | NC:3, ND:3, SM:2, VP:2 |",
+    "| VP | AL:7, NC:8, ND:1, SM:4, TP:2 |"
+  ],
+  "explication": "<p>En Python, c'est un dictionnaire de listes (ou de dictionnaires) : <code>{\"AL\": [(\"ML\", 3), (\"NC\", 7), …], …}</code>. Chaque arête y figure deux fois, une fois chez chacune de ses extrémités.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>2.3, question 4</span></p>
+      <p>D'après vous, quelle structure de données est la plus adaptée pour stocker un graphe en mémoire et accéder aux arêtes du graphe ?</p>
+    </div>
+    <div class="atelier" id="td1-ex2-q34" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "La structure la plus adaptée",
+  "options": {
+    "lignes": 5
+  },
+  "solution": "La liste d'adjacence. Elle ne stocke que les arêtes qui existent (pas de zéros, contrairement à la matrice), et elle donne directement les voisins d'un sommet, ce qui sert dans presque tous les algorithmes (parcours, plus courts chemins) : on lit N(u) en d(u) opérations, au lieu de parcourir toute la liste d'arêtes (m) ou toute une ligne de la matrice (n).\nLa matrice répond en temps constant à « {u, v} est-elle une arête ? », mais coûte n² cases : elle ne convient qu'aux petits graphes, ou aux graphes denses. La liste d'arêtes sert surtout de format d'échange (fichiers).",
+  "explication": "<p>C'est la conclusion du cours, qui l'appuie sur les deux critères, mémoire et temps d'accès aux voisins.</p>"
+}
+      </script>
+    </div>
+
+    <h3>Calcul (approximatif) de l'espace mémoire nécessaire pour stocker un graphe</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>2.4, question 1</span></p>
+      <p>En considérant que l'on remplace les noms des nœuds par des entiers Python (4 octets), calculer la mémoire nécessaire pour stocker chaque structure de données construite en 2.3. On ignorera l'espace mémoire inhérent à la structure de données.</p>
+    </div>
+    <div class="atelier" id="td1-ex2-q41" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "Mémoire pour le graphe des co-publications",
+  "options": {
+    "verrou": "depart",
+    "lignes": false,
+    "complet": true,
+    "types": {
+      "Entiers": "entier",
+      "Octets": "entier"
+    }
+  },
+  "consigne": "<p>Les poids sont aussi des entiers de 4 octets.</p>",
+  "depart": [
+    "| Structure | Entiers | Octets |",
+    "|---|---|---|",
+    "| Liste d'arêtes |  |  |",
+    "| Matrice d'adjacence |  |  |",
+    "| Liste d'adjacence |  |  |"
+  ],
+  "solution": [
+    "| Structure | Entiers | Octets |",
+    "|---|---|---|",
+    "| Liste d'arêtes | 45 | 180 |",
+    "| Matrice d'adjacence | 49 | 196 |",
+    "| Liste d'adjacence | 60 | 240 |"
+  ],
+  "explication": "<p>Liste d'arêtes : 15 triplets (u, v, poids), 45 entiers. Matrice : n² = 49 cases, le poids étant la valeur de la case. Liste d'adjacence : chaque arête apparaît deux fois, avec un voisin et un poids, soit 2 × 2 × 15 = 60 entiers ; les sommets eux-mêmes sont les indices (ou les clés) de la structure, que l'énoncé demande d'ignorer. Sur un graphe aussi petit et aussi dense, la matrice ne coûte pas plus cher que les autres.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>2.4, question 2</span></p>
+      <p>Considérons maintenant un graphe à 1000 sommets et 3000 arêtes non pondérées. Calculer la mémoire nécessaire pour chaque structure de données de la même manière. Qu'observe-t-on ?</p>
+    </div>
+    <div class="atelier" id="td1-ex2-q42" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "Mémoire pour 1000 sommets et 3000 arêtes",
+  "options": {
+    "verrou": "depart",
+    "lignes": false,
+    "complet": true,
+    "types": {
+      "Entiers": "entier",
+      "Octets": "entier"
+    }
+  },
+  "depart": [
+    "| Structure | Entiers | Octets |",
+    "|---|---|---|",
+    "| Liste d'arêtes |  |  |",
+    "| Matrice d'adjacence |  |  |",
+    "| Liste d'adjacence |  |  |"
+  ],
+  "solution": [
+    "| Structure | Entiers | Octets |",
+    "|---|---|---|",
+    "| Liste d'arêtes | 6000 | 24000 |",
+    "| Matrice d'adjacence | 1000000 | 4000000 |",
+    "| Liste d'adjacence | 6000 | 24000 |"
+  ],
+  "explication": "<p>Sans poids : 2 entiers par arête dans la liste d'arêtes (2m), un voisin par extrémité dans la liste d'adjacence (2m aussi), n² cases dans la matrice.</p>"
+}
+      </script>
+    </div>
+    <div class="atelier" id="td1-ex2-q42-obs" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Qu'observe-t-on ?",
+  "options": {
+    "lignes": 4
+  },
+  "solution": "La matrice coûte n² = 1 000 000 entiers (4 Mo), environ 170 fois plus que les deux listes (24 ko), qui coûtent 2m. Elle est presque vide : 6000 cases non nulles sur un million, soit une densité de 3000 / 499 500 ≈ 0,6 %.\nLes graphes réels sont creux (m de l'ordre de n, pas de n²) : on les stocke en listes, jamais en matrice dès qu'ils sont grands.",
+  "explication": "<p>La mémoire d'une liste croît avec le nombre d'arêtes, celle de la matrice avec le carré du nombre de sommets : l'écart se creuse avec la taille du graphe.</p>"
+}
+      </script>
+    </div>
+  </section>
+
+  <section>
+    <h2>Exercice 3 · Différents modèles du modèle : quelles questions pose-t-on ? <span class="ref">TD, p. 2–4</span></h2>
+    <p>Le dernier exercice ne demande aucun calcul : il s'agit de regarder un vrai réseau social, celui de dauphins de Doubtful Sound, et de se demander ce que l'on pourrait y mesurer. Chaque question annonce une notion des cours suivants.</p>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Énoncé</span></p>
+      <p>Dans les pages qui suivent, vous disposez de plusieurs visualisations du réseau social des dauphins. À partir de ces vues, répondre aux questions suivantes.</p>
+    </div>
+    <figure class="figure">
+      <img src="img/td-01-graphes-et-representations-1.png" alt="Le réseau social des dauphins, dessiné avec le nom de chaque dauphin : un groupe dense en haut à gauche (Grin, SN4, Kringel, Topless…), relié par quelques sommets (SN100, Oscar, PL, DN63…) à un groupe plus petit en bas à droite (Jet, Web, Beescratch, Upbang…). MN23 n'est relié qu'à Jet ; Cross n'est relié qu'à Trigger.">
+      <figcaption>Figure 1 du TD · Réseau social des dauphins avec leurs noms. Figures issues de <a href="https://users.dimi.uniud.it/~massimo.franceschet/bottlenose/bottlenose.html">users.dimi.uniud.it/~massimo.franceschet/bottlenose</a>.</figcaption>
+    </figure>
+    <figure class="figure">
+      <img src="img/td-01-graphes-et-representations-2.png" alt="Quatre vues du même réseau : en haut à gauche, les mâles seuls (en bleu), en plusieurs morceaux ; en haut à droite, les femelles seules (en rose), autour d'un noyau central ; en bas à gauche, le réseau complet, la taille des sommets variant avec leur importance ; en bas à droite, le réseau rangé en couches horizontales.">
+      <figcaption>Figure 2 du TD · Réseau social des dauphins mâles en haut à gauche, femelles en haut à droite. Autres vues du réseau social en bas.</figcaption>
+    </figure>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Question 1</span></p>
+      <p>Si vous deviez diffuser une information, par exemple sur la présence de prédateurs (genre des humains) à éviter, par où commenceriez-vous cette diffusion dans le réseau ? Quels critères utilisez-vous ?</p>
+    </div>
+    <div class="atelier" id="td1-ex3-q1" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Question 1",
+  "options": {
+    "lignes": 5
+  },
+  "solution": "Par des dauphins bien placés : ceux qui ont beaucoup de voisins (degré élevé, comme Grin, SN4 ou Topless dans le grand groupe) pour toucher vite beaucoup d'individus, mais aussi ceux qui sont proches de tous les autres et font le lien entre les groupes (SN100, Beescratch, PL…), sans quoi l'information resterait dans le groupe de départ.\nCritères : le degré, la proximité moyenne aux autres sommets, le rôle de pont entre groupes ; idéalement, un point de départ dans chacun des deux groupes.",
+  "explication": "<p>Ces critères sont les mesures de centralité du cours 5 (degré, proximité, intermédiarité) et la diffusion qu'il étudie.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Question 2</span></p>
+      <p>Il existe plusieurs façons de se déplacer sur le graphe pour aller de MN23 à Cross. On appelle chemin la liste des sommets par lesquels on passe lors d'un déplacement. Qu'ont en commun tous les chemins de MN23 à Cross ? Qu'apprend-on sur certains sommets ?</p>
+    </div>
+    <div class="atelier" id="td1-ex3-q2" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Question 2",
+  "options": {
+    "lignes": 5
+  },
+  "solution": "Tous commencent par MN23 – Jet (MN23 n'a que Jet pour voisin) et finissent par Trigger – Cross (Cross n'a que Trigger), et tous traversent la zone étroite qui sépare les deux groupes (SN100, Oscar, PL, DN63, Beescratch…).\nCertains sommets sont donc des passages obligés : Jet et Trigger sont sur tous ces chemins ; les supprimer isolerait MN23 ou Cross. Les sommets de la frontière entre les groupes sont sur un très grand nombre de plus courts chemins.",
+  "explication": "<p>Un sommet dont la suppression déconnecte le graphe s'appelle un point d'articulation ; le nombre de plus courts chemins qui passent par un sommet mesure son intermédiarité (cours 5).</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Question 3</span></p>
+      <p>Certains sommets du réseau ont un degré élevé. Sont-ils les plus importants ? La contraposée est-elle vraie ?</p>
+    </div>
+    <div class="atelier" id="td1-ex3-q3" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Question 3",
+  "options": {
+    "lignes": 5
+  },
+  "solution": "Pas forcément : un sommet de fort degré au cœur du grand groupe a beaucoup de voisins, mais tous dans ce groupe ; il compte moins pour relier le réseau qu'un sommet de faible degré placé entre les deux groupes (SN100, Beescratch). Le degré ne mesure qu'une importance locale.\nLa contraposée de « important ⇒ fort degré » serait « faible degré ⇒ pas important » : elle est fausse aussi, puisqu'un pont de faible degré peut être indispensable.",
+  "explication": "<p>« Important » dépend de la question posée : popularité (degré), vitesse de diffusion (proximité), contrôle des échanges (intermédiarité). D'où plusieurs mesures de centralité.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Question 4</span></p>
+      <p>Existe-t-il un ou des moyens de faire émerger des groupes au sein des dauphins pour mieux comprendre la façon dont leurs relations se structurent ?</p>
+    </div>
+    <div class="atelier" id="td1-ex3-q4" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Question 4",
+  "options": {
+    "lignes": 5
+  },
+  "solution": "Oui : chercher des groupes de sommets densément reliés entre eux et peu reliés au reste, ce qui se voit à l'œil sur la figure 1 (deux groupes). On peut les trouver par des algorithmes de détection de communautés, en supprimant les arêtes qui servent de ponts, ou en regroupant les sommets qui ont beaucoup de voisins communs. On peut aussi croiser avec des attributs connus (sexe, âge) : la figure 2 sépare mâles et femelles.",
+  "explication": "<p>C'est l'objet du cours 4 (communautés, modularité) ; le TD 2 en construit une première version à partir des plus courts chemins.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Question 5</span></p>
+      <p>Y a-t-il des sommets dont la suppression impacterait fortement la structure du réseau ?</p>
+    </div>
+    <div class="atelier" id="td1-ex3-q5" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Question 5",
+  "options": {
+    "lignes": 5
+  },
+  "solution": "Oui : les sommets de la frontière entre les deux groupes (SN100, Beescratch, PL, DN63…). Peu d'arêtes relient les groupes ; supprimer ces sommets couperait le réseau en deux, ou allongerait beaucoup les chemins entre groupes. À plus petite échelle, supprimer Jet isole MN23 et Quasi, supprimer Trigger isole Cross.\nÀ l'inverse, supprimer un sommet de fort degré au milieu d'un groupe dense change peu de chose : ses voisins restent reliés entre eux.",
+  "explication": "<p>On parle de robustesse du réseau : un réseau réel résiste bien à des suppressions au hasard, mal à des suppressions ciblées des sommets les plus centraux.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Question 6</span></p>
+      <p>Les graphes sont des modèles d'un système du réel. Par exemple, ici, on s'abstrait de la dynamique de ce système pour en étudier un état via un seul graphe. On observe qu'il est possible de visualiser de plusieurs façons ce graphe : qu'est-ce que ces visualisations semblent mettre en avant les unes par rapport aux autres ? Qu'est-ce que cela signifie en termes de modélisation ?</p>
+    </div>
+    <div class="atelier" id="td1-ex3-q6" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Question 6",
+  "options": {
+    "lignes": 5
+  },
+  "solution": "La figure 1 (placement par forces) fait ressortir les deux groupes et les ponts ; les vues par sexe montrent que mâles et femelles forment des sous-réseaux de structures différentes ; la vue en bas à gauche, avec des tailles de sommets variables, met en avant les dauphins centraux ; la vue en couches insiste sur une hiérarchie ou un ordre.\nLe graphe est le même, mais chaque dessin choisit ce qu'il montre : une visualisation est déjà une interprétation. Le graphe lui-même est un choix de modélisation (quels liens, à quelle période, sans la dynamique) : il faut choisir le modèle et sa représentation en fonction de la question posée.",
+  "explication": "<p>Comme le dit le cours 1, un modèle simplifie le réel pour en faire ressortir certaines caractéristiques : les conclusions ne valent que pour ce que le modèle a retenu.</p>"
+}
+      </script>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>Modéliser, c'est dire ce que sont les sommets, ce que sont les liens, et si ceux-ci sont orientés (relation non symétrique) ou pondérés (relation d'intensité variable).</li>
+        <li>Dans un graphe orienté, N⁺(u) se lit sur les arcs qui partent de u et N⁻(u) sur ceux qui arrivent ; Σ d⁺ = Σ d⁻ = m.</li>
+        <li>Dans un graphe non orienté, Σ d(u) = 2m : un bon contrôle des calculs de degrés.</li>
+        <li>Le degré compte des voisins, le degré pondéré additionne les poids : ce ne sont pas les mêmes questions (co-auteurs ou collaborations).</li>
+        <li>Mémoire : 2m (ou 3m avec les poids) pour la liste d'arêtes, 2m (ou 4m) pour la liste d'adjacence, n² pour la matrice ; sur un grand graphe creux, la matrice est hors de prix.</li>
+        <li>Un même graphe se dessine de plusieurs façons, et chaque dessin met en avant autre chose : choisir la représentation selon la question.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Un graphe orienté a 10 arcs. Que valent la somme des degrés sortants et la somme des degrés totaux ?</summary>
+        <div><p>10 et 20 : chaque arc compte une fois comme sortant (à sa source) et une fois comme entrant (à sa cible).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi le graphe des co-publications n'est-il pas orienté ?</summary>
+        <div><p>Co-signer un article est une relation symétrique : si u a publié avec v, v a publié avec u. Une influence, elle, peut n'aller que dans un sens.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Deux chercheurs ont le même degré. Ont-ils forcément le même degré pondéré ?</summary>
+        <div><p>Non : AL et ND ont tous deux 4 co-auteurs, mais 24 et 9 collaborations. Le degré compte les voisins, le degré pondéré les articles partagés avec eux.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Dans quel cas la matrice d'adjacence est-elle un bon choix ?</summary>
+        <div><p>Pour un petit graphe, ou un graphe dense (m proche de n²/2), quand on doit souvent tester si deux sommets sont voisins : la réponse est immédiate. Pour un grand graphe creux, elle gaspille la mémoire.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un sommet de faible degré peut-il être indispensable à un réseau ?</summary>
+        <div><p>Oui, s'il est le seul pont entre deux groupes : le supprimer les déconnecte. L'importance d'un sommet ne se résume pas à son degré.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="index.html"><small>← Précédent</small>Théorie des graphes</a>
+    <a class="suivant" href="td-02-parcours-connexite-tarjan.html"><small>Suivant →</small>TD 2 · Parcours, connexité et Tarjan</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Théorie des graphes · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

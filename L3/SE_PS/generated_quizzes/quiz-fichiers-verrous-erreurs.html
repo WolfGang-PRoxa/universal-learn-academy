@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="se">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Fichiers et verrous : reprendre les erreurs · Programmation système L3</title>
+<meta name="description" content="Quiz ciblé de programmation système (L3) sur les notions manquées lors des tentatives du 28 septembre : catalogue et i-nœud, type d'une référence avec st_mode, verrou externe, fcntl et lockf, verrous consultatifs et impératifs, avec deux fonctions C exécutées.">
+<link rel="stylesheet" href="../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../index.html">studies</a>
+    <a href="../../index.html">L3</a>
+    <a href="../generated_courses/index.html">Programmation système</a>
+    <span aria-current="page">Quiz · Reprendre les erreurs</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Programmation système</span> Quiz · L3 S5</p>
+    <h1>Fichiers et verrous : reprendre les erreurs</h1>
+    <p class="chapeau">Quinze questions ciblées sur les notions manquées lors des deux tentatives du 28 septembre (quiz du cours 2 et annale du CC1) : rôle du catalogue et contenu d'une entrée, type d'une référence avec <code>st_mode</code>, verrou externe, <code>fcntl</code> et <code>lockf</code>, verrous consultatifs et impératifs. Chaque explication reprend la confusion relevée. Deux fonctions C sont exécutées et corrigées automatiquement.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-01-fichiers-catalogues.html">Cours 1 · Fichiers et catalogues</a> · <a href="../generated_courses/cours-02-verrous.html">Cours 2 · Les verrous sur les fichiers</a></dd></div>
+      <div><dt>D'après</dt><dd>les tentatives archivées dans <code>quiz_results/</code></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-01">1<sup>er</sup> oct. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Programmation système · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "se-fichiers-verrous-erreurs",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 1 · Fichiers et catalogues",
+      "lien": "../generated_courses/cours-01-fichiers-catalogues.html"
+    },
+    {
+      "titre": "Cours 2 · Les verrous sur les fichiers",
+      "lien": "../generated_courses/cours-02-verrous.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "vrai-faux",
+      "theme": "Catalogues et i-nœuds",
+      "difficulte": 1,
+      "enonce": "<p>Le rôle d'un catalogue est d'organiser l'accès simultané de plusieurs processus aux données d'un fichier ouvert.</p>",
+      "reponse": false,
+      "explication": "<p>Faux : c'est le rôle des verrous et du descripteur commun (cours 2). Un catalogue associe à chaque <strong>nom</strong> de fichier son <strong>adresse sur le disque</strong> ; sous Unix, une entrée de catalogue est un couple (nom, numéro d'i-nœud). Le SGF le consulte pour retrouver un fichier à partir de son nom, par exemple à l'ouverture. C'est la réponse qu'attendait la question 1 du CC1, « Quel est le rôle d'un catalogue ? ».</p>",
+      "revoir": {
+        "texte": "Cours 1 · Rôle du catalogue",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#role-du-catalogue"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "qcm-multi",
+      "theme": "Catalogues et i-nœuds",
+      "difficulte": 1,
+      "enonce": "<p>Sous Unix, que contient une entrée de catalogue ? Cocher tout ce qui y figure.</p>",
+      "choix": [
+        "Le nom du fichier",
+        "Le numéro de son i-nœud",
+        "Ses droits d'accès",
+        "Sa taille",
+        "Les adresses de ses blocs",
+        "La date de sa dernière modification"
+      ],
+      "reponses": [
+        0,
+        1
+      ],
+      "explication": "<p>Une entrée de catalogue ne contient que le nom et le numéro d'i-nœud. Tout le reste (droits, taille, dates, adresses des blocs, nombre de liens) est dans l'i-nœud, où <code>stat</code> va le chercher. C'est cette séparation qui permet à un même fichier d'avoir plusieurs noms, les liens physiques : plusieurs entrées, un seul i-nœud.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les catalogues d'Unix",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#les-catalogues-d-unix"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "numerique",
+      "theme": "Catalogues et i-nœuds",
+      "difficulte": 2,
+      "enonce": "<p>Dans un même catalogue, <code>ls -li</code> affiche trois noms, <code>a</code>, <code>b</code> et <code>c</code>, avec le même numéro d'i-nœud, 4217, et un compteur de liens de 3. Combien de fichiers distincts (d'i-nœuds) ces trois noms désignent-ils ?</p>",
+      "reponse": 1,
+      "explication": "<p>Un seul : les trois entrées renvoient au même i-nœud, ce sont trois liens physiques vers le même fichier. Le contenu, la taille et les droits sont communs, puisqu'ils sont dans l'i-nœud, et non dans les entrées. Supprimer <code>a</code> fait passer le compteur de liens à 2 ; le fichier n'est effacé que quand ce compteur tombe à 0.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Liens physiques et liens symboliques",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#liens-physiques-et-liens-symboliques"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "association",
+      "theme": "Catalogues et i-nœuds",
+      "difficulte": 2,
+      "enonce": "<p>Associer chaque réalisation à l'organisation des blocs qu'elle applique :</p>",
+      "paires": [
+        [
+          "La FAT de MS-DOS",
+          "Une table des blocs : une entrée par secteur, qui donne le secteur suivant du fichier"
+        ],
+        [
+          "L'i-nœud d'Unix",
+          "Des blocs d'index : 10 adresses directes, puis des index à un, deux et trois niveaux"
+        ],
+        [
+          "Le chaînage des blocs",
+          "La fin de chaque bloc contient l'adresse du bloc suivant"
+        ]
+      ],
+      "intrus": [
+        "Les blocs d'un fichier sont toujours consécutifs sur le disque"
+      ],
+      "explication": "<p>La FAT est une table des blocs, gardée en mémoire centrale ; l'i-nœud d'Unix applique les blocs d'index, étagés sur plusieurs niveaux pour les grands fichiers ; le chaînage range l'adresse du suivant dans chaque bloc. Des blocs toujours consécutifs (l'intrus) ne sont aucune des trois organisations du cours : justement, les blocs d'un fichier sont rarement voisins sur le disque.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Comparer les trois organisations",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#comparer-les-trois-organisations"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "qcm",
+      "theme": "Type d'une référence (st_mode)",
+      "difficulte": 2,
+      "enonce": "<p>Pourquoi le test <code>if (info.st_mode &amp; S_IFDIR)</code> ne suffit-il pas à reconnaître un catalogue ?</p>",
+      "choix": [
+        "Les codes d'une socket (<code>1100</code>) et d'un périphérique en mode bloc (<code>0110</code>) contiennent aussi le bit de <code>S_IFDIR</code> (<code>0100</code>) : le test serait vrai pour eux",
+        "<code>S_IFDIR</code> vaut 0 : le test est toujours faux",
+        "L'opérateur <code>&amp;</code> renvoie toujours 0 ou 1, et perd l'information sur le type",
+        "Les bits de droits se mélangent au type, et rendent le test faux pour un catalogue en <code>755</code>"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Comparer, bit à bit, le code de <code>S_IFDIR</code> (<code>0100</code>) et celui de <code>S_IFSOCK</code> (<code>1100</code>).</p>"
+      ],
+      "explication": "<p>Le type n'est pas un bit isolé, mais un code sur 4 bits. <code>S_IFSOCK</code> (<code>1100</code>) et <code>S_IFBLK</code> (<code>0110</code>) contiennent le bit de <code>S_IFDIR</code> (<code>0100</code>) : <code>st_mode &amp; S_IFDIR</code> serait non nul pour eux aussi. On isole donc les 4 bits du type avec le masque <code>S_IFMT</code>, puis on compare : <code>(info.st_mode &amp; S_IFMT) == S_IFDIR</code>, ou <code>S_ISDIR(info.st_mode)</code>. L'inverse, <code>(info.st_mode &amp; S_IFDIR) == S_IFMT</code>, est toujours faux : un masque par <code>S_IFDIR</code> ne peut pas donner <code>1111</code>.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Le type et les droits : st_mode",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#le-type-et-les-droits-st-mode"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "numerique",
+      "theme": "Type d'une référence (st_mode)",
+      "difficulte": 2,
+      "enonce": "<p>Un catalogue a pour <code>st_mode</code> la valeur octale <code>040755</code>. Que vaut l'expression C suivante ?</p><pre><code class='language-c'>info.st_mode &amp; S_IFMT == S_IFDIR</code></pre>",
+      "reponse": 0,
+      "indices": [
+        "<p>Des deux opérateurs <code>&amp;</code> et <code>==</code>, lequel est évalué en premier ?</p>"
+      ],
+      "explication": "<p>0. En C, <code>==</code> est prioritaire sur <code>&amp;</code> : l'expression se lit <code>info.st_mode &amp; (S_IFMT == S_IFDIR)</code>. <code>S_IFMT == S_IFDIR</code> est faux, donc vaut 0, et <code>040755 &amp; 0</code> vaut 0, pour un catalogue comme pour n'importe quel fichier. C'était l'erreur de la fonction <code>catalogue</code> des notes partagées. Avec les parenthèses, <code>(info.st_mode &amp; S_IFMT) == S_IFDIR</code> vaut 1 ; <code>gcc -Wall</code> signale le piège (« suggest parentheses »).</p>",
+      "revoir": {
+        "texte": "Cours 1 · Le type et les droits : st_mode",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#le-type-et-les-droits-st-mode"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "code",
+      "langage": "c",
+      "theme": "Type d'une référence (st_mode)",
+      "difficulte": 2,
+      "enonce": "<p>Écrire la fonction <code>type_ref</code>, qui reçoit la valeur du champ <code>st_mode</code> d'une référence et renvoie un caractère, comme la première colonne de <code>ls -l</code> : <code>'d'</code> pour un catalogue, <code>'-'</code> pour un fichier ordinaire, <code>'l'</code> pour un lien symbolique, <code>'s'</code> pour une socket, <code>'?'</code> pour tout autre type. Le programme de test lit des valeurs en octal et affiche le résultat de chacune.</p>",
+      "depart": "#include <stdio.h>\n#include <sys/stat.h>\n#ifndef S_IFLNK\n#define S_IFLNK  0120000\n#endif\n#ifndef S_IFSOCK\n#define S_IFSOCK 0140000\n#endif\n\n/* mode : la valeur du champ st_mode */\nchar type_ref(unsigned int mode)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <sys/stat.h>\n#ifndef S_IFLNK\n#define S_IFLNK  0120000\n#endif\n#ifndef S_IFSOCK\n#define S_IFSOCK 0140000\n#endif\n\n/* mode : la valeur du champ st_mode */\nchar type_ref(unsigned int mode)\n{\n    switch (mode & S_IFMT) {          /* les 4 bits du type, puis une comparaison */\n    case S_IFDIR:  return 'd';\n    case S_IFREG:  return '-';\n    case S_IFLNK:  return 'l';\n    case S_IFSOCK: return 's';\n    default:       return '?';\n    }\n}\n",
+      "harnais": "\nint main(void)\n{\n    unsigned int mode;\n    while (scanf(\"%o\", &mode) == 1)\n        printf(\"%c\\n\", type_ref(mode));\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "catalogue",
+          "entree": "040755\n",
+          "sortie": "d\n"
+        },
+        {
+          "nom": "fichier ordinaire",
+          "entree": "0100644\n",
+          "sortie": "-\n"
+        },
+        {
+          "nom": "lien symbolique",
+          "entree": "0120777\n",
+          "sortie": "l\n"
+        },
+        {
+          "nom": "socket",
+          "entree": "0140755\n",
+          "sortie": "s\n"
+        },
+        {
+          "nom": "périphérique en mode bloc",
+          "entree": "060660\n",
+          "sortie": "?\n"
+        },
+        {
+          "nom": "fichier avec SET_UID",
+          "entree": "0104755\n",
+          "sortie": "-\n"
+        },
+        {
+          "nom": "catalogue avec sticky bit",
+          "entree": "041777\n",
+          "sortie": "d\n"
+        },
+        {
+          "nom": "tube nommé",
+          "entree": "010644\n",
+          "sortie": "?\n"
+        }
+      ],
+      "indices": [
+        "<p>Isoler d'abord les 4 bits du type avec <code>mode &amp; S_IFMT</code>, puis comparer le résultat à chaque constante, par exemple dans un <code>switch</code>.</p>"
+      ],
+      "explication": "<p>On masque par <code>S_IFMT</code> pour ne garder que le type, puis on compare à chaque constante : un <code>switch</code> sur <code>mode &amp; S_IFMT</code> le fait d'un coup. Le test du périphérique en mode bloc (<code>060660</code>) et celui de la socket piègent un test bit à bit comme <code>mode &amp; S_IFDIR</code>, vrai pour eux ; les tests avec <code>SET_UID</code> et sticky bit vérifient que les bits spéciaux ne perturbent pas le type. Les constantes <code>S_IFLNK</code> et <code>S_IFSOCK</code> sont redéfinies au début parce que le compilateur de Windows (MinGW) ne les fournit pas ; sous Linux, <code>&lt;sys/stat.h&gt;</code> les définit.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Le type et les droits : st_mode",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#le-type-et-les-droits-st-mode"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "qcm-multi",
+      "theme": "Verrou externe",
+      "difficulte": 1,
+      "enonce": "<p>Quels sont des défauts d'un verrou externe, c'est-à-dire d'un fichier verrou créé avec <code>open(…, O_CREAT | O_EXCL, 0)</code> ?</p>",
+      "choix": [
+        "Le processus qui attend refait <code>open</code> en boucle : attente active, qui consomme du temps processeur",
+        "Il n'a pas de portée : il verrouille toujours le fichier entier",
+        "Il est toujours exclusif : deux lecteurs ne peuvent pas lire en même temps",
+        "Si le processus qui le tient s'arrête sans le lever, le fichier verrou reste, et bloque les autres",
+        "Le système bloque les <code>read</code> et <code>write</code> des processus qui ne l'ont pas demandé",
+        "Il ne fonctionne qu'entre deux processus d'un même programme"
+      ],
+      "reponses": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "explication": "<p>Un verrou externe n'est qu'un fichier, dont la seule présence signale que la ressource est prise. D'où ses défauts : l'attente active (le processus refait <code>open</code> en boucle), l'absence de portée (tout ou rien), l'absence de verrou partagé (deux lecteurs s'excluent), un verrou qui survit à un plantage, aucune détection d'interblocage, et une discipline à respecter par tous les programmes. Le système, lui, ne bloque rien : ce serait un verrou impératif. Au CC1, trois de ces défauts suffisaient.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Avantages et limites",
+        "lien": "../generated_courses/cours-02-verrous.html#avantages-et-limites"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "trous",
+      "theme": "Verrou externe",
+      "difficulte": 2,
+      "enonce": "<p>Compléter ces deux fonctions : la première pose un verrou externe sans attendre, la seconde le lève.</p>",
+      "code": true,
+      "texte": "/* Renvoie 0 si le verrou est posé, -1 s'il est déjà pris, -2 pour une autre erreur */\nint poser_nb(const char *verrou)\n{\n    int fd = open(verrou, {{0}}, 0);\n    if (fd == -1)\n        return errno == {{1}} ? -1 : -2;\n    close(fd);\n    return 0;\n}\n\nvoid lever(const char *verrou)\n{\n    {{2}}(verrou);\n}",
+      "trous": [
+        {
+          "choix": [
+            "O_CREAT | O_EXCL",
+            "O_CREAT",
+            "O_WRONLY",
+            "O_CREAT | O_TRUNC"
+          ],
+          "reponse": 0
+        },
+        {
+          "reponses": [
+            "EEXIST"
+          ]
+        },
+        {
+          "reponses": [
+            "unlink",
+            "remove"
+          ]
+        }
+      ],
+      "explication": "<p><code>O_CREAT | O_EXCL</code> rend la création atomique : <code>open</code> échoue si le fichier existe déjà, et <code>errno</code> vaut alors <code>EEXIST</code>. On compare <code>errno</code> à cette constante nommée, et non à un nombre comme 1. On lève le verrou en <strong>supprimant</strong> le fichier verrou avec <code>unlink</code> : <code>close</code> ne fait que fermer le descripteur, le fichier reste sur le disque, et le verrou resterait posé pour toujours. <code>remove</code>, de la bibliothèque C, fait la même chose qu'<code>unlink</code> pour un fichier.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Poser et lever un verrou externe",
+        "lien": "../generated_courses/cours-02-verrous.html#poser-et-lever-un-verrou-externe"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "qcm-multi",
+      "theme": "fcntl et lockf",
+      "difficulte": 2,
+      "enonce": "<p>Aucun verrou n'est posé sur le fichier. Lesquels de ces appels à <code>fcntl(fd, F_SETLK, &amp;verrou)</code> réussissent ?</p>",
+      "choix": [
+        "Un verrou <code>F_RDLCK</code> sur un fichier ouvert avec <code>O_RDONLY</code>",
+        "Un verrou <code>F_RDLCK</code> sur un fichier ouvert avec <code>O_RDWR</code>",
+        "Un verrou <code>F_WRLCK</code> sur un fichier ouvert avec <code>O_WRONLY</code>",
+        "Un verrou <code>F_WRLCK</code> sur un fichier ouvert avec <code>O_RDONLY</code>",
+        "Un verrou <code>F_RDLCK</code> sur un fichier ouvert avec <code>O_WRONLY</code>"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "explication": "<p>Le type du verrou doit correspondre au mode d'ouverture : un verrou en lecture (<code>F_RDLCK</code>) demande un descripteur ouvert en lecture (<code>O_RDONLY</code> ou <code>O_RDWR</code>), un verrou en écriture (<code>F_WRLCK</code>) un descripteur ouvert en écriture (<code>O_WRONLY</code> ou <code>O_RDWR</code>). Sinon, <code>fcntl</code> échoue avec <code>EBADF</code>, bien que le descripteur soit valide. <code>O_RDWR</code> permet les deux types de verrous : c'est pourquoi l'écrivain du cours ouvre son fichier en lecture-écriture.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les erreurs de fcntl",
+        "lien": "../generated_courses/cours-02-verrous.html#les-erreurs-de-fcntl"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "qcm",
+      "theme": "fcntl et lockf",
+      "difficulte": 2,
+      "enonce": "<p>Qu'est-ce qui ne va pas dans ce fragment, qui veut lire l'enregistrement de 26 octets du début du fichier sous la protection d'un verrou partagé ?</p><pre><code class='language-c'>struct flock verrou;\nfcntl(fd, F_SETLKW, &amp;verrou);\nverrou.l_type = F_RDLCK;\nverrou.l_whence = SEEK_SET;\nverrou.l_start = 0;\nverrou.l_len = 26;\nlseek(fd, 0, SEEK_SET);\nread(fd, enreg, 26);</code></pre>",
+      "choix": [
+        "<code>fcntl</code> lit la structure avant qu'elle soit remplie : le verrou demandé n'est pas celui qui est décrit ensuite",
+        "Il faut lever le verrou avant le <code>read</code>",
+        "<code>F_SETLKW</code> ne permet pas de poser un verrou partagé",
+        "<code>lseek</code> doit être appelé avant <code>fcntl</code>, pour indiquer la zone à verrouiller"
+      ],
+      "reponse": 0,
+      "explication": "<p><code>fcntl</code> lit la <code>struct flock</code> au moment de l'appel : elle doit être remplie avant. Ici, elle ne l'est pas encore quand <code>fcntl</code> la reçoit : type, origine et portée valent n'importe quoi, l'appel peut échouer (<code>EINVAL</code>) ou poser un tout autre verrou, et la lecture se fait sans la protection voulue. L'ordre est : remplir la structure, appeler <code>fcntl</code>, puis <code>lseek</code> et <code>read</code>, enfin lever le verrou (<code>F_UNLCK</code>). La position courante n'intervient pas : avec <code>SEEK_SET</code>, la portée se compte depuis le début du fichier.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Exemple : un écrivain et un lecteur d'enregistrements",
+        "lien": "../generated_courses/cours-02-verrous.html#exemple-un-ecrivain-et-un-lecteur-d-enregistrements"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "qcm",
+      "theme": "fcntl et lockf",
+      "difficulte": 2,
+      "enonce": "<p>Deux processus exécutent en même temps <code>lockf(fd, F_LOCK, 26)</code> pour <em>lire</em> le même enregistrement. Que se passe-t-il ?</p>",
+      "choix": [
+        "Le second attend que le premier lève son verrou : <code>lockf</code> ne pose que des verrous exclusifs",
+        "Les deux lisent en même temps : <code>lockf</code> pose un verrou partagé pour une lecture",
+        "Le second échoue tout de suite avec <code>EAGAIN</code>",
+        "<code>lockf</code> choisit le type de verrou selon le mode d'ouverture du fichier"
+      ],
+      "reponse": 0,
+      "explication": "<p><code>lockf</code> ne connaît que les verrous exclusifs : deux lecteurs qui l'utilisent s'excluent, même s'ils ne font que lire. Pour que plusieurs lecteurs lisent en même temps, il faut des verrous partagés, donc <code>fcntl</code> avec <code>F_RDLCK</code>. <code>F_LOCK</code> attend ; c'est <code>F_TLOCK</code> qui échoue tout de suite (<code>EACCES</code> ou <code>EAGAIN</code>). Et comme le verrou est exclusif, le fichier doit être ouvert en écriture.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Une autre interface : lockf",
+        "lien": "../generated_courses/cours-02-verrous.html#une-autre-interface-lockf"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "code",
+      "langage": "c",
+      "theme": "fcntl et lockf",
+      "difficulte": 2,
+      "enonce": "<p>Un verrou couvre une zone décrite par <code>(l_start, l_len)</code>, comptée depuis le début du fichier : les octets <code>l_start</code> à <code>l_start + l_len − 1</code> ou, si <code>l_len</code> vaut 0, tous les octets à partir de <code>l_start</code>, jusqu'à la fin du fichier et au-delà. Écrire la fonction <code>chevauche</code>, qui renvoie 1 si deux zones ont au moins un octet en commun, 0 sinon. Le programme de test lit des lignes de quatre entiers <code>s1 n1 s2 n2</code>.</p>",
+      "depart": "#include <stdio.h>\n\n/* Zone 1 : (s1, n1) ; zone 2 : (s2, n2) ; une longueur nulle va jusqu'à la fin, et au-delà */\nint chevauche(long s1, long n1, long s2, long n2)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n\n/* Zone 1 : (s1, n1) ; zone 2 : (s2, n2) ; une longueur nulle va jusqu'à la fin, et au-delà */\nint chevauche(long s1, long n1, long s2, long n2)\n{\n    if (n1 != 0 && s1 + n1 <= s2)\n        return 0;                   /* zone 1 entièrement avant la zone 2 */\n    if (n2 != 0 && s2 + n2 <= s1)\n        return 0;                   /* zone 2 entièrement avant la zone 1 */\n    return 1;\n}\n",
+      "harnais": "\nint main(void)\n{\n    long s1, n1, s2, n2;\n    while (scanf(\"%ld %ld %ld %ld\", &s1, &n1, &s2, &n2) == 4)\n        printf(\"%d\\n\", chevauche(s1, n1, s2, n2));\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "zones qui se recouvrent",
+          "entree": "0 10 5 5\n",
+          "sortie": "1\n"
+        },
+        {
+          "nom": "zones qui se touchent",
+          "entree": "0 10 10 5\n",
+          "sortie": "0\n"
+        },
+        {
+          "nom": "dans l'autre sens",
+          "entree": "10 5 0 10\n",
+          "sortie": "0\n"
+        },
+        {
+          "nom": "un seul octet commun",
+          "entree": "0 10 9 1\n",
+          "sortie": "1\n"
+        },
+        {
+          "nom": "longueur nulle : jusqu'à la fin, et au-delà",
+          "entree": "100 0 5000 10\n",
+          "sortie": "1\n"
+        },
+        {
+          "nom": "longueur nulle, l'autre zone avant",
+          "entree": "100 0 0 100\n",
+          "sortie": "0\n"
+        },
+        {
+          "nom": "deux longueurs nulles",
+          "entree": "0 0 50 0\n",
+          "sortie": "1\n"
+        },
+        {
+          "nom": "enregistrements voisins",
+          "entree": "26 13 13 13\n",
+          "sortie": "0\n"
+        },
+        {
+          "nom": "zone incluse dans l'autre",
+          "entree": "13 13 0 39\n",
+          "sortie": "1\n"
+        }
+      ],
+      "indices": [
+        "<p>Tester plutôt quand les zones ne se chevauchent <em>pas</em> : l'une se termine avant le début de l'autre.</p>",
+        "<p>La zone (<var>s</var>, <var>n</var>) se termine avant l'octet <var>t</var> si <var>s</var> + <var>n</var> ≤ <var>t</var> ; une zone de longueur nulle ne se termine jamais.</p>"
+      ],
+      "explication": "<p>Deux zones ne se chevauchent pas quand l'une se termine avant que l'autre commence. La zone (<var>s</var>, <var>n</var>) s'arrête juste avant l'octet <var>s</var> + <var>n</var> : elle est entièrement avant l'octet <var>t</var> si <var>s</var> + <var>n</var> ≤ <var>t</var>, ce qui n'arrive jamais quand <var>n</var> vaut 0. Il reste à tester les deux sens. Le test des zones qui se touchent (octets 0 à 9, puis 10 à 14) piège un <code>&lt;</code> écrit à la place de <code>&lt;=</code>. C'est le cœur de la fonction <code>conflit</code> du quiz du cours 2, qui ajoute la règle des types : deux verrous partagés ne sont jamais en conflit.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La portée d'un verrou",
+        "lien": "../generated_courses/cours-02-verrous.html#la-portee-d-un-verrou"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "vrai-faux",
+      "theme": "Consultatif ou impératif",
+      "difficulte": 2,
+      "enonce": "<p>Le processus A tient, avec <code>fcntl</code>, un verrou exclusif sur les octets 0 à 25 d'un fichier. Le processus B ouvre ce fichier en écriture et, sans demander de verrou, y écrit 10 octets à partir de l'octet 0. Sous Linux, l'écriture de B réussit.</p>",
+      "reponse": true,
+      "explication": "<p>Vrai : les verrous de <code>fcntl</code> sont <strong>consultatifs</strong>. Le système ne contrôle que les demandes de verrous : il fait attendre ou refuse un autre <code>fcntl</code> sur la zone, mais un <code>read</code> ou un <code>write</code> qui n'a rien demandé passe. Le verrou ne protège que des programmes qui jouent le jeu, en demandant tous le verrou avant d'accéder au fichier. Un verrou impératif bloquerait l'écriture de B, mais Linux ne les applique plus depuis la version 5.15.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les verrous consultatifs",
+        "lien": "../generated_courses/cours-02-verrous.html#les-verrous-consultatifs"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "qcm",
+      "theme": "Consultatif ou impératif",
+      "difficulte": 1,
+      "enonce": "<p>Que signifie « consultatif » dans « verrou consultatif » ?</p>",
+      "choix": [
+        "Le verrou se consulte : seuls les programmes qui le demandent avant d'accéder au fichier le respectent",
+        "Il empêche les autres utilisateurs de consulter, c'est-à-dire de lire, le fichier",
+        "Le système bloque les <code>read</code> et <code>write</code> des processus qui ne le détiennent pas",
+        "Il ne fait qu'avertir l'utilisateur par un message, sans jamais rien bloquer"
+      ],
+      "reponse": 0,
+      "explication": "<p>« Consultatif » (<span lang='en'>advisory</span>) veut dire que le verrou est à <em>consulter</em> : chaque programme doit le demander avant d'accéder au fichier, et seuls ceux qui le font sont arrêtés, par l'attente ou le refus de leur demande. Il ne s'agit pas d'empêcher de consulter le fichier. Un verrou <strong>impératif</strong> (<span lang='en'>mandatory</span>), lui, est imposé par le système, qui bloque les <code>read</code> et <code>write</code> des autres processus sur la zone : c'est le plus contraignant des deux, et non le plus permissif. Le consultatif est le plus courant ; il exige que tous les programmes qui partagent le fichier demandent le verrou.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les verrous consultatifs",
+        "lien": "../generated_courses/cours-02-verrous.html#les-verrous-consultatifs"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>
