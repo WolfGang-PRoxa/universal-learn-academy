@@ -35,21 +35,79 @@ a.ula-bouton::after { content: none; }
 }
 .ula-profil[aria-pressed="true"] { background: var(--accent-fort); border-color: var(--accent-fort); color: var(--surface); font-weight: 650; }
 
-/* Cursus */
-.ula-arbre, .ula-arbre ul { list-style: none; margin: 0; padding: 0; }
-.ula-arbre ul { margin-left: 1.1rem; padding-left: 0.8rem; border-left: 1px solid var(--bordure); }
-.ula-noeud { margin: 0.35rem 0; }
-.ula-ligne { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.6rem; padding: 0.3rem 0.5rem; border-radius: 8px; }
-.ula-ligne:hover { background: var(--surface-2); }
-.ula-ligne .ula-outils { display: inline-flex; gap: 0.1rem; opacity: 0.25; transition: opacity 0.15s; }
-.ula-ligne:hover .ula-outils, .ula-ligne:focus-within .ula-outils { opacity: 1; }
-@media (hover: none) { .ula-ligne .ula-outils { opacity: 1; } }
-.ula-dossier-nom { font-weight: 650; }
-.ula-dossier-nom::before { content: "▸ "; color: var(--texte-3); }
+/* Cours : titre, ligne d'information, pastille de la couleur de la matière */
 .ula-cours-titre { font-weight: 600; }
 .ula-cours-info { color: var(--texte-3); font-size: 0.85rem; }
 .ula-pastille { display: inline-block; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--accent); flex: none; }
-.ula-absent { color: var(--texte-3); font-style: italic; }
+
+/* Les grilles de fiches et de blocs prennent toute la largeur de la page : la
+   charte limite les listes d'un accueil à la largeur de lecture */
+.sans-sommaire > section > :is(.ula-cartes, .ula-blocs) { max-width: none; }
+
+/* Blocs (dossiers du cursus, packs du catalogue) : même carte que les matières,
+   sur 1 à 3 colonnes selon la largeur ; les cours y sont des boutons */
+.ula-blocs {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 25rem), 1fr));
+  gap: 1rem; margin: 0.75rem 0 1.5rem; padding: 0; list-style: none; align-items: start;
+}
+.ula-bloc {
+  display: flex; flex-direction: column; gap: 0.6rem; min-width: 0;
+  padding: 0.9rem 1rem 1rem; border: 1px solid var(--bordure); border-radius: 12px;
+  background: var(--surface); border-top: 3px solid var(--accent);
+}
+.ula-bloc-tete { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+.ula-bloc-titres { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.ula-bloc h3, .ula-sous-bloc h4 { margin: 0; font-size: 1.08rem; line-height: 1.3; }
+.ula-sous-bloc h4 { font-size: 0.98rem; }
+.ula-bloc h3::before, .ula-sous-bloc h4::before { content: none; }
+.ula-bloc-titres .ula-cours-info, .ula-bloc > .ula-note { margin: 0; }
+.ula-bloc > .ula-actions { margin-top: 0; }
+.ula-sous-bloc { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.7rem 0.75rem 0.8rem; border: 1px solid var(--bordure); border-radius: 10px; background: var(--surface-2); }
+
+.ula-boutons {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 11.5rem), 1fr));
+  gap: 0.45rem; margin: 0; padding: 0; list-style: none;
+}
+.ula-item { position: relative; display: flex; min-width: 0; }
+.ula-cours-bouton {
+  flex: 1; min-width: 0; min-height: 2.75rem;
+  display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.45rem 2.1rem 0.45rem 0.7rem;
+  font: inherit; font-size: 0.92rem; line-height: 1.25; text-align: left;
+  color: var(--texte); background: var(--fond); text-decoration: none;
+  border: 1px solid var(--bordure-forte); border-radius: 8px;
+  cursor: pointer; transition: border-color 0.15s, background 0.15s;
+}
+a.ula-cours-bouton::after { content: none; }
+.ula-cours-bouton:hover { border-color: var(--accent); background: var(--accent-doux); }
+.ula-cours-bouton:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ula-cours-bouton:disabled { cursor: progress; opacity: 0.6; }
+.ula-cours-bouton.absent { border-style: dashed; color: var(--texte-2); background: transparent; }
+.ula-cours-bouton.absent .ula-pastille { background: transparent; border: 2px solid var(--accent); }
+.ula-cours-bouton.absent:hover { border-color: var(--accent); color: var(--texte); }
+.ula-cours-texte { display: flex; flex-direction: column; min-width: 0; }
+.ula-cours-texte .ula-cours-titre { overflow-wrap: anywhere; }
+.ula-cours-texte .ula-cours-info { font-size: 0.78rem; }
+
+/* Menu « ⋯ » : actions rares d'un bloc ou d'un cours */
+.ula-menu { position: relative; flex: none; }
+.ula-item > .ula-menu { position: absolute; top: 0.3rem; right: 0.25rem; }
+.ula-menu > summary {
+  list-style: none; display: grid; place-items: center;
+  width: 1.8rem; height: 1.8rem; border-radius: 6px; cursor: pointer;
+  color: var(--texte-3); font-weight: 700; line-height: 1; user-select: none;
+}
+.ula-menu > summary::-webkit-details-marker { display: none; }
+.cours .ula-menu > summary::before { content: none; display: none; }
+.ula-menu > summary:hover, .ula-menu[open] > summary { color: var(--texte); background: var(--surface-2); }
+.ula-menu-liste {
+  position: absolute; right: 0; top: calc(100% + 0.25rem); z-index: 20;
+  display: flex; flex-direction: column; gap: 0.15rem; min-width: 13rem; padding: 0.35rem;
+  background: var(--surface); border: 1px solid var(--bordure-forte); border-radius: 10px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+}
+.ula-menu-liste .ula-bouton { justify-content: flex-start; border-color: transparent; background: transparent; min-height: 2rem; }
+.ula-menu-liste .ula-bouton:hover { background: var(--surface-2); border-color: transparent; }
 
 /* Cours du catalogue */
 .ula-cartes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr)); gap: 0.75rem; margin: 0.75rem 0 1.5rem; padding: 0; list-style: none; }

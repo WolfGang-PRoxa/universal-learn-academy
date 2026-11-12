@@ -466,6 +466,13 @@ img, svg, video { max-width: 100%; height: auto; }
 @media screen and (min-width: 90rem) {
   html { font-size: calc(100vw / 90); }
 }
+/* Entre 48rem et 90rem (768 à 1 440 px), la taille de base passe en douceur de
+   15 à 16 px : une fenêtre moyenne (portable, écran mis à l'échelle à 125 %)
+   garde plus de place pour les fiches, et la taille rejoint sans saut celle du
+   grand écran à 1 440 px. */
+@media screen and (min-width: 48rem) and (max-width: 89.99rem) {
+  html { font-size: calc(15px + (100vw - 768px) / 672); }
+}
 
 /* Grille : colonne de lecture seule, ou sommaire + lecture (classe ajoutée
    par cours.js quand il construit le sommaire). */
@@ -1477,12 +1484,16 @@ a.chapitre:hover { border-color: var(--accent); box-shadow: var(--ombre); }
 }
 .a-venir .chapitre-num:empty::before { background: var(--accent-trait); }
 
-/* Accueils sans sommaire (matière, accueil général) : sur grand écran, la page
-   prend la largeur de la barre du haut et les fiches se rangent sur plusieurs
-   colonnes ; les paragraphes gardent la largeur de lecture. */
-@media (min-width: 72rem) {
-  .page:has(> .sans-sommaire) { grid-template-columns: minmax(0, 80rem); }
+/* Accueils sans sommaire (matière, accueil général) : dès que la fenêtre dépasse
+   la colonne de lecture (48rem), la page prend toute la largeur disponible
+   (jusqu'à 84rem, qui grandit avec la taille de base au-delà de 1 440 px) et les
+   fiches se rangent sur plusieurs colonnes ; les paragraphes gardent la largeur
+   de lecture. Les pages de cours (colonne + sommaire) ne sont pas concernées. */
+@media (min-width: 48rem) {
+  .page:has(> .sans-sommaire) { grid-template-columns: minmax(0, 84rem); }
   .sans-sommaire .chapeau, .sans-sommaire > section > :is(p, ul) { max-width: var(--mesure); }
+}
+@media (min-width: 72rem) {
   .sans-sommaire ol.chapitres { grid-template-columns: repeat(auto-fill, minmax(min(100%, 30rem), 1fr)); }
   .sans-sommaire ol.chapitres > li > .chapitre { height: 100%; }
 }

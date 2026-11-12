@@ -292,13 +292,47 @@ async function afficherPageDeDepart(f) {
   if (f.isDestroyed()) return;
   await charger(f, url);
   if (f.isDestroyed()) return;
-  f.webContents.setZoomLevel(etat.zoom || 0);
+  appliquerEchelle(f, etat);
   f.webContents.navigationHistory.clear();   // « Précédent » ne ramène pas à l'écran de démarrage
 }
 
+/* Échelle de l'interface ---------------------------------------------------------- */
+
+// Application installée : l'échelle choisie dans les paramètres (« Automatique » =
+// 100 %) s'applique à toutes les fenêtres ; Ctrl +/− reste un ajustement de la
+// fenêtre, Ctrl+0 revient à l'échelle choisie. Sans hôte, ou avec un hôte qui ne
+// connaît pas ce réglage (avant la version 2.3.0), le zoom mémorisé dans
+// fenetre.json est repris comme avant.
+function echelleChoisie() {
+  const hote = global.studiesHote;
+  return hote && typeof hote.echelle === "function" ? hote.echelle() : null;
+}
+
+function appliquerEchelle(f, etat) {
+  if (f.isDestroyed()) return;
+  const e = echelleChoisie();
+  if (e) f.webContents.setZoomFactor(e);
+  else f.webContents.setZoomLevel((etat && etat.zoom) || 0);
+}
+
+// Ctrl+0 : retour à l'échelle choisie
+function echelleNormale(f) {
+  const e = echelleChoisie();
+  if (e) f.webContents.setZoomFactor(e);
+  else f.webContents.setZoomLevel(0);
+}
+
+// Nouvelle échelle choisie dans les paramètres : toutes les fenêtres des cours
+function surNouvelleEchelle(e) {
+  for (const f of BrowserWindow.getAllWindows()) {
+    if (!f.isDestroyed() && !f.studiesAnnexe) f.webContents.setZoomFactor(e);
+  }
+}
+if (global.studiesHote && typeof global.studiesHote.surEchelle === "function") global.studiesHote.surEchelle(surNouvelleEchelle);
+
 function ouvrir(url) {
   const f = creer(TAILLE);
-  f.webContents.setZoomLevel(lireEtat().zoom || 0);
+  appliquerEchelle(f, lireEtat());
   charger(f, url);
   return f;
 }
@@ -313,6 +347,6 @@ function preparerSession() {
 }
 
 module.exports = {
-  PORTAIL, allerA, afficherPageDeDepart, ecranAttente, enregistrerPdf, imprimer,
+  PORTAIL, allerA, afficherPageDeDepart, echelleNormale, ecranAttente, enregistrerPdf, imprimer,
   noter, ouvrir, preparerSession, rechercher, relier
 };

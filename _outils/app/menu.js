@@ -71,7 +71,7 @@ function construireMenu() {
         { label: "Agrandir", role: "zoomIn", accelerator: "CmdOrCtrl+Plus" },
         { label: "Agrandir", role: "zoomIn", accelerator: "CmdOrCtrl+=", visible: false },
         { label: "Réduire", role: "zoomOut", accelerator: "CmdOrCtrl+-" },
-        { label: "Taille normale", role: "resetZoom", accelerator: "CmdOrCtrl+0" },
+        { label: "Taille normale", accelerator: "CmdOrCtrl+0", click: surFenetre(fenetres.echelleNormale) },
         { type: "separator" },
         { label: "Plein écran", role: "togglefullscreen", accelerator: "F11" },
         { label: "Outils de développement", role: "toggleDevTools", accelerator: "F12" }

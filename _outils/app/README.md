@@ -19,7 +19,7 @@ Sur ce PC, tout a été essayé sous Windows. `lancer-app.sh` et le paquet Linux
 
 ### Au quotidien
 
-- L'application rouvre la dernière page, à la même position et au même zoom. Une seule instance tourne : la relancer ramène sa fenêtre devant.
+- L'application rouvre la dernière page, à la même position et au même zoom (dans l'application installée : à l'échelle choisie dans ses paramètres). Une seule instance tourne : la relancer ramène sa fenêtre devant.
 - La barre du haut des pages porte **Précédent** et **Suivant**, à gauche du fil d'Ariane. Le menu complet apparaît avec la touche **Alt**.
 - Un **PDF** s'ouvre dans sa propre fenêtre, dont la visionneuse occupe toute la place : la fermer ramène à la page.
 - Un lien vers un autre site s'ouvre dans le navigateur du système.
@@ -33,7 +33,7 @@ Sur ce PC, tout a été essayé sous Windows. `lancer-app.sh` et le paquet Linux
 | Alt+←, Alt+→, boutons latéraux de la souris | précédent, suivant |
 | Alt+Début | portail |
 | Ctrl+P, Ctrl+Maj+S | imprimer, enregistrer en PDF |
-| Ctrl+Plus, Ctrl+Moins, Ctrl+0, Ctrl+molette | zoom |
+| Ctrl+Plus, Ctrl+Moins, Ctrl+0, Ctrl+molette | zoom (Ctrl+0 : taille normale, ou l'échelle choisie dans les paramètres de l'application installée) |
 | F5, Ctrl+R | recharger |
 | F11, F12 | plein écran, outils de développement |
 | Ctrl+W, Ctrl+Q | fermer la fenêtre, quitter |

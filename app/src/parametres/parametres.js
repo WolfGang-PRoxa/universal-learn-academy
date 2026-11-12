@@ -119,6 +119,23 @@ function carteFenetre() {
     perso);
 }
 
+/* -- Échelle de l'interface ------------------------------------------------------ */
+
+function carteAffichage() {
+  const actuelle = (reglages.affichage && reglages.affichage.echelle) || 0;
+  const options = [h('option', { value: '0' }, 'Automatique (100 %)')];
+  for (let p = 50; p <= 200; p += 10) options.push(h('option', { value: String(p) }, `${p} %`));
+  const choix = h('select', { class: 'saisie', id: 'echelle', onChange: async (e) => {
+    const r = await enregistrer({ affichage: { echelle: Number(e.target.value) } });
+    const v = (r.affichage && r.affichage.echelle) || 0;
+    note(v ? `Échelle de l’interface : ${v} %` : 'Échelle automatique (100 %)');
+  } }, ...options);
+  choix.value = String(actuelle);
+  return carte('affichage', 'ecran', 'Échelle de l’interface', 'Taille des textes, des boutons et des fiches dans toutes les fenêtres de cours.',
+    h('label', { class: 'champ' }, h('span', {}, 'Échelle'), choix),
+    h('p', { class: 'aide' }, 'En automatique, les pages s’adaptent seules à la largeur de la fenêtre : les accueils occupent toute la largeur et tout grandit sur un grand écran. Un pourcentage agrandit ou réduit tout en plus, tout de suite et à chaque lancement. Ctrl + et Ctrl − (ou Ctrl et la molette) ajustent en plus, jusqu’à la fermeture ; Ctrl 0 revient à l’échelle choisie ici.'));
+}
+
 /* -- Raccourcis ------------------------------------------------------------------ */
 
 export function decrireRaccourci(l) {
@@ -493,7 +510,7 @@ function proposerRedemarrage() {
 
 /* -- Page ------------------------------------------------------------------------------- */
 
-document.getElementById('cartes').append(carteMisesAJour(), carteFenetre(), carteRaccourcis(), carteClaude(), carteModeles(), carteProfils(), carteDonnees(), carteAPropos());
+document.getElementById('cartes').append(carteMisesAJour(), carteAffichage(), carteFenetre(), carteRaccourcis(), carteClaude(), carteModeles(), carteProfils(), carteDonnees(), carteAPropos());
 
 const aller = (section) => { const el = section && document.getElementById(section); if (el) el.scrollIntoView(); };
 aller(location.hash.slice(1));

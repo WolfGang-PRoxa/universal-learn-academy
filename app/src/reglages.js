@@ -16,6 +16,9 @@ const DEFAUT = {
   miseAJourAuto: true,
   // Fenêtre au lancement : « agrandie » (par défaut) ou « personnalisee » (bornes)
   fenetre: { mode: "agrandie", bornes: { x: 120, y: 80, width: 1400, height: 900 } },
+  // Échelle de l'interface, en % : 0 pour « Automatique » (100 %, la page s'adapte
+  // seule à la largeur de la fenêtre), sinon de 50 à 200 par pas de 10
+  affichage: { echelle: 0 },
   // Dossier des données (catalogue explore/ et espaces des profils) : vide pour
   // Documents/ULA ; un dépôt git d'ula (mode de l'auteur du catalogue) est reconnu
   donnees: { dossier: "" },

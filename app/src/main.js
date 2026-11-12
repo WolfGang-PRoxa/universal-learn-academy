@@ -62,6 +62,25 @@ app.setAppUserModelId(ID_APP);
 app.on("window-all-closed", () => {});
 
 let fenetreParametres = null;
+
+/* -- Échelle de l'interface ------------------------------------------------------- */
+
+// Réglage « affichage.echelle » : 0 (Automatique, 100 %) ou 50 à 200 par pas de 10.
+// Le programme des outils (fenetres.js) l'applique à toutes les fenêtres et s'abonne
+// aux changements faits dans les paramètres.
+const auditeursEchelle = new Set();
+function echelleValide(v) {
+  const n = Math.round(Number(v) / 10) * 10;
+  return Number.isFinite(n) && n >= 50 && n <= 200 ? n : 0;
+}
+function facteurEchelle() {
+  return (echelleValide((reglages.lire().affichage || {}).echelle) || 100) / 100;
+}
+function annoncerEchelle() {
+  const e = facteurEchelle();
+  for (const fn of auditeursEchelle) { try { fn(e); } catch (err) { /* fenêtre fermée entre-temps */ } }
+}
+
 let racine = null;
 let outils = null;
 let modeDonnees = null;
@@ -264,7 +283,10 @@ function enregistrerIpc() {
     delete sur.raccourcis;
     delete sur.cours;
     delete sur.donnees;
-    return reglages.publics(reglages.modifier(sur));
+    if (sur.affichage) sur.affichage = { echelle: echelleValide(sur.affichage.echelle) };
+    const r = reglages.publics(reglages.modifier(sur));
+    if (sur.affichage) annoncerEchelle();
+    return r;
   });
   traiter("fenetre:ecrans", () => lancement.ecrans());
   traiter("fenetre:bornes", () => {
@@ -351,6 +373,9 @@ async function demarrer() {
     racine,
     // Fenêtre principale au lancement : { bornes, agrandie }
     etatFenetre: () => lancement.etatInitial(reglages.lire().fenetre),
+    // Échelle de l'interface (facteur, 1 = 100 %) et abonnement à ses changements
+    echelle: facteurEchelle,
+    surEchelle: (fn) => { if (typeof fn === "function") auditeursEchelle.add(fn); },
     ouvrirParametres,
     verifierMiseAJour: () => { ouvrirParametres("mises-a-jour"); majs.verifier(); }
   };
