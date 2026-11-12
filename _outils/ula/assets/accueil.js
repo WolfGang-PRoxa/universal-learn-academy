@@ -12,7 +12,7 @@
 (function () {
   "use strict";
 
-  var DOMAINES = { informatique: "Informatique", mathematiques: "Mathématiques", langues: "Langues", sciences: "Sciences", lettres: "Lettres", autres: "Autres" };
+  var DOMAINES = { informatique: "Informatique", mathematiques: "Mathématiques", langues: "Langues", communication: "Communication et projet", sciences: "Sciences", lettres: "Lettres", autres: "Autres" };
   var main = document.getElementById("ula");
   var etat = null, cursus = null, progression = {}, catalogue = null;
   var domaineSeul = (location.pathname.match(/^\/explore\/([^/]+)\/index\.html$/) || [])[1] || null;

@@ -32,7 +32,7 @@ const PERSONNELS = [
   { motif: /^explore\/[^/]+\/[^/]+\/TP\//, raison: "fichier de TP : seulement ceux de la liste blanche, dans leur version d'origine", tp: true },
   { motif: /(^|\/)(administratif|Hop3x|propositions)\//, raison: "documents personnels, traces de TP, propositions en attente" },
   { motif: /(^|\/)(Site Portfolio|website_project)\//, raison: "portfolio ou projet de site de l'étudiant" },
-  { motif: /(^|\/)Communication\//i, raison: "communication : travaux de groupe et productions de l'étudiant" },
+  { motif: /(^|\/)L\d\/Communication\//i, raison: "communication : travaux de groupe et productions de l'étudiant" },
   { motif: /STUDENT[^/]*\.docx$/i, raison: "fiches d'anglais remplies par l'étudiant" },
   { motif: /(^|\/)DM\/.*\.ipynb$/i, raison: "devoir maison : notebook de l'étudiant" },
   { motif: /^_outils\/numerisation\/scans\//, raison: "scans, avec parfois des réponses manuscrites" },

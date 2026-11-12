@@ -22,7 +22,7 @@ const { DEPOT } = require("./catalogue");
 const PERMIS = /\.(html?|css|js|mjs|json|svg|png|jpe?g|gif|webp|txt|md)$/i;
 const TEXTE = /\.(html?|css|js|mjs|json|svg|txt|md)$/i;
 const DOSSIERS = ["generated_courses", "generated_quizzes"];
-const DOMAINES = ["informatique", "mathematiques", "langues", "sciences", "lettres", "autres"];
+const DOMAINES = ["informatique", "mathematiques", "langues", "communication", "sciences", "lettres", "autres"];
 
 function parcourir(dossier, base = dossier, liste = []) {
   let entrees = [];

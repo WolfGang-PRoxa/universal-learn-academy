@@ -39,6 +39,7 @@ DOMAINES = {
     "informatique": ("Informatique", "Programmation (C, shell, objet, système), bases de données, réseaux, sécurité, codage, génie logiciel."),
     "mathematiques": ("Mathématiques", "Analyse et algèbre, probabilités et statistiques, théorie des graphes, mathématiques pour l'IA."),
     "langues": ("Langues", "Anglais : compréhension orale, vocabulaire, préparation de l'oral."),
+    "communication": ("Communication et projet", "Communication écrite et orale, projet personnel et professionnel, conduite de projet."),
 }
 ORDRE_NIVEAUX = ["Licence 3", "Licence 2", "Licence 1"]
 

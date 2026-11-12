@@ -24,6 +24,10 @@ echo "▸ Copie du programme et des outils dans $TRAVAIL"
 rm -rf "$TRAVAIL/app"
 mkdir -p "$TRAVAIL/app"
 tar -C "$SOURCE" --exclude=./node_modules --exclude=./dist -cf - . | tar -C "$TRAVAIL/app" -xf -
+# Règles des données personnelles, partagées avec les outils (app/scripts/contenu-regles.cjs)
+rm -rf "$TRAVAIL/_outils"
+mkdir -p "$TRAVAIL/_outils/ula/lib"
+cp -f "$SOURCE/../_outils/ula/lib/"*.js "$TRAVAIL/_outils/ula/lib/"
 
 cd "$TRAVAIL/app"
 echo "▸ Dépendances pour Linux (node $(node --version))"
