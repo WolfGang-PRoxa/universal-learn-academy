@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="codage">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Codage de source · Codage L3</title>
+<meta name="description" content="Cours 2 de codage de l'information (L3) : codes à longueur fixe et variable, codes uniquement déchiffrables et codes préfixes, code Morse, codes de Shannon-Fano et de Huffman, chaîne de compression JPEG, codage arithmétique, performances des codes et codes à dictionnaire LZ78 et LZW.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-02-codage-source.html" title="Quiz · Codage de source">
+<link rel="quiz" href="../generated_quizzes/quiz-exercices-types.html" title="Quiz · Exercices types (tous les cours)">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale (tous les cours)">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Codage</a>
+    <span aria-current="page">Cours 2 · Codage de source</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Codage</span> Cours 2 · L3 S5</p>
+    <h1>Codage de source</h1>
+    <p class="chapeau">Une source n'émet pas tous ses symboles avec la même probabilité. En donnant des mots courts aux symboles fréquents et des mots longs aux symboles rares, on s'approche de son entropie : c'est la compression sans perte. Ce cours présente les codes préfixes et leur arbre, les codes de Shannon-Fano et de Huffman, leur place dans la norme JPEG, puis le codage arithmétique, qui code un message entier par un seul nombre.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/L3_INFO_C2.pdf">L3_INFO_C2.pdf</a> · 36 diapos (numérotées ici comme les pages du PDF)</dd></div>
+      <div><dt>Enseignant</dt><dd>Florent Carlier</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-30">30 sept. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Distinguer code à longueur fixe et code à longueur variable ; reconnaître un code uniquement déchiffrable et un code préfixe, et lire un code sur son arbre.</li>
+        <li>Construire un code de Shannon-Fano (de haut en bas) et un code de Huffman (de bas en haut), calculer leur longueur moyenne et la comparer à l'entropie.</li>
+        <li>Décrire la chaîne de compression JPEG : DCT, quantification, parcours en zigzag, codage.</li>
+        <li>Coder un message par codage arithmétique, et le décoder.</li>
+        <li>Expliquer le principe des codes à dictionnaire LZ78 et LZW.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Entropie d'une source, entropie relative et redondance : <a href="cours-01-codage-physique-entropie.html#l-entropie-d-une-source">cours 1</a>.</li>
+        <li>Logarithme en base 2 et probabilités discrètes.</li>
+        <li>Arbres binaires : racine, nœud interne, feuille, profondeur.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le codage de source <span class="ref">diapos 2–4</span></h2>
+    <p>Le cours 1 a montré qu'une source contient souvent moins d'information que ne le laisse croire le nombre de bits qui la représentent. Le <dfn>codage de source</dfn> (<span class="en" lang="en">source coding</span>) exploite cet écart : il retire la redondance, sans rien perdre du message.</p>
+
+    <h3>Les familles de codes <span class="ref">diapo 2</span></h3>
+    <p>Le support s'ouvre sur une classification des codes détecteurs et correcteurs d'erreurs.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 399 490" width="399" role="img" aria-labelledby="fig-famille-titre">
+        <title id="fig-famille-titre">Classification des codes détecteurs et correcteurs d’erreurs : codes en blocs (séparables, linéaires ou non, et non séparables) et codes convolutionnels, avec des exemples de chaque famille</title>
+        <path class="trait" d="M22 34 V54 H36"/>
+        <path class="trait" d="M48 66 V86 H62"/>
+        <path class="trait" d="M74 98 V118 H88"/>
+        <path class="trait" d="M100 130 V150 H114"/>
+        <path class="trait" d="M74 98 V182 H88"/>
+        <path class="trait" d="M100 194 V214 H114"/>
+        <path class="trait" d="M126 226 V246 H140"/>
+        <path class="trait" d="M126 226 V278 H140"/>
+        <path class="trait" d="M100 194 V310 H114"/>
+        <path class="trait" d="M100 194 V342 H114"/>
+        <path class="trait" d="M48 66 V374 H62"/>
+        <path class="trait" d="M74 386 V406 H88"/>
+        <path class="trait" d="M22 34 V438 H36"/>
+        <path class="trait" d="M48 450 V470 H62"/>
+        <rect class="boite" x="10" y="10" width="333.7" height="24" rx="5"/>
+        <text x="176.8" y="26.5" text-anchor="middle" class="gras" font-size="13">Codes détecteurs et correcteurs d’erreurs</text>
+        <rect class="boite" x="36" y="42" width="125.8" height="24" rx="5"/>
+        <text x="98.9" y="58.5" text-anchor="middle" class="gras" font-size="13">Codes en blocs</text>
+        <rect class="boite" x="62" y="74" width="141.2" height="24" rx="5"/>
+        <text x="132.6" y="90.5" text-anchor="middle" class="gras" font-size="13">Codes séparables</text>
+        <rect class="boite" x="88" y="106" width="164.3" height="24" rx="5"/>
+        <text x="170.2" y="122.5" text-anchor="middle" class="gras" font-size="13">Codes non linéaires</text>
+        <rect class="boite-accent" x="114" y="138" width="62.4" height="24" rx="12"/>
+        <text x="145.2" y="154.5" text-anchor="middle" font-size="13">Berger</text>
+        <rect class="boite" x="88" y="170" width="133.5" height="24" rx="5"/>
+        <text x="154.8" y="186.5" text-anchor="middle" class="gras" font-size="13">Codes linéaires</text>
+        <rect class="boite" x="114" y="202" width="133.5" height="24" rx="5"/>
+        <text x="180.8" y="218.5" text-anchor="middle" class="gras" font-size="13">Codes cycliques</text>
+        <rect class="boite-accent" x="140" y="234" width="47.6" height="24" rx="12"/>
+        <text x="163.8" y="250.5" text-anchor="middle" font-size="13">Fire</text>
+        <rect class="boite-accent" x="195.6" y="234" width="40.2" height="24" rx="12"/>
+        <text x="215.7" y="250.5" text-anchor="middle" font-size="13">BCH</text>
+        <rect class="boite-accent" x="243.8" y="234" width="77.2" height="24" rx="12"/>
+        <text x="282.4" y="250.5" text-anchor="middle" font-size="13">Abramson</text>
+        <rect class="boite-accent" x="140" y="266" width="106.8" height="24" rx="12"/>
+        <text x="193.4" y="282.5" text-anchor="middle" font-size="13">Reed-Solomon</text>
+        <rect class="boite-accent" x="254.8" y="266" width="55" height="24" rx="12"/>
+        <text x="282.3" y="282.5" text-anchor="middle" font-size="13">Mélas</text>
+        <rect class="boite-accent" x="317.8" y="266" width="69.8" height="24" rx="12"/>
+        <text x="352.7" y="282.5" text-anchor="middle" font-size="13">Hamming</text>
+        <rect class="boite-accent" x="114" y="298" width="55" height="24" rx="12"/>
+        <text x="141.5" y="314.5" text-anchor="middle" font-size="13">Golay</text>
+        <rect class="boite-accent" x="177" y="298" width="99.4" height="24" rx="12"/>
+        <text x="226.7" y="314.5" text-anchor="middle" font-size="13">Reed-Muller</text>
+        <rect class="boite-accent" x="284.4" y="298" width="92" height="24" rx="12"/>
+        <text x="330.4" y="314.5" text-anchor="middle" font-size="13">Mac Donald</text>
+        <rect class="boite-accent" x="114" y="330" width="55" height="24" rx="12"/>
+        <text x="141.5" y="346.5" text-anchor="middle" font-size="13">Elias</text>
+        <rect class="boite-accent" x="177" y="330" width="77.2" height="24" rx="12"/>
+        <text x="215.6" y="346.5" text-anchor="middle" font-size="13">Gallager</text>
+        <rect class="boite" x="62" y="362" width="172" height="24" rx="5"/>
+        <text x="148" y="378.5" text-anchor="middle" class="gras" font-size="13">Codes non séparables</text>
+        <rect class="boite-accent" x="88" y="394" width="129" height="24" rx="12"/>
+        <text x="152.5" y="410.5" text-anchor="middle" font-size="13">Poids constants</text>
+        <rect class="boite-accent" x="225" y="394" width="69.8" height="24" rx="12"/>
+        <text x="259.9" y="410.5" text-anchor="middle" font-size="13">Plotkin</text>
+        <rect class="boite" x="36" y="426" width="179.7" height="24" rx="5"/>
+        <text x="125.9" y="442.5" text-anchor="middle" class="gras" font-size="13">Codes convolutionnels</text>
+        <rect class="boite-accent" x="62" y="458" width="136.4" height="24" rx="12"/>
+        <text x="130.2" y="474.5" text-anchor="middle" font-size="13">Fink-Hagelbarger</text>
+        <rect class="boite-accent" x="206.4" y="458" width="62.4" height="24" rx="12"/>
+        <text x="237.6" y="474.5" text-anchor="middle" font-size="13">Massey</text>
+      </svg>
+      <figcaption>Familles de codes détecteurs et correcteurs d'erreurs (redessiné d'après la diapo 2). BCH : Bose, Chaudhuri, Hocquenghem.</figcaption>
+    </figure>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Lire cette classification</span></p>
+      <p>Ces codes relèvent du codage de canal : ils <em>ajoutent</em> une redondance contrôlée pour détecter ou corriger les erreurs de transmission, là où le codage de source en retire. Ils sont l'objet des cours suivants. Le vocabulaire de l'arbre :</p>
+      <ul>
+        <li>un <strong>code en blocs</strong> découpe le message en blocs de \(k\) bits et code chacun indépendamment en \(n\) bits ; un <strong>code convolutionnel</strong> a une mémoire : chaque sortie dépend aussi des bits précédents ;</li>
+        <li>un code est <strong>séparable</strong> (on dit aussi systématique) quand les bits d'information apparaissent tels quels dans le mot code, suivis des bits de contrôle ;</li>
+        <li>un code est <strong>linéaire</strong> quand la somme bit à bit (ou exclusif) de deux mots code est encore un mot code ; il est <strong>cyclique</strong> quand, de plus, toute permutation circulaire d'un mot code est un mot code.</li>
+      </ul>
+    </div>
+
+    <h3>Retirer la redondance <span class="ref">diapo 3</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Rappel <span>Entropie relative et redondance</span> <span class="ref">diapo 3</span></p>
+      <p>Soit \(U\) une source discrète à \(N\) valeurs possibles et d'entropie \(H_\infty(U) \lt \log_2 N\). L'<dfn>entropie relative</dfn> \(H_r(U) = \dfrac{H_\infty(U)}{\log_2 N}\) étant strictement plus petite que 1, la <dfn>redondance</dfn> \(r = 1 - H_r(U)\) est différente de zéro.</p>
+      <p>L'élimination de la partie redondante de l'information délivrée par la source peut être obtenue en codant les différentes configurations émises par la source.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Ce que mesure \(H_\infty\)</span></p>
+      <p>\(H_\infty(U)\) est l'entropie par symbole quand on tient compte de toutes les dépendances entre symboles successifs : c'est la limite des entropies \(H_n\) de l'<a href="cours-01-codage-physique-entropie.html#l-experience-de-shannon-l-entropie-de-l-anglais">expérience de Shannon</a>. Pour une source sans mémoire, dont les symboles sont indépendants, elle se réduit à \(H(U) = -\sum p_i \log_2 p_i\).</p>
+      <p>Exemple, repris tout au long du cours : une source émet A, B, C, D, E avec les probabilités \(15/39\), \(7/39\), \(6/39\), \(6/39\), \(5/39\). Son entropie vaut \(H \approx 2{,}186\) bits par symbole, pour un maximum de \(\log_2 5 \approx 2{,}322\) : entropie relative ≈ 94,1 %, redondance ≈ 5,9 %. Un code à longueur fixe demande pourtant 3 bits par symbole, car \(2^2 = 4 \lt 5\). Les codes de ce chapitre cherchent à ramener ces 3 bits vers 2,186.</p>
+    </div>
+
+    <h3>Longueur fixe ou longueur variable <span class="ref">diapo 4</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Code à longueur fixe, code à longueur variable</span></p>
+      <p>Dans un <dfn>code à longueur fixe</dfn> (<span class="en" lang="en">fixed-length code</span>), tous les mots ont la même longueur : ils contiennent le même nombre de symboles.</p>
+      <p>Dans un <dfn>code à longueur variable</dfn> (<span class="en" lang="en">variable-length code</span>), la longueur des mots varie en fonction de leur fréquence d'apparition : un mot sera d'autant plus long que sa probabilité d'apparition est petite.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Quelle longueur pour un symbole ?</span></p>
+      <p>Le code ASCII, qui code chaque caractère sur 7 bits, est à longueur fixe ; le code Morse, vu plus bas, est à longueur variable. Le cours 1 a défini l'incertitude d'un symbole de probabilité \(p\) : \(-\log_2 p\). C'est la longueur idéale de son mot. Dans l'exemple, A (\(p = 15/39\)) mériterait \(1{,}38\) bit et E (\(p = 5/39\)) \(2{,}96\) bits. Une longueur étant entière, aucun code symbole par symbole n'atteint exactement ces valeurs ; on verra que le codage arithmétique contourne cette limite.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Généralités sur les codes <span class="ref">diapos 5–8</span></h2>
+    <p>Avec des mots de longueurs différentes, une difficulté apparaît : le récepteur reçoit une suite de bits sans séparateur, et doit retrouver seul où finit chaque mot.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Alphabet, mot, code</span> <span class="ref">diapo 5</span></p>
+      <p>Soit \(B\) un <dfn>alphabet de référence</dfn>, c'est-à-dire un ensemble de lettres (en général, \(B\) est l'alphabet binaire \(B = \{0, 1\}\)). En concaténant des lettres de l'alphabet \(B\), on forme des <dfn>mots</dfn> dont la longueur correspond au nombre de lettres utilisées. Un <dfn>code</dfn> \(C\) est un ensemble de mots.</p>
+    </div>
+
+    <h3>Code uniquement déchiffrable <span class="ref">diapo 6</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Code uniquement déchiffrable</span></p>
+      <p>Un code est <dfn>uniquement déchiffrable</dfn> (<span class="en" lang="en">uniquely decodable</span>) si toute suite de mots code ne peut être interprétée (décodée) que d'une seule manière.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple 1 <span>Un code de longueur fixe</span> <span class="ref">diapo 6</span></p>
+      <p>Avec \(B = \{0, 1\}\), \(C = \{00, 01, 10, 11\}\) est un code de longueur fixe égale à 2.</p>
+      <p><span class="badge ajout">Ajout</span> Il est uniquement déchiffrable, comme tout code de longueur fixe à mots distincts : il suffit de couper la suite reçue tous les deux bits. <code>011100</code> se lit <code>01 | 11 | 00</code>, et d'aucune autre façon.</p>
+    </div>
+
+    <h3>Code préfixe <span class="ref">diapo 7</span></h3>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple 2 <span>Déchiffrable ou non</span> <span class="ref">diapo 7</span></p>
+      <p>Le code \(\{0, 11, 010\}\) est uniquement déchiffrable.</p>
+      <p>Le code \(\{0, 1, 101\}\), dont on note les mots \(\alpha = 0\), \(\beta = 1\) et \(\gamma = 101\), n'est pas uniquement déchiffrable : la suite <code>101</code> peut être interprétée comme \(\beta\alpha\beta\) ou comme \(\gamma\).</p>
+    </div>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Code préfixe</span> <span class="ref">diapo 7</span></p>
+      <p>Un <dfn>code préfixe</dfn> (<span class="en" lang="en">prefix code</span>) est un code pour lequel aucun mot n'est le début d'un autre mot.</p>
+    </div>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Un code préfixe est uniquement déchiffrable</span></p>
+      <p>Il est clair qu'un code préfixe est uniquement déchiffrable.</p>
+      <details class="preuve">
+        <summary>Preuve</summary>
+        <p><span class="badge ajout">Ajout</span> On lit les bits un à un jusqu'à reconnaître un mot du code. Aucun mot n'étant le début d'un autre, ce premier mot reconnu est le seul possible : un mot plus long qui commencerait par lui n'existe pas. On l'émet, puis on recommence sur la suite. Chaque découpage est forcé, donc la lecture est unique.</p>
+      </details>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La réciproque est fausse</span></p>
+      <p>Le code \(\{0, 11, 010\}\) de l'exemple 2 est uniquement déchiffrable sans être préfixe : 0 est le début de 010. Après un 0, le décodeur ne sait pas encore s'il tient le mot 0 ou le début de 010. Il doit regarder les bits suivants : <code>011</code> ne peut être que <code>0 | 11</code>, et <code>010</code> ne peut être que <code>010</code>, car aucun mot ne commence par <code>10</code>.</p>
+      <p>Un code préfixe, lui, se décode au fil de l'eau, sans attendre la suite : on l'appelle aussi <dfn>code instantané</dfn> (<span class="en" lang="en">instantaneous code</span>). C'est pourquoi les codes de ce chapitre sont tous préfixes.</p>
+    </div>
+
+    <h3>L'arbre d'un code <span class="ref">diapo 8</span></h3>
+    <p>Un code binaire se représente par un arbre. Depuis la racine, on descend à gauche pour un 0 et à droite pour un 1 : chaque mot est le chemin qui mène de la racine à un nœud de l'arbre.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 420 246" width="420" role="img" aria-labelledby="fig-arbre-mots-titre">
+        <title id="fig-arbre-mots-titre">Arbre binaire des mots 00, 01, 100, 101, 110 et 111 : chaque mot est le chemin qui mène de la racine à une feuille, 0 vers la gauche, 1 vers la droite</title>
+        <path class="trait" d="M177 26 L78 86"/>
+        <path class="trait" d="M78 86 L45 133"/>
+        <path class="trait" d="M78 86 L111 133"/>
+        <path class="trait" d="M177 26 L276 86"/>
+        <path class="trait" d="M276 86 L210 146"/>
+        <path class="trait" d="M210 146 L177 193"/>
+        <path class="trait" d="M210 146 L243 193"/>
+        <path class="trait" d="M276 86 L342 146"/>
+        <path class="trait" d="M342 146 L309 193"/>
+        <path class="trait" d="M342 146 L375 193"/>
+        <text x="117.5" y="56" text-anchor="middle" class="mono t2" font-size="12">0</text>
+        <text x="51.5" y="109.5" text-anchor="middle" class="mono t2" font-size="12">0</text>
+        <rect class="boite" x="26" y="133" width="38" height="26" rx="6"/>
+        <text x="45" y="151" text-anchor="middle" class="mono gras" font-size="13">00</text>
+        <text x="104.5" y="109.5" text-anchor="middle" class="mono t2" font-size="12">1</text>
+        <rect class="boite" x="92" y="133" width="38" height="26" rx="6"/>
+        <text x="111" y="151" text-anchor="middle" class="mono gras" font-size="13">01</text>
+        <circle class="plein" cx="78" cy="86" r="5"/>
+        <text x="236.5" y="56" text-anchor="middle" class="mono t2" font-size="12">1</text>
+        <text x="233" y="116" text-anchor="middle" class="mono t2" font-size="12">0</text>
+        <text x="183.5" y="169.5" text-anchor="middle" class="mono t2" font-size="12">0</text>
+        <rect class="boite" x="158" y="193" width="38" height="26" rx="6"/>
+        <text x="177" y="211" text-anchor="middle" class="mono gras" font-size="13">100</text>
+        <text x="236.5" y="169.5" text-anchor="middle" class="mono t2" font-size="12">1</text>
+        <rect class="boite" x="224" y="193" width="38" height="26" rx="6"/>
+        <text x="243" y="211" text-anchor="middle" class="mono gras" font-size="13">101</text>
+        <circle class="plein" cx="210" cy="146" r="5"/>
+        <text x="319" y="116" text-anchor="middle" class="mono t2" font-size="12">1</text>
+        <text x="315.5" y="169.5" text-anchor="middle" class="mono t2" font-size="12">0</text>
+        <rect class="boite" x="290" y="193" width="38" height="26" rx="6"/>
+        <text x="309" y="211" text-anchor="middle" class="mono gras" font-size="13">110</text>
+        <text x="368.5" y="169.5" text-anchor="middle" class="mono t2" font-size="12">1</text>
+        <rect class="boite" x="356" y="193" width="38" height="26" rx="6"/>
+        <text x="375" y="211" text-anchor="middle" class="mono gras" font-size="13">111</text>
+        <circle class="plein" cx="342" cy="146" r="5"/>
+        <circle class="plein" cx="276" cy="86" r="5"/>
+        <circle class="plein" cx="177" cy="26" r="5"/>
+      </svg>
+      <figcaption>Construction de l'arbre (redessiné d'après la diapo 8). <span class="badge ajout">Ajout</span> Les bits sont écrits sur toutes les branches.</figcaption>
+    </figure>
+
+    <p>Le code \(\{0, 10, 110, 111\}\) est un code préfixe. Le code \(\{0, 11, 110, 111\}\) n'est pas un code préfixe, car le chemin menant à 11 est inclus dans les chemins menant à 110 et à 111.</p>
+
+    <div class="colonnes">
+      <figure class="figure">
+        <svg class="schema" viewBox="0 0 270 228" width="270" role="img" aria-labelledby="fig-arbre-prefixe-titre">
+          <title id="fig-arbre-prefixe-titre">Code {0, 10, 110, 111} : tous les mots sont des feuilles de l’arbre, c’est un code préfixe</title>
+          <path class="trait" d="M97.5 26 L45 67"/>
+          <path class="trait" d="M97.5 26 L150 80"/>
+          <path class="trait" d="M150 80 L105 121"/>
+          <path class="trait" d="M150 80 L195 134"/>
+          <path class="trait" d="M195 134 L165 175"/>
+          <path class="trait" d="M195 134 L225 175"/>
+          <text x="61.2" y="46.5" text-anchor="middle" class="mono t2" font-size="12">0</text>
+          <rect class="boite-accent" x="26" y="67" width="38" height="26" rx="6"/>
+          <text x="45" y="85" text-anchor="middle" class="mono gras accent" font-size="13">0</text>
+          <text x="133.8" y="53" text-anchor="middle" class="mono t2" font-size="12">1</text>
+          <text x="117.5" y="100.5" text-anchor="middle" class="mono t2" font-size="12">0</text>
+          <rect class="boite-accent" x="86" y="121" width="38" height="26" rx="6"/>
+          <text x="105" y="139" text-anchor="middle" class="mono gras accent" font-size="13">10</text>
+          <text x="182.5" y="107" text-anchor="middle" class="mono t2" font-size="12">1</text>
+          <text x="170" y="154.5" text-anchor="middle" class="mono t2" font-size="12">0</text>
+          <rect class="boite-accent" x="146" y="175" width="38" height="26" rx="6"/>
+          <text x="165" y="193" text-anchor="middle" class="mono gras accent" font-size="13">110</text>
+          <text x="220" y="154.5" text-anchor="middle" class="mono t2" font-size="12">1</text>
+          <rect class="boite-accent" x="206" y="175" width="38" height="26" rx="6"/>
+          <text x="225" y="193" text-anchor="middle" class="mono gras accent" font-size="13">111</text>
+          <circle class="plein" cx="195" cy="134" r="5"/>
+          <circle class="plein" cx="150" cy="80" r="5"/>
+          <circle class="plein" cx="97.5" cy="26" r="5"/>
+        </svg>
+        <figcaption><span class="badge ajout">Ajout</span> \(\{0, 10, 110, 111\}\) : tous les mots sont des feuilles.</figcaption>
+      </figure>
+      <figure class="figure">
+        <svg class="schema" viewBox="0 0 270 228" width="270" role="img" aria-labelledby="fig-arbre-non-prefixe-titre">
+          <title id="fig-arbre-non-prefixe-titre">Code {0, 11, 110, 111} : le mot 11 est un nœud interne, sur le chemin de 110 et de 111 ; ce n’est pas un code préfixe</title>
+          <path class="trait" d="M97.5 26 L45 67"/>
+          <path class="trait" d="M97.5 26 L150 80"/>
+          <path class="trait" d="M150 80 L105 121"/>
+          <path class="trait" d="M150 80 L195 134"/>
+          <path class="trait" d="M195 134 L165 175"/>
+          <path class="trait" d="M195 134 L225 175"/>
+          <text x="61.2" y="46.5" text-anchor="middle" class="mono t2" font-size="12">0</text>
+          <rect class="boite-accent" x="26" y="67" width="38" height="26" rx="6"/>
+          <text x="45" y="85" text-anchor="middle" class="mono gras accent" font-size="13">0</text>
+          <text x="133.8" y="53" text-anchor="middle" class="mono t2" font-size="12">1</text>
+          <text x="117.5" y="100.5" text-anchor="middle" class="mono t2" font-size="12">0</text>
+          <rect class="boite" x="86" y="121" width="38" height="26" rx="6"/>
+          <text x="105" y="139" text-anchor="middle" class="mono gras" font-size="13">10</text>
+          <text x="182.5" y="107" text-anchor="middle" class="mono t2" font-size="12">1</text>
+          <text x="170" y="154.5" text-anchor="middle" class="mono t2" font-size="12">0</text>
+          <rect class="boite-accent" x="146" y="175" width="38" height="26" rx="6"/>
+          <text x="165" y="193" text-anchor="middle" class="mono gras accent" font-size="13">110</text>
+          <text x="220" y="154.5" text-anchor="middle" class="mono t2" font-size="12">1</text>
+          <rect class="boite-accent" x="206" y="175" width="38" height="26" rx="6"/>
+          <text x="225" y="193" text-anchor="middle" class="mono gras accent" font-size="13">111</text>
+          <circle class="plein-accent" cx="195" cy="134" r="5"/>
+          <text x="205" y="138" class="mono" font-size="12">11</text>
+          <circle class="plein" cx="150" cy="80" r="5"/>
+          <circle class="plein" cx="97.5" cy="26" r="5"/>
+        </svg>
+        <figcaption><span class="badge ajout">Ajout</span> \(\{0, 11, 110, 111\}\) : le mot 11 est un nœud interne.</figcaption>
+      </figure>
+    </div>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Reconnaître et décoder un code préfixe sur son arbre</span></p>
+      <p><span class="badge ajout">Ajout</span> Un code est préfixe si et seulement si tous ses mots sont des feuilles de son arbre : aucun mot n'est alors sur le chemin d'un autre. Pour décoder, on part de la racine et on suit les bits reçus ; à chaque feuille atteinte, on émet son mot et on repart de la racine. Avec \(\{0, 10, 110, 111\}\), la suite <code>0110100</code> se lit <code>0 | 110 | 10 | 0</code>.</p>
+    </div>
+
+    <details class="depliant">
+      <summary>Pour aller plus loin : l'inégalité de Kraft <span class="badge hors-programme">Hors programme</span></summary>
+      <p>Des longueurs \(\ell_1, \dots, \ell_n\) sont celles d'un code préfixe binaire si et seulement si</p>
+      \[ \sum_{i=1}^{n} 2^{-\ell_i} \le 1. \]
+      <p>Un mot de longueur \(\ell\) « occupe » la fraction \(2^{-\ell}\) des feuilles d'un arbre complet, et deux mots d'un code préfixe n'occupent jamais les mêmes feuilles. Pour \(\{0, 10, 110, 111\}\) : \(1/2 + 1/4 + 1/8 + 1/8 = 1\), l'arbre est plein. McMillan a montré que la même inégalité vaut pour tout code uniquement déchiffrable : se limiter aux codes préfixes ne fait donc rien perdre.</p>
+    </details>
+
+    <div class="bloc exercice" id="ex-1">
+      <p class="bloc-titre">Exercice 1 <span>Préfixe, déchiffrable</span></p>
+      <p><span class="badge ajout">Ajout</span> Pour chacun des codes suivants, dire s'il est préfixe, puis s'il est uniquement déchiffrable. Répondre par « oui » ou « non ».</p>
+      <details class="indice"><summary>Indice</summary><p>Pour montrer qu'un code n'est pas uniquement déchiffrable, il suffit d'une suite de bits qui se découpe de deux façons. Pour le dernier code, regarder où se trouvent les 1 dans chaque mot.</p></details>
+    </div>
+    <div class="atelier" id="c2-ex1-prefixe" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "Codes préfixes et codes uniquement déchiffrables",
+        "consigne": "<p>Remplir les deux dernières colonnes par « oui » ou « non ».</p>",
+        "options": { "verrou": "depart", "lignes": false, "ordre": true },
+        "depart": ["| Code | Préfixe | Uniquement déchiffrable |", "|---|---|---|", "| {00, 01, 10, 11} |  |  |", "| {0, 10, 110, 111} |  |  |", "| {0, 11, 110, 111} |  |  |", "| {0, 01, 10} |  |  |", "| {1, 10, 100} |  |  |"],
+        "solution": ["| Code | Préfixe | Uniquement déchiffrable |", "|---|---|---|", "| {00, 01, 10, 11} | oui | oui |", "| {0, 10, 110, 111} | oui | oui |", "| {0, 11, 110, 111} | non | non |", "| {0, 01, 10} | non | non |", "| {1, 10, 100} | non | oui |"],
+        "explication": "<p><b>{00, 01, 10, 11}</b> : longueur fixe, donc préfixe (deux mots distincts de même longueur ne peuvent pas commencer l'un par l'autre). <b>{0, 10, 110, 111}</b> : tous les mots sont des feuilles de l'arbre. <b>{0, 11, 110, 111}</b> : 11 est le début de 110, et la suite 110 se lit 11 | 0 ou 110. <b>{0, 01, 10}</b> : 0 est le début de 01, et la suite 010 se lit 0 | 10 ou 01 | 0. <b>{1, 10, 100}</b> : 1 est le début de 10, donc le code n'est pas préfixe ; mais chaque mot commence par un 1 et n'en contient pas d'autre, si bien qu'on découpe la suite devant chaque 1 : 110100 se lit 1 | 10 | 100, d'une seule façon. Il faut en revanche attendre le 1 suivant pour savoir où finit un mot : le code n'est pas instantané.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Un code ternaire : le Morse <span class="ref">diapo 9</span></h2>
+    <p>Bien avant la théorie de l'information, le <dfn>code Morse</dfn> (<span class="en" lang="en">Morse code</span>) appliquait déjà le principe du code à longueur variable. Il emploie trois symboles : le point, le trait et l'espace.</p>
+
+    <div class="colonnes">
+      <div class="tableau mono compact centre">
+        <table>
+          <caption>Code Morse, lettres A à M et espace (diapo 9)</caption>
+          <thead><tr><th>Lettre</th><th>Fréquence</th><th>Code</th><th>Durée</th></tr></thead>
+          <tbody>
+            <tr><th>A</th><td>0,0642</td><td>· −</td><td>9</td></tr>
+            <tr><th>B</th><td>0,0127</td><td>− · · ·</td><td>13</td></tr>
+            <tr><th>C</th><td>0,0218</td><td>− · − ·</td><td>15</td></tr>
+            <tr><th>D</th><td>0,0317</td><td>− · ·</td><td>11</td></tr>
+            <tr><th>E</th><td>0,1031</td><td>·</td><td>5</td></tr>
+            <tr><th>F</th><td>0,0208</td><td>· · − ·</td><td>13</td></tr>
+            <tr><th>G</th><td>0,0152</td><td>− − ·</td><td>13</td></tr>
+            <tr><th>H</th><td>0,0467</td><td>· · · ·</td><td>11</td></tr>
+            <tr><th>I</th><td>0,0575</td><td>· ·</td><td>7</td></tr>
+            <tr><th>J</th><td>0,0008</td><td>· − − −</td><td>17</td></tr>
+            <tr><th>K</th><td>0,0049</td><td>− · −</td><td>13</td></tr>
+            <tr><th>L</th><td>0,0321</td><td>· − · ·</td><td>13</td></tr>
+            <tr><th>M</th><td>0,0198</td><td>− −</td><td>11</td></tr>
+            <tr><th>Espace</th><td>0,1859</td><td></td><td>6</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tableau mono compact centre">
+        <table>
+          <caption>Code Morse, lettres N à Z (diapo 9)</caption>
+          <thead><tr><th>Lettre</th><th>Fréquence</th><th>Code</th><th>Durée</th></tr></thead>
+          <tbody>
+            <tr><th>N</th><td>0,0574</td><td>− ·</td><td>9</td></tr>
+            <tr><th>O</th><td>0,0632</td><td>− − −</td><td>15</td></tr>
+            <tr><th>P</th><td>0,0152</td><td>· − − ·</td><td>15</td></tr>
+            <tr><th>Q</th><td>0,0008</td><td>− − · −</td><td>17</td></tr>
+            <tr><th>R</th><td>0,0484</td><td>· − ·</td><td>11</td></tr>
+            <tr><th>S</th><td>0,0514</td><td>· · ·</td><td>9</td></tr>
+            <tr><th>T</th><td>0,0796</td><td>−</td><td>7</td></tr>
+            <tr><th>U</th><td>0,0228</td><td>· · −</td><td>11</td></tr>
+            <tr><th>V</th><td>0,0083</td><td>· · · −</td><td>13</td></tr>
+            <tr><th>W</th><td>0,0175</td><td>· − −</td><td>13</td></tr>
+            <tr><th>X</th><td>0,0013</td><td>− · · −</td><td>15</td></tr>
+            <tr><th>Y</th><td>0,0164</td><td>− · − −</td><td>17</td></tr>
+            <tr><th>Z</th><td>0,0005</td><td>− − · ·</td><td>15</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Lire la colonne Durée</span></p>
+      <p>La durée est comptée en unités de temps : un point dure 1 unité, un trait 3 ; chaque signe est suivi d'un silence de 1 unité, et chaque lettre d'un silence supplémentaire de 3 unités. Ainsi E (·) dure \(1 + 1 + 3 = 5\), A (· −) dure \((1 + 1) + (3 + 1) + 3 = 9\) et O (− − −) dure \(3 \times (3 + 1) + 3 = 15\). Cette règle redonne les 26 durées du tableau (vérifié par programme) ; l'espace entre deux mots dure 6 unités.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi trois symboles ?</span></p>
+      <p>Les lettres fréquentes ont les codes les plus courts (E : 5 unités, T et I : 7) et les lettres rares les plus longs (J, Q, Y : 17). La correspondance n'est pas parfaite : O, assez fréquent (0,0632), dure 15 unités, plus que M (0,0198), qui en dure 11. En pondérant par les fréquences, dont la somme vaut 1 avec l'espace, un caractère dure en moyenne \(\sum p_i\, d_i \approx 9{,}3\) unités.</p>
+      <p>Surtout, le Morse n'est pas un code préfixe : le code de E (·) est le début de celui de A (· −), celui de T (−) le début de celui de N (− ·). Sans séparation, « · − » se lirait A ou ET. Le silence entre les lettres est donc indispensable : c'est un troisième symbole, et le Morse est un code ternaire.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le code de Shannon-Fano <span class="ref">diapos 10–14</span></h2>
+    <p>Le premier code construit pour une source donnée part de l'ensemble des symboles et le coupe en deux groupes de probabilités voisines, puis recommence dans chaque groupe. L'arbre se construit donc de haut en bas.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Principe <span>Code de Shannon-Fano</span> <span class="ref">diapo 10</span></p>
+      <p>Le <dfn>code de Shannon-Fano</dfn> (<span class="en" lang="en">Shannon-Fano coding</span>) est le premier code utilisé pour exploiter la redondance d'une source.</p>
+    </div>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Algorithme <span>Somme de probabilités : étapes</span> <span class="ref">diapo 10</span></p>
+      <ol>
+        <li>Classer les symboles par probabilités décroissantes.</li>
+        <li>Partager la liste en deux groupes consécutifs dont les sommes de probabilités sont aussi proches que possible.</li>
+        <li>Attribuer le bit 0 au premier groupe et le bit 1 au second.</li>
+        <li>Recommencer les étapes 2 et 3 dans chaque groupe qui contient plus d'un symbole.</li>
+        <li>S'arrêter quand chaque groupe ne contient plus qu'un symbole : le mot code d'un symbole est la suite des bits qu'il a reçus, division après division.</li>
+      </ol>
+    </div>
+    <p><span class="badge ajout">Ajout</span> La diapo 10 numérote cinq étapes, de (1) à (5), mais leur texte n'apparaît pas, ni dans le texte du PDF ni sur l'image de la diapo. Les étapes ci-dessus sont reconstituées : ce sont celles de l'algorithme classique, et elles redonnent exactement le tableau de la diapo 12.</p>
+
+    <h3>Exemple <span class="ref">diapos 11–13</span></h3>
+    <p>Soit une source dont les cinq symboles A, B, C, D, E apparaissent avec les probabilités \(15/39\), \(7/39\), \(6/39\), \(6/39\), \(5/39\). En appliquant la procédure décrite précédemment, on obtient le tableau suivant.</p>
+
+    <div class="tableau compact centre">
+      <table>
+        <caption>Construction du code de Shannon-Fano (diapos 12–13)</caption>
+        <thead><tr><th>Symbole</th><th>Fréquence</th><th>1<sup>re</sup> division</th><th>2<sup>e</sup> division</th><th>3<sup>e</sup> division</th><th>4<sup>e</sup> division</th></tr></thead>
+        <tbody>
+          <tr><th>A</th><td>15/39</td><td>0</td><td>0</td><td></td><td></td></tr>
+          <tr><th>B</th><td>7/39</td><td>0</td><td>1</td><td></td><td></td></tr>
+          <tr><th>C</th><td>6/39</td><td>1</td><td></td><td>0</td><td></td></tr>
+          <tr><th>D</th><td>6/39</td><td>1</td><td></td><td>1</td><td>0</td></tr>
+          <tr><th>E</th><td>5/39</td><td>1</td><td></td><td>1</td><td>1</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>On obtient pour chaque lettre les mots code binaires : A = <code>00</code>, B = <code>01</code>, C = <code>10</code>, D = <code>110</code>, E = <code>111</code>.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le choix de chaque division</span></p>
+      <ul>
+        <li><strong>Première division</strong> : \(\{A, B\}\) pèse \(22/39\) et \(\{C, D, E\}\) \(17/39\), soit un écart de \(5/39\). Couper après A donnerait \(15/39\) contre \(24/39\) (écart \(9/39\)), et après C \(28/39\) contre \(11/39\) : la coupure après B est la meilleure.</li>
+        <li><strong>Deuxième division</strong> : \(\{A, B\}\) se sépare en A et B.</li>
+        <li><strong>Troisième division</strong> : \(\{C, D, E\}\) se coupe en \(\{C\}\) (\(6/39\)) et \(\{D, E\}\) (\(11/39\)), écart \(5/39\), plutôt qu'en \(\{C, D\}\) (\(12/39\)) et \(\{E\}\) (\(5/39\)), écart \(7/39\).</li>
+        <li><strong>Quatrième division</strong> : \(\{D, E\}\) se sépare en D et E.</li>
+      </ul>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 460 264" width="460" role="img" aria-labelledby="fig-arbre-sf-titre">
+        <title id="fig-arbre-sf-titre">Arbre du code de Shannon-Fano : on coupe {A, B, C, D, E} en {A, B} (22/39) et {C, D, E} (17/39), puis {A, B} en A et B, {C, D, E} en C et {D, E}, enfin {D, E} en D et E</title>
+        <path class="trait" d="M198.5 26 L104 92"/>
+        <path class="trait" d="M104 92 L62 145"/>
+        <path class="trait" d="M104 92 L146 145"/>
+        <path class="trait" d="M198.5 26 L293 92"/>
+        <path class="trait" d="M293 92 L230 145"/>
+        <path class="trait" d="M293 92 L356 158"/>
+        <path class="trait" d="M356 158 L314 211"/>
+        <path class="trait" d="M356 158 L398 211"/>
+        <text x="141.2" y="59" text-anchor="middle" class="mono t2" font-size="12">0</text>
+        <text x="73" y="118.5" text-anchor="middle" class="mono t2" font-size="12">0</text>
+        <rect class="boite" x="43" y="145" width="38" height="26" rx="6"/>
+        <text x="62" y="163" text-anchor="middle" class="mono gras" font-size="13">A</text>
+        <text x="62" y="188" text-anchor="middle" class="t2 mono" font-size="12">00</text>
+        <text x="135" y="118.5" text-anchor="middle" class="mono t2" font-size="12">1</text>
+        <rect class="boite" x="127" y="145" width="38" height="26" rx="6"/>
+        <text x="146" y="163" text-anchor="middle" class="mono gras" font-size="13">B</text>
+        <text x="146" y="188" text-anchor="middle" class="t2 mono" font-size="12">01</text>
+        <circle class="plein" cx="104" cy="92" r="5"/>
+        <text x="94" y="96" text-anchor="end" class="mono" font-size="12">A B · 22/39</text>
+        <text x="255.8" y="59" text-anchor="middle" class="mono t2" font-size="12">1</text>
+        <text x="251.5" y="118.5" text-anchor="middle" class="mono t2" font-size="12">0</text>
+        <rect class="boite" x="211" y="145" width="38" height="26" rx="6"/>
+        <text x="230" y="163" text-anchor="middle" class="mono gras" font-size="13">C</text>
+        <text x="230" y="188" text-anchor="middle" class="t2 mono" font-size="12">10</text>
+        <text x="334.5" y="125" text-anchor="middle" class="mono t2" font-size="12">1</text>
+        <text x="325" y="184.5" text-anchor="middle" class="mono t2" font-size="12">0</text>
+        <rect class="boite" x="295" y="211" width="38" height="26" rx="6"/>
+        <text x="314" y="229" text-anchor="middle" class="mono gras" font-size="13">D</text>
+        <text x="314" y="254" text-anchor="middle" class="t2 mono" font-size="12">110</text>
+        <text x="387" y="184.5" text-anchor="middle" class="mono t2" font-size="12">1</text>
+        <rect class="boite" x="379" y="211" width="38" height="26" rx="6"/>
+        <text x="398" y="229" text-anchor="middle" class="mono gras" font-size="13">E</text>
+        <text x="398" y="254" text-anchor="middle" class="t2 mono" font-size="12">111</text>
+        <circle class="plein" cx="356" cy="158" r="5"/>
+        <text x="366" y="162" class="mono" font-size="12">D E · 11/39</text>
+        <circle class="plein" cx="293" cy="92" r="5"/>
+        <text x="303" y="96" class="mono" font-size="12">C D E · 17/39</text>
+        <circle class="plein" cx="198.5" cy="26" r="5"/>
+        <text x="208.5" y="30" class="mono" font-size="12">39/39</text>
+      </svg>
+      <figcaption><span class="badge ajout">Ajout</span> Arbre du code de Shannon-Fano : chaque nœud interne est un groupe, avec sa probabilité ; le mot code s'écrit sous chaque feuille.</figcaption>
+    </figure>
+
+    <h3>Mesure de l'information <span class="ref">diapo 14</span></h3>
+    <p>La longueur moyenne d'un mot code est :</p>
+    \[ 2 \cdot \tfrac{15}{39} + 2 \cdot \tfrac{7}{39} + 2 \cdot \tfrac{6}{39} + 3 \cdot \tfrac{6}{39} + 3 \cdot \tfrac{5}{39} = 2{,}282 \text{ bits.} \]
+    <p>Ce nombre est à comparer avec l'entropie de la source :</p>
+    \[ -\left\{ \tfrac{15}{39} \log_2 \tfrac{15}{39} + \tfrac{7}{39} \log_2 \tfrac{7}{39} + 2 \cdot \tfrac{6}{39} \log_2 \tfrac{6}{39} + \tfrac{5}{39} \log_2 \tfrac{5}{39} \right\} = 2{,}1858 \text{ Sh.} \]
+    <p>Le code de Shannon-Fano était utilisé dans les télétypes des années cinquante.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Longueur moyenne, shannon, efficacité</span></p>
+      <p>La <dfn>longueur moyenne</dfn> (<span class="en" lang="en">average codeword length</span>) d'un code qui attribue un mot de longueur \(\ell_i\) au symbole de probabilité \(p_i\) vaut \(\bar L = \sum_i p_i\, \ell_i\). Elle se mesure en bits, au sens de chiffres binaires. L'entropie se mesure en <dfn>shannons</dfn> (Sh) : l'unité de quantité d'information, celle d'un choix entre deux possibilités équiprobables. Les deux se comparent directement.</p>
+      <p>Le premier théorème de Shannon, ou théorème du codage de source, fixe la limite : pour tout code uniquement déchiffrable, \(\bar L \ge H\), et il existe un code préfixe tel que \(\bar L \lt H + 1\). On mesure donc un code par son <dfn>efficacité</dfn> \(\eta = H / \bar L\) :</p>
+      <div class="encadre">\[ \bar L = \sum_i p_i\, \ell_i \;\ge\; H \qquad\qquad \eta = \frac{H}{\bar L} \le 1 \]</div>
+      <p>Ici, \(\eta = 2{,}1858 / 2{,}282\), soit environ 95,8 %, contre \(2{,}1858 / 3\), soit 72,9 %, pour le code à longueur fixe de 3 bits.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le code de Huffman <span class="ref">diapos 15–23</span></h2>
+    <p>Shannon-Fano doit choisir chaque coupure, et un mauvais premier choix se paie ensuite. Huffman prend le problème dans l'autre sens : il part des symboles les moins probables, ceux qui auront les mots les plus longs, et remonte jusqu'à la racine.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Principe <span>Code de Huffman</span> <span class="ref">diapo 15</span></p>
+      <p>Dans le <dfn>code de Huffman</dfn> (<span class="en" lang="en">Huffman coding</span>), la construction de l'arbre permettant d'affecter aux \(n\) lettres source un mot code s'effectue de façon ascendante (contrairement au code de Shannon-Fano).</p>
+    </div>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Algorithme <span>Construction de l'arbre : étapes</span> <span class="ref">diapos 15–19</span></p>
+      <ol>
+        <li><strong>Première étape</strong> : on classe les lettres source suivant l'ordre croissant de leur probabilité.</li>
+        <li><strong>Deuxième étape</strong> : on crée un nœud parent à partir des deux lettres source de probabilités les plus faibles.</li>
+        <li><strong>Troisième étape</strong> : on affecte au nœud parent une probabilité égale à la somme des probabilités des deux lettres source à l'origine du nœud parent.</li>
+        <li><strong>Quatrième étape</strong> : on élimine de la liste les deux précédentes lettres source et on les remplace par le « super symbole » constitué par le nœud parent.</li>
+      </ol>
+      <p>Considérant les \(n - 1\) lettres source restantes, on revient à la deuxième étape jusqu'à ce qu'il ne reste plus de lettre source. <span class="badge ajout">Ajout</span> C'est-à-dire jusqu'à ce que la liste ne contienne plus qu'un nœud, la racine, de probabilité 1. Le mot code d'une lettre se lit ensuite sur le chemin de la racine à sa feuille : 0 pour une branche, 1 pour l'autre.</p>
+    </div>
+
+    <h3>Exemple <span class="ref">diapos 20–21</span></h3>
+    <p>On reprend l'exemple précédent, constitué des cinq lettres A, B, C, D, E affectées des fréquences relatives d'apparition \(15/39\), \(7/39\), \(6/39\), \(6/39\), \(5/39\).</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 460 264" width="460" role="img" aria-labelledby="fig-arbre-huffman-titre">
+        <title id="fig-arbre-huffman-titre">Arbre de Huffman de A, B, C, D, E : (I) E et D donnent un nœud de 11/39, (II) C et B un nœud de 13/39, (III) ces deux nœuds un nœud de 24/39, (IV) celui-ci et A la racine, 39/39</title>
+        <path class="trait" d="M293 26 L188 92"/>
+        <path class="trait" d="M188 92 L104 158"/>
+        <path class="trait" d="M104 158 L62 211"/>
+        <path class="trait" d="M104 158 L146 211"/>
+        <path class="trait" d="M188 92 L272 158"/>
+        <path class="trait" d="M272 158 L230 211"/>
+        <path class="trait" d="M272 158 L314 211"/>
+        <path class="trait" d="M293 26 L398 79"/>
+        <text x="230.5" y="59" text-anchor="middle" class="mono t2" font-size="12">0</text>
+        <text x="136" y="125" text-anchor="middle" class="mono t2" font-size="12">0</text>
+        <text x="73" y="184.5" text-anchor="middle" class="mono t2" font-size="12">0</text>
+        <rect class="boite" x="43" y="211" width="38" height="26" rx="6"/>
+        <text x="62" y="229" text-anchor="middle" class="mono gras" font-size="13">E</text>
+        <text x="62" y="254" text-anchor="middle" class="t2 mono" font-size="12">5/39</text>
+        <text x="135" y="184.5" text-anchor="middle" class="mono t2" font-size="12">1</text>
+        <rect class="boite" x="127" y="211" width="38" height="26" rx="6"/>
+        <text x="146" y="229" text-anchor="middle" class="mono gras" font-size="13">D</text>
+        <text x="146" y="254" text-anchor="middle" class="t2 mono" font-size="12">6/39</text>
+        <circle class="plein" cx="104" cy="158" r="5"/>
+        <text x="94" y="162" text-anchor="end" class="mono" font-size="12">(I) 11/39</text>
+        <text x="240" y="125" text-anchor="middle" class="mono t2" font-size="12">1</text>
+        <text x="241" y="184.5" text-anchor="middle" class="mono t2" font-size="12">0</text>
+        <rect class="boite" x="211" y="211" width="38" height="26" rx="6"/>
+        <text x="230" y="229" text-anchor="middle" class="mono gras" font-size="13">C</text>
+        <text x="230" y="254" text-anchor="middle" class="t2 mono" font-size="12">6/39</text>
+        <text x="303" y="184.5" text-anchor="middle" class="mono t2" font-size="12">1</text>
+        <rect class="boite" x="295" y="211" width="38" height="26" rx="6"/>
+        <text x="314" y="229" text-anchor="middle" class="mono gras" font-size="13">B</text>
+        <text x="314" y="254" text-anchor="middle" class="t2 mono" font-size="12">7/39</text>
+        <circle class="plein" cx="272" cy="158" r="5"/>
+        <text x="282" y="162" class="mono" font-size="12">(II) 13/39</text>
+        <circle class="plein" cx="188" cy="92" r="5"/>
+        <text x="178" y="96" text-anchor="end" class="mono" font-size="12">(III) 24/39</text>
+        <text x="355.5" y="52.5" text-anchor="middle" class="mono t2" font-size="12">1</text>
+        <rect class="boite-accent" x="379" y="79" width="38" height="26" rx="6"/>
+        <text x="398" y="97" text-anchor="middle" class="mono gras accent" font-size="13">A</text>
+        <text x="398" y="122" text-anchor="middle" class="t2 mono" font-size="12">15/39</text>
+        <circle class="plein" cx="293" cy="26" r="5"/>
+        <text x="303" y="30" class="mono" font-size="12">(IV) 39/39</text>
+      </svg>
+      <figcaption>Construction de l'arbre de Huffman (redessiné d'après la diapo 21). Les chiffres romains donnent l'ordre de création des nœuds. <span class="badge ajout">Ajout</span> Les bits des branches, et les feuilles placées à la profondeur de leur mot.</figcaption>
+    </figure>
+
+    <ol class="etapes">
+      <li><strong>(I)</strong> Les deux plus petites probabilités sont celles de E (\(5/39\)) et de D (\(6/39\)) : leur nœud parent vaut \(11/39\).</li>
+      <li><strong>(II)</strong> Il reste A (\(15/39\)), B (\(7/39\)), C (\(6/39\)) et le nœud \(11/39\) : C et B donnent un nœud de \(13/39\).</li>
+      <li><strong>(III)</strong> Les nœuds \(11/39\) et \(13/39\) donnent un nœud de \(24/39\).</li>
+      <li><strong>(IV)</strong> Ce nœud et A (\(15/39\)) donnent la racine, \(39/39 = 1\).</li>
+    </ol>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Les choix libres</span></p>
+      <p><span class="badge ajout">Ajout</span> À l'étape (I), C et D sont à égalité (\(6/39\)) : l'arbre de la diapo associe D à E, mais associer C à E serait tout aussi correct. De même, le bit 0 ou 1 attribué à chaque branche est libre. Ces choix changent les mots, jamais leurs longueurs dans ce cas, ni la longueur moyenne.</p>
+    </div>
+
+    <h3>Résultats <span class="ref">diapo 22</span></h3>
+    <p>Le code binaire obtenu est : E = <code>000</code>, D = <code>001</code>, C = <code>010</code>, B = <code>011</code>, A = <code>1</code>. La longueur moyenne d'un mot s'écrit :</p>
+    \[ 3 \cdot \left( 1 - \tfrac{15}{39} \right) + 1 \cdot \tfrac{15}{39} = 2{,}23 \text{ bits.} \]
+    <p><span class="badge ajout">Ajout</span> Exactement \(87/39 \approx 2{,}231\) bits, soit une efficacité de \(2{,}1858 / 2{,}231\), environ 98,0 %.</p>
+
+    <h3>Shannon-Fano ou Huffman ? <span class="ref">diapo 23</span></h3>
+    <ul>
+      <li>Un code de Huffman est toujours au moins aussi performant qu'un code de Shannon-Fano.</li>
+      <li>Le codage de Huffman (comme celui de Shannon-Fano) nécessite la connaissance des probabilités a priori des lettres source. En fait, si on ne connaît pas ces nombres, on peut toujours les estimer en mesurant les fréquences d'apparition des différents symboles dans le message à transmettre. Mais il faudra alors transmettre la table des probabilités ainsi estimées pour que le décodage soit possible.</li>
+    </ul>
+
+    <div class="tableau centre">
+      <table>
+        <caption>Les trois codes de la source A, B, C, D, E (\(H = 2{,}1858\) Sh)</caption>
+        <thead><tr><th>Code</th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>\(\bar L\) (bits)</th><th>Efficacité</th></tr></thead>
+        <tbody>
+          <tr><th>Longueur fixe</th><td><code>000</code></td><td><code>001</code></td><td><code>010</code></td><td><code>011</code></td><td><code>100</code></td><td>3</td><td>72,9 %</td></tr>
+          <tr><th>Shannon-Fano</th><td><code>00</code></td><td><code>01</code></td><td><code>10</code></td><td><code>110</code></td><td><code>111</code></td><td>2,282</td><td>95,8 %</td></tr>
+          <tr><th>Huffman</th><td><code>1</code></td><td><code>011</code></td><td><code>010</code></td><td><code>001</code></td><td><code>000</code></td><td>2,231</td><td>98,0 %</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>D'où vient le gain de Huffman</span></p>
+      <p>A représente plus du tiers des symboles (\(15/39\), environ 38 %). Sa longueur idéale, \(-\log_2 (15/39) \approx 1{,}38\) bit, est plus proche de 1 que de 2. Huffman lui donne 1 bit ; Shannon-Fano, contraint par sa première coupure équilibrée, lui en donne 2.</p>
+      <p>Plus généralement, dans un code optimal, les deux symboles les moins probables ont les mots les plus longs, et on peut toujours les placer comme deux feuilles sœurs au fond de l'arbre. C'est exactement ce que fait chaque étape de Huffman, ce qui rend son code optimal parmi les codes qui codent les symboles un par un. Il atteint \(\bar L = H\) quand toutes les probabilités sont des puissances de \(1/2\).</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Algorithme avec une file de priorité</span></p>
+      <p>En pratique, la liste triée de l'étape 1 est une file de priorité : chaque tour en extrait les deux nœuds les moins probables et y remet leur parent. Pour \(n\) symboles, il y a \(n - 1\) tours.</p>
+<pre><code class="language-pseudo"><b>fonction</b> Huffman(symboles, p)
+    F ← file de priorité des feuilles s, de clé p(s)    <i>// la plus petite clé sort en premier</i>
+    <b>tant que</b> F contient plus d'un nœud <b>faire</b>
+        x ← extraire_min(F)
+        y ← extraire_min(F)
+        z ← nouveau nœud : fils x (branche 0) et y (branche 1), clé p(x) + p(y)
+        insérer z dans F
+    <b>fin tant que</b>
+    <b>retourner</b> extraire_min(F)                       <i>// la racine, de clé 1</i>
+<i>// mot de s : bits lus sur le chemin de la racine à la feuille s</i></code></pre>
+    </div>
+
+    <div class="bloc exercice" id="ex-2">
+      <p class="bloc-titre">Exercice 2 <span>Shannon-Fano contre Huffman</span></p>
+      <p><span class="badge ajout">Ajout</span> Une source émet six symboles A, B, C, D, E, F avec les probabilités 0,39 ; 0,18 ; 0,15 ; 0,14 ; 0,11 ; 0,03.</p>
+      <ol>
+        <li>Construire le code de Shannon-Fano de cette source et donner la longueur de chaque mot.</li>
+        <li>Construire un code de Huffman et donner la longueur de chaque mot.</li>
+        <li>Calculer les deux longueurs moyennes et l'entropie de la source. Quel code est le plus efficace ?</li>
+      </ol>
+      <details class="indice"><summary>Indice</summary><p>Shannon-Fano : la première coupure sépare \(\{A, B\}\) du reste (0,57 contre 0,43). Huffman : on commence par fusionner F (0,03) et E (0,11).</p></details>
+    </div>
+    <div class="atelier" id="c2-ex2-shannon-huffman" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "Longueurs des mots",
+        "consigne": "<p>Pour chaque symbole, écrire la longueur de son mot dans chacun des deux codes. Les longueurs moyennes et l'entropie sont dans la solution.</p>",
+        "options": { "verrou": "depart", "lignes": false, "ordre": true },
+        "depart": ["| Symbole | Probabilité | Longueur Shannon-Fano | Longueur Huffman |", "|---|---|---|---|", "| A | 0,39 |  |  |", "| B | 0,18 |  |  |", "| C | 0,15 |  |  |", "| D | 0,14 |  |  |", "| E | 0,11 |  |  |", "| F | 0,03 |  |  |"],
+        "solution": ["| Symbole | Probabilité | Longueur Shannon-Fano | Longueur Huffman |", "|---|---|---|---|", "| A | 0,39 | 2 | 1 |", "| B | 0,18 | 2 | 3 |", "| C | 0,15 | 2 | 3 |", "| D | 0,14 | 3 | 3 |", "| E | 0,11 | 4 | 4 |", "| F | 0,03 | 4 | 4 |"],
+        "explication": "<p><b>Shannon-Fano.</b> Première coupure : {A, B} (0,57) contre {C, D, E, F} (0,43) ; couper après A donnerait 0,39 contre 0,61, plus déséquilibré. Puis A = 00 et B = 01. Le groupe {C, D, E, F} (0,43) se coupe en {C} (0,15) et {D, E, F} (0,28) : C = 10. {D, E, F} se coupe exactement en deux, {D} (0,14) et {E, F} (0,14) : D = 110, E = 1110, F = 1111. Longueur moyenne : 2 × 0,72 + 3 × 0,14 + 4 × 0,14 = 2,42 bits.</p><p><b>Huffman.</b> F + E = 0,14 ; puis D (0,14) et ce nœud (0,14) donnent 0,28 ; puis C + B = 0,33 ; puis 0,28 + 0,33 = 0,61 ; enfin A + 0,61 = 1. Un code possible : A = 0, D = 100, E = 1010, F = 1011, C = 110, B = 111. Longueur moyenne : 0,39 + 3 × 0,47 + 4 × 0,14 = 2,36 bits.</p><p><b>Comparaison.</b> L'entropie vaut H ≈ 2,285 Sh. Efficacité : 2,285 / 2,42 ≈ 94,4 % pour Shannon-Fano, 2,285 / 2,36 ≈ 96,8 % pour Huffman. Comme dans le cours, Huffman gagne en donnant un seul bit au symbole très probable A.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice" id="ex-3">
+      <p class="bloc-titre">Exercice 3 <span>Décoder un message</span></p>
+      <p><span class="badge ajout">Ajout</span> Décoder la suite <code>1011000110101</code> avec le code de Huffman du cours (A = <code>1</code>, B = <code>011</code>, C = <code>010</code>, D = <code>001</code>, E = <code>000</code>). Combien de bits aurait demandé le code de Shannon-Fano pour le même message ?</p>
+      <details class="indice"><summary>Indice</summary><p>Le code est préfixe : lire les bits de gauche à droite et couper dès qu'un mot est reconnu.</p></details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p><code>1 | 011 | 000 | 1 | 1 | 010 | 1</code>, soit le message ABEAACA, codé en 13 bits. Avec Shannon-Fano (A = <code>00</code>, B = <code>01</code>, C = <code>10</code>, E = <code>111</code>), il faudrait \(2 + 2 + 3 + 2 + 2 + 2 + 2 = 15\) bits : les quatre A coûtent chacun un bit de plus.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Compression d'images : la norme JPEG <span class="ref">diapos 24–30</span></h2>
+    <p>Le codage de Huffman sert rarement seul. Dans la compression d'images, il intervient en dernier, après des transformations qui, elles, acceptent de perdre de l'information.</p>
+
+    <p>Le codage de Huffman correspond à une des étapes de la compression des images suivant les normes <dfn>JPEG</dfn> (<span class="en" lang="en">Joint Photographic Experts Group</span>) pour les images fixes, et <dfn>MPEG</dfn> (<span class="en" lang="en">Moving Picture Experts Group</span>) pour les images animées. Le procédé de compression JPEG peut être schématisé comme suit.</p>
+    <p>La diapo 24 développe MPEG en « Moving Photographic Experts Group » : le nom du groupe de normalisation est « Moving Picture Experts Group ».</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 724 104" width="724" role="img" aria-labelledby="fig-jpeg-titre">
+        <title id="fig-jpeg-titre">Chaîne de compression JPEG : image originale, calcul de la DCT, quantification, compression, image compressée</title>
+        <defs><marker id="fleche-jpeg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="plein"/></marker></defs>
+        <text x="4" y="34" font-size="13">Image</text>
+        <text x="4" y="51" font-size="13">originale</text>
+        <path class="trait" d="M64 38 H98" marker-end="url(#fleche-jpeg)"/>
+        <rect class="boite" x="100" y="16" width="142" height="44" rx="8"/>
+        <text x="171" y="43" text-anchor="middle" class="gras">Calcul de la DCT</text>
+        <text x="171" y="82" text-anchor="middle" class="t2" font-size="12">blocs 8 × 8 → fréquences</text>
+        <path class="trait" d="M242 38 H280" marker-end="url(#fleche-jpeg)"/>
+        <rect class="boite" x="282" y="16" width="142" height="44" rx="8"/>
+        <text x="353" y="43" text-anchor="middle" class="gras">Quantification</text>
+        <text x="353" y="82" text-anchor="middle" class="t2" font-size="12">perte d’information</text>
+        <path class="trait" d="M424 38 H462" marker-end="url(#fleche-jpeg)"/>
+        <rect class="boite-accent" x="464" y="16" width="142" height="44" rx="8"/>
+        <text x="535" y="43" text-anchor="middle" class="gras">Compression</text>
+        <text x="535" y="82" text-anchor="middle" class="t2" font-size="12">zigzag, plages, Huffman</text>
+        <path class="trait" d="M606 38 H640" marker-end="url(#fleche-jpeg)"/>
+        <text x="646" y="34" font-size="13">Image</text>
+        <text x="646" y="51" font-size="13">compressée</text>
+      </svg>
+      <figcaption>Chaîne de compression JPEG (redessiné d'après la diapo 25). <span class="badge ajout">Ajout</span> Les mentions sous les blocs.</figcaption>
+    </figure>
+
+    <h3>Découpage en blocs <span class="ref">diapo 26</span></h3>
+    <p>L'image est représentée par une matrice dont les éléments correspondent aux valeurs prises par les pixels. On la décompose en blocs de \(8 \times 8 = 64\) pixels, de façon à ce que les calculs de DCT puissent être effectués en un laps de temps raisonnable.</p>
+
+    <h3>La DCT <span class="ref">diapo 27</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Transformée en cosinus discrète</span></p>
+      <p>La <dfn>DCT</dfn> (<span class="en" lang="en">Discrete Cosine Transform</span>, transformée en cosinus discrète) est une opération similaire au calcul de la transformée de Fourier discrète à deux dimensions (variables d'espace). On obtient alors une nouvelle matrice, de mêmes dimensions que la première, où les éléments correspondent à des mots de 11 éléments binaires (les termes de la matrice initiale étaient codés sur 8 éléments binaires).</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Ce que fait la DCT</span></p>
+      <p>La DCT écrit le bloc comme une somme de 64 motifs en cosinus, de fréquences croissantes. Le coefficient en haut à gauche mesure le niveau moyen du bloc ; les autres décrivent des variations de plus en plus fines, horizontales vers la droite, verticales vers le bas. Sur une photographie, les pixels voisins se ressemblent : l'essentiel de l'énergie se concentre dans les coefficients du coin haut gauche, et ceux du coin bas droit sont petits.</p>
+      <p>La DCT elle-même ne perd rien : elle est inversible. Elle ne compresse pas non plus, puisqu'elle passe de 8 à 11 bits par terme. Elle prépare le terrain de l'étape suivante.</p>
+    </div>
+
+    <details class="depliant">
+      <summary>La formule de la DCT et ses 11 bits <span class="badge hors-programme">Hors programme</span></summary>
+      <p>Pour un bloc \(f(x, y)\), \(0 \le x, y \le 7\), dont on a retranché 128 à chaque pixel (valeurs entre −128 et 127) :</p>
+      \[ F(u, v) = \frac14\, C(u)\, C(v) \sum_{x=0}^{7} \sum_{y=0}^{7} f(x, y) \cos\frac{(2x+1)u\pi}{16} \cos\frac{(2y+1)v\pi}{16}, \qquad C(0) = \frac{1}{\sqrt 2},\ C(k) = 1 \text{ sinon.} \]
+      <p>Pour \(u = v = 0\), les cosinus valent 1 et \(F(0, 0) = \sum f(x, y) / 8\), soit 8 fois la moyenne des 64 pixels. Sa valeur absolue peut atteindre \(8 \times 128 = 1024 = 2^{10}\) : avec le signe, il faut 11 bits, ce qui explique les 11 éléments binaires de la diapo 27.</p>
+    </details>
+
+    <h3>Quantification : perte d'informations <span class="ref">diapo 28</span></h3>
+    <p>La <dfn>quantification</dfn> (<span class="en" lang="en">quantization</span>) consiste à réduire le nombre d'éléments binaires pour représenter les coefficients de la matrice. Ainsi les termes situés dans la partie haute gauche de la matrice se verront accorder, pour les représenter, un nombre d'éléments binaires plus important que les termes localisés dans la partie basse droite de la matrice.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Quantifier en pratique</span></p>
+      <p>Chaque coefficient est divisé par un pas \(Q(u, v)\) puis arrondi : \(F_Q(u, v) = \operatorname{arrondi}\big(F(u, v) / Q(u, v)\big)\). La table des pas est petite en haut à gauche et grande en bas à droite, car l'œil perçoit mal les détails fins. Beaucoup de coefficients de haute fréquence deviennent nuls. C'est la seule étape qui perd de l'information, et le réglage de « qualité » d'un logiciel ne fait que multiplier les pas.</p>
+    </div>
+
+    <h3>Parcours en zigzag <span class="ref">diapo 29</span></h3>
+    <p>Ensuite, les valeurs de la matrice sont rangées à partir d'une excursion en zigzag effectuée sur la matrice, en débutant par le terme situé en haut à gauche.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 348 344" width="348" role="img" aria-labelledby="fig-zigzag-titre">
+        <title id="fig-zigzag-titre">Parcours en zigzag d’un bloc de 8 × 8 coefficients, du coefficient DC en haut à gauche jusqu’au coefficient de plus haute fréquence en bas à droite ; chaque case porte son rang dans le parcours</title>
+        <defs><marker id="fleche-zigzag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="plein-accent"/></marker></defs>
+        <rect class="boite-accent" x="34" y="30" width="38" height="38"/>
+        <rect class="boite" x="72" y="30" width="38" height="38"/>
+        <rect class="boite" x="110" y="30" width="38" height="38"/>
+        <rect class="boite" x="148" y="30" width="38" height="38"/>
+        <rect class="boite" x="186" y="30" width="38" height="38"/>
+        <rect class="boite" x="224" y="30" width="38" height="38"/>
+        <rect class="boite" x="262" y="30" width="38" height="38"/>
+        <rect class="boite" x="300" y="30" width="38" height="38"/>
+        <rect class="boite" x="34" y="68" width="38" height="38"/>
+        <rect class="boite" x="72" y="68" width="38" height="38"/>
+        <rect class="boite" x="110" y="68" width="38" height="38"/>
+        <rect class="boite" x="148" y="68" width="38" height="38"/>
+        <rect class="boite" x="186" y="68" width="38" height="38"/>
+        <rect class="boite" x="224" y="68" width="38" height="38"/>
+        <rect class="boite" x="262" y="68" width="38" height="38"/>
+        <rect class="boite" x="300" y="68" width="38" height="38"/>
+        <rect class="boite" x="34" y="106" width="38" height="38"/>
+        <rect class="boite" x="72" y="106" width="38" height="38"/>
+        <rect class="boite" x="110" y="106" width="38" height="38"/>
+        <rect class="boite" x="148" y="106" width="38" height="38"/>
+        <rect class="boite" x="186" y="106" width="38" height="38"/>
+        <rect class="boite" x="224" y="106" width="38" height="38"/>
+        <rect class="boite" x="262" y="106" width="38" height="38"/>
+        <rect class="boite" x="300" y="106" width="38" height="38"/>
+        <rect class="boite" x="34" y="144" width="38" height="38"/>
+        <rect class="boite" x="72" y="144" width="38" height="38"/>
+        <rect class="boite" x="110" y="144" width="38" height="38"/>
+        <rect class="boite" x="148" y="144" width="38" height="38"/>
+        <rect class="boite" x="186" y="144" width="38" height="38"/>
+        <rect class="boite" x="224" y="144" width="38" height="38"/>
+        <rect class="boite" x="262" y="144" width="38" height="38"/>
+        <rect class="boite" x="300" y="144" width="38" height="38"/>
+        <rect class="boite" x="34" y="182" width="38" height="38"/>
+        <rect class="boite" x="72" y="182" width="38" height="38"/>
+        <rect class="boite" x="110" y="182" width="38" height="38"/>
+        <rect class="boite" x="148" y="182" width="38" height="38"/>
+        <rect class="boite" x="186" y="182" width="38" height="38"/>
+        <rect class="boite" x="224" y="182" width="38" height="38"/>
+        <rect class="boite" x="262" y="182" width="38" height="38"/>
+        <rect class="boite" x="300" y="182" width="38" height="38"/>
+        <rect class="boite" x="34" y="220" width="38" height="38"/>
+        <rect class="boite" x="72" y="220" width="38" height="38"/>
+        <rect class="boite" x="110" y="220" width="38" height="38"/>
+        <rect class="boite" x="148" y="220" width="38" height="38"/>
+        <rect class="boite" x="186" y="220" width="38" height="38"/>
+        <rect class="boite" x="224" y="220" width="38" height="38"/>
+        <rect class="boite" x="262" y="220" width="38" height="38"/>
+        <rect class="boite" x="300" y="220" width="38" height="38"/>
+        <rect class="boite" x="34" y="258" width="38" height="38"/>
+        <rect class="boite" x="72" y="258" width="38" height="38"/>
+        <rect class="boite" x="110" y="258" width="38" height="38"/>
+        <rect class="boite" x="148" y="258" width="38" height="38"/>
+        <rect class="boite" x="186" y="258" width="38" height="38"/>
+        <rect class="boite" x="224" y="258" width="38" height="38"/>
+        <rect class="boite" x="262" y="258" width="38" height="38"/>
+        <rect class="boite" x="300" y="258" width="38" height="38"/>
+        <rect class="boite" x="34" y="296" width="38" height="38"/>
+        <rect class="boite" x="72" y="296" width="38" height="38"/>
+        <rect class="boite" x="110" y="296" width="38" height="38"/>
+        <rect class="boite" x="148" y="296" width="38" height="38"/>
+        <rect class="boite" x="186" y="296" width="38" height="38"/>
+        <rect class="boite" x="224" y="296" width="38" height="38"/>
+        <rect class="boite" x="262" y="296" width="38" height="38"/>
+        <rect class="boite" x="300" y="296" width="38" height="38"/>
+        <text x="37" y="41" class="t2 mono" font-size="9">0</text>
+        <text x="75" y="41" class="t2 mono" font-size="9">1</text>
+        <text x="37" y="79" class="t2 mono" font-size="9">2</text>
+        <text x="37" y="117" class="t2 mono" font-size="9">3</text>
+        <text x="75" y="79" class="t2 mono" font-size="9">4</text>
+        <text x="113" y="41" class="t2 mono" font-size="9">5</text>
+        <text x="151" y="41" class="t2 mono" font-size="9">6</text>
+        <text x="113" y="79" class="t2 mono" font-size="9">7</text>
+        <text x="75" y="117" class="t2 mono" font-size="9">8</text>
+        <text x="37" y="155" class="t2 mono" font-size="9">9</text>
+        <text x="37" y="193" class="t2 mono" font-size="9">10</text>
+        <text x="75" y="155" class="t2 mono" font-size="9">11</text>
+        <text x="113" y="117" class="t2 mono" font-size="9">12</text>
+        <text x="151" y="79" class="t2 mono" font-size="9">13</text>
+        <text x="189" y="41" class="t2 mono" font-size="9">14</text>
+        <text x="227" y="41" class="t2 mono" font-size="9">15</text>
+        <text x="189" y="79" class="t2 mono" font-size="9">16</text>
+        <text x="151" y="117" class="t2 mono" font-size="9">17</text>
+        <text x="113" y="155" class="t2 mono" font-size="9">18</text>
+        <text x="75" y="193" class="t2 mono" font-size="9">19</text>
+        <text x="37" y="231" class="t2 mono" font-size="9">20</text>
+        <text x="37" y="269" class="t2 mono" font-size="9">21</text>
+        <text x="75" y="231" class="t2 mono" font-size="9">22</text>
+        <text x="113" y="193" class="t2 mono" font-size="9">23</text>
+        <text x="151" y="155" class="t2 mono" font-size="9">24</text>
+        <text x="189" y="117" class="t2 mono" font-size="9">25</text>
+        <text x="227" y="79" class="t2 mono" font-size="9">26</text>
+        <text x="265" y="41" class="t2 mono" font-size="9">27</text>
+        <text x="303" y="41" class="t2 mono" font-size="9">28</text>
+        <text x="265" y="79" class="t2 mono" font-size="9">29</text>
+        <text x="227" y="117" class="t2 mono" font-size="9">30</text>
+        <text x="189" y="155" class="t2 mono" font-size="9">31</text>
+        <text x="151" y="193" class="t2 mono" font-size="9">32</text>
+        <text x="113" y="231" class="t2 mono" font-size="9">33</text>
+        <text x="75" y="269" class="t2 mono" font-size="9">34</text>
+        <text x="37" y="307" class="t2 mono" font-size="9">35</text>
+        <text x="75" y="307" class="t2 mono" font-size="9">36</text>
+        <text x="113" y="269" class="t2 mono" font-size="9">37</text>
+        <text x="151" y="231" class="t2 mono" font-size="9">38</text>
+        <text x="189" y="193" class="t2 mono" font-size="9">39</text>
+        <text x="227" y="155" class="t2 mono" font-size="9">40</text>
+        <text x="265" y="117" class="t2 mono" font-size="9">41</text>
+        <text x="303" y="79" class="t2 mono" font-size="9">42</text>
+        <text x="303" y="117" class="t2 mono" font-size="9">43</text>
+        <text x="265" y="155" class="t2 mono" font-size="9">44</text>
+        <text x="227" y="193" class="t2 mono" font-size="9">45</text>
+        <text x="189" y="231" class="t2 mono" font-size="9">46</text>
+        <text x="151" y="269" class="t2 mono" font-size="9">47</text>
+        <text x="113" y="307" class="t2 mono" font-size="9">48</text>
+        <text x="151" y="307" class="t2 mono" font-size="9">49</text>
+        <text x="189" y="269" class="t2 mono" font-size="9">50</text>
+        <text x="227" y="231" class="t2 mono" font-size="9">51</text>
+        <text x="265" y="193" class="t2 mono" font-size="9">52</text>
+        <text x="303" y="155" class="t2 mono" font-size="9">53</text>
+        <text x="303" y="193" class="t2 mono" font-size="9">54</text>
+        <text x="265" y="231" class="t2 mono" font-size="9">55</text>
+        <text x="227" y="269" class="t2 mono" font-size="9">56</text>
+        <text x="189" y="307" class="t2 mono" font-size="9">57</text>
+        <text x="227" y="307" class="t2 mono" font-size="9">58</text>
+        <text x="265" y="269" class="t2 mono" font-size="9">59</text>
+        <text x="303" y="231" class="t2 mono" font-size="9">60</text>
+        <text x="303" y="269" class="t2 mono" font-size="9">61</text>
+        <text x="265" y="307" class="t2 mono" font-size="9">62</text>
+        <text x="303" y="307" class="t2 mono" font-size="9">63</text>
+        <polyline class="accent" points="53,49 91,49 53,87 53,125 91,87 129,49 167,49 129,87 91,125 53,163 53,201 91,163 129,125 167,87 205,49 243,49 205,87 167,125 129,163 91,201 53,239 53,277 91,239 129,201 167,163 205,125 243,87 281,49 319,49 281,87 243,125 205,163 167,201 129,239 91,277 53,315 91,315 129,277 167,239 205,201 243,163 281,125 319,87 319,125 281,163 243,201 205,239 167,277 129,315 167,315 205,277 243,239 281,201 319,163 319,201 281,239 243,277 205,315 243,315 281,277 319,239 319,277 281,315 319,315" marker-end="url(#fleche-zigzag)"/>
+        <circle class="plein-accent" cx="53" cy="49" r="4"/>
+        <text x="53" y="21" text-anchor="middle" class="gras accent" font-size="13">DC</text>
+        <text x="205" y="21" text-anchor="middle" class="t2" font-size="12">fréquences horizontales croissantes →</text>
+        <text x="24" y="182" text-anchor="middle" class="t2" font-size="12" transform="rotate(-90 24 182)">fréquences verticales croissantes →</text>
+      </svg>
+      <figcaption>Parcours en <dfn>zigzag</dfn> (<span class="en" lang="en">zigzag scan</span>) d'un bloc de coefficients (redessiné d'après la diapo 29). <span class="badge ajout">Ajout</span> La diapo ne trace que la première moitié du parcours ; le rang de chaque case est ajouté.</figcaption>
+    </figure>
+
+    <h3>Le coefficient DC <span class="ref">diapo 30</span></h3>
+    <p>Chaque bloc de \(8 \times 8\) possède un coefficient noté <dfn>DC</dfn> (situé en haut à gauche), correspondant en quelque sorte à la « valeur moyenne » des 63 autres coefficients, notés <dfn>AC</dfn>.</p>
+    <p>Tenant compte du fait qu'il existe généralement une corrélation assez forte entre les coefficients DC de blocs adjacents, on ne code pas la valeur de DC, mais la différence entre le coefficient DC du bloc précédent et celui que l'on vient de lire.</p>
+    <p>Contrairement à ce que dit la diapo, le coefficient DC n'est pas la moyenne des 63 coefficients AC : il est proportionnel à la moyenne des 64 <em>pixels</em> du bloc (8 fois cette moyenne, voir le dépliant sur la formule). Les coefficients AC décrivent les variations autour de ce niveau moyen. Les noms viennent de l'électricité : DC pour <span lang="en">direct current</span> (courant continu, fréquence nulle) et AC pour <span lang="en">alternating current</span> (courant alternatif).</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Ce que recouvre l'étape « compression »</span></p>
+      <p>Le zigzag range les coefficients des basses fréquences vers les hautes : les zéros produits par la quantification se retrouvent groupés en fin de parcours. On code alors les 63 coefficients AC par plages, comme le fax du cours 1 : chaque valeur non nulle est précédée du nombre de zéros qui la précèdent, et un marqueur de fin de bloc (<span class="en" lang="en">EOB, end of block</span>) remplace tous les zéros restants. Les couples obtenus, et les différences de DC, sont enfin codés par Huffman : c'est là qu'intervient le code de la section précédente.</p>
+      <p>Exemple : après quantification, un bloc donne DC = 52 (celui du bloc précédent valait 49) puis, dans l'ordre du zigzag, les AC −3, 1, 0, 0, 2, 0, 0, 0, 0, −1 suivis de 53 zéros. On code la différence \(+3\) pour DC, puis les couples (0 zéro, −3), (0, 1), (2, 2), (4, −1) et EOB : cinq symboles au lieu de 63 valeurs.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le codage arithmétique <span class="ref">diapos 31–34</span></h2>
+    <p>Huffman attribue à chaque symbole un nombre entier de bits, ce qui l'empêche d'atteindre exactement l'entropie. Le codage arithmétique contourne cette limite : il ne code plus les symboles un par un, mais le message entier.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Principe <span>Codage arithmétique</span> <span class="ref">diapo 31</span></p>
+      <p>Le principe du <dfn>codage arithmétique</dfn> (<span class="en" lang="en">arithmetic coding</span>) consiste à affecter à l'ensemble du message un seul nombre en virgule flottante.</p>
+    </div>
+
+    <h3>Exemple : les probabilités <span class="ref">diapo 32</span></h3>
+    <p>Soit à coder le message « HANS ZIMMER ». On estime tout d'abord les probabilités des lettres source en les assimilant aux fréquences relatives d'apparition dans le message. Pour notre exemple, on obtient le tableau suivant.</p>
+
+    <div class="tableau mono compact centre">
+      <table>
+        <caption>Fréquences des lettres de « HANS ZIMMER » (11 caractères, diapo 32)</caption>
+        <thead><tr><th>Lettre</th><th>Fréquence</th><th>Lettre</th><th>Fréquence</th></tr></thead>
+        <tbody>
+          <tr><th>Espace</th><td>1/11</td><th>M</th><td>2/11</td></tr>
+          <tr><th>A</th><td>1/11</td><th>N</th><td>1/11</td></tr>
+          <tr><th>E</th><td>1/11</td><th>R</th><td>1/11</td></tr>
+          <tr><th>I</th><td>1/11</td><th>S</th><td>1/11</td></tr>
+          <tr><th>H</th><td>1/11</td><th>Z</th><td>1/11</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Tableau d'intervalles <span class="ref">diapo 33</span></h3>
+    <p>\(1/11 \approx 0{,}0909090909\) : on se propose d'arrondir à 0,09, et l'erreur est reportée sur l'espace, avec 0,1. <span class="badge ajout">Ajout</span> M, deux fois plus fréquent, reçoit 0,18 ; la somme vaut bien \(0{,}1 + 8 \times 0{,}09 + 0{,}18 = 1\).</p>
+    <p>Ensuite, on attribue à chaque symbole un intervalle semi-ouvert contenu dans \([0, 1]\). Ces intervalles doivent être disjoints, et de longueur égale à la fréquence d'apparition du symbole.</p>
+
+    <div class="tableau mono compact centre">
+      <table>
+        <caption>Intervalle de chaque symbole (diapo 33)</caption>
+        <thead><tr><th>Symbole</th><th>Intervalle</th><th>Symbole</th><th>Intervalle</th></tr></thead>
+        <tbody>
+          <tr><th>Espace</th><td>[0 ; 0,1[</td><th>M</th><td>[0,46 ; 0,64[</td></tr>
+          <tr><th>A</th><td>[0,1 ; 0,19[</td><th>N</th><td>[0,64 ; 0,73[</td></tr>
+          <tr><th>E</th><td>[0,19 ; 0,28[</td><th>R</th><td>[0,73 ; 0,82[</td></tr>
+          <tr><th>I</th><td>[0,28 ; 0,37[</td><th>S</th><td>[0,82 ; 0,91[</td></tr>
+          <tr><th>H</th><td>[0,37 ; 0,46[</td><th>Z</th><td>[0,91 ; 1[</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Déroulement <span class="ref">diapo 34</span></h3>
+    <p>On part de l'intervalle du premier symbole, puis chaque symbole suivant réduit l'intervalle courant à la part qui lui revient.</p>
+    <ul>
+      <li>Pour « H » : \([0{,}37\,;\,0{,}46[\), écart 0,09.</li>
+      <li>Pour « HA » : \([0{,}37 + 0{,}09 \times 0{,}1\,;\, 0{,}37 + 0{,}09 \times 0{,}19[\; = [0{,}379\,;\,0{,}3871[\), écart 0,0081.</li>
+      <li>Pour « HAN » : \([0{,}379 + 0{,}0081 \times 0{,}64\,;\, 0{,}379 + 0{,}0081 \times 0{,}73[\; = [0{,}384184\,;\,0{,}384913[\), écart 0,000729.</li>
+      <li>Et ainsi de suite.</li>
+    </ul>
+    <p>Finalement, on obtient pour le message complet un intervalle \([X\,;\,Y[\). C'est la borne inférieure du dernier intervalle (ici \(X\)) qui codera l'ensemble du message.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 226" width="640" role="img" aria-labelledby="fig-intervalles-titre">
+        <title id="fig-intervalles-titre">Codage arithmétique de HAN : l’intervalle [0 ; 1[ est découpé selon les probabilités et l’on garde la part de H, [0,37 ; 0,46[ ; on la redécoupe dans les mêmes proportions et l’on garde la part de A, [0,379 ; 0,3871[, puis celle de N, [0,384184 ; 0,384913[</title>
+        <text x="54" y="27" text-anchor="end" class="mono gras" font-size="13">début</text>
+        <rect class="boite" x="64" y="8" width="56" height="28"/>
+        <text x="92" y="27" text-anchor="middle" class="mono" font-size="12">␣</text>
+        <rect class="boite" x="120" y="8" width="50.4" height="28"/>
+        <text x="145.2" y="27" text-anchor="middle" class="mono" font-size="12">A</text>
+        <rect class="boite" x="170.4" y="8" width="50.4" height="28"/>
+        <text x="195.6" y="27" text-anchor="middle" class="mono" font-size="12">E</text>
+        <rect class="boite" x="220.8" y="8" width="50.4" height="28"/>
+        <text x="246" y="27" text-anchor="middle" class="mono" font-size="12">I</text>
+        <rect class="boite-accent" x="271.2" y="8" width="50.4" height="28"/>
+        <text x="296.4" y="27" text-anchor="middle" class="mono gras accent" font-size="12">H</text>
+        <rect class="boite" x="321.6" y="8" width="100.8" height="28"/>
+        <text x="372" y="27" text-anchor="middle" class="mono" font-size="12">M</text>
+        <rect class="boite" x="422.4" y="8" width="50.4" height="28"/>
+        <text x="447.6" y="27" text-anchor="middle" class="mono" font-size="12">N</text>
+        <rect class="boite" x="472.8" y="8" width="50.4" height="28"/>
+        <text x="498" y="27" text-anchor="middle" class="mono" font-size="12">R</text>
+        <rect class="boite" x="523.2" y="8" width="50.4" height="28"/>
+        <text x="548.4" y="27" text-anchor="middle" class="mono" font-size="12">S</text>
+        <rect class="boite" x="573.6" y="8" width="50.4" height="28"/>
+        <text x="598.8" y="27" text-anchor="middle" class="mono" font-size="12">Z</text>
+        <text x="64" y="51" class="t2 mono" font-size="11">0</text>
+        <text x="624" y="51" text-anchor="end" class="t2 mono" font-size="11">1</text>
+        <path class="pointille" d="M271.2 36 L64 82"/>
+        <path class="pointille" d="M321.6 36 L624 82"/>
+        <text x="54" y="101" text-anchor="end" class="mono gras" font-size="13">H</text>
+        <rect class="boite" x="64" y="82" width="56" height="28"/>
+        <text x="92" y="101" text-anchor="middle" class="mono" font-size="12">␣</text>
+        <rect class="boite-accent" x="120" y="82" width="50.4" height="28"/>
+        <text x="145.2" y="101" text-anchor="middle" class="mono gras accent" font-size="12">A</text>
+        <rect class="boite" x="170.4" y="82" width="50.4" height="28"/>
+        <text x="195.6" y="101" text-anchor="middle" class="mono" font-size="12">E</text>
+        <rect class="boite" x="220.8" y="82" width="50.4" height="28"/>
+        <text x="246" y="101" text-anchor="middle" class="mono" font-size="12">I</text>
+        <rect class="boite" x="271.2" y="82" width="50.4" height="28"/>
+        <text x="296.4" y="101" text-anchor="middle" class="mono" font-size="12">H</text>
+        <rect class="boite" x="321.6" y="82" width="100.8" height="28"/>
+        <text x="372" y="101" text-anchor="middle" class="mono" font-size="12">M</text>
+        <rect class="boite" x="422.4" y="82" width="50.4" height="28"/>
+        <text x="447.6" y="101" text-anchor="middle" class="mono" font-size="12">N</text>
+        <rect class="boite" x="472.8" y="82" width="50.4" height="28"/>
+        <text x="498" y="101" text-anchor="middle" class="mono" font-size="12">R</text>
+        <rect class="boite" x="523.2" y="82" width="50.4" height="28"/>
+        <text x="548.4" y="101" text-anchor="middle" class="mono" font-size="12">S</text>
+        <rect class="boite" x="573.6" y="82" width="50.4" height="28"/>
+        <text x="598.8" y="101" text-anchor="middle" class="mono" font-size="12">Z</text>
+        <text x="64" y="125" class="t2 mono" font-size="11">0,37</text>
+        <text x="624" y="125" text-anchor="end" class="t2 mono" font-size="11">0,46</text>
+        <path class="pointille" d="M120 110 L64 156"/>
+        <path class="pointille" d="M170.4 110 L624 156"/>
+        <text x="54" y="175" text-anchor="end" class="mono gras" font-size="13">HA</text>
+        <rect class="boite" x="64" y="156" width="56" height="28"/>
+        <text x="92" y="175" text-anchor="middle" class="mono" font-size="12">␣</text>
+        <rect class="boite" x="120" y="156" width="50.4" height="28"/>
+        <text x="145.2" y="175" text-anchor="middle" class="mono" font-size="12">A</text>
+        <rect class="boite" x="170.4" y="156" width="50.4" height="28"/>
+        <text x="195.6" y="175" text-anchor="middle" class="mono" font-size="12">E</text>
+        <rect class="boite" x="220.8" y="156" width="50.4" height="28"/>
+        <text x="246" y="175" text-anchor="middle" class="mono" font-size="12">I</text>
+        <rect class="boite" x="271.2" y="156" width="50.4" height="28"/>
+        <text x="296.4" y="175" text-anchor="middle" class="mono" font-size="12">H</text>
+        <rect class="boite" x="321.6" y="156" width="100.8" height="28"/>
+        <text x="372" y="175" text-anchor="middle" class="mono" font-size="12">M</text>
+        <rect class="boite-accent" x="422.4" y="156" width="50.4" height="28"/>
+        <text x="447.6" y="175" text-anchor="middle" class="mono gras accent" font-size="12">N</text>
+        <rect class="boite" x="472.8" y="156" width="50.4" height="28"/>
+        <text x="498" y="175" text-anchor="middle" class="mono" font-size="12">R</text>
+        <rect class="boite" x="523.2" y="156" width="50.4" height="28"/>
+        <text x="548.4" y="175" text-anchor="middle" class="mono" font-size="12">S</text>
+        <rect class="boite" x="573.6" y="156" width="50.4" height="28"/>
+        <text x="598.8" y="175" text-anchor="middle" class="mono" font-size="12">Z</text>
+        <text x="64" y="199" class="t2 mono" font-size="11">0,379</text>
+        <text x="624" y="199" text-anchor="end" class="t2 mono" font-size="11">0,3871</text>
+        <text x="447.6" y="216" text-anchor="middle" class="mono accent" font-size="12">HAN : [0,384184 ; 0,384913[</text>
+      </svg>
+      <figcaption><span class="badge ajout">Ajout</span> Les trois premières étapes du codage de « HANS ZIMMER » : chaque intervalle retenu est redécoupé dans les mêmes proportions que \([0\,;\,1[\).</figcaption>
+    </figure>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Réduire l'intervalle</span></p>
+      <p><span class="badge ajout">Ajout</span> Si l'intervalle courant est \([b\,;\,b + e[\), d'écart \(e\), et que le symbole suivant \(s\) a pour intervalle \([a_s\,;\,b_s[\) dans le tableau, le nouvel intervalle et le nouvel écart sont :</p>
+      <div class="encadre">\[ \big[\, b + e \cdot a_s \;;\; b + e \cdot b_s \,\big[ \qquad\qquad e' = e \times (b_s - a_s) = e \times p(s) \]</div>
+      <p>On part de \(b = 0\) et \(e = 1\). L'écart final est donc le produit des probabilités de tous les symboles du message.</p>
+    </div>
+
+<pre><code class="language-pseudo"><b>fonction</b> CoderArithmetique(message)
+    b ← 0 ; e ← 1
+    <b>pour chaque</b> symbole s <b>de</b> message <b>faire</b>
+        [a, c[ ← intervalle de s dans le tableau
+        b ← b + e × a
+        e ← e × (c − a)
+    <b>fin pour</b>
+    <b>retourner</b> b          <i>// ou tout nombre de [b ; b + e[</i></code></pre>
+
+    <div class="bloc exercice" id="ex-4">
+      <p class="bloc-titre">Exercice 4 <span>Poursuivre le codage</span></p>
+      <p><span class="badge ajout">Ajout</span> Poursuivre le déroulement de la diapo 34 : donner les intervalles de « HANS » et de « HANS␣ » (␣ désigne l'espace), avec leur écart.</p>
+      <details class="indice"><summary>Indice</summary><p>Pour « HANS », partir de \(b = 0{,}384184\) et \(e = 0{,}000729\), et utiliser l'intervalle de S, \([0{,}82\,;\,0{,}91[\). L'espace a pour intervalle \([0\,;\,0{,}1[\) : sa borne inférieure ne bouge pas.</p></details>
+    </div>
+    <div class="atelier" id="c2-ex4-arithmetique" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "Intervalles successifs de HANS ZIMMER",
+        "consigne": "<p>Compléter les deux dernières lignes, en valeurs exactes (virgule ou point décimal).</p>",
+        "options": { "verrou": "depart", "lignes": false, "ordre": true, "tolerance": 1e-10, "mono": true },
+        "depart": ["| Préfixe | Borne inférieure | Borne supérieure | Écart |", "|---|---|---|---|", "| H | 0,37 | 0,46 | 0,09 |", "| HA | 0,379 | 0,3871 | 0,0081 |", "| HAN | 0,384184 | 0,384913 | 0,000729 |", "| HANS |  |  |  |", "| HANS␣ |  |  |  |"],
+        "solution": ["| Préfixe | Borne inférieure | Borne supérieure | Écart |", "|---|---|---|---|", "| H | 0,37 | 0,46 | 0,09 |", "| HA | 0,379 | 0,3871 | 0,0081 |", "| HAN | 0,384184 | 0,384913 | 0,000729 |", "| HANS | 0,38478178 | 0,38484739 | 0,00006561 |", "| HANS␣ | 0,38478178 | 0,384788341 | 0,000006561 |"],
+        "explication": "<p><b>HANS</b> : 0,384184 + 0,000729 × 0,82 = 0,38478178 et 0,384184 + 0,000729 × 0,91 = 0,38484739 ; écart 0,000729 × 0,09 = 0,00006561. <b>HANS␣</b> : l'espace a pour intervalle [0 ; 0,1[, donc la borne inférieure reste 0,38478178 et la borne supérieure vaut 0,38478178 + 0,00006561 × 0,1 = 0,384788341 ; écart 0,000006561. Erreur fréquente : multiplier par la borne de S sans repartir de la borne inférieure de HAN, ou arrondir en cours de route, ce qui fausse toutes les étapes suivantes.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le calcul complet</span></p>
+      <p>En poursuivant jusqu'au bout (calcul exact, par programme), on obtient le tableau ci-dessous. Chaque étape multiplie l'écart par la probabilité de la lettre : 0,09, ou 0,1 pour l'espace, ou 0,18 pour M.</p>
+      <div class="tableau mono compact">
+        <table>
+          <caption>Intervalles successifs de « HANS ZIMMER »</caption>
+          <thead><tr><th>Préfixe</th><th>Borne inférieure</th><th>Borne supérieure</th><th>Écart</th></tr></thead>
+          <tbody>
+            <tr><th>H</th><td>0,37</td><td>0,46</td><td>0,09</td></tr>
+            <tr><th>HA</th><td>0,379</td><td>0,3871</td><td>0,0081</td></tr>
+            <tr><th>HAN</th><td>0,384184</td><td>0,384913</td><td>7,29 × 10⁻⁴</td></tr>
+            <tr><th>HANS</th><td>0,38478178</td><td>0,38484739</td><td>6,561 × 10⁻⁵</td></tr>
+            <tr><th>HANS␣</th><td>0,38478178</td><td>0,384788341</td><td>6,561 × 10⁻⁶</td></tr>
+            <tr><th>HANS␣Z</th><td>0,38478775051</td><td>0,384788341</td><td>5,9049 × 10⁻⁷</td></tr>
+            <tr><th>HANS␣ZI</th><td>0,3847879158472</td><td>0,3847879689913</td><td>5,31441 × 10⁻⁸</td></tr>
+            <tr><th>HANS␣ZIM</th><td>0,384787940293486</td><td>0,384787949859424</td><td>9,565938 × 10⁻⁹</td></tr>
+            <tr><th>HANS␣ZIMM</th><td>0,38478794469381748</td><td>0,38478794641568632</td><td>1,72186884 × 10⁻⁹</td></tr>
+            <tr><th>HANS␣ZIMME</th><td>0,3847879450209725596</td><td>0,3847879451759407552</td><td>1,549681956 × 10⁻¹⁰</td></tr>
+            <tr><th>HANS␣ZIMMER</th><td>0,384787945134099342388</td><td>0,384787945148046479992</td><td>1,3947137604 × 10⁻¹¹</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Le message est donc codé par \(X = 0{,}384787945134099342388\). Tout nombre de \([X\,;\,Y[\) conviendrait aussi : le plus court en décimal est \(0{,}38478794514\), et en binaire il suffit ici de 34 bits.</p>
+      <p>Combien de bits faut-il en général ? Pour désigner un nombre dans un intervalle d'écart \(e\), il faut environ \(-\log_2 e\) bits. Ici, \(-\log_2(1{,}39 \times 10^{-11}) \approx 36{,}1\) bits : c'est la somme des \(-\log_2 p\) des onze lettres, à peu près 11 fois l'entropie de leurs fréquences (\(11 \times 3{,}278 \approx 36{,}05\) bits). À comparer avec 88 bits en ASCII (8 bits par caractère), 44 bits avec un code fixe de 4 bits pour ces 10 symboles, et 37 bits avec un code de Huffman construit sur les mêmes fréquences.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Décoder</span></p>
+      <p>Le décodeur connaît le tableau d'intervalles et le nombre de lettres (11), ou reçoit un symbole de fin. Il cherche l'intervalle qui contient le nombre reçu, émet la lettre correspondante, puis ramène le nombre dans \([0\,;\,1[\) en retranchant la borne inférieure et en divisant par l'écart :</p>
+      <ul>
+        <li>\(X \approx 0{,}38479\) est dans \([0{,}37\,;\,0{,}46[\) : H. Puis \((X - 0{,}37) / 0{,}09 \approx 0{,}16431\) ;</li>
+        <li>\(0{,}16431\) est dans \([0{,}1\,;\,0{,}19[\) : A. Puis \((0{,}16431 - 0{,}1) / 0{,}09 \approx 0{,}71456\) ;</li>
+        <li>\(0{,}71456\) est dans \([0{,}64\,;\,0{,}73[\) : N. Puis \((0{,}71456 - 0{,}64) / 0{,}09 \approx 0{,}82846\), dans \([0{,}82\,;\,0{,}91[\) : S, et ainsi de suite.</li>
+      </ul>
+<pre><code class="language-pseudo"><b>fonction</b> DecoderArithmetique(x, n)
+    <b>répéter</b> n <b>fois</b>
+        trouver le symbole s tel que x ∈ [a_s ; b_s[
+        émettre s
+        x ← (x − a_s) / (b_s − a_s)
+    <b>fin répéter</b></code></pre>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>La précision des calculs</span></p>
+      <p><span class="badge ajout">Ajout</span> Onze lettres demandent déjà 21 décimales, et un <code>double</code> n'en garde qu'environ 16 significatives : un codeur écrit naïvement en virgule flottante se trompe dès les messages moyens. Les vrais codeurs calculent sur des entiers et émettent les chiffres dès qu'ils sont fixés. Après « HAN », par exemple, les deux bornes commencent par 0,384 : ces trois chiffres ne changeront plus, on peut les envoyer et agrandir l'intervalle d'un facteur 1000.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Performances et codes à dictionnaire <span class="ref">diapos 35–36</span></h2>
+    <p>Reste à comparer ces codes sur des fichiers réels. Le support conclut sur un tableau de performances où figure une autre famille, celle des codes à dictionnaire, laissée en travail personnel.</p>
+
+    <h3>Performance des codes <span class="ref">diapo 35</span></h3>
+    <div class="tableau centre">
+      <table>
+        <caption>Performance des codes selon le type de fichier (diapo 35)</caption>
+        <thead><tr><th>Code</th><th>Graphiques</th><th>Binaires</th><th>Textes</th><th>Moyenne</th></tr></thead>
+        <tbody>
+          <tr><th>Code de Huffman</th><td>27,22 %</td><td>24,79 %</td><td>40,38 %</td><td>31,04 %</td></tr>
+          <tr><th>Code de Huffman adaptatif</th><td>32,59 %</td><td>26,69 %</td><td>40,72 %</td><td>33,27 %</td></tr>
+          <tr><th>Code arithmétique</th><td>27,78 %</td><td>25,25 %</td><td>40,81 %</td><td>31,51 %</td></tr>
+          <tr><th>LZW 12 bits fixe</th><td>20,61 %</td><td>15,07 %</td><td>50,32 %</td><td>29,20 %</td></tr>
+          <tr><th>LZW 12 bits variable</th><td>46,78 %</td><td>36,61 %</td><td>54,82 %</td><td>45,81 %</td></tr>
+          <tr><th>LZW 15 bits variable</th><td>48,44 %</td><td>36,15 %</td><td>58,28 %</td><td>47,31 %</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>La diapo ne précise ni les fichiers testés ni ce que mesurent les pourcentages. Ce sont des gains de place, \(1 - \text{taille compressée} / \text{taille d'origine}\) : les codes réputés les meilleurs ont les plus grandes valeurs, et les 40 % du code de Huffman sur du texte correspondent à environ 4,8 bits par caractère au lieu de 8, l'ordre de grandeur attendu. Lus comme une taille restante, ils donneraient 3,2 bits par caractère, sous l'entropie d'un texte courant : hors de portée d'un code de Huffman.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Lire le tableau</span></p>
+      <ul>
+        <li>Huffman et le codage arithmétique sont très proches (31,0 % et 31,5 % en moyenne) : avec des probabilités peu déséquilibrées, les longueurs entières de Huffman coûtent peu.</li>
+        <li>Le <strong>Huffman adaptatif</strong> fait mieux (33,3 %) : l'arbre est mis à jour au fil de la lecture, de la même façon chez le codeur et chez le décodeur. Il suit les variations locales du fichier, et il n'y a plus de table de probabilités à transmettre.</li>
+        <li>Ces trois codes n'exploitent que la fréquence de chaque symbole pris isolément, l'entropie \(H_1\) du cours 1. LZW exploite les chaînes qui se répètent, donc les dépendances entre symboles successifs : il se rapproche de \(H_\infty\) et gagne nettement (47,3 % en moyenne sur 15 bits).</li>
+        <li>LZW avec des codes de 12 bits fixes est mauvais sur les graphiques et les binaires : tant que le dictionnaire ne contient que des chaînes courtes, chaque octet coûte 12 bits. Les versions à longueur variable commencent à 9 bits et n'allongent les codes qu'au fur et à mesure.</li>
+      </ul>
+    </div>
+
+    <h3>Travail personnel : LZ78 et LZW <span class="ref">diapo 36</span></h3>
+    <p>La dernière diapo fixe un objectif de travail personnel : « Le code de Lempel-Ziv-Welch (LZW) – Algorithme LZ78 ? ». Les blocs qui suivent proposent une réponse ; ils ne viennent pas du support.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le principe des codes à dictionnaire</span></p>
+      <p>Un <dfn>code à dictionnaire</dfn> (<span class="en" lang="en">dictionary coder</span>) ne s'appuie sur aucune probabilité. Il remplace chaque chaîne déjà rencontrée par son numéro dans un dictionnaire, construit au fil de la lecture. Le décodeur reconstruit le même dictionnaire à partir de ce qu'il décode : il n'y a rien d'autre à transmettre que la suite des numéros. C'est la réponse à la limite relevée à la diapo 23.</p>
+      <p>Ces codes descendent des algorithmes de Lempel et Ziv, LZ77 (1977) et <dfn>LZ78</dfn> (1978). <dfn>LZW</dfn> est la variante de LZ78 publiée par Welch en 1984.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>LZ78</span></p>
+      <p>Le dictionnaire part vide ; l'entrée 0 représente la chaîne vide. À chaque pas, on lit la plus longue chaîne \(w\) déjà présente dans le dictionnaire, puis le caractère \(c\) qui la suit. On émet le couple (numéro de \(w\), \(c\)) et on ajoute \(w + c\) au dictionnaire.</p>
+      <p>Pour CHACHACHAT : (0, C) (0, H) (0, A) (1, H) (3, C) (2, A) (0, T). Le dictionnaire contient alors 1 = C, 2 = H, 3 = A, 4 = CH, 5 = AC, 6 = HA, 7 = T.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>LZW</span></p>
+      <p>Welch initialise le dictionnaire avec tous les symboles de l'alphabet (les 256 octets pour un fichier). Toute chaîne d'un caractère est donc connue d'avance, et il suffit d'émettre des numéros, sans caractère à côté. Quand \(w + c\) n'est pas dans le dictionnaire, on émet le numéro de \(w\), on ajoute \(w + c\), et on repart de \(c\).</p>
+<pre><code class="language-pseudo"><b>fonction</b> CoderLZW(texte)
+    dictionnaire ← un numéro pour chaque symbole de l'alphabet
+    w ← chaîne vide
+    <b>pour chaque</b> caractère c <b>de</b> texte <b>faire</b>
+        <b>si</b> w + c est dans le dictionnaire <b>alors</b>
+            w ← w + c                          <i>// on allonge la chaîne reconnue</i>
+        <b>sinon</b>
+            émettre numéro(w)
+            ajouter w + c au dictionnaire
+            w ← c
+        <b>fin si</b>
+    <b>fin pour</b>
+    émettre numéro(w)</code></pre>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Coder CHACHACHAT avec LZW</span></p>
+      <p><span class="badge ajout">Ajout</span> Dictionnaire initial : A = 1, C = 2, H = 3, T = 4. Les nouvelles entrées prennent les numéros suivants, à partir de 5.</p>
+      <div class="tableau mono compact centre">
+        <table>
+          <caption>Codage LZW de CHACHACHAT</caption>
+          <thead><tr><th>Chaîne reconnue \(w\)</th><th>Caractère suivant \(c\)</th><th>Numéro émis</th><th>Nouvelle entrée</th></tr></thead>
+          <tbody>
+            <tr><td>C</td><td>H</td><td>2</td><td>5 = CH</td></tr>
+            <tr><td>H</td><td>A</td><td>3</td><td>6 = HA</td></tr>
+            <tr><td>A</td><td>C</td><td>1</td><td>7 = AC</td></tr>
+            <tr><td>CH</td><td>A</td><td>5</td><td>8 = CHA</td></tr>
+            <tr><td>AC</td><td>H</td><td>7</td><td>9 = ACH</td></tr>
+            <tr><td>HA</td><td>T</td><td>6</td><td>10 = HAT</td></tr>
+            <tr><td>T</td><td>(fin)</td><td>4</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Le message est codé par 2 3 1 5 7 6 4 : sept numéros pour dix lettres. Sur un texte aussi court, le gain en bits est nul, puisqu'un numéro est plus long qu'une lettre ; il n'apparaît que sur de longs fichiers, quand le dictionnaire contient de longues chaînes.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Décoder LZW</span></p>
+      <p>Le décodeur part du même dictionnaire initial. Il traduit chaque numéro, et crée l'entrée que le codeur avait créée un pas plus tôt : la chaîne précédente suivie de la première lettre de la chaîne courante. Pour 2 3 1 5 7 6 4 : C, puis H (entrée 5 = CH), A (6 = HA), CH (7 = AC), AC (8 = CHA), HA (9 = ACH), T (10 = HAT), soit CHACHACHAT.</p>
+<pre><code class="language-pseudo"><b>fonction</b> DecoderLZW(numéros)
+    dictionnaire ← un numéro pour chaque symbole de l'alphabet
+    w ← dictionnaire[premier numéro] ; émettre w
+    <b>pour chaque</b> numéro k suivant <b>faire</b>
+        <b>si</b> k est dans le dictionnaire <b>alors</b>
+            e ← dictionnaire[k]
+        <b>sinon</b>                                <i>// k est l'entrée en cours de création</i>
+            e ← w + première lettre de w
+        <b>fin si</b>
+        émettre e
+        ajouter w + première lettre de e au dictionnaire
+        w ← e
+    <b>fin pour</b></code></pre>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Le numéro pas encore connu</span></p>
+      <p><span class="badge ajout">Ajout</span> Le décodeur a un pas de retard sur le codeur : il peut recevoir le numéro de l'entrée qu'il est justement en train de créer. Avec A = 1 et B = 2, ABABABA se code 1 2 3 5. Quand le décodeur lit 5, il n'a créé que 3 = AB et 4 = BA. L'entrée 5 commence forcément par la chaîne précédente, AB, et se termine par sa propre première lettre : c'est ABA. Oublier ce cas est l'erreur classique d'un décodeur LZW.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Taille des numéros</span></p>
+      <p>Avec des numéros de 12 bits, le dictionnaire compte au plus \(2^{12} = 4096\) entrées ; avec 15 bits, \(2^{15} = 32\,768\). En longueur variable, on commence à 9 bits (256 octets plus quelques entrées) et on passe à 10, 11, puis 12 bits quand le dictionnaire se remplit. Une fois plein, on le fige ou on le vide pour recommencer. LZW a servi dans la commande <code>compress</code> d'Unix et dans les formats GIF et TIFF.</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-5">
+      <p class="bloc-titre">Exercice 5 <span>Décoder LZW</span></p>
+      <p><span class="badge ajout">Ajout</span> Avec le dictionnaire initial A = 1, T = 2, décoder la suite 2 1 3 5 1. Pour chaque numéro lu, donner la chaîne émise et l'entrée créée (numéro et chaîne).</p>
+      <details class="indice"><summary>Indice</summary><p>Le premier numéro ne crée pas d'entrée. L'un des numéros n'est pas encore dans le dictionnaire quand on le lit.</p></details>
+    </div>
+    <div class="atelier" id="c2-ex5-lzw" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "Décodage LZW de 2 1 3 5 1",
+        "consigne": "<p>Laisser vides les deux dernières cases de la première ligne.</p>",
+        "options": { "verrou": "depart", "lignes": false, "ordre": true, "mono": true },
+        "depart": ["| Numéro lu | Chaîne émise | N° de l'entrée créée | Entrée créée |", "|---|---|---|---|", "| 2 |  |  |  |", "| 1 |  |  |  |", "| 3 |  |  |  |", "| 5 |  |  |  |", "| 1 |  |  |  |"],
+        "solution": ["| Numéro lu | Chaîne émise | N° de l'entrée créée | Entrée créée |", "|---|---|---|---|", "| 2 | T |  |  |", "| 1 | A | 3 | TA |", "| 3 | TA | 4 | AT |", "| 5 | TAT | 5 | TAT |", "| 1 | A | 6 | TATA |"],
+        "explication": "<p>2 donne T. 1 donne A, et crée 3 = T + A = TA. 3 donne TA, et crée 4 = A + T = AT. 5 n'existe pas encore : c'est le cas particulier, l'entrée vaut la chaîne précédente TA suivie de sa première lettre, soit TAT ; on crée 5 = TAT. 1 donne A, et crée 6 = TAT + A = TATA. Le message est TATATATA : huit lettres pour cinq numéros.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Un code à longueur variable donne des mots courts aux symboles fréquents et longs aux symboles rares ; la longueur idéale d'un symbole de probabilité \(p\) est \(-\log_2 p\).</li>
+        <li>Un code est uniquement déchiffrable si toute suite de mots ne se décode que d'une façon ; il est préfixe si aucun mot n'est le début d'un autre. Préfixe implique uniquement déchiffrable, pas l'inverse (\(\{0, 11, 010\}\)).</li>
+        <li>Sur l'arbre d'un code, un code est préfixe quand tous ses mots sont des feuilles ; il se décode alors au fil de l'eau, en repartant de la racine à chaque feuille.</li>
+        <li>Le Morse est à longueur variable mais pas préfixe (E = · débute A = · −) : le silence entre lettres est un troisième symbole, c'est un code ternaire.</li>
+        <li>Longueur moyenne \(\bar L = \sum p_i \ell_i \ge H\) ; efficacité \(H / \bar L\). Pour la source \(15/39\), \(7/39\), \(6/39\), \(6/39\), \(5/39\) : \(H = 2{,}1858\) Sh.</li>
+        <li>Shannon-Fano construit l'arbre de haut en bas, en coupant la liste triée en deux groupes de probabilités voisines : 2,282 bits sur l'exemple.</li>
+        <li>Huffman construit l'arbre de bas en haut, en fusionnant à chaque étape les deux nœuds les moins probables : 2,23 bits sur l'exemple. Il est toujours au moins aussi bon que Shannon-Fano, mais il faut connaître les probabilités ou transmettre leur table.</li>
+        <li>JPEG : blocs 8 × 8, DCT (8 → 11 bits, sans perte), quantification (la seule perte, forte sur les hautes fréquences), zigzag, DC codé par différence, puis plages et Huffman.</li>
+        <li>Codage arithmétique : chaque symbole réduit l'intervalle courant \([b\,;\,b + e[\) à \([b + e\,a_s\,;\,b + e\,b_s[\) ; un nombre du dernier intervalle (sa borne inférieure) code tout le message, en environ \(-\log_2 e\) bits.</li>
+        <li>LZW remplace les chaînes déjà vues par leur numéro dans un dictionnaire que le décodeur reconstruit seul ; il exploite les répétitions et donne les meilleurs taux du tableau (≈ 47 % en moyenne).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pour la source A, B, C, D, E du cours, pourquoi un code de 3 bits par symbole est-il peu efficace ?</summary>
+        <div><p>Son entropie vaut 2,186 Sh : 3 bits par symbole donnent une efficacité de 73 % seulement. Il faut 3 bits pour distinguer 5 symboles à longueur fixe, alors que Huffman descend à 2,23 bits en moyenne.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Le code {0, 10, 110, 111} est-il préfixe ? Décoder 1100100.</summary>
+        <div><p>Oui : ses mots sont les feuilles de son arbre. <code>110 | 0 | 10 | 0</code> : 110, 0, 10, 0.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Une source émet A, B, C, D avec les probabilités 1/2, 1/4, 1/8, 1/8. Quel code de Huffman, et quelle efficacité ?</summary>
+        <div><p>A = 0, B = 10, C = 110, D = 111 (aux choix de 0 et 1 près). \(\bar L = 1/2 + 2/4 + 3/8 + 3/8 = 1{,}75\) bit, égal à l'entropie : efficacité 100 %, car toutes les probabilités sont des puissances de \(1/2\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi Huffman fusionne-t-il toujours les deux nœuds les moins probables ?</summary>
+        <div><p>Parce que, dans un code optimal, les deux symboles les moins probables ont les mots les plus longs et peuvent être deux feuilles sœurs au fond de l'arbre. En les fusionnant, on fixe leur dernier bit et on se ramène à une source d'un symbole de moins.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Dans la chaîne JPEG, quelle étape perd de l'information ? À quoi sert le zigzag ?</summary>
+        <div><p>La quantification : la DCT est inversible, et le codage final (plages, Huffman) est sans perte. Le zigzag range les coefficients des basses vers les hautes fréquences, pour grouper en fin de parcours les zéros produits par la quantification et les coder d'un seul symbole.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Avec le tableau d'intervalles de HANS ZIMMER, par quelles deux lettres commence le message codé par 0,6 ?</summary>
+        <div><p>0,6 est dans \([0{,}46\,;\,0{,}64[\) : M. Puis \((0{,}6 - 0{,}46) / 0{,}18 \approx 0{,}78\), dans \([0{,}73\,;\,0{,}82[\) : R. Le message commence par MR.</p></div>
+      </details>
+      <details class="carte">
+        <summary>En codage arithmétique, que vaut l'écart du dernier intervalle ?</summary>
+        <div><p>Le produit des probabilités de tous les symboles du message. Il faut environ \(-\log_2\) de cet écart bits pour désigner un nombre de l'intervalle, soit la somme des \(-\log_2 p\) des symboles.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi LZW n'a-t-il pas besoin de transmettre son dictionnaire ?</summary>
+        <div><p>Le dictionnaire initial (l'alphabet) est convenu d'avance, et chaque nouvelle entrée se déduit de ce qui a déjà été décodé : le décodeur reconstruit le même dictionnaire, avec un pas de retard.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-01-codage-physique-entropie.html"><small>← Précédent</small>Codage physique et entropie</a>
+    <a class="suivant" href="cours-03A-codes-correcteurs.html"><small>Suivant →</small>Codes correcteurs d'erreurs</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Codage · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

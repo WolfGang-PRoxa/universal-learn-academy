@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="securite">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Faits et enjeux de la sécurité informatique · Sécurité informatique L2</title>
+<meta name="description" content="Cours 1 de sécurité informatique (L2) : domaines de la sécurité, critères DIC, identification, authentification et non-répudiation, cybercriminalité et ses acteurs, mode opératoire et grandes familles d'attaques (vol d'identifiants, leurre, malwares, DoS, exploits, botnets, manipulation d'information), classifications MITRE et organismes officiels.">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-01-faits-et-enjeux.html" title="Quiz · Cours 1 · Faits et enjeux">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale (annales)">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Sécurité informatique</a>
+    <span aria-current="page">Cours 1 · Faits et enjeux</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Sécurité informatique</span> Cours 1 · L2 S4</p>
+    <h1>Faits et enjeux de la sécurité informatique</h1>
+    <p class="chapeau">Ce premier cours pose le vocabulaire du module : les domaines que couvre la sécurité informatique, les critères qui permettent de dire qu'un système est sûr, puis l'adversaire, c'est-à-dire le cybercriminel, ses motivations, son organisation et ses attaques. Les cours suivants apportent les outils de défense : la cryptographie (cours 2), puis la sécurité des systèmes et des réseaux (cours 3).</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/L2_Info-174UD06-C1.pdf">L2_Info-174UD06-C1.pdf</a> · 31 diapos</dd></div>
+      <div><dt>Enseignant</dt><dd>Thierry Lemeunier</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Citer les domaines de la sécurité informatique, avec un exemple pour chacun.</li>
+        <li>Définir les critères DIC (disponibilité, intégrité, confidentialité), l'identification, l'authentification et la non-répudiation.</li>
+        <li>Expliquer ce qui rend la cybercriminalité possible et qui sont ses acteurs.</li>
+        <li>Nommer et expliquer les grandes familles d'attaques et les principaux logiciels malveillants.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Notions de réseau : adresse IP, DNS, connexion TCP.</li>
+        <li><a href="index.html">Présentation du module</a> (organisation et évaluation).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les domaines de la sécurité informatique <span class="ref">diapos 3–5</span></h2>
+    <p>La sécurité informatique ne se limite pas aux logiciels : elle va de la porte du centre de données jusqu'au comportement des utilisateurs. On la découpe en cinq domaines techniques, auxquels s'ajoute le facteur humain.</p>
+
+    <dl class="glossaire">
+      <dt>Sécurité physique</dt>
+      <dd>Contrôler l'accès aux locaux et aux équipements des centres de données (<span class="en" lang="en">data centers</span>) ; doubler physiquement les matériels et les sources d'énergie (redondance) ; protéger contre les incendies, les inondations, les tremblements de terre…</dd>
+      <dt>Sécurité des réseaux</dt>
+      <dd>Protocoles réseau sécurisés par la cryptographie, par exemple TLS ; protocoles réseau de bas niveau, par exemple IPsec (voir le <a href="cours-03-securite-si-reseaux.html">cours 3</a>).</dd>
+      <dt>Sécurité d'exploitation</dt>
+      <dd>Plan de sauvegarde (avec stockage dans un coffre-fort…) ; systèmes de surveillance et de détection d'intrusion, par exemple un antivirus sur les postes des utilisateurs.</dd>
+      <dt>Sécurité logique et applicative</dt>
+      <dd>La sécurité logique est le contrôle d'accès ; la sécurité applicative est la qualité des logiciels.</dd>
+      <dt>Sécurité des données</dt>
+      <dd>Assurer l'intégrité et la confidentialité des données ; déterminer leur pérennité (durée d'exploitation et durée d'archivage) ; les classer selon leur degré de sensibilité (non classifié, restreint, confidentiel, secret, très secret) ; poser des verrous logiciels adaptés à cette sensibilité et à cette pérennité : chiffrement des données, des documents, d'une image disque ou d'une partition, protection par mot de passe d'un document, d'un disque ou d'une clé USB.</dd>
+    </dl>
+
+    <h3>Et les personnes ?</h3>
+    <p>Une personne inconsciente des risques est son propre ennemi. L'enseignant le résume par une formule : le problème se situe souvent « entre la chaise et le clavier ». D'où deux leviers : la sensibilisation du grand public et la formation des utilisateurs.</p>
+    <p>Les individus comme les organisations doivent aussi respecter les lois, en particulier :</p>
+    <ul>
+      <li>la loi Informatique et Libertés de 1978, mise à jour en 2018 ;</li>
+      <li>le RGPD de 2018 ;</li>
+      <li>les lois et règlements contre les crimes informatiques.</li>
+    </ul>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Le nom exact du RGPD</span></p>
+      <p>La diapo 5 développe RGPD en « Réglementation Générale sur la Protection des Données ». Le texte européen s'appelle le <dfn>règlement général sur la protection des données</dfn> (<span class="en" lang="en">GDPR</span>) : adopté en 2016, il s'applique depuis le 25 mai 2018, d'où la date du cours.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les concepts de la sécurité informatique <span class="ref">diapos 6–9</span></h2>
+    <p>Pour dire qu'un système est « sûr », il faut savoir ce que l'on protège et contre quoi. Le cours appelle <dfn>service</dfn> ce que l'on protège : du matériel, du logiciel ou des données. On juge sa sécurité selon trois critères, dits critères DIC.</p>
+
+    <h3>Les critères DIC</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Disponibilité</span></p>
+      <p>La <dfn>disponibilité</dfn> (<span class="en" lang="en">availability</span>) est la période de temps durant laquelle un service est opérationnel. Elle inclut l'accessibilité : l'accès reste restreint aux ayants droit. Elle demande de la gestion et de la maintenance, pour minimiser les pertes de temps et de données, avec une politique de sauvegarde et une procédure de restitution.</p>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Intégrité</span></p>
+      <p>L'<dfn>intégrité</dfn> (<span class="en" lang="en">integrity</span>) consiste à interdire la destruction ou la modification d'un service à l'insu de son propriétaire, de façon intentionnelle ou accidentelle. Elle vaut pour le stockage, le traitement et le transfert.</p>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Confidentialité</span></p>
+      <p>La <dfn>confidentialité</dfn> (<span class="en" lang="en">confidentiality</span>) est la protection contre une divulgation non autorisée. On limite et on contrôle l'accès aux personnes habilitées, pour lire ou pour modifier, et on rend les données inintelligibles à qui ne détient pas la clé secrète : c'est le chiffrement.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Un exemple par critère</span></p>
+      <p>En anglais, on parle de la triade CIA (<span class="en" lang="en">Confidentiality, Integrity, Availability</span>). Trois attaques du cours, chacune contre un critère : un déni de service vise la disponibilité, une porte dérobée qui modifie le noyau vise l'intégrité, le vol d'identifiants par hameçonnage vise la confidentialité.</p>
+    </div>
+
+    <h3>Identification, authentification et contrôle d'accès</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Identification et authentification</span></p>
+      <p>L'<dfn>identification</dfn> consiste à désigner sans ambiguïté une entité. L'<dfn>authentification</dfn> vérifie cette identité en contrôlant une ou plusieurs informations que l'entité est seule à détenir, par exemple un mot de passe.</p>
+    </div>
+    <p>Ces deux principes participent à la confidentialité et à l'intégrité, par un contrôle d'accès réservé aux ayants droit. Ils permettent aussi d'imputer la responsabilité d'une action à son auteur : c'est la traçabilité des événements. Les trois étapes s'enchaînent toujours dans le même ordre.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 120" width="640" role="img" aria-labelledby="fig-acces-titre">
+        <title id="fig-acces-titre">Chaîne d'accès : identification (désignation des entités), puis authentification (vérification de l'identité), puis contrôle d'accès (permissions), qui accorde ou refuse l'accès</title>
+        <defs>
+          <marker id="fleche-acces" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="10" y="35" width="150" height="56" rx="8"/>
+        <text x="85" y="58" text-anchor="middle" class="gras">Identification</text>
+        <text x="85" y="78" text-anchor="middle" class="t2">désigner l'entité</text>
+        <path class="trait" d="M160 63 H188" marker-end="url(#fleche-acces)"/>
+        <rect class="boite" x="190" y="35" width="150" height="56" rx="8"/>
+        <text x="265" y="58" text-anchor="middle" class="gras">Authentification</text>
+        <text x="265" y="78" text-anchor="middle" class="t2">vérifier l'identité</text>
+        <path class="trait" d="M340 63 H368" marker-end="url(#fleche-acces)"/>
+        <rect class="boite-accent" x="370" y="35" width="150" height="56" rx="8"/>
+        <text x="445" y="58" text-anchor="middle" class="gras accent">Contrôle d'accès</text>
+        <text x="445" y="78" text-anchor="middle" class="t2">permissions</text>
+        <path class="trait" d="M520 63 H548" marker-end="url(#fleche-acces)"/>
+        <text x="590" y="58" text-anchor="middle">accordé</text>
+        <text x="590" y="78" text-anchor="middle">ou refusé</text>
+      </svg>
+      <figcaption>Les trois étapes qui donnent accès à une ressource (diapo 9).</figcaption>
+    </figure>
+
+    <h3>La non-répudiation</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Non-répudiation</span></p>
+      <p>La <dfn>non-répudiation</dfn> (<span class="en" lang="en">non-repudiation</span>) est le fait de ne pas pouvoir nier qu'un événement a eu lieu. Elle s'appuie sur :</p>
+      <ul>
+        <li>l'<dfn>imputabilité</dfn> : l'attribution d'une action à une entité ;</li>
+        <li>la <dfn>traçabilité</dfn> : la trace numérique de la réalisation d'une action, par un système de journalisation ;</li>
+        <li>l'<dfn>auditabilité</dfn> : la capacité à être audité, c'est-à-dire analysé a posteriori, grâce à la traçabilité.</li>
+      </ul>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Un exemple de non-répudiation</span></p>
+      <p>Un virement validé en ligne : la banque a authentifié le client, journalisé l'opération avec son horodatage, et peut le prouver plus tard lors d'un audit. Le client ne peut pas nier l'avoir ordonné. Au <a href="cours-02-initiation-cryptographie.html">cours 2</a>, la signature numérique apporte cette garantie au niveau d'un document.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les objectifs des cybercriminels <span class="ref">diapos 10–13</span></h2>
+    <p>Avant de se défendre, il faut connaître l'adversaire. Le cours commence par le vocabulaire juridique, puis par ce qui rend la cybercriminalité possible.</p>
+
+    <dl class="glossaire">
+      <dt>Crime informatique</dt>
+      <dd>Infraction pénale qui a pour objet ou pour moyen un système informatique.</dd>
+      <dt>Cybercriminalité</dt>
+      <dd>Ensemble des crimes informatiques qui ont pour objet ou pour moyen le réseau Internet.</dd>
+      <dt>Cybercrime</dt>
+      <dd>Crime informatique commis sur Internet ou par Internet.</dd>
+      <dt>Cybercriminel</dt>
+      <dd>Acteur d'un cybercrime.</dd>
+    </dl>
+
+    <h3>Les délits</h3>
+    <div class="colonnes">
+      <div class="colonne">
+        <p class="colonne-titre">« Vieux » délits, passés au numérique</p>
+        <ul>
+          <li>crime économique : enrichissement illicite, blanchiment d'argent, vol, escroquerie ;</li>
+          <li>usurpation d'identité, trafic de stupéfiants, harcèlement ;</li>
+          <li>incitation à la haine raciale, pédophilie, espionnage…</li>
+        </ul>
+      </div>
+      <div class="colonne">
+        <p class="colonne-titre">« Nouveaux » délits</p>
+        <ul>
+          <li>vol d'informations numériques ;</li>
+          <li>détérioration de ressources informatiques, intrusion dans les systèmes d'information ;</li>
+          <li>hébergement de site ou de contenu illicite ;</li>
+          <li>cyberguerre, manipulation d'information…</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Ce qui rend la cybercriminalité possible</h3>
+    <p>Le cours avance plusieurs raisons, sans prétendre en faire une liste exhaustive :</p>
+    <ul>
+      <li><strong>La dématérialisation de l'information.</strong> De plus en plus d'informations existent sous forme numérique, et une information numérique est facile à copier, à modifier ou à détruire. Certaines sont protégées, mais les programmes ont des failles, et les humains aussi.</li>
+      <li><strong>L'uniformisation des matériels et des logiciels.</strong> Pourquoi Windows ou Android sont-ils plus infectés que macOS ou iOS ? Parce que les cybercriminels s'attaquent aux cibles les plus accessibles ou les plus nombreuses : le « retour sur investissement » est important et le risque faible.</li>
+      <li><strong>La disponibilité d'outils</strong> qui exploitent les failles des systèmes d'exploitation et des logiciels : les <dfn>logiciels malveillants</dfn> (<span class="en" lang="en">malwares</span>), vendus ou loués, de plus en plus accessibles aux néophytes.</li>
+      <li><strong>La lenteur de la correction des failles</strong>, malgré la multiplication des <span class="en" lang="en">bug bounties</span>, et le « problème » de l'installation des versions corrigées.</li>
+    </ul>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Bug bounty</span></p>
+      <p>Un <dfn>programme de prime aux bogues</dfn> (<span class="en" lang="en">bug bounty</span>) récompense, souvent en argent, les chercheurs qui signalent une faille à l'éditeur plutôt que de l'exploiter ou de la vendre. Il accélère la découverte des failles, mais pas l'installation des correctifs chez les utilisateurs.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>La sociologie des cybercriminels <span class="ref">diapos 14–17</span></h2>
+    <p>« Hacker » n'est pas synonyme de « cybercriminel ». Le cours distingue les hackers selon leur rapport à la loi, puis décrit les formes d'organisation de la cybercriminalité.</p>
+
+    <h3>Cybercriminels et hackers</h3>
+    <p>Tous les hackers ne sont pas des cybercriminels. On les range par la couleur de leur « chapeau » :</p>
+    <div class="tableau">
+      <table>
+        <caption>Catégories de hackers (diapo 15)</caption>
+        <thead><tr><th>Catégorie</th><th>Statut</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><th>White hat</th><td>légal</td><td>professionnel légitime qui fait des tests d'intrusion</td></tr>
+          <tr><th>Blue hat</th><td>légal</td><td>professionnel légitime qui cherche les failles de sécurité</td></tr>
+          <tr><th>Grey hat</th><td>parfois hors-la-loi</td><td>sans volonté de nuire : défi ou curiosité</td></tr>
+          <tr><th>Black hat</th><td>hors-la-loi</td><td>pirate informatique</td></tr>
+          <tr><th>Script kiddie</th><td>hors-la-loi</td><td>« s'amuse » avec des techniques connues</td></tr>
+          <tr><th>Hacktiviste</th><td>hors-la-loi</td><td>défend une cause qu'il considère comme juste</td></tr>
+          <tr><th>Hacker éthique</th><td>légal</td><td>hacking non malveillant</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Qui sont-ils ?</h3>
+    <ul>
+      <li>Des <strong>individus isolés</strong>, qui travaillent en solitaire.</li>
+      <li>Des <strong>groupes</strong> plus ou moins structurés : le Chaos Computer Club, groupe allemand de hacking éthique ; les Anonymous, « groupe » informel d'hacktivistes ; les groupes <dfn>APT</dfn> (<span class="en" lang="en">Advanced Persistent Threat</span>), souvent « parrainés » par des États.</li>
+      <li>Des <strong>entreprises privées</strong>, officines d'espionnage ou de renseignement économique, qui emploient d'anciens policiers ou « espions », ou ont été fondées par eux. Exemple : en 2006, EDF a chargé l'officine Kargus Consultants d'espionner Greenpeace France, et Kargus a employé des techniques de hacking.</li>
+      <li>Certains <strong>services étatiques</strong>, non officiellement.</li>
+    </ul>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Le ver Stuxnet, une attaque étatique</span></p>
+      <p>La frontière entre étatique et non étatique est floue. Le ver Stuxnet, découvert en 2010, a été conçu par la NSA (<span class="en" lang="en">National Security Agency</span>) et l'unité 8200, unité de renseignement de l'armée israélienne. Son but : endommager les centrifugeuses iraniennes d'enrichissement d'uranium en reprogrammant les automates industriels Siemens qui les pilotaient. Il a touché 45 000 systèmes, dont 30 000 en Iran et 15 000 en Allemagne, en France, en Inde et en Indonésie.</p>
+    </div>
+
+    <h3>Un écosystème</h3>
+    <p>La cybercriminalité forme un écosystème, en recherche permanente de nouvelles opportunités du « marché », de nouvelles vulnérabilités et de nouveaux outils. Des marchés noirs fonctionnent selon l'offre et la demande :</p>
+    <ul>
+      <li>vente de données illicites : données confidentielles volées, informations bancaires, listes d'identifiants ;</li>
+      <li>vente de kits de phishing et de malwares ;</li>
+      <li>location de zombies ou de réseaux botnets.</li>
+    </ul>
+    <p>Le premier attaquant y a un avantage concurrentiel, et l'intelligence économique y joue un rôle. L'écosystème utilise ses propres structures illicites, ou des acteurs licites à leur insu, comme les zombies d'un botnet.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les attaques des cybercriminels <span class="ref">diapos 18–28</span></h2>
+    <p>Une cyberattaque suit presque toujours le même déroulement. On le décrit d'abord, puis on passe en revue les grandes familles d'attaques : vol d'identifiants, leurre, détournement de technologie et manipulation d'information.</p>
+
+    <h3>Le mode opératoire d'une cyberattaque</h3>
+    <ol class="etapes">
+      <li><strong>Collecte d'informations et recherche de vulnérabilités de la cible.</strong> On identifie les mécanismes et les niveaux de sécurité, et les failles techniques, organisationnelles et humaines. L'<dfn>ingénierie sociale</dfn> (<span class="en" lang="en">social engineering</span>) en fait partie : manipuler une personne pour qu'elle livre des informations confidentielles ou fasse, à son insu, une action non souhaitée.</li>
+      <li><strong>Exploitation des informations recueillies et des failles.</strong> On utilise des outils d'attaque préexistants ou disponibles en ligne, on crée ou on modifie des malwares, et on les paramètre pour cibler le plus précisément possible (par exemple une vidéo truquée, ou <span class="en" lang="en">deepfake</span>).</li>
+      <li><strong>Réalisation de l'attaque.</strong></li>
+      <li><strong>Exfiltration</strong> (phase facultative). L'attaque doit rester indétectable, ou être détectée difficilement ou tardivement, et ne laisser aucune trace qui identifie l'attaquant : brouiller les pistes, usurper une identité numérique, modifier les journaux, désactiver les antivirus, obscurcir le code, augmenter son niveau de privilège…</li>
+    </ol>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 560 210" width="560" role="img" aria-labelledby="fig-mode-titre">
+        <title id="fig-mode-titre">Mode opératoire : le cybercriminel observe la cible (1), puise dans son savoir-faire et sa bibliothèque d'attaques (2), attaque la cible (3), puis s'exfiltre en effaçant ses traces (4)</title>
+        <defs>
+          <marker id="fleche-mode" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="10" y="20" width="150" height="50" rx="8"/>
+        <text x="85" y="50" text-anchor="middle" class="gras">Cybercriminel</text>
+        <rect class="boite-accent" x="380" y="20" width="110" height="50" rx="8"/>
+        <text x="435" y="50" text-anchor="middle" class="gras accent">Cible</text>
+        <path class="trait" d="M162 38 H378" marker-start="url(#fleche-mode)" marker-end="url(#fleche-mode)"/>
+        <text x="270" y="30" text-anchor="middle" class="mono">1 · collecte</text>
+        <rect class="boite" x="170" y="140" width="200" height="56" rx="8"/>
+        <text x="270" y="163" text-anchor="middle" class="gras">Savoir-faire</text>
+        <text x="270" y="183" text-anchor="middle" class="t2">bibliothèque d'attaques</text>
+        <path class="trait" d="M95 72 L190 138" marker-start="url(#fleche-mode)" marker-end="url(#fleche-mode)"/>
+        <text x="118" y="115" class="mono">2</text>
+        <path class="accent" d="M350 138 L420 72" marker-end="url(#fleche-mode)"/>
+        <text x="400" y="115" class="mono">3 · attaque</text>
+        <path class="pointille" d="M490 45 C 530 45, 545 90, 545 130" marker-end="url(#fleche-mode)"/>
+        <text x="548" y="150" text-anchor="end" class="mono">4 · exfiltration</text>
+      </svg>
+      <figcaption>Les quatre phases d'une cyberattaque (diapo 19).</figcaption>
+    </figure>
+
+    <h3>Les attaques par vol d'identifiant de connexion</h3>
+    <p>Pour entrer dans un système, le plus simple est souvent de se faire passer pour un utilisateur légitime. Le cours recense plusieurs façons de voler son identifiant :</p>
+    <ul>
+      <li>un <strong>mot de passe trop faible</strong>, c'est-à-dire trop facile à deviner ;</li>
+      <li>une <strong>divulgation par complicité interne</strong>, par exemple un mot de passe partagé entre collaborateurs ;</li>
+      <li>l'<dfn>hameçonnage</dfn> (<span class="en" lang="en">phishing</span>) : leurrer les personnes pour qu'elles saisissent elles-mêmes leurs identifiants, en se faisant passer pour une autorité (banque, police, gouvernement, EDF, fournisseur…) qui suscite la peur et l'urgence, et en présentant un faux formulaire d'identification ;</li>
+      <li>l'<strong>interception du mot de passe transmis en clair</strong> sur le réseau : le <dfn>reniflage</dfn> (<span class="en" lang="en">sniffing</span>) des mots de passe ;</li>
+      <li>l'interception par un <dfn>logiciel espion</dfn> (<span class="en" lang="en">spyware</span>) de type <dfn>cheval de Troie</dfn> (<span class="en" lang="en">Trojan horse</span>), installé sur le poste de la victime à son insu ;</li>
+      <li>l'interception par un <dfn>enregistreur de frappe</dfn> (<span class="en" lang="en">keylogger</span>) ;</li>
+      <li>une <dfn>porte dérobée</dfn> (<span class="en" lang="en">backdoor</span>) : un accès de maintenance prévu par les concepteurs, ou mis en place par le cybercriminel à l'insu des utilisateurs et des concepteurs.</li>
+    </ul>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Les indices d'une page d'hameçonnage</span> <span class="ref">diapo 21</span></p>
+      <p>Un courriel contient un lien vers un faux site PayPal, hébergé clandestinement et dont le code est masqué. La page imite le vrai site, mais plusieurs détails la trahissent :</p>
+      <ul>
+        <li>la mauvaise adresse dans la barre du navigateur, sans connexion chiffrée ;</li>
+        <li>un logo officiel et une page semblable aux pages du site officiel, pour inspirer confiance ;</li>
+        <li>un menu inactif, mais des liens actifs vers le site officiel en bas de page ;</li>
+        <li>un formulaire qui demande des informations personnelles, dont le mot de passe, envoyé en clair par un bouton actif.</li>
+      </ul>
+      <p>Le <a href="../TP/TP1/L2-174UD06-TP1.pdf">TP 1</a> faisait analyser un exemple de ce type.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Tentative de porte dérobée dans le noyau Linux, 2003</span> <span class="ref">diapo 22</span></p>
+      <p>Deux lignes ajoutées à la fonction <code>sys_wait4()</code> du fichier <code>kernel/exit.c</code> :</p>
+<pre data-fichier="kernel/exit.c"><code class="language-c">/* … */
+if ((options == (__WCLONE|__WALL)) &amp;&amp; (current-&gt;uid = 0))
+        retval = -EINVAL;
+/* … */</code></pre>
+      <p>Si la fonction <code>sys_wait4()</code> truquée est appelée avec les options <code>__WCLONE|__WALL</code>, le processus courant prend l'identité de root (<code>uid = 0</code>).</p>
+      <p><span class="badge a-verifier">À vérifier</span> La diapo écrit <code>current→uid</code>, <code>-ENINVAL</code> et une parenthèse en trop ; le code ci-dessus est celui de la tentative de 2003, tel que le rapporte Wikipédia (constante <code>EINVAL</code>, opérateur <code>-&gt;</code>).</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi ces deux lignes sont si discrètes</span></p>
+      <p>Tout tient au signe <code>=</code> de <code>current-&gt;uid = 0</code> : c'est une <em>affectation</em>, pas une comparaison <code>==</code>. Un relecteur croit lire « si l'appelant est root, renvoyer une erreur », ce qui semble inoffensif. En réalité, l'affectation donne l'uid 0 au processus ; elle vaut 0, donc la condition est fausse et aucune erreur n'est renvoyée. L'attaquant obtient les droits de root sans laisser de trace visible. La modification avait été repérée parce qu'elle était entrée dans le dépôt sans passer par le circuit habituel de validation.</p>
+    </div>
+
+    <h3>Les attaques par leurre</h3>
+    <p>Le principe est de tromper la cible en masquant la cyberattaque. Quelques méthodes :</p>
+    <ul>
+      <li>l'<dfn>usurpation d'adresse IP</dfn> (<span class="en" lang="en">IP spoofing</span>) : masquer sa propre identité en « empruntant » l'adresse IP d'un équipement, pour bénéficier des services auxquels il a accès ;</li>
+      <li>la modification du routage, qui redirige les flux réseau ;</li>
+      <li>le <dfn>dévoiement de serveur DNS</dfn> (<span class="en" lang="en">pharming</span>) ;</li>
+      <li>le détournement de flux applicatifs : l'<dfn>attaque de l'homme du milieu</dfn> (<span class="en" lang="en">man in the middle attack</span>, aujourd'hui aussi <span class="en" lang="en">adversary in the middle</span>) ;</li>
+      <li>réussir à installer, ou à faire installer, un logiciel malveillant : fausse application ou application détournée, faux courriel qui pousse l'usager crédule à une « mise à jour », diffusion sur des forums ou des sites de téléchargement, légaux ou non…</li>
+    </ul>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pharming et homme du milieu</span></p>
+      <p>Avec le <em>pharming</em>, l'utilisateur tape la bonne adresse, mais le serveur DNS corrompu lui renvoie l'adresse IP d'un faux site : contrairement au phishing, aucun lien piégé n'est nécessaire. Dans l'attaque de l'homme du milieu, l'attaquant s'intercale entre deux interlocuteurs qui croient se parler directement ; il peut lire et modifier les échanges. Le <a href="cours-03-securite-si-reseaux.html">cours 3</a> montre comment un certificat numérique empêche cette attaque.</p>
+    </div>
+
+    <h3>Panorama des logiciels malveillants</h3>
+    <p>La diapo 24 propose un panorama des logiciels malveillants (<span class="en" lang="en">malwares</span>), organisé comme une hiérarchie de types :</p>
+    <dl class="glossaire">
+      <dt>Cheval de Troie <span class="en" lang="en">Trojan horse</span></dt>
+      <dd>Logiciel installé à l'insu de l'utilisateur. Il se décline en plusieurs sous-types, décrits ci-dessous, de la porte dérobée à l'effaceur.</dd>
+      <dt>Porte dérobée <span class="en" lang="en">backdoor</span></dt>
+      <dd>Accès caché au système, voir plus haut.</dd>
+      <dt>Injecteur <span class="en" lang="en">dropper</span></dt>
+      <dd>Injecte un autre malware sur la machine.</dd>
+      <dt>Logiciel espion <span class="en" lang="en">spyware</span></dt>
+      <dd>Collecte des informations sur l'utilisateur à son insu.</dd>
+      <dt>Enregistreur de frappe <span class="en" lang="en">keylogger</span></dt>
+      <dd>Enregistre les touches frappées au clavier, mots de passe compris.</dd>
+      <dt>Publiciel <span class="en" lang="en">adware</span></dt>
+      <dd>Affiche de la publicité non désirée.</dd>
+      <dt>Rançongiciel <span class="en" lang="en">ransomware</span></dt>
+      <dd>Rend indisponibles des données ou une machine contre paiement d'une rançon.</dd>
+      <dt>Alarmiste <span class="en" lang="en">scareware</span></dt>
+      <dd>Fait croire à une attaque pour faire acheter ou installer un malware.</dd>
+      <dt>Effaceur <span class="en" lang="en">wiper</span></dt>
+      <dd>Supprime tous les fichiers accessibles.</dd>
+      <dt>Exploit</dt>
+      <dd>Exploite une faille de sécurité.</dd>
+      <dt>Rootkit</dt>
+      <dd>Logiciel qui vise à obtenir et à pérenniser un accès clandestin et furtif.</dd>
+      <dt>Ver <span class="en" lang="en">worm</span></dt>
+      <dd>Capable de se propager par un réseau, par courriel, par Internet.</dd>
+      <dt>Virus</dt>
+      <dd>Caché dans un programme normal, capable de se répliquer et de se propager par un réseau. Il existe des virus de secteur d'amorçage (<span class="en" lang="en">boot sector</span>), de fichier, de macro et de script.</dd>
+    </dl>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Ver ou virus ?</span></p>
+      <p><span class="badge ajout">Ajout</span> Les deux se propagent, mais le virus a besoin d'un programme hôte dans lequel il se cache, et se propage quand on l'exécute ; le ver est un programme autonome, qui se propage seul de machine en machine.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Les indices d'un faux courriel</span> <span class="ref">diapo 25</span></p>
+      <p>Un courriel annonce un « paiement en attente » et menace de suites si l'on ne paie pas. Il est classé comme SPAM, et plusieurs indices le trahissent :</p>
+      <ul>
+        <li>l'adresse de l'expéditeur diffère de l'adresse du lien, et l'adresse de réponse est bidon ;</li>
+        <li>la langue du titre diffère de celle du message, qui contient des fautes d'orthographe et de grammaire ;</li>
+        <li>le lien pointe vers un fichier Zip, qui contient un fichier exécutable à deux extensions (<code>Details.Pdf………….exe</code>) ;</li>
+        <li>le numéro de téléphone est bidon.</li>
+      </ul>
+    </div>
+
+    <h3>Les attaques par détournement de technologie</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Déni de service</span></p>
+      <p>Un <dfn>déni de service</dfn> (<span class="en" lang="en">DoS, Denial of Service</span>) surcharge un service ou un serveur pour le rendre indisponible. L'attaque est <dfn>distribuée</dfn> (<span class="en" lang="en">DDoS</span>) quand un ensemble de machines, un botnet, attaque la cible simultanément.</p>
+    </div>
+    <p>Exemples de DDoS :</p>
+    <ul>
+      <li>des requêtes TCP inachevées : l'<dfn>inondation par messages SYN</dfn> (<span class="en" lang="en">SYN flood</span>) ;</li>
+      <li>un très grand nombre de requêtes HTTP sur un serveur web, de courriels sur un serveur de messagerie, de requêtes sur un serveur DNS…</li>
+    </ul>
+    <p><span class="badge ajout">Ajout</span> La diapo 26 écrit « Deny of Service » : le terme anglais est « Denial of Service ».</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 600 200" width="600" role="img" aria-labelledby="fig-syn-titre">
+        <title id="fig-syn-titre">À gauche, connexion TCP normale : SYN, SYN-ACK, ACK. À droite, inondation SYN : l'attaquant envoie des SYN en rafale et ne répond jamais aux SYN-ACK, le serveur garde des connexions à moitié ouvertes</title>
+        <defs>
+          <marker id="fleche-syn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="140" y="18" text-anchor="middle" class="gras">Connexion TCP normale</text>
+        <text x="40" y="42" text-anchor="middle">Client</text>
+        <text x="240" y="42" text-anchor="middle">Serveur</text>
+        <path class="trait" d="M40 50 V190"/>
+        <path class="trait" d="M240 50 V190"/>
+        <path class="trait" d="M40 70 L238 95" marker-end="url(#fleche-syn)"/>
+        <text x="140" y="75" text-anchor="middle" class="mono">SYN</text>
+        <path class="trait" d="M240 110 L42 135" marker-end="url(#fleche-syn)"/>
+        <text x="140" y="115" text-anchor="middle" class="mono">SYN-ACK</text>
+        <path class="trait" d="M40 150 L238 175" marker-end="url(#fleche-syn)"/>
+        <text x="140" y="155" text-anchor="middle" class="mono">ACK</text>
+        <text x="460" y="18" text-anchor="middle" class="gras accent">Inondation SYN</text>
+        <text x="360" y="42" text-anchor="middle">Attaquant</text>
+        <text x="560" y="42" text-anchor="middle">Serveur</text>
+        <path class="trait" d="M360 50 V190"/>
+        <path class="trait" d="M560 50 V190"/>
+        <path class="accent" d="M360 62 L558 80" marker-end="url(#fleche-syn)"/>
+        <path class="accent" d="M360 78 L558 96" marker-end="url(#fleche-syn)"/>
+        <path class="accent" d="M360 94 L558 112" marker-end="url(#fleche-syn)"/>
+        <text x="420" y="64" class="mono accent">SYN</text>
+        <path class="pointille" d="M560 130 L362 150" marker-end="url(#fleche-syn)"/>
+        <text x="460" y="134" text-anchor="middle" class="mono t2">SYN-ACK sans réponse</text>
+        <text x="460" y="185" text-anchor="middle" class="t2">connexions à moitié ouvertes</text>
+      </svg>
+      <figcaption>La poignée de main de TCP, et son détournement par l'inondation SYN (diapo 26).</figcaption>
+    </figure>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi l'inondation SYN fonctionne</span></p>
+      <p>À chaque SYN reçu, le serveur réserve de la mémoire pour une connexion « à moitié ouverte » et attend l'ACK final pendant un certain délai. L'attaquant, souvent avec une adresse IP usurpée, n'envoie jamais cet ACK. La table des connexions en attente se remplit, et les clients légitimes ne peuvent plus se connecter : c'est la disponibilité qui est visée.</p>
+    </div>
+
+    <p>L'autre forme de détournement est l'<dfn>exploitation des failles</dfn> des logiciels, les <span class="en" lang="en">exploits</span> :</p>
+    <ul>
+      <li>le <dfn>dépassement de tampon</dfn> (<span class="en" lang="en">buffer overflow attack</span>), qui force un saut (<code>jmp</code>) vers du code malveillant ;</li>
+      <li>les pointeurs de fonctions non initialisés, les problèmes de logique ;</li>
+      <li>la mauvaise conception, la mauvaise configuration ;</li>
+      <li>l'injection de code, l'injection SQL…</li>
+    </ul>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Vulnérabilité zéro jour</span></p>
+      <p>Une <dfn>vulnérabilité zéro jour</dfn> (<span class="en" lang="en">zero day</span>) est une faille inconnue de tous sauf du hacker, ou qui n'a encore aucun correctif.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>L'injection SQL en une ligne</span></p>
+      <p>Un site construit sa requête en collant la saisie de l'utilisateur : <code>SELECT * FROM comptes WHERE login = '…' AND mdp = '…'</code>. Si l'on saisit comme login <code>' OR '1'='1' --</code>, la condition devient toujours vraie et le reste de la ligne passe en commentaire : on est connecté sans mot de passe. La parade est de ne jamais coller une saisie dans une requête, et de passer par des requêtes paramétrées.</p>
+    </div>
+
+    <h3>Les botnets</h3>
+    <div class="bloc methode">
+      <p class="bloc-titre">Principe <span>Le botnet</span> <span class="ref">diapo 27</span></p>
+      <ol>
+        <li>Le pirate infecte des machines, par un cheval de Troie par exemple.</li>
+        <li>Les machines infectées deviennent des <dfn>zombies</dfn> : elles reçoivent des ordres d'une machine serveur de contrôle, le <dfn>C2</dfn> (<span class="en" lang="en">Command and Control</span>).</li>
+        <li>Le pirate loue son réseau pour des activités illégales : DDoS, envoi de spam…</li>
+        <li>Le botnet utilise les zombies pour mener les attaques.</li>
+      </ol>
+    </div>
+
+    <h3>Les attaques par manipulation d'information</h3>
+    <ul>
+      <li>La <dfn>défiguration</dfn> d'un site web (<span class="en" lang="en">defacement attack</span>) : la page d'accueil est remplacée par une page noire, ou qui affiche les messages des hackers. Les conséquences portent sur l'image et la réputation. La diapo 28 en montre une, signée de la SEA (<span class="en" lang="en">Syrian Electronic Army</span>).</li>
+      <li>La propagation de fausses informations, ou guerre de l'information (<span class="en" lang="en">infowar</span>) : informations fausses ou altérées (<span class="en" lang="en">fake news</span>, <span class="en" lang="en">semantic war</span>), pour manipuler le cours des actions ou l'opinion.</li>
+      <li>Le chantage technologique : l'annonce d'une attaque, ou de la divulgation de données volées (vraies ou fausses !), suivie d'une demande de rançon.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Annexes : classifications des attaques et organismes officiels <span class="ref">diapos 29–31</span></h2>
+    <p>Pour partager la connaissance des attaques, la communauté s'est dotée de catalogues communs, et chaque pays d'organismes chargés de la sécurité.</p>
+
+    <h3>Les classifications MITRE</h3>
+    <p>Le MITRE est une entreprise américaine de services numériques (ESN) à but non lucratif. Elle tient deux catalogues :</p>
+    <dl class="glossaire">
+      <dt>MITRE ATT&amp;CK</dt>
+      <dd>Catalogue des tactiques et des techniques employées par les cybercriminels, des groupes APT et des logiciels malveillants connus. Exemples : la technique du phishing, le groupe Turla, le malware Stuxnet. Site : <a href="https://attack.mitre.org/">attack.mitre.org</a>.</dd>
+      <dt>CVE</dt>
+      <dd>Catalogue public commun, au niveau mondial, de toutes les vulnérabilités logicielles et matérielles connues. Chacune reçoit un identifiant, par exemple CVE-2023-2156. Site : <a href="https://www.cve.org/">cve.org</a>.</dd>
+    </dl>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo 30 développe CVE en « Common Vulnerability Enumeration » ; le sigle officiel signifie <span class="en" lang="en">Common Vulnerabilities and Exposures</span>.</p>
+
+    <h3>Les organismes officiels</h3>
+    <div class="tableau">
+      <table>
+        <caption>Organismes nationaux et internationaux (diapo 31)</caption>
+        <thead><tr><th>Organisme</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><th>ANSSI<br><small>Agence nationale de la sécurité des systèmes d'information</small></th><td>Assurer la sécurité des systèmes d'information de l'État ; délivrer les autorisations des produits de sécurité… <a href="https://www.ssi.gouv.fr">ssi.gouv.fr</a></td></tr>
+          <tr><th>OFAC<br><small>Office anti-cybercriminalité</small></th><td>Rattaché à la police judiciaire (anciennement OCLCTIC, puis SDLC), il traite les affaires d'attaques cyber ; plateformes Pharos (contenus illicites), Thésée (escroqueries)…</td></tr>
+          <tr><th>CNIL<br><small>Commission nationale de l'informatique et des libertés</small></th><td>Veiller au respect du RGPD… Elle peut avertir, prononcer une injonction ou une sanction financière, et saisir la justice. <a href="https://www.cnil.fr">cnil.fr</a></td></tr>
+          <tr><th>CERT<br><small>Computer Emergency Response Team</small></th><td>Centres d'alerte et de réaction aux attaques informatiques, qui aident les entreprises et les organisations face aux cyberattaques et diffusent des informations publiques. En France : CERT-RENATER pour le réseau de l'éducation, de l'enseignement supérieur et de la recherche ; CERT-FR pour les administrations.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo 31 plafonne les sanctions de la CNIL à 300 000 €. C'était le plafond de la loi de 1978 en cas de récidive, avant 2016 ; depuis le RGPD, l'amende peut atteindre 20 millions d'euros ou 4 % du chiffre d'affaires mondial.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>La sécurité informatique couvre cinq domaines (physique, réseaux, exploitation, logique et applicative, données) et le facteur humain, souvent le maillon faible.</li>
+        <li>Les critères DIC : disponibilité (le service fonctionne pour les ayants droit), intégrité (pas de modification à l'insu du propriétaire), confidentialité (pas de divulgation non autorisée).</li>
+        <li>Identification (désigner), authentification (vérifier), puis contrôle d'accès (autoriser ou refuser), toujours dans cet ordre.</li>
+        <li>La non-répudiation repose sur l'imputabilité, la traçabilité (journalisation) et l'auditabilité.</li>
+        <li>La cybercriminalité prospère grâce à la dématérialisation, à l'uniformisation des systèmes, aux malwares vendus ou loués et à la lenteur des correctifs.</li>
+        <li>Une cyberattaque : collecte d'informations (dont l'ingénierie sociale), exploitation, réalisation, exfiltration sans trace.</li>
+        <li>Grandes familles d'attaques : vol d'identifiants (phishing, sniffing, keylogger, backdoor), leurre (IP spoofing, pharming, homme du milieu), détournement de technologie (DoS et DDoS, exploits, zero day), manipulation d'information (defacement, infowar, chantage).</li>
+        <li>Un botnet est un réseau de machines zombies pilotées par un serveur C2, loué pour des DDoS ou du spam.</li>
+        <li>MITRE ATT&amp;CK catalogue les techniques d'attaque, CVE les vulnérabilités ; en France, l'ANSSI, l'OFAC, la CNIL et les CERT.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Que signifient les trois lettres de DIC ? Donner une attaque contre chacune.</summary>
+        <div><p>Disponibilité (un DDoS par inondation SYN), intégrité (une porte dérobée qui modifie le noyau), confidentialité (le vol d'identifiants par phishing ou sniffing).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle différence entre identification et authentification ?</summary>
+        <div><p>L'identification désigne l'entité (un identifiant de connexion) ; l'authentification vérifie qu'elle est bien celle qu'elle prétend être, par une information qu'elle seule détient (un mot de passe).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Sur quoi s'appuie la non-répudiation ?</summary>
+        <div><p>Sur l'imputabilité (attribuer l'action à une entité), la traçabilité (journaliser l'action) et l'auditabilité (pouvoir analyser a posteriori grâce à ces traces).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi Windows et Android sont-ils plus attaqués que macOS et iOS ?</summary>
+        <div><p>Parce qu'ils sont plus répandus : les cybercriminels visent les cibles les plus nombreuses et les plus accessibles, pour le meilleur « retour sur investissement » au moindre risque.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelles sont les quatre phases d'une cyberattaque ?</summary>
+        <div><p>Collecte d'informations et recherche de vulnérabilités, exploitation des informations et des failles, réalisation de l'attaque, puis exfiltration (rester indétectable et effacer ses traces).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Phishing ou pharming : lequel fonctionne même si l'on tape soi-même la bonne adresse ?</summary>
+        <div><p>Le pharming : c'est le serveur DNS qui est dévoyé et renvoie l'adresse du faux site. Le phishing repose sur un lien ou un message piégé.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Qu'est-ce qu'une vulnérabilité zéro jour ?</summary>
+        <div><p>Une faille inconnue de tous sauf de l'attaquant, ou pour laquelle aucun correctif n'existe encore.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Qu'est-ce qu'un serveur C2 ?</summary>
+        <div><p>Le serveur de commande et de contrôle (<span class="en" lang="en">Command and Control</span>) d'un botnet : il envoie ses ordres aux machines zombies.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="index.html"><small>← Accueil</small>Sécurité informatique</a>
+    <a class="suivant" href="cours-02-initiation-cryptographie.html"><small>Suivant →</small>Initiation à la cryptographie</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Sécurité informatique · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

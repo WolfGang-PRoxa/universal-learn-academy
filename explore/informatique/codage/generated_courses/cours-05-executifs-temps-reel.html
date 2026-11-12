@@ -1,0 +1,1741 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="codage">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exécutifs temps réel · Codage L3</title>
+<meta name="description" content="Cours 5 de codage de l'information (L3) : applications temps réel et contraintes de temps, implantation avec ou sans exécutif, multitâche et parallélisme, rôle et structure d'un exécutif temps réel, états des tâches et ordonnancement (temps partagé, priorité fixe, priorité dynamique), synchronisation, partage de ressources, communication, interblocages, architectures multiprocesseurs.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-05-executifs-temps-reel.html" title="Quiz · Exécutifs temps réel">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-temps-reel.html" title="Quiz · Annale : notions et principes du temps réel (TD 4)">
+<link rel="quiz" href="../generated_quizzes/quiz-exercices-types.html" title="Quiz · Exercices types (tous les cours)">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale (tous les cours)">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/langues/x86asm.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Codage</a>
+    <span aria-current="page">Cours 5 · Exécutifs temps réel</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Codage</span> Cours 5 · L3 S5</p>
+    <h1>Exécutifs temps réel</h1>
+    <p class="chapeau">Une application temps réel doit fournir une réponse juste, et la fournir à temps. Ce dernier cours part d'un exemple, l'asservissement d'un moteur, pour montrer quand une implantation à base d'interruptions atteint ses limites, puis présente l'outil qui les lève : l'exécutif temps réel. On y voit comment il gère les tâches et le processeur (ordonnancement), et comment il fournit la synchronisation, le partage de ressources et la communication entre tâches, jusque sur des architectures multiprocesseurs.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/L3_INFO_C5.pdf">L3_INFO_C5.pdf</a> · 101 diapos (numérotées ici comme les pages du PDF)</dd></div>
+      <div><dt>Enseignant</dt><dd>Florent Carlier</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-30">30 sept. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Définir une application temps réel, ses contraintes de temps, et distinguer temps réel souple et temps réel dur.</li>
+        <li>Expliquer quand une implantation sans exécutif, à base d'interruptions, cesse de respecter les contraintes.</li>
+        <li>Décrire une tâche, ses états, ses paramètres temporels, et le rôle de l'exécutif.</li>
+        <li>Tracer un ordonnancement en temps partagé, à priorité fixe et à priorité dynamique, et tester si un ensemble de tâches est ordonnançable.</li>
+        <li>Choisir et écrire le mécanisme adapté : événement, sémaphore, rendez-vous, section critique, boîte aux lettres.</li>
+        <li>Reconnaître un interblocage et citer ses remèdes.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Notions de processeur, de pile et d'interruption.</li>
+        <li>Langage C : pointeurs, structures, boucles.</li>
+        <li>Le cours de programmation système sur les <a href="../../programmation-systeme/generated_courses/cours-02-verrous.html">verrous</a> et les <a href="../../programmation-systeme/generated_courses/cours-03-signaux.html">signaux</a> aborde les mêmes problèmes sous Unix.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Remarque <span>Le support</span></p>
+    <p>Les diapos sont une numérisation d'un support plus long : leur numéro propre, en haut à droite, saute de 47 à 49 puis va jusqu'à 135. Cette page les numérote comme les pages du PDF (1 à 101). Les diapos 19, 30, 75, 89 et 99 sont des pages de titre de partie. Les notes de séance (Google Doc « Cours codage ») rattachent à ce cours le TD 4, qui commence par comparer attente active et attente passive : son sujet, une annale de deux heures, est repris dans le <a href="../generated_quizzes/quiz-annale-temps-reel.html">quiz d'annale</a>.</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le temps réel <span class="ref">diapos 2–10</span></h2>
+    <p>Une application temps réel commande un procédé physique : elle observe son environnement, calcule, et agit sur lui. Son résultat n'est juste que s'il arrive dans une fenêtre de temps donnée ; c'est ce qui la distingue d'une application ordinaire, pour laquelle seule la valeur compte.</p>
+    <p>Le cours suit le plan de la diapo 2 : introduction au temps réel, approche multitâche et parallélisme, définition et structure d'un exécutif (mécanismes et primitives de base), exemples d'application, solutions pour le cas multiprocesseur. Les exécutifs industriels annoncés au sommaire ne figurent pas dans le PDF.</p>
+
+    <h3>Spécificités des applications temps réel <span class="ref">diapo 3</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Application temps réel</span></p>
+      <p>Une application <dfn>temps réel</dfn> (<span class="en" lang="en">real-time</span>) est un système réactif, lié à un environnement physique, qui doit satisfaire des contraintes de temps : toute réponse fournie en dehors de la fenêtre temporelle prévue est considérée comme fausse, quelle que soit sa valeur.</p>
+    </div>
+    <ul>
+      <li><strong>Système réactif</strong> : l'environnement physique impose de multiples entrées et sorties, et des interfaces pour l'observer et agir sur lui.</li>
+      <li><strong>Contraintes de temps</strong> à satisfaire.</li>
+      <li><strong>Système dédié</strong> : un matériel complet (calculateur et interfaces) et son logiciel, conçus pour cette seule application.</li>
+      <li><strong>Contraintes industrielles</strong> : système embarqué (poids, taille), contraintes d'environnement.</li>
+    </ul>
+
+    <h3>Contraintes de temps : temps réel souple et temps réel dur <span class="ref">diapo 4</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Contrainte de temps</span></p>
+      <p>Une <dfn>contrainte de temps</dfn> fixe des limites (minimale et maximale) au temps qui sépare deux événements.</p>
+    </div>
+    <p>Selon l'échelle de temps et la tolérance accordée, on distingue deux grandes classes d'applications.</p>
+    <table>
+      <caption>Temps réel souple et temps réel dur</caption>
+      <thead><tr><th></th><th>Temps réel souple (contraintes relatives)</th><th>Temps réel dur (contraintes strictes)</th></tr></thead>
+      <tbody>
+        <tr><th>Échelle de temps</th><td>de l'ordre de la seconde</td><td>de l'ordre de la milliseconde</td></tr>
+        <tr><th>Non-respect</th><td>toléré dans un certain pourcentage des cas</td><td>conséquences dramatiques</td></tr>
+        <tr><th>Exemples</th><td>système transactionnel, interface utilisateur</td><td>contrôle de procédé, systèmes de mesure</td></tr>
+      </tbody>
+    </table>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Deux exemples d'aujourd'hui</span></p>
+      <p>Un lecteur vidéo relève du temps réel souple : une image affichée en retard de temps en temps dégrade la qualité, sans plus. Le déclenchement d'un coussin gonflable de voiture relève du temps réel dur : il doit se gonfler en quelques dizaines de millisecondes après le choc, et un déclenchement tardif est aussi inutile qu'une absence de déclenchement.</p>
+    </div>
+
+    <h3>Exemples de contraintes de temps <span class="ref">diapos 5–6</span></h3>
+    <p>Chaque contrainte se lit sur un chronogramme : un événement doit survenir dans une <dfn>fenêtre autorisée</dfn>, entre un délai minimal et un délai maximal après un événement de référence.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 170" width="640" role="img" aria-labelledby="fig-fenetre-titre">
+        <title id="fig-fenetre-titre">Temps de réponse : la sortie S doit changer dans une fenêtre autorisée, entre un délai minimal et un délai maximal après le changement de l'entrée E</title>
+        <defs>
+          <marker id="fleche-fenetre" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="20" y="45" width="70" height="50"/>
+        <path class="trait" d="M0 70 H18" marker-end="url(#fleche-fenetre)"/>
+        <path class="trait" d="M90 70 H118" marker-end="url(#fleche-fenetre)"/>
+        <text x="8" y="62" text-anchor="middle" class="mono">E</text>
+        <text x="108" y="62" text-anchor="middle" class="mono">S</text>
+        <rect class="boite-accent" x="420" y="20" width="90" height="100"/>
+        <text x="465" y="14" text-anchor="middle" class="t2">fenêtre autorisée</text>
+        <text x="175" y="54" text-anchor="end" class="mono">E</text>
+        <path class="trait" d="M185 60 H270 V38 H600"/>
+        <text x="175" y="94" text-anchor="end" class="mono">S</text>
+        <path class="trait" d="M185 100 H460 V78 H600"/>
+        <path class="accent" d="M272 68 H458" marker-start="url(#fleche-fenetre)" marker-end="url(#fleche-fenetre)"/>
+        <text x="365" y="62" text-anchor="middle">temps de réponse</text>
+        <path class="pointille" d="M270 130 H420"/>
+        <text x="345" y="145" text-anchor="middle" class="t2">min</text>
+        <path class="pointille" d="M270 155 H510"/>
+        <text x="470" y="168" text-anchor="middle" class="t2">max</text>
+        <path class="trait" d="M270 124 V160"/>
+      </svg>
+      <figcaption>Temps de réponse (diapo 5) : la sortie doit évoluer entre le délai minimal et le délai maximal qui suivent l'évolution de l'entrée.</figcaption>
+    </figure>
+    <table>
+      <caption>Les contraintes de temps des diapos 5 et 6</caption>
+      <thead><tr><th>Contrainte</th><th>Temps mesuré</th><th>Rôle</th></tr></thead>
+      <tbody>
+        <tr><th>Temps de réponse</th><td>entre l'évolution d'une entrée et la réponse en sortie</td><td>réactivité</td></tr>
+        <tr><th>Cohérence de sorties</th><td>entre les instants d'évolution de deux sorties</td><td>deux sorties évoluent (presque) ensemble</td></tr>
+        <tr><th>Débit, fréquence de sorties</th><td>entre deux évolutions successives d'une même sortie (période)</td><td>régularité d'une sortie</td></tr>
+        <tr><th>Écart entre deux entrées</th><td>entre l'évolution de deux entrées de synchronisation (délai)</td><td>définit la charge de travail</td></tr>
+        <tr><th>Débit, fréquence d'entrée</th><td>fréquence d'activation d'une fonction (période)</td><td>définit la charge de travail</td></tr>
+      </tbody>
+    </table>
+    <p>Les trois premières contraintes portent sur ce que produit le système ; il doit les garantir. Les deux dernières décrivent ce que l'environnement lui impose ; elles fixent la charge de travail qu'il doit absorber.</p>
+
+    <h3>Contraintes pour la réalisation <span class="ref">diapo 7</span></h3>
+    <ul>
+      <li>La solution est faite de <strong>composantes parallèles</strong>, pour prendre en compte des événements asynchrones.</li>
+      <li>Il y a <strong>moins de processeurs que de fonctions</strong> : le processeur est partagé.</li>
+      <li>Certaines fonctions s'exécutent de façon synchrone avec des événements externes (<strong>interruptions</strong>).</li>
+      <li>Les <strong>contraintes de temps</strong> doivent être satisfaites, ce qui demande :
+        <ul>
+          <li>une preuve <em>a priori</em>, à partir de la fréquence d'activation, de la durée de traitement, des contraintes imposées… ;</li>
+          <li>un <strong>déterminisme</strong> d'exécution ;</li>
+          <li>de l'efficacité dans le développement (qualité, lisibilité, maintenabilité).</li>
+        </ul>
+      </li>
+    </ul>
+    <p>D'où l'intérêt d'un <strong>exécutif temps réel</strong>, qui fournit ces composantes parallèles et le partage du processeur.</p>
+
+    <h3>Niveaux d'approche et processus de développement <span class="ref">diapos 8–10</span></h3>
+    <p>La réalisation d'une application temps réel se décompose en trois niveaux de travail, qui demandent des connaissances différentes.</p>
+    <table>
+      <caption>Niveaux d'approche pour une application temps réel (diapo 8)</caption>
+      <thead><tr><th>Étape</th><th>Nature du travail</th><th>Connaissances requises</th></tr></thead>
+      <tbody>
+        <tr><th>Du cahier des charges et des spécifications à la solution fonctionnelle</th><td>conception de l'application : définition d'une solution fonctionnelle</td><td>conception multitâche, modèle de description, démarche de conception</td></tr>
+        <tr><th>De la solution fonctionnelle à la solution d'implantation</th><td>implantation : élaboration de règles de traduction, puis traduction</td><td>compréhension du modèle de description, mécanismes disponibles</td></tr>
+        <tr><th>De la solution complète (matériel et logiciel) à la solution d'implantation</th><td>conception et implantation d'exécutifs</td><td>mécanismes à fournir, possibilités du matériel, principes et techniques du multitâche</td></tr>
+      </tbody>
+    </table>
+    <p>Dans le processus de développement (diapo 9), on passe du plus abstrait au plus concret en quatre niveaux :</p>
+    <ol class="etapes">
+      <li><strong>Spécification</strong> : à partir du cahier des charges et de modèles de spécification, on produit les spécifications fonctionnelles, opératoires et technologiques.</li>
+      <li><strong>Conception fonctionnelle</strong> : un modèle fonctionnel donne la description fonctionnelle.</li>
+      <li><strong>Définition de la réalisation</strong> : un modèle d'exécution, qui tient compte des spécifications technologiques, donne la description exécutive.</li>
+      <li><strong>Réalisation</strong> : à partir des spécifications technologiques de réalisation, on obtient le produit.</li>
+    </ol>
+    <p>La définition de la réalisation (diapo 10) part de la solution fonctionnelle et des spécifications technologiques. Elle introduit la répartition et les interfaces, ce qui donne une solution fonctionnelle détaillée. Elle détermine ensuite la structure d'exécution en tenant compte des contraintes de temps, puis spécifie les implantations logicielles et la réalisation matérielle : allocation et implantation.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Un exemple : l'asservissement d'un moteur <span class="ref">diapos 11–18</span></h2>
+    <p>Une application simple sert de fil rouge : régler la vitesse d'un moteur. Elle montre qu'une implantation sans exécutif est possible, mais que ses temps de réponse deviennent difficiles à garantir dès que les fonctions doivent se synchroniser entre elles.</p>
+
+    <h3>L'application <span class="ref">diapos 11 et 13</span></h3>
+    <p>Un capteur envoie une impulsion <code>Inc</code> à chaque incrément de rotation du moteur ; une horloge <code>H</code> bat régulièrement. Cinq fonctions coopèrent :</p>
+    <ul>
+      <li><code>Mesure_vitesse</code>, déclenchée par <code>Inc</code>, calcule la vitesse mesurée <code>V_mes</code> ;</li>
+      <li><code>Supervision</code> fournit la vitesse de consigne <code>V_cons</code> ;</li>
+      <li><code>Asservissement</code> compare les deux et calcule la commande <code>Cmd_Vi</code> ;</li>
+      <li><code>GenePWM</code> produit le signal de commande du moteur <code>Cmd_Mot</code>, modulé en largeur d'impulsion (<span class="en" lang="en">PWM, pulse width modulation</span>) ;</li>
+      <li><code>Diviseur</code> (diapo 13) divise l'horloge <code>H</code> en deux signaux logiciels : <code>H_ass</code>, qui déclenche l'asservissement, et <code>H_PWM</code>, qui déclenche la génération PWM, avec Fréquence(<code>H_PWM</code>) &gt; Fréquence(<code>H_ass</code>).</li>
+    </ul>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 240" width="640" role="img" aria-labelledby="fig-moteur-titre">
+        <title id="fig-moteur-titre">Application moteur avec synchronisation logicielle : Inc déclenche Mesure_vitesse, qui transmet V_mes à Asservissement ; Supervision fournit V_cons ; Asservissement transmet Cmd_Vi à GenePWM, qui commande le moteur ; l'horloge H déclenche Diviseur, qui produit H_ass pour Asservissement et H_PWM pour GenePWM</title>
+        <defs>
+          <marker id="fleche-moteur" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="265" y="10" width="110" height="40"/>
+        <text x="320" y="35" text-anchor="middle" class="gras">Supervision</text>
+        <path class="trait" d="M320 50 V103" marker-end="url(#fleche-moteur)"/>
+        <text x="328" y="82" class="mono">V_cons</text>
+        <rect class="boite" x="90" y="105" width="120" height="40"/>
+        <text x="150" y="130" text-anchor="middle" class="mono">Mesure_vitesse</text>
+        <rect class="boite" x="255" y="105" width="130" height="40"/>
+        <text x="320" y="130" text-anchor="middle" class="mono">Asservissement</text>
+        <rect class="boite" x="440" y="105" width="100" height="40"/>
+        <text x="490" y="130" text-anchor="middle" class="mono">GenePWM</text>
+        <text x="8" y="129" class="gras">Moteur</text>
+        <path class="pointille" d="M60 125 H88" marker-end="url(#fleche-moteur)"/>
+        <text x="72" y="116" text-anchor="middle" class="mono">Inc</text>
+        <path class="trait" d="M210 125 H253" marker-end="url(#fleche-moteur)"/>
+        <text x="232" y="116" text-anchor="middle" class="mono">V_mes</text>
+        <path class="trait" d="M385 125 H438" marker-end="url(#fleche-moteur)"/>
+        <text x="412" y="116" text-anchor="middle" class="mono">Cmd_Vi</text>
+        <path class="trait" d="M540 125 H585" marker-end="url(#fleche-moteur)"/>
+        <text x="562" y="116" text-anchor="middle" class="mono">Cmd_Mot</text>
+        <text x="590" y="129" class="gras">Moteur</text>
+        <rect class="boite" x="90" y="180" width="120" height="40"/>
+        <text x="150" y="205" text-anchor="middle" class="mono">Diviseur</text>
+        <path class="pointille" d="M60 200 H88" marker-end="url(#fleche-moteur)"/>
+        <text x="72" y="192" text-anchor="middle" class="mono">H</text>
+        <path class="pointille" d="M210 192 H320 V147" marker-end="url(#fleche-moteur)"/>
+        <text x="262" y="186" text-anchor="middle" class="mono">H_ass</text>
+        <path class="pointille" d="M210 210 H490 V147" marker-end="url(#fleche-moteur)"/>
+        <text x="420" y="226" text-anchor="middle" class="mono">H_PWM</text>
+      </svg>
+      <figcaption>Application temps réel avec synchronisation logicielle (diapo 13). Traits pleins : données ; pointillés : événements. Dans la version simple (diapo 11), il n'y a pas de <code>Diviseur</code> : <code>H</code> déclenche directement <code>Asservissement</code> et <code>GenePWM</code>, et les tâches logicielles ne se synchronisent pas entre elles.</figcaption>
+    </figure>
+
+    <h3>Implanter sans exécutif <span class="ref">diapo 12</span></h3>
+    <p>La version simple (deux événements matériels, pas de synchronisation entre tâches logicielles) s'implante très bien <strong>sans exécutif</strong>, en utilisant les différents niveaux d'interruption du processeur : c'est facile à mettre en œuvre, et efficace.</p>
+    <ul>
+      <li><code>Mesure_vitesse</code> est la routine de l'interruption <code>Inc</code>, au niveau de priorité le plus haut ;</li>
+      <li><code>Asservissement</code> et <code>GenePWM</code> forment la routine de l'interruption <code>H</code> ;</li>
+      <li><code>Supervision</code> est le programme principal, qui s'exécute quand aucune interruption n'est en cours.</li>
+    </ul>
+
+    <h3>Première solution : tout traiter sous interruption <span class="ref">diapos 14–15</span></h3>
+    <p>Avec la synchronisation logicielle, une première solution met <code>GenePWM</code> et <code>Asservissement</code> à l'intérieur de la routine d'interruption <code>Diviseur</code>, qui compte les impulsions de <code>H</code> :</p>
+<pre data-fichier="diviseur.c"><code class="language-c">void interrupt Diviseur()
+{
+    CptHPWM--;
+    if (CptHPWM == 0)
+    {
+        GenePWM();
+        CptHPWM = ...;
+    }
+    CptHass--;
+    if (CptHass == 0)
+    {
+        Asservissement();
+        CptHass = ...;
+    }
+}</code></pre>
+    <p>Le cas problématique (diapo 15) : quand la génération PWM et l'asservissement tombent sur la même impulsion, la routine dure longtemps, et une impulsion <code>H</code> qui arrive pendant ce temps est perdue.</p>
+    <div class="atelier" id="c5-lecture-diviseur" data-editeur="chronogramme">
+      <script type="application/json">
+      {
+        "titre": "Première implantation : une impulsion H perdue",
+        "mode": "lecture",
+        "vue": "dessin",
+        "depart": ["temps 0..16", "etat x Exécution", "etat e Impulsion H", "H : ..e..e..e....e..", "Diviseur : ..x..x.......x..", "GenePWM : ......xxxx......", "Asservissement : ..........xxx...", "Supervision : xx.xx.........xx"]
+      }
+      </script>
+    </div>
+    <p>Sur la ligne <code>H</code>, les cases hachurées marquent les impulsions de l'horloge ; sur les autres lignes, une case pleine est une unité de temps d'exécution. À t = 5, la routine <code>Diviseur</code> appelle <code>GenePWM</code> puis <code>Asservissement</code>, et ne rend la main qu'à t = 13 : l'impulsion de t = 8, arrivée pendant ce temps, n'est jamais traitée.</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Risque de perte de l'événement H</span></p>
+      <p>Une impulsion de <code>H</code> peut être perdue si
+      \[ 2\,T_H \lt T_{exec}(\text{GenePWM}) + T_{exec}(\text{Asserv}) \;\big(+\, f(T_{Inc},\, T_{exec}(\text{Mesure\_vitesse}))\big), \]
+      où \(T_H\) est la période de \(H\). Le dernier terme tient compte des interruptions <code>Inc</code>, plus prioritaires, qui allongent encore la routine. D'où la règle : le <code>Diviseur</code> doit être plus prioritaire que les traitements longs.</p>
+    </div>
+
+    <h3>Seconde solution : une tâche de fond <span class="ref">diapos 16–17</span></h3>
+    <p>La seconde solution ne garde sous interruption que ce qui est court : <code>Diviseur</code> se contente de lever des drapeaux, et une boucle principale, la <dfn>tâche de fond</dfn>, exécute les traitements longs.</p>
+    <div class="colonnes">
+<pre data-fichier="interruption"><code class="language-c">void interrupt Diviseur()
+{
+    CptHPWM--;
+    if (CptHPWM == 0)
+    {
+        HPWM = TRUE;
+        CptHPWM = ...;
+    };
+    CptHass--;
+    if (CptHass == 0)
+    {
+        Hass = TRUE;
+        CptHass = ...;
+    };
+};</code></pre>
+<pre data-fichier="tâche de fond"><code class="language-c">main()
+{
+    ...
+    while (1)
+    {
+        if (HPWM)
+        {
+            HPWM = FALSE;
+            GeneHPWM();
+        }
+        if (Hass)
+        {
+            Hass = FALSE;
+            Asservissement();
+        }
+        Supervision();
+    };
+}</code></pre>
+    </div>
+    <p>Aucune impulsion n'est plus perdue. Le problème change de nature (diapo 17) : quand <code>H</code> survient, le traitement correspondant n'est lancé qu'au prochain passage de la boucle sur le bon <code>if</code>, après ce qui est en cours, y compris la supervision. Le temps de réponse devient long et difficile à borner.</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Risque de non-respect du temps de réponse</span></p>
+      <p>La contrainte de temps de réponse entre <code>H</code> et <code>Cmd_Mot</code> peut ne pas être respectée si
+      \[ T_{rep}(H \to \text{Cmd\_Mot}) \lt (K^*)\,T_{exec}(\text{Diviseur}) + T_{exec}(\text{Asserv}) + T_{exec}(\text{Superviseur}) + T_{exec}(\text{GenePWM}), \]
+      où \(K^*\) est le nombre d'interruptions <code>Diviseur</code> qui peuvent survenir pendant ce temps.</p>
+    </div>
+    <p>La diapo 17 appelle <code>GeneHPWM()</code> dans la boucle, là où les autres diapos, et le chronogramme de la même diapo, écrivent <code>GenePWM</code> : c'est la même fonction, que déclenche le drapeau <code>HPWM</code>.</p>
+
+    <h3>Solution avec un exécutif temps réel <span class="ref">diapo 18</span></h3>
+    <p>Avec un exécutif, <code>Mesure_vitesse</code>, <code>Diviseur</code>, <code>GenePWM</code> et <code>Asservissement</code> deviennent des tâches, chacune avec sa priorité ; <code>Diviseur</code> signale les événements <code>H_PWM</code> et <code>H_ass</code>, et l'exécutif donne aussitôt le processeur à la tâche réveillée si elle est plus prioritaire que la tâche en cours. La supervision reste la tâche de fond.</p>
+    <ul>
+      <li>Le temps de réponse de <code>H</code> à <code>Cmd_Mot</code> ne dépend plus des temps d'exécution de l'asservissement et du superviseur.</li>
+      <li>La période minimale de <code>H</code> dépend principalement du temps d'exécution du <code>Diviseur</code>. Il doit cependant rester du temps pour effectuer les autres tâches de l'application.</li>
+    </ul>
+    <table>
+      <caption>Les trois implantations de l'application moteur</caption>
+      <thead><tr><th>Implantation</th><th>Traitements longs</th><th>Risque</th></tr></thead>
+      <tbody>
+        <tr><th>Tout sous interruption (diapo 14)</th><td>dans la routine d'interruption <code>Diviseur</code></td><td>perte d'impulsions <code>H</code></td></tr>
+        <tr><th>Tâche de fond (diapo 16)</th><td>dans la boucle principale, déclenchés par des drapeaux</td><td>temps de réponse long et mal borné</td></tr>
+        <tr><th>Exécutif temps réel (diapo 18)</th><td>dans des tâches à priorités, réveillées par des événements</td><td>il faut garder du temps processeur pour les autres tâches</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Multitâche et parallélisme <span class="ref">diapos 19–29</span></h2>
+    <p>Un exécutif fait coexister plusieurs traitements sur un même processeur. Cette partie définit la tâche, ce qui la compose, et les façons de faire avancer plusieurs tâches « en même temps ».</p>
+
+    <h3>Objectif et origines <span class="ref">diapo 20</span></h3>
+    <p>L'objectif du multitâche est de faire coexister plusieurs traitements (programmes). Il a deux origines :</p>
+    <ul>
+      <li><strong>au niveau matériel</strong> (une constatation) : le processeur est sous-exploité pendant les opérations d'entrée-sortie. En <dfn>attente active</dfn>, il reste occupé pendant l'attente ; en <dfn>attente passive</dfn>, il est libéré pendant l'attente, pour un autre traitement ;</li>
+      <li><strong>au niveau fonctionnel</strong> (un besoin) : les traitements sont synchrones à des événements ; ces événements étant asynchrones, les traitements doivent s'exécuter en parallèle.</li>
+    </ul>
+
+    <h3>Programme, tâche et descripteur <span class="ref">diapos 21–22</span></h3>
+    <dl class="glossaire">
+      <dt>Programme</dt>
+      <dd>Entité composée des instructions à dérouler pour effectuer le traitement.</dd>
+      <dt>Tâche <span class="en" lang="en">process, task, thread</span></dt>
+      <dd>Entité dynamique composée d'un programme (composante statique), de données, d'une pile et d'un contexte (composante dynamique).</dd>
+      <dt>Descripteur</dt>
+      <dd>Ensemble des informations qui caractérisent la tâche à un instant donné : son nom, son contexte…</dd>
+      <dt>Contexte</dt>
+      <dd>Les registres du processeur au moment où la tâche s'exécute, dont le compteur ordinal <code>PC</code> (adresse de l'instruction en cours dans le programme), le pointeur de pile <code>SP</code> et le registre de segment de données <code>DS</code>.</dd>
+    </dl>
+    <p>Le contexte relie la tâche à ce qu'elle manipule : <code>PC</code> désigne son programme, <code>SP</code> sa pile, <code>DS</code> ses données (diapo 22). Charger un contexte dans le processeur, c'est lui faire exécuter cette tâche.</p>
+
+    <h3>Parallélisme réel et pseudo-parallélisme <span class="ref">diapos 23–27</span></h3>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="colonne-titre">Parallélisme réel</p>
+        <ul>
+          <li>Systèmes multiprocesseurs : réelle exécution parallèle des traitements.</li>
+          <li>Exemple : le travail en salle de TP, où chacun utilise son propre processeur.</li>
+          <li>Chaque processeur charge son propre contexte (diapo 26).</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p class="colonne-titre">Pseudo-parallélisme</p>
+        <ul>
+          <li>Plusieurs traitements à effectuer sur un même processeur : partage du processeur, exécution en séquence.</li>
+          <li>La commutation des traitements donne à l'environnement une évolution parallèle.</li>
+          <li>Exemple : une salle de terminaux, où tout le monde est connecté au même serveur.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="atelier" id="c5-lecture-deroulements" data-editeur="chronogramme">
+      <script type="application/json">
+      {
+        "titre": "Exemples de déroulement (diapo 24)",
+        "mode": "lecture",
+        "vue": "dessin",
+        "depart": ["temps 0..10", "etat x Exécution", "etat p Prêt", "Séquentiel T1 : xxxx......", "Séquentiel T2 : ppppxxxx..", "Mono T1 : xpxpxpx...", "Mono T2 : pxpxpxpx..", "Multi T1 : xxxx......", "Multi T2 : .xxxx....."]
+      }
+      </script>
+    </div>
+    <p>Case pleine : la tâche s'exécute ; case hachurée : elle est prête et attend le processeur. En exécution <strong>séquentielle</strong>, T2 attend la fin de T1. En <strong>multitâche monoprocesseur</strong>, les deux tâches alternent sur le même processeur : chacune avance par morceaux, et la durée totale est la même. En <strong>multiprocesseur</strong>, elles s'exécutent vraiment en même temps.</p>
+    <p>En exécution séquentielle (diapo 25), un seul contexte est chargé tour à tour avec les programmes 1 à n, qui partagent pile et données. En multitâche monoprocesseur (diapo 27), chaque tâche a son propre contexte, sa pile et ses données, et l'exécutif charge tour à tour chaque contexte dans l'unique processeur.</p>
+
+    <h3>Une pile par tâche <span class="ref">diapos 28–29</span></h3>
+    <p>La différence se voit sur l'application moteur.</p>
+    <ul>
+      <li><strong>Implantation par interruptions</strong> (diapo 28) : une seule pile pour toute l'application. Quand <code>H</code> interrompt la supervision, le contexte de <code>Supervision</code> est empilé, puis celui de <code>Diviseur</code>, puis les paramètres et le contexte de <code>GenePWM</code>, puis d'<code>Asservissement</code>… Chaque routine ne peut se terminer qu'après celles qui l'ont interrompue : les exécutions s'emboîtent strictement.</li>
+      <li><strong>Implantation avec exécutif</strong> (diapo 29) : une pile par tâche. Chaque tâche garde son état dans sa pile, et l'exécutif peut suspendre l'une pour en reprendre une autre dans n'importe quel ordre, selon les priorités.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>L'exécutif temps réel <span class="ref">diapos 30–37</span></h2>
+    <p>Dans une application multitâche, les tâches ne sont pas indépendantes : elles s'attendent, se partagent des données, s'échangent des résultats. L'exécutif fournit les mécanismes qui réalisent ces relations, et gère le processeur pour le compte des tâches.</p>
+
+    <h3>Les relations entre tâches <span class="ref">diapos 31–32</span></h3>
+    <p>Dans une application, les tâches sont liées par trois types de relations :</p>
+    <ul>
+      <li>la <dfn>synchronisation</dfn> : une notion d'ordre, de précédence dans les traitements ;</li>
+      <li>le <dfn>partage de variables</dfn> : un échange d'informations, de résultats, sans contrainte temporelle ;</li>
+      <li>le <dfn>lien de communication</dfn> : l'établissement d'une relation de type producteur-consommateur.</li>
+    </ul>
+    <table>
+      <caption>Du modèle fonctionnel à l'implantation (diapo 32)</caption>
+      <thead><tr><th>Dans le modèle fonctionnel</th><th>Dans l'implantation</th></tr></thead>
+      <tbody>
+        <tr><th>Fonction, action</th><td>tâche séquentielle cyclique, permanente ou temporaire ; son code est défini à partir de la description comportementale</td></tr>
+        <tr><th>Événement</th><td>relation de synchronisation</td></tr>
+        <tr><th>Variable partagée</th><td>relation de partage de variable</td></tr>
+        <tr><th>Port de communication</th><td>lien de communication : association d'une relation de synchronisation et d'un partage de variables (un port d'une place, un dépôt, un retrait)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Rôle et services de l'exécutif <span class="ref">diapos 33–34</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Exécutif temps réel</span></p>
+      <p>Un <dfn>exécutif temps réel</dfn> met des mécanismes de haut niveau (multitâche, synchronisation…) à la disposition de l'application. C'est une interface entre le niveau applicatif et le matériel : l'application l'appelle, et il gère la machine réelle (processeur, mémoire).</p>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 210" width="640" role="img" aria-labelledby="fig-couches-titre">
+        <title id="fig-couches-titre">L'application appelle l'exécutif temps réel, qui gère la machine réelle : processeur et mémoire</title>
+        <defs>
+          <marker id="fleche-couches" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="170" y="10" width="300" height="42"/>
+        <text x="320" y="36" text-anchor="middle" class="gras">Application</text>
+        <path class="trait" d="M250 52 V86" marker-end="url(#fleche-couches)"/>
+        <path class="trait" d="M320 52 V86" marker-end="url(#fleche-couches)"/>
+        <path class="trait" d="M390 52 V86" marker-end="url(#fleche-couches)"/>
+        <text x="480" y="74" class="t2">appels</text>
+        <rect class="boite-accent" x="170" y="88" width="300" height="42"/>
+        <text x="320" y="114" text-anchor="middle" class="gras accent">Exécutif temps réel</text>
+        <path class="accent" d="M320 130 V164" marker-end="url(#fleche-couches)"/>
+        <text x="480" y="152" class="t2">gestion</text>
+        <rect class="boite" x="170" y="166" width="300" height="42"/>
+        <text x="320" y="185" text-anchor="middle" class="gras">Machine réelle</text>
+        <text x="320" y="201" text-anchor="middle" class="t2">processeur, mémoire</text>
+      </svg>
+      <figcaption>Rôle de l'exécutif (diapo 33) : une couche entre l'application et le matériel.</figcaption>
+    </figure>
+    <p>L'exécutif apporte des services au programme (diapo 34) :</p>
+    <ul>
+      <li><strong>gestion des tâches</strong> : création, destruction, activation, arrêt ;</li>
+      <li><strong>gestion des synchronisations</strong> : génération, attente ;</li>
+      <li><strong>gestion des ressources partagées</strong> : allocation, libération ;</li>
+      <li><strong>gestion des transferts d'information</strong> : envoi d'un message ; attente, réception d'un message ;</li>
+      <li><strong>gestion du temps</strong> : attente d'un délai, activation périodique.</li>
+    </ul>
+    <p>Et il assure la <strong>gestion du processeur</strong>.</p>
+
+    <h3>Principe d'implantation <span class="ref">diapos 35–36</span></h3>
+    <p>Soit une application de trois fonctions : un événement matériel <code>Ev</code> déclenche <code>T0</code>, qui envoie un message à <code>T1</code> par un port <code>MESS</code> ; <code>T1</code> signale ensuite l'événement <code>Prêt</code> à <code>T2</code>. Avec un exécutif, chaque relation devient un appel de primitive :</p>
+    <table>
+      <caption>Traduction de l'application en tâches et primitives (diapo 35)</caption>
+      <thead><tr><th>Tâche</th><th>Rôle</th><th>Primitives</th></tr></thead>
+      <tbody>
+        <tr><th><code>Tit</code></th><td>tâche d'interruption, lancée par <code>Ev</code></td><td><code>Signal(EV)</code></td></tr>
+        <tr><th><code>T0</code></th><td>attend l'événement, puis envoie le message</td><td><code>Wait(EV)</code>, <code>Send(V, MESS)</code></td></tr>
+        <tr><th><code>T1</code></th><td>attend le message, puis prévient <code>T2</code></td><td><code>Receive(V, MESS)</code>, <code>Signal(Prêt)</code></td></tr>
+        <tr><th><code>T2</code></th><td>attend le signal de <code>T1</code></td><td><code>Wait(Prêt)</code></td></tr>
+        <tr><th>tâche de fond</th><td>s'exécute quand aucune autre tâche n'est prête</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <p>Les priorités vont de l'exécutif, le plus prioritaire, à <code>Tit</code>, <code>T0</code>, <code>T2</code>, <code>T1</code>, puis la tâche de fond. Le déroulement (diapo 36) :</p>
+    <ol class="etapes">
+      <li><strong>Initialisation</strong> : <code>T0</code> exécute <code>Wait(EV)</code>, <code>T2</code> <code>Wait(Prêt)</code>, <code>T1</code> <code>Receive(V, MESS)</code> ; les trois se bloquent, et la tâche de fond s'exécute.</li>
+      <li>L'événement <code>Ev</code> lance <code>Tit</code>, qui exécute <code>Signal(EV)</code> : <code>T0</code> devient prête et, plus prioritaire que la tâche de fond, prend le processeur.</li>
+      <li><code>T0</code> exécute <code>Send(V, MESS)</code> : <code>T1</code> devient prête, mais <code>T0</code> garde la main, puis se bloque sur <code>Wait(EV)</code>.</li>
+      <li><code>T1</code> s'exécute et fait <code>Signal(Prêt)</code> : <code>T2</code>, plus prioritaire, prend aussitôt le processeur, termine son traitement et se rebloque sur <code>Wait(Prêt)</code>.</li>
+      <li><code>T1</code> reprend, puis se bloque sur <code>Receive(V, MESS)</code> ; la tâche de fond reprend.</li>
+    </ol>
+    <p>Chaque appel de primitive passe par l'exécutif, qui décide à chaque fois quelle tâche reçoit le processeur.</p>
+
+    <h3>La machine virtuelle <span class="ref">diapo 37</span></h3>
+    <p>L'exécutif offre à l'application une <dfn>machine virtuelle</dfn> : au lieu du processeur, de la mémoire et des entrées-sorties (la machine réelle), les fonctions de l'application voient des mécanismes de haut niveau, partage de variable, synchronisation, transfert de message, gestion des tâches, tous réalisés à partir d'un mécanisme central, la gestion du processeur.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Gestion des tâches et ordonnancement <span class="ref">diapos 38–50</span></h2>
+    <p>Le processeur ne peut exécuter qu'une tâche à la fois. L'exécutif tient à jour l'état de chaque tâche et choisit, à chaque instant, celle qui s'exécute : c'est l'ordonnancement. Le choix de la politique décide si l'on peut prouver, avant l'exécution, que les contraintes de temps seront respectées.</p>
+
+    <h3>Les états d'une tâche <span class="ref">diapo 38</span></h3>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 680 270" width="680" role="img" aria-labelledby="fig-etats-titre">
+        <title id="fig-etats-titre">États d'une tâche : non opérationnelle, prête, en cours et en attente, avec les transitions démarrer, sélection, préemption, attente condition, occurrence condition, arrêter et terminer</title>
+        <defs>
+          <marker id="fleche-etats" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="270" y="15" width="160" height="42" rx="18"/>
+        <text x="350" y="33" text-anchor="middle" class="gras">Non opérationnelle</text>
+        <text x="350" y="50" text-anchor="middle" class="t2">(inactive)</text>
+        <rect class="boite-accent" x="130" y="112" width="130" height="38" rx="18"/>
+        <text x="195" y="136" text-anchor="middle" class="gras">Prête</text>
+        <rect class="boite" x="480" y="112" width="150" height="38" rx="18"/>
+        <text x="555" y="130" text-anchor="middle" class="gras">En attente</text>
+        <text x="555" y="145" text-anchor="middle" class="t2">(bloquée)</text>
+        <rect class="boite-accent" x="270" y="215" width="160" height="40" rx="18"/>
+        <text x="350" y="240" text-anchor="middle" class="gras">En cours (active)</text>
+        <path class="trait" d="M285 57 L215 110" marker-end="url(#fleche-etats)"/>
+        <text x="230" y="78" text-anchor="end">Démarrer</text>
+        <path class="trait" d="M240 112 L305 59" marker-end="url(#fleche-etats)"/>
+        <text x="282" y="100">Arrêter</text>
+        <path class="trait" d="M540 112 L425 59" marker-end="url(#fleche-etats)"/>
+        <text x="500" y="80">Arrêter</text>
+        <path class="trait" d="M478 131 H262" marker-end="url(#fleche-etats)"/>
+        <text x="422" y="108" text-anchor="middle">Occurrence</text>
+        <text x="422" y="123" text-anchor="middle">condition</text>
+        <path class="trait" d="M170 150 L285 213" marker-end="url(#fleche-etats)"/>
+        <text x="200" y="195" text-anchor="end">Sélection</text>
+        <text x="200" y="210" text-anchor="end" class="t2">(ordonnanceur)</text>
+        <path class="trait" d="M300 213 L220 152" marker-end="url(#fleche-etats)"/>
+        <text x="255" y="172">Préemption</text>
+        <text x="255" y="187" class="t2">(ordonnanceur)</text>
+        <path class="trait" d="M430 232 L560 152" marker-end="url(#fleche-etats)"/>
+        <text x="505" y="210">Attente condition</text>
+        <path class="trait" d="M365 213 V59" marker-end="url(#fleche-etats)"/>
+        <text x="373" y="190">Terminer</text>
+        <text x="373" y="205" class="t2">(tâche en cours)</text>
+      </svg>
+      <figcaption>Les états d'une tâche et leurs transitions (diapo 38). « Sélection » et « Préemption » sont décidées par l'ordonnanceur.</figcaption>
+    </figure>
+    <dl class="glossaire">
+      <dt>Non opérationnelle (inactive)</dt><dd>La tâche existe mais n'a pas été démarrée, ou a été arrêtée.</dd>
+      <dt>Prête</dt><dd>La tâche pourrait s'exécuter, mais le processeur est occupé par une autre.</dd>
+      <dt>En cours (active)</dt><dd>La tâche s'exécute ; une seule à la fois sur un monoprocesseur.</dd>
+      <dt>En attente (bloquée)</dt><dd>La tâche attend une condition : un événement, un message, une ressource, un délai.</dd>
+    </dl>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Préemption</span></p>
+      <p>La <dfn>préemption</dfn> (<span class="en" lang="en">preemption</span>) est la suspension d'une tâche en cours de traitement, au profit d'une autre, par l'ordonnanceur (diapo 41). La tâche préemptée repasse à l'état prêt.</p>
+    </div>
+
+    <h3>Caractérisation temporelle d'une tâche <span class="ref">diapos 39–40</span></h3>
+    <table>
+      <caption>Paramètres d'une tâche i (diapo 39)</caption>
+      <thead><tr><th>Paramètre</th><th>Sens</th></tr></thead>
+      <tbody>
+        <tr><th colspan="2">Paramètres statiques</th></tr>
+        <tr><td>\(T_i\)</td><td>période d'activation</td></tr>
+        <tr><td>\(d_i\)</td><td>échéance (<span class="en" lang="en">deadline</span>), définie à partir de la date d'éveil</td></tr>
+        <tr><td>\(C_i\)</td><td>charge : temps d'exécution sans préemption</td></tr>
+        <tr><td>\(D_i = C_i / d_i\)</td><td>taux d'occupation de la tâche</td></tr>
+        <tr><th colspan="2">Paramètres dynamiques</th></tr>
+        <tr><td>\(R_i(t)\)</td><td>délai critique (urgence) : temps qui reste jusqu'à l'échéance</td></tr>
+        <tr><td>\(C_i(t)\)</td><td>temps de traitement résiduel</td></tr>
+        <tr><td>\(CH_i(t) = C_i(t) / R_i(t)\)</td><td>charge dynamique</td></tr>
+      </tbody>
+    </table>
+    <p>Si \(d_i = T_i\), la tâche est dite <strong>à échéance sur requête</strong> : chaque activation doit être terminée avant la suivante.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 235" width="640" role="img" aria-labelledby="fig-ci-titre">
+        <title id="fig-ci-titre">Évolution du temps de traitement résiduel C i de t : il vaut C i à l'éveil, diminue quand la tâche est active, reste constant quand elle est prête, et doit atteindre 0 avant l'échéance d i ; la tâche est réveillée de nouveau une période T i plus tard</title>
+        <defs>
+          <marker id="fleche-ci" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <path class="trait" d="M60 170 H615" marker-end="url(#fleche-ci)"/>
+        <path class="trait" d="M60 170 V20" marker-end="url(#fleche-ci)"/>
+        <text x="68" y="25">C<tspan dy="4" font-size="11">i</tspan><tspan dy="-4">(t)</tspan></text>
+        <text x="600" y="160" text-anchor="end" class="t2">temps</text>
+        <text x="52" y="64" text-anchor="end">C<tspan dy="4" font-size="11">i</tspan></text>
+        <path class="pointille" d="M60 60 H80"/>
+        <path class="accent" d="M80 170 V60 L160 110 H215 L295 170 H440 V60 L520 110 H560 L600 135"/>
+        <text x="130" y="78" class="t2">actif</text>
+        <text x="188" y="104" text-anchor="middle" class="t2">prêt</text>
+        <text x="272" y="130" class="t2">actif</text>
+        <text x="410" y="163" text-anchor="middle" class="t2">bloqué</text>
+        <text x="80" y="186" text-anchor="middle" class="mono">Ev<tspan dy="4" font-size="11">i</tspan></text>
+        <text x="440" y="186" text-anchor="middle" class="mono">Ev<tspan dy="4" font-size="11">i</tspan></text>
+        <path class="pointille" d="M190 110 V170"/>
+        <text x="190" y="186" text-anchor="middle">t</text>
+        <path class="trait" d="M192 150 H378" marker-start="url(#fleche-ci)" marker-end="url(#fleche-ci)"/>
+        <text x="335" y="144">R<tspan dy="4" font-size="11">i</tspan><tspan dy="-4">(t)</tspan></text>
+        <path class="pointille" d="M380 60 V170"/>
+        <path class="trait" d="M82 205 H378" marker-start="url(#fleche-ci)" marker-end="url(#fleche-ci)"/>
+        <text x="230" y="200" text-anchor="middle">d<tspan dy="4" font-size="11">i</tspan><tspan dy="-4"> (échéance)</tspan></text>
+        <path class="trait" d="M82 226 H438" marker-start="url(#fleche-ci)" marker-end="url(#fleche-ci)"/>
+        <text x="455" y="230">T<tspan dy="4" font-size="11">i</tspan><tspan dy="-4"> (période)</tspan></text>
+      </svg>
+      <figcaption>Temps de traitement résiduel d'une tâche (diapo 39) : il décroît quand la tâche est active, reste constant quand elle est prête, et doit s'annuler avant l'échéance.</figcaption>
+    </figure>
+    <p>Pour une application complète (diapo 40), on superpose l'activité de toutes les tâches, et l'on définit deux taux :</p>
+    <div class="encadre">
+      \[ \text{taux d'occupation de l'application} = \sum_i D_i \qquad \text{taux d'occupation du processeur} = \sum_i D_i + \text{overhead}, \]
+    </div>
+    <p>où l'<dfn>overhead</dfn> est le temps consommé par l'exécutif lui-même (ordonnancement, changements de contexte).</p>
+
+    <h3>Politiques d'ordonnancement <span class="ref">diapo 41</span></h3>
+    <ul>
+      <li><strong>Non préemptif</strong> : une tâche garde le processeur jusqu'à ce qu'elle le rende. Par exemple FIFO (ordre d'arrivée), ou selon la durée de traitement.</li>
+      <li><strong>Préemptif</strong> :
+        <ul>
+          <li>« sans priorité » : le <strong>temps partagé</strong>, ou <span class="en" lang="en">Round Robin</span> ;</li>
+          <li><strong>selon priorité</strong> : statique (IFP), ou dynamique, fixée par l'utilisateur ou calculée selon l'urgence relative.</li>
+        </ul>
+      </li>
+    </ul>
+    <p>Seul l'ordonnancement préemptif selon priorité permet d'établir <em>a priori</em> le respect des contraintes de temps.</p>
+
+    <h3>Temps partagé <span class="ref">diapo 42</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Ordonnancement en temps partagé</span></p>
+      <p>L'ordonnancement en <dfn>temps partagé</dfn> (<span class="en" lang="en">Round Robin</span>, ou priorité tournante) alloue le processeur, à tour de rôle, pour une tranche de temps (<span class="en" lang="en">time slice</span>, ou <dfn>quantum</dfn>) à chaque tâche prête. À la fin de son quantum, la tâche en cours repasse en fin de file des tâches prêtes.</p>
+    </div>
+    <div class="atelier" id="c5-lecture-tourniquet" data-editeur="chronogramme">
+      <script type="application/json">
+      {
+        "titre": "Temps partagé, quantum de 1 : T1, T2, T3 de durées 3, 2 et 4",
+        "mode": "lecture",
+        "vue": "dessin",
+        "depart": ["temps 0..10", "etat x Exécution", "etat p Prêt", "T1 : xppxppx...", "T2 : pxppx.....", "T3 : ppxppxpxx."]
+      }
+      </script>
+    </div>
+    <p>À chaque unité, la tâche en cours (case pleine) passe derrière les tâches prêtes (cases hachurées) ; T2 termine à 5, T1 à 7, T3 à 9. La difficulté est de choisir la tranche de temps :</p>
+    <ul>
+      <li>trop courte, les changements de contexte se multiplient : l'<strong>overhead</strong> devient important ;</li>
+      <li>trop longue, le <strong>temps de réponse</strong> des tâches augmente.</li>
+    </ul>
+
+    <div class="bloc exercice" id="ex-1">
+      <p class="bloc-titre">Exercice 1 <span>Temps partagé avec un quantum de 2</span></p>
+      <p>Trois tâches T1, T2 et T3, de durées 3, 2 et 4, sont prêtes à t = 0, dans cet ordre. Tracer leur exécution en temps partagé avec un quantum de 2. Une tâche qui n'a pas fini à la fin de son quantum repasse en fin de file.</p>
+      <details class="indice"><summary>Indice</summary><p>Tenir à jour la file des tâches prêtes : au départ T1, T2, T3. Après chaque quantum, la tâche qui n'a pas fini se remet derrière les autres.</p></details>
+    </div>
+    <div class="atelier" id="c5-ex1-tourniquet" data-editeur="chronogramme">
+      <script type="application/json">
+      {
+        "titre": "Temps partagé, quantum de 2",
+        "consigne": "<p>Peindre, pour chaque tâche, les unités où elle s'exécute (x) et celles où elle attend le processeur (p). Laisser vide après la fin d'une tâche.</p>",
+        "vue": "dessin",
+        "options": { "processeurs": 1, "durees": { "T1": 3, "T2": 2, "T3": 4 } },
+        "depart": ["temps 0..10", "etat x Exécution", "etat p Prêt", "T1 :", "T2 :", "T3 :"],
+        "solution": ["temps 0..10", "etat x Exécution", "etat p Prêt", "T1 : xxppppx...", "T2 : ppxx......", "T3 : ppppxxpxx."],
+        "explication": "<p>File au départ : T1, T2, T3. T1 s'exécute de 0 à 2 et repasse en fin de file (reste 1). T2 s'exécute de 2 à 4 et termine. T3 s'exécute de 4 à 6 (reste 2) et repasse derrière T1. T1 termine de 6 à 7, puis T3 de 7 à 9. Avec un quantum de 1, T2 finissait à 5 au lieu de 4 et T1 à 7 comme ici : le quantum change l'ordre des fins.</p>"
+      }
+      </script>
+    </div>
+
+    <h3>Ordonnancement à priorité fixe <span class="ref">diapos 43–44</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Ordonnancement à priorité fixe</span></p>
+      <p>Chaque fonction reçoit un niveau de priorité lors de sa création, et l'ordonnanceur rend active (en cours) la tâche prête de plus forte priorité. L'ordonnancement est dit <dfn>Intelligent Fixed Priority</dfn> (IFP) si la priorité dépend de la fréquence d'activation :
+      \[ P_i = f\!\left(\frac{1}{T_i}\right), \]
+      c'est-à-dire que plus une tâche est fréquente, plus elle est prioritaire.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Rate Monotonic</span> <span class="badge hors-programme">Hors programme</span></p>
+      <p>Dans la littérature, cet ordonnancement s'appelle <span class="en" lang="en">Rate Monotonic</span> (RM) : Liu et Layland (1973) ont montré qu'il est optimal parmi les ordonnancements à priorités fixes, et établi la borne qui suit.</p>
+    </div>
+    <p>Dans l'exemple de la diapo 43, une horloge alimente deux diviseurs qui activent A1 et A2 : A1 a un taux d'occupation \(D_1 = 25\,\%\) et une période \(T_1 = 3T\), A2 a \(D_2 = 50\,\%\) et \(T_2 = 2T\). A2, plus fréquente, est plus prioritaire.</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Limites de la priorité fixe (diapo 44)</span></p>
+      <ul>
+        <li>Implantation simple (une liste ordonnée des tâches à l'état prêt) : faible overhead.</li>
+        <li>Algorithme non optimal ; IFP est optimal parmi les algorithmes à priorité fixe.</li>
+        <li>Taux d'occupation maximum du processeur qui garantit le respect des échéances, pour \(n\) tâches :
+          \[ \sum_{i=1}^{n} D_i \le n\,\left(2^{1/n} - 1\right). \]
+        </li>
+      </ul>
+    </div>
+    <table class="centre">
+      <caption>La borne de Liu et Layland</caption>
+      <thead><tr><th>n</th><th>2</th><th>3</th><th>4</th><th>10</th><th>n grand</th></tr></thead>
+      <tbody>
+        <tr><th>\(n(2^{1/n}-1)\)</th><td>82,8 %</td><td>78,0 %</td><td>75,7 %</td><td>71,8 %</td><td>\(\ln 2 \approx 69,3\,\%\)</td></tr>
+      </tbody>
+    </table>
+    <p>La diapo arrondit à 83 %, 77 % et ≈ 70 %. Pour \(n = 3\), \(3(2^{1/3} - 1) = 0{,}7798\), soit 78 % : les 77 % de la diapo sont une valeur tronquée.</p>
+    <p>Sur l'exemple de la diapo 44 (T2 : \(C_2 = 2\), \(T_2 = 4\), soit \(D_2 = 50\,\%\) ; T1 : \(T_1 = 6\)), la priorité fixe donne T2 prioritaire. Avec \(D_1 = 33\,\%\), le total vaut 83 % : tout passe. Avec \(D_1 = 50\,\%\), le total vaut 100 %, au-delà de la borne, et T1 manque son échéance.</p>
+    <div class="atelier" id="c5-lecture-ifp" data-editeur="chronogramme">
+      <script type="application/json">
+      {
+        "titre": "Priorité fixe : T2 (C = 2, T = 4) prioritaire sur T1 (T = 6)",
+        "mode": "lecture",
+        "vue": "dessin",
+        "depart": ["temps 0..12", "etat x Exécution", "etat p Prêt", "T2 : xx..xx..xx..", "T1, D1 = 33 % : ppxx..xx....", "T1, D1 = 50 % : ppxxpp"]
+      }
+      </script>
+    </div>
+    <p>Cases pleines : exécution ; cases hachurées : tâche prête. Avec \(D_1 = 50\,\%\) (\(C_1 = 3\)), T1 n'obtient le processeur qu'entre 2 et 4 : T2 le reprend à t = 4, et à t = 6, échéance de T1, il lui manque encore une unité.</p>
+
+    <div class="bloc exercice" id="ex-2">
+      <p class="bloc-titre">Exercice 2 <span>Priorité fixe, l'exemple de la diapo 43</span></p>
+      <p>On prend \(T = 4\) : A1 a une période de 12 et une charge de 3 (25 %), A2 une période de 8 et une charge de 4 (50 %). Les deux tâches sont activées à t = 0, puis à chaque début de période. Tracer l'ordonnancement IFP de 0 à 24.</p>
+      <details class="indice"><summary>Indice</summary><p>A2, de plus petite période, est la plus prioritaire : elle prend le processeur dès qu'elle est activée. A1 utilise les trous.</p></details>
+    </div>
+    <div class="atelier" id="c5-ex2-ifp" data-editeur="chronogramme">
+      <script type="application/json">
+      {
+        "titre": "Priorité fixe (IFP) de 0 à 24",
+        "consigne": "<p>Peindre les unités d'exécution (x) et d'attente du processeur (p) de chaque tâche. Une tâche terminée reste vide jusqu'à sa prochaine activation.</p>",
+        "vue": "dessin",
+        "options": { "processeurs": 1, "durees": { "A1": 6, "A2": 12 } },
+        "depart": ["temps 0..24", "etat x Exécution", "etat p Prêt", "A1 :", "A2 :"],
+        "solution": ["temps 0..24", "etat x Exécution", "etat p Prêt", "A1 : ppppxxx.....xxx.........", "A2 : xxxx....xxxx....xxxx...."],
+        "explication": "<p>A2 s'exécute à chaque activation (0, 8, 16), pendant 4 unités. A1, activée à 0, attend la fin de A2 puis s'exécute de 4 à 7 ; activée à 12, elle trouve le processeur libre et s'exécute de 12 à 15. Le taux d'occupation vaut 75 %, sous la borne de 82,8 % pour deux tâches : aucune échéance n'est manquée, et le processeur est libre un quart du temps.</p>"
+      }
+      </script>
+    </div>
+
+    <h3>Ordonnancement à priorité dynamique <span class="ref">diapo 45</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Urgence relative</span></p>
+      <p>L'algorithme dit à <dfn>urgence relative</dfn> (RU) affecte le processeur à la tâche prête dont le délai critique \(R_i(t)\) est le plus faible, c'est-à-dire celle dont l'échéance est la plus proche.</p>
+    </div>
+    <ul>
+      <li>Algorithme <strong>optimal</strong> : il ordonnance correctement toute application dont le taux d'occupation est inférieur à 100 %.</li>
+      <li>Implantation complexe (calcul du délai critique à chaque décision) : <strong>overhead important</strong>.</li>
+    </ul>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Earliest Deadline First</span> <span class="badge hors-programme">Hors programme</span></p>
+      <p>Choisir la tâche de plus petit délai critique revient à choisir celle d'échéance la plus proche : c'est l'algorithme <span class="en" lang="en">Earliest Deadline First</span> (EDF) de la littérature. Pour des tâches à échéance sur requête, il respecte toutes les échéances dès que \(\sum D_i \le 100\,\%\).</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-3">
+      <p class="bloc-titre">Exercice 3 <span>Urgence relative, l'exemple de la diapo 45</span></p>
+      <p>On reprend les deux tâches qui mettaient la priorité fixe en échec : T1 (\(C_1 = 3\), \(T_1 = 6\)) et T2 (\(C_2 = 2\), \(T_2 = 4\)), soit 100 % d'occupation, à échéance sur requête. Tracer l'ordonnancement à urgence relative de 0 à 12. En cas d'égalité des délais critiques, la tâche en cours garde le processeur.</p>
+      <details class="indice"><summary>Indice</summary><p>À chaque activation et à chaque fin de tâche, comparer les prochaines échéances des tâches prêtes : 4 et 6 à t = 0, 8 et 6 à t = 4…</p></details>
+    </div>
+    <div class="atelier" id="c5-ex3-ru" data-editeur="chronogramme">
+      <script type="application/json">
+      {
+        "titre": "Urgence relative de 0 à 12",
+        "consigne": "<p>Peindre les unités d'exécution (x) et d'attente du processeur (p) de chaque tâche.</p>",
+        "vue": "dessin",
+        "options": { "processeurs": 1, "durees": { "T1": 6, "T2": 6 } },
+        "depart": ["temps 0..12", "etat x Exécution", "etat p Prêt", "T1 :", "T2 :"],
+        "solution": ["temps 0..12", "etat x Exécution", "etat p Prêt", "T1 : ppxxx.pxxx..", "T2 : xx..pxx.ppxx"],
+        "explication": "<p>À t = 0, T2 (échéance 4) passe avant T1 (échéance 6). À t = 4, T2 est réactivée avec l'échéance 8, mais T1, d'échéance 6, est plus urgente : elle termine à 5, et respecte son échéance, contrairement à la priorité fixe. T2 s'exécute de 5 à 7. À t = 6, T1 est réactivée (échéance 12) et s'exécute à 7. À t = 8, les deux échéances valent 12 : T1, en cours, garde le processeur jusqu'à 10, puis T2 termine à 12. Le processeur est occupé à 100 % et aucune échéance n'est manquée. Donner la main à T2 à t = 8 est aussi juste.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice" id="ex-4">
+      <p class="bloc-titre">Exercice 4 <span>Tester avant d'exécuter</span></p>
+      <ol type="a">
+        <li>Trois tâches ont pour charge et période (1, 4), (1, 5) et (2, 10). Sont-elles ordonnançables par IFP d'après la borne de la diapo 44 ?</li>
+        <li>On ajoute une tâche (1, 8). Que dit la borne ? Peut-on conclure ?</li>
+      </ol>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <ol type="a">
+          <li>\(\sum D_i = \frac14 + \frac15 + \frac{2}{10} = 0{,}65 \le 3(2^{1/3} - 1) \approx 0{,}78\) : les échéances sont garanties.</li>
+          <li>\(\sum D_i = 0{,}65 + \frac18 = 0{,}775\), au-dessus de \(4(2^{1/4} - 1) \approx 0{,}757\). La borne ne garantit plus rien, mais elle est seulement <em>suffisante</em> : on ne peut pas conclure sans tracer l'ordonnancement. Ici, la simulation sur l'hyperpériode (40 unités) montre qu'aucune échéance n'est manquée. Au-delà de 100 %, en revanche, aucun ordonnancement ne peut réussir.</li>
+        </ol>
+      </details>
+    </div>
+
+    <h3>Descripteur de tâche et structure de l'exécutif <span class="ref">diapos 46–48</span></h3>
+    <p>Le descripteur doit permettre d'identifier totalement chaque tâche (diapo 46). Il contient :</p>
+    <ul>
+      <li>un <strong>identificateur</strong> ;</li>
+      <li>un <strong>pointeur vers le contexte</strong>, où sont sauvegardés les registres du processeur, dont <code>SP</code> et <code>PC</code> ;</li>
+      <li>des <strong>informations pour l'ordonnanceur</strong>, selon la politique : la priorité pour une priorité fixe (IFP) ; la période d'activation et la date de prochaine activation pour une priorité dynamique (RU) ;</li>
+      <li>un champ <strong>suivant</strong>, qui chaîne les descripteurs entre eux.</li>
+    </ul>
+    <p>L'état d'une tâche n'est pas stocké : il est modélisé implicitement par le <strong>chaînage</strong>. Une tâche est prête si son descripteur est dans la liste des tâches prêtes (la tête de liste étant la tâche en cours), bloquée s'il est dans la liste d'attente d'un événement. Sur l'exemple de la diapo 47, T1 (priorité 2) signale l'événement <code>Ev</code> attendu par T2 (priorité 1) et T3 (priorité 4) :</p>
+    <table>
+      <caption>Évolution des listes quand T1 émet Ev (diapo 47)</caption>
+      <thead><tr><th>Liste</th><th>Avant l'émission de Ev</th><th>Après l'émission de Ev</th></tr></thead>
+      <tbody>
+        <tr><th>Prêt (tête = en cours)</th><td>T1 (2)</td><td>T3 (4) → T1 (2) → T2 (1)</td></tr>
+        <tr><th>Ev</th><td>T3 (4) → T2 (1)</td><td>vide</td></tr>
+      </tbody>
+    </table>
+    <p>Les deux tâches réveillées sont insérées dans la liste des prêtes selon leur priorité ; T3, la plus prioritaire, passe en tête et devient la tâche en cours : T1 est préemptée.</p>
+    <p>La structure générale d'un exécutif (diapo 48) : les tâches de l'application et leurs relations appellent des <strong>primitives</strong> ; celles-ci manipulent les <strong>descripteurs</strong> et appellent l'<strong>ordonnanceur</strong>, qui gère la liste des tâches prêtes ; un gestionnaire d'interruptions (Gest. IT) et un gestionnaire d'entrées-sorties (Gest. ES) reçoivent les événements extérieurs et agissent eux aussi sur les descripteurs et l'ordonnanceur.</p>
+
+    <h3>Les primitives <span class="ref">diapos 49–50</span></h3>
+    <p>Une primitive se déroule toujours de la même façon (diapo 49), qu'elle soit appelée par l'application ou déclenchée par une interruption :</p>
+    <div class="colonnes">
+      <div>
+        <p><strong>Primitive pour l'utilisateur</strong> (appel procédural)</p>
+        <ol class="etapes">
+          <li>Appel de l'exécutif (ETR).</li>
+          <li>Sauvegarde du contexte.</li>
+          <li>Traitement de la primitive.</li>
+          <li>Ordonnanceur.</li>
+          <li>Restitution du contexte, retour à l'application.</li>
+        </ol>
+      </div>
+      <div>
+        <p><strong>Primitive de gestion interne</strong> (interruption)</p>
+        <ol class="etapes">
+          <li>Interruption.</li>
+          <li>Sauvegarde du contexte.</li>
+          <li>Opérations spécifiques.</li>
+          <li>Ordonnanceur.</li>
+          <li>Restitution du contexte, retour à l'application.</li>
+        </ol>
+      </div>
+    </div>
+    <p>Le contexte restitué n'est pas forcément celui qui a été sauvegardé : si l'ordonnanceur a élu une autre tâche, c'est son contexte qui est chargé, et c'est elle qui reprend.</p>
+    <table>
+      <caption>Exemples de primitives de gestion des tâches (diapo 50)</caption>
+      <thead><tr><th>Fonction</th><th>Exécutif Turbo Pascal</th><th>wVRTX</th><th>A6RMTR</th></tr></thead>
+      <tbody>
+        <tr><th>Démarrer</th><td><code>Start(@Proc, Pid, Priorité)</code></td><td><code>sc_create(Task, wTid, wPri, Error)</code></td><td><code>Create_task(Task_id, Task_def, Task_code)</code></td></tr>
+        <tr><th>Arrêt</th><td><code>Stop()</code></td><td><code>sc_tdelete(wTid, 0, Error)</code></td><td><code>Abort_task()</code></td></tr>
+        <tr><th>Priorité</th><td><code>Set_priority(New_prior)</code>, <code>Reset_priority()</code></td><td><code>sc_tpriority(wTid, wPri, Error)</code></td><td><code>Set_priority(Task_id, priority)</code></td></tr>
+        <tr><th>Suspension</th><td>—</td><td><code>sc_tsuspend(wTid, Option, Error)</code>, <code>sc_tresume(wTid, Option, Error)</code></td><td>—</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Synchronisation <span class="ref">diapos 51–58</span></h2>
+    <p>Une tâche doit souvent attendre qu'une autre ait fait quelque chose. Cette partie montre comment réaliser l'attente, pourquoi les procédures de l'exécutif doivent être indivisibles, et compare les trois mécanismes : l'événement, le sémaphore et le rendez-vous.</p>
+
+    <h3>La relation de synchronisation <span class="ref">diapos 51–52</span></h3>
+    <p>A1 exécute <code>signaler(Ev)</code>, A2 exécute <code>attendre(Ev)</code> (diapo 51). Si A2 arrive la première au point de synchronisation, elle passe à l'état bloqué ; l'apparition de l'événement la rend prête, puis active quand l'ordonnanceur la choisit. A1, elle, ne se bloque jamais.</p>
+    <table>
+      <caption>Les différentes implantations de la synchronisation (diapo 52)</caption>
+      <thead><tr><th>Critère</th><th>Variantes</th></tr></thead>
+      <tbody>
+        <tr><th>Mémorisation</th><td>sans : comme une interruption sur front (événement <strong>fugace</strong>) ; avec : comme une interruption sur niveau (événement <strong>persistant</strong>)</td></tr>
+        <tr><th>Action</th><td>directe : <code>signaler(Ev, A2)</code>, on désigne la tâche ; indirecte : <code>signaler(Ev)</code>, toute tâche qui attend <code>Ev</code> peut en profiter</td></tr>
+        <tr><th>Comportement</th><td>événement, sémaphore, rendez-vous</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Indivisibilité : la notion de primitive <span class="ref">diapos 53–54</span></h3>
+    <p>Soient deux tâches cycliques sur le même processeur, avec un ordonnancement par priorité fixe, A1 plus prioritaire que A2 :</p>
+    <div class="colonnes">
+<pre data-fichier="A1"><code class="language-plaintext">cycle
+  attendre(H, A1);
+  signaler(Ev, A2);
+  traitement_A1;
+end_cycle</code></pre>
+<pre data-fichier="A2"><code class="language-plaintext">cycle
+  attendre(Ev, A2);
+  traitement_A2;
+end_cycle</code></pre>
+    </div>
+    <p>Conditions initiales : <code>Ev = 0</code>, A1 bloquée (sur <code>H</code>), A2 en cours. Les procédures, écrites naïvement, ressemblent à ceci (diapo 54) :</p>
+<pre><code class="language-plaintext">attendre(Ev, A) :  if (*Ev &gt; 0) *Ev = *Ev - 1;
+                   else A-&gt;Etat = Bloqué;
+
+signaler(Ev, A) :  if (A-&gt;Etat == Bloqué) A-&gt;Etat = Prêt;
+                   else *Ev = *Ev + 1;</code></pre>
+    <p>A2 appelle <code>attendre(Ev, A2)</code> : le test <code>*Ev &gt; 0</code> est faux, elle passe dans le <code>else</code>… et l'interruption <code>H</code> survient avant qu'elle ait écrit <code>A2-&gt;Etat = Bloqué</code>. A1, plus prioritaire, prend la main et exécute <code>signaler(Ev, A2)</code> : A2 n'étant pas encore bloquée, A1 incrémente <code>Ev</code>, fait son traitement et se rebloque sur <code>H</code>. A2 reprend là où elle s'était arrêtée et se bloque, alors que <code>Ev</code> vaut 1 : l'événement est manqué, et A2 attendra le suivant.</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Primitive</span></p>
+      <p>Les procédures de gestion de l'exécutif doivent s'exécuter de façon <strong>indivisible</strong> : aucune autre tâche ne doit pouvoir s'intercaler au milieu. Une procédure indivisible s'appelle une <dfn>primitive</dfn>.</p>
+    </div>
+
+    <h3>Synchronisation par événement <span class="ref">diapo 55</span></h3>
+    <p>L'événement, présent dans les exécutifs Psos et Sceptre, est :</p>
+    <ul>
+      <li>un mécanisme à <strong>action directe</strong> ;</li>
+      <li>avec une <strong>mémorisation à 2 états</strong> (arrivé, non arrivé) ;</li>
+      <li>avec une <strong>possibilité de perte d'événements</strong> ;</li>
+      <li>manipulé par les procédures <code>Signal</code> et <code>Wait</code>.</li>
+    </ul>
+    <p>Exemple : A1, activée par l'horloge <code>H</code>, signale <code>Ev</code> à A2 à chaque cycle. Si A2 est lente, <code>Ev</code> est déjà à l'état « arrivé » quand A1 le signale de nouveau : ce second signal n'ajoute rien, l'événement est perdu.</p>
+
+    <h3>Synchronisation par sémaphore <span class="ref">diapo 56</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Sémaphore</span></p>
+      <p>Un <dfn>sémaphore</dfn> (<span class="en" lang="en">semaphore</span>) est un mécanisme à action indirecte, dont la mémorisation est un compteur, manipulé par deux procédures : <code>Signal</code> (ou <code>V</code>) incrémente le compteur, ou réveille une tâche en attente ; <code>Wait</code> (ou <code>P</code>) le décrémente s'il est positif, ou bloque la tâche sinon.</p>
+    </div>
+    <p>Exemple : A1, activée par <code>H</code>, fait <code>Signal(Ev)</code> ; A2 et A3 font toutes deux <code>Wait(Ev)</code>. Chaque signal ne libère qu'une tâche : A2, arrivée la première, repart ; A3 reste bloquée jusqu'au signal suivant. Contrairement à l'événement, aucun signal n'est perdu : le compteur les mémorise tous.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>P et V</span></p>
+      <p>Les sémaphores ont été inventés par Dijkstra (1965). Les lettres P et V viennent du néerlandais : <em>proberen</em> (essayer) pour <code>Wait</code> et <em>verhogen</em> (augmenter) pour <code>Signal</code>. En C sous POSIX, ce sont <code>sem_wait</code> et <code>sem_post</code>.</p>
+    </div>
+
+    <h3>Synchronisation par rendez-vous <span class="ref">diapo 57</span></h3>
+    <p>Le <dfn>rendez-vous</dfn>, proposé par les langages ADA, OCCAM et CSP, bloque le premier demandeur en attente du second : les deux tâches doivent être présentes au même moment. En ADA, A2 déclare une entrée <code>Ev</code> ; A1 l'appelle (<code>A2.Ev</code>) et A2 l'accepte (<code>accept Ev</code>) :</p>
+    <div class="colonnes">
+<pre data-fichier="A1 (ADA)"><code class="language-plaintext">task body A1 is
+begin
+  loop
+    ...
+    A2.Ev;
+    ...
+  end loop
+end A1;</code></pre>
+<pre data-fichier="A2 (ADA)"><code class="language-plaintext">task A2 is
+  entry Ev;
+end;
+task body A2 is
+begin
+  loop
+    ...
+    accept Ev;
+    ...
+  end loop
+end A2;</code></pre>
+    </div>
+    <p>Si A1 arrive la première à <code>A2.Ev</code>, elle attend que A2 atteigne <code>accept Ev</code> ; si c'est A2, elle attend l'appel de A1. Dans les deux cas, les deux tâches repartent ensemble.</p>
+    <table>
+      <caption>Exemples de primitives de gestion des sémaphores (diapo 58)</caption>
+      <thead><tr><th>Fonction</th><th>Exécutif Turbo Pascal</th><th>wVRTX</th><th>A6RMTR</th></tr></thead>
+      <tbody>
+        <tr><th>Initialisation</th><td><code>Seminit(Sem, valeur)</code></td><td><code>Sem_id = sc_screate(Init, Option, Error)</code></td><td><code>Init_Semaphore(Sem_id, Type, Unités)</code></td></tr>
+        <tr><th>Destruction</th><td>—</td><td><code>sc_sdelete(Sem_id, Option, Error)</code></td><td>—</td></tr>
+        <tr><th>« Signal »</th><td><code>Signal(Sem)</code></td><td><code>sc_post(Sem_id, Error)</code></td><td><code>Send_Signal(Sem_id, Unités)</code></td></tr>
+        <tr><th>« Wait »</th><td><code>Wait(Sem)</code></td><td><code>sc_pend(Sem_id, T_out, Error)</code></td><td><code>Receive_Signal(Sem_id, Unités, delai)</code></td></tr>
+        <tr><th>Consultation</th><td>—</td><td><code>Val = sc_inquiry(Sem_id, Error)</code></td><td><code>Receive_Signal(Sem_id, Unités, 0)</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Partage de ressources <span class="ref">diapos 59–66</span></h2>
+    <p>Quand deux tâches manipulent la même ressource (une variable, un périphérique), l'une ne doit pas s'intercaler au milieu de l'accès de l'autre, sous peine de laisser la ressource dans un état incohérent. Il faut protéger chaque accès par une section critique.</p>
+
+    <h3>Section critique <span class="ref">diapo 59</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Section critique</span></p>
+      <p>Une <dfn>section critique</dfn> (<span class="en" lang="en">critical section</span>) est une portion de code qui accède à une ressource partagée, et qu'une seule tâche à la fois peut exécuter : c'est l'<dfn>exclusion mutuelle</dfn>. Chaque tâche encadre son accès par une demande (<code>Request(Res)</code>) et une libération (<code>Release(Res)</code>).</p>
+    </div>
+
+    <h3>Section critique courte ou longue <span class="ref">diapos 60–61</span></h3>
+    <table>
+      <caption>Implantation d'une section critique (diapo 60)</caption>
+      <thead><tr><th>Section critique</th><th>Moyen</th><th>Inconvénient</th></tr></thead>
+      <tbody>
+        <tr><th rowspan="2">Courte</th><td>invalidation des interruptions</td><td>perte d'événements possible</td></tr>
+        <tr><td>augmentation temporaire de la priorité</td><td>retard dans le traitement de tâches non concernées par la ressource</td></tr>
+        <tr><th rowspan="2">Longue</th><td>invalider les interruptions est impossible ; augmentation temporaire de la priorité</td><td>même retard des tâches non concernées</td></tr>
+        <tr><td>contrôle de l'exécution des tâches</td><td>c'est le rôle des mécanismes qui suivent (attente active ou passive)</td></tr>
+      </tbody>
+    </table>
+    <p>La diapo 61 illustre la protection par modification de priorité : A1 (priorité 15) et A3 (priorité 5) partagent <code>Res</code> ; A2 (priorité 10) ne l'utilise pas. Pendant son accès, A3 passe à la priorité 30.</p>
+    <ul>
+      <li><strong>Comportement « normal »</strong> : A3 est dans <code>AccesRes</code> quand <code>Ev1</code> réveille A1 ; A1 attend la fin de l'accès de A3, puis enchaîne <code>A1_1</code>, <code>AccesRes</code>, <code>A1_2</code>, et A3 termine ensuite <code>A3_2</code>. L'accès reste cohérent.</li>
+      <li><strong>Retard de fonctions non concernées</strong> : si <code>Ev2</code> réveille A2 pendant l'accès de A3, A2, pourtant plus prioritaire que A3 et sans rapport avec <code>Res</code>, doit attendre la fin de la section critique.</li>
+    </ul>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>L'inversion de priorité</span> <span class="badge hors-programme">Hors programme</span></p>
+      <p>Sans élévation de priorité, le problème est pire : A3 tient <code>Res</code>, A1 se bloque en la demandant, et A2, de priorité intermédiaire, préempte A3 aussi longtemps qu'elle veut. A1, la plus prioritaire, attend alors A2, qui n'a rien à voir avec la ressource : c'est l'<dfn>inversion de priorité</dfn>. Elle a provoqué des redémarrages répétés du robot Mars Pathfinder en 1997. Le remède classique, l'héritage de priorité, donne à A3 la priorité de A1 tant que A1 l'attend.</p>
+    </div>
+
+    <h3>Attente active <span class="ref">diapos 62–63</span></h3>
+    <p>En <dfn>attente active</dfn>, la tâche utilise le processeur pour attendre. À chaque ressource est associé un verrou :</p>
+<pre data-fichier="attente active"><code class="language-c">typedef struct var_part {
+    Boolean libre;
+    Valeur Val;
+} Var_part;
+
+procedure Request (Var_part *V)
+{
+    while (!V-&gt;libre);
+    V-&gt;libre = False;
+};
+
+procedure Release (Var_part *V)
+{
+    V-&gt;libre = True;
+};</code></pre>
+    <p>Tel quel, <code>Request</code> n'est pas sûr : deux tâches peuvent voir <code>libre</code> vrai l'une après l'autre avant que la première ne le passe à faux. L'indivisibilité des primitives se réalise par :</p>
+    <ul>
+      <li>l'invalidation des interruptions ;</li>
+      <li>l'augmentation de la priorité ;</li>
+      <li>l'exécution de plusieurs opérations en un seul « cycle machine », grâce à une instruction spéciale du processeur.</li>
+    </ul>
+    <p>Utilisation de l'attente active (diapo 63) :</p>
+    <ul>
+      <li><strong>cas monoprocesseur</strong> : risque de blocage complet de l'application. Si la tâche qui boucle est plus prioritaire que celle qui tient le verrou, celle-ci ne s'exécute plus et ne le libère jamais ;</li>
+      <li><strong>cas multiprocesseur</strong> : l'indivisibilité est nécessaire pour les accès à la variable commune, et le processeur est sous-exploité en cas de section critique longue.</li>
+    </ul>
+    <div class="colonnes">
+<pre data-fichier="680x0 : test et modification"><code class="language-plaintext">Deb  TAS  libre
+     BNE  Deb</code></pre>
+<pre data-fichier="80x86 : lecture, test, modification"><code class="language-x86asm">Deb  MOVE  AL,0
+     LOCK
+     XCHG  AL, libre
+     TEST  AL, AL
+     JZ    Deb</code></pre>
+    </div>
+    <p><code>TAS</code> (<span class="en" lang="en">test and set</span>) teste un octet et positionne son bit de poids fort dans la même instruction. Sur 80x86, <code>XCHG</code> échange le registre et la variable en une instruction, et le préfixe <code>LOCK</code> verrouille le bus pendant ce temps : la lecture et l'écriture ne peuvent pas être séparées.</p>
+    <p>Les deux codes n'utilisent pas la même convention. Avec <code>TAS</code>, la boucle continue si l'octet était non nul : il vaut 0 quand la ressource est libre. Avec <code>XCHG</code>, la boucle continue si l'ancienne valeur était 0 : il vaut 1 quand la ressource est libre, comme le nom <code>libre</code> l'indique. Par ailleurs, l'instruction de transfert du 80x86 s'écrit <code>MOV</code> ; <code>MOVE</code> est la syntaxe du 680x0.</p>
+
+    <h3>Attente passive : le sémaphore d'exclusion mutuelle <span class="ref">diapo 64</span></h3>
+    <p>En <dfn>attente passive</dfn>, la tâche qui attend est bloquée et libère le processeur. On utilise un sémaphore appelé <dfn>sémaphore d'exclusion mutuelle</dfn> (<span class="en" lang="en">mutex</span>), initialisé à 1 :</p>
+<pre data-fichier="attente passive"><code class="language-c">typedef struct var_part {
+    Semaphore Mutex;
+    Valeur Val;
+} Var_part;
+
+/* Request(v)  ≡  Wait(V.Mutex)   */
+/* Release(v)  ≡  Signal(V.Mutex) */</code></pre>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 250" width="640" role="img" aria-labelledby="fig-mutex-titre">
+        <title id="fig-mutex-titre">Réseau de Petri de l'exclusion mutuelle : la place Mutex, marquée d'un jeton, alimente la transition d'entrée en section critique de A1 et de A2 ; chaque transition de sortie rend le jeton</title>
+        <defs>
+          <marker id="fleche-mutex" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="160" y="18" text-anchor="middle" class="gras">A1</text>
+        <text x="480" y="18" text-anchor="middle" class="gras">A2</text>
+        <circle class="boite" cx="160" cy="45" r="14"/>
+        <circle class="boite" cx="480" cy="45" r="14"/>
+        <path class="trait" d="M160 59 V76" marker-end="url(#fleche-mutex)"/>
+        <path class="trait" d="M480 59 V76" marker-end="url(#fleche-mutex)"/>
+        <rect class="plein" x="135" y="78" width="50" height="5"/>
+        <rect class="plein" x="455" y="78" width="50" height="5"/>
+        <text x="125" y="84" text-anchor="end" class="mono">Request</text>
+        <text x="515" y="84" class="mono">Request</text>
+        <path class="trait" d="M160 83 V104" marker-end="url(#fleche-mutex)"/>
+        <path class="trait" d="M480 83 V104" marker-end="url(#fleche-mutex)"/>
+        <circle class="boite-accent" cx="160" cy="120" r="14"/>
+        <circle class="boite-accent" cx="480" cy="120" r="14"/>
+        <text x="125" y="124" text-anchor="end" class="t2">section critique</text>
+        <text x="515" y="124" class="t2">section critique</text>
+        <path class="trait" d="M160 134 V152" marker-end="url(#fleche-mutex)"/>
+        <path class="trait" d="M480 134 V152" marker-end="url(#fleche-mutex)"/>
+        <rect class="plein" x="135" y="154" width="50" height="5"/>
+        <rect class="plein" x="455" y="154" width="50" height="5"/>
+        <text x="125" y="160" text-anchor="end" class="mono">Release</text>
+        <text x="515" y="160" class="mono">Release</text>
+        <path class="trait" d="M160 159 V180" marker-end="url(#fleche-mutex)"/>
+        <path class="trait" d="M480 159 V180" marker-end="url(#fleche-mutex)"/>
+        <circle class="boite" cx="160" cy="196" r="14"/>
+        <circle class="boite" cx="480" cy="196" r="14"/>
+        <circle class="boite-accent" cx="320" cy="118" r="18"/>
+        <circle class="plein-accent" cx="320" cy="118" r="5"/>
+        <text x="320" y="90" text-anchor="middle" class="gras">Mutex</text>
+        <path class="accent" d="M303 112 L188 82" marker-end="url(#fleche-mutex)"/>
+        <path class="accent" d="M337 112 L452 82" marker-end="url(#fleche-mutex)"/>
+        <path class="accent" d="M188 156 L304 126" marker-end="url(#fleche-mutex)"/>
+        <path class="accent" d="M452 156 L336 126" marker-end="url(#fleche-mutex)"/>
+        <text x="320" y="238" text-anchor="middle" class="t2">Request(v) ≡ Wait(V.Mutex) · Release(v) ≡ Signal(V.Mutex) · Mutex initialisé à 1</text>
+      </svg>
+      <figcaption>Exclusion mutuelle par sémaphore (diapo 64) : le jeton de <code>Mutex</code> ne peut être pris que par une tâche à la fois.</figcaption>
+    </figure>
+
+    <h3>Attente passive à l'aide du rendez-vous <span class="ref">diapos 65–66</span></h3>
+    <p>Avec le rendez-vous, on encapsule l'exclusion dans une tâche serveur. Pour une ressource commune, la tâche <code>Semaphore</code> accepte alternativement <code>P</code> et <code>V</code> ; pour une variable partagée, la tâche <code>Var_protect</code> accepte au choix une lecture ou une écriture, jamais deux à la fois.</p>
+    <div class="colonnes">
+<pre data-fichier="Ressource commune (ADA)"><code class="language-plaintext">task Semaphore is
+  entry P;
+  entry V;
+end;
+task body Semaphore is
+begin
+  loop
+    accept P;
+    accept V;
+  end loop;
+end Semaphore
+
+-- dans A1 et A2 :
+semaphore.P
+  section critique
+semaphore.V</code></pre>
+<pre data-fichier="Variable partagée (ADA)"><code class="language-plaintext">task Var_protect is
+  entry Read (v : out Elem);
+  entry Write (e : in Elem);
+end;
+task body Var_protect is
+  Var : Elem;
+begin
+  loop
+    select
+      accept Read (v : out Elem) do
+        v := Var;
+      end;
+    or
+      accept Write (e : in Elem) do
+        Var := e;
+      end;
+    end select;
+  end loop;
+end Var_protect
+
+-- lecture   : Var_protect.Read(v)
+-- écriture  : Var_protect.Write(v)</code></pre>
+    </div>
+    <p>La tâche <code>Semaphore</code> ne peut accepter un second <code>P</code> qu'après un <code>V</code> : le deuxième demandeur reste bloqué au rendez-vous tant que le premier n'a pas libéré la ressource. Dans <code>Var_protect</code>, c'est <code>select</code> qui choisit l'entrée appelée ; chaque accès se fait pendant un rendez-vous, donc un seul à la fois.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Communication entre tâches <span class="ref">diapos 67–74</span></h2>
+    <p>Pour qu'une tâche transmette des données à une autre, on combine un partage de variable (le tampon) et une synchronisation (attendre qu'il y ait un message, ou une place). Le résultat s'appelle un port, ou boîte aux lettres.</p>
+
+    <h3>La relation de communication <span class="ref">diapos 67–68</span></h3>
+    <p>A1 dépose des messages dans un <dfn>port</dfn> (une file, FIFO) ; A2 les retire. Deux implantations sont possibles :</p>
+    <ul>
+      <li><strong>port de taille infinie</strong> : le dépôt ne bloque jamais ; seul le retrait attend qu'il y ait un message ;</li>
+      <li><strong>port de taille finie</strong> (N places) : le dépôt attend aussi qu'il y ait une place libre.</li>
+    </ul>
+    <p>Problèmes à résoudre :</p>
+    <ul>
+      <li>la <strong>synchronisation</strong> : blocage du récepteur en attente de messages, et du producteur en attente de places ;</li>
+      <li>l'<strong>exclusion mutuelle</strong> : protection de la zone de données du port.</li>
+    </ul>
+    <p>Deux solutions : à base de sémaphores, ou par mécanisme de rendez-vous.</p>
+
+    <h3>Port de taille finie avec des sémaphores <span class="ref">diapos 69–70</span></h3>
+    <p>Le tampon est un <strong>anneau</strong> de N cases : <code>Deb</code> désigne le prochain message à retirer, <code>Fin</code> la prochaine case où déposer, et les indices reviennent à 0 après N − 1. Deux sémaphores comptent les places libres (<code>Places</code>, initialisé à N) et les messages présents (<code>Messages</code>, initialisé à 0) ; un troisième protège le tampon (<code>Mutex</code>, initialisé à 1).</p>
+<pre data-fichier="port de taille finie"><code class="language-c">typedef struct boite_aux_lettres {
+    Donnees   Buffer[N];
+    Semaphore Places, Messages;
+    Semaphore Mutex;
+    int       Deb, Fin;
+} Boite_aux_lettres;
+
+primitive SEND (Donnees *M, Boite_aux_lettres *BAL)
+{
+    wait(BAL-&gt;Places);
+    wait(BAL-&gt;Mutex);
+    BAL-&gt;Buffer[BAL-&gt;Fin] = *M;
+    BAL-&gt;Fin = (BAL-&gt;Fin + 1) % N;
+    signal(BAL-&gt;Mutex);
+    signal(BAL-&gt;Messages);
+};
+
+primitive RECEIVE (Donnees *M, Boite_aux_lettres *BAL)
+{
+    wait(BAL-&gt;Messages);
+    wait(BAL-&gt;Mutex);
+    *M = Buffer[Deb];
+    BAL-&gt;Deb = (BAL-&gt;Deb + 1) % N;
+    signal(BAL-&gt;Mutex);
+    signal(BAL-&gt;Places);
+};</code></pre>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>L'ordre d'attente des sémaphores</span></p>
+      <p>Il faut d'abord attendre la place (ou le message), et seulement ensuite prendre l'exclusion mutuelle. Plusieurs choix sont possibles pour l'exclusion mutuelle : un seul <code>Mutex</code> pour tout le tampon, comme ici, ou un pour les dépôts et un pour les retraits, puisqu'ils ne touchent pas les mêmes cases.</p>
+    </div>
+    <p>Dans <code>RECEIVE</code>, la diapo écrit <code>*M = Buffer[Deb]</code> : il faut lire <code>*M = BAL-&gt;Buffer[BAL-&gt;Deb]</code>, comme dans <code>SEND</code>.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La même boîte aux lettres en C</span></p>
+      <p>Avec des threads POSIX et les sémaphores <code>sem_t</code>, le code du cours s'écrit presque à l'identique : <code>wait</code> devient <code>sem_wait</code>, <code>signal</code> devient <code>sem_post</code>. Un producteur envoie les carrés de 1 à 10 dans une boîte de 4 places, un consommateur les affiche.</p>
+    </div>
+<pre data-fichier="bal.c"><code class="language-c">/* bal.c : boîte aux lettres de taille finie (diapos 69-70), avec des threads et des sémaphores POSIX */
+#include &lt;stdio.h&gt;
+#include &lt;pthread.h&gt;
+#include &lt;semaphore.h&gt;
+
+#define N 4                                 /* nombre de places du tampon */
+#define NB_MESSAGES 10
+
+typedef struct {
+    int buffer[N];
+    sem_t places, messages, mutex;
+    int deb, fin;
+} boite_aux_lettres;
+
+void send(boite_aux_lettres *bal, int m)
+{
+    sem_wait(&amp;bal-&gt;places);                 /* attendre une place libre */
+    sem_wait(&amp;bal-&gt;mutex);
+    bal-&gt;buffer[bal-&gt;fin] = m;
+    bal-&gt;fin = (bal-&gt;fin + 1) % N;
+    sem_post(&amp;bal-&gt;mutex);
+    sem_post(&amp;bal-&gt;messages);               /* un message de plus */
+}
+
+int receive(boite_aux_lettres *bal)
+{
+    int m;
+    sem_wait(&amp;bal-&gt;messages);               /* attendre un message */
+    sem_wait(&amp;bal-&gt;mutex);
+    m = bal-&gt;buffer[bal-&gt;deb];
+    bal-&gt;deb = (bal-&gt;deb + 1) % N;
+    sem_post(&amp;bal-&gt;mutex);
+    sem_post(&amp;bal-&gt;places);                 /* une place de plus */
+    return m;
+}
+
+boite_aux_lettres bal;
+
+void *producteur(void *arg)
+{
+    (void)arg;
+    for (int i = 1; i &lt;= NB_MESSAGES; i++)
+        send(&amp;bal, i * i);
+    return NULL;
+}
+
+void *consommateur(void *arg)
+{
+    (void)arg;
+    for (int i = 1; i &lt;= NB_MESSAGES; i++)
+        printf("%d ", receive(&amp;bal));
+    printf("\n");
+    return NULL;
+}
+
+int main(void)
+{
+    pthread_t p, c;
+    sem_init(&amp;bal.places, 0, N);            /* N places libres au départ */
+    sem_init(&amp;bal.messages, 0, 0);          /* aucun message */
+    sem_init(&amp;bal.mutex, 0, 1);             /* exclusion mutuelle */
+    bal.deb = bal.fin = 0;
+    pthread_create(&amp;p, NULL, producteur, NULL);
+    pthread_create(&amp;c, NULL, consommateur, NULL);
+    pthread_join(p, NULL);
+    pthread_join(c, NULL);
+    return 0;
+}</code></pre>
+<pre class="terminal"><code>$ gcc -Wall -o bal bal.c -lpthread
+$ ./bal
+1 4 9 16 25 36 49 64 81 100</code></pre>
+
+    <div class="bloc exercice" id="ex-5">
+      <p class="bloc-titre">Exercice 5 <span>Inverser les attentes</span></p>
+      <p>Un étudiant écrit <code>SEND</code> en prenant d'abord l'exclusion mutuelle : <code>wait(BAL-&gt;Mutex); wait(BAL-&gt;Places);</code>. Que se passe-t-il quand le tampon est plein ?</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Le producteur prend <code>Mutex</code>, puis se bloque sur <code>Places</code>, qui vaut 0, sans rendre <code>Mutex</code>. Le consommateur passe <code>wait(Messages)</code>, puis se bloque sur <code>wait(Mutex)</code>. Aucun des deux ne peut plus avancer : le producteur attend une place que seul le consommateur peut libérer, et le consommateur attend le mutex que tient le producteur. C'est un <strong>interblocage</strong>. D'où la règle : attendre la ressource comptée d'abord, l'exclusion mutuelle ensuite, et ne jamais se bloquer en tenant un mutex.</p>
+      </details>
+    </div>
+
+    <h3>Port de taille infinie <span class="ref">diapos 71–72</span></h3>
+    <p>Les messages sont alloués dynamiquement et chaînés dans une FIFO : la boîte connaît son <code>Premier</code> et son <code>Dernier</code> message. Il ne faut plus qu'un sémaphore pour les messages, et un pour l'exclusion mutuelle ; le dépôt ne bloque jamais.</p>
+<pre data-fichier="port de taille infinie"><code class="language-c">typedef struct t_message {
+    struct t_message *Suivant;
+    Donnees           Info;
+} T_message;
+
+typedef struct boite_aux_lettres {
+    struct t_message *Premier, *Dernier;
+    Semaphore         Messages;
+    Semaphore         Mutex;
+} Boite_aux_lettres;
+
+primitive SEND (T_message *M, Boite_aux_lettres *BAL)
+{
+    wait(BAL-&gt;Mutex);
+    if (BAL-&gt;Premier == NULL)
+        BAL-&gt;Premier = M;
+    else BAL-&gt;Dernier-&gt;Suivant = M;
+    BAL-&gt;Dernier = M;
+    signal(BAL-&gt;Mutex);
+    signal(BAL-&gt;Messages);
+};
+
+primitive RECEIVE (T_message *M, Boite_aux_lettres *BAL)
+{
+    wait(BAL-&gt;Messages);
+    wait(BAL-&gt;Mutex);
+    M = BAL-&gt;Premier;
+    if (BAL-&gt;Premier == BAL-&gt;Dernier)
+        BAL-&gt;Premier = NULL;
+    else BAL-&gt;Premier := BAL-&gt;Premier-&gt;Suivant;
+    signal(BAL-&gt;Mutex);
+};</code></pre>
+    <p>Le code de la diapo 72 est reproduit tel quel. En C, <code>:=</code> s'écrit <code>=</code> ; <code>M = BAL-&gt;Premier</code> ne modifie que la copie locale du pointeur, et il faudrait un <code>T_message **M</code> pour rendre le message à l'appelant ; enfin <code>SEND</code> doit mettre <code>M-&gt;Suivant</code> à <code>NULL</code> avant de chaîner le message.</p>
+
+    <h3>Communication par rendez-vous <span class="ref">diapo 73</span></h3>
+    <p>On encapsule la structure de données dans une tâche serveur, la boîte aux lettres, qui résout ainsi l'exclusion mutuelle. La synchronisation sur les places et les messages utilise des <strong>gardes</strong> et l'<strong>attente sélective</strong> : la tâche n'accepte <code>Send</code> que si <code>Places &gt; 0</code>, et <code>Receive</code> que si <code>Messages &gt; 0</code>.</p>
+    <table>
+      <caption>Exemples de primitives de gestion des boîtes aux lettres (diapo 74)</caption>
+      <thead><tr><th>Fonction</th><th>Exécutif Turbo Pascal</th><th>wVRTX</th><th>A6RMTR</th></tr></thead>
+      <tbody>
+        <tr><th>Création</th><td><code>Mailinit(BAL)</code></td><td><code>sc_qecreate(Qid, Qsize, Option, Error)</code></td><td>chaque tâche possède 2 boîtes</td></tr>
+        <tr><th>Dépôt</th><td><code>Send(Message, BAL)</code></td><td><code>sc_qpost(Qid, Mess, Error)</code>, <code>sc_qjam(Qid, Mess, Error)</code></td><td><code>Send_Message(Task_id, Message)</code>, <code>Send_FastMessage(Task_id, Message)</code></td></tr>
+        <tr><th>Retrait</th><td><code>Receive(Message, BAL)</code></td><td><code>Mess = sc_qpend(Qid, T_out, Error)</code>, <code>Mess = sc_qaccept(Qid, Error)</code></td><td><code>Type = Receive_Message(Message, delai)</code></td></tr>
+        <tr><th>Consultation</th><td>—</td><td><code>Mess = sc_qinquiry(Qid, Count, Error)</code></td><td><code>Type = Receive_Message(Message, 0)</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Situations classiques <span class="ref">diapos 75–88</span></h2>
+    <p>Quelques situations reviennent dans toutes les applications multitâches : deux tâches qui s'attendent mutuellement, un message à diffuser à plusieurs destinataires, une attente qui ne doit pas durer indéfiniment, une donnée lue souvent et modifiée rarement.</p>
+
+    <h3>Interblocage imbriqué <span class="ref">diapo 76</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Interblocage</span></p>
+      <p>Un <dfn>interblocage</dfn> (<span class="en" lang="en">deadlock</span>) survient quand des tâches s'attendent mutuellement : chacune détient une ressource que l'autre demande, et aucune ne peut plus progresser.</p>
+    </div>
+    <p>A1 et A2 exploitent simultanément deux ressources R1 et R2, chacune protégée par exclusion mutuelle, mais ne les demandent pas dans le même ordre :</p>
+    <div class="colonnes">
+<pre data-fichier="A1"><code class="language-plaintext">Request(R1)
+Request(R2)
+  ...
+Release(R2)
+Release(R1)</code></pre>
+<pre data-fichier="A2"><code class="language-plaintext">Request(R2)
+Request(R1)
+  ...
+Release(R1)
+Release(R2)</code></pre>
+    </div>
+    <p>Si A1 obtient R1 et que A2 obtient R2 avant que A1 ne demande R2, chacune attend la ressource de l'autre. Remèdes :</p>
+    <ul>
+      <li>demander <strong>simultanément</strong> toutes les ressources ;</li>
+      <li>les demander <strong>par niveaux</strong> : toujours R1 puis R2, dans toutes les tâches.</li>
+    </ul>
+
+    <h3>Interblocage circulaire : le dîner des philosophes <span class="ref">diapo 77</span></h3>
+    <div class="colonnes">
+      <figure class="figure">
+        <svg class="schema" viewBox="0 0 240 220" width="240" role="img" aria-labelledby="fig-philo-titre">
+          <title id="fig-philo-titre">Cinq philosophes numérotés de 1 à 5 autour d'une table ronde, avec une fourchette entre deux voisins</title>
+          <circle class="boite" cx="120" cy="110" r="85"/>
+          <path class="accent" d="M161 53 L169 42"/>
+          <path class="accent" d="M187 132 L200 136"/>
+          <path class="accent" d="M120 180 V194"/>
+          <path class="accent" d="M53 132 L40 136"/>
+          <path class="accent" d="M79 53 L71 42"/>
+          <circle class="boite-accent" cx="120" cy="50" r="13"/>
+          <text x="120" y="55" text-anchor="middle" class="gras">1</text>
+          <circle class="boite-accent" cx="177" cy="92" r="13"/>
+          <text x="177" y="97" text-anchor="middle" class="gras">2</text>
+          <circle class="boite-accent" cx="155" cy="158" r="13"/>
+          <text x="155" y="163" text-anchor="middle" class="gras">3</text>
+          <circle class="boite-accent" cx="85" cy="158" r="13"/>
+          <text x="85" y="163" text-anchor="middle" class="gras">4</text>
+          <circle class="boite-accent" cx="63" cy="92" r="13"/>
+          <text x="63" y="97" text-anchor="middle" class="gras">5</text>
+        </svg>
+        <figcaption>Cinq philosophes, cinq fourchettes (Dijkstra).</figcaption>
+      </figure>
+<pre data-fichier="philosophe"><code class="language-plaintext">Philosophe : repeat
+               penser;
+               manger;
+             until false;
+
+procédure manger();
+begin
+  prendre fourchette droite;
+  prendre fourchette gauche;
+    ...
+  rendre fourchette gauche;
+  rendre fourchette droite;
+end;</code></pre>
+    </div>
+    <p>Chaque philosophe a besoin des deux fourchettes qui l'entourent. Si chacun possède sa fourchette droite, tous attendent leur fourchette gauche, tenue par le voisin : c'est un <strong>interblocage circulaire</strong>. Remèdes :</p>
+    <ul>
+      <li>acquérir les deux fourchettes <strong>simultanément</strong>, avec un risque de <dfn>privation</dfn> : un philosophe peut ne jamais trouver ses deux voisins disposés à le laisser manger ;</li>
+      <li><strong>limiter le nombre de philosophes</strong> à table (au plus quatre sur cinq : l'un d'eux au moins peut alors manger).</li>
+    </ul>
+
+    <h3>Diffusion d'un message <span class="ref">diapos 78–80</span></h3>
+    <p>Comportement souhaité : chaque message produit par A1 doit être transmis à A2 et à A3, et avant de poursuivre son exécution, A1 doit attendre la lecture du message par A2 et par A3. Le réseau de Petri de la diapo 78 le montre : A1 dépose le message dans deux ports <code>Dep2</code> et <code>Dep3</code>, puis attend deux acquittements <code>Lu2</code> et <code>Lu3</code>.</p>
+    <div class="colonnes">
+<pre data-fichier="première solution (diapo 79)"><code class="language-c">Process T1 { while (1) { ... Diff(mess); ... } };
+
+void Diff(mess)
+{
+    send(mess, Dep2);
+    send(mess, Dep3);
+    wait(Lu2);
+    wait(Lu3);
+}
+
+Process T2 { while (1) { receive(mess, Dep2); signal(Lu2); ... } };
+Process T3 { while (1) { receive(mess, Dep3); signal(Lu3); ... } };</code></pre>
+<pre data-fichier="deuxième solution (diapo 80)"><code class="language-c">Process T1 { while (1) { ... send(mess, Dep1); wait(Lu1); ... } };
+
+Process Diff
+{
+    while (1) {
+        receive(mess, P1);
+        send(mess, Dep2);
+        send(mess, Dep3);
+        wait(Lu2);
+        wait(Lu3);
+        signal(Ev1);
+    }
+};
+
+Process T2 { while (1) { receive(mess, Dep2); signal(Lu2); ... } };
+Process T3 { while (1) { receive(mess, Dep3); signal(Lu3); ... } };</code></pre>
+    </div>
+    <ul>
+      <li><strong>Première solution</strong>, la diffusion est une procédure appelée par T1 : l'ordre de traitement des messages par T2 et T3 dépend des priorités relatives des tâches.</li>
+      <li><strong>Seconde solution</strong>, la diffusion est une tâche : son comportement dépend de sa priorité, qui doit dépasser celles de T1, T2 et T3 : \(P_{rior}(\text{Diff}) \gt P_{rior}(T_1), P_{rior}(T_2), P_{rior}(T_3)\).</li>
+    </ul>
+    <p>Dans la seconde solution, T1 dépose dans <code>Dep1</code> et attend <code>Lu1</code>, mais <code>Diff</code> lit dans <code>P1</code> et signale <code>Ev1</code> : il faut lire <code>receive(mess, Dep1)</code> et <code>signal(Lu1)</code>, les noms du schéma de structure de la même diapo.</p>
+
+    <h3>Attente avec chien de garde <span class="ref">diapos 81–83</span></h3>
+    <p>La tâche <code>Emission</code> envoie un message et attend son acquittement <code>Ack</code>, mais pas plus de <code>T_max_attente</code> : un <dfn>chien de garde</dfn> (<span class="en" lang="en">watchdog</span>), activé par l'horloge <code>H</code>, décompte le temps et signale <code>Time_out</code> à l'échéance.</p>
+    <div class="colonnes">
+<pre data-fichier="Emission"><code class="language-plaintext">Process Emission
+begin
+  cycle L_Mess :
+  begin
+    message := f(L_Mess);
+    Send(message, Mess);
+    T := T_max_attente;
+    WHEN
+      Ack      : T_ack();
+      Time_out : T_Tout();
+    end_when
+    ...
+  end;
+  end_cycle;
+end;</code></pre>
+<pre data-fichier="Chien_de_garde"><code class="language-plaintext">Process Chien_de_garde
+begin
+  Cycle H :
+    if T &gt; 0
+    then begin
+      T := T - 1;
+      if (T = 0)
+        then signal(time_out);
+    end;
+  end_cycle;
+end;</code></pre>
+    </div>
+    <p><strong>Problème</strong> (diapo 82) : le <code>WHEN</code> attend l'une ou l'autre de deux conditions, or une tâche ne peut être en attente que d'une seule synchronisation (événement ou port).</p>
+    <p><strong>Solution</strong> (diapo 83) : décomposer en tâches parallèles. <code>Emission</code> envoie le message, passe dans l'état <code>EnAttente</code> et attend l'événement <code>F_when</code>. Deux tâches, <code>Gest_ack</code> et <code>Gest_T_out</code>, attendent chacune l'une des deux conditions ; la première qui trouve l'état <code>EnAttente</code> le change et réveille <code>Emission</code>. Le sémaphore <code>Mutex_Att</code> protège l'état partagé.</p>
+<pre data-fichier="décomposition en tâches parallèles"><code class="language-c">Process Emission
+{
+    while (1) {
+        receive(l_mess, L_Mess);
+        mess = f(l_mess);
+        Send(mess, Mess);
+        T = T_max_attente;
+        Etat = EnAttente;
+        wait(F_when);
+        ...
+    }
+};
+
+Process Gest_Ack()
+{
+    while (1) {
+        Receive(rep, Ack);
+        wait(Mutex_Att);
+        if (Etat == EnAttente) {
+            Etat = Eveil_Ack;
+            signal(Mutex_Att);
+            T_Ack();
+            signal(F_When);
+        }
+        else signal(Mutex_Att);
+    }
+};
+
+Process Gest_T_out()
+{
+    while (1) {
+        wait(Time_out);
+        wait(Mutex_Att);
+        if (Etat == EnAttente) {
+            Etat = Eveil_T_Out;
+            signal(Mutex_Att);
+            T_Tout();
+            signal(F_When);
+        }
+        else signal(Mutex_Att);
+    }
+};</code></pre>
+    <p>Si l'acquittement arrive, <code>Gest_Ack</code> passe l'état à <code>Eveil_Ack</code> ; un <code>Time_out</code> qui arrive ensuite trouve l'état changé et ne fait rien. Une seule des deux réponses réveille <code>Emission</code>.</p>
+
+    <h3>Le problème des lecteurs et des rédacteurs <span class="ref">diapos 84–88</span></h3>
+    <p>Il s'agit d'assurer l'intégrité d'une variable qui a un nombre important de lecteurs. La règle de comportement :</p>
+    <ul>
+      <li>une seule modification à la fois ;</li>
+      <li>un nombre de consultations simultanées non limité ;</li>
+      <li>les consultations sont interdites pendant une modification ;</li>
+      <li>les demandes de modification sont prioritaires.</li>
+    </ul>
+    <p><strong>Première solution</strong> (diapo 85) : le premier lecteur s'approprie la section critique, le dernier la libère ; chaque rédacteur s'approprie la section critique. Il faut une exclusion mutuelle sur la variable (<code>Mutex_Res</code>) et un compteur de lecteurs (<code>Nb_lecteurs</code>), lui-même protégé par <code>Mutex_struct</code>.</p>
+<pre data-fichier="première solution"><code class="language-c">typedef struct ressource {
+    Elem      Val;
+    Semaphore Mutex_Res;
+    int       Nb_lecteurs;
+    Semaphore Mutex_struct;
+} Ressource;
+
+void Redacteur(Elem E, Ressource *R)
+{
+    P(R-&gt;Mutex_Res);
+    R-&gt;Val = E;
+    V(R-&gt;Mutex_Res);
+};
+
+void Lecteur(Elem *E, Ressource *R)
+{
+    P(R-&gt;Mutex_struct);
+    if (R-&gt;Nb_lecteurs == 0)
+        P(R-&gt;Mutex_Res);
+    R-&gt;Nb_lecteurs = R-&gt;Nb_lecteurs + 1;
+    V(R-&gt;Mutex_struct);
+    *E := R-&gt;Val;
+    P(R-&gt;Mutex_struct);
+    R-&gt;Nb_lecteurs := R-&gt;Nb_lecteurs - 1;
+    if (R-&gt;Nb_lecteurs == 0)
+        V(R-&gt;Mutex_Res);
+    V(R-&gt;Mutex_struct);
+};</code></pre>
+    <p>Limitations : les rédacteurs ne sont pas prioritaires, et ils risquent la privation. Tant qu'un lecteur au moins est dans la section, les nouveaux lecteurs y entrent sans attendre, et un flot continu de lectures peut bloquer indéfiniment les rédacteurs.</p>
+    <p><strong>Deuxième solution</strong> (diapos 87–88) : le premier lecteur s'approprie la section critique si aucun rédacteur n'a fait de demande d'accès ; toute demande de lecture est bloquée si une demande d'écriture est en cours ; le dernier lecteur libère la section critique. Elle demande une exclusion mutuelle sur la variable (<code>Mutex_Res</code>), un compteur de lecteurs, un compteur de rédacteurs, et un sémaphore de blocage des lecteurs (<code>Bl_lecteurs</code>).</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La deuxième solution en C</span></p>
+      <p>La diapo 88 ne la donne que sous forme de réseau de Petri. Le code ci-dessous en est la traduction, avec les noms du réseau : le premier rédacteur qui arrive ferme <code>Bl_Lect</code>, ce qui arrête les nouveaux lecteurs, et le dernier rédacteur le rouvre. Il a été éprouvé avec cinq lecteurs et trois rédacteurs lancés en parallèle (16 000 accès sans jamais de lecture pendant une écriture).</p>
+    </div>
+<pre data-fichier="deuxième solution"><code class="language-c">/* Tous les sémaphores sont initialisés à 1, les compteurs à 0 */
+
+void Redacteur(Elem E, Ressource *R)
+{
+    P(Mutex_Reda);
+    NbReda = NbReda + 1;
+    if (NbReda == 1) P(Bl_Lect);       /* le premier rédacteur bloque les lecteurs */
+    V(Mutex_Reda);
+
+    P(Mutex_Res);
+    R-&gt;Val = E;
+    V(Mutex_Res);
+
+    P(Mutex_Reda);
+    NbReda = NbReda - 1;
+    if (NbReda == 0) V(Bl_Lect);       /* le dernier les libère */
+    V(Mutex_Reda);
+}
+
+void Lecteur(Elem *E, Ressource *R)
+{
+    P(Bl_Lect);                        /* bloqué si une écriture est demandée */
+    P(Mutex_Lect);
+    NbLect = NbLect + 1;
+    if (NbLect == 1) P(Mutex_Res);     /* le premier lecteur prend la ressource */
+    V(Mutex_Lect);
+    V(Bl_Lect);
+
+    *E = R-&gt;Val;
+
+    P(Mutex_Lect);
+    NbLect = NbLect - 1;
+    if (NbLect == 0) V(Mutex_Res);     /* le dernier la rend */
+    V(Mutex_Lect);
+}</code></pre>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Architectures multiprocesseurs <span class="ref">diapos 89–98</span></h2>
+    <p>Sur plusieurs processeurs, masquer les interruptions ne suffit plus à garantir l'exclusion : une tâche d'un autre processeur peut accéder à la même donnée au même instant. Les solutions dépendent de l'architecture.</p>
+
+    <h3>Avec ou sans mémoire commune <span class="ref">diapo 90</span></h3>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 210" width="640" role="img" aria-labelledby="fig-archi-titre">
+        <title id="fig-archi-titre">À gauche, trois processeurs avec leur mémoire locale reliés par un bus à une mémoire commune ; à droite, trois processeurs avec leur mémoire reliés par un réseau, sans mémoire commune</title>
+        <text x="155" y="16" text-anchor="middle" class="gras">Mémoire commune</text>
+        <text x="155" y="32" text-anchor="middle" class="t2">(multiprocesseurs)</text>
+        <text x="485" y="16" text-anchor="middle" class="gras">Sans mémoire commune</text>
+        <text x="485" y="32" text-anchor="middle" class="t2">(multi-ordinateurs)</text>
+        <path class="pointille" d="M320 5 V205"/>
+        <rect class="boite" x="15" y="45" width="80" height="40"/>
+        <text x="55" y="70" text-anchor="middle" class="mono">P  M</text>
+        <rect class="boite" x="115" y="45" width="80" height="40"/>
+        <text x="155" y="70" text-anchor="middle" class="mono">P  M</text>
+        <rect class="boite" x="215" y="45" width="80" height="40"/>
+        <text x="255" y="70" text-anchor="middle" class="mono">P  M</text>
+        <path class="trait" d="M55 85 V115 M155 85 V115 M255 85 V115"/>
+        <path class="accent" d="M10 115 H300"/>
+        <text x="305" y="119" text-anchor="end" class="t2">bus</text>
+        <path class="trait" d="M155 115 V140"/>
+        <rect class="boite-accent" x="105" y="140" width="100" height="32"/>
+        <text x="155" y="161" text-anchor="middle" class="gras">Mémoire</text>
+        <text x="155" y="197" text-anchor="middle" class="t2">échanges par mémoire commune et bus</text>
+        <rect class="boite" x="345" y="45" width="80" height="40"/>
+        <text x="385" y="70" text-anchor="middle" class="mono">P  M</text>
+        <rect class="boite" x="445" y="45" width="80" height="40"/>
+        <text x="485" y="70" text-anchor="middle" class="mono">P  M</text>
+        <rect class="boite" x="545" y="45" width="80" height="40"/>
+        <text x="585" y="70" text-anchor="middle" class="mono">P  M</text>
+        <path class="trait" d="M385 85 V115 M485 85 V115 M585 85 V115"/>
+        <rect class="boite-accent" x="340" y="115" width="290" height="40"/>
+        <text x="485" y="140" text-anchor="middle" class="gras">Réseau</text>
+        <text x="485" y="197" text-anchor="middle" class="t2">échanges sous forme de messages</text>
+      </svg>
+      <figcaption>Deux familles d'architectures (diapo 90). Le réseau peut être un anneau (Token Ring), un bus (Ethernet, Token Bus…) ou des liaisons point à point (C40, Transputer).</figcaption>
+    </figure>
+
+    <h3>Exclusion mutuelle avec mémoire commune <span class="ref">diapos 91–94</span></h3>
+    <p>Pour une section critique courte en mémoire commune, il faut considérer deux niveaux d'exclusion (diapo 91) :</p>
+    <ul>
+      <li>le <strong>bus</strong> : exclusion mutuelle entre les processeurs ;</li>
+      <li>le <strong>processeur</strong> : exclusion mutuelle entre les tâches d'un même processeur.</li>
+    </ul>
+    <p>Deux cas (diapo 92) :</p>
+    <ul>
+      <li><strong>exclusion totalement réalisée par le matériel</strong> : invalidation des interruptions du processeur, et le contrôleur affecte le bus pour plusieurs cycles. La limite est la nature des opérations indivisibles : lecture de l'information, écriture de l'information, et exceptionnellement lecture, modification et écriture ;</li>
+      <li><strong>exclusion par verrou</strong> (attente active) : le problème est de tester et de positionner le verrou sans interruption, au niveau du processeur comme du bus.</li>
+    </ul>
+    <p>Sur 80x86 avec un Multibus (diapo 93), l'instruction <code>LOCK</code> verrouille le bus pendant toute la durée de l'instruction suivante et positionne la sortie <code>Lock</code> du composant : lecture et modification se font en une seule instruction. Au niveau du bus, un gestionnaire de bus utilise la ligne <code>Lock</code> pour refuser le bus aux autres processeurs.</p>
+    <div class="colonnes">
+<pre data-fichier="proc Request(Verrou)"><code class="language-x86asm">        DI
+Occupe: MOV   AL, 1
+LOCK    XCHG  Verrou, AL
+        TEST  AL, AL
+        JNZ   Occupe</code></pre>
+<pre data-fichier="proc Release(Verrou)"><code class="language-x86asm">        MOVEQ AL, 0
+        MOVE  Verrou, AL
+        EI</code></pre>
+    </div>
+    <p><code>DI</code> masque les interruptions du processeur (exclusion entre ses tâches), <code>LOCK XCHG</code> réserve le bus (exclusion entre processeurs) ; ici, <code>Verrou</code> vaut 1 quand la ressource est prise. <code>MOVEQ</code> et <code>MOVE</code> sont des mnémoniques du 680x0, et <code>DI</code>, <code>EI</code> ceux du 8080 : sur 80x86, on écrirait <code>MOV</code>, <code>CLI</code> et <code>STI</code>.</p>
+    <p>Pour une section critique longue en mémoire commune (diapo 94), on passe à l'<strong>attente passive</strong> : un verrou et une file d'attente en mémoire commune, cette structure de contrôle étant elle-même protégée par une section critique courte (<code>Verrou_SC</code>).</p>
+
+    <h3>Synchronisation avec mémoire commune <span class="ref">diapo 95</span></h3>
+    <p>La synchronisation entre processeurs se fait par signalisation électrique (une interruption), et l'échange d'informations par la mémoire partagée. Exemple : T1, sur P1, se bloque (<code>Bloquer(me)</code>) ; T2, sur P2, veut l'éveiller (<code>Eveil_D(T1, P1)</code>) : elle écrit la demande dans une zone <code>Synchro[P1]</code> de la mémoire commune, puis envoie une interruption à P1, dont la tâche <code>Gestion_signal</code> lit la zone et exécute <code>eveil(T1)</code>.</p>
+
+    <h3>Sans mémoire commune <span class="ref">diapos 96–98</span></h3>
+    <p><strong>Copie unique</strong> de la variable (diapo 96) : la variable est gérée par un <strong>serveur</strong>, une tâche placée sur un processeur. Les accès (lecture, modification) sont transmis au serveur sous forme de demandes, et le serveur réalise l'exclusion mutuelle en ne traitant qu'une demande à la fois. Le choix du processeur qui porte les serveurs compte, dans le cas d'un réseau point à point (transputer, 320C40…) ; des algorithmes de gestion existent (Lamport, 1978).</p>
+    <p><strong>Copies multiples</strong> (diapo 97) : chaque site garde une copie de la variable.</p>
+    <ul>
+      <li><strong>Cohérence faible</strong> : en cas de modification, les copies deviennent identiques après un temps fini. Une modification sur un site se traduit par la diffusion de la nouvelle valeur vers tous les autres (problème si les communications ne sont pas fiables).</li>
+      <li><strong>Cohérence forte</strong> : toutes les copies doivent être identiques en permanence. Il faut une section critique, et la solution est proche de la copie unique.</li>
+    </ul>
+    <p>Synchronisation sans mémoire commune (diapo 98) : les structures de données utilisent les solutions du partage de variables (copie unique, ou copies multiples avec cohérence forte), et la synchronisation est réalisée par la transmission de messages (attente et activation).</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Synthèse et idées reçues <span class="ref">diapos 99–101</span></h2>
+    <p>La conclusion du cours rappelle les notions importantes, et corrige trois idées reçues sur le temps réel.</p>
+    <p>Notions importantes (diapo 100) :</p>
+    <ul>
+      <li>multitâche ≠ temps réel ;</li>
+      <li>exécutif temps réel = surcouche logicielle : gestion des ressources de la machine, machine virtuelle plus simple à exploiter ;</li>
+      <li>limites du temps partagé : choix du quantum de temps, prédictibilité des temps de réponse ;</li>
+      <li>masquage des interruptions ⇒ précautions ;</li>
+      <li>partage de ressources ou de variables ⇒ exclusion mutuelle ;</li>
+      <li>résultat correct ≡ valeur correcte <strong>et</strong> contraintes de temps respectées.</li>
+    </ul>
+    <table>
+      <caption>Idées reçues (diapo 101)</caption>
+      <thead><tr><th>Idée reçue</th><th>Pourquoi c'est faux</th></tr></thead>
+      <tbody>
+        <tr><th>Application temps réel ⇒ multitâche, ou exécutif temps réel</th><td>il est souvent possible d'implanter sans exécutif, comme l'application moteur simple</td></tr>
+        <tr><th>Forte puissance de calcul ⇒ calcul temps réel</th><td>le temps de calcul doit surtout être prédictible (déterministe) : attention à la mémoire cache, et au coût des communications</td></tr>
+        <tr><th>Programmation temps réel ⇒ programmation en assembleur</th><td>les exécutifs s'utilisent depuis des langages de haut niveau (C, ADA…)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Une application temps réel n'est correcte que si sa réponse est juste <strong>et</strong> arrive dans la fenêtre prévue. Temps réel souple : quelques dépassements tolérés ; temps réel dur : aucun.</li>
+        <li>Sans exécutif, tout faire sous interruption peut perdre des événements, et tout faire dans une tâche de fond donne des temps de réponse mal bornés. L'exécutif, avec des tâches à priorités, lève ces deux limites.</li>
+        <li>Une tâche = programme + données + pile + contexte. États : non opérationnelle, prête, en cours, en attente. La préemption renvoie la tâche en cours à l'état prêt.</li>
+        <li>Paramètres d'une tâche : période \(T_i\), échéance \(d_i\), charge \(C_i\), taux d'occupation \(D_i = C_i/d_i\) ; délai critique \(R_i(t)\).</li>
+        <li>Temps partagé : un quantum par tâche prête, à tour de rôle ; trop court, overhead ; trop long, temps de réponse.</li>
+        <li>Priorité fixe IFP : plus une tâche est fréquente, plus elle est prioritaire ; échéances garanties si \(\sum D_i \le n(2^{1/n} - 1)\) (83 % pour 2 tâches, ≈ 69 % pour n grand), condition suffisante seulement.</li>
+        <li>Urgence relative : la tâche prête d'échéance la plus proche passe ; optimale jusqu'à 100 %, mais coûteuse.</li>
+        <li>Les procédures de l'exécutif doivent être indivisibles : ce sont des primitives.</li>
+        <li>Synchronisation : événement (2 états, peut perdre des signaux), sémaphore (compteur, <code>P</code>/<code>V</code>), rendez-vous (le premier arrivé attend l'autre).</li>
+        <li>Section critique : masquer les interruptions ou élever la priorité si elle est courte ; sinon attente active (verrou, <code>TAS</code>, <code>LOCK XCHG</code>) ou passive (mutex initialisé à 1).</li>
+        <li>Boîte aux lettres de taille finie : sémaphores <code>Places</code> (N) et <code>Messages</code> (0), plus un <code>Mutex</code> pris <em>après</em> eux.</li>
+        <li>Interblocage : des tâches s'attendent mutuellement. Remèdes : demander toutes les ressources à la fois, ou toujours dans le même ordre.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi une réponse juste peut-elle être fausse en temps réel ?</summary>
+        <div><p>Parce qu'une réponse fournie en dehors de sa fenêtre temporelle est considérée comme fausse, quelle que soit sa valeur : le procédé physique n'attend pas.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Dans l'application moteur, quel est le risque de la tâche de fond, et celui de tout traiter sous interruption ?</summary>
+        <div><p>Sous interruption, une impulsion <code>H</code> peut être perdue pendant une routine trop longue. En tâche de fond, rien n'est perdu, mais le temps de réponse de <code>H</code> à <code>Cmd_Mot</code> inclut la supervision et devient mal borné.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle différence entre une tâche prête et une tâche en attente ?</summary>
+        <div><p>La tâche prête pourrait s'exécuter : il ne lui manque que le processeur. La tâche en attente est bloquée sur une condition (événement, message, ressource) ; même avec un processeur libre, elle ne peut pas avancer.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Deux tâches de taux 40 % et 45 % : IFP garantit-il leurs échéances ? Et l'urgence relative ?</summary>
+        <div><p>85 % dépasse la borne de 82,8 % pour deux tâches : IFP ne les garantit pas (il faut tracer). L'urgence relative les garantit, puisque le total est inférieur à 100 %.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi un événement peut-il être perdu, et pas un signal de sémaphore ?</summary>
+        <div><p>L'événement n'a que deux états, arrivé ou non : un second signal avant la consommation du premier ne change rien. Le sémaphore compte les signaux : chacun sera consommé par un <code>Wait</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi l'attente active peut-elle bloquer toute une application monoprocesseur ?</summary>
+        <div><p>Si la tâche qui boucle est plus prioritaire que celle qui tient le verrou, l'ordonnanceur ne rend jamais la main à cette dernière : le verrou n'est jamais libéré, et la tâche prioritaire boucle indéfiniment.</p></div>
+      </details>
+      <details class="carte">
+        <summary>A1 demande R1 puis R2, A2 demande R2 puis R1. Quel est le risque, et le remède le plus simple ?</summary>
+        <div><p>Un interblocage imbriqué, si chacune obtient sa première ressource. Remède : demander les ressources dans le même ordre dans toutes les tâches (R1 puis R2).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi la première solution des lecteurs-rédacteurs peut-elle priver les rédacteurs ?</summary>
+        <div><p>Tant qu'un lecteur est dans la section, les nouveaux lecteurs y entrent sans attendre : si les lectures se succèdent sans interruption, <code>Mutex_Res</code> n'est jamais rendu et les rédacteurs attendent indéfiniment.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-04-pseudo-aleatoires-cycliques.html"><small>← Précédent</small>Codes pseudo-aléatoires, de Gold, JPL et cycliques</a>
+    <a class="suivant" href="index.html"><small>Matière →</small>Codage</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Codage · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="codage">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Codes d'étalement et CDMA · Codage L3</title>
+<meta name="description" content="Quiz interactif sur le cours 3B de codage de l'information (L3) : FDMA, TDMA et GSM, relation de Shannon et étalement de spectre, étalement et désétalement CDMA, séquences de Walsh-Hadamard, MC-CDMA, égaliseurs ZF et MMSE, détecteurs SIC et PIC, avec un signal reçu et un désétalement à calculer dans des tables.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/quiz/assets/quiz.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/quiz/assets/quiz.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="../generated_courses/index.html">Codage</a>
+    <span aria-current="page">Quiz · Codes d'étalement et CDMA</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Codage</span> Quiz · L3 S5</p>
+    <h1>Codes d'étalement et CDMA</h1>
+    <p class="chapeau">Vingt et une questions sur le cours 3B : FDMA, TDMA et GSM, relation de Shannon et étalement de spectre, étalement et désétalement sur l'exemple à quatre utilisateurs, séquences de Walsh-Hadamard, MC-CDMA, égaliseurs ZF et MMSE, détecteurs SIC et PIC. Un signal reçu et un désétalement à calculer dans des tables.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-03B-cdma.html">Cours 3B · Codes d'étalement et CDMA</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-26">26 sept. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Codage · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "codage-cours-03b-cdma",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 3B · Codes d'étalement et CDMA",
+      "lien": "../generated_courses/cours-03B-cdma.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "qcm",
+      "theme": "Accès multiple",
+      "difficulte": 1,
+      "enonce": "<p>En CDMA, comment les utilisateurs se partagent-ils la ressource radio ?</p>",
+      "choix": [
+        "Ils émettent en même temps, dans toute la bande, et sont séparés par leur séquence d'étalement",
+        "Chacun reçoit une sous-bande de fréquences, pour tout le temps",
+        "Chacun reçoit toute la bande, pendant un time slot de chaque trame",
+        "Chacun émet à tour de rôle, quand le canal est libre"
+      ],
+      "reponse": 0,
+      "explication": "<p>Le FDMA découpe la bande, le TDMA découpe le temps ; le CDMA ne découpe rien : tous les utilisateurs occupent tout le plan temps-fréquence, et ce sont leurs codes qui les séparent à la réception.</p>",
+      "revoir": {
+        "texte": "Cours 3B · Partager une ressource radio",
+        "lien": "../generated_courses/cours-03B-cdma.html#partager-une-ressource-radio"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "numerique",
+      "theme": "Accès multiple",
+      "difficulte": 2,
+      "enonce": "<p>Une bande de 2 MHz est partagée en FDMA en sous-bandes de 25 kHz, séparées par des bandes de garde de 5 kHz. Combien d'utilisateurs peut-on servir au plus ?</p>",
+      "reponse": 66,
+      "indices": [
+        "<p>\\(N'\\) sous-bandes demandent \\(N' W + (N' - 1) W_g \\le B\\).</p>"
+      ],
+      "explication": "<p>\\(N' = \\lfloor (B + W_g) / (W + W_g) \\rfloor = \\lfloor 2005 / 30 \\rfloor = 66\\) : \\(66 \\times 25 + 65 \\times 5 = 1975\\) kHz. Sans bande de garde, on en servirait 80 : les bandes de garde coûtent 14 utilisateurs.</p>",
+      "revoir": {
+        "texte": "Cours 3B · Accès multiple par répartition en fréquence (FDMA)",
+        "lien": "../generated_courses/cours-03B-cdma.html#acces-multiple-par-repartition-en-frequence-fdma"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "numerique",
+      "theme": "Accès multiple",
+      "difficulte": 2,
+      "enonce": "<p>Dans un système GSM, la trame compte 8 time slots de 577 µs, et un slot transporte 116 bits utiles. Un terminal reçoit <strong>deux</strong> slots par trame. Quel est son débit utile, en kbit/s ? Arrondir au dixième.</p>",
+      "reponse": 50.26,
+      "tolerance": 0.06,
+      "unite": "kbit/s",
+      "indices": [
+        "<p>Le terminal transmet \\(2 \\times 116\\) bits par trame, et une trame dure \\(8 \\times 577\\ \\mu\\text{s}\\).</p>"
+      ],
+      "explication": "<p>\\(\\dfrac{2 \\times 116}{8 \\times 577 \\cdot 10^{-6}} = \\dfrac{232}{4{,}616 \\cdot 10^{-3}} \\approx 50{,}3\\) kbit/s, le double des 25,13 kbit/s d'un terminal à un slot. Oublier le facteur 8 reviendrait à calculer le débit de la porteuse pendant un slot, l'erreur de la diapo.</p>",
+      "revoir": {
+        "texte": "Cours 3B · Rappel sur le GSM",
+        "lien": "../generated_courses/cours-03B-cdma.html#rappel-sur-le-gsm"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "vrai-faux",
+      "theme": "Accès multiple",
+      "difficulte": 1,
+      "enonce": "<p>Sur le lien descendant d'un réseau cellulaire, de la station de base vers les terminaux, le système est synchrone.</p>",
+      "reponse": true,
+      "explication": "<p>Vrai. La station de base émet tous les signaux d'un même point et au même instant : ils restent alignés. Sur le lien montant, chaque terminal émet avec sa propre horloge et depuis sa propre distance : le système est asynchrone. Un canal multi-trajet pose le même problème, même sur le lien descendant.</p>",
+      "revoir": {
+        "texte": "Cours 3B · Liens descendant et montant",
+        "lien": "../generated_courses/cours-03B-cdma.html#liens-descendant-et-montant"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "association",
+      "theme": "Accès multiple",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque sigle à sa description.</p>",
+      "paires": [
+        [
+          "FDMA",
+          "Une sous-bande de fréquences par utilisateur"
+        ],
+        [
+          "TDMA",
+          "Un time slot par utilisateur dans chaque trame"
+        ],
+        [
+          "CDMA",
+          "Une séquence d'étalement par utilisateur, dans toute la bande"
+        ],
+        [
+          "OFDM",
+          "Des données en parallèle sur des porteuses orthogonales"
+        ],
+        [
+          "MC-CDMA",
+          "Un chip par sous-porteuse, tous émis en même temps"
+        ]
+      ],
+      "intrus": [
+        "Une antenne par utilisateur, orientée vers lui"
+      ],
+      "explication": "<p>FDMA, TDMA et CDMA partagent la ressource en fréquence, en temps et par codes. L'OFDM transmet en parallèle sur des porteuses orthogonales, générées par une IFFT ; le MC-CDMA y ajoute l'étalement, en fréquence. La description en trop évoque un partage dans l'espace, dont le cours ne parle pas.</p>",
+      "revoir": {
+        "texte": "Cours 3B · Vocabulaire",
+        "lien": "../generated_courses/cours-03B-cdma.html#vocabulaire"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "qcm",
+      "theme": "Étalement de spectre",
+      "difficulte": 2,
+      "enonce": "<p>D'après la relation de Shannon, quel rapport signal à bruit \\(P_s/P_n\\) faut-il au minimum pour transmettre 20 kbit/s dans une bande de 10 kHz ?</p>",
+      "choix": [
+        "3",
+        "2",
+        "4",
+        "1"
+      ],
+      "reponse": 0,
+      "melanger": false,
+      "indices": [
+        "<p>\\(C = B \\log_2(1 + P_s/P_n)\\), donc \\(P_s/P_n = 2^{C/B} - 1\\).</p>"
+      ],
+      "explication": "<p>\\(C/B = 2\\), d'où \\(P_s/P_n = 2^2 - 1 = 3\\), soit 4,8 dB. Dans une bande de 1 MHz, il suffirait de \\(2^{0{,}02} - 1 \\approx 0{,}014\\) : élargir la bande permet de réduire la puissance, c'est le principe de l'étalement. La réponse 4 oublie le « − 1 », et 2 confond le rapport signal à bruit avec \\(C/B\\).</p>",
+      "revoir": {
+        "texte": "Cours 3B · La relation de Shannon",
+        "lien": "../generated_courses/cours-03B-cdma.html#la-relation-de-shannon"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "numerique",
+      "theme": "Étalement de spectre",
+      "difficulte": 1,
+      "enonce": "<p>Un système étale chaque bit sur \\(N = 64\\) chips. Quel est son gain de traitement, en décibels ? Arrondir au dixième.</p>",
+      "reponse": 18.06,
+      "tolerance": 0.06,
+      "unite": "dB",
+      "indices": [
+        "<p>Le gain de traitement vaut le facteur d'étalement \\(N\\), exprimé en décibels : \\(10 \\log_{10} N\\).</p>"
+      ],
+      "explication": "<p>\\(10 \\log_{10} 64 \\approx 18{,}1\\) dB. Au désétalement, un brouilleur à bande étroite est étalé à son tour sur toute la bande, et le filtre qui ne garde que la bande utile en élimine l'essentiel : il perd environ 18 dB.</p>",
+      "revoir": {
+        "texte": "Cours 3B · Principe de l'étalement",
+        "lien": "../generated_courses/cours-03B-cdma.html#principe-de-l-etalement"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "qcm-multi",
+      "theme": "Étalement de spectre",
+      "difficulte": 1,
+      "enonce": "<p>Parmi ces propriétés, lesquelles sont des <strong>avantages</strong> de l'étalement de spectre ?</p>",
+      "choix": [
+        "Une robustesse vis-à-vis des brouilleurs à bande étroite",
+        "Une faible probabilité d'interception, et la discrétion",
+        "La possibilité d'un accès multiple par répartition de codes",
+        "Une forte efficacité spectrale pour un utilisateur seul",
+        "Aucun besoin de synchroniser le code en réception"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "explication": "<p>Les trois premières sont les avantages de la diapo. Pour un utilisateur seul, l'efficacité spectrale est au contraire faible : la bande est multipliée par \\(N\\) pour le même débit, et c'est le partage entre plusieurs utilisateurs qui la rétablit. Enfin, il faut une réplique synchrone du code en réception : c'est un inconvénient.</p>",
+      "revoir": {
+        "texte": "Cours 3B · Principe de l'étalement",
+        "lien": "../generated_courses/cours-03B-cdma.html#principe-de-l-etalement"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "ouverte",
+      "theme": "Étalement de spectre",
+      "difficulte": 2,
+      "enonce": "<p>Expliquer, à l'aide de la relation de Shannon, pourquoi un signal étalé peut être émis avec une puissance inférieure à celle du bruit. Citer deux avantages et deux inconvénients de l'étalement de spectre.</p>",
+      "reponse_modele": "<p>La capacité d'un canal vaut \\(C = B \\log_2(1 + P_s/P_n)\\). Pour un débit \\(C\\) fixé, une bande \\(B\\) plus large se contente d'un rapport \\(P_s/P_n\\) plus faible, qui peut descendre sous 1 : l'étalement émet dans une bande bien plus large que celle du signal utile, avec une faible puissance, et le signal peut se noyer dans le bruit. Avantages : accès multiple par répartition de codes, robustesse aux brouilleurs à bande étroite, faible probabilité d'interception. Inconvénients : faible efficacité spectrale pour un utilisateur, bande bien plus large que celle du message, nécessité d'une réplique synchrone du code en réception.</p>",
+      "criteres": [
+        "la relation \\(C = B \\log_2(1 + P_s/P_n)\\)",
+        "à débit fixé, élargir la bande permet de réduire \\(P_s/P_n\\), jusqu'à moins de 1",
+        "deux avantages parmi : accès multiple par codes, robustesse aux brouilleurs à bande étroite, discrétion",
+        "deux inconvénients parmi : faible efficacité spectrale, bande très large, réplique synchrone du code"
+      ],
+      "revoir": {
+        "texte": "Cours 3B · Principe de l'étalement",
+        "lien": "../generated_courses/cours-03B-cdma.html#principe-de-l-etalement"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "atelier",
+      "editeur": "table",
+      "theme": "CDMA par l'exemple",
+      "difficulte": 2,
+      "titre": "Signal reçu",
+      "enonce": "<p>Quatre utilisateurs synchrones emploient les séquences \\(c_1 = (+1, +1, +1, +1)\\), \\(c_2 = (+1, -1, +1, -1)\\), \\(c_3 = (+1, +1, -1, -1)\\) et \\(c_4 = (+1, -1, -1, +1)\\). Ils émettent les bits \\(a = -1\\), \\(b = -1\\), \\(c = +1\\), \\(d = -1\\). Calculer les quatre valeurs du signal reçu \\(r\\), sur un canal idéal.</p>",
+      "consigne": "Écrire des entiers, avec le signe moins du clavier : -2, 0, 2…",
+      "options": {
+        "verrou": "depart",
+        "lignes": false,
+        "ordre": true,
+        "mono": true,
+        "types": {
+          "r": "entier"
+        }
+      },
+      "depart": [
+        "| Chip | r |",
+        "|---|---|",
+        "| 1 |  |",
+        "| 2 |  |",
+        "| 3 |  |",
+        "| 4 |  |"
+      ],
+      "solution": [
+        "| Chip | r |",
+        "|---|---|",
+        "| 1 | -2 |",
+        "| 2 | 2 |",
+        "| 3 | -2 |",
+        "| 4 | -2 |"
+      ],
+      "indices": [
+        "<p>Au chip \\(k\\), le récepteur reçoit la somme des chips \\(k\\) des quatre utilisateurs, chacun multiplié par son bit.</p>"
+      ],
+      "explication": "<p>\\(r_1 = a + b + c + d = -1 - 1 + 1 - 1 = -2\\) ; \\(r_2 = a - b + c - d = -1 + 1 + 1 + 1 = 2\\) ; \\(r_3 = a + b - c - d = -1 - 1 - 1 + 1 = -2\\) ; \\(r_4 = a - b - c + d = -1 + 1 - 1 - 1 = -2\\). Le signal reçu ne ressemble à aucun des bits, et pourtant le désétalement les retrouve tous.</p>",
+      "revoir": {
+        "texte": "Cours 3B · Réception et désétalement",
+        "lien": "../generated_courses/cours-03B-cdma.html#reception-et-desetalement"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "atelier",
+      "editeur": "table",
+      "theme": "CDMA par l'exemple",
+      "difficulte": 3,
+      "titre": "Désétaler",
+      "enonce": "<p>Quatre utilisateurs synchrones emploient les séquences \\(c_1 = (+1, +1, +1, +1)\\), \\(c_2 = (+1, -1, +1, -1)\\), \\(c_3 = (+1, +1, -1, -1)\\) et \\(c_4 = (+1, -1, -1, +1)\\). Le récepteur reçoit \\(r = (0, 0, 4, 0)\\). Pour chaque utilisateur \\(j\\), calculer le produit scalaire \\(\\langle r, c_j \\rangle\\), puis le bit estimé.</p>",
+      "consigne": "Écrire des entiers, avec le signe moins du clavier : -4, 4, -1, 1.",
+      "options": {
+        "verrou": "depart",
+        "lignes": false,
+        "ordre": true,
+        "mono": true,
+        "types": {
+          "Produit scalaire": "entier",
+          "Bit": "entier"
+        }
+      },
+      "depart": [
+        "| Utilisateur | Produit scalaire | Bit |",
+        "|---|---|---|",
+        "| 1 |  |  |",
+        "| 2 |  |  |",
+        "| 3 |  |  |",
+        "| 4 |  |  |"
+      ],
+      "solution": [
+        "| Utilisateur | Produit scalaire | Bit |",
+        "|---|---|---|",
+        "| 1 | 4 | 1 |",
+        "| 2 | 4 | 1 |",
+        "| 3 | -4 | -1 |",
+        "| 4 | -4 | -1 |"
+      ],
+      "indices": [
+        "<p>\\(\\hat x_j = \\frac14 \\langle r, c_j \\rangle\\) : multiplier chaque valeur de \\(r\\) par le chip correspondant de \\(c_j\\), puis additionner.</p>"
+      ],
+      "explication": "<p>Seul \\(r_3 = 4\\) est non nul, donc \\(\\langle r, c_j \\rangle = 4\\,c_{j,3}\\) : 4, 4, −4 et −4. Divisés par 4 : \\(a = +1\\), \\(b = +1\\), \\(c = -1\\), \\(d = -1\\). Vérification : \\(a + b - c - d = 4\\), et les trois autres sommes sont nulles.</p>",
+      "revoir": {
+        "texte": "Cours 3B · Réception et désétalement",
+        "lien": "../generated_courses/cours-03B-cdma.html#reception-et-desetalement"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "numerique",
+      "theme": "CDMA par l'exemple",
+      "difficulte": 3,
+      "enonce": "<p>Quatre utilisateurs synchrones emploient les séquences \\(c_1 = (+1, +1, +1, +1)\\), \\(c_2 = (+1, -1, +1, -1)\\), \\(c_3 = (+1, +1, -1, -1)\\) et \\(c_4 = (+1, -1, -1, +1)\\). Sur un canal bruité, le récepteur mesure \\(r = (2{,}3;\\ 1{,}5;\\ 2{,}2;\\ -1{,}6)\\). Calculer l'estimation \\(\\hat c\\) du bit de l'utilisateur 3, avant la décision.</p>",
+      "reponse": 0.8,
+      "tolerance": 0.005,
+      "indices": [
+        "<p>\\(\\hat c = \\frac14 \\langle r, c_3 \\rangle = \\frac14 (r_1 + r_2 - r_3 - r_4)\\).</p>"
+      ],
+      "explication": "<p>\\(\\hat c = \\frac14 (2{,}3 + 1{,}5 - 2{,}2 + 1{,}6) = \\frac{3{,}2}{4} = 0{,}8\\). Le bruit l'écarte de \\(+1\\) sans changer son signe : la décision donne \\(+1\\). Le désétalement fait une moyenne sur les \\(N\\) chips, ce qui atténue le bruit. Piège : oublier que \\(-r_4 = +1{,}6\\).</p>",
+      "revoir": {
+        "texte": "Cours 3B · Réception et désétalement",
+        "lien": "../generated_courses/cours-03B-cdma.html#reception-et-desetalement"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "qcm-multi",
+      "theme": "CDMA par l'exemple",
+      "difficulte": 2,
+      "enonce": "<p>Parmi ces conditions, lesquelles font partie des hypothèses sous lesquelles le désétalement est parfait ?</p>",
+      "choix": [
+        "Les chips des utilisateurs arrivent synchronisés au récepteur",
+        "Aucun bruit n'est ajouté au signal",
+        "Les séquences d'étalement sont orthogonales",
+        "Aucun effet Doppler différentiel",
+        "Tous les utilisateurs émettent le même bit",
+        "Les séquences d'étalement sont pseudo-aléatoires"
+      ],
+      "reponses": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "explication": "<p>Ce sont les hypothèses H0 à H3. Les bits émis sont quelconques : l'orthogonalité sépare les utilisateurs quels que soient leurs bits. Et l'exemple emploie des séquences de Hadamard, déterministes ; les séquences pseudo-aléatoires (codes de Gold) servent justement quand la synchronisation manque.</p>",
+      "revoir": {
+        "texte": "Cours 3B · Les hypothèses du désétalement",
+        "lien": "../generated_courses/cours-03B-cdma.html#les-hypotheses-du-desetalement"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "vrai-faux",
+      "theme": "CDMA par l'exemple",
+      "difficulte": 2,
+      "enonce": "<p>Les séquences de Walsh-Hadamard restent orthogonales quand l'un des utilisateurs arrive avec un chip de retard.</p>",
+      "reponse": false,
+      "explication": "<p>Faux. Leur orthogonalité exige des chips alignés (H0). Dans l'exercice du cours, un seul chip de retard de l'utilisateur 3 fait disparaître son bit de sa propre estimation et le reporte sur l'utilisateur 4. C'est pourquoi on les réserve au lien descendant, synchrone, et qu'on préfère des codes de Gold sur le lien montant.</p>",
+      "revoir": {
+        "texte": "Cours 3B · Les hypothèses du désétalement",
+        "lien": "../generated_courses/cours-03B-cdma.html#les-hypotheses-du-desetalement"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "numerique",
+      "theme": "Walsh-Hadamard",
+      "difficulte": 1,
+      "enonce": "<p>Un système utilise des séquences de Walsh-Hadamard de longueur 32 et sert 20 utilisateurs. Quelle est sa charge ?</p>",
+      "reponse": 0.625,
+      "tolerance": 0.001,
+      "explication": "<p>\\(\\alpha = K / N = 20 / 32 = 0{,}625\\). Il reste 12 séquences orthogonales libres, donc 12 utilisateurs de plus au maximum : un espace de dimension 32 ne contient pas 33 vecteurs non nuls orthogonaux deux à deux.</p>",
+      "revoir": {
+        "texte": "Cours 3B · Les séquences de Walsh-Hadamard",
+        "lien": "../generated_courses/cours-03B-cdma.html#les-sequences-de-walsh-hadamard"
+      }
+    },
+    {
+      "id": "q16",
+      "type": "qcm",
+      "theme": "Walsh-Hadamard",
+      "difficulte": 2,
+      "enonce": "<p>On construit \\(H_3\\), la matrice de Walsh-Hadamard d'ordre 8, par la construction de Sylvester à partir de \\(H_2\\). Quelle est sa <strong>sixième</strong> ligne ?</p>",
+      "choix": [
+        "+1 −1 +1 −1 −1 +1 −1 +1",
+        "+1 −1 +1 −1 +1 −1 +1 −1",
+        "−1 +1 −1 +1 +1 −1 +1 −1",
+        "+1 +1 −1 −1 −1 −1 +1 +1"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>\\(H_3 = \\begin{bmatrix} H_2 & H_2 \\\\ H_2 & -H_2 \\end{bmatrix}\\) : chaque ligne du bas recopie une ligne de \\(H_2\\), puis son opposée.</p>",
+        "<p>La sixième ligne de \\(H_3\\) part de la deuxième ligne de \\(H_2\\), (+1, −1, +1, −1).</p>"
+      ],
+      "explication": "<p>Les lignes 5 à 8 de \\(H_3\\) sont \\((h, -h)\\) pour chaque ligne \\(h\\) de \\(H_2\\). La sixième part de (+1, −1, +1, −1) : +1 −1 +1 −1 −1 +1 −1 +1. La deuxième proposition est la ligne 2, \\((h, h)\\) ; la troisième n'a pas de +1 en tête, contrairement à toutes les lignes de Sylvester ; la dernière est la ligne 7.</p>",
+      "revoir": {
+        "texte": "Cours 3B · Les séquences de Walsh-Hadamard",
+        "lien": "../generated_courses/cours-03B-cdma.html#les-sequences-de-walsh-hadamard"
+      }
+    },
+    {
+      "id": "q17",
+      "type": "qcm",
+      "theme": "MC-CDMA et détecteurs",
+      "difficulte": 1,
+      "enonce": "<p>En MC-CDMA, comment sont émis les \\(L_c\\) chips d'un même symbole ?</p>",
+      "choix": [
+        "En même temps, chacun sur sa propre sous-porteuse",
+        "Les uns après les autres, sur une seule porteuse",
+        "Les uns après les autres, chacun sur une sous-porteuse différente",
+        "Un seul chip par symbole, choisi selon l'utilisateur"
+      ],
+      "reponse": 0,
+      "explication": "<p>Le MC-CDMA étale en fréquence : la branche \\(k\\) de l'émetteur multiplie le symbole par le chip \\(c_{j,k}\\), puis par la sous-porteuse \\(f_k\\), et une IFFT additionne les branches. Dans le CDMA de l'exemple, qui étale dans le temps, les chips se succèdent au contraire : \\(T_b = N T_c\\).</p>",
+      "revoir": {
+        "texte": "Cours 3B · L'émetteur MC-CDMA",
+        "lien": "../generated_courses/cours-03B-cdma.html#l-emetteur-mc-cdma"
+      }
+    },
+    {
+      "id": "q18",
+      "type": "qcm",
+      "theme": "MC-CDMA et détecteurs",
+      "difficulte": 2,
+      "enonce": "<p>Sur une sous-porteuse très atténuée (\\(h_k\\) proche de 0), quel est le défaut de l'égaliseur ZF, \\(g_k = 1/h_k\\) ?</p>",
+      "choix": [
+        "Il amplifie fortement le bruit de cette sous-porteuse",
+        "Il laisse subsister l'interférence d'accès multiple",
+        "Il demande d'estimer le rapport signal à bruit de chaque sous-porteuse",
+        "Il ne s'applique qu'à un seul utilisateur à la fois"
+      ],
+      "reponse": 0,
+      "explication": "<p>Le ZF restaure l'orthogonalité (\\(g_k h_k = 1\\)), donc annule la MAI, mais il multiplie le bruit par \\(1/h_k\\), soit sa puissance par \\(1/|h_k|^2\\). Estimer le rapport signal à bruit de chaque sous-porteuse est l'inconvénient du MMSE, qui en échange limite cette amplification.</p>",
+      "revoir": {
+        "texte": "Cours 3B · Techniques fréquentielles mono-utilisateur",
+        "lien": "../generated_courses/cours-03B-cdma.html#techniques-frequentielles-mono-utilisateur"
+      }
+    },
+    {
+      "id": "q19",
+      "type": "numerique",
+      "theme": "MC-CDMA et détecteurs",
+      "difficulte": 3,
+      "enonce": "<p>Sur une sous-porteuse, le canal vaut \\(h_k = 0{,}2\\) (réel) et le rapport signal à bruit \\(\\gamma_k = 20\\). Calculer le coefficient de l'égaliseur MMSE, \\(g_k = \\dfrac{h_k^*}{|h_k|^2 + 1/\\gamma_k}\\). Donner deux décimales.</p>",
+      "reponse": 2.222,
+      "tolerance": 0.006,
+      "indices": [
+        "<p>Pour un \\(h_k\\) réel, \\(h_k^* = h_k\\) et \\(|h_k|^2 = h_k^2\\).</p>"
+      ],
+      "explication": "<p>\\(g_k = \\dfrac{0{,}2}{0{,}04 + 0{,}05} = \\dfrac{0{,}2}{0{,}09} \\approx 2{,}22\\), contre \\(1/0{,}2 = 5\\) pour le ZF. La puissance du bruit est multipliée par \\(2{,}22^2 \\approx 4{,}9\\) au lieu de 25. En contrepartie, \\(g_k h_k \\approx 0{,}44 \\ne 1\\) : un peu d'interférence d'accès multiple subsiste.</p>",
+      "revoir": {
+        "texte": "Cours 3B · Techniques fréquentielles mono-utilisateur",
+        "lien": "../generated_courses/cours-03B-cdma.html#techniques-frequentielles-mono-utilisateur"
+      }
+    },
+    {
+      "id": "q20",
+      "type": "numerique",
+      "theme": "MC-CDMA et détecteurs",
+      "difficulte": 3,
+      "enonce": "<p>Deux utilisateurs MC-CDMA emploient \\(c_1 = (+1, +1)\\) et \\(c_2 = (+1, -1)\\) sur deux sous-porteuses. Le canal vaut \\(h = (1;\\ 0{,}6)\\), sans bruit, et le récepteur n'égalise pas (\\(g_k = 1\\)). Il estime \\(\\hat d_1 = \\frac12 \\sum_k c_{1,k}\\, h_k\\, (c_{1,k} d_1 + c_{2,k} d_2)\\). Que vaut \\(\\hat d_1\\) quand \\(d_1 = +1\\) et \\(d_2 = -1\\) ?</p>",
+      "reponse": 0.6,
+      "tolerance": 0.005,
+      "indices": [
+        "<p>Sous-porteuse 1 : \\(1 \\times (d_1 + d_2)\\) ; sous-porteuse 2 : \\(0{,}6 \\times (d_1 - d_2)\\), multiplié par le chip \\(c_{1,2} = +1\\).</p>"
+      ],
+      "explication": "<p>\\(\\hat d_1 = \\frac12\\big(1 \\times (d_1 + d_2) + 0{,}6\\,(d_1 - d_2)\\big) = 0{,}8\\, d_1 + 0{,}2\\, d_2 = 0{,}8 - 0{,}2 = 0{,}6\\). Le terme \\(0{,}2\\, d_2\\) est l'interférence d'accès multiple : le canal pondère inégalement les chips et casse l'orthogonalité. Avec \\(g_k = 1/h_k\\), on retrouverait \\(\\hat d_1 = d_1 = 1\\).</p>",
+      "revoir": {
+        "texte": "Cours 3B · Le récepteur MC-CDMA",
+        "lien": "../generated_courses/cours-03B-cdma.html#le-recepteur-mc-cdma"
+      }
+    },
+    {
+      "id": "q21",
+      "type": "qcm",
+      "theme": "MC-CDMA et détecteurs",
+      "difficulte": 1,
+      "enonce": "<p>Quel détecteur multi-utilisateur détecte les utilisateurs un par un, du plus fort au plus faible, en retirant du signal reçu chaque utilisateur détecté ?</p>",
+      "choix": [
+        "Le SIC, annulation d'interférences série",
+        "Le PIC, annulation d'interférences parallèle",
+        "Le ZF, restauration d'orthogonalité",
+        "Le MMSE, erreur quadratique moyenne minimale"
+      ],
+      "reponse": 0,
+      "explication": "<p>Le SIC traite un utilisateur à la fois. Il commence par le plus fort, dont l'estimation est la plus fiable, car une erreur précoce fausserait toutes les soustractions suivantes. Le PIC retranche en même temps tous les interférents, par étages. ZF et MMSE sont des égaliseurs mono-utilisateur.</p>",
+      "revoir": {
+        "texte": "Cours 3B · Annulation d'interférences série (SIC)",
+        "lien": "../generated_courses/cours-03B-cdma.html#annulation-d-interferences-serie-sic"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

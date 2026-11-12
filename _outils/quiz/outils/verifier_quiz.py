@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Vérifie une page de quiz (studies/_outils/quiz).
+"""Vérifie une page de quiz (_outils/quiz).
 
 Usage :
     python _outils/quiz/outils/verifier_quiz.py [--executer] CHEMIN [CHEMIN ...]
@@ -26,6 +26,7 @@ Code de sortie : 1 s'il y a au moins une erreur, 0 sinon.
 """
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -36,11 +37,13 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 QUIZ = Path(__file__).resolve().parent.parent
-RACINE = QUIZ.parent.parent
-sys.path.insert(0, str(RACINE / "_outils" / "charte" / "outils"))
+OUTILS = QUIZ.parent
+# Racine des données : le dossier qui contient _outils (dépôt), ou ULA_RACINE (application installée)
+RACINE = Path(os.environ["ULA_RACINE"]).resolve() if os.environ.get("ULA_RACINE") else OUTILS.parent
+sys.path.insert(0, str(OUTILS / "charte" / "outils"))
 import verifier as charte  # noqa: E402  (vérificateur de la charte)
 
-FEUILLES = [RACINE / "_outils" / "charte" / "assets" / "cours.css", QUIZ / "assets" / "quiz.css"]
+FEUILLES = [OUTILS / "charte" / "assets" / "cours.css", QUIZ / "assets" / "quiz.css"]
 
 CHAMPS_COMMUNS = {"id", "type", "theme", "difficulte", "enonce", "consigne", "explication", "revoir", "indices"}
 LANGAGES = {"sql", "python", "javascript", "c", "c-posix"}
@@ -61,7 +64,7 @@ CHAMPS = {
 }
 CHAMPS_RACINE = {"id", "titre", "description", "melanger", "questions", "cours", "jeux", "penalite_indice"}
 SOLUTIONS = QUIZ / "serveur" / "outils" / "verifier-solutions.js"
-ATELIER = RACINE / "_outils" / "atelier" / "outils" / "verifier.js"
+ATELIER = OUTILS / "atelier" / "outils" / "verifier.js"
 
 
 # Ancres des pages de cours : même calcul que cours.js ------------------------
@@ -382,7 +385,13 @@ def verifier_lien(lien, page, ou, err, avert):
     morceaux = urlsplit(lien)
     if morceaux.scheme or morceaux.netloc:
         return
-    cible = (page.parent / unquote(morceaux.path)).resolve() if morceaux.path else page.resolve()
+    chemin = unquote(morceaux.path)
+    if chemin.startswith("/_outils/"):
+        cible = (OUTILS / chemin[len("/_outils/"):]).resolve()
+    elif chemin.startswith("/"):
+        cible = (RACINE / chemin.lstrip("/")).resolve()
+    else:
+        cible = (page.parent / chemin).resolve() if chemin else page.resolve()
     if not cible.exists():
         err(f"{ou} : lien « revoir » vers un fichier introuvable : {lien}")
         return

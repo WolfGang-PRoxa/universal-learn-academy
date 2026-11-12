@@ -13,6 +13,9 @@ const M = require("../assets/markdown-todo.js");
 const extension = require("../serveur/extension.js");
 
 const RACINE = path.resolve(__dirname, "..", "..", "..");
+const espace = require("../../ula/lib/espace.js");
+// TODO.md du profil actif (le suivi est personnel : <profil>/TODO.md)
+const TODO = path.join(RACINE, espace.profilActif(RACINE) || "", "TODO.md");
 let reussis = 0;
 const echecs = [];
 
@@ -43,7 +46,7 @@ function titre(doc, texte) { return doc.blocs.find((b) => b.type === "titre" && 
 /* Lecture et écriture ------------------------------------------------------------ */
 
 test("TODO.md relu et réécrit à l'identique", () => {
-  const t = fs.readFileSync(path.join(RACINE, "TODO.md"), "utf8");
+  const t = fs.readFileSync(TODO, "utf8");
   egal(M.ecrire(M.lire(t)), t, "TODO.md");
 });
 
@@ -70,7 +73,7 @@ test("étiquette reconnue, tableau non", () => {
 });
 
 test("structure et comptes de TODO.md", () => {
-  const d = M.lire(fs.readFileSync(path.join(RACINE, "TODO.md"), "utf8"));
+  const d = M.lire(fs.readFileSync(TODO, "utf8"));
   const s = M.structure(d);
   vrai(s.sections.length >= 5, "au moins 5 sections");
   vrai(s.sections.some((x) => x.sous.length >= 3), "des sous-sections");
@@ -214,7 +217,7 @@ test("sections : renommer, ajouter, déplacer, supprimer", () => {
 function faux(racine) {
   const res = { statut: 0, corps: null };
   const outils = {
-    chemins: { RACINE: racine },
+    chemins: { RACINE: racine, espace },
     envoyerJson: (r, statut, objet) => { res.statut = statut; res.corps = objet; },
     erreur: (r, statut, message) => { res.statut = statut; res.corps = { erreur: message }; },
     lireCorps: (req) => req.corps instanceof Error ? Promise.reject(req.corps) : Promise.resolve(req.corps)
@@ -225,22 +228,26 @@ function faux(racine) {
 }
 
 (async () => {
-  const dossier = fs.mkdtempSync(path.join(os.tmpdir(), "todo-test-"));
+  const racineEssai = fs.mkdtempSync(path.join(os.tmpdir(), "todo-test-"));
+  // Un seul profil dans la racine d'essai : c'est le profil actif
+  const dossier = path.join(racineEssai, "essai");
+  fs.mkdirSync(dossier);
+  fs.writeFileSync(path.join(dossier, "ula-profil.json"), JSON.stringify({ format: "ula-profil-1", nom: "essai" }));
   try {
     await testAsync("extension : fichier absent", async () => {
-      const f = faux(dossier);
+      const f = faux(racineEssai);
       await f.appel("GET");
       egal(f.res.statut, 404);
     });
     fs.writeFileSync(path.join(dossier, "TODO.md"), BASE, "utf8");
     await testAsync("extension : lecture", async () => {
-      const f = faux(dossier);
+      const f = faux(racineEssai);
       await f.appel("GET");
       egal(f.res.statut, 200); egal(f.res.corps.texte, BASE);
       vrai(/^\d+-\d+$/.test(f.res.corps.version), "version");
     });
     await testAsync("extension : écriture, puis conflit, puis écriture forcée", async () => {
-      const f = faux(dossier);
+      const f = faux(racineEssai);
       await f.appel("GET");
       const v = f.res.corps.version;
       await f.appel("PUT", { texte: BASE + "- [ ] ajout\n", version: v });
@@ -254,7 +261,7 @@ function faux(racine) {
       egal(fs.readFileSync(path.join(dossier, "TODO.md"), "utf8"), "autre");
     });
     await testAsync("extension : requêtes refusées", async () => {
-      const f = faux(dossier);
+      const f = faux(racineEssai);
       await f.appel("PUT", { version: "x" });
       egal(f.res.statut, 400, "texte manquant");
       await f.appel("PUT", new Error("JSON invalide."));
@@ -264,7 +271,7 @@ function faux(racine) {
       egal(await f.appel("GET", undefined, "autre"), false, "route inconnue non traitée");
     });
   } finally {
-    fs.rmSync(dossier, { recursive: true, force: true });
+    fs.rmSync(racineEssai, { recursive: true, force: true });
   }
   if (echecs.length) {
     echecs.forEach((e) => console.log("✗ " + e));

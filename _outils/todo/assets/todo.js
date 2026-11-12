@@ -8,7 +8,7 @@
    le fichier une demi-seconde plus tard.
 
    D'où vient le fichier :
-   - page servie par le serveur local (studies/lancer.bat) : routes
+   - page servie par le serveur local (lancer.bat) : routes
      /api/todo/fichier de _outils/todo/serveur/extension.js ;
    - page ouverte depuis le disque : TODO.md choisi une fois (Edge, Chrome),
      puis rouvert d'un clic (poignée gardée dans IndexedDB).
@@ -353,11 +353,11 @@
     var surDisqueSeul = !/^https?:$/.test(location.protocol);
     var p1 = el("p");
     if (raison === "extension") {
-      p1.innerHTML = "Le serveur local tourne, mais sans l'outil de suivi : il a démarré avant sa création. Fermer sa fenêtre, puis relancer <code>studies/lancer.bat</code>.";
+      p1.innerHTML = "Le serveur local tourne, mais sans l'outil de suivi : il a démarré avant sa création. Fermer sa fenêtre, puis relancer <code>lancer.bat</code>.";
     } else if (raison === "serveur") {
       p1.textContent = "Le serveur local ne répond pas comme prévu" + (erreur ? " (" + erreur.message + ")" : "") + ".";
     } else {
-      p1.innerHTML = "Avec le serveur local (<code>studies/lancer.bat</code>), la page lit et enregistre <code>TODO.md</code> d'elle-même.";
+      p1.innerHTML = "Avec le serveur local (<code>lancer.bat</code>), la page lit et enregistre le <code>TODO.md</code> de ton profil d'elle-même.";
     }
     c.appendChild(p1);
     var actions = el("div", "todo-ouvrir-actions");
@@ -368,13 +368,13 @@
       actions.appendChild(lien);
       fetch("http://127.0.0.1:" + PORT + "/api/ping", { mode: "no-cors" }).then(function () { lien.hidden = false; }).catch(function () {
         var p = el("p", "todo-aide");
-        p.innerHTML = "Le serveur local n'est pas lancé : double-cliquer sur <code>studies/lancer.bat</code>, puis recharger cette page.";
+        p.innerHTML = "Le serveur local n'est pas lancé : double-cliquer sur <code>lancer.bat</code>, puis recharger cette page.";
         c.insertBefore(p, actions);
       });
     }
     if (window.showOpenFilePicker) {
       var p2 = el("p");
-      p2.innerHTML = "Ou, sans serveur : choisir <code>TODO.md</code>, à la racine du dossier <code>studies</code>. Edge le lit et l'enregistre directement ; il demande ton accord à chaque visite.";
+      p2.innerHTML = "Ou, sans serveur : choisir <code>TODO.md</code>, dans le dossier de ton profil (<code>ula/&lt;profil&gt;/TODO.md</code>). Edge le lit et l'enregistre directement ; il demande ton accord à chaque visite.";
       c.appendChild(p2);
       actions.appendChild(boutonTexte("Choisir TODO.md…", choisirFichier));
       poigneeGardee().then(function (p) {

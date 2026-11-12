@@ -1,5 +1,7 @@
 "use strict";
 /* Le serveur local vu par l'application : le même programme que lancer.bat,
+   sur la racine des données (ULA_RACINE si l'hôte l'a posée, sinon le dossier
+   qui contient _outils),
    dans un processus à part pour que les lectures sur Google Drive ne figent pas
    la fenêtre. Il tourne avec le Node embarqué dans Electron
    (ELECTRON_RUN_AS_NODE) : process.execPath y reste un Node utilisable, et
@@ -24,11 +26,20 @@ let surveillance = null;
 
 function adresse() { return "http://127.0.0.1:" + port + "/"; }
 
+// true si le serveur de ce port est celui de notre racine ; une erreur si le port est
+// pris par le serveur d'un autre dossier de données (lancer.bat d'un autre dossier)
 async function repond() {
+  let d;
   try {
     const r = await fetch(adresse() + "api/ping", { signal: AbortSignal.timeout(1500) });
-    return (await r.json()).app === "studies-quiz";
+    d = await r.json();
   } catch (e) { return false; }
+  if (d.app !== "studies-quiz") return false;
+  const meme = (a, b) => path.resolve(a || "").toLowerCase() === path.resolve(b || "").toLowerCase();
+  if (d.racine && !meme(d.racine, RACINE)) {
+    throw new Error("le port " + port + " est pris par le serveur d'un autre dossier (" + d.racine + ") : le fermer, ou changer de port dans les paramètres.");
+  }
+  return true;
 }
 
 function lancer(journal, surArret) {

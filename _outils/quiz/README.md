@@ -1,6 +1,6 @@
 # Outil de quiz
 
-Ce dossier produit et fait tourner des **quiz interactifs** sur les matières de `studies/` : sur tout un cours, plusieurs cours ou un sujet précis, avec un seul type de question ou un mélange. Chaque quiz est une page HTML qui suit la charte des cours (`_outils/charte/`) : mêmes couleurs, thème clair ou sombre, teinte de la matière, code coloré, formules.
+Ce dossier produit et fait tourner des **quiz interactifs** sur les matières d’`ula/` : sur tout un cours, plusieurs cours ou un sujet précis, avec un seul type de question ou un mélange. Chaque quiz est une page HTML qui suit la charte des cours (`_outils/charte/`) : mêmes couleurs, thème clair ou sombre, teinte de la matière, code coloré, formules.
 
 Un **serveur local** ajoute ce qu'une page ouverte depuis le disque ne peut pas faire seule :
 - l'aide de **Claude**, par Claude Code avec l'abonnement du compte connecté : conversation sur une question, correction des questions ouvertes, évaluation détaillée d'une tentative, génération de nouveaux quiz ;
@@ -15,7 +15,7 @@ Les questions de **modélisation** (diagramme de classes, modèle relationnel, t
 
 ### Lancer le serveur
 
-Double-cliquer sur `lancer.bat`, à la racine de `studies`, ou lancer `lancer.sh` dans un terminal. Il faut Node.js. Pour tout avoir dans sa propre fenêtre, sans navigateur ni terminal : `lancer-app.bat`, l'application Studies (`_outils/app/README.md`).
+Double-cliquer sur `lancer.bat`, à la racine d’`ula`, ou lancer `lancer.sh` dans un terminal. Il faut Node.js. Pour tout avoir dans sa propre fenêtre, sans navigateur ni terminal : `lancer-app.bat`, l'application Studies (`_outils/app/README.md`).
 
 - Une fenêtre reste ouverte tant que le serveur tourne ; la fermer l'arrête.
 - Le **portail** s'ouvre dans le navigateur (`http://127.0.0.1:5178/`). Il affiche les quiz à reprendre, puis, pour chaque matière, les cours générés et les quiz avec leurs résultats.
@@ -58,7 +58,7 @@ Sans serveur, une page de quiz ouverte depuis le disque fonctionne quand même, 
 ## Contenu du dossier
 
 ```
-lancer.bat, lancer.sh       à la racine de studies/ : lancement du serveur local
+lancer.bat, lancer.sh       à la racine (ula/) : lancement du serveur local
 _outils/quiz/
 ├── README.md               ce document
 ├── portail.html            page d'accueil du serveur : toutes les matières
@@ -72,7 +72,7 @@ _outils/quiz/
 │   └── js/                 outils, markdown, connexion, types, code, claude, dialogues, archives,
 │                           moteur, ecran-accueil, ecran-question, ecran-resultats, portail, demarrage
 ├── serveur/
-│   ├── serveur.js          serveur HTTP : fichiers de studies/ et API
+│   ├── serveur.js          serveur HTTP : fichiers de la racine des données (ula/) et des outils et API
 │   ├── lib/                chemins, reglages, claude, executer (+ sql-worker), archives, catalogue,
 │   │                       assistant (demandes à Claude), taches (génération), extensions
 │   ├── prompts/            consignes données à Claude : aide, correction, evaluation, generation
@@ -85,10 +85,10 @@ _outils/quiz/
 
 | Élément | Emplacement |
 |---|---|
-| Quiz d'une matière | `<Niveau>/<Matière>/generated_quizzes/quiz-<slug>.html`, par exemple `L3/BDD/generated_quizzes/quiz-cours-02-sql.html` |
-| Tentatives | `<Niveau>/<Matière>/quiz_results/<id du quiz>/<AAAA-MM-JJ_HH-MM-SS>.json` (écrites par le serveur) |
+| Quiz d'une matière | `explore/<domaine>/<cours>/generated_quizzes/quiz-<slug>.html`, par exemple `explore/informatique/bases-de-donnees-3/generated_quizzes/quiz-cours-02-sql.html` |
+| Tentatives | `<profil>/<cursus>/<cours>/quiz_results/<id du quiz>/<AAAA-MM-JJ_HH-MM-SS>.json` (écrites par le serveur) |
 
-- Depuis `generated_quizzes/`, la charte est à `../../../_outils/charte/` et l'outil à `../../../_outils/quiz/`, comme dans le modèle.
+- Depuis `generated_quizzes/`, la charte est à `../../../../_outils/charte/` et l'outil à `../../../_outils/quiz/`, comme dans le modèle.
 - Noms de fichiers : `quiz-cours-02-sql.html`, `quiz-formes-normales.html`, `quiz-sql-code.html`, `quiz-revision-generale.html`.
 
 ### Archives des tentatives
@@ -176,7 +176,7 @@ Pour `trous`, chaque entrée de `trous` est soit une saisie libre, `{ "reponses"
 - `langage` : `sql`, `python`, `javascript`, `c` ou `c-posix`. `depart` : code affiché au départ dans l'éditeur (souvent `SELECT ` ou un squelette de fonction). `solution` : solution de référence, montrée après la correction.
 - **SQL** : la requête de l'étudiant et la `solution` sont exécutées sur une base neuve créée par le `script` du jeu `jeu` (champ `jeux` à la racine). Les résultats sont comparés sans tenir compte des noms de colonnes ni, par défaut, de l'ordre des lignes ; les nombres sont comparés à 10⁻⁶ près. `"ordre": true` quand l'énoncé demande un tri ; `"colonnes": true` pour exiger aussi les noms de colonnes. L'énoncé précise les colonnes attendues quand il y a une ambiguïté.
 - **Programmes** : `tests` est une liste de `{ "nom": …, "entree": "texte envoyé sur l'entrée standard", "sortie": "sortie attendue" }`. Les sorties sont comparées aux espaces de fin de ligne près. Pour une fonction, `harnais` est ajouté après le code de l'étudiant pour l'appeler (lire l'entrée, afficher le résultat), comme dans `demo.html`. Chaque exécution est limitée à 8 secondes.
-- **C ou C POSIX.** `c` compile avec le gcc du PC, qui sous Windows est MinGW : ni `fork`, ni `sigaction`, ni `sigsuspend`. `c-posix` passe par WSL sous Windows (gcc, `-std=gnu11`) et compile directement sous Linux ; il demande gcc dans WSL. Chaque exécution est limitée à 7 secondes, fils compris. Exemple : `L3/SE_PS/generated_quizzes/quiz-signaux-code.html`.
+- **C ou C POSIX.** `c` compile avec le gcc du PC, qui sous Windows est MinGW : ni `fork`, ni `sigaction`, ni `sigsuspend`. `c-posix` passe par WSL sous Windows (gcc, `-std=gnu11`) et compile directement sous Linux ; il demande gcc dans WSL. Chaque exécution est limitée à 7 secondes, fils compris. Exemple : `explore/informatique/programmation-systeme/generated_quizzes/quiz-signaux-code.html`.
 - **Des tests qui rejettent le vide.** Une fonction `int` sans `return` peut renvoyer son paramètre par hasard, et réussir des tests : faire afficher le résultat par la fonction, ou vérifier qu'un `depart` non complété échoue.
 - **Des tests qui ne comptent pas sur le délai.** Le délai tue le programme, pas forcément ses fils : un fils qui attendait la fin d'un tube peut alors finir et écrire la sortie attendue. Le père du harnais vérifie donc lui-même que le fils a terminé (`waitpid` avec `WNOHANG`), et affiche un message sinon. La sortie n'est pas fiable non plus sur un octet nul : faire afficher un nombre d'octets. Un tube nommé se crée dans `/tmp`, le dossier d'exécution étant sur le disque Windows.
 - Toujours vérifier avec `verifier_quiz.py --executer` : la solution SQL doit s'exécuter et renvoyer des lignes, la solution d'un programme doit passer tous ses tests.
@@ -240,9 +240,9 @@ Exemple de question SQL :
 ## Claude dans l'outil
 
 - Le serveur lance Claude Code en mode non interactif (`claude -p`) avec le compte connecté : l'usage est décompté de l'abonnement, et l'interface affiche la part utilisée de la fenêtre de 5 heures. Avec Pro, Sonnet, Opus et Haiku sont disponibles ; Fable demande des crédits.
-- Pour l'aide, la correction et l'évaluation, Claude reçoit une consigne dédiée (`serveur/prompts/`) et un contexte construit par la page et le serveur (question, réponse, extrait du cours, tentative, plan des cours). Il peut lire les fichiers de `studies/`, mais pas les modifier. Les connecteurs (Gmail, Drive…) ne sont pas chargés, ce qui garde chaque demande légère.
+- Pour l'aide, la correction et l'évaluation, Claude reçoit une consigne dédiée (`serveur/prompts/`) et un contexte construit par la page et le serveur (question, réponse, extrait du cours, tentative, plan des cours). Il peut lire les fichiers d’`ula/`, mais pas les modifier. Les connecteurs (Gmail, Drive…) ne sont pas chargés, ce qui garde chaque demande légère.
 - Les conversations sont des sessions Claude Code gardées dans `%LOCALAPPDATA%\studies-quiz\conversations` : c'est ce qui permet de les reprendre.
-- La génération lance Claude Code dans `studies/` avec sa consigne complète (`serveur/prompts/generation.md`) : il lit ce README, écrit le quiz, le vérifie et le relie. Il peut créer et modifier des fichiers et lancer `python` et `node`, sans rien demander ; rien d'autre. La session apparaît dans l'historique de Claude Code, ce qui permet de la poursuivre à la main.
+- La génération lance Claude Code dans la racine des données avec sa consigne complète (`serveur/prompts/generation.md`) : il lit ce README, écrit le quiz, le vérifie et le relie. Il peut créer et modifier des fichiers et lancer `python` et `node`, sans rien demander ; rien d'autre. La session apparaît dans l'historique de Claude Code, ce qui permet de la poursuivre à la main.
 - Pour changer le ton ou les règles de Claude, modifier les fichiers de `serveur/prompts/` ; pour les modèles, les réglages.
 
 ## Faire évoluer l'outil
@@ -251,7 +251,7 @@ Exemple de question SQL :
 - **Nouveau module ou nouvelle feuille** : l'écrire dans `assets/js/` ou `assets/css/` et l'ajouter à la liste de `quiz.js` ou aux `@import` de `quiz.css`. Aucune page n'est à modifier.
 - **Nouvelle route de l'API** : dans `serveur/serveur.js`, avec la logique dans `serveur/lib/` ; la page l'appelle par `QuizApp.connexion`.
 - **Nouveau langage exécutable** : dans `serveur/lib/executer.js` (et `LANGAGES` du vérificateur, `NOMS` et `LANGUE_HLJS` de `code.js`).
-- **Extensions du serveur** : un autre outil de `studies/` ajoute ses routes sans toucher au serveur, par un fichier `_<outil>/serveur/extension.js` qui exporte `{ nom, api(route, req, res, outils), travauxMatiere(dossier, relatif) }`. Au démarrage, `serveur/lib/extensions.js` charge chaque extension trouvée ; les requêtes `/api/<nom>/…` lui sont confiées, avec les outils du serveur (`envoyerJson`, `lireCorps`, `claude`, `assistant`, `chemins`…). `travauxMatiere` alimente le portail. C'est ainsi que fonctionnent `_outils/atelier/` et `_outils/todo/` (suivi de `TODO.md`).
+- **Extensions du serveur** : un autre outil d’`ula/` ajoute ses routes sans toucher au serveur, par un fichier `_<outil>/serveur/extension.js` qui exporte `{ nom, api(route, req, res, outils), travauxMatiere(dossier, relatif) }`. Au démarrage, `serveur/lib/extensions.js` charge chaque extension trouvée ; les requêtes `/api/<nom>/…` lui sont confiées, avec les outils du serveur (`envoyerJson`, `lireCorps`, `claude`, `assistant`, `chemins`…). `travauxMatiere` alimente le portail. C'est ainsi que fonctionnent `_outils/atelier/` et `_outils/todo/` (suivi de `TODO.md`).
 - **Rapports et types venus d'un autre outil** : `QuizApp.rapports[type]` affiche un rapport de correction propre à un outil ; un type ajouté à `QuizApp.types` peut fournir `blocModele(q)` (solution affichée pour l'auto-évaluation). `QuizApp.pret` est une promesse résolue quand le quiz est prêt ; si la page charge `atelier.js`, le démarrage attend l'atelier avant d'afficher le quiz.
 - Après une modification : `node --check` sur les fichiers JavaScript, `verifier_quiz.py --executer` sur `demo.html` et les dossiers `generated_quizzes/`, puis un quiz complet dans chaque mode (clair, sombre, fenêtre étroite, avec et sans serveur).
 - Les couleurs et polices viennent de la charte : on ne les redéfinit pas ici.
@@ -266,3 +266,4 @@ Exemple de question SQL :
 - **2.5**, 31 octobre 2026 : langage `c-posix` : le C qui emploie `fork` ou `sigaction` s'exécute dans WSL sous Windows.
 - **2.4**, 31 octobre 2026 : `lancer.bat` et `lancer.sh` passent à la racine de `studies` ; application de bureau (`_outils/app/`), qui lance le serveur et l'arrête par un message (`process.send`) ; Claude Code : la version la plus récente est retenue, et non la première trouvée (celle du PATH refusait `--permission-prompts`, et tous les appels à Claude échouaient).
 - **2.3**, 29 septembre 2026 : le fil d'Ariane du modèle commence par « studies » (accueil général) ; l'icône maison de la barre, ajoutée par la charte (1.9), mène à l'accueil général ; le bouton du portail, avec le serveur, prend une icône de tableau de bord. L'agrandissement au-delà de 1 440 px vient désormais de la charte (1.10), pour toutes les pages ; le portail prend aussi la largeur de la barre du haut. Mouvement (charte 1.11) : chaque écran du quiz et du portail, la correction, les indices et la réponse modèle arrivent en fondu ; choix et boutons s'enfoncent au clic.
+- **2.5**, 12 novembre 2026 : réorganisation ula. Les quiz du catalogue sont dans `explore/<domaine>/<cours>/generated_quizzes/` ; les tentatives s'écrivent dans l'espace du profil actif (`<profil>/<cursus>/<cours>/quiz_results/`, jamais dans `explore/`), et le cours est ajouté au cursus s'il n'y est pas (dossier « Cours suivis »). Le serveur sert la racine des données (le dossier qui contient `_outils`, ou `ULA_RACINE`) et les outils sous `/_outils/` ; `/` mène à l'accueil dynamique (`_outils/ula/accueil.html` : profils, cursus, catalogue) ; un fichier absent d'un cours est cherché dans le dossier de ce cours de l'espace du profil (TP, devoir) ; une page d'un cours non installé renvoie au catalogue. La génération écrit le nouveau quiz dans l'espace du profil, avec des liens depuis la racine du serveur, sans toucher au catalogue. Le portail ne montre que les cours du cursus du profil.

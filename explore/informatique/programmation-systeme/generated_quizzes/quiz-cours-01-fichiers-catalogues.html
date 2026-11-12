@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="se">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Fichiers et catalogues · Programmation système L3</title>
+<meta name="description" content="Quiz interactif sur le cours 1 de programmation système (L3) : services du SGF, catalogues, organisation des blocs, descripteurs, i-nœuds et capacité d'un fichier, droits, liens, FAT, struct stat et readdir, avec une fonction C exécutée.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="../generated_courses/index.html">Programmation système</a>
+    <span aria-current="page">Quiz · Fichiers et catalogues</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Programmation système</span> Quiz · L3 S5</p>
+    <h1>Fichiers et catalogues</h1>
+    <p class="chapeau">Vingt questions sur le cours 1 : services du SGF et catalogues, organisation des blocs, descripteurs, i-nœuds et taille maximale d'un fichier, droits et liens, FAT, <code>struct stat</code> et <code>readdir</code>. Plusieurs calculs, et une fonction C exécutée et corrigée automatiquement. Les questions du CC1 et les erreurs du 28 septembre ont leurs propres quiz.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-01-fichiers-catalogues.html">Cours 1 · Fichiers et catalogues</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-01">1<sup>er</sup> oct. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Programmation système · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "se-cours-01-fichiers-catalogues",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 1 · Fichiers et catalogues",
+      "lien": "../generated_courses/cours-01-fichiers-catalogues.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "association",
+      "theme": "SGF et catalogues",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque service que doit rendre le SGF au moyen qui le réalise :</p>",
+      "paires": [
+        [
+          "Allouer assez de blocs pour stocker un fichier",
+          "La gestion des blocs"
+        ],
+        [
+          "Désigner un fichier par un nom symbolique",
+          "Le catalogue"
+        ],
+        [
+          "Partager les fichiers entre plusieurs utilisateurs",
+          "Les droits"
+        ],
+        [
+          "Interdire les écritures concurrentes",
+          "Le verrouillage"
+        ],
+        [
+          "Créer et supprimer des fichiers, les ouvrir et les fermer",
+          "open, close et les descripteurs"
+        ]
+      ],
+      "intrus": [
+        "L'ordonnancement des processus"
+      ],
+      "explication": "<p>Ce sont les cinq services listés au CM 1, et chacun a sa partie dans le cours : la gestion des blocs (section 3), le catalogue (section 2), les descripteurs (section 4), les droits (sections 5 et 6) ; le verrouillage fait l'objet du cours 2. L'ordonnancement des processus relève d'un autre composant du système d'exploitation.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les services du SGF",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#les-services-du-sgf"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "qcm",
+      "theme": "SGF et catalogues",
+      "difficulte": 1,
+      "enonce": "<p>Quel est le principal inconvénient du catalogue à deux niveaux (un catalogue principal par utilisateur, puis un catalogue de ses fichiers) ?</p>",
+      "choix": [
+        "Il est très rigide : chaque utilisateur n'a qu'une liste plate de fichiers, et le partage entre utilisateurs est malcommode",
+        "Il est lent : il faut lire chaque étage depuis la racine pour atteindre un fichier",
+        "Il ne permet pas de retrouver l'adresse d'un fichier à partir de son nom",
+        "Il demande une table qui décrit tous les blocs du disque en mémoire centrale"
+      ],
+      "reponse": 0,
+      "explication": "<p>Deux recherches suffisent (l'utilisateur, puis le nom) : c'est rapide et simple, mais rigide. Pas de sous-dossiers pour ranger ses fichiers, et partager un fichier entre utilisateurs est malcommode ; cette organisation n'est plus utilisée. La lenteur d'une lecture étage par étage est l'inconvénient de l'arborescence, qui l'a remplacée. La table de tous les blocs relève de l'organisation des blocs, pas du catalogue.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Le catalogue à deux niveaux",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#le-catalogue-a-deux-niveaux"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "numerique",
+      "theme": "SGF et catalogues",
+      "difficulte": 1,
+      "enonce": "<p>Dans une arborescence de catalogues, sans aucun chemin gardé en mémoire, combien de catalogues faut-il lire pour trouver l'entrée du fichier <code>/home/alice/td1/notes.txt</code> ?</p>",
+      "reponse": 4,
+      "explication": "<p>Quatre : la racine <code>/</code>, puis <code>home</code>, <code>alice</code> et <code>td1</code>, qui contient enfin l'entrée <code>notes.txt</code>. C'est le prix de la flexibilité de l'arborescence. Pour limiter ces lectures, le système garde le chemin du dernier catalogue accédé, le catalogue de travail : depuis <code>/home/alice/td1</code>, le chemin relatif <code>notes.txt</code> ne demande plus qu'une lecture.</p>",
+      "revoir": {
+        "texte": "Cours 1 · L'arborescence de catalogues",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#l-arborescence-de-catalogues"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "numerique",
+      "theme": "Organisation des blocs",
+      "difficulte": 1,
+      "enonce": "<p>Un fichier est rangé en blocs chaînés ; le catalogue donne l'adresse de son premier bloc. Combien de blocs faut-il lire sur le disque pour lire le contenu de son 500<sup>e</sup> bloc ?</p>",
+      "reponse": 500,
+      "explication": "<p>500 : l'adresse du 500<sup>e</sup> bloc n'est écrite qu'à la fin du 499<sup>e</sup>, dont l'adresse est à la fin du 498<sup>e</sup>, et ainsi de suite. Il faut lire les 499 blocs qui précèdent, puis le bloc voulu. C'est le grand défaut des blocs chaînés : pas d'accès direct. Avec une table des blocs, on suit la même chaîne, mais en mémoire centrale, et une seule lecture sur le disque suffit.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les blocs chaînés",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#les-blocs-chaines"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "numerique",
+      "theme": "Organisation des blocs",
+      "difficulte": 2,
+      "enonce": "<p>Un disque de 512 Gio est découpé en blocs de 4 Kio ; il est géré par une table des blocs dont chaque entrée occupe 4 octets. Quelle place la table occupe-t-elle en mémoire centrale, en Mio ?</p>",
+      "reponse": 512,
+      "unite": "Mio",
+      "indices": [
+        "<p>Une entrée par bloc du disque : combien de blocs de \\(2^{12}\\) octets dans \\(2^{39}\\) octets ?</p>"
+      ],
+      "explication": "<p>Le disque compte \\(2^{39} / 2^{12} = 2^{27}\\) blocs, soit environ 134 millions, et la table une entrée de 4 octets par bloc : \\(2^{27} \\times 4 = 2^{29}\\) octets, soit 512 Mio. C'est l'inconvénient de la table des blocs : sa taille suit celle du disque, et si elle ne tient pas en mémoire centrale, il faut en échanger des morceaux avec le disque (le swap).</p>",
+      "revoir": {
+        "texte": "Cours 1 · La table des blocs",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#la-table-des-blocs"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "association",
+      "theme": "Organisation des blocs",
+      "difficulte": 2,
+      "enonce": "<p>Associer chaque organisation des blocs à son point faible :</p>",
+      "paires": [
+        [
+          "Blocs chaînés",
+          "Pas d'accès direct : il faut lire tous les blocs qui précèdent"
+        ],
+        [
+          "Table des blocs",
+          "Une table qui grandit avec le disque, et peut ne pas tenir en mémoire centrale"
+        ],
+        [
+          "Blocs d'index",
+          "Insérer des données au milieu du fichier oblige à décaler les adresses qui suivent"
+        ]
+      ],
+      "intrus": [
+        "Le dernier bloc du fichier est toujours entièrement rempli"
+      ],
+      "explication": "<p>Chaque organisation corrige le défaut de la précédente, et en a un autre : la table supprime les adresses des blocs et donne l'accès direct, mais sa taille suit celle du disque ; les blocs d'index n'en gardent en mémoire que pour les fichiers ouverts, mais l'insertion y coûte un décalage. Le dernier bloc, lui, n'est presque jamais plein, et c'est vrai pour les trois : une partie en est perdue.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Comparer les trois organisations",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#comparer-les-trois-organisations"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "qcm-multi",
+      "theme": "Organisation des blocs",
+      "difficulte": 2,
+      "enonce": "<p>On double la taille des blocs d'un SGF, à disque égal. Qu'est-ce qui change ?</p>",
+      "choix": [
+        "Il y a deux fois moins de blocs, donc moins d'adresses à gérer",
+        "La place perdue à la fin de chaque fichier augmente, en moyenne",
+        "Un fichier d'un octet occupe plus de place sur le disque",
+        "La place perdue à la fin de chaque fichier diminue, en moyenne",
+        "Le nombre de fichiers que l'on peut créer double"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "explication": "<p>La taille des blocs est un compromis entre le gaspillage d'espace à la fin des fichiers et le nombre d'adresses à manipuler. Des blocs deux fois plus grands, c'est deux fois moins de blocs, donc une table plus petite ou des index plus courts ; mais le dernier bloc de chaque fichier, à moitié vide en moyenne, perd deux fois plus de place, et un fichier d'un octet occupe un bloc entier, deux fois plus grand.</p>",
+      "revoir": {
+        "texte": "Cours 1 · La taille des blocs",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#la-taille-des-blocs"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "qcm",
+      "theme": "Descripteurs",
+      "difficulte": 2,
+      "enonce": "<p>Pourquoi le descripteur d'un fichier ouvert contient-il sa taille ?</p>",
+      "choix": [
+        "C'est le seul moyen de savoir où s'arrêtent les données : il n'y a pas de marqueur de fin dans le contenu",
+        "Pour savoir combien de blocs réserver à l'ouverture",
+        "Pour vérifier les droits d'accès : un fichier vide n'en a pas",
+        "Pour calculer l'adresse du premier bloc"
+      ],
+      "reponse": 0,
+      "explication": "<p>Les données d'un fichier ne se terminent par aucun marqueur : la taille dit où elles s'arrêtent, en particulier dans le dernier bloc, souvent rempli en partie seulement. Le <code>EOF</code> des blocs chaînés ou de la table marque le dernier <em>bloc</em>, pas le dernier octet. Le descripteur contient aussi le nom, l'adresse du début du fichier, l'adresse courante et le mode d'accès.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Le descripteur de fichier",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#le-descripteur-de-fichier"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "qcm-multi",
+      "theme": "Descripteurs",
+      "difficulte": 2,
+      "enonce": "<p>Avec une liste de descripteurs à deux niveaux, que contient le descripteur <strong>local</strong>, propre à chaque ouverture du fichier ?</p>",
+      "choix": [
+        "Le mode d'ouverture (lecture, écriture)",
+        "L'adresse du prochain bloc à lire ou écrire",
+        "Le nom du fichier",
+        "L'adresse du début du fichier",
+        "Le verrouillage interne"
+      ],
+      "reponses": [
+        0,
+        1
+      ],
+      "explication": "<p>Le descripteur local porte ce qui diffère d'une ouverture à l'autre : le mode et la position. Ce qui est commun à toutes les ouvertures d'un même fichier (son nom, l'adresse de son début, le verrouillage interne) est rangé une seule fois, dans le descripteur commun. C'est ce qui permet à plusieurs processus d'ouvrir le même fichier en même temps, chacun avec son mode et sa position.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Descripteurs à un niveau, à deux niveaux",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#descripteurs-a-un-niveau-a-deux-niveaux"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "numerique",
+      "theme": "i-nœuds",
+      "difficulte": 2,
+      "enonce": "<p>Les blocs font 2 Kio et les adresses 4 octets. En n'utilisant que les 10 adresses directes de l'i-nœud et son adresse de 1<sup>er</sup> niveau, combien de blocs de données un fichier peut-il avoir au plus ?</p>",
+      "reponse": 522,
+      "unite": "blocs",
+      "explication": "<p>Un bloc d'index de 2 Kio contient \\(2048 / 4 = 512\\) adresses. Les 10 adresses directes donnent 10 blocs, le 1<sup>er</sup> niveau 512 de plus : 522 blocs, soit 1 044 Kio. Le 2<sup>e</sup> niveau ajouterait \\(512^2\\) blocs, et le 3<sup>e</sup> \\(512^3\\).</p>",
+      "revoir": {
+        "texte": "Cours 1 · L'i-nœud et ses blocs d'index",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#i-noeud-et-blocs-d-index"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "numerique",
+      "theme": "i-nœuds",
+      "difficulte": 3,
+      "enonce": "<p>Les blocs font 1 Kio et les adresses 4 octets ; l'i-nœud du fichier est déjà en mémoire. Combien de blocs faut-il lire sur le disque pour obtenir l'octet n° 50 000 du fichier (en comptant à partir de 0) ?</p>",
+      "reponse": 2,
+      "indices": [
+        "<p>L'octet 50 000 est dans le bloc \\(\\lfloor 50\\,000 / 1\\,024 \\rfloor\\) du fichier. Les blocs 0 à 9 sont directs, les 256 suivants passent par le 1<sup>er</sup> niveau.</p>"
+      ],
+      "explication": "<p>L'octet est dans le bloc \\(\\lfloor 50\\,000 / 1\\,024 \\rfloor = 48\\). Ce n'est pas un bloc direct (0 à 9), mais il relève du 1<sup>er</sup> niveau, qui couvre les blocs 10 à 265 : on lit le bloc d'index de 1<sup>er</sup> niveau, dont l'adresse est dans l'i-nœud, puis le bloc de données qu'il désigne à l'entrée \\(48 - 10 = 38\\). Deux lectures, contre une seule pour un octet des 10 premiers blocs.</p>",
+      "revoir": {
+        "texte": "Cours 1 · L'i-nœud et ses blocs d'index",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#i-noeud-et-blocs-d-index"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "reponse-courte",
+      "theme": "Droits et liens",
+      "difficulte": 1,
+      "enonce": "<p>Un fichier ordinaire a les droits octaux <code>640</code>. Comment <code>ls -l</code> affiche-t-il ses droits, sans le caractère du type ? (9 caractères)</p>",
+      "reponses": [
+        "rw-r-----",
+        "-rw-r-----"
+      ],
+      "casse": true,
+      "explication": "<p>Chaque chiffre octal code trois bits, dans l'ordre <code>r</code>, <code>w</code>, <code>x</code> : 6 = 110 = <code>rw-</code> pour le propriétaire, 4 = 100 = <code>r--</code> pour le groupe, 0 = <code>---</code> pour les autres. D'où <code>rw-r-----</code>, et <code>-rw-r-----</code> avec le type.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les droits et les bits spéciaux",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#les-droits-et-les-bits-speciaux"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "qcm",
+      "theme": "Droits et liens",
+      "difficulte": 2,
+      "enonce": "<p><code>ls -l /usr/bin/passwd</code> affiche <code>-rwsr-xr-x 1 root root</code>. Que permet le <code>s</code> ?</p>",
+      "choix": [
+        "Le bit SET_UID : qui lance la commande obtient, le temps de son exécution, les droits de son propriétaire, <code>root</code>",
+        "Le sticky bit : seul le propriétaire peut supprimer le fichier",
+        "Le bit SET_GID : la commande s'exécute avec les droits du groupe de l'utilisateur",
+        "Le fichier est un lien symbolique vers une commande système"
+      ],
+      "reponse": 0,
+      "explication": "<p>Un <code>s</code> à la place du <code>x</code> du propriétaire signale le bit <code>SET_UID</code> : l'utilisateur qui exécute le programme hérite temporairement des droits de son propriétaire. Ainsi, n'importe qui peut lancer <code>passwd</code>, qui s'exécute avec les droits de <code>root</code>, seul autorisé à modifier le fichier des mots de passe. Le sticky bit s'affiche <code>t</code>, à la place du dernier <code>x</code> ; <code>SET_GID</code> s'affiche <code>s</code> à la place du <code>x</code> du groupe, et donne les droits du groupe <em>propriétaire</em>.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les droits et les bits spéciaux",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#les-droits-et-les-bits-speciaux"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "vrai-faux",
+      "theme": "Droits et liens",
+      "difficulte": 1,
+      "enonce": "<p>Un lien symbolique a le même numéro d'i-nœud que le fichier qu'il désigne.</p>",
+      "reponse": false,
+      "explication": "<p>Faux : c'est le cas du lien <strong>physique</strong>, qui n'est qu'une entrée de catalogue de plus vers le même i-nœud. Un lien symbolique est un petit fichier à part entière, de type lien, avec son propre i-nœud, qui contient le chemin de sa cible. C'est pourquoi il peut désigner un fichier d'une autre unité logique, ou un fichier qui n'existe plus.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Liens physiques et liens symboliques",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#liens-physiques-et-liens-symboliques"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "numerique",
+      "theme": "Droits et liens",
+      "difficulte": 3,
+      "enonce": "<p>Un catalogue contient trois sous-catalogues et deux fichiers ordinaires. Combien de liens physiques son i-nœud compte-t-il (le champ <code>st_nlink</code>) ?</p>",
+      "reponse": 5,
+      "indices": [
+        "<p>Compter toutes les entrées de catalogue qui désignent cet i-nœud : dans son père, en lui-même, et dans chacun de ses sous-catalogues.</p>"
+      ],
+      "explication": "<p>Cinq : son entrée dans le catalogue parent, sa propre entrée <code>.</code>, et l'entrée <code>..</code> de chacun de ses trois sous-catalogues. Les fichiers ordinaires qu'il contient ne comptent pas : leurs entrées désignent leurs propres i-nœuds. En général, un catalogue a \\(2 + k\\) liens, \\(k\\) étant son nombre de sous-catalogues.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les catalogues d'Unix",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#les-catalogues-d-unix"
+      }
+    },
+    {
+      "id": "q16",
+      "type": "ordre",
+      "theme": "FAT",
+      "difficulte": 2,
+      "enonce": "<p>Le catalogue indique qu'un fichier commence au secteur 4. La FAT contient, pour les entrées 2 à 9 : 2 → EOF, 3 → 7, 4 → 9, 5 → LIBRE, 6 → EOF, 7 → 6, 8 → LIBRE, 9 → 3. Remettre les secteurs du fichier dans l'ordre.</p>",
+      "elements": [
+        "secteur 4",
+        "secteur 9",
+        "secteur 3",
+        "secteur 7",
+        "secteur 6"
+      ],
+      "explication": "<p>On part du secteur donné par le catalogue, 4 ; l'entrée 4 de la FAT donne le suivant, 9 ; l'entrée 9 donne 3, l'entrée 3 donne 7, l'entrée 7 donne 6, et l'entrée 6 vaut <code>EOF</code> : c'est le dernier. Le fichier occupe 5 secteurs, dans cet ordre. Le secteur 2 termine un autre fichier, et les secteurs 5 et 8 sont libres.</p>",
+      "revoir": {
+        "texte": "Cours 1 · La FAT, une table des secteurs",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#la-fat-une-table-des-secteurs"
+      }
+    },
+    {
+      "id": "q17",
+      "type": "numerique",
+      "theme": "FAT",
+      "difficulte": 2,
+      "enonce": "<p>Une disquette de 360 Kio a des secteurs de 512 octets. Sa FAT a une entrée de 12 bits par secteur. Combien d'octets la FAT occupe-t-elle ?</p>",
+      "reponse": 1080,
+      "unite": "octets",
+      "explication": "<p>La disquette compte \\(360 \\times 1024 / 512 = 720\\) secteurs, et la FAT \\(720 \\times 12 / 8 = 1080\\) octets. Elle ne tient plus dans un seul secteur, comme celle de la disquette de 160 Kio du cours (480 octets) : il en faut trois. Avec 12 bits, on ne numérote de toute façon que \\(2^{12} = 4096\\) secteurs ; d'où les FAT16 et FAT32 pour les disques plus grands.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Une FAT de 12 bits",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#une-fat-de-12-bits"
+      }
+    },
+    {
+      "id": "q18",
+      "type": "association",
+      "theme": "stat et readdir",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque champ de <code>struct stat</code> à ce qu'il contient :</p>",
+      "paires": [
+        [
+          "<code>st_ino</code>",
+          "Le numéro d'i-nœud"
+        ],
+        [
+          "<code>st_nlink</code>",
+          "Le nombre de liens physiques"
+        ],
+        [
+          "<code>st_size</code>",
+          "La taille, en octets"
+        ],
+        [
+          "<code>st_mtime</code>",
+          "La date de la dernière modification du contenu"
+        ],
+        [
+          "<code>st_dev</code>",
+          "L'unité logique qui contient l'i-nœud"
+        ]
+      ],
+      "intrus": [
+        "Le nom du fichier"
+      ],
+      "explication": "<p><code>stat</code> copie les informations de l'i-nœud dans la structure. Le nom n'en fait pas partie : il est dans le catalogue, et un même i-nœud peut d'ailleurs avoir plusieurs noms. <code>st_mtime</code> est celle que compare la fonction <code>modif</code> du CC1 ; <code>st_dev</code> sert quand une arborescence réunit plusieurs unités logiques, qui numérotent chacune leurs i-nœuds.</p>",
+      "revoir": {
+        "texte": "Cours 1 · La structure stat",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#la-structure-stat"
+      }
+    },
+    {
+      "id": "q19",
+      "type": "qcm",
+      "theme": "stat et readdir",
+      "difficulte": 2,
+      "enonce": "<p>Ce programme veut afficher les noms des entrées d'un catalogue. Que fait la boucle ?</p><pre><code class='language-c'>struct dirent *e;\nDIR *d = opendir(\".\");\nwhile (e = readdir(d) != NULL)\n    printf(\"%s\\n\", e-&gt;d_name);</code></pre>",
+      "choix": [
+        "<code>e</code> reçoit le résultat de la comparaison, 0 ou 1, et non l'adresse de l'entrée : <code>e-&gt;d_name</code> lit à une adresse invalide",
+        "Elle affiche les noms des entrées, dans un ordre quelconque",
+        "Elle affiche les noms des entrées, sans <code>.</code> ni <code>..</code>",
+        "Elle ne s'arrête jamais, car <code>readdir</code> ne renvoie jamais <code>NULL</code>"
+      ],
+      "reponse": 0,
+      "explication": "<p><code>!=</code> est prioritaire sur <code>=</code> : la condition se lit <code>e = (readdir(d) != NULL)</code>, et <code>e</code> reçoit 1 tant qu'il reste des entrées. <code>e-&gt;d_name</code> lit alors à l'adresse 1 : le programme plante. Il faut <code>while ((e = readdir(d)) != NULL)</code>. Une fois corrigée, la boucle affiche toutes les entrées, <code>.</code> et <code>..</code> compris, dans un ordre quelconque, et s'arrête quand <code>readdir</code> renvoie <code>NULL</code>. <code>gcc -Wall</code> signale le piège.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Lire un catalogue : opendir et readdir",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#lire-un-catalogue-opendir-et-readdir"
+      }
+    },
+    {
+      "id": "q20",
+      "type": "code",
+      "langage": "c",
+      "theme": "stat et readdir",
+      "difficulte": 2,
+      "enonce": "<p>Écrire la fonction <code>taille</code>, qui renvoie la taille en octets du fichier <code>nom</code>, −1 si la référence n'existe pas, et −2 si c'est un catalogue. Le programme de test crée un fichier vide <code>vide.txt</code>, un fichier de 10 octets <code>dix.txt</code> et un catalogue <code>rep</code>, puis lit des noms et affiche le résultat de chacun.</p>",
+      "depart": "#include <stdio.h>\n#include <sys/stat.h>\n\nlong taille(const char *nom)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <sys/stat.h>\n\nlong taille(const char *nom)\n{\n    struct stat infos;\n    if (stat(nom, &infos) == -1)\n        return -1;                          /* référence inexistante */\n    if ((infos.st_mode & S_IFMT) == S_IFDIR)\n        return -2;                          /* un catalogue */\n    return (long) infos.st_size;\n}\n",
+      "harnais": "\n#ifdef _WIN32\n#include <direct.h>\n#define creer_catalogue(n) _mkdir(n)\n#else\n#define creer_catalogue(n) mkdir(n, 0755)\n#endif\n\nint main(void)\n{\n    char nom[256];\n    FILE *f = fopen(\"vide.txt\", \"wb\");\n    if (f) fclose(f);\n    f = fopen(\"dix.txt\", \"wb\");\n    if (f) { fputs(\"0123456789\", f); fclose(f); }\n    creer_catalogue(\"rep\");\n    while (scanf(\"%255s\", nom) == 1)\n        printf(\"%ld\\n\", taille(nom));\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "fichier de 10 octets",
+          "entree": "dix.txt\n",
+          "sortie": "10\n"
+        },
+        {
+          "nom": "fichier vide",
+          "entree": "vide.txt\n",
+          "sortie": "0\n"
+        },
+        {
+          "nom": "catalogue",
+          "entree": "rep\n",
+          "sortie": "-2\n"
+        },
+        {
+          "nom": "référence absente",
+          "entree": "absent.txt\n",
+          "sortie": "-1\n"
+        }
+      ],
+      "indices": [
+        "<p><code>stat</code> renvoie −1 si la référence n'existe pas ; sinon, le type se lit avec <code>(infos.st_mode &amp; S_IFMT) == S_IFDIR</code>, et la taille dans <code>infos.st_size</code>.</p>"
+      ],
+      "explication": "<p>Il n'est pas utile d'ouvrir le fichier : <code>stat</code> suffit, et renvoie −1 pour une référence absente. On teste le type en masquant par <code>S_IFMT</code> avant de comparer à <code>S_IFDIR</code>, avec les parenthèses, puis on renvoie <code>st_size</code>, de type <code>off_t</code>, converti en <code>long</code>. Le fichier vide piège une confusion entre « taille nulle » et « erreur ».</p>",
+      "revoir": {
+        "texte": "Cours 1 · La structure stat",
+        "lien": "../generated_courses/cours-01-fichiers-catalogues.html#la-structure-stat"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

@@ -9,8 +9,9 @@
                                   a changé depuis la version lue (une autre
                                   page, Claude, l'éditeur…), sauf avec forcer
 
-   Seul TODO.md, à la racine de studies/, est lu ou écrit. La version est
-   « date de modification-taille » : elle change à chaque écriture. */
+   Seul le TODO.md du profil actif (<racine>/<profil>/TODO.md) est lu ou écrit :
+   le suivi est personnel. La version est « date de modification-taille » :
+   elle change à chaque écriture. */
 
 const fs = require("fs");
 const path = require("path");
@@ -26,10 +27,13 @@ function lireFichier(fichier) {
 
 async function api(route, req, res, outils) {
   if (route !== "fichier") return false;
-  const fichier = path.join(outils.chemins.RACINE, "TODO.md");
+  const { RACINE, espace } = outils.chemins;
+  const profil = espace.profilActif(RACINE);
+  if (!profil) return outils.erreur(res, 409, "Aucun profil choisi : le choisir sur l'accueil (TODO.md est dans l'espace du profil).");
+  const fichier = path.join(RACINE, profil, "TODO.md");
 
   if (req.method === "GET") {
-    if (!fs.existsSync(fichier)) return outils.erreur(res, 404, "TODO.md est introuvable à la racine de studies/.");
+    if (!fs.existsSync(fichier)) return outils.erreur(res, 404, "TODO.md est introuvable dans l'espace du profil « " + profil + " » (" + profil + "/TODO.md).");
     return outils.envoyerJson(res, 200, lireFichier(fichier));
   }
 

@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="codage">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Exécutifs temps réel · Codage L3</title>
+<meta name="description" content="Quiz interactif sur le cours 5 de codage de l'information (L3) : temps réel souple et dur, implantations de l'application moteur, tâches, états et primitives, ordonnancement en temps partagé, à priorité fixe et à urgence relative, borne de Liu et Layland, événement, sémaphore et rendez-vous, sections critiques, boîte aux lettres et interblocages, avec trois chronogrammes d'ordonnancement à tracer et une boîte aux lettres en C exécutée.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/quiz/assets/quiz.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/quiz/assets/quiz.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="../generated_courses/index.html">Codage</a>
+    <span aria-current="page">Quiz · Exécutifs temps réel</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Codage</span> Quiz · L3 S5</p>
+    <h1>Exécutifs temps réel</h1>
+    <p class="chapeau">Vingt-quatre questions sur le cours 5 : contraintes de temps, tâches et exécutif, ordonnancement, synchronisation et exclusion mutuelle, boîte aux lettres et interblocages. Trois chronogrammes d'ordonnancement à tracer (temps partagé, priorité fixe, urgence relative), et une boîte aux lettres à écrire en C, exécutée sur un petit exécutif simulé et corrigée automatiquement.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-05-executifs-temps-reel.html">Cours 5 · Exécutifs temps réel</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-30">30 sept. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Codage · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "codage-cours-05-executifs-temps-reel",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 5 · Exécutifs temps réel",
+      "lien": "../generated_courses/cours-05-executifs-temps-reel.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "qcm-multi",
+      "theme": "Temps réel",
+      "difficulte": 1,
+      "enonce": "<p>Lesquelles de ces applications relèvent du <strong>temps réel dur</strong> ?</p>",
+      "choix": [
+        "Le contrôle d'un procédé industriel",
+        "Le déclenchement d'un coussin gonflable de voiture",
+        "Un système de mesure",
+        "Un système transactionnel (réservation, banque)",
+        "Un lecteur vidéo",
+        "Une interface utilisateur"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "explication": "<p>En temps réel dur, les contraintes sont strictes, de l'ordre de la milliseconde, et les manquer a des conséquences dramatiques : contrôle de procédé, systèmes de mesure, coussin gonflable (un déclenchement tardif est aussi inutile qu'une absence de déclenchement). Le système transactionnel, l'interface utilisateur et le lecteur vidéo relèvent du temps réel souple : un dépassement y est toléré dans un certain pourcentage des cas, il dégrade le service sans le rendre inutilisable.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Temps réel souple et temps réel dur",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#contraintes-de-temps-temps-reel-souple-et-temps-reel-dur"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "vrai-faux",
+      "theme": "Temps réel",
+      "difficulte": 1,
+      "enonce": "<p>Avec un processeur assez puissant, n'importe quelle application devient une application temps réel.</p>",
+      "reponse": false,
+      "explication": "<p>Faux : c'est l'une des idées reçues de la fin du cours. Ce qui compte n'est pas la vitesse moyenne mais la <strong>prédictibilité</strong> : il faut pouvoir borner <em>a priori</em> le temps de calcul. Une mémoire cache ou des communications au coût variable rendent ce temps imprévisible, même sur une machine rapide.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Synthèse et idées reçues",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#synthese-et-idees-recues"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "association",
+      "theme": "Temps réel",
+      "difficulte": 2,
+      "enonce": "<p>Dans l'application d'asservissement du moteur, associer chaque implantation au risque qu'elle fait courir :</p>",
+      "paires": [
+        [
+          "Tout traiter dans la routine d'interruption <code>Diviseur</code>",
+          "Perdre une impulsion <code>H</code> arrivée pendant un traitement long"
+        ],
+        [
+          "Lever des drapeaux et traiter dans une tâche de fond",
+          "Un temps de réponse de <code>H</code> à <code>Cmd_Mot</code> long et mal borné"
+        ],
+        [
+          "Des tâches à priorités, gérées par un exécutif",
+          "Manquer de temps processeur pour les autres tâches si la période de <code>H</code> est trop courte"
+        ]
+      ],
+      "intrus": [
+        "Un interblocage entre <code>Asservissement</code> et <code>GenePWM</code>"
+      ],
+      "explication": "<p>Sous interruption, une routine qui enchaîne <code>GenePWM</code> et <code>Asservissement</code> peut durer plus de deux périodes de <code>H</code> : une impulsion est perdue. Avec une tâche de fond, rien n'est perdu, mais le traitement n'est lancé qu'au prochain passage de la boucle, après la supervision : le temps de réponse devient difficile à borner. Avec un exécutif, la tâche réveillée prend aussitôt le processeur si elle est plus prioritaire ; la période minimale de <code>H</code> ne dépend plus que du <code>Diviseur</code>, à condition de laisser du temps aux autres tâches.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Solution avec un exécutif temps réel",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#solution-avec-un-executif-temps-reel"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "trous",
+      "theme": "Tâches et exécutif",
+      "difficulte": 1,
+      "enonce": "<p>Compléter la définition d'une tâche :</p>",
+      "texte": "Une tâche est une entité dynamique composée d'un {{0}} (sa composante statique), de données, d'une {{1}} et d'un {{2}} : l'état des registres du processeur, dont le compteur ordinal <code>PC</code> et le pointeur de pile <code>SP</code>.",
+      "trous": [
+        {
+          "choix": [
+            "programme",
+            "descripteur",
+            "sémaphore"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "pile",
+            "file d'attente",
+            "priorité"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "contexte",
+            "descripteur",
+            "quantum"
+          ],
+          "reponse": 0
+        }
+      ],
+      "explication": "<p>Le programme, la suite d'instructions, est la partie statique ; données, pile et contexte en font une entité dynamique. Le descripteur n'est pas une partie de la tâche : c'est la fiche par laquelle l'exécutif la décrit (identificateur, pointeur vers le contexte, priorité, chaînage). Charger un contexte dans le processeur, c'est lui faire exécuter la tâche.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Programme, tâche et descripteur",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#programme-tache-et-descripteur"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "association",
+      "theme": "Tâches et exécutif",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque transition entre états d'une tâche à ce qui la provoque :</p>",
+      "paires": [
+        [
+          "Prête → En cours",
+          "Sélection par l'ordonnanceur"
+        ],
+        [
+          "En cours → Prête",
+          "Préemption au profit d'une tâche plus prioritaire"
+        ],
+        [
+          "En cours → En attente",
+          "<code>Wait</code> sur un événement qui n'est pas encore arrivé"
+        ],
+        [
+          "En attente → Prête",
+          "Occurrence de l'événement attendu"
+        ]
+      ],
+      "intrus": [
+        "Fin du traitement de la tâche"
+      ],
+      "explication": "<p>Sélection et préemption sont décidées par l'ordonnanceur ; le blocage vient de la tâche elle-même, qui attend une condition. L'occurrence de la condition la rend seulement <em>prête</em>, pas active : elle doit encore être choisie. La fin du traitement (« Terminer ») fait passer de En cours à Non opérationnelle.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Les états d'une tâche",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#les-etats-d-une-tache"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "qcm",
+      "theme": "Tâches et exécutif",
+      "difficulte": 2,
+      "enonce": "<p>Le descripteur d'une tâche n'a pas de champ « état ». Comment l'exécutif sait-il qu'une tâche est prête ou bloquée ?</p>",
+      "choix": [
+        "Par le chaînage : son descripteur est dans la liste des tâches prêtes, ou dans la liste d'attente d'un événement",
+        "Par son compteur ordinal <code>PC</code>, sauvegardé dans son contexte",
+        "Par sa priorité, mise à zéro tant que la tâche est bloquée",
+        "En interrogeant la tâche à chaque passage de l'ordonnanceur"
+      ],
+      "reponse": 0,
+      "explication": "<p>L'état est modélisé implicitement par le chaînage des descripteurs (champ <code>suivant</code>) : une tâche est prête si son descripteur est dans la liste des tâches prêtes, dont la tête est la tâche en cours, et bloquée s'il est dans la liste d'attente d'un événement. Changer d'état, c'est déplacer le descripteur d'une liste à l'autre. Le <code>PC</code> dit où reprendre le programme, pas si la tâche peut reprendre.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Descripteur de tâche et structure de l'exécutif",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#descripteur-de-tache-et-structure-de-l-executif"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "ordre",
+      "theme": "Tâches et exécutif",
+      "difficulte": 2,
+      "enonce": "<p>Remettre dans l'ordre les étapes d'une primitive appelée par une tâche, par exemple <code>Signal(Ev)</code> :</p>",
+      "elements": [
+        "Appel de l'exécutif",
+        "Sauvegarde du contexte de la tâche appelante",
+        "Traitement de la primitive",
+        "Appel de l'ordonnanceur",
+        "Restitution d'un contexte et retour à l'application"
+      ],
+      "explication": "<p>L'exécutif sauvegarde d'abord le contexte de l'appelante, traite la primitive (ici, réveiller les tâches qui attendent <code>Ev</code>), puis l'ordonnanceur choisit la tâche à exécuter. Le contexte restitué n'est pas forcément celui qui a été sauvegardé : si une tâche plus prioritaire a été réveillée, c'est le sien qui est chargé. Une primitive déclenchée par une interruption suit les mêmes étapes, l'interruption remplaçant l'appel.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Les primitives",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#les-primitives"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "qcm",
+      "theme": "Tâches et exécutif",
+      "difficulte": 3,
+      "enonce": "<p>Ordonnancement à priorité fixe, le plus grand nombre étant la plus forte priorité. T1 (priorité 3) est en cours, seule dans la liste des tâches prêtes. T2 (priorité 5) et T3 (priorité 1) sont dans la liste d'attente de l'événement <code>Ev</code>. T1 émet <code>Ev</code>, ce qui, comme dans l'exemple du cours, réveille toutes les tâches qui l'attendent. Qu'obtient-on ?</p>",
+      "choix": [
+        "Prêtes : T2 (5) → T1 (3) → T3 (1) ; T2 prend le processeur, T1 est préemptée",
+        "Prêtes : T1 (3) → T2 (5) → T3 (1) ; T1 garde le processeur jusqu'à son prochain blocage",
+        "Prêtes : T2 (5) → T3 (1) → T1 (3) ; les tâches réveillées passent devant la tâche en cours",
+        "Prêtes : T2 (5) → T1 (3) → T3 (1) ; T1 reste en cours jusqu'à la fin de son quantum"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Les tâches réveillées sont insérées dans la liste des prêtes selon leur priorité ; la tête de la liste est la tâche en cours.</p>"
+      ],
+      "explication": "<p>L'émission de <code>Ev</code> vide sa liste d'attente : T2 et T3 sont insérées dans la liste des prêtes selon leur priorité. T2, la plus prioritaire, passe en tête et devient la tâche en cours : T1 est préemptée et repasse à l'état prêt, derrière T2 ; T3 se place en queue. En priorité fixe préemptive, rien n'attend le prochain blocage de T1, et il n'y a pas de quantum.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Descripteur de tâche et structure de l'exécutif",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#descripteur-de-tache-et-structure-de-l-executif"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "atelier",
+      "editeur": "chronogramme",
+      "theme": "Ordonnancement",
+      "difficulte": 2,
+      "titre": "Temps partagé, quantum de 2",
+      "enonce": "<p>Trois tâches T1, T2 et T3, de durées 5, 2 et 3, sont prêtes à t = 0, dans cet ordre. Tracer leur exécution en temps partagé avec un quantum de 2 : une tâche qui n'a pas fini à la fin de son quantum repasse en fin de file.</p>",
+      "consigne": "<p>Choisir un état dans la palette, puis peindre les cases : x pour l'exécution, p pour une tâche prête qui attend le processeur. Laisser vide quand la tâche n'a rien à faire (terminée, ou pas encore réactivée).</p>",
+      "vue": "dessin",
+      "options": {
+        "processeurs": 1,
+        "durees": {
+          "T1": 5,
+          "T2": 2,
+          "T3": 3
+        }
+      },
+      "depart": [
+        "temps 0..10",
+        "etat x Exécution",
+        "etat p Prêt",
+        "T1 :",
+        "T2 :",
+        "T3 :"
+      ],
+      "solution": [
+        "temps 0..10",
+        "etat x Exécution",
+        "etat p Prêt",
+        "T1 : xxppppxxpx",
+        "T2 : ppxx......",
+        "T3 : ppppxxppx."
+      ],
+      "indices": [
+        "<p>Tenir à jour la file des tâches prêtes : T1, T2, T3 au départ. À t = 2, T1, à qui il reste 3 unités, repasse derrière T2 et T3.</p>"
+      ],
+      "explication": "<p>T1 s'exécute de 0 à 2 (reste 3) et repasse en fin de file : T2, T3, T1. T2 s'exécute de 2 à 4 et termine. T3 s'exécute de 4 à 6 (reste 1) : file T1, T3. T1 de 6 à 8 (reste 1) : file T3, T1. T3 termine à 9, T1 à 10. T3 finit avant T1, arrivée pourtant en tête : en temps partagé, une tâche longue avance par tranches et laisse passer les courtes.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Temps partagé",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#temps-partage"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "qcm",
+      "theme": "Ordonnancement",
+      "difficulte": 1,
+      "enonce": "<p>En temps partagé, on divise le quantum par dix. Quel est l'effet principal à craindre ?</p>",
+      "choix": [
+        "L'overhead augmente : les changements de contexte se multiplient",
+        "Le temps de réponse des tâches augmente",
+        "Certaines tâches prêtes ne reçoivent plus jamais le processeur",
+        "L'ordonnancement cesse d'être préemptif"
+      ],
+      "reponse": 0,
+      "explication": "<p>Chaque fin de quantum coûte un passage par l'ordonnanceur et un changement de contexte : avec un quantum dix fois plus court, ce coût est payé dix fois plus souvent, au détriment du temps utile. C'est un quantum trop <em>long</em> qui augmente le temps de réponse, puisque chaque tâche attend plus longtemps son tour. Le tourniquet sert toutes les tâches prêtes à tour de rôle : aucune n'est privée du processeur.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Temps partagé",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#temps-partage"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "atelier",
+      "editeur": "chronogramme",
+      "theme": "Ordonnancement",
+      "difficulte": 2,
+      "titre": "Priorité fixe (IFP) de 0 à 12",
+      "enonce": "<p>Trois tâches périodiques à échéance sur requête, activées à t = 0 puis au début de chaque période : T1 (charge \\(C_1 = 1\\), période \\(T_1 = 4\\)), T2 (\\(C_2 = 2\\), \\(T_2 = 6\\)) et T3 (\\(C_3 = 2\\), \\(T_3 = 12\\)). Tracer l'ordonnancement à priorité fixe IFP de 0 à 12.</p>",
+      "consigne": "<p>Choisir un état dans la palette, puis peindre les cases : x pour l'exécution, p pour une tâche prête qui attend le processeur. Laisser vide quand la tâche n'a rien à faire (terminée, ou pas encore réactivée).</p>",
+      "vue": "dessin",
+      "options": {
+        "processeurs": 1,
+        "durees": {
+          "T1": 3,
+          "T2": 4,
+          "T3": 2
+        }
+      },
+      "depart": [
+        "temps 0..12",
+        "etat x Exécution",
+        "etat p Prêt",
+        "T1 :",
+        "T2 :",
+        "T3 :"
+      ],
+      "solution": [
+        "temps 0..12",
+        "etat x Exécution",
+        "etat p Prêt",
+        "T1 : x...x...x...",
+        "T2 : pxx...xx....",
+        "T3 : pppxpx......"
+      ],
+      "indices": [
+        "<p>En IFP, plus une tâche est fréquente, plus elle est prioritaire : T1, puis T2, puis T3. Une tâche activée préempte aussitôt une tâche moins prioritaire.</p>",
+        "<p>À t = 4, T1 est activée pour la deuxième fois alors que T3 n'a fait qu'une unité sur deux.</p>"
+      ],
+      "explication": "<p>Priorités : T1 (période 4), puis T2 (6), puis T3 (12). T1 s'exécute de 0 à 1, T2 de 1 à 3, T3 de 3 à 4. À t = 4, T1 est réactivée et préempte T3, qui repasse à l'état prêt ; T3 termine de 5 à 6. T2, réactivée à 6, s'exécute de 6 à 8, et T1 de 8 à 9. Le taux d'occupation vaut \\(\\frac14 + \\frac26 + \\frac{2}{12} = 75\\,\\%\\), sous la borne de 78 % pour trois tâches : les échéances étaient garanties avant même de tracer.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Ordonnancement à priorité fixe",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#ordonnancement-a-priorite-fixe"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "numerique",
+      "theme": "Ordonnancement",
+      "difficulte": 1,
+      "enonce": "<p>D'après la borne de la diapo 44, jusqu'à quel taux d'occupation du processeur l'ordonnancement IFP garantit-il les échéances de <strong>trois</strong> tâches ?</p>",
+      "reponse": 78,
+      "tolerance": 1,
+      "unite": "%",
+      "indices": [
+        "<p>Pour \\(n\\) tâches, la borne vaut \\(n\\,(2^{1/n} - 1)\\).</p>"
+      ],
+      "explication": "<p>\\(3\\,(2^{1/3} - 1) = 3 \\times 0{,}2599 \\approx 0{,}780\\), soit 78 % (la diapo tronque à 77 %). Pour deux tâches, la borne vaut 82,8 % ; elle décroît avec \\(n\\) vers \\(\\ln 2 \\approx 69{,}3\\,\\%\\). C'est une condition suffisante : au-dessus, les échéances ne sont plus garanties, mais elles ne sont pas forcément manquées.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Ordonnancement à priorité fixe",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#ordonnancement-a-priorite-fixe"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "qcm",
+      "theme": "Ordonnancement",
+      "difficulte": 3,
+      "enonce": "<p>Trois tâches à échéance sur requête ont pour charge et période (1, 4), (2, 6) et (2, 8). Que peut-on affirmer <em>avant</em> de tracer l'ordonnancement ?</p>",
+      "choix": [
+        "IFP : la borne ne garantit rien, il faut tracer ; urgence relative : toutes les échéances seront respectées",
+        "IFP manquera forcément une échéance, puisque le taux dépasse 78 %",
+        "Aucun ordonnancement ne peut respecter toutes les échéances",
+        "IFP et urgence relative respectent toutes les échéances, puisque le taux est inférieur à 100 %"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Calculer \\(\\sum D_i\\), puis le comparer à la borne d'IFP pour \\(n = 3\\) (78 %) et à 100 %.</p>"
+      ],
+      "explication": "<p>\\(\\sum D_i = \\frac14 + \\frac26 + \\frac28 \\approx 83{,}3\\,\\%\\), au-dessus de la borne de 78 %, qui n'est qu'une condition <em>suffisante</em> : pour IFP, on ne peut rien conclure sans tracer. Ici, la simulation sur l'hyperpériode (24 unités) montre d'ailleurs qu'IFP respecte toutes les échéances. L'urgence relative, optimale, ordonnance correctement toute application dont le taux ne dépasse pas 100 %.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Ordonnancement à priorité dynamique",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#ordonnancement-a-priorite-dynamique"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "atelier",
+      "editeur": "chronogramme",
+      "theme": "Ordonnancement",
+      "difficulte": 3,
+      "titre": "Urgence relative de 0 à 18",
+      "enonce": "<p>Deux tâches périodiques à échéance sur requête, activées à t = 0 : T1 (\\(C_1 = 3\\), \\(T_1 = 6\\)) et T2 (\\(C_2 = 4\\), \\(T_2 = 9\\)), soit un taux d'occupation de 94,4 %. Tracer l'ordonnancement à urgence relative de 0 à 18. En cas d'égalité des délais critiques, la tâche en cours garde le processeur.</p>",
+      "consigne": "<p>Choisir un état dans la palette, puis peindre les cases : x pour l'exécution, p pour une tâche prête qui attend le processeur. Laisser vide quand la tâche n'a rien à faire (terminée, ou pas encore réactivée).</p>",
+      "vue": "dessin",
+      "options": {
+        "processeurs": 1,
+        "durees": {
+          "T1": 9,
+          "T2": 8
+        }
+      },
+      "depart": [
+        "temps 0..18",
+        "etat x Exécution",
+        "etat p Prêt",
+        "T1 :",
+        "T2 :"
+      ],
+      "solution": [
+        "temps 0..18",
+        "etat x Exécution",
+        "etat p Prêt",
+        "T1 : xxx...pxxx..ppxxx.",
+        "T2 : pppxxxx..pxxxx...."
+      ],
+      "indices": [
+        "<p>À chaque activation et à chaque fin de tâche, comparer les échéances des tâches prêtes : 6 et 9 à t = 0. À t = 6, T1 est réactivée avec l'échéance 12, alors que T2 doit finir avant 9.</p>",
+        "<p>À t = 12, les deux échéances valent 18 : la tâche en cours garde le processeur.</p>"
+      ],
+      "explication": "<p>À t = 0, T1 (échéance 6) passe avant T2 (échéance 9) : T1 de 0 à 3, T2 de 3 à 6. À t = 6, T1 est réactivée (échéance 12), mais T2, d'échéance 9, a encore une unité : elle termine de 6 à 7, puis T1 s'exécute de 7 à 9. À t = 9, T2 est réactivée (échéance 18) ; T1, d'échéance 12, termine à 10, puis T2 s'exécute de 10 à 12. À t = 12, T1 est réactivée avec l'échéance 18, comme T2 : T2, en cours, garde le processeur jusqu'à 14, puis T1 termine à 17. Aucune échéance n'est manquée. En IFP, T1, plus fréquente, aurait repris le processeur à t = 6, et T2 aurait atteint son échéance de t = 9 avec une unité de retard.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Ordonnancement à priorité dynamique",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#ordonnancement-a-priorite-dynamique"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "association",
+      "theme": "Synchronisation et exclusion mutuelle",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque mécanisme de synchronisation à son comportement :</p>",
+      "paires": [
+        [
+          "Événement",
+          "Mémorisation à deux états : un signal peut être perdu"
+        ],
+        [
+          "Sémaphore",
+          "Compteur : chaque <code>Signal</code> sera consommé par un <code>Wait</code>"
+        ],
+        [
+          "Rendez-vous",
+          "Le premier arrivé attend l'autre, puis les deux repartent ensemble"
+        ]
+      ],
+      "intrus": [
+        "Boucle sur un verrou jusqu'à ce qu'il se libère"
+      ],
+      "explication": "<p>L'événement (Psos, Sceptre) ne retient que « arrivé » ou « non arrivé » : un second signal avant consommation n'ajoute rien. Le sémaphore compte les signaux et libère une tâche par signal. Le rendez-vous (ADA, OCCAM, CSP) bloque le premier demandeur jusqu'à l'arrivée du second. La boucle sur un verrou, c'est l'attente active, une façon de réaliser une section critique.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Synchronisation",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#synchronisation"
+      }
+    },
+    {
+      "id": "q16",
+      "type": "qcm",
+      "theme": "Synchronisation et exclusion mutuelle",
+      "difficulte": 2,
+      "enonce": "<p>A1 exécute deux fois <code>Signal(Ev)</code> avant que A2 n'arrive à son premier <code>Wait(Ev)</code> ; A2 exécute ensuite deux <code>Wait(Ev)</code> de suite. Combien de ces deux <code>Wait</code> passent sans bloquer, selon que <code>Ev</code> est un événement ou un sémaphore initialisé à 0 ?</p>",
+      "choix": [
+        "Événement : 1 ; sémaphore : 2",
+        "Événement : 2 ; sémaphore : 2",
+        "Événement : 1 ; sémaphore : 1",
+        "Événement : 0 ; sémaphore : 2"
+      ],
+      "reponse": 0,
+      "explication": "<p>L'événement passe à « arrivé » au premier signal ; le second ne change rien : il est perdu. Le premier <code>Wait</code> consomme l'événement, le second bloque A2. Le sémaphore vaut 2 après les deux signaux : les deux <code>Wait</code> le décrémentent sans bloquer.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Synchronisation par événement",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#synchronisation-par-evenement"
+      }
+    },
+    {
+      "id": "q17",
+      "type": "qcm",
+      "theme": "Synchronisation et exclusion mutuelle",
+      "difficulte": 2,
+      "enonce": "<p>Les procédures de l'exécutif sont écrites naïvement :</p><pre><code class='language-plaintext'>attendre(Ev, A) :  if (*Ev &gt; 0) *Ev = *Ev - 1;\n                   else A-&gt;Etat = Bloqué;\n\nsignaler(Ev, A) :  if (A-&gt;Etat == Bloqué) A-&gt;Etat = Prêt;\n                   else *Ev = *Ev + 1;</code></pre><p>A2 exécute <code>attendre(Ev, A2)</code> avec <code>Ev = 0</code>. Juste après le test, une interruption donne la main à A1, plus prioritaire, qui exécute <code>signaler(Ev, A2)</code> ; puis A2 reprend. Que se passe-t-il, et quel est le remède ?</p>",
+      "choix": [
+        "A2 se bloque alors que <code>Ev</code> vaut 1 : le signal est manqué. Il faut rendre ces procédures indivisibles",
+        "A2 passe sans se bloquer et <code>Ev</code> reste à 1 : le signal compte double. Il faut remplacer le compteur par un booléen",
+        "A1 se bloque jusqu'à ce que A2 soit bloquée. Il faut faire signaler <code>Ev</code> par A2 elle-même",
+        "Rien d'anormal : A2 se bloque, puis le prochain <code>signaler</code> de A1 la réveille à temps"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Au moment de l'interruption, A2 a déjà vu <code>*Ev &gt; 0</code> faux, mais son état n'est pas encore <code>Bloqué</code>. Que fait alors <code>signaler</code> ?</p>"
+      ],
+      "explication": "<p>A1 trouve A2 encore prête : elle incrémente <code>Ev</code> au lieu de la réveiller. A2 reprend dans le <code>else</code> et se bloque : l'événement est là, mais elle attendra le suivant, avec une période de retard. La cause est l'entrelacement au milieu d'une procédure de l'exécutif : elle doit s'exécuter de façon indivisible (interruptions masquées, par exemple). Une procédure indivisible s'appelle une primitive.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Indivisibilité : la notion de primitive",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#indivisibilite-la-notion-de-primitive"
+      }
+    },
+    {
+      "id": "q18",
+      "type": "vrai-faux",
+      "theme": "Synchronisation et exclusion mutuelle",
+      "difficulte": 2,
+      "enonce": "<p>Sur un monoprocesseur à priorités fixes, une tâche qui attend activement un verrou tenu par une tâche <strong>moins</strong> prioritaire peut bloquer toute l'application.</p>",
+      "reponse": true,
+      "explication": "<p>Vrai. La tâche prioritaire boucle sur <code>while (!V-&gt;libre);</code> et garde le processeur : l'ordonnanceur ne rend jamais la main à la tâche qui tient le verrou, qui ne peut donc pas le libérer. D'où l'attente passive (sémaphore d'exclusion mutuelle), qui bloque la tâche et libère le processeur. En multiprocesseur, l'attente active reste utilisable, au prix d'un processeur sous-exploité si la section critique est longue.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Attente active",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#attente-active"
+      }
+    },
+    {
+      "id": "q19",
+      "type": "trous",
+      "theme": "Synchronisation et exclusion mutuelle",
+      "difficulte": 1,
+      "enonce": "<p>Compléter :</p>",
+      "texte": "En attente passive, une section critique est protégée par un sémaphore d'exclusion mutuelle, <code>Mutex</code>, initialisé à {{0}}. <code>Request(v)</code> s'écrit {{1}}<code>(V.Mutex)</code> et <code>Release(v)</code> s'écrit {{2}}<code>(V.Mutex)</code>.",
+      "trous": [
+        {
+          "reponses": [
+            "1",
+            "un"
+          ]
+        },
+        {
+          "choix": [
+            "Wait",
+            "Signal"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "Wait",
+            "Signal"
+          ],
+          "reponse": 1
+        }
+      ],
+      "explication": "<p>Le jeton unique de <code>Mutex</code> ne peut être pris que par une tâche à la fois : la première qui fait <code>Wait</code> le prend et entre en section critique ; les suivantes se bloquent, sans consommer de processeur, jusqu'au <code>Signal</code> qui le rend. Initialisé à 0, le sémaphore bloquerait tout le monde ; à 2, deux tâches entreraient ensemble.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Attente passive : le sémaphore d'exclusion mutuelle",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#attente-passive-le-semaphore-d-exclusion-mutuelle"
+      }
+    },
+    {
+      "id": "q20",
+      "type": "qcm",
+      "theme": "Communication et interblocages",
+      "difficulte": 2,
+      "enonce": "<p>Dans la boîte aux lettres de taille finie, un étudiant écrit <code>RECEIVE</code> en prenant l'exclusion mutuelle avant d'attendre un message :</p><pre><code class='language-c'>wait(BAL-&gt;Mutex);\nwait(BAL-&gt;Messages);\n...</code></pre><p>La boîte est vide ; le consommateur appelle <code>RECEIVE</code>, puis le producteur <code>SEND</code>. Que se passe-t-il ?</p>",
+      "choix": [
+        "Un interblocage : le consommateur est bloqué sur <code>Messages</code> en tenant <code>Mutex</code>, et le producteur se bloque sur <code>Mutex</code>",
+        "Le consommateur lit une case vide du tampon",
+        "Rien de grave : le producteur dépose, puis réveille le consommateur",
+        "Le producteur dépose, mais le consommateur ne sera jamais réveillé"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Suivre les sémaphores : au départ, <code>Messages</code> vaut 0 et <code>Mutex</code> vaut 1.</p>"
+      ],
+      "explication": "<p>Le consommateur prend <code>Mutex</code> (qui passe à 0), puis se bloque sur <code>Messages</code>, qui vaut 0, sans rendre <code>Mutex</code>. Le producteur franchit <code>wait(Places)</code>, puis se bloque sur <code>wait(Mutex)</code>. Le consommateur attend un message que seul le producteur peut déposer, et le producteur attend le mutex que tient le consommateur : interblocage. C'est l'erreur symétrique de celle de l'exercice 5 sur <code>SEND</code> : attendre la ressource comptée d'abord, l'exclusion mutuelle ensuite.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Port de taille finie avec des sémaphores",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#port-de-taille-finie-avec-des-semaphores"
+      }
+    },
+    {
+      "id": "q21",
+      "type": "ouverte",
+      "theme": "Communication et interblocages",
+      "difficulte": 2,
+      "enonce": "<p>La boîte aux lettres de taille finie (N places) utilise trois sémaphores. Expliquer le rôle de chacun et sa valeur initiale, puis pourquoi <code>SEND</code> attend <code>Places</code> avant <code>Mutex</code>.</p>",
+      "reponse_modele": "<p><code>Places</code>, initialisé à N, compte les places libres : <code>SEND</code> l'attend avant de déposer, <code>RECEIVE</code> le signale après un retrait. <code>Messages</code>, initialisé à 0, compte les messages présents : <code>RECEIVE</code> l'attend, <code>SEND</code> le signale. <code>Mutex</code>, initialisé à 1, protège le tampon et les indices <code>Deb</code> et <code>Fin</code> (exclusion mutuelle). Si <code>SEND</code> prenait <code>Mutex</code> d'abord et que la boîte était pleine, le producteur se bloquerait sur <code>Places</code> en tenant <code>Mutex</code> ; le consommateur ne pourrait plus retirer de message pour libérer une place : interblocage.</p>",
+      "criteres": [
+        "<code>Places</code> (N) et <code>Messages</code> (0) réalisent la synchronisation : attendre une place, attendre un message",
+        "<code>Mutex</code> (1) réalise l'exclusion mutuelle sur le tampon",
+        "chaque primitive signale le sémaphore que l'autre attend (<code>SEND</code> → <code>Messages</code>, <code>RECEIVE</code> → <code>Places</code>)",
+        "prendre <code>Mutex</code> d'abord mène à un interblocage quand la boîte est pleine"
+      ],
+      "revoir": {
+        "texte": "Cours 5 · Port de taille finie avec des sémaphores",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#port-de-taille-finie-avec-des-semaphores"
+      }
+    },
+    {
+      "id": "q22",
+      "type": "code",
+      "langage": "c",
+      "theme": "Communication et interblocages",
+      "difficulte": 3,
+      "enonce": "<p>Écrire la boîte aux lettres de taille finie du cours (diapos 69–70), avec les sémaphores fournis par le programme de test :</p><ul><li><code>bal_init</code> donne leur valeur initiale aux trois sémaphores et aux indices <code>Deb</code> et <code>Fin</code> ;</li><li><code>SEND(m, BAL)</code> dépose l'entier <code>m</code> ; <code>RECEIVE(BAL)</code> retire le plus ancien message et le renvoie ;</li><li>le tampon est un anneau de <code>N</code> = 4 cases, et tout accès au tampon se fait sous <code>Mutex</code>.</li></ul><p>Le programme de test simule un petit exécutif, sans threads : deux tâches, un producteur P et un consommateur C, et un <code>wait</code> qui bloque vraiment la tâche jusqu'au <code>signal</code> qui la réveille. Il lit un scénario (<code>P5</code> : P veut déposer 5 ; <code>C</code> : C veut retirer un message), affiche chaque dépôt, retrait et blocage, puis la valeur finale des sémaphores, les tâches restées bloquées et un éventuel interblocage.</p>",
+      "depart": "#include <stdio.h>\n\n#define N 4                              /* nombre de places de la boîte */\n\n/* Sémaphores fournis par le mini-exécutif du programme de test */\ntypedef struct { int val; } Semaphore;\nvoid init_sem(Semaphore *s, int val);    /* fixe la valeur initiale */\nvoid wait(Semaphore *s);                 /* P : prend un jeton, ou bloque la tâche */\nvoid signal(Semaphore *s);               /* V : réveille une tâche en attente, ou rend un jeton */\n\ntypedef struct {\n    int       Buffer[N];\n    Semaphore Places, Messages, Mutex;\n    int       Deb, Fin;                  /* prochain message à retirer, prochaine case où déposer */\n} Boite_aux_lettres;\n\nvoid bal_init(Boite_aux_lettres *BAL)\n{\n\n}\n\nvoid SEND(int m, Boite_aux_lettres *BAL)\n{\n\n}\n\nint RECEIVE(Boite_aux_lettres *BAL)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n\n#define N 4                              /* nombre de places de la boîte */\n\n/* Sémaphores fournis par le mini-exécutif du programme de test */\ntypedef struct { int val; } Semaphore;\nvoid init_sem(Semaphore *s, int val);    /* fixe la valeur initiale */\nvoid wait(Semaphore *s);                 /* P : prend un jeton, ou bloque la tâche */\nvoid signal(Semaphore *s);               /* V : réveille une tâche en attente, ou rend un jeton */\n\ntypedef struct {\n    int       Buffer[N];\n    Semaphore Places, Messages, Mutex;\n    int       Deb, Fin;                  /* prochain message à retirer, prochaine case où déposer */\n} Boite_aux_lettres;\n\nvoid bal_init(Boite_aux_lettres *BAL)\n{\n    init_sem(&BAL->Places, N);           /* N places libres */\n    init_sem(&BAL->Messages, 0);         /* aucun message */\n    init_sem(&BAL->Mutex, 1);            /* tampon libre */\n    BAL->Deb = BAL->Fin = 0;\n}\n\nvoid SEND(int m, Boite_aux_lettres *BAL)\n{\n    wait(&BAL->Places);                  /* d'abord une place... */\n    wait(&BAL->Mutex);                   /* ...ensuite le tampon */\n    BAL->Buffer[BAL->Fin] = m;\n    BAL->Fin = (BAL->Fin + 1) % N;\n    signal(&BAL->Mutex);\n    signal(&BAL->Messages);              /* un message de plus */\n}\n\nint RECEIVE(Boite_aux_lettres *BAL)\n{\n    int m;\n    wait(&BAL->Messages);                /* d'abord un message... */\n    wait(&BAL->Mutex);                   /* ...ensuite le tampon */\n    m = BAL->Buffer[BAL->Deb];\n    BAL->Deb = (BAL->Deb + 1) % N;\n    signal(&BAL->Mutex);\n    signal(&BAL->Places);                /* une place de plus */\n    return m;\n}\n",
+      "harnais": "\n/* ===== Mini-exécutif de test =====\n   Deux tâches, P (producteur) et C (consommateur), sans threads : wait bloque la\n   tâche, qui garde ses demandes suivantes ; quand un signal la réveille, elle\n   reprend son opération là où elle s'était bloquée.\n   Entrée : un scénario, par exemple « P1 P2 C C » (P dépose 1 puis 2, C retire deux fois). */\n#include <setjmp.h>\n\ntypedef struct {\n    char nom;                  /* 'P' ou 'C' */\n    int valeurs[64];           /* P : valeurs à déposer */\n    int demandes, faites;      /* opérations demandées, opérations terminées */\n    Semaphore *attend;         /* sémaphore qui bloque la tâche, NULL sinon */\n    int depuis;                /* date du blocage : réveil dans l'ordre d'arrivée */\n    int obtenus;               /* wait déjà franchis par l'opération en cours */\n    int reveillee;             /* un signal lui a transmis le jeton attendu */\n} Tache;\n\nstatic Tache taches[2];\nstatic Tache *courante, *reveils[8];\nstatic int nb_reveils, horloge, franchis, mutex_pris;\nstatic jmp_buf blocage;\nstatic Boite_aux_lettres boite;\n\nvoid init_sem(Semaphore *s, int val) { s->val = val; }\n\nvoid wait(Semaphore *s)\n{\n    Tache *t = courante;\n    if (s == &boite.Mutex) mutex_pris = 1;\n    if (franchis < t->obtenus) { franchis++; return; }   /* franchi avant le blocage */\n    if (t->reveillee) t->reveillee = 0;                  /* jeton transmis par signal */\n    else if (s->val > 0) s->val--;\n    else {                                               /* la tâche se bloque */\n        t->attend = s;\n        t->depuis = horloge++;\n        longjmp(blocage, 1);\n    }\n    t->obtenus++;\n    franchis++;\n}\n\nvoid signal(Semaphore *s)\n{\n    Tache *u = NULL;\n    for (int i = 0; i < 2; i++)\n        if (taches[i].attend == s && (!u || taches[i].depuis < u->depuis)) u = &taches[i];\n    if (u) {                                             /* réveil de la tâche qui attend */\n        u->attend = NULL;\n        u->reveillee = 1;\n        reveils[nb_reveils++] = u;\n    } else\n        s->val++;\n}\n\n/* Exécute les demandes de t jusqu'à ce qu'elle se bloque ou n'en ait plus */\nstatic void avancer(Tache *t)\n{\n    while (!t->attend && t->faites < t->demandes) {\n        courante = t;\n        franchis = 0;\n        mutex_pris = 0;\n        if (setjmp(blocage)) {\n            printf(\"%c se bloque\\n\", t->nom);\n            return;\n        }\n        if (t->nom == 'P') {\n            SEND(t->valeurs[t->faites], &boite);\n            printf(\"P dépose %d\\n\", t->valeurs[t->faites]);\n        } else\n            printf(\"C retire %d\\n\", RECEIVE(&boite));\n        if (!mutex_pris) printf(\"  (%s sans wait sur Mutex)\\n\", t->nom == 'P' ? \"SEND\" : \"RECEIVE\");\n        t->faites++;\n        t->obtenus = 0;\n    }\n}\n\nstatic const char *nom_sem(Semaphore *s)\n{\n    return s == &boite.Places ? \"Places\" : s == &boite.Messages ? \"Messages\" : \"Mutex\";\n}\n\nint main(void)\n{\n    char mot[32];\n    taches[0].nom = 'P';\n    taches[1].nom = 'C';\n    boite.Places.val = boite.Messages.val = boite.Mutex.val = 7;   /* valeurs quelconques avant bal_init */\n    boite.Deb = 3;\n    boite.Fin = 1;\n    bal_init(&boite);\n    while (scanf(\"%31s\", mot) == 1) {\n        Tache *t = mot[0] == 'P' ? &taches[0] : &taches[1];\n        if (t->nom == 'P' && t->demandes < 64) sscanf(mot + 1, \"%d\", &t->valeurs[t->demandes]);\n        if (t->demandes < 64) t->demandes++;\n        avancer(t);\n        while (nb_reveils > 0) {                         /* les tâches réveillées reprennent */\n            Tache *u = reveils[0];\n            for (int i = 1; i < nb_reveils; i++) reveils[i - 1] = reveils[i];\n            nb_reveils--;\n            avancer(u);\n        }\n    }\n    printf(\"fin : Places = %d, Messages = %d, Mutex = %d\\n\",\n           boite.Places.val, boite.Messages.val, boite.Mutex.val);\n    for (int i = 0; i < 2; i++)\n        if (taches[i].attend) printf(\"%c reste bloquée sur %s\\n\", taches[i].nom, nom_sem(taches[i].attend));\n    if (taches[0].attend && taches[1].attend) printf(\"interblocage\\n\");\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "dépôts puis retraits",
+          "entree": "P1 P2 P3 C C C\n",
+          "sortie": "P dépose 1\nP dépose 2\nP dépose 3\nC retire 1\nC retire 2\nC retire 3\nfin : Places = 4, Messages = 0, Mutex = 1\n"
+        },
+        {
+          "nom": "retrait dans une boîte vide",
+          "entree": "C P7 C\n",
+          "sortie": "C se bloque\nP dépose 7\nC retire 7\nC se bloque\nfin : Places = 4, Messages = 0, Mutex = 1\nC reste bloquée sur Messages\n"
+        },
+        {
+          "nom": "boîte pleine",
+          "entree": "P1 P2 P3 P4 P5 C C\n",
+          "sortie": "P dépose 1\nP dépose 2\nP dépose 3\nP dépose 4\nP se bloque\nC retire 1\nP dépose 5\nC retire 2\nfin : Places = 1, Messages = 3, Mutex = 1\n"
+        },
+        {
+          "nom": "tampon circulaire",
+          "entree": "P1 P2 P3 C C P4 P5 P6 C C C C\n",
+          "sortie": "P dépose 1\nP dépose 2\nP dépose 3\nC retire 1\nC retire 2\nP dépose 4\nP dépose 5\nP dépose 6\nC retire 3\nC retire 4\nC retire 5\nC retire 6\nfin : Places = 4, Messages = 0, Mutex = 1\n"
+        },
+        {
+          "nom": "producteur en avance",
+          "entree": "P1 P2 P3 P4 P5 P6 P7 C C C C C C C\n",
+          "sortie": "P dépose 1\nP dépose 2\nP dépose 3\nP dépose 4\nP se bloque\nC retire 1\nP dépose 5\nP se bloque\nC retire 2\nP dépose 6\nP se bloque\nC retire 3\nP dépose 7\nC retire 4\nC retire 5\nC retire 6\nC retire 7\nfin : Places = 4, Messages = 0, Mutex = 1\n"
+        },
+        {
+          "nom": "consommateur en avance",
+          "entree": "C C P1 P2 P3\n",
+          "sortie": "C se bloque\nP dépose 1\nC retire 1\nC se bloque\nP dépose 2\nC retire 2\nP dépose 3\nfin : Places = 3, Messages = 1, Mutex = 1\n"
+        }
+      ],
+      "indices": [
+        "<p><code>Places</code> compte les places libres, <code>Messages</code> les messages présents, <code>Mutex</code> protège le tampon : quelles valeurs au départ, la boîte étant vide ?</p>",
+        "<p><code>SEND</code> : attendre une place, puis le tampon ; écrire dans <code>Buffer[Fin]</code> et avancer <code>Fin</code> modulo <code>N</code> ; rendre le tampon ; signaler un message de plus. <code>RECEIVE</code> est symétrique.</p>"
+      ],
+      "explication": "<p><code>bal_init</code> : <code>Places</code> à N (toutes les places sont libres), <code>Messages</code> à 0, <code>Mutex</code> à 1, <code>Deb = Fin = 0</code>. Chaque primitive attend d'abord la ressource comptée, puis le mutex ; elle rend le mutex, puis signale le sémaphore qu'attend l'autre tâche. Si <code>SEND</code> prend <code>Mutex</code> avant <code>Places</code>, le test « boîte pleine » finit en interblocage ; si <code>RECEIVE</code> prend <code>Mutex</code> avant <code>Messages</code>, c'est le test « retrait dans une boîte vide ». Sans <code>% N</code>, le cinquième dépôt écrit hors du tableau. Le programme de test tient lieu des threads et des sémaphores POSIX (<code>sem_wait</code>, <code>sem_post</code>) du complément du cours, pour que le code s'exécute avec n'importe quel compilateur C.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Port de taille finie avec des sémaphores",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#port-de-taille-finie-avec-des-semaphores"
+      }
+    },
+    {
+      "id": "q23",
+      "type": "qcm-multi",
+      "theme": "Communication et interblocages",
+      "difficulte": 2,
+      "enonce": "<p>Cinq philosophes prennent leur fourchette droite, puis leur fourchette gauche. Lesquelles de ces mesures suppriment le risque d'interblocage circulaire ?</p>",
+      "choix": [
+        "Prendre les deux fourchettes simultanément, en une seule demande",
+        "N'admettre que quatre philosophes à table en même temps",
+        "Faire prendre à chacun sa fourchette gauche avant sa fourchette droite",
+        "Donner au philosophe 1 la priorité la plus forte",
+        "Rendre les fourchettes dans l'ordre inverse de leur prise"
+      ],
+      "reponses": [
+        0,
+        1
+      ],
+      "indices": [
+        "<p>L'interblocage survient quand chaque philosophe tient une fourchette et attend celle de son voisin, tout autour de la table.</p>"
+      ],
+      "explication": "<p>Si les cinq tiennent chacun leur fourchette droite, chacun attend la gauche, tenue par son voisin : le cycle est complet. Demander les deux fourchettes à la fois empêche de tenir l'une en attendant l'autre, au risque de priver un philosophe. À quatre à table pour cinq fourchettes, l'un d'eux au moins obtient ses deux fourchettes. Commencer tous par la gauche reproduit le même cycle dans l'autre sens ; la priorité et l'ordre de restitution n'empêchent pas chacun de tenir une fourchette en attendant l'autre.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Interblocage circulaire : le dîner des philosophes",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#interblocage-circulaire-le-diner-des-philosophes"
+      }
+    },
+    {
+      "id": "q24",
+      "type": "qcm",
+      "theme": "Communication et interblocages",
+      "difficulte": 2,
+      "enonce": "<p>Dans la première solution des lecteurs et des rédacteurs, un rédacteur attend indéfiniment alors que des lectures se succèdent sans interruption. Pourquoi ?</p>",
+      "choix": [
+        "Seul le premier lecteur prend <code>Mutex_Res</code>, et seul le dernier le rend : tant que des lecteurs se chevauchent, il n'est jamais rendu",
+        "Chaque lecteur garde <code>Mutex_struct</code> pendant toute sa lecture",
+        "Le rédacteur attend qu'un autre rédacteur remette <code>Nb_lecteurs</code> à zéro",
+        "Les lecteurs ont une priorité d'ordonnancement plus forte que les rédacteurs"
+      ],
+      "reponse": 0,
+      "explication": "<p>Un nouveau lecteur qui trouve <code>Nb_lecteurs &gt; 0</code> entre sans prendre <code>Mutex_Res</code>. Si un lecteur arrive toujours avant que le dernier ne sorte, le compteur ne revient jamais à 0, <code>Mutex_Res</code> n'est jamais rendu, et le rédacteur bloqué sur <code>P(Mutex_Res)</code> est privé. <code>Mutex_struct</code>, lui, n'est tenu que le temps de mettre à jour le compteur. La deuxième solution ajoute <code>Bl_Lect</code>, que le premier rédacteur ferme pour arrêter les nouveaux lecteurs.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Le problème des lecteurs et des rédacteurs",
+        "lien": "../generated_courses/cours-05-executifs-temps-reel.html#le-probleme-des-lecteurs-et-des-redacteurs"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

@@ -1,6 +1,6 @@
 # Outil de suivi : TODO.md
 
-La page `_outils/todo/index.html` met en forme `TODO.md` (à la racine de `studies/`) et permet de le gérer entièrement sans ouvrir l'éditeur : cocher, ajouter, modifier, déplacer et supprimer des tâches ; créer, renommer, déplacer et supprimer des listes, des paragraphes, des sections et des sous-sections. Chaque changement est écrit dans le fichier une demi-seconde plus tard. Elle suit la charte (`_outils/charte/`) : thème clair ou sombre, teinte de chaque matière, agrandissement sur grand écran.
+La page `_outils/todo/index.html` met en forme le `TODO.md` du profil actif (`<profil>/TODO.md`) et permet de le gérer entièrement sans ouvrir l'éditeur : cocher, ajouter, modifier, déplacer et supprimer des tâches ; créer, renommer, déplacer et supprimer des listes, des paragraphes, des sections et des sous-sections. Chaque changement est écrit dans le fichier une demi-seconde plus tard. Elle suit la charte (`_outils/charte/`) : thème clair ou sombre, teinte de chaque matière, agrandissement sur grand écran.
 
 On y arrive depuis l'accueil général (section « Outils ») et le pied de page des accueils de niveau.
 
@@ -8,8 +8,8 @@ On y arrive depuis l'accueil général (section « Outils ») et le pied de page
 
 ### Ouvrir la page
 
-- **Avec le serveur local** (`studies/lancer.bat`) : `http://127.0.0.1:5178/_outils/todo/index.html`. La page lit et écrit `TODO.md` d'elle-même. Le serveur charge l'outil à son démarrage : s'il tournait déjà quand l'outil a été ajouté, le relancer.
-- **Sans serveur**, page ouverte depuis le disque : « Choisir TODO.md… » (Edge ou Chrome), puis choisir `TODO.md` à la racine de `studies`. Le navigateur lit et écrit le fichier directement ; il demande ton accord à chaque visite (« Rouvrir TODO.md » s'en souvient). Si le serveur tourne, la page propose aussi de s'ouvrir par lui.
+- **Avec le serveur local** (`lancer.bat`) : `http://127.0.0.1:5178/_outils/todo/index.html`. La page lit et écrit `TODO.md` d'elle-même. Le serveur charge l'outil à son démarrage : s'il tournait déjà quand l'outil a été ajouté, le relancer.
+- **Sans serveur**, page ouverte depuis le disque : « Choisir TODO.md… » (Edge ou Chrome), puis choisir le `TODO.md` du dossier de ton profil (`ula/<profil>/TODO.md`). Le navigateur lit et écrit le fichier directement ; il demande ton accord à chaque visite (« Rouvrir TODO.md » s'en souvient). Si le serveur tourne, la page propose aussi de s'ouvrir par lui.
 
 ### Gérer les tâches
 
@@ -60,7 +60,7 @@ _outils/todo/
 
 ## API du serveur local
 
-L'extension est chargée par `_outils/quiz/serveur/lib/extensions.js` (voir `_outils/quiz/README.md`, « Extensions du serveur »). Elle ne lit et n'écrit que `TODO.md`, à la racine de `studies/`.
+L'extension est chargée par `_outils/quiz/serveur/lib/extensions.js` (voir `_outils/quiz/README.md`, « Extensions du serveur »). Elle ne lit et n'écrit que `TODO.md`, à la racine (`ula/`).
 
 | Route | Rôle |
 |---|---|
@@ -78,3 +78,4 @@ Comme pour toute écriture du serveur, la requête doit venir de la page servie 
 ## Historique
 
 - **1.0**, 29 septembre 2026 : création. Vue Tâches (plan des sections avec compteurs, cartes de matière, listes, sous-tâches, notes), édition en place, glisser-déposer et déplacement au clavier, création et suppression de listes, paragraphes, sections et sous-sections, annuler et rétablir, filtres et recherche, vue Texte brut ; enregistrement par le serveur local ou directement sur le disque, détection des modifications faites ailleurs ; tests.
+- **1.1**, 12 novembre 2026 : réorganisation ula. Le suivi est personnel : la page lit et écrit le `TODO.md` du profil actif (`<profil>/TODO.md`, `romain/TODO.md` pour Romain), et non plus celui de la racine.

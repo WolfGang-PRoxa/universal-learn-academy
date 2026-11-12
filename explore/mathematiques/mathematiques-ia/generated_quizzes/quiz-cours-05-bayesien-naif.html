@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Modèle bayésien naïf · Mathématiques et IA L3</title>
+<meta name="description" content="Quiz interactif sur le cours 5 de Mathématiques et IA (L3) : formule de Bayes, hypothèse naïve, maximum a posteriori, maximum de vraisemblance, modèles de Bernoulli et gaussien, nombre de paramètres.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Mathématiques</a>
+    <a href="../generated_courses/index.html">Mathématiques et IA</a>
+    <span aria-current="page">Quiz · Modèle bayésien naïf</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Mathématiques et IA</span> Quiz · L3 S5</p>
+    <h1>Quiz : le modèle bayésien naïf</h1>
+    <p class="chapeau">Le cours 5 de bout en bout : vocabulaire de Bayes, hypothèse naïve, décision par maximum a posteriori, apprentissage par maximum de vraisemblance, puis un modèle de Bernoulli à apprendre et à appliquer sur huit données, le modèle gaussien et le nombre de paramètres. Pas de code à écrire ici : programmer le classifieur est l'objet du devoir maison, que le quiz laisse de côté.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-05-bayesien-naif.html">Cours 5 · Modèle bayésien naïf</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-01">1er nov. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Mathématiques et IA · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "maths-cours-05-bayes",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 5 · Modèle bayésien naïf",
+      "lien": "../generated_courses/cours-05-bayesien-naif.html"
+    }
+  ],
+  "questions": [
+    {
+      "type": "association",
+      "theme": "Bayes et hypothèse naïve",
+      "difficulte": 1,
+      "enonce": "<p>Dans \\(P(c \\mid \\mathbf{x}) = \\dfrac{P(\\mathbf{x} \\mid c)\\,P(c)}{P(\\mathbf{x})}\\), associer chaque terme à son nom et à son rôle.</p>",
+      "paires": [
+        [
+          "\\(P(c)\\)",
+          "Probabilité a priori : la proportion de la classe avant de voir la donnée"
+        ],
+        [
+          "\\(P(\\mathbf{x} \\mid c)\\)",
+          "Vraisemblance : la probabilité d'observer cette donnée dans la classe"
+        ],
+        [
+          "\\(P(\\mathbf{x})\\)",
+          "Évidence : la probabilité de la donnée, toutes classes confondues"
+        ],
+        [
+          "\\(P(c \\mid \\mathbf{x})\\)",
+          "Probabilité a posteriori : celle que l'on cherche à maximiser"
+        ]
+      ],
+      "explication": "<p>On ne sait pas estimer directement \\(P(c \\mid \\mathbf{x})\\) pour une donnée jamais vue ; Bayes la ramène à la vraisemblance et à l'a priori, estimables sur les données d'apprentissage. L'évidence se calcule par les probabilités totales, \\(\\sum_c P(\\mathbf{x} \\mid c)\\,P(c)\\). L'examen de 2023 demandait ces quatre noms.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Le théorème de Bayes et l'hypothèse naïve",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#le-theoreme-de-bayes-et-l-hypothese-naive"
+      },
+      "id": "q01"
+    },
+    {
+      "type": "qcm",
+      "theme": "Bayes et hypothèse naïve",
+      "difficulte": 2,
+      "enonce": "<p>Que suppose exactement l'hypothèse naïve ?</p>",
+      "choix": [
+        "Les caractéristiques sont indépendantes entre elles une fois la classe connue : \\(P(x_i \\mid c, x_j) = P(x_i \\mid c)\\)",
+        "Les caractéristiques sont indépendantes de la classe : \\(P(x_i \\mid c) = P(x_i)\\)",
+        "Les classes sont équiprobables : \\(P(c) = \\frac{1}{M}\\)",
+        "Les données d'apprentissage sont indépendantes entre elles"
+      ],
+      "reponse": 0,
+      "explication": "<p>C'est une indépendance <em>conditionnelle</em> à la classe : sans connaître la classe, les caractéristiques peuvent être liées, puisqu'elles en dépendent toutes. Si elles étaient indépendantes de la classe, elles ne serviraient à rien pour classer. L'indépendance des données entre elles est la deuxième hypothèse, celle du maximum de vraisemblance.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Le théorème de Bayes et l'hypothèse naïve",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#le-theoreme-de-bayes-et-l-hypothese-naive"
+      },
+      "id": "q02"
+    },
+    {
+      "type": "qcm",
+      "theme": "Bayes et hypothèse naïve",
+      "difficulte": 2,
+      "enonce": "<p>Sous l'hypothèse naïve, que devient la vraisemblance \\(P(x_1, \\dots, x_n \\mid c)\\) ?</p>",
+      "choix": [
+        "\\(\\prod_{i=1}^{n} P(x_i \\mid c)\\)",
+        "\\(\\sum_{i=1}^{n} P(x_i \\mid c)\\)",
+        "\\(\\prod_{i=1}^{n} P(c \\mid x_i)\\)",
+        "\\(P(x_1 \\mid c)\\,P(x_2 \\mid c, x_1) \\cdots P(x_n \\mid c, x_1, \\dots, x_{n-1})\\)"
+      ],
+      "reponse": 0,
+      "explication": "<p>La décomposition exacte est la dernière réponse, où chaque facteur dépend des dimensions précédentes. L'hypothèse naïve supprime ces dépendances : \\(P(x_i \\mid c, x_1, \\dots) = P(x_i \\mid c)\\), et il reste le produit d'une loi par dimension. Une somme apparaît seulement si l'on passe aux logarithmes.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Décomposer la vraisemblance",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#decomposer-la-vraisemblance"
+      },
+      "id": "q03"
+    },
+    {
+      "type": "numerique",
+      "theme": "Bayes et hypothèse naïve",
+      "difficulte": 3,
+      "enonce": "<p>Avec 10 caractéristiques binaires, combien de probabilités faut-il, <strong>par classe</strong>, pour décrire la loi jointe \\(P(x_1, \\dots, x_{10} \\mid c)\\) sans l'hypothèse naïve ?</p>",
+      "reponse": 1023,
+      "tolerance": 0,
+      "indices": [
+        "<p>Combien de vecteurs binaires de longueur 10 ? Leurs probabilités ont pour somme 1.</p>"
+      ],
+      "explication": "<p>Il y a \\(2^{10} = 1024\\) combinaisons, dont les probabilités somment à 1 : \\(2^{10} - 1 = 1023\\) valeurs à estimer, contre 10 sous l'hypothèse naïve. C'est ce gain qui justifie l'hypothèse, même quand elle est fausse.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Le théorème de Bayes et l'hypothèse naïve",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#le-theoreme-de-bayes-et-l-hypothese-naive"
+      },
+      "id": "q04"
+    },
+    {
+      "type": "vrai-faux",
+      "theme": "Décision (MAP)",
+      "difficulte": 1,
+      "enonce": "<p>Pour choisir la classe par le maximum a posteriori, il faut calculer l'évidence \\(P(\\mathbf{x})\\).</p>",
+      "reponse": false,
+      "explication": "<p>Faux : \\(P(\\mathbf{x})\\) est la même pour toutes les classes. Elle divise tous les scores par le même nombre, sans changer lequel est le plus grand : \\(\\hat c = \\operatorname{arg\\,max}_c P(c) \\prod_i P(x_i \\mid c)\\). On ne la calcule (comme somme des scores) que pour obtenir les probabilités a posteriori elles-mêmes.</p>",
+      "revoir": {
+        "texte": "Cours 5 · La décision : le maximum a posteriori",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#la-decision-le-maximum-a-posteriori"
+      },
+      "id": "q05"
+    },
+    {
+      "type": "qcm",
+      "theme": "Décision (MAP)",
+      "difficulte": 2,
+      "enonce": "<p>Pourquoi calcule-t-on souvent \\(\\ln P(c) + \\sum_i \\ln P(x_i \\mid c)\\) au lieu du produit \\(P(c) \\prod_i P(x_i \\mid c)\\) ?</p>",
+      "choix": [
+        "Avec beaucoup de caractéristiques, le produit devient si petit que l'ordinateur l'arrondit à 0 ; le logarithme, croissant, garde la même classe gagnante",
+        "Le logarithme donne directement la probabilité a posteriori",
+        "Le logarithme supprime le besoin de l'hypothèse naïve",
+        "Le logarithme rend les probabilités positives"
+      ],
+      "reponse": 0,
+      "explication": "<p>Un produit de centaines de nombres inférieurs à 1 tombe sous la plus petite valeur représentable (underflow). Le logarithme transforme le produit en somme, et comme il est croissant, l'arg max ne change pas. Il ne donne pas une probabilité : il faudrait repasser par l'exponentielle et normaliser.</p>",
+      "revoir": {
+        "texte": "Cours 5 · La décision : le maximum a posteriori",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#la-decision-le-maximum-a-posteriori"
+      },
+      "id": "q06"
+    },
+    {
+      "type": "qcm",
+      "theme": "Maximum de vraisemblance",
+      "difficulte": 1,
+      "enonce": "<p>Qu'est-ce que le maximum de vraisemblance ?</p>",
+      "choix": [
+        "Les paramètres \\(\\hat\\theta\\) qui rendent les données d'apprentissage les plus probables : \\(\\operatorname{arg\\,max}_\\theta \\prod_k P(\\mathbf{x}_k \\mid \\theta)\\)",
+        "La classe qui rend la donnée inconnue la plus probable",
+        "La plus grande valeur de la densité, atteinte en sa moyenne",
+        "Les paramètres qui rendent la donnée inconnue la plus probable"
+      ],
+      "reponse": 0,
+      "explication": "<p>Le maximum de vraisemblance sert à <em>apprendre</em> : pour chaque classe, on cherche les paramètres des lois qui expliquent le mieux les données de cette classe, supposées indépendantes, d'où le produit. Choisir la classe d'une donnée inconnue, c'est le maximum a posteriori, l'étape de <em>décision</em>.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Apprendre les paramètres : le maximum de vraisemblance",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#apprendre-les-parametres-le-maximum-de-vraisemblance"
+      },
+      "id": "q07"
+    },
+    {
+      "type": "numerique",
+      "theme": "Maximum de vraisemblance",
+      "difficulte": 2,
+      "enonce": "<p>Dans une classe, une caractéristique réelle prend les valeurs 2, 4 et 6. Quelle variance \\(\\hat\\sigma^2\\) le maximum de vraisemblance donne-t-il pour la loi normale de cette caractéristique ? Arrondir au centième.</p>",
+      "reponse": 2.67,
+      "tolerance": 0.01,
+      "indices": [
+        "<p>\\(\\hat\\mu\\) est la moyenne empirique, et \\(\\hat\\sigma^2 = \\frac{1}{K_c}\\sum_k (x^{(k)} - \\hat\\mu)^2\\).</p>"
+      ],
+      "explication": "<p>\\(\\hat\\mu = 4\\), puis \\(\\hat\\sigma^2 = \\frac{4 + 0 + 4}{3} = \\frac83 \\approx 2{,}67\\). Le maximum de vraisemblance divise par \\(K_c = 3\\) ; diviser par \\(K_c - 1\\), comme la variance corrigée ou <code>np.cov</code>, donnerait 4.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Le cas normal",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#le-cas-normal"
+      },
+      "id": "q08"
+    },
+    {
+      "type": "qcm",
+      "theme": "Maximum de vraisemblance",
+      "difficulte": 3,
+      "enonce": "<p>Pour trouver le maximum de vraisemblance d'une loi de Bernoulli, on maximise \\(\\ell(p) = s \\ln p + (K_c - s) \\ln(1 - p)\\), où \\(s\\) est le nombre de 1 parmi les \\(K_c\\) données de la classe. Quel résultat obtient-on ?</p>",
+      "choix": [
+        "\\(\\hat p = \\frac{s}{K_c}\\), la proportion de 1",
+        "\\(\\hat p = \\frac12\\), quelles que soient les données",
+        "\\(\\hat p = \\frac{s}{K_c - s}\\)",
+        "\\(\\hat p = \\frac{s + 1}{K_c + 2}\\)"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Annuler \\(\\ell'(p) = \\frac{s}{p} - \\frac{K_c - s}{1 - p}\\).</p>"
+      ],
+      "explication": "<p>\\(\\ell'(p) = 0\\) donne \\(s(1 - p) = (K_c - s)p\\), soit \\(p = \\frac{s}{K_c}\\) ; la dérivée seconde est négative, c'est un maximum. Le log transforme le produit \\(p^s(1 - p)^{K_c - s}\\) en somme, plus facile à dériver. La dernière réponse est le lissage de Laplace, hors programme, qui n'est pas le maximum de vraisemblance.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Le cas Bernoulli",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#le-cas-bernoulli"
+      },
+      "id": "q09"
+    },
+    {
+      "type": "trous",
+      "theme": "Modèle de Bernoulli",
+      "difficulte": 1,
+      "enonce": "<p>Avec ces données :</p><table><caption>Huit données d'apprentissage</caption><thead><tr><th></th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th></tr></thead><tbody><tr><th>A</th><td>1</td><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><th>B</th><td>0</td><td>1</td><td>1</td><td>0</td><td>1</td><td>0</td><td>1</td><td>1</td></tr><tr><th>C</th><td>1</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td></tr><tr><th>Classe</th><td>oui</td><td>oui</td><td>oui</td><td>oui</td><td>non</td><td>non</td><td>non</td><td>non</td></tr></tbody></table><p>Compléter les paramètres du modèle bayésien naïf de Bernoulli.</p>",
+      "texte": "P(oui) = {{0}} ; p_A,oui = {{1}} ; p_B,oui = {{2}} ; p_A,non = {{3}} ; p_B,non = {{4}}.",
+      "trous": [
+        {
+          "reponses": [
+            "0,5",
+            "0.5",
+            "1/2",
+            "0,50"
+          ]
+        },
+        {
+          "reponses": [
+            "0,75",
+            "0.75",
+            "3/4"
+          ]
+        },
+        {
+          "reponses": [
+            "0,5",
+            "0.5",
+            "1/2",
+            "2/4",
+            "0,50"
+          ]
+        },
+        {
+          "reponses": [
+            "0,25",
+            "0.25",
+            "1/4"
+          ]
+        },
+        {
+          "reponses": [
+            "0,75",
+            "0.75",
+            "3/4"
+          ]
+        }
+      ],
+      "indices": [
+        "<p>Séparer d'abord les colonnes par classe : les 4 premières sont « oui », les 4 dernières « non ». Un paramètre est une proportion de 1 dans la classe.</p>"
+      ],
+      "explication": "<p>4 données sur 8 dans chaque classe : \\(P(\\text{oui}) = 0{,}5\\). Classe oui : A vaut 1, 1, 0, 1, soit \\(\\frac34\\) ; B vaut 0, 1, 1, 0, soit \\(\\frac12\\). Classe non : A vaut 0, 0, 1, 0, soit \\(\\frac14\\) ; B vaut 1, 0, 1, 1, soit \\(\\frac34\\). (Et pour C : \\(\\frac34\\) chez les oui, \\(\\frac14\\) chez les non.) On divise par l'effectif de la classe, pas par 8.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Le cas Bernoulli",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#le-cas-bernoulli"
+      },
+      "id": "q10"
+    },
+    {
+      "type": "numerique",
+      "theme": "Modèle de Bernoulli",
+      "difficulte": 2,
+      "enonce": "<p>Avec les mêmes données :</p><table><caption>Huit données d'apprentissage</caption><thead><tr><th></th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th></tr></thead><tbody><tr><th>A</th><td>1</td><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><th>B</th><td>0</td><td>1</td><td>1</td><td>0</td><td>1</td><td>0</td><td>1</td><td>1</td></tr><tr><th>C</th><td>1</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td></tr><tr><th>Classe</th><td>oui</td><td>oui</td><td>oui</td><td>oui</td><td>non</td><td>non</td><td>non</td><td>non</td></tr></tbody></table><p>Calculer le score de la classe oui, \\(P(\\text{oui}) \\prod_i P(x_i \\mid \\text{oui})\\), pour la donnée \\(\\mathbf{x} = [A = 1, B = 0, C = 1]\\). Arrondir au millième.</p>",
+      "reponse": 0.141,
+      "tolerance": 0.001,
+      "indices": [
+        "<p>Pour B = 0, le facteur est \\(1 - p_{B,\\text{oui}}\\).</p>"
+      ],
+      "explication": "<p>\\(0{,}5 \\times \\frac34 \\times \\left(1 - \\frac12\\right) \\times \\frac34 = 0{,}140625 \\approx 0{,}141\\). Le terme \\(p^{x_i}(1 - p)^{1 - x_i}\\) vaut \\(p\\) quand \\(x_i = 1\\) et \\(1 - p\\) quand \\(x_i = 0\\). Prendre \\(p_{B,\\text{oui}}\\) pour B = 0 donne le même nombre ici, par hasard, puisque \\(p_{B,\\text{oui}} = \\frac12\\) : vérifier la méthode sur la classe non.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Le cas Bernoulli",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#le-cas-bernoulli"
+      },
+      "id": "q11"
+    },
+    {
+      "type": "numerique",
+      "theme": "Modèle de Bernoulli",
+      "difficulte": 3,
+      "enonce": "<p>Avec les mêmes données :</p><table><caption>Huit données d'apprentissage</caption><thead><tr><th></th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th></tr></thead><tbody><tr><th>A</th><td>1</td><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><th>B</th><td>0</td><td>1</td><td>1</td><td>0</td><td>1</td><td>0</td><td>1</td><td>1</td></tr><tr><th>C</th><td>1</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td></tr><tr><th>Classe</th><td>oui</td><td>oui</td><td>oui</td><td>oui</td><td>non</td><td>non</td><td>non</td><td>non</td></tr></tbody></table><p>Calculer la probabilité a posteriori \\(P(\\text{oui} \\mid \\mathbf{x})\\) pour \\(\\mathbf{x} = [A = 1, B = 0, C = 1]\\). Arrondir au millième.</p>",
+      "reponse": 0.947,
+      "tolerance": 0.002,
+      "indices": [
+        "<p>Calculer aussi le score de la classe non, puis diviser le score de oui par la somme des deux scores (c'est l'évidence).</p>"
+      ],
+      "explication": "<p>Score oui : \\(0{,}5 \\times \\frac34 \\times \\frac12 \\times \\frac34 = 0{,}140625\\). Score non : \\(0{,}5 \\times \\frac14 \\times \\left(1 - \\frac34\\right) \\times \\frac14 = 0{,}0078125\\). Donc \\(P(\\text{oui} \\mid \\mathbf{x}) = \\frac{0{,}140625}{0{,}1484375} \\approx 0{,}947\\), et le MAP choisit oui. Répondre 0,141 donne le score, qui n'est pas une probabilité.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Le cas Bernoulli",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#le-cas-bernoulli"
+      },
+      "id": "q12"
+    },
+    {
+      "type": "qcm",
+      "theme": "Modèle de Bernoulli",
+      "difficulte": 2,
+      "enonce": "<p>Dans une classe, une caractéristique binaire vaut 1 pour toutes les données d'apprentissage. Que se passe-t-il pour une donnée inconnue où elle vaut 0 ?</p>",
+      "choix": [
+        "Le score de cette classe est nul, quelles que soient les autres caractéristiques",
+        "Le facteur de cette caractéristique vaut 1, elle ne compte pas",
+        "Le score de la classe est divisé par deux",
+        "Rien : le maximum de vraisemblance corrige ce cas"
+      ],
+      "reponse": 0,
+      "explication": "<p>\\(\\hat p = 1\\), donc \\(P(x_i = 0 \\mid c) = 1 - \\hat p = 0\\), et un seul facteur nul annule tout le produit : la classe est exclue, même si la donnée lui ressemble par ailleurs. C'est le problème des fréquences nulles, fréquent sur de petits jeux de données ; le lissage de Laplace (hors programme) le corrige.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Le cas Bernoulli",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#le-cas-bernoulli"
+      },
+      "id": "q13"
+    },
+    {
+      "type": "numerique",
+      "theme": "Modèle de Bernoulli",
+      "difficulte": 3,
+      "enonce": "<p>Avec les mêmes données :</p><table><caption>Huit données d'apprentissage</caption><thead><tr><th></th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th></tr></thead><tbody><tr><th>A</th><td>1</td><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td></tr><tr><th>B</th><td>0</td><td>1</td><td>1</td><td>0</td><td>1</td><td>0</td><td>1</td><td>1</td></tr><tr><th>C</th><td>1</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td></tr><tr><th>Classe</th><td>oui</td><td>oui</td><td>oui</td><td>oui</td><td>non</td><td>non</td><td>non</td><td>non</td></tr></tbody></table><p>Calculer \\(P(\\text{non} \\mid \\mathbf{x})\\) pour \\(\\mathbf{x} = [A = 0, B = 1, C = 0]\\). Arrondir au millième.</p>",
+      "reponse": 0.931,
+      "tolerance": 0.002,
+      "indices": [
+        "<p>Il faut aussi \\(p_{C,\\text{oui}} = \\frac34\\) et \\(p_{C,\\text{non}} = \\frac14\\). Pour une caractéristique à 0, le facteur est \\(1 - p\\).</p>"
+      ],
+      "explication": "<p>Score non : \\(0{,}5 \\times \\left(1 - \\frac14\\right) \\times \\frac34 \\times \\left(1 - \\frac14\\right) = 0{,}2109\\). Score oui : \\(0{,}5 \\times \\frac14 \\times \\frac12 \\times \\frac14 = 0{,}0156\\). Donc \\(P(\\text{non} \\mid \\mathbf{x}) = \\frac{0{,}2109}{0{,}2266} \\approx 0{,}931\\). Utiliser \\(p\\) au lieu de \\(1 - p\\) pour les caractéristiques à 0 inverse presque la décision.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Le cas Bernoulli",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#le-cas-bernoulli"
+      },
+      "id": "q14"
+    },
+    {
+      "type": "numerique",
+      "theme": "Modèle gaussien et paramètres",
+      "difficulte": 3,
+      "enonce": "<p>Une seule caractéristique réelle. Classe A : \\(\\mu = 2\\), \\(\\sigma = 1\\) ; classe B : \\(\\mu = 5\\), \\(\\sigma = 2\\) ; les deux classes sont équiprobables. Pour \\(x = 3{,}5\\), calculer \\(P(B \\mid x)\\). Arrondir au centième.</p>",
+      "reponse": 0.54,
+      "tolerance": 0.01,
+      "indices": [
+        "<p>Calculer les deux densités \\(p(x \\mid c) = \\frac{1}{\\sigma\\sqrt{2\\pi}} e^{-\\frac{(x - \\mu)^2}{2\\sigma^2}}\\), puis normaliser.</p>",
+        "<p>\\(x\\) est à 1,5 écart-type de A, mais à 0,75 écart-type de B.</p>"
+      ],
+      "explication": "<p>\\(p(3{,}5 \\mid A) = \\frac{1}{\\sqrt{2\\pi}} e^{-1{,}125} \\approx 0{,}1295\\) et \\(p(3{,}5 \\mid B) = \\frac{1}{2\\sqrt{2\\pi}} e^{-0{,}28125} \\approx 0{,}1506\\). Avec des a priori égaux, \\(P(B \\mid x) = \\frac{0{,}1506}{0{,}1295 + 0{,}1506} \\approx 0{,}54\\) : la classe B l'emporte, bien que 3,5 soit plus près de 2 que de 5. Sa plus grande variance compte : B « couvre » mieux ce point.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Le cas normal",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#le-cas-normal"
+      },
+      "id": "q15"
+    },
+    {
+      "type": "qcm",
+      "theme": "Modèle gaussien et paramètres",
+      "difficulte": 2,
+      "enonce": "<p>Le modèle bayésien naïf gaussien revient, pour chaque classe, à quelle loi à \\(n\\) dimensions ?</p>",
+      "choix": [
+        "Une loi normale multivariée à matrice de covariance diagonale",
+        "Une loi normale multivariée à matrice de covariance pleine",
+        "Une loi normale multivariée de covariance l'identité",
+        "Une loi uniforme sur un pavé"
+      ],
+      "reponse": 0,
+      "explication": "<p>Le produit des \\(n\\) densités normales est la densité de \\(\\mathcal{N}(\\boldsymbol{\\mu}_c, \\operatorname{diag}(\\sigma_{1,c}^2, \\dots, \\sigma_{n,c}^2))\\) : pour une loi normale, covariance diagonale et indépendance sont équivalentes (cours 4). Les isolignes sont des ellipses aux axes parallèles au repère. L'identité imposerait en plus des variances toutes égales à 1.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Le cas normal",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#le-cas-normal"
+      },
+      "id": "q16"
+    },
+    {
+      "type": "numerique",
+      "theme": "Modèle gaussien et paramètres",
+      "difficulte": 2,
+      "enonce": "<p>Combien de paramètres a un modèle bayésien naïf <strong>gaussien</strong> à 3 classes et 4 caractéristiques, a priori compris ?</p>",
+      "reponse": 26,
+      "tolerance": 0,
+      "indices": [
+        "<p>Une moyenne et un écart-type par caractéristique et par classe, plus \\(M - 1\\) probabilités a priori.</p>"
+      ],
+      "explication": "<p>\\(2 \\times n \\times M + M - 1 = 2 \\times 4 \\times 3 + 2 = 26\\). Les a priori ne comptent que pour \\(M - 1\\), puisqu'ils somment à 1 ; si les classes sont équiprobables, on les enlève et il reste 24.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Le nombre de paramètres du modèle",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#le-nombre-de-parametres-du-modele"
+      },
+      "id": "q17"
+    },
+    {
+      "type": "numerique",
+      "theme": "Modèle gaussien et paramètres",
+      "difficulte": 2,
+      "enonce": "<p>Combien de paramètres a un modèle bayésien naïf de <strong>Bernoulli</strong> à 5 classes et 20 caractéristiques binaires, a priori compris ?</p>",
+      "reponse": 104,
+      "tolerance": 0,
+      "explication": "<p>\\(n \\times M + M - 1 = 20 \\times 5 + 4 = 104\\) : un \\(p_{i,c}\\) par caractéristique et par classe, et 4 probabilités a priori libres. Sans l'hypothèse naïve, il en faudrait \\(2^{20} - 1\\), plus d'un million, par classe.</p>",
+      "revoir": {
+        "texte": "Cours 5 · Le nombre de paramètres du modèle",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#le-nombre-de-parametres-du-modele"
+      },
+      "id": "q18"
+    },
+    {
+      "type": "qcm",
+      "theme": "Modèle gaussien et paramètres",
+      "difficulte": 2,
+      "enonce": "<p>Dans l'exemple des iris du cours, la fleur \\(\\mathbf{x} = [5{,}1 ; 2{,}7]\\) (longueur, largeur du sépale) est classée versicolor (bleu), avec \\(P(\\text{bleu} \\mid \\mathbf{x}) \\approx 0{,}59\\). Les paramètres sont \\(\\mu_{1} = 5{,}006\\), \\(\\sigma_1 = 0{,}349\\), \\(\\mu_2 = 3{,}428\\), \\(\\sigma_2 = 0{,}375\\) pour setosa, et \\(\\mu_1 = 5{,}936\\), \\(\\sigma_1 = 0{,}511\\), \\(\\mu_2 = 2{,}770\\), \\(\\sigma_2 = 0{,}311\\) pour versicolor. Qu'est-ce qui fait pencher la décision ?</p>",
+      "choix": [
+        "La largeur : 2,7 est à environ 2 écarts-types sous la moyenne des setosa, mais typique des versicolor",
+        "La longueur : 5,1 est plus proche de la moyenne des versicolor",
+        "L'a priori : il y a plus de versicolor dans les données",
+        "La corrélation entre longueur et largeur, plus forte chez les versicolor"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Mesurer l'écart de chaque coordonnée à chaque moyenne, en nombre d'écarts-types.</p>"
+      ],
+      "explication": "<p>La longueur 5,1 est typique des setosa (à 0,3 écart-type de 5,006), et favorise la classe rouge. Mais la largeur 2,7 est à \\(\\frac{3{,}428 - 2{,}7}{0{,}375} \\approx 1{,}9\\) écart-type des setosa, et à 0,2 des versicolor : sa densité est près de huit fois plus grande chez les versicolor, ce qui l'emporte. Les deux espèces ont 50 fleurs (a priori égaux), et le modèle naïf ignore toute corrélation.</p>",
+      "revoir": {
+        "texte": "Cours 5 · L'exemple des iris",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#l-exemple-des-iris"
+      },
+      "id": "q19"
+    },
+    {
+      "type": "ordre",
+      "theme": "Décision (MAP)",
+      "difficulte": 1,
+      "enonce": "<p>Remettre dans l'ordre les étapes d'une classification par modèle bayésien naïf.</p>",
+      "elements": [
+        "Estimer les probabilités a priori \\(P(c)\\) par la proportion de chaque classe dans l'ensemble d'apprentissage",
+        "Estimer, classe par classe, les paramètres de chaque loi \\(P(x_i \\mid c)\\) par maximum de vraisemblance",
+        "Pour la donnée inconnue, calculer le score \\(P(c) \\prod_i P(x_i \\mid c)\\) de chaque classe",
+        "Choisir la classe de plus grand score (maximum a posteriori)"
+      ],
+      "explication": "<p>Les deux premières étapes sont l'apprentissage, sur des données étiquetées (apprentissage supervisé) ; les deux dernières la décision. L'ordre des deux premières est indifférent, mais toutes deux précèdent le calcul des scores. Pour des probabilités a posteriori, on divise enfin chaque score par leur somme.</p>",
+      "revoir": {
+        "texte": "Cours 5 · La décision : le maximum a posteriori",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#la-decision-le-maximum-a-posteriori"
+      },
+      "id": "q20"
+    },
+    {
+      "type": "ouverte",
+      "theme": "Bayes et hypothèse naïve",
+      "difficulte": 2,
+      "enonce": "<p>Pourquoi l'hypothèse du modèle bayésien naïf est-elle dite « naïve », et pourquoi la fait-on quand même ?</p>",
+      "reponse_modele": "<p>Elle suppose les caractéristiques indépendantes une fois la classe connue, ce qui est rarement vrai : sur les iris, la longueur et la largeur des sépales sont corrélées dans chaque espèce. On la fait parce qu'elle réduit énormément le nombre de paramètres : avec \\(n\\) attributs binaires, la loi jointe demande \\(2^n - 1\\) probabilités par classe, contre \\(n\\) avec l'hypothèse, et chacune s'estime facilement par une proportion, une moyenne ou une variance. Il faut donc beaucoup moins de données, et le classifieur reste souvent bon même quand l'hypothèse est fausse.</p>",
+      "criteres": [
+        "l'hypothèse : indépendance des caractéristiques conditionnellement à la classe, rarement vérifiée (exemple)",
+        "le gain : beaucoup moins de paramètres (2^n − 1 contre n, ou covariance diagonale contre pleine)",
+        "la conséquence : moins de données nécessaires, des paramètres simples à estimer, et un classifieur souvent efficace malgré tout"
+      ],
+      "revoir": {
+        "texte": "Cours 5 · Le théorème de Bayes et l'hypothèse naïve",
+        "lien": "../generated_courses/cours-05-bayesien-naif.html#le-theoreme-de-bayes-et-l-hypothese-naive"
+      },
+      "id": "q21"
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

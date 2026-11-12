@@ -7,7 +7,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const { RACINE, relatif, pageQuiz, dossierLocal } = require("./chemins");
+const { RACINE, OUTILS, relatif, depuisUrl, dansRacine, pageQuiz, dossierLocal } = require("./chemins");
 const claude = require("./claude");
 const catalogue = require("./catalogue");
 const archives = require("./archives");
@@ -30,8 +30,8 @@ function extraitCours(page, lien) {
   const q = pageQuiz(page);
   const base = q ? path.dirname(q.abs) : RACINE;
   const [chemin, ancre] = lien.split("#");
-  const fichier = path.resolve(base, decodeURIComponent(chemin));
-  if (!fichier.startsWith(RACINE) || !ancre) return null;
+  const fichier = chemin.startsWith("/") ? depuisUrl(chemin) : path.resolve(base, decodeURIComponent(chemin));
+  if (!fichier || !dansRacine(fichier) || !ancre) return null;
   return catalogue.extraireSection(fichier, ancre, 6000);
 }
 
@@ -85,7 +85,7 @@ function aide(demande, surEvenement) {
     session,
     reprendre,
     outils: "Read,Grep,Glob",
-    dossiers: [RACINE],
+    dossiers: [RACINE, OUTILS],
     cwd: dossierLocal("conversations"),
     delai: 4 * 60 * 1000,
     surEvenement
@@ -168,7 +168,7 @@ function evaluer(demande, surEvenement) {
   let message = "# Quiz\n" + ligne("Titre", t.quiz && t.quiz.titre) + ligne("Matière", t.quiz && [t.quiz.matiere, t.quiz.niveau].filter(Boolean).join(", ")) +
     ligne("Page", demande.page) + "\n# Tentative à évaluer\n" + texteTentative(t) +
     "\n# Tentatives précédentes\n" + historique(demande.page, t.id) + "\n";
-  if (q) message += "\n# Plan des cours de la matière (chemins relatifs à la page du quiz)\n" + catalogue.planCours(q.matiere) + "\n";
+  if (q) message += "\n# Plan des cours de la matière (chemins relatifs à la page du quiz)\n" + catalogue.planCours(q.cours) + "\n";
   message += "\nRédige le bilan détaillé de cette tentative.";
   const appel = claude.lancer({
     usage: "evaluation",
@@ -176,7 +176,7 @@ function evaluer(demande, surEvenement) {
     message,
     session,
     outils: "Read,Grep,Glob",
-    dossiers: [RACINE],
+    dossiers: [RACINE, OUTILS],
     cwd: dossierLocal("conversations"),
     delai: 6 * 60 * 1000,
     surEvenement

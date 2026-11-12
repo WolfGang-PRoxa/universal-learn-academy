@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 "use strict";
-/* Enregistre le travail fait sur papier dans le dossier de la matière (studies/_outils/atelier).
+/* Enregistre le travail fait sur papier dans l'espace du profil actif (_outils/atelier).
 
    Usage :
      node _outils/atelier/outils/saisir.js [--forcer] [--essai] PAGE.html [PAGE.html ...]
 
    Pour chaque atelier de la page qui a un champ « papier » (la réponse écrite
    sur papier, saisie dans la syntaxe texte de l'éditeur), écrit son état dans
-   <Niveau>/<Matière>/td_results/<page>.json, au format des enregistrements du
+   <profil>/<cursus>/<cours>/td_results/<page>.json, au format des enregistrements du
    serveur local : le TD s'ouvre alors avec ce travail, comme s'il avait été
    fait sur le PC, le portail le compte, et Claude le lit.
 
@@ -21,7 +21,8 @@ const fs = require("fs");
 const path = require("path");
 const { charger, ATELIER } = require("./charger");
 
-const RACINE = path.resolve(ATELIER, "..", "..");
+const RACINE = process.env.ULA_RACINE ? path.resolve(process.env.ULA_RACINE) : path.resolve(ATELIER, "..", "..");
+const espace = require(path.join(ATELIER, "..", "ula", "lib", "espace.js"));
 const A = charger();
 const N = A.noyau;
 
@@ -43,11 +44,12 @@ function ateliers(source) {
   return res;
 }
 
-// Même emplacement que le serveur (_outils/atelier/serveur/extension.js)
+// Même emplacement que le serveur (_outils/atelier/serveur/extension.js) : le dossier
+// du cours dans l'espace du profil actif (lien ajouté au cursus au besoin)
 function fichierTravail(page) {
-  const dossier = path.dirname(page);
-  const matiere = path.basename(dossier) === "generated_courses" ? path.dirname(dossier) : dossier;
-  return path.join(matiere, "td_results", path.basename(page, ".html") + ".json");
+  const t = espace.travailDePage(RACINE, path.resolve(page), { creer: true });
+  if (!t.dossier) throw new Error(t.raison || "Aucun profil choisi.");
+  return path.join(t.dossier, "td_results", path.basename(page, ".html") + ".json");
 }
 
 function titrePage(source, page) {

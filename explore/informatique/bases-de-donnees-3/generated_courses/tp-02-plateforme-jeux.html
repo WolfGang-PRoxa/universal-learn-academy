@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TP 2 · Plateforme de jeux (suite) · Bases de données L3</title>
+<meta name="description" content="TP 2 de bases de données (L3) : suite de la plateforme de jeux en ligne. Consignes, rappel du modèle relationnel, les 32 questions du sujet et ses bonus (schémas, fonctions SQL, séquences, CTE et fonctions de fenêtrage, modification de la base, rôles et privilèges, premiers pas en PL/pgSQL), et une console SQL pour travailler chez soi, qui rejoue la base du TP 1 et le compte rendu sur une base PostgreSQL neuve.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+<script type="application/json" id="atelier-jeux">
+{
+  "fac": {
+    "titre": "réglages du serveur de la fac",
+    "description": "<p>Base neuve, vide. Seul réglage : les dates s'écrivent jour/mois/année (<code>DateStyle</code>), comme sur le serveur de la fac, sans quoi les dates du script du TP 1 (<code>'24/01/16'</code>) sont refusées.</p>",
+    "script": "SET datestyle TO 'ISO, DMY';"
+  }
+}
+</script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Bases de données</a>
+    <span aria-current="page">TP 2 · Plateforme de jeux (suite)</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> TP 2 · L3 S5</p>
+    <h1>TP 2 : plateforme de jeux en ligne (suite)</h1>
+    <p class="chapeau">On reprend la base de la plateforme de jeux créée au TP 1 : schémas, fonctions SQL, séquence, CTE et fonctions de fenêtrage, modification de tables, rôles et privilèges entre binômes, puis premiers pas en PL/pgSQL. Pour travailler chez soi, une console SQL rejoue la base du TP 1 et le compte rendu sur une base PostgreSQL neuve.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TP/TP2/%5B26%5DTP2_PlateformeJeux.pdf">[26]TP2_PlateformeJeux.pdf</a> · 4 pages</dd></div>
+      <div><dt>Enseignants</dt><dd>T. Mariotte, N. Camelin</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-16">16 oct. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Gérer les schémas d'une base et son <code>search_path</code>.</li>
+        <li>Écrire des fonctions SQL, et les appeler dans des requêtes.</li>
+        <li>Créer une séquence et l'associer à une colonne.</li>
+        <li>Écrire des requêtes avec des CTE et des fonctions de fenêtrage.</li>
+        <li>Modifier des tables et leurs contraintes, gérer des rôles et des privilèges, écrire ses premières fonctions PL/pgSQL.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">À rendre</p>
+      <ul>
+        <li>Comme au TP 1, un compte rendu <code>TP2_Monnom.txt</code> (pas d'odt, de rtf ou autre format, et pas de .zip), avec les requêtes de chaque question.</li>
+        <li>Le TP se termine d'une semaine sur l'autre.</li>
+        <li>Cours à revoir : <a href="cours-02-sql.html#les-fonctions-sql">les fonctions SQL</a>, puis, dans le cours 3, <a href="cours-03-sql-avance-plpgsql.html#les-sequences">les séquences</a>, <a href="cours-03-sql-avance-plpgsql.html#roles-et-privileges">les rôles</a>, <a href="cours-03-sql-avance-plpgsql.html#les-cte-with">les CTE</a>, <a href="cours-03-sql-avance-plpgsql.html#les-fonctions-de-fenetrage">le fenêtrage</a> et <a href="cours-03-sql-avance-plpgsql.html#le-langage-pl-pgsql">PL/pgSQL</a>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Consignes <span class="ref">p. 1</span></h2>
+    <p>Les TP doivent être finis d'une semaine sur l'autre. Lors d'une nouvelle séance, vous commencez le nouveau sujet et n'hésitez pas à poser des questions sur l'ancien TP si vous avez besoin d'aide MAIS le TP réalisé pendant la séance est bien le nouveau sujet.</p>
+    <p><strong>Compte rendu de TP</strong> : afin de garder une trace de votre travail, vous devez écrire dans un fichier <code>TPX_Monnom.txt</code> (pas d'odt, de rtf ou autre format… et pas de .zip !) les requêtes associées à chaque question.</p>
+    <p>Pour commencer ce TP, vous devez être connecté sur votre base de données <code>jeu</code> (créée lors du TP précédent).</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Rappel du modèle relationnel <span class="ref">p. 1</span></h2>
+    <p>La base est celle du <a href="tp-01-plateforme-jeux.html">TP 1</a>, avec les tables <code>jeu</code>, <code>partie</code> et <code>save</code> écrites à sa question 9.</p>
+    <div class="relations">
+      <p><b>visiteur</b> (<u>id_visiteur</u>, login, mdp, mail, ville)</p>
+      <p><b>objet</b> (<u>id_objet</u>, nom_objet, prix, puissance)</p>
+      <p><b>stock</b> (<u>#id_objet</u>, <u>#id_visiteur</u>, nb_achat, nb_dispo)</p>
+      <p><b>race</b> (<u>id_race</u>, nom_race, txt_race)</p>
+      <p><b>avatar</b> (<u>id_avatar</u>, nom_avatar, sexe, xp, code_dsc, #id_visiteur, #id_race)</p>
+      <p><b>jeu</b> (<u>id_jeu</u>, nom_jeu, type, nb_joueur)</p>
+      <p><b>partie</b> (<u>#id_avatar</u>, <u>#id_jeu</u>, role, highscore)</p>
+      <p><b>save</b> (<u>#id_avatar</u>, <u>#id_jeu</u>, <u>date_s</u>, nb_pv, fichier)</p>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Le rappel du sujet ne tient pas compte des modifications du TP 1 : depuis ses questions 14 et 16, la ville du visiteur vient de la table <code>localisation</code> et <code>nb_joueur</code> s'appelle <code>nb_joueur_max</code>.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Partie I <span class="ref">p. 1–3</span></h2>
+    <p>Les questions du sujet, dans son ordre et avec ses intitulés de parties.</p>
+
+    <h3>Schéma</h3>
+    <ol start="1">
+      <li>Affichez l'ensemble des schémas de votre base de données.</li>
+      <li>Affichez l'ensemble des tables de votre base de données.
+        <p>Rappel : si plus aucune table ne s'affiche alors que vous les aviez bien créées au TP précédent, c'est que vous devez reconfigurer la variable <code>search_path</code> afin qu'elle parcoure tous vos schémas (et surtout le schéma <code>jeu</code> qui contient vos tables). Donc : 1) lister les schémas ; 2) modifier le <code>search_path</code> pour parcourir les schémas voulus…</p></li>
+      <li>Renommez le schéma <code>toto1</code> en <code>team</code> et supprimez le schéma <code>toto2</code>. Créez un schéma nommé <code>copain</code>.</li>
+    </ol>
+
+    <h3>Fonctions SQL</h3>
+    <ol start="4">
+      <li>Créer la fonction SQL <code>f_nb_avat()</code> qui renvoie le nombre d'avatars d'un visiteur (login) donné jouant un rôle donné dans une de ses parties. Par exemple, on veut savoir combien le visiteur « Visit » a d'avatars qui jouent le rôle « gentil », quel que soit le jeu.</li>
+      <li>Créer la fonction SQL <code>f_topscore()</code> qui renvoie pour un jeu donné le meilleur score et le login du visiteur auquel appartient l'avatar détenant ce score sous la forme d'une seule chaîne de caractères : « login 372000 ». Attention : pour cela la définition de la fonction doit être dans un autre séparateur que <code>' '</code>. Par exemple, <code>CREATE FUNCTION … AS $$ select blabla ; $$ LANGUAGE SQL ;</code> Conseil : n'hésitez pas à vous servir de la vue du TP précédent.</li>
+      <li>Créer la fonction SQL <code>f_gentillesse()</code> qui renvoie un booléen : vrai (valeur = <code>t</code>) si le visiteur passé en paramètre joue plus souvent en tant que gentil qu'en tant que méchant ; faux (valeur = <code>f</code>) sinon. Note : cette fonction peut faire doublement appel à la fonction <code>f_nb_avat()</code>…</li>
+    </ol>
+
+    <h3>SELECT de fonction…</h3>
+    <ol start="7">
+      <li>Combien Dominic a-t-il d'avatars qui ont un rôle de gentil ? et de méchant ?</li>
+      <li>Quel visiteur détient le highscore de « Kingdom Rush » ?</li>
+      <li>Est-ce que Dominic est gentil ? (nooooon…) Est-ce que Sean est gentil ? (ouiiii !)</li>
+    </ol>
+
+    <h3>Séquences</h3>
+    <ol start="10">
+      <li>On souhaite que chacun des objets créés soit de puissance plus importante que les précédents. Note : la puissance est un attribut de la table <code>objet</code>.
+        <ol type="a">
+          <li>Quelle est la valeur maximale actuelle de puissance des objets ?</li>
+          <li>Créer une séquence <code>seq_puiss</code> initialisée à cette valeur (donner le chiffre) et s'incrémentant de 10 en 10.</li>
+          <li>Associez <code>seq_puiss</code> à l'attribut <code>puissance</code> de la table <code>objet</code> afin que ce soit la valeur par défaut de tout nouvel objet créé.</li>
+        </ol></li>
+    </ol>
+
+    <h3>Common Table Expressions (CTE) et fonctions de fenêtrage (window functions)</h3>
+    <ol start="11">
+      <li>Affichez les jeux (<code>nom_jeu</code>) dont le highscore moyen (table <code>partie</code>) dépasse la moyenne des highscores moyens, tous jeux confondus. Écrivez d'abord la requête avec une sous-requête imbriquée, puis réécrivez-la avec une CTE.
+        <ol type="a" start="4">
+          <li>Avec des sous-requêtes</li>
+          <li>Avec les CTE</li>
+        </ol></li>
+      <li>Affichez les avatars (<code>nom_avatar</code>) dont l'XP est supérieure à l'XP moyenne des avatars de leur race (table <code>avatar</code>, colonne <code>id_race</code>).</li>
+      <li>Pour chaque partie jouée, affichez le nom du jeu, le highscore, et le rang de ce score au sein de son jeu (le meilleur score = rang 1).</li>
+      <li>Pour chaque ligne de la table <code>stock</code>, affichez <code>id_visiteur</code>, <code>id_objet</code>, <code>nb_achat</code>, ainsi que le nombre total d'objets achetés par ce visiteur (tous objets confondus), sans fusionner les lignes.</li>
+      <li>Pour chaque jeu, affichez les 2 meilleurs highscores (avec le nom de l'avatar correspondant).</li>
+    </ol>
+    <p><span class="badge a-verifier">À vérifier</span> Le sujet numérote les deux versions de la question 11 « d) » et « e) », à la suite des lettres de la question 10.</p>
+
+    <h3>Modification de la base de données</h3>
+    <ol start="16">
+      <li>Modifiez la table <code>visiteur</code> afin que l'on stocke le nom et le prénom du visiteur.</li>
+      <li>Créez la fonction SQL <code>maj_nom_prenom</code>, fonction qui permet de mettre à jour le nom et le prénom d'un visiteur à partir de son nom de login.
+<pre class="terminal"><code>nath=# select * from visiteur;
+ id_visiteur |  login  | mdp  | mail | id_ville | nom | prenom
+-------------+---------+------+------+----------+-----+--------
+           4 | Billy   | tutu |      |          |     |
+           5 | Dominic | tyty |      |          |     |
+           1 | Elijah  | toto |      |        5 |     |
+           2 | Ian     | titi |      |        1 |     |
+           3 | Sean    | tata |      |        2 |     |
+           6 | Viggo   | tete |      |        3 |     |
+(6 lignes)
+
+nath=# select maj_nom_prenom('Billy','Bil','lly');
+ maj_nom_prenom
+----------------
+
+(1 ligne)
+
+nath=# select * from visiteur;
+ id_visiteur |  login  | mdp  | mail | id_ville | nom | prenom
+-------------+---------+------+------+----------+-----+--------
+           5 | Dominic | tyty |      |          |     |
+           1 | Elijah  | toto |      |        5 |     |
+           2 | Ian     | titi |      |        1 |     |
+           3 | Sean    | tata |      |        2 |     |
+           6 | Viggo   | tete |      |        3 |     |
+           4 | Billy   | tutu |      |          | Bil | lly
+(6 lignes)</code></pre></li>
+    </ol>
+    <ol type="a" start="6">
+      <li>Modifiez la table <code>stock</code> afin que les nombre d'achats et nombre d'objets disponibles aient pour valeur par défaut 0 et soient toujours positifs ou nuls.</li>
+    </ol>
+    <ol start="18">
+      <li>Ian achète 2 chaînes tourbillonnantes. C'est son premier achat sur cet objet. Modifiez les données de votre base en conséquence. Note : attention, vous ne savez pas que Ian a l'id 2, vous ne connaissez que son login. Pareil pour l'objet acheté.</li>
+    </ol>
+    <p><span class="badge a-verifier">À vérifier</span> La question sur la table <code>stock</code> est numérotée « f) » dans le sujet, entre les questions 17 et 18 : sans doute une sous-question de la question 17, ou une question 17 bis.</p>
+
+    <h3>Rôles (30 minutes maximum)</h3>
+    <ol start="19">
+      <li>Modifiez votre mot de passe (notez-le pour ne pas l'oublier !).</li>
+      <li>Quelles sont les commandes qui permettent de :
+        <ol type="a">
+          <li>savoir avec quel rôle je me suis connecté(e) au SGBD ;</li>
+          <li>savoir quel est le rôle que j'ai actuellement ;</li>
+          <li>changer de rôle ;</li>
+          <li>réinitialiser mon rôle.</li>
+        </ol></li>
+      <li>Votre rôle a été modifié afin que vous ayez les droits pour créer vous-même un rôle. Quelle commande a été appliquée ? (Attention, elle ne fonctionnera pas pour vous qui n'êtes pas super-utilisateur.)</li>
+      <li>Par binôme, créez le rôle <code>binome_role2</code>, avec <code>role2</code> le user postgres de votre binôme. Exemple : Théo est en binôme avec Simon, alors Simon va créer le rôle <code>binome_theo</code> et Théo le rôle <code>binome_simon</code>.</li>
+      <li>Pour vérifier ce que vous avez fait, utilisez la commande postgres pour visualiser les rôles ou interrogez le catalogue des rôles pour avoir plus d'informations.</li>
+    </ol>
+
+    <h3>Privilèges</h3>
+    <ol start="24">
+      <li>Indiquer que vous et votre binôme faites partie du groupe <code>binome_XX</code>. Après cette commande, vous pourrez alors vous connecter en tant que vous, le rôle <code>binome_XX</code> que vous avez créé ou encore le rôle <code>binome_XX</code> que votre binôme a créé.</li>
+      <li>Interdisez l'accès (création, modification, affichage…) à votre base de données pour tous. Autorisez l'accès uniquement à votre copain.</li>
+      <li>Connectez-vous en tant qu'un des rôles <code>binome_XX</code>.
+        <ol type="a" start="5">
+          <li>Créez des tables fictives (ex : <code>create table mon_nom (id integer);</code>).</li>
+          <li>Est-ce que votre binôme a le droit de modifier la table ? Dans quel cas ?</li>
+        </ol></li>
+      <li>Reprenez votre rôle initial.</li>
+    </ol>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Partie II : premiers pas en PL/pgSQL <span class="ref">p. 3–4</span></h2>
+    <p>Les fonctions de cette partie s'écrivent en PL/pgSQL : <code>LANGUAGE plpgsql</code>, un bloc <code>DECLARE … BEGIN … END</code>, et <code>RAISE NOTICE</code> pour afficher un message.</p>
+    <ol start="28">
+      <li>Écrire une fonction sans argument qui souhaite le bonjour à l'utilisateur connecté.
+<pre class="terminal"><code>nath=# select bonjour();
+NOTICE:  Bonjour nath, quelle belle journée n'est-ce pas?
+ bonjour
+---------
+
+(1 ligne)</code></pre></li>
+      <li>Créez la fonction <code>bonjour2(prenom varchar, meteo varchar)</code> qui diminue le prénom à ses 4 premiers caractères et met le premier en majuscule, puis transforme tous les a de la météo en o. Ces deux nouvelles chaînes de caractères sont le retour de la fonction.</li>
+      <li>Appelez votre fonction de manière à avoir soit le premier affichage, soit le second. Les valeurs passées en paramètre ici sont : <code>nathalie</code> et <code>nuageux</code>.
+        <div class="colonnes">
+<pre class="terminal"><code>     bonjour2
+-----------------
+ (Nath,nuogeux)
+(1 ligne)</code></pre>
+<pre class="terminal"><code> surnom |  meteo
+--------+---------
+ Nath   | nuogeux
+(1 ligne)</code></pre>
+        </div>
+        <p>Affichage 1 à gauche, affichage 2 à droite.</p></li>
+      <li>Créez la fonction <code>listing</code> qui renvoie pour un jeu donné (<code>nom_jeu</code>) et un utilisateur donné (<code>login</code>) la liste des avatars (<code>nom_avatar</code>, <code>nom_race</code>) de ce joueur qui ont déjà engagé une partie dans ce jeu, ordonnée par highscore (du plus grand au plus petit). Conseil : n'hésitez pas à vous servir de la vue du TP précédent.</li>
+      <li>Quels sont les noms et xp des avatars de Billy qui jouent au solitaire ?</li>
+    </ol>
+
+    <h3>Fonctions SQL : bonus (à ne faire que s'il vous reste du temps !!)</h3>
+    <ul>
+      <li>Créez la fonction SQL qui renvoie le prix de l'objet le plus cher acheté par un visiteur (id) donné en paramètre.</li>
+      <li>Quel est l'objet le plus cher qu'a acheté le visiteur 1 ? Et Ian ?</li>
+      <li>Créez la fonction SQL qui renvoie la liste des parties en cours (nom du jeu, rôle de l'avatar et highscore) pour un avatar donné (nom de l'avatar).</li>
+      <li>Quelles sont les informations des parties concernant Hector ? Et Ayas ? (attention, 2 lignes retournées à chaque fois…)</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Chez soi : la console SQL du TP</h2>
+    <p>Le serveur de la fac n'est pas accessible de chez soi. La console ci-dessous exécute le compte rendu entier sur une base PostgreSQL neuve (PGlite), par le serveur local des quiz : <code>studies/lancer.bat</code>, puis cette page ouverte depuis le portail. Sans le serveur, on peut écrire, mais pas exécuter.</p>
+    <ol class="etapes">
+      <li>Le TP 2 part de la base du TP 1. En tête de la console, on colle donc le compte rendu du TP 1 : le menu ⋯ de la <a href="tp-01-plateforme-jeux.html#chez-soi-la-console-sql-du-tp">console du TP 1</a> en copie le texte, ou bien on reprend <code>TP1_Monnom.txt</code>. Il doit au moins contenir le script complété (tables <code>jeu</code>, <code>partie</code> et <code>save</code>), les schémas <code>jeu</code>, <code>toto1</code> et <code>toto2</code>, le <code>search_path</code>, les modifications des questions 14 à 16 et les vues.</li>
+      <li>Les réponses du TP 2 s'écrivent à la suite, dans l'ordre des questions. <b>Exécuter</b> (ou <kbd>Ctrl</kbd> + <kbd>Entrée</kbd>) rejoue tout, depuis le début, sur une base neuve, et affiche le résultat de la <strong>dernière</strong> requête qui renvoie des lignes, ou la première erreur.</li>
+      <li>Le travail s'enregistre tout seul : dans le navigateur, et, avec le serveur, dans le dossier <code>td_results/</code> de ce cours, dans ton espace. Le menu ⋯ copie le texte, à coller dans <code>TP2_Monnom.txt</code>.</li>
+    </ol>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Ce qui ne se fait qu'à la fac</span></p>
+      <ul>
+        <li>Les commandes du client <code>psql</code> (<code>\dn</code>, <code>\dt</code>, <code>\du</code>, <code>\c</code>) ne sont pas du SQL : la console les refuse. On les garde en commentaire (<code>-- \du</code>) ; les requêtes sur les catalogues (<code>information_schema.schemata</code>, <code>pg_roles</code>), elles, fonctionnent.</li>
+        <li>Rôles et privilèges : <code>CREATE ROLE</code>, <code>GRANT</code>, <code>SET ROLE</code>, <code>RESET ROLE</code>, <code>current_user</code> et <code>session_user</code> s'exécutent, mais la console travaille en super-utilisateur, sur une base nommée <code>postgres</code> : aucun droit n'y est refusé. Les questions 21, 25 et 26, qui portent sur ce qu'un rôle a le droit de faire, et le travail en binôme ne se vérifient qu'à la fac.</li>
+        <li>Un <code>RAISE NOTICE</code> (questions 28 et suivantes) n'apparaît pas dans les résultats de la console : il se voit dans <code>psql</code>.</li>
+      </ul>
+    </div>
+    <div class="atelier" id="tp2-compte-rendu" data-editeur="sql">
+      <script type="application/json">
+{
+  "titre": "Compte rendu du TP 2",
+  "consigne": "<p>Coller d'abord la base du TP 1 (son compte rendu), puis écrire les réponses du TP 2 à la suite, dans l'ordre des questions. <b>Exécuter</b> rejoue tout, depuis le début, sur une base neuve, et affiche le résultat de la dernière requête qui renvoie des lignes, ou la première erreur.</p>",
+  "options": {
+    "jeu": "fac",
+    "lignes": 28
+  },
+  "depart": "-- ===== Base du TP 1 =====\n-- Coller ici le compte rendu du TP 1 (menu ⋯ de sa console, ou TP1_Monnom.txt) :\n-- schémas, search_path, script complété, modifications et vues.\n\n\n-- ===== TP 2 =====\n-- PARTIE I\n-- 1.\n"
+}
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Le TP 2 travaille sur la base du TP 1 : si aucune table ne s'affiche, c'est le <code>search_path</code> qui ne parcourt plus le schéma <code>jeu</code>.</li>
+        <li>Le corps d'une fonction s'écrit entre <code>$$ … $$</code> plutôt qu'entre apostrophes, pour ne pas avoir à doubler celles du code.</li>
+        <li>Le compte rendu <code>TP2_Monnom.txt</code> garde chaque requête, dans l'ordre des questions ; le TP se termine d'une semaine sur l'autre.</li>
+        <li>Les questions 11 à 15 reprennent les CTE et les fonctions de fenêtrage du cours 3 : moyenne de moyennes, rang dans un groupe, total sans fusionner les lignes, top 2 par jeu.</li>
+        <li>Chez soi, la console rejoue la base du TP 1 puis le compte rendu du TP 2 ; les commandes <code>psql</code> et les refus de droits ne s'y voient pas.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Les tables du TP 1 ont disparu à la reconnexion. Que s'est-il passé ?</summary>
+        <div><p>Elles sont toujours dans le schéma <code>jeu</code>, mais le <code>search_path</code> est revenu à sa valeur par défaut, qui ne le parcourt pas. On liste les schémas, puis on remet <code>jeu</code> dans le <code>search_path</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi le sujet demande-t-il <code>$$ … $$</code> plutôt que <code>' … '</code> pour le corps de <code>f_topscore</code> ?</summary>
+        <div><p>Le corps contient lui-même des chaînes entre apostrophes (l'espace entre le login et le score) : entre apostrophes, il faudrait toutes les doubler. Les dollars délimitent le corps sans conflit.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi faut-il coller le compte rendu du TP 1 en tête de la console du TP 2 ?</summary>
+        <div><p>Chaque exécution part d'une base neuve : rien ne reste d'une exécution à l'autre, ni d'une page à l'autre. Pour que les tables, les modifications et les vues du TP 1 existent quand arrivent les questions du TP 2, il faut les recréer à chaque fois, avant elles.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi la console ne montre-t-elle pas le message de <code>bonjour()</code> ?</summary>
+        <div><p>Un <code>RAISE NOTICE</code> n'est pas un résultat de requête : <code>psql</code> l'affiche à part, mais la console n'affiche que les lignes renvoyées.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="tp-01-plateforme-jeux.html"><small>← TP 1</small>Plateforme de jeux</a>
+    <a class="suivant" href="tp-03-compagnie-sw7.html"><small>TP 3 →</small>La compagnie SW7</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

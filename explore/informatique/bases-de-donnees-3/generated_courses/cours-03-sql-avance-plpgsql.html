@@ -1,0 +1,2473 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQL avancé et PL/pgSQL · Bases de données L3</title>
+<meta name="description" content="Cours 3 de bases de données (L3) : séquences et index, rôles et privilèges (GRANT, REVOKE), CTE et CTE récursives, fonctions de fenêtrage (PARTITION BY, RANK, LAG), langage PL/pgSQL et triggers, sur la base d'exemple Dingo Fringo.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-03-sql-avance-plpgsql.html" title="Quiz · SQL avancé et PL/pgSQL">
+<link rel="quiz" href="../generated_quizzes/quiz-plpgsql-triggers.html" title="Quiz · PL/pgSQL et triggers">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale (format de l'écrit)">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/langues/pgsql.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Bases de données</a>
+    <span aria-current="page">Cours 3 · SQL avancé et PL/pgSQL</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> Cours 3 · L3 S5</p>
+    <h1>SQL avancé : droits, CTE, fenêtrage, PL/pgSQL et triggers</h1>
+    <p class="chapeau">Le deuxième CM de SQL complète le DDL avec les séquences et les index, puis aborde la gestion des droits : rôles, <code>GRANT</code> et <code>REVOKE</code>. Il présente ensuite deux outils pour écrire des requêtes d'analyse lisibles, les expressions de table communes (CTE) et les fonctions de fenêtrage. Il se termine par la programmation côté serveur, avec le langage PL/pgSQL et les triggers.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/2026_Cours_BDD2.pdf">2026_Cours_BDD2.pdf</a> · 95 diapos (CM2)</dd></div>
+      <div><dt>Enseignants</dt><dd>Théo Mariotte, Mathilde Mottay, Nathalie Camelin</dd></div>
+      <div><dt>Complété par</dt><dd><a href="../cours/_BDD__PLPGSQL_Cheat_Sheet.pdf">Supplément de cours PL/pgSQL</a> (T. Mariotte) · notes de séance « Cours BDD »</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-23">23 sept. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Créer et utiliser une séquence ; savoir ce que cache le type <code>SERIAL</code>.</li>
+        <li>Créer un index, et savoir quand il en vaut la peine.</li>
+        <li>Créer des rôles, les regrouper, leur accorder et leur retirer des privilèges.</li>
+        <li>Réécrire une requête imbriquée avec une CTE ; parcourir une hiérarchie avec une CTE récursive.</li>
+        <li>Calculer un agrégat sans perdre de lignes : moyenne par groupe, cumul, rang, top-N, <code>LAG</code> et <code>LEAD</code>.</li>
+        <li>Écrire une fonction PL/pgSQL et un trigger, puis les tester.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-02-sql.html">Cours 2</a> : <code>SELECT</code>, <code>GROUP BY</code> et <code>HAVING</code>, ordre d'exécution d'une requête, schémas, fonctions SQL.</li>
+        <li><a href="cours-01-uml-vers-relationnel.html">Cours 1</a> : association réflexive et sa traduction en clé étrangère.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Remarque <span>Tous les exemples ont été exécutés</span></p>
+    <p>Les requêtes de cette page ont été rejouées sur PostgreSQL 18, avec la base Dingo Fringo de la section 3.1. Les résultats affichés sont ceux obtenus. Les messages d'erreur sont reproduits en anglais, tels que PostgreSQL les renvoie par défaut ; un serveur configuré en français les affiche traduits.</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Séquences et index <span class="ref">diapos 2–11</span></h2>
+    <p>Le cours 2 a présenté le DDL : bases, schémas, tables, contraintes et vues. Deux objets complètent cette liste : la séquence, qui fabrique des identifiants, et l'index, qui accélère les recherches.</p>
+
+    <h3>Où en est-on ? <span class="ref">diapos 2–3, 16, 24</span></h3>
+    <p>Le cours s'ouvre sur la liste des cinq catégories de commandes vue au cours 2, et y revient à chaque changement de partie, comme une barre de progression : « On progresse ! » sur le DDL, « On sait tout, on gère !.. Vraiment ? » sur le DML, puis « On est initié ! » sur la gestion des droits. Sur la diapo 24, la gestion des transactions et le SQL intégré sont barrés : ils ne sont pas traités dans ce CM.</p>
+    <table>
+      <caption>Les parties de ce cours, rangées selon les catégories des diapos</caption>
+      <thead>
+        <tr><th>Catégorie (intitulé des diapos)</th><th>Contenu dans ce cours</th><th>Section</th></tr>
+      </thead>
+      <tbody>
+        <tr><th>DDL : définition des éléments de la base</th><td>séquences, index</td><td>1</td></tr>
+        <tr><th>DQL : gestion des droits d'accès</th><td>rôles, <code>GRANT</code>, <code>REVOKE</code></td><td>2</td></tr>
+        <tr><th>DML : manipulation et extraction</th><td>CTE, fonctions de fenêtrage</td><td>3 à 5</td></tr>
+        <tr><th>DCL : gestion des transactions</th><td>barré : non traité</td><td></td></tr>
+        <tr><th>SQL intégré</th><td>barré : non traité</td><td></td></tr>
+      </tbody>
+    </table>
+    <p>Les sections 6 et 7, PL/pgSQL et triggers, forment une partie à part : la programmation dans le serveur.</p>
+    <p><span class="badge a-verifier">À vérifier</span> Comme au cours 2, les diapos associent DQL aux droits d'accès et DCL aux transactions. Dans la plupart des ouvrages, DQL désigne l'interrogation (<code>SELECT</code>), DCL la gestion des droits (<code>GRANT</code>, <code>REVOKE</code>), et les transactions forment une famille à part, TCL (<span class="en" lang="en">Transaction Control Language</span>). Voir la <a href="cours-02-sql.html">section 1 du cours 2</a>.</p>
+
+    <h3>Les séquences <span class="ref">diapos 4–5</span></h3>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Séquence</span></p>
+      <p>Une <dfn>séquence</dfn> (<span class="en" lang="en">sequence</span>) est un objet de la base qui génère des entiers, les uns après les autres. On s'en sert surtout pour fabriquer des identifiants.</p>
+    </div>
+<pre data-fichier="Syntaxe"><code class="language-sql">CREATE SEQUENCE nom_seq [ INCREMENT BY increment ]
+    [ MINVALUE valeurmin | NO MINVALUE ]
+    [ MAXVALUE valeurmax | NO MAXVALUE ]
+    [ START [ WITH ] début ]
+    [ CACHE cache ]
+    [ [ NO ] CYCLE ]
+    [ OWNED BY { table.colonne | NONE } ]</code></pre>
+    <p>On utilise les valeurs de la séquence avec trois fonctions :</p>
+    <ul>
+      <li><code>nextval()</code> : valeur suivante ;</li>
+      <li><code>currval()</code> : valeur courante ;</li>
+      <li><code>setval()</code> : initialisation de la valeur courante.</li>
+    </ul>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les options de CREATE SEQUENCE</span></p>
+      <ul>
+        <li><code>INCREMENT BY</code> : le pas, 1 par défaut ; un pas négatif fait une séquence décroissante.</li>
+        <li><code>MINVALUE</code>, <code>MAXVALUE</code> : les bornes. Par défaut, de 1 à 2<sup>63</sup> − 1 pour une séquence croissante.</li>
+        <li><code>START WITH</code> : la première valeur renvoyée, <code>MINVALUE</code> par défaut.</li>
+        <li><code>CACHE</code> : nombre de valeurs réservées d'avance en mémoire, pour aller plus vite (1 par défaut).</li>
+        <li><code>CYCLE</code> : une fois la borne atteinte, la séquence repart de l'autre borne. Avec <code>NO CYCLE</code> (par défaut), <code>nextval()</code> échoue.</li>
+        <li><code>OWNED BY</code> : rattache la séquence à une colonne ; supprimer la colonne supprime la séquence (voir <code>SERIAL</code> plus bas).</li>
+      </ul>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Une séquence qui part de 3, de 2 en 2</span> <span class="ref">diapo 5</span></p>
+<pre><code class="language-sql">CREATE SEQUENCE mon_num START 3 INCREMENT BY 2;
+
+SELECT nextval('mon_num');
+    -- retourne 3
+
+SELECT nextval('mon_num');
+    -- retourne 5
+
+INSERT INTO ma_table VALUES (nextval('mon_num'));   -- insère 7
+
+ALTER SEQUENCE mon_num RESTART WITH 3;
+    -- réinitialisation à 3 ;
+
+SELECT setval('mon_num', 3, false);
+    -- idem</code></pre>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>currval, setval et les bornes, en pratique</span></p>
+      <p><code>currval()</code> renvoie la dernière valeur obtenue par <code>nextval()</code> <em>dans la session en cours</em>. Avant le premier <code>nextval()</code>, elle échoue :</p>
+<pre><code class="language-sql">SELECT currval('mon_num');
+-- ERROR:  currval of sequence "mon_num" is not yet defined in this session</code></pre>
+      <p>Le troisième argument de <code>setval()</code> indique si la valeur donnée a déjà été utilisée :</p>
+<pre><code class="language-sql">SELECT setval('mon_num', 3, false);  SELECT nextval('mon_num');   -- 3 : la valeur donnée sert au prochain appel
+SELECT setval('mon_num', 3);         SELECT nextval('mon_num');   -- 5 : true par défaut, on repart de 3 + 2</code></pre>
+      <p>Enfin, une séquence bornée sans <code>CYCLE</code> s'arrête ; avec <code>CYCLE</code>, elle recommence :</p>
+<pre><code class="language-sql">CREATE SEQUENCE petite MAXVALUE 3;
+SELECT nextval('petite'), nextval('petite'), nextval('petite');   -- 1 | 2 | 3
+SELECT nextval('petite');
+-- ERROR:  nextval: reached maximum value of sequence "petite" (3)
+
+CREATE SEQUENCE ronde MAXVALUE 3 CYCLE;
+SELECT nextval('ronde'), nextval('ronde'), nextval('ronde'), nextval('ronde');   -- 1 | 2 | 3 | 1</code></pre>
+    </div>
+
+    <h3>Retour sur le type SERIAL <span class="ref">diapos 6–8</span></h3>
+    <p>Le type <code>SERIAL</code>, vu en L2, est spécifique à PostgreSQL : il sert à créer des colonnes d'identifiants uniques. D'autres SGBD proposent l'équivalent sous la forme d'une propriété <code>auto_increment</code> (MySQL, par exemple).</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Taille de stockage des types numériques (diapo 6)</caption>
+        <thead><tr><th>Type</th><th>Taille de stockage</th></tr></thead>
+        <tbody>
+          <tr><td><code>smallint</code></td><td>2 octets</td></tr>
+          <tr><td><code>integer</code></td><td>4 octets</td></tr>
+          <tr><td><code>bigint</code></td><td>8 octets</td></tr>
+          <tr><td><code>decimal</code></td><td>variable</td></tr>
+          <tr><td><code>numeric</code></td><td>variable</td></tr>
+          <tr><td><code>real</code></td><td>4 octets</td></tr>
+          <tr><td><code>double precision</code></td><td>8 octets</td></tr>
+          <tr><td><code>smallserial</code></td><td>2 octets</td></tr>
+          <tr><td><code>serial</code></td><td>4 octets</td></tr>
+          <tr><td><code>bigserial</code></td><td>8 octets</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Quand l'utiliser ? Pour une <strong>clé primaire</strong> : oui. Pour une <strong>clé étrangère</strong> : non !</p>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Jamais de SERIAL pour une clé étrangère</span></p>
+      <p>Une clé étrangère doit contenir l'identifiant d'une ligne qui <em>existe déjà</em> dans la table référencée. Or une colonne <code>SERIAL</code> invente sa propre valeur à chaque insertion.</p>
+      <p><span class="badge ajout">Ajout</span> Avec <code>id_s SERIAL REFERENCES t_serial (id)</code>, une insertion qui ne précise pas <code>id_s</code> le remplit tout seul avec 1, puis 2, etc. : chaque ligne pointe vers une ligne arbitraire. Une clé étrangère se déclare avec le type entier correspondant : <code>integer</code> pour référencer un <code>serial</code>, <code>bigint</code> pour un <code>bigserial</code>.</p>
+    </div>
+
+    <p><code>SERIAL</code> n'est pas un vrai type : c'est un raccourci pour créer une séquence et l'associer à une colonne.</p>
+    <div class="colonnes">
+<pre data-fichier="Avec SERIAL"><code class="language-sql">CREATE TABLE ma_table ( ma_col SERIAL );</code></pre>
+<pre data-fichier="Équivalent"><code class="language-sql">CREATE SEQUENCE ma_seq AS integer;
+CREATE TABLE ma_table
+    ( ma_col integer NOT NULL DEFAULT nextval('ma_seq') );
+ALTER SEQUENCE ma_seq OWNED BY ma_table.ma_col;</code></pre>
+    </div>
+    <p>La dernière ligne crée une dépendance :</p>
+    <ul>
+      <li>si <code>ma_col</code> est supprimée, alors <code>ma_seq</code> est aussi supprimée ;</li>
+      <li>mais si <code>ma_seq</code> est supprimée, <code>ma_col</code> subsiste, sans valeur par défaut.</li>
+    </ul>
+    <p><span class="badge ajout">Ajout</span> Précision sur le second point : un simple <code>DROP SEQUENCE</code> est refusé, car la valeur par défaut de la colonne dépend de la séquence. Il faut <code>CASCADE</code>, qui supprime la valeur par défaut et garde la colonne :</p>
+<pre><code class="language-sql">DROP SEQUENCE t_serial_id_seq;
+-- ERROR:  cannot drop sequence t_serial_id_seq because other objects depend on it
+-- DETAIL:  default value for column id of table t_serial depends on sequence t_serial_id_seq
+-- HINT:  Use DROP ... CASCADE to drop the dependent objects too.</code></pre>
+    <p>La séquence créée par <code>SERIAL</code> s'appelle <code>table_colonne_seq</code> ; la fonction <code>pg_get_serial_sequence(table, colonne)</code> renvoie son nom.</p>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Des « trous » dans les valeurs</span></p>
+      <p>Il peut y avoir des trous dans les valeurs : si une transaction ne fonctionne pas, la valeur est perdue.</p>
+      <p><span class="badge ajout">Ajout</span> <code>nextval()</code> n'est jamais annulé, même par un <code>ROLLBACK</code>. Une insertion refusée consomme donc quand même une valeur :</p>
+<pre><code class="language-sql">CREATE TABLE t_serial (id SERIAL PRIMARY KEY, nom varchar(10) NOT NULL);
+INSERT INTO t_serial (nom) VALUES ('a');     -- id 1
+INSERT INTO t_serial (nom) VALUES ('b');     -- id 2
+INSERT INTO t_serial (nom) VALUES (NULL);
+-- ERROR:  null value in column "nom" of relation "t_serial" violates not-null constraint
+-- DETAIL:  Failing row contains (3, null).  ← la valeur 3 est consommée
+INSERT INTO t_serial (nom) VALUES ('c');     -- id 4 : le 3 n'existera jamais</code></pre>
+      <p>Un identifiant ne sert qu'à identifier : on ne compte pas sur lui pour numéroter sans trou.</p>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Insérer un identifiant à la main</span> <span class="badge ajout">Ajout</span></p>
+      <p>Donner explicitement une valeur à une colonne <code>SERIAL</code> ne fait pas avancer la séquence. Le conflit apparaît plus tard :</p>
+<pre><code class="language-sql">INSERT INTO t_serial (nom) VALUES ('a'), ('b');   -- id 1 et 2, la séquence est à 2
+INSERT INTO t_serial VALUES (3, 'c');              -- id donné à la main
+INSERT INTO t_serial (nom) VALUES ('d');           -- nextval() renvoie 3…
+-- ERROR:  duplicate key value violates unique constraint "t_serial_pkey"
+-- DETAIL:  Key (id)=(3) already exists.
+
+-- On recale la séquence sur le plus grand identifiant :
+SELECT setval('t_serial_id_seq', (SELECT max(id) FROM t_serial));
+INSERT INTO t_serial (nom) VALUES ('d');           -- id 4</code></pre>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les colonnes IDENTITY</span> <span class="badge hors-programme">Hors programme</span></p>
+      <p>La norme SQL propose une syntaxe équivalente, préférée dans les versions récentes de PostgreSQL :</p>
+<pre><code class="language-sql">CREATE TABLE t (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, nom text);</code></pre>
+      <p>La séquence est gérée de la même façon, mais une valeur donnée à la main est refusée, ce qui évite le piège ci-dessus.</p>
+    </div>
+
+    <h3>Les index <span class="ref">diapos 9–10</span></h3>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Index</span></p>
+      <p>Un <dfn>index</dfn> (<span class="en" lang="en">index</span>) est une structure de données auxiliaire, construite à partir d'une ou plusieurs colonnes d'une table, qui permet au SGBD de retrouver des lignes sans parcourir toute la table. C'est une notion non standard : la norme SQL ne la définit pas, mais tous les SGBD la proposent.</p>
+    </div>
+    <p>L'intérêt est une recherche plus rapide, nécessaire pour les grandes bases de données. Mais un index a un coût :</p>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="colonne-titre">Avantage</p>
+        <ul>
+          <li>Retrouver une ligne spécifique plus rapidement.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p class="colonne-titre">Inconvénient</p>
+        <ul>
+          <li>Une surcharge pour le SGBD : la structure de données est mise à jour à chaque modification de la table.</li>
+        </ul>
+      </div>
+    </div>
+    <p>Un index est donc à utiliser à bon escient. PostgreSQL crée automatiquement un index sur chaque clé primaire <span class="badge ajout">Ajout</span> et sur chaque contrainte <code>UNIQUE</code> :</p>
+<pre><code class="language-sql">SELECT indexname, indexdef FROM pg_indexes WHERE tablename IN ('articles', 'vendeurs');
+--  vendeurs_pkey | CREATE UNIQUE INDEX vendeurs_pkey ON public.vendeurs USING btree (id)
+--  articles_pkey | CREATE UNIQUE INDEX articles_pkey ON public.articles USING btree (id)</code></pre>
+    <p>Création, suppression et modification d'un index :</p>
+<pre data-fichier="Syntaxe"><code class="language-sql">CREATE INDEX nom_index
+    ON nom_table [ USING methode ] ( nom_colonne [, ...] )
+    [ WHERE expression ];
+
+DROP INDEX nom_index [, ...] [ RESTRICT | CASCADE ];
+
+ALTER INDEX nom_index ...</code></pre>
+    <p>La clause <code>WHERE</code> crée un <dfn>index partiel</dfn> : seules les lignes qui vérifient l'expression sont indexées.</p>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Index sur la table articles</span> <span class="badge ajout">Ajout</span></p>
+<pre><code class="language-sql">CREATE INDEX idx_articles_categorie ON articles (categorie);
+-- index partiel : seules les ventes de vêtements
+CREATE INDEX idx_vetements_date ON articles (date_vente) WHERE categorie = 'Vêtements';
+-- index de hachage : ne sert que pour l'égalité
+CREATE INDEX idx_articles_nom_hash ON articles USING hash (nom);
+
+ALTER INDEX idx_articles_categorie RENAME TO idx_cat;
+DROP INDEX idx_cat, idx_articles_nom_hash;</code></pre>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Voir si un index sert : EXPLAIN</span></p>
+      <p><code>EXPLAIN</code> affiche le plan choisi par PostgreSQL pour exécuter une requête, sans l'exécuter. Sur une table de 200 000 lignes :</p>
+<pre><code class="language-sql">CREATE TABLE grosse AS SELECT n, md5(n::text) AS code FROM generate_series(1, 200000) AS n;
+
+EXPLAIN SELECT * FROM grosse WHERE n = 4242;
+--  Seq Scan on grosse  (cost=0.00..4228.00 rows=1 width=37)      ← parcours de toute la table
+--    Filter: (n = 4242)
+
+CREATE INDEX idx_grosse_n ON grosse (n);
+EXPLAIN SELECT * FROM grosse WHERE n = 4242;
+--  Index Scan using idx_grosse_n on grosse  (cost=0.42..8.44 rows=1 width=37)   ← 500 fois moins cher
+--    Index Cond: (n = 4242)
+
+EXPLAIN SELECT * FROM grosse WHERE n &gt; 1000;
+--  Seq Scan on grosse  (cost=0.00..4228.00 rows=199043 width=37) ← l'index est ignoré</code></pre>
+      <p>La dernière requête garde presque toutes les lignes : passer par l'index coûterait plus cher que lire la table. Un index sert quand la condition est <strong>sélective</strong> ; sur une petite table comme <code>articles</code>, PostgreSQL ne l'utilise même pas.</p>
+    </div>
+
+    <h3>Les types d'index <span class="ref">diapo 11</span></h3>
+    <p>L'argument <code>USING</code> choisit la structure de données et l'algorithme de recherche : B-arbres (par défaut), table de hachage, GiST, SP-GiST… Attention : toutes les structures ne permettent pas l'utilisation des mêmes opérateurs. Par exemple, une table de hachage ne sert que pour l'opérateur <code>=</code>. Plus d'informations dans la <a href="https://www.postgresql.org/docs/current/indexes-types.html">documentation de PostgreSQL</a>.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Quel type pour quel opérateur ?</span></p>
+      <table>
+        <caption>Les principaux types d'index de PostgreSQL</caption>
+        <thead><tr><th>Type</th><th>Opérateurs pris en charge</th><th>Usage typique</th></tr></thead>
+        <tbody>
+          <tr><td><code>btree</code></td><td><code>=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>BETWEEN</code>, <code>IN</code>, <code>LIKE 'abc%'</code></td><td>le cas général ; permet aussi les tris</td></tr>
+          <tr><td><code>hash</code></td><td><code>=</code> seulement</td><td>égalité sur de longues valeurs</td></tr>
+          <tr><td><code>gist</code>, <code>spgist</code></td><td>chevauchement, inclusion, distance</td><td>données géométriques, intervalles, plus proche voisin</td></tr>
+          <tr><td><code>gin</code></td><td>« contient » (<code>@&gt;</code>)</td><td>tableaux, documents JSON, recherche plein texte</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Rôles et privilèges <span class="ref">diapos 12–23</span></h2>
+    <p>Une base de données sert à plusieurs personnes, qui n'ont pas toutes besoin des mêmes droits : une comptable doit pouvoir lire les ventes sans pouvoir les modifier. PostgreSQL gère ces droits avec des rôles, auxquels on accorde ou retire des privilèges sur les objets.</p>
+
+    <h3>Les rôles <span class="ref">diapo 12</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Rôle</span></p>
+      <p>Un <dfn>rôle</dfn> (<span class="en" lang="en">role</span>, mot-clé <code>ROLE</code>, non standard SQL) est une entité qui peut posséder des objets et avoir des droits.</p>
+      <ul>
+        <li>Un rôle de la base n'est pas un utilisateur du système d'exploitation.</li>
+        <li>Il est global aux bases de données : un rôle existe pour tout le serveur, pas pour une seule base.</li>
+        <li>Il affecte les droits d'accès sur ses objets pour les autres rôles.</li>
+      </ul>
+    </div>
+    <p>Les rôles sont enregistrés dans le catalogue <code>pg_roles</code>. On les liste par une requête, ou par la méta-commande <code>\du</code> de <code>psql</code> :</p>
+<pre><code class="language-sql">SELECT rolname FROM pg_roles;</code></pre>
+    <p><span class="badge ajout">Ajout</span> Sur un serveur neuf, la requête renvoie <code>postgres</code> et une quinzaine de rôles prédéfinis dont le nom commence par <code>pg_</code> (<code>pg_read_all_data</code>, <code>pg_monitor</code>…), qui regroupent des droits d'administration.</p>
+
+    <h3>Utilisateur et super-utilisateur <span class="ref">diapo 13</span></h3>
+    <p>Un « <dfn>user</dfn> » est un rôle qui a le droit de connexion. Les droits sont déterminés par le rôle indiqué lors de la connexion :</p>
+<pre class="terminal"><code>$ psql -U nom_user</code></pre>
+    <p>Pendant la session, <code>session_user</code> vaut alors <code>nom_user</code>.</p>
+    <p>L'utilisateur initial est <code>postgres</code> : c'est le rôle par défaut d'un SGBD PostgreSQL nouvellement installé. Il a les droits d'un <dfn>super-utilisateur</dfn> : aucune vérification de droits n'est faite avant l'exécution d'une action.</p>
+
+    <h3>Rôles et groupes <span class="ref">diapo 14</span></h3>
+    <p>Un rôle peut être à la fois une personne ou un groupe de personnes. L'intérêt d'un groupe est le partage commun de droits : on accorde les droits une fois au groupe, et tous ses membres en profitent.</p>
+    <p>Il est possible de changer de rôle, si <code>nom_user</code> fait partie du groupe <code>group_user</code> :</p>
+<pre><code class="language-sql">SET ROLE to group_user;          -- current_user prend alors la valeur group_user
+SELECT current_user, session_user;   -- quel rôle ?
+RESET ROLE;                      -- retour au rôle de connexion</code></pre>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>session_user ou current_user ?</span></p>
+      <p><code>session_user</code> est le rôle qui s'est connecté ; il ne change pas pendant la session. <code>current_user</code> est le rôle dont les droits sont vérifiés à cet instant ; <code>SET ROLE</code> le modifie. Connecté en <code>postgres</code> :</p>
+<pre><code class="language-sql">SET ROLE nora;
+SELECT current_user, session_user;
+--  current_user | session_user
+--  nora         | postgres</code></pre>
+    </div>
+
+    <h3>Créer, modifier, supprimer un rôle <span class="ref">diapo 15</span></h3>
+<pre><code class="language-sql">-- Création d'un rôle
+CREATE ROLE etudiant LOGIN;
+CREATE USER etudiant;              -- identique à la ligne précédente
+CREATE ROLE prof SUPERUSER;        -- création d'un super-utilisateur
+CREATE ROLE etu_db CREATEDB;       -- possibilité de créer des bases de données
+CREATE ROLE etu_role CREATEROLE;   -- possibilité de créer des rôles
+
+-- Modification d'un rôle
+ALTER ROLE etudiant WITH PASSWORD 'toto13';
+
+-- Suppression d'un rôle
+DROP ROLE etudiant;</code></pre>
+    <p><span class="badge ajout">Ajout</span> Les attributs se lisent dans <code>pg_roles</code> :</p>
+    <div class="tableau compact">
+      <table>
+        <caption>SELECT rolname, rolsuper, rolcanlogin, rolcreatedb, rolcreaterole FROM pg_roles …</caption>
+        <thead><tr><th>rolname</th><th>rolsuper</th><th>rolcanlogin</th><th>rolcreatedb</th><th>rolcreaterole</th></tr></thead>
+        <tbody>
+          <tr><td>etu_db</td><td>f</td><td>f</td><td>t</td><td>f</td></tr>
+          <tr><td>etu_role</td><td>f</td><td>f</td><td>f</td><td>t</td></tr>
+          <tr><td>etudiant</td><td>f</td><td>t</td><td>f</td><td>f</td></tr>
+          <tr><td>prof</td><td>t</td><td>f</td><td>f</td><td>f</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Supprimer un rôle qui a encore des droits</span> <span class="badge ajout">Ajout</span></p>
+      <p><code>DROP ROLE</code> échoue tant que le rôle possède des objets ou détient des privilèges :</p>
+<pre><code class="language-sql">DROP ROLE nora;
+-- ERROR:  role "nora" cannot be dropped because some objects depend on it
+-- DETAIL:  privileges for table articles</code></pre>
+      <p>Il faut d'abord lui retirer ses privilèges avec <code>REVOKE</code> (voir plus bas), puis supprimer le rôle.</p>
+    </div>
+
+    <h3>La liste de contrôle d'accès <span class="ref">diapos 16–17</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Liste de contrôle d'accès</span></p>
+      <p>La <dfn>liste de contrôle d'accès</dfn> (<span class="en" lang="en">access control list</span>, ACL) indique quels rôles possèdent quels droits sur quels objets. Elle est consultée avant toute action. Pour chaque objet, elle contient un ensemble de privilèges et un ensemble de restrictions.</p>
+    </div>
+    <p>Les droits sur un objet peuvent être modifiés par le super-utilisateur ou par le propriétaire de l'objet : octroi de privilèges avec <code>GRANT</code>, restriction avec <code>REVOKE</code>.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Lire une ACL</span></p>
+      <p>Dans <code>psql</code>, <code>\dp nom_table</code> affiche l'ACL d'une table. Elle est aussi stockée dans le catalogue, sous une forme abrégée :</p>
+<pre><code class="language-sql">SELECT relname, relacl FROM pg_class WHERE relname = 'stock';
+--  stock | {postgres=arwdDxtm/postgres,lecteur=r/postgres}</code></pre>
+      <p>Chaque élément se lit <code>bénéficiaire=droits/auteur</code> : <code>lecteur=r/postgres</code> signifie que <code>postgres</code> a accordé à <code>lecteur</code> le droit <code>r</code>. Les lettres : <code>r</code> <code>SELECT</code>, <code>a</code> <code>INSERT</code>, <code>w</code> <code>UPDATE</code>, <code>d</code> <code>DELETE</code>, <code>D</code> <code>TRUNCATE</code>, <code>x</code> <code>REFERENCES</code>, <code>t</code> <code>TRIGGER</code>, <code>m</code> <code>MAINTAIN</code>. Un bénéficiaire vide (<code>=r/…</code>) désigne <code>PUBLIC</code>.</p>
+    </div>
+
+    <h3>Accorder des privilèges : GRANT <span class="ref">diapos 18–20</span></h3>
+<pre data-fichier="Syntaxe"><code class="language-sql">GRANT privilege [, ...] ON objet [, ...]
+    TO { username | GROUP groupname | PUBLIC } [, ...];</code></pre>
+    <p>Exemples de valeurs pour <var>privilege</var> :</p>
+    <ul>
+      <li><code>SELECT</code> : lecture ;</li>
+      <li><code>INSERT</code> : insertion de lignes ;</li>
+      <li><code>UPDATE</code> : modification de colonnes ;</li>
+      <li><code>DELETE</code> : suppression de lignes ;</li>
+      <li><code>ALL</code> : tous les privilèges.</li>
+    </ul>
+    <p>Exemples de valeurs pour <var>objet</var> :</p>
+    <ul>
+      <li>base de données : <code>ON DATABASE nom_bd</code> ;</li>
+      <li>table : <code>ON [TABLE] nom_table</code> ;</li>
+      <li>schéma : <code>ON SCHEMA nom_schema</code> ;</li>
+      <li>langage : <code>ON LANGUAGE nom_langage</code> ;</li>
+      <li>fonction : <code>ON FUNCTION nom_fonction</code>.</li>
+    </ul>
+    <p>Le bénéficiaire, après <code>TO</code>, est un utilisateur particulier (<var>username</var>), un groupe d'utilisateurs (<code>GROUP</code> <var>groupname</var>) ou tous les utilisateurs (<code>PUBLIC</code>).</p>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Les droits dépendent des objets</span></p>
+      <p><span class="badge ajout">Ajout</span> Chaque type d'objet a ses propres privilèges. Accorder <code>SELECT</code> sur une base de données, par exemple, n'a pas de sens.</p>
+      <table>
+        <caption>Privilèges disponibles selon l'objet</caption>
+        <thead><tr><th>Objet</th><th>Privilèges</th></tr></thead>
+        <tbody>
+          <tr><td>table, vue</td><td><code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, <code>TRUNCATE</code>, <code>REFERENCES</code>, <code>TRIGGER</code></td></tr>
+          <tr><td>séquence</td><td><code>USAGE</code>, <code>SELECT</code>, <code>UPDATE</code></td></tr>
+          <tr><td>base de données</td><td><code>CONNECT</code>, <code>CREATE</code>, <code>TEMPORARY</code></td></tr>
+          <tr><td>schéma</td><td><code>USAGE</code> (accéder aux objets), <code>CREATE</code> (en créer)</td></tr>
+          <tr><td>fonction</td><td><code>EXECUTE</code></td></tr>
+          <tr><td>langage</td><td><code>USAGE</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Des droits à la colonne près</span> <span class="badge ajout">Ajout</span></p>
+      <p>Pour <code>UPDATE</code> (et <code>SELECT</code>, <code>INSERT</code>), on peut restreindre le droit à certaines colonnes :</p>
+<pre><code class="language-sql">GRANT SELECT ON articles TO compta;
+GRANT UPDATE (prix) ON articles TO compta;
+
+SET ROLE compta;
+UPDATE articles SET prix = prix WHERE id = 1;    -- UPDATE 1 : autorisé
+UPDATE articles SET nom = 'x' WHERE id = 1;
+-- ERROR:  permission denied for table articles
+SELECT * FROM vendeurs;
+-- ERROR:  permission denied for table vendeurs   ← aucun droit par défaut
+RESET ROLE;</code></pre>
+    </div>
+
+    <h3>Retirer des privilèges : REVOKE <span class="ref">diapo 21</span></h3>
+<pre data-fichier="Syntaxe"><code class="language-sql">REVOKE privilege [, ...] ON objet [, ...]
+    FROM { username | GROUP groupname | PUBLIC } [, ...];</code></pre>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque</p>
+      <p>Le fait de supprimer des droits à <code>PUBLIC</code> n'affecte pas ceux à qui l'on a octroyé spécifiquement les droits.</p>
+<pre><code class="language-sql">GRANT SELECT ON articles TO PUBLIC;
+GRANT SELECT ON articles TO compta;
+REVOKE SELECT ON articles FROM PUBLIC;
+SET ROLE compta;
+SELECT count(*) FROM articles;    -- 12 : compta garde son droit</code></pre>
+    </div>
+
+    <h3>Accès aux schémas <span class="ref">diapo 22</span></h3>
+<pre><code class="language-sql">-- Donner les droits d'accès à son schéma
+GRANT usage ON schema mon_schema TO nom_utilisateur;
+
+-- Révoquer les droits : interdiction de créer des objets dans le schéma public
+REVOKE create ON schema public FROM public;</code></pre>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Droits sur un schéma ≠ droits sur ses objets</span></p>
+      <p>L'octroi de droits sur le schéma n'octroie pas de droits sur les objets de ce schéma !</p>
+      <p><span class="badge ajout">Ajout</span> Il faut les deux : <code>USAGE</code> sur le schéma pour y entrer, et un privilège sur la table pour s'en servir.</p>
+<pre><code class="language-sql">CREATE SCHEMA boutique;
+CREATE TABLE boutique.stock (id int, qte int);
+
+GRANT USAGE ON SCHEMA boutique TO lecteur;        -- le schéma seul
+SET ROLE lecteur; SELECT * FROM boutique.stock;
+-- ERROR:  permission denied for table stock
+
+REVOKE USAGE ON SCHEMA boutique FROM lecteur;
+GRANT SELECT ON boutique.stock TO lecteur;        -- la table seule
+SET ROLE lecteur; SELECT * FROM boutique.stock;
+-- ERROR:  permission denied for schema boutique
+
+GRANT USAGE ON SCHEMA boutique TO lecteur;        -- les deux
+SET ROLE lecteur; SELECT * FROM boutique.stock;   -- 1 | 10 : enfin</code></pre>
+      <p>Pour donner un droit sur toutes les tables existantes d'un schéma en une commande :</p>
+<pre><code class="language-sql">GRANT SELECT ON ALL TABLES IN SCHEMA boutique TO lecteur;</code></pre>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Depuis PostgreSQL 15, <code>PUBLIC</code> n'a plus le droit <code>CREATE</code> sur le schéma <code>public</code> : le <code>REVOKE</code> de la diapo n'est plus nécessaire que sur les versions antérieures. Un rôle ordinaire qui tente <code>CREATE TABLE public.essai (x int);</code> obtient <code>permission denied for schema public</code>.</p>
+
+    <h3>Groupes d'utilisateurs <span class="ref">diapo 23</span></h3>
+<pre><code class="language-sql">-- Création des rôles
+CREATE ROLE group_test;
+CREATE ROLE toto;
+CREATE ROLE tata;
+CREATE ROLE titi;
+
+-- Ajout d'utilisateurs au sein d'un groupe
+GRANT group_test TO toto, tata, titi;
+
+-- Suppression d'utilisateurs
+REVOKE group_test FROM toto;
+ALTER GROUP group_test DROP USER toto;   -- idem</code></pre>
+    <p><span class="badge ajout">Ajout</span> On accorde un groupe comme un privilège, avec <code>GRANT</code>. Les membres héritent ensuite des droits du groupe, sans avoir besoin de <code>SET ROLE</code> :</p>
+<pre><code class="language-sql">GRANT SELECT, INSERT ON articles TO group_test;
+SET ROLE titi;  SELECT count(*) FROM articles;    -- 12 : titi est membre
+SET ROLE toto;  SELECT count(*) FROM articles;    -- toto a été retiré du groupe
+-- ERROR:  permission denied for table articles</code></pre>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exploiter une base : Dingo Fringo et les CTE <span class="ref">diapos 24–52</span></h2>
+    <p>Retour au DML. Une petite base d'exemple, Dingo Fringo, sert jusqu'à la fin du cours. Ses premières requêtes d'analyse montrent vite une limite : dès qu'on imbrique des sous-requêtes, la requête devient difficile à lire. Les expressions de table communes y remédient.</p>
+
+    <h3>La base Dingo Fringo <span class="ref">diapos 25–29</span></h3>
+    <p>Dingo Fringo vend des articles (vêtements, chaussures, accessoires) par l'intermédiaire de vendeur·ses. Chaque vendeur·se peut avoir été parrainé·e par un·e autre. Le cours déroule les quatre étapes de la conception :</p>
+    <ol class="etapes">
+      <li><strong>Diagramme de classes</strong> : c'est fait (figure ci-dessous).</li>
+      <li><strong>Modèle relationnel</strong> associé.</li>
+      <li><strong>Création des tables</strong> de la base de données.</li>
+      <li><strong>Insertion de données</strong>, par exemple dans la table <code>Articles</code>. Ensuite, on peut exploiter la base.</li>
+    </ol>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 620 160" width="620" role="img" aria-labelledby="fig-dingo-titre">
+        <title id="fig-dingo-titre">Diagramme de classes de Dingo Fringo : Vendeur·se (id, nom) vend des Articles (id, nom, categorie, prix, date_vente), multiplicité 1 côté vendeur et étoile côté articles ; association réflexive parraine sur Vendeur·se, 0..1 d'un côté et étoile de l'autre.</title>
+        <rect class="boite" x="150" y="12" width="170" height="74" rx="3"/>
+        <path class="boite" d="M150 40 H320"/>
+        <text x="235" y="31" text-anchor="middle" class="gras">Vendeur·se</text>
+        <g font-size="13">
+          <text x="158" y="58" class="mono">id : int {PK}</text>
+          <text x="158" y="78" class="mono">nom : varchar</text>
+        </g>
+        <path class="trait" d="M150 28 H80 V74 H150"/>
+        <g font-size="13">
+          <text x="112" y="22"><tspan class="gras">0..1</tspan></text>
+          <text x="128" y="92"><tspan class="gras">*</tspan></text>
+          <text x="8" y="56">parraine ▸</text>
+        </g>
+        <rect class="boite" x="430" y="12" width="180" height="134" rx="3"/>
+        <path class="boite" d="M430 40 H610"/>
+        <text x="520" y="31" text-anchor="middle" class="gras">Articles</text>
+        <g font-size="13">
+          <text x="438" y="58" class="mono">id : int {PK}</text>
+          <text x="438" y="78" class="mono">nom : varchar</text>
+          <text x="438" y="98" class="mono">categorie</text>
+          <text x="438" y="118" class="mono">prix : numeric</text>
+          <text x="438" y="138" class="mono">date_vente</text>
+        </g>
+        <path class="trait" d="M320 50 H430"/>
+        <g font-size="13">
+          <text x="326" y="44" class="gras">1</text>
+          <text x="418" y="44" class="gras">*</text>
+          <text x="375" y="68" text-anchor="middle">vend ▸</text>
+        </g>
+      </svg>
+      <figcaption>Le diagramme de classes de Dingo Fringo (diapo 25). L'association « parraine » est réflexive : un·e vendeur·se a au plus un parrain ou une marraine, et peut avoir plusieurs filleul·es.</figcaption>
+    </figure>
+
+    <p>Le modèle relationnel (étape 2) traduit l'association « vend », de type <code>1 — *</code>, par une clé étrangère côté <code>Articles</code>, et l'association réflexive par une clé étrangère renommée dans <code>Vendeurs</code> (voir le <a href="cours-01-uml-vers-relationnel.html">cours 1</a>) :</p>
+    <div class="relations">
+      <p><b>Vendeurs</b>(<u>id</u>, nom, #id_parrain) <i>id_parrain référence Vendeurs.id</i></p>
+      <p><b>Articles</b>(<u>id</u>, nom, categorie, prix, date_vente, #id_vendeur) <i>id_vendeur référence Vendeurs.id</i></p>
+    </div>
+
+    <p>Création des tables et insertion des valeurs (étapes 3 et 4) :</p>
+<pre data-fichier="dingo_fringo.sql"><code class="language-sql">CREATE TABLE vendeurs (
+    id          INT PRIMARY KEY,
+    nom         VARCHAR(50),
+    id_parrain  INT REFERENCES vendeurs (id)
+);
+
+CREATE TABLE articles (
+    id          INT PRIMARY KEY,
+    nom         VARCHAR(100),
+    categorie   VARCHAR(30),
+    prix        NUMERIC(6,2),
+    id_vendeur  INT REFERENCES vendeurs (id),
+    date_vente  DATE
+);
+
+-- Julie d'abord : les parrains avant leurs filleuls
+INSERT INTO vendeurs VALUES
+    (1, 'Julie', NULL),
+    (2, 'Marc', 1),
+    (3, 'Sophie', 1),
+    (4, 'Karim', 2),
+    (5, 'Lea', 2),
+    (6, 'Nadia', 3);
+
+INSERT INTO articles VALUES
+    (1,  'Jean Levis',         'Vêtements',   25.00, 1, '2024-01-10'),
+    (2,  'Robe fleurie',       'Vêtements',   18.00, 2, '2024-01-15'),
+    (3,  'Manteau laine',      'Vêtements',   45.00, 3, '2024-02-05'),
+    (4,  'T-shirt Nike',       'Vêtements',   12.00, 4, '2024-02-20'),
+    (5,  'Pull col roulé',     'Vêtements',   18.00, 5, '2024-03-01'),
+    (6,  'Baskets Adidas',     'Chaussures',  30.00, 1, '2024-01-12'),
+    (7,  'Bottines cuir',      'Chaussures',  40.00, 2, '2024-02-08'),
+    (8,  'Sandales été',       'Chaussures',  15.00, 3, '2024-03-10'),
+    (9,  'Sac à main vintage', 'Accessoires', 22.00, 4, '2024-01-25'),
+    (10, 'Écharpe laine',      'Accessoires',  9.00, 5, '2024-02-14'),
+    (11, 'Ceinture cuir',      'Accessoires',  9.00, 6, '2024-03-05'),
+    (12, 'Chapeau feutre',     'Accessoires', 14.00, 1, '2024-03-20');</code></pre>
+
+    <p><span class="badge a-verifier">À vérifier</span> Ce script corrige et complète celui des diapos, qui ne s'exécute pas tel quel :</p>
+    <ul>
+      <li>dans le <code>CREATE TABLE articles</code> de la diapo 27, il manque une virgule après <code>date_vente DATE</code>, et une virgule traîne avant la parenthèse finale (<code>vendeurs(id),);</code>) ;</li>
+      <li>la diapo 27 place <code>date_vente</code> avant <code>id_vendeur</code>, alors que les <code>INSERT</code> de la diapo 28 donnent l'identifiant du vendeur avant la date. L'affichage de la table (diapo 29) montre <code>id_vendeur</code> avant <code>date_vente</code> : c'est cet ordre qui est retenu ici ;</li>
+      <li>la diapo 28 n'insère que cinq articles, suivis de « … », et les nomme <code>'Jean large'</code> et <code>'T-shirt Noike'</code> ; les douze articles et leurs noms viennent de l'affichage de la diapo 29, utilisé par tous les exemples suivants.</li>
+    </ul>
+
+    <div class="colonnes">
+      <div class="tableau compact">
+        <table>
+          <caption>SELECT * FROM vendeurs;</caption>
+          <thead><tr><th>id</th><th>nom</th><th>id_parrain</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Julie</td><td></td></tr>
+            <tr><td>2</td><td>Marc</td><td>1</td></tr>
+            <tr><td>3</td><td>Sophie</td><td>1</td></tr>
+            <tr><td>4</td><td>Karim</td><td>2</td></tr>
+            <tr><td>5</td><td>Lea</td><td>2</td></tr>
+            <tr><td>6</td><td>Nadia</td><td>3</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tableau compact">
+        <table>
+          <caption>SELECT * FROM articles;</caption>
+          <thead><tr><th>id</th><th>nom</th><th>categorie</th><th>prix</th><th>id_vendeur</th><th>date_vente</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Jean Levis</td><td>Vêtements</td><td>25.00</td><td>1</td><td>2024-01-10</td></tr>
+            <tr><td>2</td><td>Robe fleurie</td><td>Vêtements</td><td>18.00</td><td>2</td><td>2024-01-15</td></tr>
+            <tr><td>3</td><td>Manteau laine</td><td>Vêtements</td><td>45.00</td><td>3</td><td>2024-02-05</td></tr>
+            <tr><td>4</td><td>T-shirt Nike</td><td>Vêtements</td><td>12.00</td><td>4</td><td>2024-02-20</td></tr>
+            <tr><td>5</td><td>Pull col roulé</td><td>Vêtements</td><td>18.00</td><td>5</td><td>2024-03-01</td></tr>
+            <tr><td>6</td><td>Baskets Adidas</td><td>Chaussures</td><td>30.00</td><td>1</td><td>2024-01-12</td></tr>
+            <tr><td>7</td><td>Bottines cuir</td><td>Chaussures</td><td>40.00</td><td>2</td><td>2024-02-08</td></tr>
+            <tr><td>8</td><td>Sandales été</td><td>Chaussures</td><td>15.00</td><td>3</td><td>2024-03-10</td></tr>
+            <tr><td>9</td><td>Sac à main vintage</td><td>Accessoires</td><td>22.00</td><td>4</td><td>2024-01-25</td></tr>
+            <tr><td>10</td><td>Écharpe laine</td><td>Accessoires</td><td>9.00</td><td>5</td><td>2024-02-14</td></tr>
+            <tr><td>11</td><td>Ceinture cuir</td><td>Accessoires</td><td>9.00</td><td>6</td><td>2024-03-05</td></tr>
+            <tr><td>12</td><td>Chapeau feutre</td><td>Accessoires</td><td>14.00</td><td>1</td><td>2024-03-20</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <h3>Les articles de chaque vendeur : attention à la jointure <span class="ref">diapos 30–32</span></h3>
+    <p>Quels sont les articles vendus par chaque vendeur ? La jointure naturelle semble tout indiquée…</p>
+<pre><code class="language-sql">SELECT * FROM articles NATURAL JOIN vendeurs;
+--  id | nom | categorie | prix | id_vendeur | date_vente | id_parrain
+-- ----+-----+-----------+------+------------+------------+------------
+-- (0 ligne)</code></pre>
+    <p>Raté : aucune ligne.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>NATURAL JOIN joint sur toutes les colonnes de même nom</span> <span class="badge ajout">Ajout</span></p>
+      <p><code>articles</code> et <code>vendeurs</code> ont deux colonnes en commun, <code>id</code> et <code>nom</code>. La jointure naturelle impose donc <code>articles.id = vendeurs.id</code> <strong>et</strong> <code>articles.nom = vendeurs.nom</code> : aucun article ne porte le nom d'un vendeur. Elle ignore au passage le vrai lien, <code>id_vendeur</code>, qui ne porte pas le même nom que <code>vendeurs.id</code>.</p>
+    </div>
+    <p>Il faut une jointure interne, en précisant les identifiants impliqués dans la jointure :</p>
+<pre><code class="language-sql">SELECT * FROM articles INNER JOIN vendeurs ON vendeurs.id = articles.id_vendeur;
+-- 12 lignes : les 6 colonnes de l'article, puis id, nom et id_parrain du vendeur</code></pre>
+    <p><span class="badge ajout">Ajout</span> Avec <code>SELECT *</code>, les colonnes <code>id</code> et <code>nom</code> apparaissent deux fois. Des alias rendent le résultat lisible :</p>
+<pre><code class="language-sql">SELECT a.nom AS article, v.nom AS vendeur
+FROM articles a JOIN vendeurs v ON v.id = a.id_vendeur
+ORDER BY v.nom, a.nom;
+-- Baskets Adidas, Chapeau feutre, Jean Levis → Julie ; Sac à main vintage, T-shirt Nike → Karim ;
+-- Pull col roulé, Écharpe laine → Lea ; Bottines cuir, Robe fleurie → Marc ;
+-- Ceinture cuir → Nadia ; Manteau laine, Sandales été → Sophie</code></pre>
+
+    <h3>Une requête difficile à lire <span class="ref">diapos 33–38</span></h3>
+    <p>Quelles catégories ont un chiffre d'affaires supérieur au chiffre d'affaires moyen par catégorie ? La requête suivante fonctionne :</p>
+<pre><code class="language-sql">SELECT categorie, SUM(prix) AS ca_total
+FROM articles
+GROUP BY categorie
+HAVING SUM(prix) &gt; (
+    SELECT AVG(ca) FROM (
+        SELECT SUM(prix) AS ca
+        FROM articles
+        GROUP BY categorie
+    ) AS sous_requete );</code></pre>
+    <p>Que fait-elle ? Il faut la lire de l'intérieur vers l'extérieur :</p>
+    <ol class="etapes">
+      <li><strong>La sous-requête la plus interne</strong> calcule le chiffre d'affaires de chaque catégorie : 85,00, 118,00 et 54,00 (3 lignes).</li>
+      <li><strong>La sous-requête intermédiaire</strong> en fait la moyenne : 85,666…, soit environ 85,7.</li>
+      <li><strong>La requête principale</strong> calcule le chiffre d'affaires de chaque catégorie (Chaussures 85,00, Vêtements 118,00, Accessoires 54,00), et <code>HAVING</code> ne garde que les groupes au-dessus de 85,7.</li>
+    </ol>
+<pre><code class="language-sql">--  categorie | ca_total
+-- -----------+----------
+--  Vêtements |   118.00</code></pre>
+    <p>Le résultat est juste : la seule catégorie dont le chiffre d'affaires dépasse le chiffre d'affaires moyen par catégorie est Vêtements. Le problème ? La requête est illisible. Trois niveaux d'imbrication, un calcul (<code>SUM(prix) … GROUP BY categorie</code>) écrit deux fois, et une lecture de l'intérieur vers l'extérieur : difficile à comprendre, et à corriger en cas d'erreur.</p>
+
+    <h3>Les CTE : WITH <span class="ref">diapos 39–40</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Expression de table commune</span></p>
+      <p>Une <dfn>expression de table commune</dfn> (<span class="en" lang="en">Common Table Expression</span>, CTE) est une requête nommée, définie avant la requête principale, qui <strong>se comporte comme une table temporaire</strong>, mais n'existe <strong>que le temps de l'exécution de la requête</strong> : pas de stockage, à la différence d'une vue (<code>VIEW</code>). Mot-clé : <code>WITH</code>.</p>
+    </div>
+<pre data-fichier="Syntaxe"><code class="language-sql">WITH nom_cte AS (SELECT ...) SELECT ... FROM nom_cte</code></pre>
+    <p>Une CTE permet de lire les requêtes de haut en bas, plutôt que de l'intérieur vers l'extérieur. Réécriture de la requête précédente :</p>
+<pre><code class="language-sql">WITH ca_par_categorie AS (
+    SELECT categorie, SUM(prix) AS ca_total FROM articles
+    GROUP BY categorie )
+SELECT categorie, ca_total
+FROM ca_par_categorie
+WHERE ca_total &gt; (SELECT AVG(ca_total) FROM ca_par_categorie);
+-- Vêtements | 118.00</code></pre>
+    <p><span class="badge ajout">Ajout</span> On lit d'abord « on calcule le chiffre d'affaires par catégorie », puis « on garde celles au-dessus de la moyenne ». Le calcul n'est écrit qu'une fois, et la CTE est utilisée deux fois. Comme le résultat de la CTE est une table, la condition passe du <code>HAVING</code> au <code>WHERE</code>.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Sous-requête, CTE ou vue ?</span></p>
+      <table>
+        <caption>Trois façons de nommer un résultat intermédiaire</caption>
+        <thead><tr><th></th><th>Où est-elle définie ?</th><th>Durée de vie</th><th>Réutilisable</th></tr></thead>
+        <tbody>
+          <tr><th>Sous-requête dans le <code>FROM</code></th><td>à l'intérieur de la requête</td><td>la requête</td><td>non : à réécrire à chaque usage</td></tr>
+          <tr><th>CTE (<code>WITH</code>)</th><td>en tête de la requête</td><td>la requête</td><td>oui, dans cette requête seulement</td></tr>
+          <tr><th>Vue (<code>CREATE VIEW</code>)</th><td>dans le catalogue de la base</td><td>jusqu'au <code>DROP VIEW</code></td><td>oui, par toutes les requêtes</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Chaîner des CTE <span class="ref">diapo 41</span></h3>
+    <p>Il est possible de chaîner des CTE les unes à la suite des autres, séparées par des virgules, derrière un seul <code>WITH</code>. Elles agissent alors comme des variables intermédiaires, utilisables dans la suite de la requête ; chacune peut utiliser les précédentes.</p>
+<pre data-fichier="Syntaxe"><code class="language-sql">WITH etape1 AS (...), etape2 AS (SELECT * FROM etape1 ...) SELECT ...</code></pre>
+    <p>Réécriture de la requête de la diapo 33 avec chaînage :</p>
+<pre><code class="language-sql">WITH ca_par_categorie AS (
+    SELECT categorie, SUM(prix) AS ca_total
+    FROM articles
+    GROUP BY categorie ),
+    moyenne_globale AS (
+        SELECT AVG(ca_total) AS moyenne
+        FROM ca_par_categorie )
+SELECT c.categorie, c.ca_total
+FROM ca_par_categorie c, moyenne_globale m
+WHERE c.ca_total &gt; m.moyenne;
+-- Vêtements | 118.00</code></pre>
+    <p><span class="badge ajout">Ajout</span> <code>moyenne_globale</code> ne contient qu'une ligne : le produit cartésien <code>ca_par_categorie c, moyenne_globale m</code> ajoute simplement la moyenne en face de chaque catégorie.</p>
+
+    <h3>Les CTE récursives <span class="ref">diapo 42</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>CTE récursive</span></p>
+      <p>Une <dfn>CTE récursive</dfn> (<code>WITH RECURSIVE</code>) permet de parcourir plusieurs fois une table de travail. Elle est formée de deux requêtes reliées par <code>UNION ALL</code> (ou <code>UNION</code>) :</p>
+      <ul>
+        <li>le <dfn>terme ancre</dfn> initialise la table de travail. Il est exécuté <strong>une seule fois</strong> et ne référence <strong>pas</strong> <code>nom_cte</code> ;</li>
+        <li>le <dfn>terme récursif</dfn> est répété en boucle. Il référence <strong>obligatoirement</strong> <code>nom_cte</code>, et la boucle s'arrête quand il renvoie 0 ligne.</li>
+      </ul>
+    </div>
+<pre data-fichier="Syntaxe"><code class="language-sql">WITH RECURSIVE nom_cte (colonne1, colonne2, ...) AS (
+    -- terme ancre : initialisation de la table de travail
+    SELECT &lt;colonnes&gt;
+    FROM &lt;table_source&gt;
+    WHERE &lt;condition_de_depart&gt;
+
+    UNION ALL                  -- obligatoire entre les deux termes
+
+    -- terme récursif : répété en boucle
+    SELECT &lt;colonnes&gt;
+    FROM &lt;table_source&gt; t
+    JOIN nom_cte c ON &lt;condition_de_liaison&gt;
+    WHERE &lt;condition_d_arret_optionnelle&gt; )
+SELECT * FROM nom_cte ORDER BY &lt;colonne&gt;;</code></pre>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Rien à voir avec une fonction récursive</span></p>
+      <p>Une CTE récursive n'a rien à voir avec les fonctions récursives en programmation. <span class="badge ajout">Ajout</span> Rien ne s'appelle soi-même et il n'y a pas de pile d'appels : c'est une <strong>boucle</strong>, qui recalcule une table de travail à partir de la précédente tant qu'elle produit des lignes.</p>
+    </div>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Comment PostgreSQL évalue une CTE récursive</span> <span class="ref">diapos 48–51</span></p>
+      <ol>
+        <li>Exécuter le terme ancre. Son résultat forme la première table de travail, et entre dans le résultat.</li>
+        <li>Exécuter le terme récursif, où <code>nom_cte</code> désigne la table de travail <em>courante</em> (seulement les lignes produites au tour précédent).</li>
+        <li>Si ce tour produit des lignes, elles deviennent la nouvelle table de travail et sont ajoutées au résultat (<code>UNION ALL</code>) ; reprendre à l'étape 2.</li>
+        <li>Si ce tour ne produit aucune ligne, s'arrêter. La CTE vaut l'union de toutes les tables produites.</li>
+      </ol>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Compter de 1 à 5</span> <span class="badge ajout">Ajout</span></p>
+      <p>Le plus petit exemple possible, sans table : l'ancre produit 1, chaque tour ajoute 1, et la condition du terme récursif arrête la boucle.</p>
+<pre><code class="language-sql">WITH RECURSIVE compteur (n) AS (
+    SELECT 1                                  -- ancre
+    UNION ALL
+    SELECT n + 1 FROM compteur WHERE n &lt; 5    -- terme récursif
+)
+SELECT n FROM compteur;    -- 1, 2, 3, 4, 5</code></pre>
+      <p>Au cinquième tour, la table de travail ne contient que 5 : <code>WHERE n &lt; 5</code> ne laisse rien passer, le tour renvoie 0 ligne et la boucle s'arrête.</p>
+    </div>
+
+    <h3>Exemple : le réseau de parrainage <span class="ref">diapos 43–51</span></h3>
+    <p>OK, mais à quoi ça sert ? Dans la table <code>vendeurs</code>, chaque vendeur·se a un parrain ou une marraine (association réflexive), et chaque parrain ou marraine peut avoir été parrainé·e par une autre personne : on a donc des filleuls de filleuls. La taille de cet organigramme est inconnue ! Comment retrouver cette hiérarchie à partir des données ?</p>
+    <p>Une jointure réflexive donne un niveau ; deux jointures, deux niveaux. Mais sans connaître la profondeur, on ne sait pas combien en écrire. La CTE récursive, elle, ajoute un niveau à chaque tour jusqu'à épuisement :</p>
+<pre><code class="language-sql">WITH RECURSIVE reseau AS (
+    -- table de travail initiale : le sommet de la hiérarchie (pas de parrain)
+    SELECT id, nom, id_parrain, 1 AS niveau
+    FROM vendeurs
+    WHERE id_parrain IS NULL
+
+    UNION ALL
+
+    -- terme récursif : les personnes parrainées par celles du tour précédent
+    SELECT v.id, v.nom, v.id_parrain, r.niveau + 1
+    FROM vendeurs v
+    JOIN reseau r ON v.id_parrain = r.id
+)
+SELECT * FROM reseau ORDER BY niveau;    -- affichage : tri par niveau hiérarchique</code></pre>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 600 230" width="600" role="img" aria-labelledby="fig-reseau-titre">
+        <title id="fig-reseau-titre">Arbre de parrainage : Julie au niveau 1 (ancre) ; Marc et Sophie, filleuls de Julie, au niveau 2 (itération 1) ; Karim et Lea, filleuls de Marc, et Nadia, filleule de Sophie, au niveau 3 (itération 2).</title>
+        <g font-size="13">
+          <text x="10" y="39" class="gras">niveau 1</text>
+          <text x="10" y="56" class="t2">ancre</text>
+          <text x="10" y="119" class="gras">niveau 2</text>
+          <text x="10" y="136" class="t2">itération 1</text>
+          <text x="10" y="199" class="gras">niveau 3</text>
+          <text x="10" y="216" class="t2">itération 2</text>
+        </g>
+        <path class="pointille" d="M10 80 H590 M10 160 H590"/>
+        <path class="trait" d="M390 58 L300 102 M390 58 L480 102 M300 138 L240 182 M300 138 L360 182 M480 138 L480 182"/>
+        <rect class="boite-accent" x="345" y="26" width="90" height="32" rx="6"/>
+        <text x="390" y="47" text-anchor="middle" class="gras accent">Julie</text>
+        <rect class="boite" x="255" y="106" width="90" height="32" rx="6"/>
+        <text x="300" y="127" text-anchor="middle">Marc</text>
+        <rect class="boite" x="435" y="106" width="90" height="32" rx="6"/>
+        <text x="480" y="127" text-anchor="middle">Sophie</text>
+        <rect class="boite" x="195" y="186" width="90" height="32" rx="6"/>
+        <text x="240" y="207" text-anchor="middle">Karim</text>
+        <rect class="boite" x="315" y="186" width="90" height="32" rx="6"/>
+        <text x="360" y="207" text-anchor="middle">Lea</text>
+        <rect class="boite" x="435" y="186" width="90" height="32" rx="6"/>
+        <text x="480" y="207" text-anchor="middle">Nadia</text>
+      </svg>
+      <figcaption>L'organigramme de Dingo Fringo. Chaque tour de la CTE récursive ajoute une ligne de l'arbre ; au troisième tour, Karim, Lea et Nadia n'ont pas de filleul, le terme récursif renvoie 0 ligne et la boucle s'arrête.</figcaption>
+    </figure>
+
+    <p>Décomposons les résultats intermédiaires.</p>
+    <ol class="etapes">
+      <li><strong>Ancre</strong> (diapo 48). Le terme ancre (<code>WHERE id_parrain IS NULL</code>) ne renvoie que Julie, car elle n'a pas de parrain : c'est la table de travail initiale, <code>(1, Julie, NULL, 1)</code>.</li>
+      <li><strong>Première itération</strong> (diapo 49). Le terme récursif cherche les personnes dont le parrain a l'identifiant de Julie. Comme la table de travail ne contient que Julie, au niveau 1, il s'exécute comme si <code>r.niveau + 1</code> valait <code>1 + 1</code>, et renvoie Marc et Sophie, au niveau 2. Puis on fait <code>UNION ALL</code> avec la table de travail pour les mettre dans <code>reseau</code>.</li>
+      <li><strong>Deuxième itération</strong> (diapo 50). La table de travail ne contient plus que les lignes de niveau 2. Le terme récursif calcule cette fois <code>2 + 1</code>, et renvoie 3 lignes : Karim, Lea et Nadia, au niveau 3.</li>
+      <li><strong>Troisième itération</strong> <span class="badge ajout">Ajout</span>. La table de travail contient Karim, Lea et Nadia, qui ne parrainent personne : 0 ligne, fin de la boucle.</li>
+    </ol>
+    <p>À chaque itération, le <code>JOIN</code> garantit de ne voir que les « nouveaux » filleuls : pas de redondance. Au final, <code>reseau</code> contient l'union de la table de travail initiale (l'ancre) et des tables produites par la récursion ; il reste à trier selon le niveau pour obtenir l'organigramme (diapo 51) :</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Résultat de la CTE récursive reseau</caption>
+        <thead><tr><th>id</th><th>nom</th><th>id_parrain</th><th>niveau</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Julie</td><td></td><td>1</td></tr>
+          <tr><td>2</td><td>Marc</td><td>1</td><td>2</td></tr>
+          <tr><td>3</td><td>Sophie</td><td>1</td><td>2</td></tr>
+          <tr><td>4</td><td>Karim</td><td>2</td><td>3</td></tr>
+          <tr><td>5</td><td>Lea</td><td>2</td><td>3</td></tr>
+          <tr><td>6</td><td>Nadia</td><td>3</td><td>3</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> Les annotations des diapos 45 à 47 parlent du « niveau 0 de la hiérarchie » pour la table initiale, alors que la requête attribue le niveau 1 à Julie (<code>1 AS niveau</code>), comme le confirme le résultat. Il s'agit du même sommet, numéroté différemment.</p>
+
+    <h3>Bilan et pièges <span class="ref">diapo 52</span></h3>
+    <p>Les CTE récursives permettent de parcourir les données itérativement. Elles sont composées de deux parties, un terme « ancre » (initialisation) et un terme récursif. Ce type de requête est très pratique pour parcourir des données structurées en arbre, comme un organigramme.</p>
+    <ul>
+      <li><strong>UNION ou UNION ALL ?</strong> <code>UNION</code> supprime les doublons, <code>UNION ALL</code> non. Quand on travaille sur des identifiants uniques, il n'y a pas de doublon, et <code>UNION ALL</code> est plus rapide.</li>
+      <li><strong>Condition d'arrêt ?</strong> Il n'est pas possible de préciser une condition d'arrêt dans la récursion : la boucle s'arrête seulement quand un tour ne renvoie rien. S'il y a un cycle (A est parrain de B et B est parrain de A), ça tourne à l'infini ! À vous de vérifier les données, ou d'ajouter un <code>WHERE</code> dans le terme récursif pour éviter les cycles.</li>
+    </ul>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo 42 annote <code>UNION ALL</code> comme « obligatoire entre les deux termes », la diapo 52 laisse le choix entre <code>UNION</code> et <code>UNION ALL</code>. Les deux sont acceptés : ce qui est obligatoire, c'est la présence de l'un des deux.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Se protéger d'un cycle</span></p>
+      <p>Avec une table où A et B se parrainent mutuellement, la CTE récursive ne s'arrête jamais. Trois parades, testées sur cette table :</p>
+<pre><code class="language-sql">CREATE TABLE boucle (id int PRIMARY KEY, nom text, id_parrain int);
+INSERT INTO boucle VALUES (1, 'A', 2), (2, 'B', 1);
+
+-- 1. Limiter la profondeur par un WHERE dans le terme récursif
+WITH RECURSIVE r AS (
+    SELECT id, nom, id_parrain, 1 AS niveau FROM boucle WHERE id = 1
+    UNION ALL
+    SELECT b.id, b.nom, b.id_parrain, r.niveau + 1
+    FROM boucle b JOIN r ON b.id_parrain = r.id
+    WHERE r.niveau &lt; 6 )
+SELECT * FROM r;    -- A, B, A, B, A, B (niveaux 1 à 6), puis arrêt
+
+-- 2. UNION : une ligne déjà produite est éliminée, le tour suivant est vide
+WITH RECURSIVE r AS (
+    SELECT id, nom, id_parrain FROM boucle WHERE id = 1
+    UNION
+    SELECT b.id, b.nom, b.id_parrain FROM boucle b JOIN r ON b.id_parrain = r.id )
+SELECT * FROM r;    -- A, B</code></pre>
+      <p>La parade 2 ne marche que si les lignes se répètent à l'identique : avec une colonne <code>niveau</code>, qui change à chaque tour, <code>UNION</code> ne voit jamais de doublon. <span class="badge hors-programme">Hors programme</span> Depuis la version 14, PostgreSQL propose une clause dédiée : <code>) CYCLE id SET est_cycle USING chemin</code>, placée après la parenthèse de la CTE, arrête la branche dès qu'un <code>id</code> revient.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les fonctions de fenêtrage <span class="ref">diapos 53–69</span></h2>
+    <p>La clause <code>GROUP BY</code> agrège les lignes qui ont la même valeur d'attribut sur une colonne. Son problème principal : on perd des informations, puisque le résultat contient moins de lignes. Heureusement, il existe les fonctions de fenêtrage (<span class="en" lang="en">window functions</span>).</p>
+
+    <h3>La limite de GROUP BY <span class="ref">diapos 53–54</span></h3>
+    <p>Revenons à Dingo Fringo : on veut connaître le prix moyen de chaque catégorie d'article.</p>
+<pre><code class="language-sql">SELECT categorie, AVG(prix) AS prix_moyen
+FROM articles
+GROUP BY categorie;
+--   categorie  |     prix_moyen
+-- -------------+---------------------
+--  Chaussures  | 28.3333333333333333
+--  Vêtements   | 23.6000000000000000
+--  Accessoires | 13.5000000000000000</code></pre>
+    <p>Impossible, avec <code>GROUP BY</code>, d'avoir cette information en face de chaque article vendu : il ne reste qu'une ligne par catégorie.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Fonction de fenêtrage</span></p>
+      <p>Une <dfn>fonction de fenêtrage</dfn> (<span class="en" lang="en">window function</span>, <code>fonction() OVER (…)</code>) applique une fonction sur une <dfn>fenêtre</dfn>, c'est-à-dire un ensemble de lignes liées à la ligne courante. C'est une alternative à <code>GROUP BY</code> qui évite de perdre des lignes : chaque ligne reste dans le résultat, avec la valeur calculée sur sa fenêtre.</p>
+    </div>
+<pre data-fichier="Syntaxe"><code class="language-sql">SELECT att1, att2,
+    function_name() OVER (
+        [PARTITION BY partition_expression]
+        [ORDER BY sort_expression [ASC | DESC] [NULLS {FIRST | LAST}]]
+        [frame_clause]
+    );</code></pre>
+    <ul>
+      <li><code>PARTITION BY</code> découpe les lignes en <dfn>partitions</dfn>, comme <code>GROUP BY</code> découpe en groupes ; sans elle, la fenêtre est tout le résultat.</li>
+      <li><code>ORDER BY</code> ordonne les lignes à l'intérieur de chaque partition (voir la section 4.3).</li>
+      <li><code>frame_clause</code>, le <dfn>cadre</dfn>, précise quelles lignes de la partition entrent dans le calcul (même section).</li>
+    </ul>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Une fonction de fenêtrage s'exécute toujours après le WHERE</span></p>
+      <p>Le <code>WHERE</code> a déjà filtré les lignes quand la fonction de fenêtrage est calculée. Conséquence : on ne peut pas filtrer sur son résultat dans le même <code>WHERE</code> (section 4.5).</p>
+    </div>
+
+    <h3>OVER et PARTITION BY <span class="ref">diapos 55–56</span></h3>
+    <p>Impossible d'avoir le prix moyen en face de chaque article vendu ? Vraiment ?</p>
+<pre><code class="language-sql">SELECT nom, categorie, prix,
+    AVG(prix) OVER (PARTITION BY categorie) AS prix_moyen_categorie
+FROM articles;</code></pre>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 600 190" width="600" role="img" aria-labelledby="fig-over-titre">
+        <title id="fig-over-titre">À gauche, GROUP BY réduit les cinq vêtements à une seule ligne portant la moyenne 23,60. À droite, AVG OVER PARTITION BY garde les cinq lignes et ajoute la moyenne 23,60 en face de chacune.</title>
+        <defs>
+          <marker id="fleche-over" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="10" y="18" class="gras">GROUP BY categorie</text>
+        <g font-size="12.5">
+          <rect class="boite" x="10" y="30" width="140" height="24" rx="3"/><text x="18" y="47">Jean Levis</text><text x="142" y="47" text-anchor="end" class="mono">25</text>
+          <rect class="boite" x="10" y="58" width="140" height="24" rx="3"/><text x="18" y="75">Robe fleurie</text><text x="142" y="75" text-anchor="end" class="mono">18</text>
+          <rect class="boite" x="10" y="86" width="140" height="24" rx="3"/><text x="18" y="103">Manteau laine</text><text x="142" y="103" text-anchor="end" class="mono">45</text>
+          <rect class="boite" x="10" y="114" width="140" height="24" rx="3"/><text x="18" y="131">T-shirt Nike</text><text x="142" y="131" text-anchor="end" class="mono">12</text>
+          <rect class="boite" x="10" y="142" width="140" height="24" rx="3"/><text x="18" y="159">Pull col roulé</text><text x="142" y="159" text-anchor="end" class="mono">18</text>
+        </g>
+        <path class="trait" d="M158 98 H196" marker-end="url(#fleche-over)"/>
+        <rect class="boite-accent" x="204" y="86" width="96" height="24" rx="3"/>
+        <text x="252" y="103" text-anchor="middle" font-size="12.5" class="mono accent">23,60</text>
+        <text x="252" y="130" text-anchor="middle" font-size="12" class="t2">1 ligne</text>
+
+        <text x="340" y="18" class="gras">AVG(prix) OVER (PARTITION BY …)</text>
+        <g font-size="12.5">
+          <rect class="boite" x="340" y="30" width="140" height="24" rx="3"/><text x="348" y="47">Jean Levis</text><text x="472" y="47" text-anchor="end" class="mono">25</text>
+          <rect class="boite" x="340" y="58" width="140" height="24" rx="3"/><text x="348" y="75">Robe fleurie</text><text x="472" y="75" text-anchor="end" class="mono">18</text>
+          <rect class="boite" x="340" y="86" width="140" height="24" rx="3"/><text x="348" y="103">Manteau laine</text><text x="472" y="103" text-anchor="end" class="mono">45</text>
+          <rect class="boite" x="340" y="114" width="140" height="24" rx="3"/><text x="348" y="131">T-shirt Nike</text><text x="472" y="131" text-anchor="end" class="mono">12</text>
+          <rect class="boite" x="340" y="142" width="140" height="24" rx="3"/><text x="348" y="159">Pull col roulé</text><text x="472" y="159" text-anchor="end" class="mono">18</text>
+          <rect class="boite-accent" x="486" y="30" width="70" height="24" rx="3"/><text x="521" y="47" text-anchor="middle" class="mono accent">23,60</text>
+          <rect class="boite-accent" x="486" y="58" width="70" height="24" rx="3"/><text x="521" y="75" text-anchor="middle" class="mono accent">23,60</text>
+          <rect class="boite-accent" x="486" y="86" width="70" height="24" rx="3"/><text x="521" y="103" text-anchor="middle" class="mono accent">23,60</text>
+          <rect class="boite-accent" x="486" y="114" width="70" height="24" rx="3"/><text x="521" y="131" text-anchor="middle" class="mono accent">23,60</text>
+          <rect class="boite-accent" x="486" y="142" width="70" height="24" rx="3"/><text x="521" y="159" text-anchor="middle" class="mono accent">23,60</text>
+        </g>
+        <text x="448" y="184" text-anchor="middle" font-size="12" class="t2">5 lignes : chacune garde son détail</text>
+      </svg>
+      <figcaption>La partition Vêtements, traitée par <code>GROUP BY</code> puis par une fonction de fenêtrage. L'agrégat est le même ; seule la fenêtre garde les lignes.</figcaption>
+    </figure>
+
+    <div class="tableau compact">
+      <table>
+        <caption>Le prix moyen de sa catégorie, en face de chaque article</caption>
+        <thead><tr><th>nom</th><th>categorie</th><th>prix</th><th>prix_moyen_categorie</th></tr></thead>
+        <tbody>
+          <tr><td>Sac à main vintage</td><td>Accessoires</td><td>22.00</td><td>13.5000000000000000</td></tr>
+          <tr><td>Chapeau feutre</td><td>Accessoires</td><td>14.00</td><td>13.5000000000000000</td></tr>
+          <tr><td>Ceinture cuir</td><td>Accessoires</td><td>9.00</td><td>13.5000000000000000</td></tr>
+          <tr><td>Écharpe laine</td><td>Accessoires</td><td>9.00</td><td>13.5000000000000000</td></tr>
+          <tr><td>Bottines cuir</td><td>Chaussures</td><td>40.00</td><td>28.3333333333333333</td></tr>
+          <tr><td>Baskets Adidas</td><td>Chaussures</td><td>30.00</td><td>28.3333333333333333</td></tr>
+          <tr><td>Sandales été</td><td>Chaussures</td><td>15.00</td><td>28.3333333333333333</td></tr>
+          <tr><td>Robe fleurie</td><td>Vêtements</td><td>18.00</td><td>23.6000000000000000</td></tr>
+          <tr><td>Pull col roulé</td><td>Vêtements</td><td>18.00</td><td>23.6000000000000000</td></tr>
+          <tr><td>T-shirt Nike</td><td>Vêtements</td><td>12.00</td><td>23.6000000000000000</td></tr>
+          <tr><td>Manteau laine</td><td>Vêtements</td><td>45.00</td><td>23.6000000000000000</td></tr>
+          <tr><td>Jean Levis</td><td>Vêtements</td><td>25.00</td><td>23.6000000000000000</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>On peut rapidement comparer le prix de vente de chaque article au prix moyen de sa catégorie. Et si l'on veut calculer l'écart ? La fonction de fenêtrage s'utilise comme n'importe quelle valeur dans une expression :</p>
+<pre><code class="language-sql">SELECT nom, categorie, prix, AVG(prix)
+    OVER (PARTITION BY categorie) AS prix_moyen_cat, prix -
+    AVG(prix) OVER (PARTITION BY categorie) AS ecart
+FROM articles ORDER BY categorie;</code></pre>
+    <div class="tableau compact">
+      <table>
+        <caption>Écart entre le prix de chaque article et la moyenne de sa catégorie</caption>
+        <thead><tr><th>nom</th><th>categorie</th><th>prix</th><th>prix_moyen_cat</th><th>ecart</th></tr></thead>
+        <tbody>
+          <tr><td>Sac à main vintage</td><td>Accessoires</td><td>22.00</td><td>13.5000000000000000</td><td>8.5000000000000000</td></tr>
+          <tr><td>Chapeau feutre</td><td>Accessoires</td><td>14.00</td><td>13.5000000000000000</td><td>0.5000000000000000</td></tr>
+          <tr><td>Ceinture cuir</td><td>Accessoires</td><td>9.00</td><td>13.5000000000000000</td><td>-4.5000000000000000</td></tr>
+          <tr><td>Écharpe laine</td><td>Accessoires</td><td>9.00</td><td>13.5000000000000000</td><td>-4.5000000000000000</td></tr>
+          <tr><td>Bottines cuir</td><td>Chaussures</td><td>40.00</td><td>28.3333333333333333</td><td>11.6666666666666667</td></tr>
+          <tr><td>Baskets Adidas</td><td>Chaussures</td><td>30.00</td><td>28.3333333333333333</td><td>1.6666666666666667</td></tr>
+          <tr><td>Sandales été</td><td>Chaussures</td><td>15.00</td><td>28.3333333333333333</td><td>-13.3333333333333333</td></tr>
+          <tr><td>Robe fleurie</td><td>Vêtements</td><td>18.00</td><td>23.6000000000000000</td><td>-5.6000000000000000</td></tr>
+          <tr><td>Pull col roulé</td><td>Vêtements</td><td>18.00</td><td>23.6000000000000000</td><td>-5.6000000000000000</td></tr>
+          <tr><td>T-shirt Nike</td><td>Vêtements</td><td>12.00</td><td>23.6000000000000000</td><td>-11.6000000000000000</td></tr>
+          <tr><td>Manteau laine</td><td>Vêtements</td><td>45.00</td><td>23.6000000000000000</td><td>21.4000000000000000</td></tr>
+          <tr><td>Jean Levis</td><td>Vêtements</td><td>25.00</td><td>23.6000000000000000</td><td>1.4000000000000000</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>On a rendu possible ce qui ne l'était pas avec <code>GROUP BY</code> !</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Nommer la fenêtre, arrondir</span></p>
+      <p>Quand la même fenêtre revient plusieurs fois, la clause <code>WINDOW</code> évite de la réécrire, et <code>ROUND</code> rend les nombres lisibles :</p>
+<pre><code class="language-sql">SELECT nom, prix, ROUND(prix - AVG(prix) OVER w, 2) AS ecart
+FROM articles
+WINDOW w AS (PARTITION BY categorie)
+ORDER BY categorie, ecart DESC;
+-- Sac à main vintage 22.00 8.50 ; Chapeau feutre 14.00 0.50 ; … ; T-shirt Nike 12.00 -11.60</code></pre>
+    </div>
+
+    <h3>ORDER BY dans OVER : les cumuls <span class="ref">diapos 57–60</span></h3>
+    <p>Prenons les articles de la catégorie Vêtements, triés par date de vente :</p>
+<pre><code class="language-sql">SELECT nom, date_vente, prix
+FROM articles
+WHERE categorie = 'Vêtements'
+ORDER BY date_vente;
+-- Jean Levis 2024-01-10 25.00 ; Robe fleurie 2024-01-15 18.00 ; Manteau laine 2024-02-05 45.00 ;
+-- T-shirt Nike 2024-02-20 12.00 ; Pull col roulé 2024-03-01 18.00</code></pre>
+    <p>On souhaite afficher la somme des prix de cette catégorie en face de chaque article. On utilise donc une… fonction de fenêtrage !</p>
+<pre><code class="language-sql">SELECT nom, date_vente, prix,
+    SUM(prix) OVER (PARTITION BY categorie) AS total
+FROM articles WHERE categorie = 'Vêtements';</code></pre>
+    <p>Chaque ligne affiche le total de la catégorie, 118,00. Et si l'on ajoute <code>ORDER BY</code> dans la clause <code>OVER</code> ?</p>
+<pre><code class="language-sql">SELECT nom, date_vente, prix,
+    SUM(prix) OVER (PARTITION BY categorie ORDER BY date_vente) AS total
+FROM articles WHERE categorie = 'Vêtements';</code></pre>
+    <div class="tableau compact">
+      <table>
+        <caption>La même somme, sans puis avec ORDER BY dans OVER</caption>
+        <thead><tr><th>nom</th><th>date_vente</th><th>prix</th><th>total sans ORDER BY</th><th>total avec ORDER BY</th></tr></thead>
+        <tbody>
+          <tr><td>Jean Levis</td><td>2024-01-10</td><td>25.00</td><td>118.00</td><td>25.00</td></tr>
+          <tr><td>Robe fleurie</td><td>2024-01-15</td><td>18.00</td><td>118.00</td><td>43.00</td></tr>
+          <tr><td>Manteau laine</td><td>2024-02-05</td><td>45.00</td><td>118.00</td><td>88.00</td></tr>
+          <tr><td>T-shirt Nike</td><td>2024-02-20</td><td>12.00</td><td>118.00</td><td>100.00</td></tr>
+          <tr><td>Pull col roulé</td><td>2024-03-01</td><td>18.00</td><td>118.00</td><td>118.00</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Étrange… Dans la clause <code>OVER</code>, <code>ORDER BY</code> change le calcul !</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Règle <span>ORDER BY dans OVER</span> <span class="ref">diapo 60</span></p>
+      <ul>
+        <li>Dans une requête classique, <code>ORDER BY</code> modifie uniquement l'affichage, sans impact sur les valeurs retournées.</li>
+        <li>Dans la clause <code>OVER</code>, <code>ORDER BY</code> agit différemment : il modifie la fenêtre de calcul de la fonction, qui est calculée de la première ligne de la partition jusqu'à la ligne courante. Cela permet notamment de faire des sommes cumulées d'un attribut.</li>
+        <li>Sans <code>ORDER BY</code>, le calcul s'applique à toute la partition.</li>
+      </ul>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le cadre, et le piège des ex-aequo</span></p>
+      <p>« De la première ligne jusqu'à la ligne courante » est le <strong>cadre</strong> par défaut, la <code>frame_clause</code> de la syntaxe :</p>
+<pre><code class="language-sql">RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code></pre>
+      <p>Avec <code>RANGE</code>, les lignes qui ont la même valeur de tri que la ligne courante (ses ex-aequo) entrent toutes dans le calcul. Avec <code>ROWS</code>, on compte ligne par ligne :</p>
+<pre><code class="language-sql">SELECT nom, prix,
+    SUM(prix) OVER (ORDER BY prix) AS cumul_range,
+    SUM(prix) OVER (ORDER BY prix ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cumul_rows
+FROM articles WHERE categorie = 'Vêtements';</code></pre>
+      <div class="tableau compact">
+        <table>
+          <caption>Cumul par prix croissant : RANGE (par défaut) et ROWS</caption>
+          <thead><tr><th>nom</th><th>prix</th><th>cumul_range</th><th>cumul_rows</th></tr></thead>
+          <tbody>
+            <tr><td>T-shirt Nike</td><td>12.00</td><td>12.00</td><td>12.00</td></tr>
+            <tr><td>Robe fleurie</td><td>18.00</td><td>48.00</td><td>30.00</td></tr>
+            <tr><td>Pull col roulé</td><td>18.00</td><td>48.00</td><td>48.00</td></tr>
+            <tr><td>Jean Levis</td><td>25.00</td><td>73.00</td><td>73.00</td></tr>
+            <tr><td>Manteau laine</td><td>45.00</td><td>118.00</td><td>118.00</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Les deux articles à 18,00 sont ex-aequo : <code>RANGE</code> leur donne le même cumul, 48,00. Dans l'exemple de la diapo 59, les dates sont toutes différentes, et les deux cadres donnent le même résultat.</p>
+    </div>
+
+    <h3>ROW_NUMBER, RANK et DENSE_RANK <span class="ref">diapos 61–62</span></h3>
+    <p>Trois fonctions très utiles avec le fenêtrage :</p>
+    <ul>
+      <li><code>ROW_NUMBER()</code> assigne un numéro à chaque ligne <strong>d'une partition</strong>, selon le tri choisi ;</li>
+      <li><code>RANK()</code> donne le rang de chaque valeur dans la partition. Attention : il y a des « trous » en cas d'égalité ;</li>
+      <li><code>DENSE_RANK()</code> fait comme <code>RANK()</code>, mais évite les « trous ».</li>
+    </ul>
+<pre><code class="language-sql">SELECT nom, categorie, prix,
+    ROW_NUMBER() OVER (PARTITION BY categorie ORDER BY prix DESC) AS row_num,
+    RANK()       OVER (PARTITION BY categorie ORDER BY prix DESC) AS rang,
+    DENSE_RANK() OVER (PARTITION BY categorie ORDER BY prix DESC) AS rang_dense
+FROM articles WHERE categorie = 'Vêtements';</code></pre>
+    <div class="tableau compact">
+      <table>
+        <caption>Trois façons de numéroter les vêtements, du plus cher au moins cher</caption>
+        <thead><tr><th>nom</th><th>categorie</th><th>prix</th><th>row_num</th><th>rang</th><th>rang_dense</th></tr></thead>
+        <tbody>
+          <tr><td>Manteau laine</td><td>Vêtements</td><td>45.00</td><td>1</td><td>1</td><td>1</td></tr>
+          <tr><td>Jean Levis</td><td>Vêtements</td><td>25.00</td><td>2</td><td>2</td><td>2</td></tr>
+          <tr><td>Robe fleurie</td><td>Vêtements</td><td>18.00</td><td>3</td><td>3</td><td>3</td></tr>
+          <tr><td>Pull col roulé</td><td>Vêtements</td><td>18.00</td><td>4</td><td>3</td><td>3</td></tr>
+          <tr><td>T-shirt Nike</td><td>Vêtements</td><td>12.00</td><td>5</td><td>5</td><td>4</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><span class="badge ajout">Ajout</span> La Robe fleurie et le Pull col roulé coûtent tous deux 18,00. <code>ROW_NUMBER</code> les départage arbitrairement (3 et 4), <code>RANK</code> leur donne le même rang, 3, puis saute au rang 5 comme au sport : deux troisièmes, pas de quatrième. <code>DENSE_RANK</code> ne saute pas et continue à 4.</p>
+
+    <h3>Top-N par groupe <span class="ref">diapos 63–65</span></h3>
+    <p>Utilisation courante : on veut savoir quels sont les 2 articles vendus les plus chers dans chaque catégorie (pour faire un max de thunes). On procède en deux étapes.</p>
+    <p><strong>Étape 1</strong> : calculer le rang de chaque article dans sa catégorie à l'aide d'une fonction de fenêtrage.</p>
+<pre><code class="language-sql">SELECT nom, categorie, prix,
+    RANK() OVER (PARTITION BY categorie ORDER BY prix DESC) AS rang
+FROM articles;
+-- Accessoires : Sac à main vintage 1, Chapeau feutre 2, Ceinture cuir 3, Écharpe laine 3
+-- Chaussures  : Bottines cuir 1, Baskets Adidas 2, Sandales été 3
+-- Vêtements   : Manteau laine 1, Jean Levis 2, Pull col roulé 3, Robe fleurie 3, T-shirt Nike 5</code></pre>
+    <p><strong>Étape 2</strong> : intégrer ce résultat dans une requête qui ne retourne que le top 2. Premier essai :</p>
+<pre><code class="language-sql">SELECT nom, categorie, prix,
+    RANK() OVER (PARTITION BY categorie ORDER BY prix DESC) AS rang
+FROM articles
+WHERE rang &gt;= 2;
+-- ERROR:  column "rang" does not exist</code></pre>
+    <p>La fonction de fenêtrage s'applique <strong>après</strong> le <code>WHERE</code> : au moment du filtrage, la colonne <code>rang</code> n'existe pas encore.</p>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo 64 écrit <code>rang &gt;= 2</code> ; pour garder le top 2, la condition voulue est <code>rang &lt;= 2</code>, comme sur la diapo 65. L'erreur est la même dans les deux cas.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 660 110" width="660" role="img" aria-labelledby="fig-ordre-titre">
+        <title id="fig-ordre-titre">Ordre d'exécution logique d'une requête : FROM, WHERE, GROUP BY, HAVING, fonctions de fenêtrage, SELECT, ORDER BY, LIMIT. Le WHERE filtre avant que le rang ne soit calculé par la fonction de fenêtrage.</title>
+        <defs>
+          <marker id="fleche-ordre" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <g font-size="12.5">
+          <rect class="boite" x="4" y="14" width="70" height="34" rx="5"/><text x="39" y="36" text-anchor="middle" class="mono">FROM</text>
+          <rect class="boite-accent" x="86" y="14" width="70" height="34" rx="5"/><text x="121" y="36" text-anchor="middle" class="mono accent">WHERE</text>
+          <rect class="boite" x="168" y="14" width="70" height="34" rx="5"/><text x="203" y="36" text-anchor="middle" class="mono">GROUP BY</text>
+          <rect class="boite" x="250" y="14" width="70" height="34" rx="5"/><text x="285" y="36" text-anchor="middle" class="mono">HAVING</text>
+          <rect class="boite-accent" x="332" y="14" width="76" height="34" rx="5"/><text x="370" y="36" text-anchor="middle" class="accent">fenêtrage</text>
+          <rect class="boite" x="420" y="14" width="70" height="34" rx="5"/><text x="455" y="36" text-anchor="middle" class="mono">SELECT</text>
+          <rect class="boite" x="502" y="14" width="70" height="34" rx="5"/><text x="537" y="36" text-anchor="middle" class="mono">ORDER BY</text>
+          <rect class="boite" x="584" y="14" width="70" height="34" rx="5"/><text x="619" y="36" text-anchor="middle" class="mono">LIMIT</text>
+        </g>
+        <g>
+          <path class="trait" d="M74 31 H84" marker-end="url(#fleche-ordre)"/>
+          <path class="trait" d="M156 31 H166" marker-end="url(#fleche-ordre)"/>
+          <path class="trait" d="M238 31 H248" marker-end="url(#fleche-ordre)"/>
+          <path class="trait" d="M320 31 H330" marker-end="url(#fleche-ordre)"/>
+          <path class="trait" d="M408 31 H418" marker-end="url(#fleche-ordre)"/>
+          <path class="trait" d="M490 31 H500" marker-end="url(#fleche-ordre)"/>
+          <path class="trait" d="M572 31 H582" marker-end="url(#fleche-ordre)"/>
+        </g>
+        <g font-size="12.5">
+          <text x="121" y="72" text-anchor="middle">filtre les lignes ici :</text>
+          <text x="121" y="90" text-anchor="middle" class="t2">rang n'existe pas encore</text>
+          <text x="370" y="72" text-anchor="middle">rang est calculé ici</text>
+          <text x="370" y="90" text-anchor="middle" class="t2">→ filtrer dans une CTE</text>
+        </g>
+      </svg>
+      <figcaption>Ordre logique d'exécution d'une requête (voir le <a href="cours-02-sql.html">cours 2</a>), avec l'étape des fonctions de fenêtrage. Tout ce qui précède, dont le <code>WHERE</code>, ne peut pas utiliser leur résultat.</figcaption>
+    </figure>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Et sans l'alias ?</span></p>
+      <p>Écrire l'expression entière dans le <code>WHERE</code> ne marche pas davantage : PostgreSQL l'interdit explicitement.</p>
+<pre><code class="language-sql">SELECT nom, categorie, prix FROM articles
+WHERE RANK() OVER (PARTITION BY categorie ORDER BY prix DESC) &lt;= 2;
+-- ERROR:  window functions are not allowed in WHERE</code></pre>
+      <p>C'est la même règle que pour les agrégats, qui ne peuvent pas figurer dans un <code>WHERE</code> (d'où le <code>HAVING</code>). Mais il n'existe pas de « <code>HAVING</code> des fonctions de fenêtrage » : il faut une requête englobante.</p>
+    </div>
+
+    <p><strong>Étape 2, et les CTE alors ?</strong> On calcule le rang dans une CTE, puis on filtre sur son résultat, qui est une table comme une autre :</p>
+<pre><code class="language-sql">WITH classement AS (
+    SELECT nom, categorie, prix,
+    RANK() OVER (
+        PARTITION BY categorie
+        ORDER BY prix DESC) AS rang
+    FROM articles )
+SELECT * FROM classement WHERE rang &lt;= 2;</code></pre>
+    <div class="tableau compact">
+      <table>
+        <caption>Les deux articles les plus chers de chaque catégorie</caption>
+        <thead><tr><th>nom</th><th>categorie</th><th>prix</th><th>rang</th></tr></thead>
+        <tbody>
+          <tr><td>Sac à main vintage</td><td>Accessoires</td><td>22.00</td><td>1</td></tr>
+          <tr><td>Chapeau feutre</td><td>Accessoires</td><td>14.00</td><td>2</td></tr>
+          <tr><td>Bottines cuir</td><td>Chaussures</td><td>40.00</td><td>1</td></tr>
+          <tr><td>Baskets Adidas</td><td>Chaussures</td><td>30.00</td><td>2</td></tr>
+          <tr><td>Manteau laine</td><td>Vêtements</td><td>45.00</td><td>1</td></tr>
+          <tr><td>Jean Levis</td><td>Vêtements</td><td>25.00</td><td>2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>RANK ou ROW_NUMBER pour un top-N ?</span> <span class="badge ajout">Ajout</span></p>
+      <p>Avec <code>RANK</code>, les ex-aequo sont gardés ensemble : un « top 1 » peut renvoyer plusieurs lignes. Pour l'article le moins cher de chaque catégorie, <code>RANK() … ORDER BY prix</code> donne le rang 1 à l'Écharpe laine <em>et</em> à la Ceinture cuir (9,00 toutes les deux), alors que <code>ROW_NUMBER()</code> numérote 1 et 2, et n'en garde qu'une, choisie arbitrairement. On prend <code>ROW_NUMBER</code> pour exactement N lignes, <code>RANK</code> ou <code>DENSE_RANK</code> pour ne pas écarter un ex-aequo.</p>
+    </div>
+
+    <h3>LAG et LEAD <span class="ref">diapos 66–68</span></h3>
+    <p><code>LAG()</code> et <code>LEAD()</code> donnent accès à la donnée précédente (<span class="en" lang="en">lag</span>) ou suivante (<span class="en" lang="en">lead</span>) dans une partition. Elles permettent de comparer des valeurs dans un voisinage proche.</p>
+    <p>Exemple : quelle est l'évolution mensuelle du chiffre d'affaires de Dingo Fringo pour une catégorie ? Le chiffre d'affaires par mois pour la catégorie Vêtements s'obtient par regroupement :</p>
+<pre><code class="language-sql">SELECT DATE_TRUNC('month', date_vente) AS mois, SUM(prix) AS ca
+FROM articles
+WHERE categorie = 'Vêtements'
+GROUP BY DATE_TRUNC('month', date_vente);
+-- 2024-01-01 00:00:00+01 | 43.00
+-- 2024-02-01 00:00:00+01 | 57.00
+-- 2024-03-01 00:00:00+01 | 18.00</code></pre>
+    <p>Comment exploiter ce résultat pour comparer chaque mois au précédent ? Les ingrédients : une CTE (continuité pédagogique !) et une fonction de fenêtrage.</p>
+<pre><code class="language-sql">WITH ca_mensuel AS (
+    SELECT DATE_TRUNC('month', date_vente) AS mois, SUM(prix) AS ca
+    FROM articles
+    WHERE categorie = 'Vêtements'
+    GROUP BY DATE_TRUNC('month', date_vente) )
+SELECT mois, ca, LAG(ca) OVER (ORDER BY mois) AS ca_mois_precedent,
+    ca - LAG(ca) OVER (ORDER BY mois) AS evolution
+FROM ca_mensuel;</code></pre>
+    <div class="tableau compact">
+      <table>
+        <caption>Évolution mensuelle du chiffre d'affaires des vêtements</caption>
+        <thead><tr><th>mois</th><th>ca</th><th>ca_mois_precedent</th><th>evolution</th></tr></thead>
+        <tbody>
+          <tr><td>2024-01-01 00:00:00+01</td><td>43.00</td><td></td><td></td></tr>
+          <tr><td>2024-02-01 00:00:00+01</td><td>57.00</td><td>43.00</td><td>14.00</td></tr>
+          <tr><td>2024-03-01 00:00:00+01</td><td>18.00</td><td>57.00</td><td>-39.00</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Le premier mois n'a pas de précédent : <code>LAG</code> renvoie <code>NULL</code>, et l'évolution aussi.</p>
+    <p>Il est où, le <code>PARTITION BY</code> ? <span class="badge ajout">Ajout</span> Il n'est pas nécessaire ici : la CTE ne garde qu'une catégorie, donc tout son résultat forme une seule partition. Sans <code>PARTITION BY</code>, la fenêtre est l'ensemble des lignes, ordonnées par <code>ORDER BY mois</code>.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Toutes les catégories à la fois</span></p>
+      <p>Pour suivre les trois catégories dans la même requête, il faut cette fois <code>PARTITION BY categorie</code> : sinon, le « mois précédent » de janvier en Chaussures serait mars en Accessoires. <code>LEAD</code> donne le mois suivant, et la conversion <code>::date</code> retire l'heure et le fuseau horaire.</p>
+<pre><code class="language-sql">WITH ca_mensuel AS (
+    SELECT categorie, DATE_TRUNC('month', date_vente)::date AS mois, SUM(prix) AS ca
+    FROM articles
+    GROUP BY categorie, DATE_TRUNC('month', date_vente) )
+SELECT categorie, mois, ca,
+    LAG(ca)  OVER (PARTITION BY categorie ORDER BY mois) AS ca_precedent,
+    LEAD(ca) OVER (PARTITION BY categorie ORDER BY mois) AS ca_suivant
+FROM ca_mensuel
+ORDER BY categorie, mois;</code></pre>
+      <div class="tableau compact">
+        <table>
+          <caption>Chiffre d'affaires mensuel, mois précédent et mois suivant, par catégorie</caption>
+          <thead><tr><th>categorie</th><th>mois</th><th>ca</th><th>ca_precedent</th><th>ca_suivant</th></tr></thead>
+          <tbody>
+            <tr><td>Accessoires</td><td>2024-01-01</td><td>22.00</td><td></td><td>9.00</td></tr>
+            <tr><td>Accessoires</td><td>2024-02-01</td><td>9.00</td><td>22.00</td><td>23.00</td></tr>
+            <tr><td>Accessoires</td><td>2024-03-01</td><td>23.00</td><td>9.00</td><td></td></tr>
+            <tr><td>Chaussures</td><td>2024-01-01</td><td>30.00</td><td></td><td>40.00</td></tr>
+            <tr><td>Chaussures</td><td>2024-02-01</td><td>40.00</td><td>30.00</td><td>15.00</td></tr>
+            <tr><td>Chaussures</td><td>2024-03-01</td><td>15.00</td><td>40.00</td><td></td></tr>
+            <tr><td>Vêtements</td><td>2024-01-01</td><td>43.00</td><td></td><td>57.00</td></tr>
+            <tr><td>Vêtements</td><td>2024-02-01</td><td>57.00</td><td>43.00</td><td>18.00</td></tr>
+            <tr><td>Vêtements</td><td>2024-03-01</td><td>18.00</td><td>57.00</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Sur un <code>date</code>, <code>DATE_TRUNC</code> renvoie un horodatage avec fuseau : le <code>+01</code> de l'exemple précédent est le décalage horaire du serveur (Paris, en hiver), et change d'un serveur à l'autre.</p>
+    </div>
+
+    <h3>Bilan : CTE et fenêtrage <span class="ref">diapo 69</span></h3>
+    <ul>
+      <li><strong>Les CTE</strong> (<code>WITH … AS ( )</code>) permettent de créer une table temporaire sur laquelle on applique une requête. Elles évitent les sous-requêtes imbriquées, et facilitent la lecture, donc le débogage.</li>
+      <li><strong>Les CTE récursives</strong> (<code>WITH RECURSIVE … AS ( )</code>) sont un cas particulier de CTE qui permet de parcourir une table itérativement. Elles se composent toujours d'une table ancre (initialisation), de <code>UNION [ALL]</code> et d'une requête récursive. On les utilise principalement pour retrouver des structures hiérarchiques dans les données, comme un organigramme.</li>
+      <li><strong>Les fonctions de fenêtrage</strong> (<code>func() OVER (…)</code>) appliquent une fonction sur une fenêtre. C'est une alternative à <code>GROUP BY</code> qui évite de perdre des lignes, très pratique pour analyser un top-N par catégorie (<code>RANK</code>) ou une évolution entre groupes (<code>LAG</code>, <code>LEAD</code>). Elles se combinent aisément avec les CTE, puisqu'on ne peut pas tester directement le résultat de la fonction dans la requête.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Mise en pratique <span class="ref">diapos 70–75</span></h2>
+    <p>Le cours propose un quart d'heure d'exercices sur la base Dingo Fringo, qui reprend les rôles, les CTE et le fenêtrage. Le schéma et les données sont ceux de la section 3.1. Les corrections sont celles des diapos 72 à 75 ; les résultats ont été obtenus en les exécutant.</p>
+
+    <h3>Les questions du cours <span class="ref">diapos 71–75</span></h3>
+
+    <div class="bloc exercice" id="q1">
+      <p class="bloc-titre">Q1 <span>CTE stats_vendeur</span></p>
+      <p>Écrivez une requête utilisant une CTE nommée <code>stats_vendeur</code> qui calcule, pour chaque vendeur, le nombre d'articles vendus et son chiffre d'affaires total. Affichez ensuite uniquement les vendeurs dont le chiffre d'affaires dépasse 30 €.</p>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>La CTE regroupe les articles par <code>id_vendeur</code> ; la requête principale filtre la CTE avec un simple <code>WHERE</code>.</p>
+      </details>
+      <details class="solution">
+        <summary>Correction</summary>
+<pre><code class="language-sql">WITH stats_vendeur AS (
+    SELECT id_vendeur, COUNT(*) AS nb_articles, SUM(prix) AS ca
+    FROM articles
+    GROUP BY id_vendeur
+)
+SELECT * FROM stats_vendeur WHERE ca &gt; 30;
+--  id_vendeur | nb_articles |  ca
+--           3 |           2 | 60.00
+--           4 |           2 | 34.00
+--           2 |           2 | 58.00
+--           1 |           3 | 69.00</code></pre>
+        <p>Note du cours : la question se résout aussi avec <code>HAVING</code> et une sous-requête, mais c'est moins lisible. <span class="badge ajout">Ajout</span> Ici, <code>HAVING</code> suffit même sans sous-requête, et donne les mêmes quatre lignes :</p>
+<pre><code class="language-sql">SELECT id_vendeur, COUNT(*) AS nb_articles, SUM(prix) AS ca
+FROM articles GROUP BY id_vendeur HAVING SUM(prix) &gt; 30;</code></pre>
+        <p>Lea (27,00) et Nadia (9,00) sont écartées. Sans <code>ORDER BY</code>, l'ordre des lignes n'est pas garanti.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice" id="q2">
+      <p class="bloc-titre">Q2 <span>Le parrain d'origine</span></p>
+      <p>En utilisant la table <code>vendeurs</code> (colonne <code>id_parrain</code>), écrivez une CTE récursive qui affiche, pour chaque vendeur, son nom et le nom de son parrain d'origine (le vendeur historique tout en haut de la chaîne, celui dont <code>id_parrain IS NULL</code>).</p>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>L'ancre sélectionne la racine et mémorise son nom dans une colonne ; le terme récursif recopie cette colonne sans la modifier.</p>
+      </details>
+      <details class="solution">
+        <summary>Correction</summary>
+<pre><code class="language-sql">WITH RECURSIVE reseau AS (
+    SELECT id, nom, nom AS vendeur_racine      -- la racine est sa propre racine
+    FROM vendeurs
+    WHERE id_parrain IS NULL
+
+    UNION ALL
+
+    SELECT v.id, v.nom, r.vendeur_racine       -- jamais mis à jour : on le recopie
+    FROM vendeurs v
+    JOIN reseau r ON v.id_parrain = r.id
+)
+SELECT nom, vendeur_racine FROM reseau;
+-- Julie | Julie ; Marc | Julie ; Sophie | Julie ; Karim | Julie ; Lea | Julie ; Nadia | Julie</code></pre>
+        <p>La colonne <code>vendeur_racine</code> reçoit une valeur dans l'ancre, puis n'est jamais mise à jour : chaque filleul hérite de celle de son parrain, donc de la racine. Ici, tout le réseau descend de Julie.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice" id="q3">
+      <p class="bloc-titre">Q3 <span>Les deux premiers de chaque catégorie</span></p>
+      <p>Écrivez une requête affichant, pour chaque article, son nom, sa catégorie, son prix, et son rang de prix au sein de sa catégorie (le plus cher = rang 1). N'affichez que les articles classés 1<sup>er</sup> ou 2<sup>e</sup> de leur catégorie.</p>
+      <details class="solution">
+        <summary>Correction</summary>
+<pre><code class="language-sql">WITH classement AS (
+    SELECT nom, categorie, prix,
+        RANK() OVER (PARTITION BY categorie ORDER BY prix DESC) AS rang
+    FROM articles )
+SELECT * FROM classement WHERE rang &lt;= 2;
+-- 6 lignes : Sac à main vintage et Chapeau feutre, Bottines cuir et Baskets Adidas,
+--            Manteau laine et Jean Levis (voir le tableau de la section 4.5)</code></pre>
+        <p>Note du cours : on ne peut pas utiliser <code>WHERE</code> sur le résultat de la fonction de fenêtrage dans la même requête, car le <code>WHERE</code> s'exécute toujours avant elle.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice" id="q4">
+      <p class="bloc-titre">Q4 <span>Un rôle pour la comptable</span></p>
+      <p>Le magasin embauche une comptable, Nora, qui doit uniquement pouvoir consulter la table <code>articles</code> (lecture seule), sans jamais pouvoir la modifier ni la supprimer, et sans accès à la table <code>vendeurs</code>. La connexion se fait avec un mot de passe. Écrivez les commandes SQL nécessaires pour créer son rôle et lui attribuer exactement ces droits.</p>
+      <p><strong>Bonus</strong> : si Nora quitte l'entreprise, comment supprimez-vous ses droits ?</p>
+      <details class="solution">
+        <summary>Correction</summary>
+<pre><code class="language-sql">CREATE ROLE nora LOGIN PASSWORD 'un_mot_de_passe';
+GRANT SELECT ON articles TO nora;
+
+-- Bonus
+REVOKE ALL PRIVILEGES ON articles FROM nora;</code></pre>
+        <p><span class="badge ajout">Ajout</span> Rien à faire pour <code>vendeurs</code> : un rôle n'a aucun droit sur une table tant qu'on ne lui en a pas donné. On le vérifie en prenant le rôle de Nora :</p>
+<pre><code class="language-sql">SET ROLE nora;
+SELECT nom, prix FROM articles WHERE id = 1;   -- Jean Levis | 25.00
+SELECT * FROM vendeurs;
+-- ERROR:  permission denied for table vendeurs
+UPDATE articles SET prix = 0;
+-- ERROR:  permission denied for table articles
+DELETE FROM articles;
+-- ERROR:  permission denied for table articles
+DROP TABLE articles;
+-- ERROR:  must be owner of table articles
+RESET ROLE;</code></pre>
+        <p>Si Nora quitte l'entreprise, on peut aussi supprimer son rôle, une fois ses privilèges retirés (sinon, <code>DROP ROLE</code> échoue, voir la section 2.4) : <code>DROP ROLE nora;</code>.</p>
+        <p><span class="badge a-verifier">À vérifier</span> L'énoncé de la diapo 71 ne mentionne pas le mot de passe ; la phrase « La connexion se fait avec un mot de passe » n'apparaît que dans celui de la correction (diapo 75).</p>
+      </details>
+    </div>
+
+    <h3>Exercices supplémentaires <span class="badge ajout">Ajout</span></h3>
+    <p>Ces exercices ne figurent pas dans le support. Ils portent sur la base Dingo Fringo, et toutes les solutions ont été exécutées.</p>
+
+    <div class="bloc exercice" id="ex-1">
+      <p class="bloc-titre">Exercice 1 <span>Numéros de facture</span></p>
+      <p>Créer une séquence <code>num_facture</code> qui commence à 1000 et avance de 10 en 10, puis une table <code>factures (num, montant)</code> dont le numéro est tiré automatiquement de cette séquence. Insérer trois factures sans préciser leur numéro. Que renvoie ensuite <code>currval('num_facture')</code> ?</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+<pre><code class="language-sql">CREATE SEQUENCE num_facture START 1000 INCREMENT BY 10;
+CREATE TABLE factures (
+    num     integer PRIMARY KEY DEFAULT nextval('num_facture'),
+    montant numeric(8,2)
+);
+INSERT INTO factures (montant) VALUES (25.00), (40.00), (14.50);
+SELECT * FROM factures;          -- 1000 | 25.00 ; 1010 | 40.00 ; 1020 | 14.50
+SELECT currval('num_facture');   -- 1020</code></pre>
+        <p><code>currval</code> renvoie la dernière valeur tirée dans la session, ici par la valeur par défaut de la colonne.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice" id="ex-2">
+      <p class="bloc-titre">Exercice 2 <span>Délai entre deux ventes</span></p>
+      <p>Pour chaque vêtement, par date de vente, afficher la date de la vente suivante et le nombre de jours qui les séparent.</p>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>La différence de deux valeurs de type <code>date</code> est un nombre de jours.</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+<pre><code class="language-sql">SELECT nom, date_vente,
+    LEAD(date_vente) OVER (ORDER BY date_vente) AS vente_suivante,
+    LEAD(date_vente) OVER (ORDER BY date_vente) - date_vente AS jours
+FROM articles
+WHERE categorie = 'Vêtements';
+-- Jean Levis     | 2024-01-10 | 2024-01-15 |  5
+-- Robe fleurie   | 2024-01-15 | 2024-02-05 | 21
+-- Manteau laine  | 2024-02-05 | 2024-02-20 | 15
+-- T-shirt Nike   | 2024-02-20 | 2024-03-01 | 10
+-- Pull col roulé | 2024-03-01 |            |</code></pre>
+      </details>
+    </div>
+
+    <div class="bloc exercice" id="ex-3">
+      <p class="bloc-titre">Exercice 3 <span>La chaîne de parrainage</span></p>
+      <p>Afficher, pour chaque vendeur, sa chaîne de parrainage depuis la racine, sous la forme <code>Julie &gt; Marc &gt; Karim</code>.</p>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Comme en Q2, une colonne calculée dans l'ancre est transportée par le terme récursif ; cette fois, on la complète à chaque tour avec l'opérateur de concaténation <code>||</code>.</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+<pre><code class="language-sql">WITH RECURSIVE chaine AS (
+    SELECT id, nom, nom::text AS chemin
+    FROM vendeurs
+    WHERE id_parrain IS NULL
+    UNION ALL
+    SELECT v.id, v.nom, c.chemin || ' &gt; ' || v.nom
+    FROM vendeurs v
+    JOIN chaine c ON v.id_parrain = c.id
+)
+SELECT nom, chemin FROM chaine ORDER BY chemin;
+-- Julie  | Julie
+-- Marc   | Julie &gt; Marc
+-- Karim  | Julie &gt; Marc &gt; Karim
+-- Lea    | Julie &gt; Marc &gt; Lea
+-- Sophie | Julie &gt; Sophie
+-- Nadia  | Julie &gt; Sophie &gt; Nadia</code></pre>
+        <p>La conversion <code>nom::text</code> est nécessaire. Sans elle, la colonne vaut <code>varchar(50)</code> dans l'ancre, mais la concaténation du terme récursif perd la longueur maximale, et PostgreSQL exige exactement le même type dans les deux termes :</p>
+<pre><code class="language-plaintext">ERROR:  recursive query "chaine" column 3 has type character varying(50)
+        in non-recursive term but type character varying overall</code></pre>
+      </details>
+    </div>
+
+    <div class="bloc exercice" id="ex-4">
+      <p class="bloc-titre">Exercice 4 <span>Part du chiffre d'affaires</span></p>
+      <p>Pour chaque article, afficher la part (en %, arrondie au dixième) que représente son prix dans le chiffre d'affaires de sa catégorie.</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+<pre><code class="language-sql">SELECT nom, categorie, prix,
+    ROUND(100 * prix / SUM(prix) OVER (PARTITION BY categorie), 1) AS part_pct
+FROM articles
+ORDER BY categorie, part_pct DESC;
+-- Sac à main vintage 40.7 ; Chapeau feutre 25.9 ; Ceinture cuir 16.7 ; Écharpe laine 16.7
+-- Bottines cuir 47.1 ; Baskets Adidas 35.3 ; Sandales été 17.6
+-- Manteau laine 38.1 ; Jean Levis 21.2 ; Robe fleurie 15.3 ; Pull col roulé 15.3 ; T-shirt Nike 10.2</code></pre>
+      </details>
+    </div>
+
+    <div class="bloc exercice" id="ex-5">
+      <p class="bloc-titre">Exercice 5 <span>Un groupe de stagiaires</span></p>
+      <p>Créer un groupe <code>stagiaires</code> qui peut lire la table <code>articles</code> et y insérer des lignes. Y placer deux utilisateurs, Lina et Hugo, qui se connectent avec un mot de passe. Retirer ensuite le droit d'insertion à tout le groupe, en une seule commande.</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+<pre><code class="language-sql">CREATE ROLE stagiaires;
+GRANT SELECT, INSERT ON articles TO stagiaires;
+CREATE ROLE lina LOGIN PASSWORD 'lina2026';
+CREATE ROLE hugo LOGIN PASSWORD 'hugo2026';
+GRANT stagiaires TO lina, hugo;
+
+-- Plus tard : un seul REVOKE, sur le groupe
+REVOKE INSERT ON articles FROM stagiaires;
+
+SET ROLE hugo;
+INSERT INTO articles VALUES (14, 'Gants', 'Accessoires', 11.00, 1, '2024-03-26');
+-- ERROR:  permission denied for table articles
+SELECT count(*) FROM articles;   -- la lecture reste permise
+RESET ROLE;</code></pre>
+        <p>C'est tout l'intérêt d'un groupe : les droits se gèrent une fois pour tous ses membres.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le langage PL/pgSQL <span class="ref">diapos 76–87</span></h2>
+    <p>Jusqu'ici, chaque requête SQL est une instruction isolée : elle décrit un résultat, pas une suite d'étapes. Un langage procédural ajoute à SQL des variables, des conditions et des boucles, exécutées directement dans le serveur. Cette partie s'appuie aussi sur le <a href="../cours/_BDD__PLPGSQL_Cheat_Sheet.pdf">supplément de cours PL/pgSQL</a>, noté « supplément » dans les références.</p>
+
+    <h3>Pourquoi un langage procédural ? <span class="ref">diapos 77–79</span></h3>
+    <p>Un langage procédural dans un SGBD comprend les commandes du DML : l'interrogation avec <code>SELECT</code>, la manipulation avec <code>INSERT</code>, <code>UPDATE</code> et <code>DELETE</code>. On évite en revanche d'y mettre des commandes DDL. S'y ajoute la partie procédurale : boucles, conditions, variables, affectation…</p>
+    <p>Ses avantages :</p>
+    <ul>
+      <li>il permet de spécifier une suite d'étapes, donc de créer des blocs d'instructions ;</li>
+      <li>dans une architecture client/serveur, il améliore la qualité de l'application : le traitement est centralisé au niveau du serveur, ce qui réduit le nombre d'allers-retours, et seuls les résultats nécessaires sont renvoyés.</li>
+    </ul>
+    <p><span class="badge ajout">Ajout</span> Par exemple, pour calculer le chiffre d'affaires de chaque vendeur, une application sans fonction envoie une requête pour obtenir la liste des vendeurs, puis une requête par vendeur. Avec une fonction stockée dans le serveur, un seul appel suffit (section 6.3).</p>
+    <table>
+      <caption>Exemples de langages procéduraux SQL (diapo 79)</caption>
+      <thead><tr><th>SGBD</th><th>Langage procédural</th></tr></thead>
+      <tbody>
+        <tr><td>Oracle</td><td>PL/SQL</td></tr>
+        <tr><td>PostgreSQL</td><td>PL/pgSQL</td></tr>
+        <tr><td>Microsoft SQL Server</td><td>Transact-SQL</td></tr>
+        <tr><td>DB2</td><td>SQL PL</td></tr>
+      </tbody>
+    </table>
+
+    <h3>La structure en blocs <span class="ref">diapos 80–81</span></h3>
+    <p>Le code PL/pgSQL est organisé en blocs. Un bloc compte quatre parties :</p>
+    <ul>
+      <li><code>DECLARE</code> : partie déclarative (facultative) ;</li>
+      <li><code>BEGIN</code> : corps principal (obligatoire) ;</li>
+      <li><code>EXCEPTION</code> : traitement des « erreurs » (facultatif) ;</li>
+      <li><code>END;</code> : fin de bloc (obligatoire).</li>
+    </ul>
+    <p>Toute instruction se termine par un <code>;</code>. Les blocs peuvent être nommés par une étiquette, <code>&lt;&lt;label&gt;&gt;</code>, et imbriqués : un bloc peut figurer parmi les instructions d'un autre.</p>
+<pre data-fichier="Syntaxe"><code class="language-pgsql">[&lt;&lt;label&gt;&gt;]
+[DECLARE
+    déclarations]
+BEGIN
+    instructions            -- peuvent contenir un sous-bloc complet
+[EXCEPTION
+    traitements]
+END [label];</code></pre>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Tester un bloc sans créer de fonction : DO</span></p>
+      <p>La commande <code>DO</code> exécute un bloc anonyme, une seule fois. C'est pratique pour essayer du PL/pgSQL. L'exemple montre aussi à quoi servent les étiquettes : dans le sous-bloc, <code>x</code> désigne la variable locale, qui masque celle du bloc englobant ; <code>externe.x</code> désigne cette dernière.</p>
+<pre><code class="language-pgsql">DO $$
+&lt;&lt;externe&gt;&gt;
+DECLARE
+    x integer := 1;
+BEGIN
+    DECLARE
+        x integer := 2;
+    BEGIN
+        RAISE NOTICE 'x interne = %, x externe = %', x, externe.x;
+    END;
+    RAISE NOTICE 'après le sous-bloc : x = %', x;
+END externe $$;
+-- NOTICE:  x interne = 2, x externe = 1
+-- NOTICE:  après le sous-bloc : x = 1</code></pre>
+      <p>Attention : le <code>BEGIN</code> d'un bloc PL/pgSQL n'a rien à voir avec le <code>BEGIN</code> qui ouvre une transaction en SQL.</p>
+    </div>
+
+    <h3>Écrire une fonction PL/pgSQL <span class="ref">diapos 82–84</span></h3>
+    <p>Les blocs se placent dans une fonction, créée avec <code>CREATE [OR REPLACE] FUNCTION</code>, comme les fonctions SQL du <a href="cours-02-sql.html">cours 2</a>. Cette commande crée et nomme la fonction, définit ses paramètres d'entrée et son type de retour. Le corps est encadré par le délimiteur <code>$$</code>, qui marque le début et la fin de la définition, et la commande se termine par <code>LANGUAGE plpgsql;</code>.</p>
+<pre data-fichier="Syntaxe"><code class="language-pgsql">CREATE OR REPLACE FUNCTION nom_fonction (paramètres)
+RETURNS type AS $$
+    DECLARE
+      -- déclarations
+    BEGIN
+      -- sous-bloc
+      DECLARE
+          -- déclarations
+      BEGIN
+          -- corps
+      END; -- fin du sous-bloc
+    END; -- fin du bloc principal
+$$ LANGUAGE plpgsql;</code></pre>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Additionner deux entiers et afficher un texte</span> <span class="ref">diapo 84</span></p>
+<pre><code class="language-pgsql">CREATE OR REPLACE FUNCTION
+    mafonction (param1 integer, param2 integer, param3 varchar(20))
+RETURNS integer AS $$
+DECLARE
+    res integer;
+BEGIN
+    RAISE NOTICE '%', param3;
+    res := param1 + param2;
+    RETURN res;
+END;
+$$ LANGUAGE plpgsql;</code></pre>
+      <p>Appel de la fonction dans une commande SQL :</p>
+<pre><code class="language-sql">SELECT mafonction(5, 10, 'toto');
+-- NOTICE:  toto
+--  mafonction
+-- ------------
+--          15</code></pre>
+    </div>
+    <p>On retrouve les éléments de base : une variable déclarée dans <code>DECLARE</code> (<code>nom type [:= valeur_initiale];</code>), l'affectation avec <code>:=</code>, et <code>RETURN</code> pour renvoyer le résultat.</p>
+
+    <h4>Ranger le résultat d'une requête dans une variable : INTO <span class="ref">supplément § 2.3</span></h4>
+    <p>La commande <code>SELECT … INTO</code> attribue le résultat d'une requête à une ou plusieurs variables. C'est ainsi qu'une fonction utilise les données de la base :</p>
+<pre><code class="language-pgsql">CREATE FUNCTION f_ca_vendeur (p_id integer) RETURNS numeric AS $$
+DECLARE
+    total numeric;
+BEGIN
+    SELECT SUM(prix) INTO total FROM articles WHERE id_vendeur = p_id;
+    RETURN total;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT nom, f_ca_vendeur(id) AS ca FROM vendeurs;
+-- Julie 69.00 ; Marc 58.00 ; Sophie 60.00 ; Karim 34.00 ; Lea 27.00 ; Nadia 9.00</code></pre>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Un SELECT sans destination</span> <span class="badge ajout">Ajout</span></p>
+      <p>Dans une fonction PL/pgSQL, un <code>SELECT</code> doit ranger son résultat quelque part. Sinon, l'erreur n'apparaît qu'à l'appel :</p>
+<pre><code class="language-pgsql">CREATE FUNCTION f_sans_into () RETURNS integer AS $$
+BEGIN
+    SELECT count(*) FROM articles;
+    RETURN 0;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT f_sans_into();
+-- ERROR:  query has no destination for result data
+-- HINT:  If you want to discard the results of a SELECT, use PERFORM instead.</code></pre>
+      <p>Si le résultat n'intéresse pas, on utilise <code>PERFORM</code> (section 6.5). Autre détail : si la requête renvoie plusieurs lignes, <code>SELECT … INTO</code> garde la première, sans erreur.</p>
+    </div>
+
+    <h3>Conditions et boucles <span class="ref">supplément § 1</span></h3>
+    <p>Le contrôle de flux repose sur des structures conditionnelles et des boucles. Les conditions utilisent <code>IF</code>, <code>ELSIF</code> et <code>ELSE</code> :</p>
+<pre data-fichier="Syntaxe"><code class="language-pgsql">IF expression THEN
+    instruction;
+ELSIF autre_expression THEN
+    instruction;
+ELSE
+    instruction;
+END IF;</code></pre>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>La gamme d'un article</span> <span class="badge ajout">Ajout</span></p>
+<pre><code class="language-pgsql">CREATE FUNCTION f_gamme (p_prix numeric) RETURNS text AS $$
+BEGIN
+    IF p_prix &lt; 15 THEN
+        RETURN 'petit prix';
+    ELSIF p_prix &lt; 30 THEN
+        RETURN 'milieu de gamme';
+    ELSE
+        RETURN 'haut de gamme';
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT nom, prix, f_gamme(prix) FROM articles WHERE categorie = 'Chaussures';
+-- Baskets Adidas 30.00 haut de gamme ; Bottines cuir 40.00 haut de gamme ; Sandales été 15.00 milieu de gamme</code></pre>
+    </div>
+    <p>Trois types de boucles sont disponibles :</p>
+    <ul>
+      <li><code>LOOP</code> : boucle simple, interrompue par <code>EXIT</code> ;</li>
+      <li><code>WHILE</code> : la boucle continue tant que l'expression est vraie ;</li>
+      <li><code>FOR</code> : permet d'itérer sur une plage de valeurs ou sur le résultat d'une requête.</li>
+    </ul>
+    <div class="colonnes">
+<pre data-fichier="FOR"><code class="language-pgsql">FOR i IN 1..10
+LOOP
+    instruction;
+END LOOP;</code></pre>
+<pre data-fichier="WHILE"><code class="language-pgsql">WHILE condition
+LOOP
+    instruction;
+END LOOP;</code></pre>
+    </div>
+    <p>Exemple de boucle <code>LOOP</code>, qui s'exécute jusqu'à ce que la variable <code>compteur</code> atteigne la valeur 5 ; <code>EXIT WHEN</code> fait sortir de la boucle lorsque la condition est vraie :</p>
+<pre><code class="language-pgsql">DO $$
+DECLARE
+    compteur INTEGER := 0;
+BEGIN
+    LOOP
+        compteur := compteur + 1;
+        RAISE NOTICE 'Compteur = %', compteur;
+        -- Sortie de boucle lorsque la condition est atteinte
+        EXIT WHEN compteur &gt;= 5;
+    END LOOP;
+END $$;
+-- NOTICE:  Compteur = 1
+-- …
+-- NOTICE:  Compteur = 5</code></pre>
+    <p><span class="badge ajout">Ajout</span> La boucle <code>FOR</code> sur une requête parcourt ses lignes une à une, dans une variable de type <code>record</code> (une ligne dont la structure n'est pas fixée d'avance) :</p>
+<pre><code class="language-pgsql">DO $$
+DECLARE
+    v record;
+BEGIN
+    FOR v IN SELECT nom, f_ca_vendeur(id) AS ca FROM vendeurs ORDER BY id LOOP
+        RAISE NOTICE '% : % €', v.nom, v.ca;
+    END LOOP;
+END $$;
+-- NOTICE:  Julie : 69.00 €
+-- NOTICE:  Marc : 58.00 €
+-- …
+-- NOTICE:  Nadia : 9.00 €</code></pre>
+
+    <h3>PERFORM et la variable FOUND <span class="ref">diapo 85, supplément § 3</span></h3>
+    <p><code>SELECT ma_fonction()</code> ou <code>PERFORM ma_fonction()</code> ? Dans du PL/pgSQL :</p>
+    <ul>
+      <li>on utilise <code>PERFORM</code> quand on souhaite exécuter une requête <strong>sans récupérer le résultat</strong>, par exemple pour appeler une fonction qui effectue des modifications dans la base (un <code>UPDATE</code>, un <code>INSERT</code>, un <code>DELETE</code>…) ;</li>
+      <li>on l'utilise aussi pour <strong>tester le succès d'une requête</strong>, en combinaison avec la variable <code>FOUND</code> ;</li>
+      <li>on ne l'utilise pas quand on veut récupérer le résultat. Comment le récupérer, alors ? Avec <code>SELECT … INTO</code> (section 6.3).</li>
+    </ul>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>FOUND</span> <span class="ref">supplément § 3</span></p>
+      <p><code>FOUND</code> est une variable spéciale, fournie automatiquement par PL/pgSQL. Elle contient un booléen qui indique si la dernière instruction SQL exécutée dans le bloc a affecté au moins une ligne : <code>TRUE</code> si la dernière commande a retourné ou modifié une ou plusieurs lignes, <code>FALSE</code> sinon. On la teste souvent après un <code>SELECT INTO</code>, un <code>UPDATE</code>, un <code>DELETE</code>, un <code>INSERT</code> ou un <code>PERFORM</code>, pour décider de la suite du traitement.</p>
+    </div>
+    <p>Les deux exemples du supplément, appliqués à la base Dingo Fringo :</p>
+<pre><code class="language-pgsql">-- FOUND après un UPDATE
+DO $$
+BEGIN
+    UPDATE articles SET prix = prix WHERE id = 99;
+    IF NOT FOUND THEN
+        RAISE NOTICE 'Aucune ligne modifiee.';
+    END IF;
+END $$;
+-- NOTICE:  Aucune ligne modifiee.
+
+-- FOUND après un PERFORM : la requête est exécutée sans stocker de valeur
+CREATE FUNCTION verifie_presence (id_recherche INTEGER) RETURNS BOOLEAN AS $$
+BEGIN
+    PERFORM * FROM articles WHERE id = id_recherche;
+    -- FOUND indique si la requête précédente a affecté au moins une ligne
+    IF FOUND THEN
+        RETURN TRUE;
+    ELSE
+        RETURN FALSE;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT verifie_presence(3), verifie_presence(42);   -- t | f</code></pre>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>PERFORM n'existe qu'en PL/pgSQL</span> <span class="badge ajout">Ajout</span></p>
+      <p>Soit une fonction qui ne renvoie rien (type <code>void</code>) et applique une remise à une catégorie :</p>
+<pre><code class="language-pgsql">CREATE FUNCTION f_solde (p_cat varchar, p_taux numeric) RETURNS void AS $$
+BEGIN
+    UPDATE articles SET prix = prix * (1 - p_taux) WHERE categorie = p_cat;
+    IF NOT FOUND THEN
+        RAISE NOTICE 'Aucun article dans la catégorie %', p_cat;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT f_solde('Bijoux', 0.1);      -- dans psql : NOTICE, puis une cellule vide
+PERFORM f_solde('Bijoux', 0.1);     -- dans psql :
+-- ERROR:  syntax error at or near "PERFORM"
+DO $$ BEGIN PERFORM f_solde('Accessoires', 0.5); END $$;   -- dans un bloc : correct</code></pre>
+      <p>Dans <code>psql</code>, on appelle toujours une fonction avec <code>SELECT</code>, même si elle ne renvoie rien. <code>PERFORM</code> ne s'écrit qu'à l'intérieur d'un bloc, dans une fonction ou un <code>DO</code>.</p>
+    </div>
+
+    <h3>Les types de retour <span class="ref">diapo 86, supplément § 2</span></h3>
+    <p>Une fonction PL/pgSQL peut retourner une seule ligne ou plusieurs lignes.</p>
+    <ul>
+      <li><strong>Une seule ligne</strong>
+        <ul>
+          <li>une valeur : types habituels (<code>integer</code>, <code>boolean</code>, <code>varchar</code>…), renvoyée par <code>RETURN expression</code> ;</li>
+          <li>plusieurs valeurs : type <code>record</code>, identique à une variable de type ligne mais sans structure prédéfinie ; ou des paramètres <code>OUT</code> (supplément § 2.2).</li>
+        </ul>
+      </li>
+      <li><strong>Plusieurs lignes</strong>
+        <ul>
+          <li>dans le prototype, le type de retour est <code>RETURNS SETOF XXX</code> (type simple ou composite) ou <code>RETURNS TABLE (…)</code> ;</li>
+          <li>dans le corps, on construit l'ensemble à retourner avec <code>RETURN NEXT</code> (une ligne à la fois, suivi d'un <code>RETURN</code> final facultatif) ou <code>RETURN QUERY</code> (le résultat direct d'une requête).</li>
+        </ul>
+      </li>
+    </ul>
+    <table>
+      <caption>Types de retour et façon de renvoyer le résultat</caption>
+      <thead><tr><th>Prototype</th><th>Dans le corps</th><th>Appel</th></tr></thead>
+      <tbody>
+        <tr><td><code>RETURNS integer</code></td><td><code>RETURN expression;</code></td><td><code>SELECT f(…);</code></td></tr>
+        <tr><td>paramètres <code>OUT</code></td><td>affecter les paramètres</td><td><code>SELECT * FROM f(…);</code></td></tr>
+        <tr><td><code>RETURNS record</code></td><td><code>RETURN variable_record;</code></td><td><code>SELECT * FROM f(…) AS (col type, …);</code></td></tr>
+        <tr><td><code>RETURNS SETOF type</code></td><td><code>RETURN QUERY</code> ou <code>RETURN NEXT</code></td><td><code>SELECT * FROM f(…);</code></td></tr>
+        <tr><td><code>RETURNS TABLE (col type, …)</code></td><td><code>RETURN QUERY</code> ou <code>RETURN NEXT</code></td><td><code>SELECT * FROM f(…);</code></td></tr>
+      </tbody>
+    </table>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>RETURNS SETOF et RETURN QUERY</span></p>
+      <p>Le type de retour peut être le type ligne d'une table. La fonction s'utilise alors dans le <code>FROM</code>, comme une table paramétrée :</p>
+<pre><code class="language-pgsql">CREATE FUNCTION f_articles_de (p_cat varchar) RETURNS SETOF articles AS $$
+BEGIN
+    RETURN QUERY SELECT * FROM articles WHERE categorie = p_cat ORDER BY prix DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT id, nom, prix FROM f_articles_de('Chaussures');
+-- 7 | Bottines cuir | 40.00 ;  6 | Baskets Adidas | 30.00 ;  8 | Sandales été | 15.00</code></pre>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>RETURNS TABLE</span></p>
+      <p><code>RETURNS TABLE</code> permet de renvoyer plusieurs colonnes, définies dans la signature :</p>
+<pre><code class="language-pgsql">CREATE OR REPLACE FUNCTION f_stats () RETURNS TABLE (categorie varchar, nb bigint, ca numeric) AS $$
+BEGIN
+    RETURN QUERY SELECT a.categorie, count(*), SUM(a.prix)
+                 FROM articles a GROUP BY a.categorie ORDER BY 3 DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT * FROM f_stats();
+-- Vêtements | 5 | 118.00 ;  Chaussures | 3 | 85.00 ;  Accessoires | 4 | 54.00</code></pre>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Colonnes de sortie et colonnes de table homonymes</span> <span class="badge ajout">Ajout</span></p>
+      <p>Les colonnes déclarées dans <code>RETURNS TABLE</code> (ou les paramètres <code>OUT</code>) deviennent des variables de la fonction. Si une table a une colonne du même nom, la requête devient ambiguë. Sans l'alias <code>a.</code>, la fonction ci-dessus échoue à l'appel :</p>
+<pre><code class="language-sql">-- corps : RETURN QUERY SELECT categorie, count(*), SUM(prix) FROM articles GROUP BY categorie;
+SELECT * FROM f_stats();
+-- ERROR:  column reference "categorie" is ambiguous
+-- DETAIL:  It could refer to either a PL/pgSQL variable or a table column.</code></pre>
+      <p>On préfixe les colonnes par un alias de table, ou l'on donne aux colonnes de sortie des noms différents.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>RETURN NEXT : construire le résultat ligne à ligne</span> <span class="badge ajout">Ajout</span></p>
+      <p>Avec <code>RETURN NEXT</code>, on remplit les colonnes de sortie, puis on ajoute la ligne au résultat ; la fonction continue ensuite.</p>
+<pre><code class="language-pgsql">CREATE FUNCTION f_prix_ttc () RETURNS TABLE (article varchar, ttc numeric) AS $$
+DECLARE
+    r record;
+BEGIN
+    FOR r IN SELECT nom, prix FROM articles WHERE categorie = 'Accessoires' LOOP
+        article := r.nom;
+        ttc := ROUND(r.prix * 1.2, 2);
+        RETURN NEXT;              -- ajoute (article, ttc) au résultat
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT * FROM f_prix_ttc();
+-- Sac à main vintage 26.40 ; Écharpe laine 10.80 ; Ceinture cuir 10.80 ; Chapeau feutre 16.80</code></pre>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Plusieurs valeurs : paramètres OUT ou record</span> <span class="ref">supplément § 2.2</span></p>
+      <p>Les paramètres <code>OUT</code> définissent directement les valeurs renvoyées, sans <code>RETURN expression</code> : chacun devient une variable de la fonction, et leurs valeurs à la fin de l'exécution forment le résultat. Avec plusieurs paramètres <code>OUT</code>, la fonction renvoie une ligne composée.</p>
+<pre><code class="language-pgsql">CREATE FUNCTION f_extremes (p_cat varchar, OUT prix_min numeric, OUT prix_max numeric) AS $$
+BEGIN
+    SELECT MIN(prix), MAX(prix) INTO prix_min, prix_max FROM articles WHERE categorie = p_cat;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT * FROM f_extremes('Vêtements');   -- prix_min 12.00 | prix_max 45.00
+SELECT f_extremes('Vêtements');          -- (12.00,45.00) : la ligne entière, en une colonne</code></pre>
+      <p><span class="badge ajout">Ajout</span> Avec <code>RETURNS record</code>, la structure n'est pas connue d'avance : il faut la décrire à l'appel.</p>
+<pre><code class="language-pgsql">CREATE FUNCTION f_resume (p_id integer) RETURNS record AS $$
+DECLARE
+    r record;
+BEGIN
+    SELECT nom, prix INTO r FROM articles WHERE id = p_id;
+    RETURN r;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT * FROM f_resume(3);
+-- ERROR:  a column definition list is required for functions returning "record"
+SELECT * FROM f_resume(3) AS (nom varchar, prix numeric);   -- Manteau laine | 45.00</code></pre>
+    </div>
+
+    <h3>Commentaires et messages <span class="ref">diapo 87</span></h3>
+    <p>On commente une ligne par <code>--</code>, plusieurs lignes par <code>/* bloc commenté */</code>. Le mot-clé <code>RAISE</code> envoie des messages, avec différents niveaux : <code>DEBUG</code>, <code>LOG</code>, <code>INFO</code>, <code>NOTICE</code>, <code>WARNING</code>, <code>EXCEPTION</code>. Chaque <code>%</code> du message est remplacé par la valeur de la variable correspondante :</p>
+<pre><code class="language-pgsql">RAISE NOTICE 'Hello world to %', var_prenom;</code></pre>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Ce que l'on voit selon le niveau</span></p>
+<pre><code class="language-pgsql">DO $$
+DECLARE var_prenom text := 'Julie';
+BEGIN
+    RAISE DEBUG 'debug';
+    RAISE LOG 'log';
+    RAISE INFO 'info';
+    RAISE NOTICE 'Hello world to %', var_prenom;
+    RAISE WARNING 'warning';
+    RAISE EXCEPTION 'Arrêt : % n''a pas le droit', var_prenom;
+    RAISE NOTICE 'jamais affiché';
+END $$;
+-- INFO:  info
+-- NOTICE:  Hello world to Julie
+-- WARNING:  warning
+-- ERROR:  Arrêt : Julie n'a pas le droit</code></pre>
+      <p>Par défaut, <code>DEBUG</code> et <code>LOG</code> ne sont pas envoyés au client : <code>LOG</code> va dans le journal du serveur. <code>RAISE EXCEPTION</code> est différent des autres niveaux : il lève une erreur, qui arrête l'exécution et annule ce que l'instruction en cours avait modifié. C'est ainsi qu'un trigger refuse une opération (section 7).</p>
+    </div>
+
+    <h3>Gérer les erreurs : EXCEPTION <span class="ref">supplément § 4</span></h3>
+    <p>PL/pgSQL gère les erreurs grâce à la partie <code>EXCEPTION</code> d'un bloc. Lorsqu'une erreur survient dans la partie principale, l'exécution bascule vers le bloc <code>EXCEPTION</code>, qui peut intercepter plusieurs types d'erreurs. Ces types sont des noms prédéfinis, comme <code>division_by_zero</code> ou <code>unique_violation</code>, ou <code>others</code> pour capter toutes les erreurs non gérées spécifiquement.</p>
+<pre data-fichier="Syntaxe"><code class="language-pgsql">BEGIN
+    instruction;
+EXCEPTION
+    WHEN type_erreur THEN
+        action;
+END;</code></pre>
+<pre><code class="language-pgsql">DO $$
+DECLARE resultat numeric; valeur integer := 0;
+BEGIN
+    resultat := 10 / valeur;
+EXCEPTION
+    WHEN division_by_zero THEN
+        RAISE NOTICE 'Division par zero detectee.';
+        resultat := NULL;
+END $$;
+-- NOTICE:  Division par zero detectee.</code></pre>
+    <p>Le bloc <code>EXCEPTION</code> s'utilise aussi dans les fonctions, les procédures (non vues en cours) ou les triggers. Une erreur capturée peut être traitée sur place, ou relancée explicitement avec <code>RAISE</code>.</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Ajouter un vendeur sans planter</span> <span class="badge ajout">Ajout</span></p>
+<pre><code class="language-pgsql">CREATE FUNCTION f_ajouter_vendeur (p_id integer, p_nom varchar) RETURNS text AS $$
+BEGIN
+    INSERT INTO vendeurs (id, nom) VALUES (p_id, p_nom);
+    RETURN 'ajouté';
+EXCEPTION
+    WHEN unique_violation THEN
+        RETURN 'id ' || p_id || ' déjà utilisé';
+    WHEN others THEN
+        RETURN 'erreur : ' || SQLERRM;      -- SQLERRM : le message de l'erreur
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT f_ajouter_vendeur(7, 'Tom'), f_ajouter_vendeur(1, 'Zoé'), f_ajouter_vendeur(8, repeat('x', 60));
+-- ajouté | id 1 déjà utilisé | erreur : value too long for type character varying(50)</code></pre>
+      <p>Quand une erreur est capturée, les modifications faites par le bloc sont annulées, mais la fonction continue et renvoie son message au lieu d'échouer.</p>
+    </div>
+
+    <h3>S'entraîner <span class="badge ajout">Ajout</span></h3>
+
+    <div class="bloc exercice" id="ex-6">
+      <p class="bloc-titre">Exercice 6 <span>Compter les filleuls</span></p>
+      <p>Écrire une fonction <code>f_nb_filleuls(p_id integer)</code> qui renvoie le nombre de filleuls directs d'un vendeur, et qui lève une exception si le vendeur n'existe pas.</p>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Vérifier d'abord l'existence du vendeur avec <code>PERFORM</code> et <code>FOUND</code>, puis compter avec <code>SELECT count(*) INTO</code>.</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+<pre><code class="language-pgsql">CREATE FUNCTION f_nb_filleuls (p_id integer) RETURNS integer AS $$
+DECLARE
+    nb integer;
+BEGIN
+    PERFORM * FROM vendeurs WHERE id = p_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Le vendeur % n''existe pas', p_id;
+    END IF;
+    SELECT count(*) INTO nb FROM vendeurs WHERE id_parrain = p_id;
+    RETURN nb;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT nom, f_nb_filleuls(id) FROM vendeurs ORDER BY id;
+-- Julie 2 ; Marc 2 ; Sophie 1 ; Karim 0 ; Lea 0 ; Nadia 0
+SELECT f_nb_filleuls(42);
+-- ERROR:  Le vendeur 42 n'existe pas</code></pre>
+      </details>
+    </div>
+
+    <div class="bloc exercice" id="ex-7">
+      <p class="bloc-titre">Exercice 7 <span>Bilan des vendeurs</span></p>
+      <p>Écrire une fonction <code>f_bilan_vendeurs()</code> qui renvoie, pour chaque vendeur, son nom, son chiffre d'affaires (0 s'il n'a rien vendu) et un statut : « objectif atteint » à partir de 50 €, « à relancer » sinon. Utiliser une boucle <code>FOR</code>, un <code>IF</code> et <code>RETURN NEXT</code>.</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+<pre><code class="language-pgsql">CREATE FUNCTION f_bilan_vendeurs () RETURNS TABLE (vendeur varchar, ca numeric, statut text) AS $$
+DECLARE
+    r record;
+BEGIN
+    FOR r IN SELECT v.nom, COALESCE(SUM(a.prix), 0) AS total
+             FROM vendeurs v LEFT JOIN articles a ON a.id_vendeur = v.id
+             GROUP BY v.id, v.nom ORDER BY v.id LOOP
+        vendeur := r.nom;
+        ca := r.total;
+        IF r.total &gt;= 50 THEN
+            statut := 'objectif atteint';
+        ELSE
+            statut := 'à relancer';
+        END IF;
+        RETURN NEXT;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT * FROM f_bilan_vendeurs();
+-- Julie 69.00 objectif atteint ; Marc 58.00 objectif atteint ; Sophie 60.00 objectif atteint
+-- Karim 34.00 à relancer ; Lea 27.00 à relancer ; Nadia 9.00 à relancer</code></pre>
+        <p>La jointure externe garde un vendeur sans article, et <code>COALESCE</code> remplace alors la somme <code>NULL</code> par 0.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice" id="ex-8">
+      <p class="bloc-titre">Exercice 8 <span>Pourquoi NULL et pas 0 ?</span></p>
+      <p>Cette fonction doit renvoyer 0 pour une catégorie inconnue. Pourtant, <code>f_ca_categorie('Bijoux')</code> renvoie <code>NULL</code>. Pourquoi ? Corriger la fonction.</p>
+<pre><code class="language-pgsql">CREATE FUNCTION f_ca_categorie (p_cat varchar) RETURNS numeric AS $$
+DECLARE total numeric;
+BEGIN
+    SELECT SUM(prix) INTO total FROM articles WHERE categorie = p_cat;
+    IF NOT FOUND THEN
+        RETURN 0;
+    END IF;
+    RETURN total;
+END;
+$$ LANGUAGE plpgsql;</code></pre>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Combien de lignes renvoie cette requête ?</p>
+<pre><code class="language-sql">SELECT SUM(prix) FROM articles WHERE categorie = 'Bijoux';</code></pre>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Une requête d'agrégation sans <code>GROUP BY</code> renvoie toujours <strong>une</strong> ligne, même si aucune ligne ne vérifie le <code>WHERE</code> : elle contient <code>NULL</code>. <code>FOUND</code> vaut donc <code>TRUE</code>, et la fonction renvoie <code>total</code>, c'est-à-dire <code>NULL</code>. On traite le cas dans la requête :</p>
+<pre><code class="language-pgsql">CREATE OR REPLACE FUNCTION f_ca_categorie (p_cat varchar) RETURNS numeric AS $$
+DECLARE total numeric;
+BEGIN
+    SELECT COALESCE(SUM(prix), 0) INTO total FROM articles WHERE categorie = p_cat;
+    RETURN total;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT f_ca_categorie('Vêtements'), f_ca_categorie('Bijoux');   -- 118.00 | 0</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les triggers <span class="ref">diapos 88–95</span></h2>
+    <p>Une fonction s'exécute quand on l'appelle. Certaines règles doivent pourtant s'appliquer à chaque modification d'une table, quelle que soit l'application qui la fait : refuser un salaire négatif, garder un historique. Un trigger appelle une fonction automatiquement, au moment d'une opération sur la table.</p>
+
+    <h3>Principe <span class="ref">diapo 88</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Trigger</span></p>
+      <p>Un <dfn>trigger</dfn> (<span class="en" lang="en">trigger</span>, déclencheur) est un objet déclenché lors d'une opération particulière de manipulation sur une table (<code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>). Il est associé à une <dfn>fonction trigger</dfn>, qu'il appelle à chaque déclenchement.</p>
+    </div>
+    <p>Il existe deux types de triggers :</p>
+    <ul>
+      <li>le <strong>trigger par ligne</strong> (<code>ROW</code>), appelé pour chaque ligne affectée par l'opération ;</li>
+      <li>le <strong>trigger par instruction</strong> (<code>STATEMENT</code>), appelé une seule fois pour l'ensemble des lignes.</li>
+    </ul>
+    <p>Dans les deux cas, il s'exécute avant ou après l'opération (<code>BEFORE</code> / <code>AFTER</code>).</p>
+
+    <h3>Créer et supprimer un trigger <span class="ref">diapo 89</span></h3>
+    <p>On définit d'abord la fonction trigger, puis le trigger qui l'appelle :</p>
+<pre data-fichier="Syntaxe"><code class="language-pgsql">-- Définition de la fonction trigger
+CREATE [ OR REPLACE ] FUNCTION nom_fonction ( )
+RETURNS TRIGGER AS $$
+    ...
+$$ LANGUAGE plpgsql;
+
+-- Définition d'un trigger
+CREATE TRIGGER nom_trigger { BEFORE | AFTER } { opération }
+    ON nom_table [ FOR [ EACH ] { ROW | STATEMENT } ]
+    EXECUTE PROCEDURE nom_fonction ( );
+
+-- Destruction d'un trigger
+DROP TRIGGER nom_trigger ON nom_table;</code></pre>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Précisions sur CREATE TRIGGER</span></p>
+      <ul>
+        <li>L'opération est <code>INSERT</code>, <code>UPDATE</code>, <code>UPDATE OF colonne</code> (seulement si cette colonne est modifiée), <code>DELETE</code> ou <code>TRUNCATE</code> ; on les combine avec <code>OR</code> : <code>BEFORE INSERT OR UPDATE</code>.</li>
+        <li>Sans <code>FOR EACH</code>, le trigger est par instruction.</li>
+        <li>Depuis PostgreSQL 11, on écrit plutôt <code>EXECUTE FUNCTION</code> ; <code>EXECUTE PROCEDURE</code> reste accepté et fait exactement la même chose.</li>
+        <li><code>DROP TRIGGER</code> supprime le trigger, pas sa fonction, qui reste disponible pour un autre trigger.</li>
+      </ul>
+    </div>
+
+    <h3>La fonction trigger <span class="ref">diapos 90–91</span></h3>
+    <p>Une fonction trigger n'accepte aucun argument, et son type de retour est obligatoirement <code>trigger</code> : elle renvoie <code>NULL</code> ou une ligne (<code>record</code>). L'effet de cette valeur de retour dépend du type de trigger :</p>
+    <table>
+      <caption>Effet de la valeur de retour d'une fonction trigger</caption>
+      <thead><tr><th>Trigger</th><th>Retour <code>NULL</code></th><th>Retour d'une ligne</th></tr></thead>
+      <tbody>
+        <tr><th><code>BEFORE</code>, par ligne</th><td><code>INSERT</code> / <code>UPDATE</code> annulé pour cette ligne</td><td>ajout ou modification effectué, avec la ligne renvoyée</td></tr>
+        <tr><th><code>AFTER</code>, par ligne</th><td colspan="2">pas d'influence : l'opération a déjà eu lieu</td></tr>
+        <tr><th>par instruction</th><td colspan="2">pas d'influence</td></tr>
+      </tbody>
+    </table>
+    <p>Si une exception est levée pendant l'exécution de la fonction, l'opération associée est annulée.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Annuler en silence, ou modifier la ligne</span></p>
+      <p>Renvoyer <code>NULL</code> dans un trigger <code>BEFORE</code> par ligne ignore la ligne <em>sans erreur</em> : les autres lignes de la même instruction sont traitées normalement. À l'inverse, modifier <code>NEW</code> avant de le renvoyer change ce qui sera écrit.</p>
+<pre><code class="language-pgsql">CREATE TABLE t (x int);
+CREATE FUNCTION f_filtre() RETURNS trigger AS $$
+BEGIN
+    IF NEW.x &lt; 0 THEN
+        RETURN NULL;          -- ligne ignorée, sans erreur
+    END IF;
+    NEW.x := NEW.x * 10;      -- on modifie la ligne avant écriture
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER tr_filtre BEFORE INSERT ON t FOR EACH ROW EXECUTE FUNCTION f_filtre();
+
+INSERT INTO t VALUES (1), (-2), (3);   -- INSERT 0 2 : deux lignes insérées sur trois
+SELECT * FROM t;                       -- 10, 30</code></pre>
+      <p>Pour un <code>DELETE</code>, la ligne à renvoyer est <code>OLD</code>, car <code>NEW</code> vaut <code>NULL</code>. Un trigger <code>BEFORE DELETE</code> qui renvoie <code>NEW</code> annule donc toutes les suppressions, sans le moindre message.</p>
+    </div>
+
+    <p>Des variables spéciales sont créées automatiquement dans le bloc de plus haut niveau de la fonction :</p>
+    <table>
+      <caption>Variables spéciales d'une fonction trigger</caption>
+      <thead><tr><th>Variable</th><th>Contenu</th><th>Exemple de valeur</th></tr></thead>
+      <tbody>
+        <tr><td><code>NEW</code></td><td>la nouvelle ligne, pour <code>INSERT</code> et <code>UPDATE</code></td><td><code>(11)</code></td></tr>
+        <tr><td><code>OLD</code></td><td>l'ancienne ligne, pour <code>UPDATE</code> et <code>DELETE</code></td><td><code>(10)</code></td></tr>
+        <tr><td><code>TG_NAME</code></td><td>le nom du trigger</td><td><code>tr_ligne</code></td></tr>
+        <tr><td><code>TG_WHEN</code></td><td>le moment</td><td><code>BEFORE</code>, <code>AFTER</code></td></tr>
+        <tr><td><code>TG_LEVEL</code></td><td>le niveau</td><td><code>ROW</code>, <code>STATEMENT</code></td></tr>
+        <tr><td><code>TG_OP</code></td><td>l'opération</td><td><code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code></td></tr>
+        <tr><td><code>TG_TABLE_NAME</code></td><td>la table concernée</td><td><code>t</code></td></tr>
+      </tbody>
+    </table>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Voir qui se déclenche, et quand</span> <span class="badge ajout">Ajout</span></p>
+      <p>Une même fonction, attachée à deux triggers <code>AFTER</code> sur la table <code>t</code> (qui contient 10 et 30) : l'un par ligne, l'autre par instruction.</p>
+<pre><code class="language-pgsql">CREATE FUNCTION f_trace() RETURNS trigger AS $$
+BEGIN
+    RAISE NOTICE '% : % % % sur %', TG_NAME, TG_WHEN, TG_LEVEL, TG_OP, TG_TABLE_NAME;
+    IF TG_LEVEL = 'ROW' THEN
+        RAISE NOTICE '   OLD = %, NEW = %', OLD, NEW;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER tr_ligne AFTER INSERT OR UPDATE OR DELETE ON t
+    FOR EACH ROW EXECUTE FUNCTION f_trace();
+CREATE TRIGGER tr_instr AFTER INSERT OR UPDATE OR DELETE ON t
+    FOR EACH STATEMENT EXECUTE FUNCTION f_trace();
+
+UPDATE t SET x = x + 1;
+-- NOTICE:  tr_ligne : AFTER ROW UPDATE sur t
+-- NOTICE:     OLD = (10), NEW = (11)
+-- NOTICE:  tr_ligne : AFTER ROW UPDATE sur t
+-- NOTICE:     OLD = (30), NEW = (31)
+-- NOTICE:  tr_instr : AFTER STATEMENT UPDATE sur t
+
+DELETE FROM t WHERE x &gt; 1000;
+-- NOTICE:  tr_instr : AFTER STATEMENT DELETE sur t    ← aucune ligne, mais l'instruction a eu lieu</code></pre>
+      <p>Le trigger par ligne se déclenche deux fois (deux lignes modifiées), celui par instruction une seule fois, même quand aucune ligne n'est touchée.</p>
+    </div>
+
+    <h3>Exemple : contrôler les employés <span class="ref">diapos 92–93</span></h3>
+    <p>Cas simple : « je ne veux pas que des employés aient un nom <code>NULL</code> ou un salaire négatif ». Oui, on pourrait gérer ce cas par des contraintes lors de la création de la table… c'est un premier cas simple ! On procède en deux temps :</p>
+    <ol class="etapes">
+      <li><strong>Créer la fonction</strong> qui vérifie les valeurs du nom et du salaire.</li>
+      <li><strong>Créer l'objet trigger</strong> qui appelle la fonction trigger à chaque insertion ou modification de données dans la table <code>emp</code>. Opération : <code>UPDATE</code> ou <code>INSERT</code>. Quand ? Avant la réalisation de l'opération. Combien de fois ? Autant que d'enregistrements insérés ou modifiés : un trigger par ligne.</li>
+    </ol>
+<pre data-fichier="emp_stamp.sql"><code class="language-pgsql">-- table minimale pour l'exemple
+CREATE TABLE emp (ename varchar(10), sal numeric(7,2));
+
+CREATE FUNCTION emp_stamp() RETURNS trigger AS $$
+    BEGIN
+        -- Verifie que ename et sal sont donnés
+        IF NEW.ename IS NULL THEN
+            RAISE EXCEPTION 'ename ne peut pas être NULL';
+        END IF;
+        IF NEW.sal IS NULL OR NEW.sal &lt; 0 THEN
+            RAISE EXCEPTION '% doit avoir un salaire positif', NEW.ename;
+        END IF;
+        RETURN NEW;
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER emp_stamp BEFORE INSERT OR UPDATE ON emp
+    FOR EACH ROW EXECUTE PROCEDURE emp_stamp();</code></pre>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo 93 affiche la condition <code>IF NEW.sal OR NEW.sal&lt;0 IS NULL THEN</code>, corrigée à la main par une flèche qui ramène <code>IS NULL</code> après le premier <code>NEW.sal</code>. C'est la version corrigée, <code>NEW.sal IS NULL OR NEW.sal &lt; 0</code>, qui est reprise ici ; la version imprimée provoque une erreur de type. La diapo ne montre pas la table : la table <code>emp (ename, sal)</code> ci-dessus est ajoutée pour pouvoir tester.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La même règle par contraintes</span></p>
+      <p>L'équivalent déclaratif demande <code>NOT NULL</code> sur les deux colonnes : une contrainte <code>CHECK (sal &gt;= 0)</code> seule laisse passer un salaire <code>NULL</code>, car la condition vaut alors « inconnu », et un <code>CHECK</code> ne rejette que ce qui est faux.</p>
+<pre><code class="language-sql">CREATE TABLE emp2 (ename varchar(10) NOT NULL, sal numeric(7,2) CHECK (sal &gt;= 0));
+INSERT INTO emp2 VALUES ('WARD', NULL);     -- accepté !
+INSERT INTO emp2 VALUES ('X', -1);
+-- ERROR:  new row for relation "emp2" violates check constraint "emp2_sal_check"</code></pre>
+      <p>Les contraintes sont plus simples et plus rapides : on les préfère quand elles suffisent. Le trigger se justifie pour des règles qu'une contrainte ne sait pas exprimer (consulter d'autres tables, modifier la ligne, écrire ailleurs), ou pour un message d'erreur sur mesure.</p>
+    </div>
+
+    <h3>Tester un trigger <span class="ref">diapo 94</span></h3>
+    <p>Comment savoir que ça fonctionne ? Ce n'est pas parce que <code>CREATE FUNCTION</code> et <code>CREATE TRIGGER</code> réussissent que le trigger se comporte comme souhaité ! Le trigger n'est déclenché que par une opération sur sa table. Pour le tester, il faut donc :</p>
+    <ol class="etapes">
+      <li><strong>Faire un <code>INSERT</code> ou un <code>UPDATE</code></strong> sur la table cible.</li>
+      <li><strong>Tester des enregistrements qui déclenchent les différents traitements</strong> : un cas valide, et un cas par branche du <code>IF</code>.</li>
+      <li><strong>Supprimer ou réinitialiser</strong> ces enregistrements de test.</li>
+    </ol>
+<pre><code class="language-sql">INSERT INTO emp VALUES ('ALLEN', 1600);                -- cas valide : INSERT 0 1
+INSERT INTO emp VALUES (NULL, 1000);
+-- ERROR:  ename ne peut pas être NULL
+INSERT INTO emp VALUES ('WARD', NULL);
+-- ERROR:  WARD doit avoir un salaire positif
+UPDATE emp SET sal = -10 WHERE ename = 'ALLEN';         -- le trigger surveille aussi UPDATE
+-- ERROR:  ALLEN doit avoir un salaire positif
+INSERT INTO emp VALUES ('A', 1), ('B', -1), ('C', 3);
+-- ERROR:  B doit avoir un salaire positif
+SELECT * FROM emp;                                      -- ALLEN | 1600.00 seulement
+DELETE FROM emp WHERE ename = 'ALLEN';                  -- nettoyage</code></pre>
+    <p><span class="badge ajout">Ajout</span> Le dernier <code>INSERT</code> est instructif : une exception sur la ligne B annule toute l'instruction, A et C compris.</p>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo 94 écrit : « Le trigger sera déclenché à chaque appel de fonction ». C'est l'inverse : chaque opération sur la table déclenche le trigger, qui appelle alors la fonction. La suite de la diapo, qui demande de faire un <code>INSERT</code> ou un <code>UPDATE</code> sur la table cible, va dans ce sens.</p>
+
+    <h3>Autre exemple : la plate-forme de jeux <span class="ref">diapo 95</span></h3>
+    <p>Le dernier exemple porte sur la base du <a href="tp-01-plateforme-jeux.html">TP 1</a> : un visiteur possède des avatars, qui jouent des parties.</p>
+    <div class="relations">
+      <p><b>visiteur</b>(<u>id_visiteur</u>, login, mdp, mail, ville)</p>
+      <p><b>avatar</b>(<u>id_avatar</u>, nom_avatar, sexe, xp, code_dsc, #id_visiteur, #id_race)</p>
+      <p><b>jeu</b>(<u>id_jeu</u>, nom_jeu, type, nb_joueur)</p>
+      <p><b>partie</b>(<u>#id_avatar, #id_jeu</u>, role, highscore)</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-9">
+      <p class="bloc-titre">Exercice 9 <span>Messages à l'insertion d'une partie</span></p>
+      <p>Afficher des informations lors de l'insertion d'une partie :</p>
+      <ul>
+        <li><strong>premier rôle de méchant</strong> : si le joueur n'avait pas d'avatar avec un rôle de méchant jusqu'à maintenant, alors on affichera le message « Le côté obscur de la force, redouter tu dois. » ;</li>
+        <li><strong>première participation à « Cooking Fever »</strong> : si le joueur n'avait pas encore d'avatar dans ce jeu, alors on affichera le message « Cuisinez un jour, cuisinez toujours ».</li>
+      </ul>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Le « joueur » est le visiteur propriétaire de l'avatar : il peut avoir plusieurs avatars, et il faut regarder les parties de tous. Un trigger <code>BEFORE INSERT</code> par ligne a l'avantage que la nouvelle partie n'est pas encore dans la table : « jusqu'à maintenant » revient à chercher dans <code>partie</code> telle qu'elle est. <code>PERFORM</code> et <code>FOUND</code> disent si une telle partie existe.</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+<pre data-fichier="messages_partie.sql"><code class="language-pgsql">CREATE FUNCTION f_messages_partie() RETURNS trigger AS $$
+DECLARE
+    v_visiteur bigint;
+BEGIN
+    -- Le « joueur » est le visiteur propriétaire de l'avatar
+    SELECT id_visiteur INTO v_visiteur FROM avatar WHERE id_avatar = NEW.id_avatar;
+
+    -- Premier rôle de méchant ?
+    IF NEW.role = 'méchant' THEN
+        PERFORM * FROM partie p JOIN avatar a ON a.id_avatar = p.id_avatar
+        WHERE a.id_visiteur = v_visiteur AND p.role = 'méchant';
+        IF NOT FOUND THEN
+            RAISE NOTICE 'Le côté obscur de la force, redouter tu dois.';
+        END IF;
+    END IF;
+
+    -- Première participation à Cooking Fever ?
+    IF NEW.id_jeu = (SELECT id_jeu FROM jeu WHERE nom_jeu = 'Cooking Fever') THEN
+        PERFORM * FROM partie p JOIN avatar a ON a.id_avatar = p.id_avatar
+        WHERE a.id_visiteur = v_visiteur AND p.id_jeu = NEW.id_jeu;
+        IF NOT FOUND THEN
+            RAISE NOTICE 'Cuisinez un jour, cuisinez toujours';
+        END IF;
+    END IF;
+
+    RETURN NEW;    -- BEFORE : sans cette ligne, l'insertion serait annulée
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_messages_partie BEFORE INSERT ON partie
+    FOR EACH ROW EXECUTE FUNCTION f_messages_partie();</code></pre>
+        <p>Tests sur les données du script du TP. Sean (avatars 3, 11, 12 et 20) n'a jamais joué de méchant ni à Cooking Fever ; Billy (avatars 4, 5, 13, 14, 21 et 22) a déjà joué des méchants, mais jamais à Cooking Fever (<code>id_jeu</code> = 5) :</p>
+<pre><code class="language-sql">INSERT INTO partie VALUES (11, 5, 'méchant', 100);   -- Sean, avatar Eliass
+-- NOTICE:  Le côté obscur de la force, redouter tu dois.
+-- NOTICE:  Cuisinez un jour, cuisinez toujours
+INSERT INTO partie VALUES (20, 2, 'méchant', 50);    -- Sean, avatar Etienne : plus de message
+INSERT INTO partie VALUES (13, 5, 'gentil', 300);    -- Billy, avatar Youssef
+-- NOTICE:  Cuisinez un jour, cuisinez toujours
+INSERT INTO partie VALUES (22, 5, 'gentil', 10);     -- Billy, avatar Choukri : plus de message
+
+-- nettoyage
+DELETE FROM partie WHERE (id_avatar, id_jeu) IN ((11, 5), (20, 2), (13, 5), (22, 5));</code></pre>
+        <p>Les messages dépendent du joueur, pas de l'avatar : le deuxième avatar de Sean ne reçoit plus le message du méchant. Avec un trigger <code>AFTER</code>, la nouvelle ligne serait déjà dans la table, et chaque recherche devrait l'exclure.</p>
+      </details>
+    </div>
+
+    <h3>S'entraîner <span class="badge ajout">Ajout</span></h3>
+
+    <div class="bloc exercice" id="ex-10">
+      <p class="bloc-titre">Exercice 10 <span>Historique des prix</span></p>
+      <p>Créer une table <code>historique_prix</code>, de colonnes <code>id_article</code>, <code>ancien</code>, <code>nouveau</code>, <code>modifie_le</code> et <code>par</code>, et un trigger qui y enregistre chaque changement de prix d'un article, avec la date et l'auteur de la modification. Une mise à jour qui ne change pas le prix ne doit rien enregistrer.</p>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Un trigger <code>AFTER UPDATE OF prix</code> par ligne ; comparer <code>OLD.prix</code> et <code>NEW.prix</code> ; <code>now()</code> et <code>current_user</code> peuvent servir de valeurs par défaut aux colonnes.</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+<pre><code class="language-pgsql">CREATE TABLE historique_prix (
+    id_article integer,
+    ancien     numeric(6,2),
+    nouveau    numeric(6,2),
+    modifie_le timestamp DEFAULT now(),
+    par        text DEFAULT current_user
+);
+
+CREATE FUNCTION f_historique_prix() RETURNS trigger AS $$
+BEGIN
+    IF NEW.prix IS DISTINCT FROM OLD.prix THEN
+        INSERT INTO historique_prix (id_article, ancien, nouveau)
+        VALUES (OLD.id, OLD.prix, NEW.prix);
+    END IF;
+    RETURN NULL;   -- trigger AFTER : valeur de retour ignorée
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_historique_prix AFTER UPDATE OF prix ON articles
+    FOR EACH ROW EXECUTE FUNCTION f_historique_prix();
+
+UPDATE articles SET prix = prix * 0.9 WHERE categorie = 'Chaussures';   -- 3 changements
+UPDATE articles SET nom = 'Jean Levi''s' WHERE id = 1;                  -- prix non touché
+UPDATE articles SET prix = prix WHERE id = 2;                           -- prix inchangé
+SELECT id_article, ancien, nouveau, par FROM historique_prix;
+-- 6 | 30.00 | 27.00 | postgres
+-- 7 | 40.00 | 36.00 | postgres
+-- 8 | 15.00 | 13.50 | postgres</code></pre>
+        <p><code>IS DISTINCT FROM</code> compare en traitant <code>NULL</code> comme une valeur : <code>&lt;&gt;</code> renverrait « inconnu » si l'un des prix était <code>NULL</code>, et le changement ne serait pas enregistré. <code>UPDATE OF prix</code> évite d'appeler la fonction quand la colonne <code>prix</code> n'apparaît pas dans le <code>SET</code> ; le test dans la fonction écarte le cas <code>SET prix = prix</code>.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice" id="ex-11">
+      <p class="bloc-titre">Exercice 11 <span>Contrôler et compléter un article</span></p>
+      <p>Écrire un trigger qui, à l'insertion d'un article, refuse un prix nul, négatif ou absent avec un message clair, et met la date du jour dans <code>date_vente</code> quand elle n'est pas fournie.</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+<pre><code class="language-pgsql">CREATE FUNCTION f_controle_article() RETURNS trigger AS $$
+BEGIN
+    IF NEW.prix IS NULL OR NEW.prix &lt;= 0 THEN
+        RAISE EXCEPTION 'Prix invalide pour « % » : %', NEW.nom, NEW.prix;
+    END IF;
+    IF NEW.date_vente IS NULL THEN
+        NEW.date_vente := CURRENT_DATE;
+    END IF;
+    RETURN NEW;       -- la ligne, éventuellement complétée, est insérée
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_controle_article BEFORE INSERT ON articles
+    FOR EACH ROW EXECUTE FUNCTION f_controle_article();
+
+INSERT INTO articles (id, nom, categorie, prix, id_vendeur) VALUES (20, 'Bottes pluie', 'Chaussures', 35.00, 6);
+SELECT id, nom, date_vente = CURRENT_DATE AS date_du_jour FROM articles WHERE id = 20;   -- 20 | Bottes pluie | t
+INSERT INTO articles (id, nom, categorie, prix, id_vendeur) VALUES (21, 'Erreur', 'Chaussures', -3, 6);
+-- ERROR:  Prix invalide pour « Erreur » : -3.00</code></pre>
+        <p>Modifier <code>NEW</code> n'est possible que dans un trigger <code>BEFORE</code> : dans un trigger <code>AFTER</code>, la ligne est déjà écrite.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Vocabulaire</h2>
+    <dl class="glossaire">
+      <dt>Séquence <span class="en" lang="en">sequence</span></dt>
+      <dd>Objet qui génère des entiers successifs ; <code>nextval</code>, <code>currval</code>, <code>setval</code>.</dd>
+      <dt>SERIAL</dt>
+      <dd>Raccourci PostgreSQL : colonne <code>integer</code> dont la valeur par défaut est tirée d'une séquence créée pour elle.</dd>
+      <dt>Index <span class="en" lang="en">index</span></dt>
+      <dd>Structure auxiliaire qui accélère la recherche de lignes, au prix d'une mise à jour à chaque modification.</dd>
+      <dt>Rôle <span class="en" lang="en">role</span></dt>
+      <dd>Entité qui possède des objets et des droits : utilisateur s'il a <code>LOGIN</code>, groupe s'il a des membres.</dd>
+      <dt>Super-utilisateur <span class="en" lang="en">superuser</span></dt>
+      <dd>Rôle pour lequel aucun droit n'est vérifié, comme <code>postgres</code>.</dd>
+      <dt>Privilège <span class="en" lang="en">privilege</span></dt>
+      <dd>Droit d'effectuer une action sur un objet (<code>SELECT</code>, <code>INSERT</code>, <code>USAGE</code>…), accordé par <code>GRANT</code>, retiré par <code>REVOKE</code>.</dd>
+      <dt>Liste de contrôle d'accès <span class="en" lang="en">ACL</span></dt>
+      <dd>Pour chaque objet, la liste des rôles et de leurs privilèges, consultée avant toute action.</dd>
+      <dt>PUBLIC</dt>
+      <dd>Pseudo-rôle qui désigne tous les rôles.</dd>
+      <dt>Expression de table commune <span class="en" lang="en">CTE</span></dt>
+      <dd>Requête nommée par <code>WITH</code>, utilisable comme une table le temps d'une requête.</dd>
+      <dt>CTE récursive</dt>
+      <dd>CTE formée d'un terme ancre et d'un terme récursif, répété tant qu'il produit des lignes.</dd>
+      <dt>Fonction de fenêtrage <span class="en" lang="en">window function</span></dt>
+      <dd>Fonction calculée sur une fenêtre de lignes (<code>OVER</code>), sans regrouper : chaque ligne reste.</dd>
+      <dt>Partition</dt>
+      <dd>Sous-ensemble de lignes défini par <code>PARTITION BY</code>, sur lequel la fonction de fenêtrage est calculée.</dd>
+      <dt>Cadre <span class="en" lang="en">frame</span></dt>
+      <dd>Lignes de la partition prises en compte pour la ligne courante ; par défaut, de la première à la ligne courante quand il y a un <code>ORDER BY</code>.</dd>
+      <dt>PL/pgSQL</dt>
+      <dd>Langage procédural de PostgreSQL : blocs, variables, conditions, boucles, exceptions.</dd>
+      <dt>Bloc</dt>
+      <dd>Unité de code PL/pgSQL : <code>DECLARE</code>, <code>BEGIN</code>, <code>EXCEPTION</code>, <code>END</code>.</dd>
+      <dt>FOUND</dt>
+      <dd>Variable booléenne : la dernière instruction SQL a-t-elle affecté au moins une ligne ?</dd>
+      <dt>Trigger <span class="en" lang="en">trigger</span></dt>
+      <dd>Objet qui appelle une fonction trigger lors d'un <code>INSERT</code>, <code>UPDATE</code> ou <code>DELETE</code> sur une table, avant ou après, par ligne ou par instruction.</dd>
+      <dt>NEW, OLD</dt>
+      <dd>Dans une fonction trigger par ligne, la nouvelle et l'ancienne version de la ligne.</dd>
+    </dl>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Une séquence fournit des entiers avec <code>nextval</code> ; <code>SERIAL</code> crée une séquence et l'associe à la colonne. <code>SERIAL</code> pour une clé primaire, jamais pour une clé étrangère. Les valeurs peuvent avoir des trous.</li>
+        <li>Un index accélère les recherches sélectives mais ralentit les écritures ; chaque clé primaire en a un automatiquement.</li>
+        <li>Un rôle est un utilisateur s'il a <code>LOGIN</code>, un groupe s'il a des membres ; un nouveau rôle n'a aucun droit sur les tables des autres.</li>
+        <li><code>GRANT privilège ON objet TO rôle</code> et <code>REVOKE … FROM</code> ; retirer un droit à <code>PUBLIC</code> ne retire pas les droits accordés nommément. Un droit sur un schéma ne donne aucun droit sur ses tables.</li>
+        <li>Une CTE (<code>WITH nom AS (…)</code>) nomme une requête le temps d'une requête : on lit de haut en bas, et on peut en chaîner plusieurs.</li>
+        <li>Une CTE récursive = ancre + <code>UNION [ALL]</code> + terme récursif ; elle s'arrête quand un tour ne renvoie rien, et boucle à l'infini sur un cycle.</li>
+        <li><code>fonction() OVER (…)</code>, avec <code>PARTITION BY</code> et <code>ORDER BY</code>, calcule sur une fenêtre sans perdre de lignes ; <code>ORDER BY</code> dans <code>OVER</code> transforme la somme en cumul.</li>
+        <li>Les fonctions de fenêtrage sont calculées après le <code>WHERE</code> : pour filtrer sur un rang (top-N), on passe par une CTE.</li>
+        <li>PL/pgSQL : blocs <code>DECLARE</code>/<code>BEGIN</code>/<code>EXCEPTION</code>/<code>END</code>, résultat d'une requête dans une variable avec <code>SELECT … INTO</code>, requête sans résultat avec <code>PERFORM</code>, succès testé par <code>FOUND</code>.</li>
+        <li>Un trigger appelle une fonction <code>RETURNS trigger</code> sans argument ; en <code>BEFORE</code> par ligne, renvoyer <code>NULL</code> annule la ligne, renvoyer <code>NEW</code> (éventuellement modifié) la laisse passer ; une exception annule l'opération.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi ne faut-il jamais déclarer une clé étrangère en <code>SERIAL</code> ?</summary>
+        <div><p>Une clé étrangère doit reprendre l'identifiant d'une ligne existante de la table référencée. Une colonne <code>SERIAL</code> génère ses propres valeurs, sans lien avec cette table. On utilise <code>integer</code> (ou <code>bigint</code> face à un <code>bigserial</code>).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un rôle a <code>USAGE</code> sur le schéma <code>boutique</code>. Peut-il lire <code>boutique.stock</code> ?</summary>
+        <div><p>Non : il obtient <code>permission denied for table stock</code>. Il lui faut aussi <code>SELECT</code> sur la table. Inversement, <code>SELECT</code> sur la table sans <code>USAGE</code> sur le schéma donne <code>permission denied for schema boutique</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi <code>articles NATURAL JOIN vendeurs</code> ne renvoie-t-il aucune ligne ?</summary>
+        <div><p>La jointure naturelle se fait sur toutes les colonnes de même nom, ici <code>id</code> et <code>nom</code> : il faudrait qu'un article ait le même identifiant et le même nom qu'un vendeur. Le vrai lien, <code>articles.id_vendeur = vendeurs.id</code>, s'écrit avec <code>JOIN … ON</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelles sont les deux parties d'une CTE récursive, et quand s'arrête-t-elle ?</summary>
+        <div><p>Le terme ancre, exécuté une fois, qui initialise la table de travail sans référencer la CTE ; le terme récursif, qui référence la CTE et est répété sur les lignes du tour précédent. Elle s'arrête quand le terme récursif renvoie 0 ligne : jamais s'il y a un cycle dans les données.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Prix 45, 25, 18, 18, 12 triés par ordre décroissant : que donnent <code>ROW_NUMBER</code>, <code>RANK</code> et <code>DENSE_RANK</code> ?</summary>
+        <div><p><code>ROW_NUMBER</code> : 1, 2, 3, 4, 5. <code>RANK</code> : 1, 2, 3, 3, 5 (un trou après les ex-aequo). <code>DENSE_RANK</code> : 1, 2, 3, 3, 4.</p></div>
+      </details>
+      <details class="carte">
+        <summary>On calcule <code>RANK() OVER (…) AS rang</code>. Pourquoi ne peut-on pas ajouter <code>WHERE rang &lt;= 2</code> à la même requête ?</summary>
+        <div><p>Le <code>WHERE</code> est exécuté avant les fonctions de fenêtrage et avant le <code>SELECT</code> : la colonne <code>rang</code> n'existe pas encore (<code>column "rang" does not exist</code>). On calcule le rang dans une CTE, puis on filtre dans la requête principale.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Dans une fonction PL/pgSQL, <code>SELECT count(*) FROM articles;</code> seul provoque une erreur. Laquelle, et que faire ?</summary>
+        <div><p>« query has no destination for result data » : le résultat doit aller quelque part. On écrit <code>SELECT count(*) INTO n FROM articles;</code> pour le garder, ou <code>PERFORM count(*) FROM articles;</code> pour l'ignorer (et tester <code>FOUND</code>).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un trigger <code>BEFORE INSERT</code> par ligne renvoie <code>NULL</code>. Que se passe-t-il ? Et s'il est <code>AFTER</code> ?</summary>
+        <div><p>En <code>BEFORE</code>, la ligne n'est pas insérée, sans message d'erreur ; les autres lignes de l'instruction le sont. En <code>AFTER</code>, la valeur de retour est ignorée : la ligne est déjà insérée. Pour refuser une opération avec un message, on lève une exception (<code>RAISE EXCEPTION</code>).</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-02-sql.html"><small>← Précédent</small>Le langage SQL : requêtes, tables et fonctions</a>
+    <a class="suivant" href="index.html"><small>Matière →</small>Bases de données</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

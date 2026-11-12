@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="se">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Les signaux en C · Programmation système L3</title>
+<meta name="description" content="Quiz de code C POSIX exécuté sur les signaux (L3, programmation système) : handlers et sigaction, masques, sigpending, kill entre père et fils, sigsuspend, sigsetjmp.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="../generated_courses/index.html">Programmation système</a>
+    <span aria-current="page">Quiz · Les signaux en C</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Programmation système</span> Quiz · L3 S5</p>
+    <h1>Les signaux en C</h1>
+    <p class="chapeau">Dix fonctions à écrire, de la plus simple à la plus délicate : handlers, masques, <code>kill</code> entre père et fils, <code>sigsuspend</code>, <code>sigsetjmp</code>. Le code s'exécute vraiment : sous Windows, le serveur local le compile et le lance dans WSL.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-03-signaux.html">Cours 3 · Les signaux Unix</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-31">31 oct. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Programmation système · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "se-signaux-code",
+  "melanger": false,
+  "cours": [
+    {
+      "titre": "Cours 3 · Les signaux Unix",
+      "lien": "../generated_courses/cours-03-signaux.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "code",
+      "langage": "c-posix",
+      "theme": "Handlers",
+      "difficulte": 1,
+      "enonce": "<p>Compléter le handler <code>compter</code>, qui ajoute 1 à <code>nb</code>, et la fonction <code>installer</code>, qui en fait le handler de <code>SIGUSR1</code> avec <code>sigaction</code>. Le programme de test lit N, s'envoie N fois <code>SIGUSR1</code>, puis affiche <code>nb</code>.</p>",
+      "depart": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n\nstatic volatile sig_atomic_t nb = 0;\n\nstatic void compter(int sig)\n{\n\n}\n\nvoid installer(void)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n\nstatic volatile sig_atomic_t nb = 0;\n\nstatic void compter(int sig)\n{\n    nb++;\n}\n\nvoid installer(void)\n{\n    struct sigaction action;\n    action.sa_handler = compter;\n    sigemptyset(&action.sa_mask);\n    action.sa_flags = 0;\n    sigaction(SIGUSR1, &action, NULL);\n}\n",
+      "harnais": "\nint main(void)\n{\n    int n;\n    scanf(\"%d\", &n);\n    installer();\n    for (int i = 0; i < n; i++)\n        kill(getpid(), SIGUSR1);\n    printf(\"%d\\n\", (int) nb);\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "aucun envoi",
+          "entree": "0\n",
+          "sortie": "0\n"
+        },
+        {
+          "nom": "un envoi",
+          "entree": "1\n",
+          "sortie": "1\n"
+        },
+        {
+          "nom": "cinq envois",
+          "entree": "5\n",
+          "sortie": "5\n"
+        }
+      ],
+      "explication": "<p>On remplit tous les champs de <code>action</code> : une structure locale contient sinon n'importe quoi. Ici, chaque envoi compte, car un signal qu'un processus s'envoie est pris en compte avant le retour de <code>kill</code>, sauf s'il est bloqué. <code>nb</code> est <code>volatile sig_atomic_t</code>, le seul type qu'un handler peut modifier sans risque.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Définition de sigaction",
+        "lien": "../generated_courses/cours-03-signaux.html#definition-de-sigaction"
+      },
+      "indices": [
+        "<p>Suivre la méthode du cours : <code>sa_handler</code>, <code>sa_mask</code>, <code>sa_flags</code>, puis <code>sigaction</code>.</p>"
+      ]
+    },
+    {
+      "id": "q02",
+      "type": "code",
+      "langage": "c-posix",
+      "theme": "Handlers",
+      "difficulte": 1,
+      "enonce": "<p>Écrire <code>ignorer(sig)</code>, qui fait ignorer le signal, et <code>retablir(sig)</code>, qui lui rend son traitement par défaut. Le programme de test crée un fils qui ignore <code>SIGUSR1</code>, se l'envoie et affiche <code>vivant</code>, puis rétablit le traitement et se l'envoie de nouveau. Le père affiche le signal qui a tué le fils.</p>",
+      "depart": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n#include <sys/wait.h>\n\nvoid ignorer(int sig)\n{\n\n}\n\nvoid retablir(int sig)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n#include <sys/wait.h>\n\nvoid ignorer(int sig)\n{\n    signal(sig, SIG_IGN);\n}\n\nvoid retablir(int sig)\n{\n    signal(sig, SIG_DFL);\n}\n",
+      "harnais": "\nint main(void)\n{\n    if (fork() == 0) {\n        ignorer(SIGUSR1);\n        raise(SIGUSR1);\n        printf(\"vivant\\n\");\n        fflush(stdout);\n        retablir(SIGUSR1);\n        raise(SIGUSR1);\n        printf(\"jamais\\n\");\n        exit(0);\n    }\n    int statut;\n    wait(&statut);\n    if (WIFSIGNALED(statut))\n        printf(\"tue par le signal %d\\n\", WTERMSIG(statut));\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "ignoré, puis fatal",
+          "entree": "",
+          "sortie": "vivant\ntue par le signal 10\n"
+        }
+      ],
+      "explication": "<p><code>SIG_IGN</code> et <code>SIG_DFL</code> sont les deux handlers prédéfinis. Ignoré, le signal est délivré, et son seul effet est de remettre son bit à zéro. Rétabli, il retrouve son comportement par défaut, ici la terminaison. Le numéro 10 est celui de <code>SIGUSR1</code> sous Linux.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Les fonctions de déroutement",
+        "lien": "../generated_courses/cours-03-signaux.html#les-fonctions-de-deroutement-handlers"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "code",
+      "langage": "c-posix",
+      "theme": "Handlers",
+      "difficulte": 1,
+      "enonce": "<p>Un seul handler sert pour <code>SIGINT</code> et <code>SIGQUIT</code>. Compléter <code>hand</code> : grâce à son paramètre, il écrit <code>INT</code> ou <code>QUIT</code>, suivi d'un saut de ligne. Compléter <code>installer</code>, qui l'installe pour les deux signaux. Le programme de test lit des lettres : <code>i</code> envoie <code>SIGINT</code>, <code>q</code> envoie <code>SIGQUIT</code>.</p>",
+      "depart": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n\nstatic void hand(int sig)\n{\n\n}\n\nvoid installer(void)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n\nstatic void hand(int sig)\n{\n    if (sig == SIGINT)\n        write(1, \"INT\\n\", 4);\n    else if (sig == SIGQUIT)\n        write(1, \"QUIT\\n\", 5);\n}\n\nvoid installer(void)\n{\n    struct sigaction action;\n    action.sa_handler = hand;\n    sigemptyset(&action.sa_mask);\n    action.sa_flags = 0;\n    sigaction(SIGINT, &action, NULL);\n    sigaction(SIGQUIT, &action, NULL);\n}\n",
+      "harnais": "\nint main(void)\n{\n    int c;\n    installer();\n    while ((c = getchar()) != EOF) {\n        if (c == 'i') raise(SIGINT);\n        if (c == 'q') raise(SIGQUIT);\n    }\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "les deux",
+          "entree": "iq\n",
+          "sortie": "INT\nQUIT\n"
+        },
+        {
+          "nom": "plusieurs fois",
+          "entree": "qqi\n",
+          "sortie": "QUIT\nQUIT\nINT\n"
+        },
+        {
+          "nom": "aucun",
+          "entree": "\n",
+          "sortie": ""
+        }
+      ],
+      "explication": "<p>Le système passe au handler le numéro du signal qui l'a activé. On emploie <code>write</code> : il est sûr dans un handler, à la différence de <code>printf</code>. Avec <code>printf</code>, les lignes passeraient par le tampon de <code>stdout</code>, au risque d'interrompre le programme au milieu d'une autre écriture.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Les fonctions de déroutement",
+        "lien": "../generated_courses/cours-03-signaux.html#les-fonctions-de-deroutement-handlers"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "code",
+      "langage": "c-posix",
+      "theme": "Masques",
+      "difficulte": 1,
+      "enonce": "<p>Écrire <code>est_bloque(sig)</code> : elle renvoie 1 si le signal est dans le masque du processus, 0 sinon, sans modifier ce masque. Le programme de test lit 0 ou 1, bloque <code>SIGUSR1</code> si la valeur vaut 1, puis affiche <code>est_bloque(SIGUSR1)</code> et <code>est_bloque(SIGUSR2)</code>.</p>",
+      "depart": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n\nint est_bloque(int sig)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n\nint est_bloque(int sig)\n{\n    sigset_t masque;\n    sigprocmask(SIG_BLOCK, NULL, &masque);   /* NULL : lire sans modifier */\n    return sigismember(&masque, sig);\n}\n",
+      "harnais": "\nint main(void)\n{\n    int b;\n    scanf(\"%d\", &b);\n    if (b) {\n        sigset_t e;\n        sigemptyset(&e);\n        sigaddset(&e, SIGUSR1);\n        sigprocmask(SIG_BLOCK, &e, NULL);\n    }\n    printf(\"%d %d\\n\", est_bloque(SIGUSR1), est_bloque(SIGUSR2));\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "rien de bloqué",
+          "entree": "0\n",
+          "sortie": "0 0\n"
+        },
+        {
+          "nom": "SIGUSR1 bloqué",
+          "entree": "1\n",
+          "sortie": "1 0\n"
+        }
+      ],
+      "explication": "<p>Avec <code>p_ens</code> à <code>NULL</code>, <code>sigprocmask</code> ne modifie pas le masque : elle se contente de le ranger dans le troisième paramètre. C'est la façon de lire le masque.</p>",
+      "revoir": {
+        "texte": "Cours 3 · La primitive générale : sigprocmask",
+        "lien": "../generated_courses/cours-03-signaux.html#la-primitive-generale-sigprocmask"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "code",
+      "langage": "c-posix",
+      "theme": "Masques",
+      "difficulte": 2,
+      "enonce": "<p>Écrire <code>rafale(n)</code> : elle bloque <code>SIGUSR1</code>, s'envoie n fois ce signal, puis rétablit <strong>exactement</strong> le masque d'avant. Le handler <code>compter</code> est fourni. Le programme de test lit <code>n b</code>, bloque déjà <code>SIGUSR1</code> si <code>b</code> vaut 1, appelle <code>rafale(n)</code>, puis affiche le nombre d'appels du handler et l'état du blocage.</p>",
+      "depart": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n\nstatic volatile sig_atomic_t vus = 0;\nstatic void compter(int sig) { vus++; }\n\nvoid rafale(int n)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n\nstatic volatile sig_atomic_t vus = 0;\nstatic void compter(int sig) { vus++; }\n\nvoid rafale(int n)\n{\n    sigset_t e, ancien;\n    sigemptyset(&e);\n    sigaddset(&e, SIGUSR1);\n    sigprocmask(SIG_BLOCK, &e, &ancien);\n    for (int i = 0; i < n; i++)\n        kill(getpid(), SIGUSR1);\n    sigprocmask(SIG_SETMASK, &ancien, NULL);   /* rend le masque d'avant */\n}\n",
+      "harnais": "\nint main(void)\n{\n    int n, b;\n    sigset_t e, m;\n    scanf(\"%d %d\", &n, &b);\n    signal(SIGUSR1, compter);\n    sigemptyset(&e);\n    sigaddset(&e, SIGUSR1);\n    if (b)\n        sigprocmask(SIG_BLOCK, &e, NULL);\n    rafale(n);\n    sigprocmask(SIG_BLOCK, NULL, &m);\n    printf(\"%d %d\\n\", (int) vus, sigismember(&m, SIGUSR1));\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "aucun envoi",
+          "entree": "0 0\n",
+          "sortie": "0 0\n"
+        },
+        {
+          "nom": "un envoi",
+          "entree": "1 0\n",
+          "sortie": "1 0\n"
+        },
+        {
+          "nom": "cinq envois, une prise en compte",
+          "entree": "5 0\n",
+          "sortie": "1 0\n"
+        },
+        {
+          "nom": "déjà bloqué avant : il le reste",
+          "entree": "3 1\n",
+          "sortie": "0 1\n"
+        }
+      ],
+      "explication": "<p>Les n envois mettent à 1 le même bit : le handler ne s'exécute qu'une fois, au déblocage. Un bit n'est pas un compteur. Le dernier test montre pourquoi on rétablit l'ancien masque avec <code>SIG_SETMASK</code> : <code>SIG_UNBLOCK</code> débloquerait un signal que l'appelant avait lui-même bloqué.</p>",
+      "revoir": {
+        "texte": "Cours 3 · La primitive générale : sigprocmask",
+        "lien": "../generated_courses/cours-03-signaux.html#la-primitive-generale-sigprocmask"
+      },
+      "indices": [
+        "<p>Il faut garder l'ancien masque : c'est le rôle du troisième paramètre.</p>"
+      ]
+    },
+    {
+      "id": "q06",
+      "type": "code",
+      "langage": "c-posix",
+      "theme": "Masques",
+      "difficulte": 2,
+      "enonce": "<p>Écrire <code>en_attente(sig)</code> : elle renvoie 1 si le signal est pendant, 0 sinon. Le programme de test bloque <code>SIGUSR1</code> et <code>SIGUSR2</code>, lit une valeur et, selon elle, s'envoie <code>SIGUSR1</code> (1), <code>SIGUSR2</code> (2) ou les deux (3). Il affiche ensuite <code>en_attente</code> pour chacun.</p>",
+      "depart": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n\nint en_attente(int sig)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n\nint en_attente(int sig)\n{\n    sigset_t pendants;\n    sigpending(&pendants);\n    return sigismember(&pendants, sig);\n}\n",
+      "harnais": "\nint main(void)\n{\n    int v;\n    sigset_t e;\n    scanf(\"%d\", &v);\n    sigemptyset(&e);\n    sigaddset(&e, SIGUSR1);\n    sigaddset(&e, SIGUSR2);\n    sigprocmask(SIG_BLOCK, &e, NULL);\n    if (v & 1) raise(SIGUSR1);\n    if (v & 2) raise(SIGUSR2);\n    printf(\"%d %d\\n\", en_attente(SIGUSR1), en_attente(SIGUSR2));\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "aucun",
+          "entree": "0\n",
+          "sortie": "0 0\n"
+        },
+        {
+          "nom": "SIGUSR1",
+          "entree": "1\n",
+          "sortie": "1 0\n"
+        },
+        {
+          "nom": "SIGUSR2",
+          "entree": "2\n",
+          "sortie": "0 1\n"
+        },
+        {
+          "nom": "les deux",
+          "entree": "3\n",
+          "sortie": "1 1\n"
+        }
+      ],
+      "explication": "<p><code>sigpending</code> range l'ensemble des signaux pendants, et <code>sigismember</code> interroge cet ensemble. Il ne faut pas confondre : <code>sigprocmask</code> lit le masque (ce qui est bloqué), <code>sigpending</code> ce qui attend d'être pris en compte.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Les autres primitives",
+        "lien": "../generated_courses/cours-03-signaux.html#les-autres-primitives"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "code",
+      "langage": "c-posix",
+      "theme": "sigaction",
+      "difficulte": 2,
+      "enonce": "<p>Écrire <code>installer_une_fois</code> : avec <code>sigaction</code>, elle installe <code>hand</code> pour <code>SIGUSR1</code>, de sorte que le handler ne serve <strong>qu'une fois</strong>. Le programme de test crée un fils qui s'envoie deux fois <code>SIGUSR1</code>. Le père affiche comment le fils s'est terminé.</p>",
+      "depart": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n#include <sys/wait.h>\n\nstatic void hand(int sig)\n{\n    write(1, \"handler\\n\", 8);\n}\n\nvoid installer_une_fois(void)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n#include <sys/wait.h>\n\nstatic void hand(int sig)\n{\n    write(1, \"handler\\n\", 8);\n}\n\nvoid installer_une_fois(void)\n{\n    struct sigaction action;\n    action.sa_handler = hand;\n    sigemptyset(&action.sa_mask);\n    action.sa_flags = SA_RESETHAND;   /* SIG_DFL réinstallé à la prise en compte */\n    sigaction(SIGUSR1, &action, NULL);\n}\n",
+      "harnais": "\nint main(void)\n{\n    if (fork() == 0) {\n        installer_une_fois();\n        raise(SIGUSR1);\n        raise(SIGUSR1);\n        write(1, \"fin du fils\\n\", 12);\n        exit(0);\n    }\n    int statut;\n    wait(&statut);\n    if (WIFSIGNALED(statut))\n        printf(\"tue par le signal %d\\n\", WTERMSIG(statut));\n    else\n        printf(\"fin normale\\n\");\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "un seul passage",
+          "entree": "",
+          "sortie": "handler\ntue par le signal 10\n"
+        }
+      ],
+      "explication": "<p><code>SA_RESETHAND</code> réinstalle le traitement par défaut à la prise en compte. Le premier signal passe par le handler, et le second produit son effet par défaut, la terminaison. C'est ce qui arrive à <code>SIGUSR1</code> dans <code>exo_sigaction.c</code>.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Définition de sigaction",
+        "lien": "../generated_courses/cours-03-signaux.html#definition-de-sigaction"
+      },
+      "indices": [
+        "<p>Quelle option de <code>sa_flags</code> remet le traitement par défaut ?</p>"
+      ]
+    },
+    {
+      "id": "q08",
+      "type": "code",
+      "langage": "c-posix",
+      "theme": "Processus et signaux",
+      "difficulte": 2,
+      "enonce": "<p>Écrire <code>tuer_un_fils(sig)</code> : elle crée un fils qui attend indéfiniment des signaux, le tue en lui envoyant <code>sig</code>, attend sa fin et affiche <code>tue par le signal N</code>, N étant le numéro lu dans le statut du fils. Le programme de test lit des numéros de signaux.</p>",
+      "depart": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n#include <sys/wait.h>\n\nvoid tuer_un_fils(int sig)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n#include <sys/wait.h>\n\nvoid tuer_un_fils(int sig)\n{\n    int statut;\n    pid_t pid = fork();\n    if (pid == 0) {\n        while (1)\n            pause();\n    }\n    kill(pid, sig);\n    wait(&statut);\n    if (WIFSIGNALED(statut))\n        printf(\"tue par le signal %d\\n\", WTERMSIG(statut));\n}\n",
+      "harnais": "\nint main(void)\n{\n    int s;\n    while (scanf(\"%d\", &s) == 1)\n        tuer_un_fils(s);\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "SIGTERM",
+          "entree": "15\n",
+          "sortie": "tue par le signal 15\n"
+        },
+        {
+          "nom": "SIGKILL",
+          "entree": "9\n",
+          "sortie": "tue par le signal 9\n"
+        },
+        {
+          "nom": "SIGUSR1",
+          "entree": "10\n",
+          "sortie": "tue par le signal 10\n"
+        },
+        {
+          "nom": "plusieurs de suite",
+          "entree": "15 9\n",
+          "sortie": "tue par le signal 15\ntue par le signal 9\n"
+        }
+      ],
+      "explication": "<p>Le père connaît le pid de son fils grâce à <code>fork</code>, et le désigne à <code>kill</code>. <code>wait</code> récupère le statut, et <code>WTERMSIG</code> y lit le numéro du signal : le fils n'est donc pas resté à l'état de zombie. Même si <code>kill</code> part avant que le fils ait atteint <code>pause</code>, le résultat ne change pas, puisqu'il ne capte pas ces signaux.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Envoyer un signal : kill et getpid",
+        "lien": "../generated_courses/cours-03-signaux.html#envoyer-un-signal-kill-et-getpid"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "code",
+      "langage": "c-posix",
+      "theme": "Processus et signaux",
+      "difficulte": 3,
+      "enonce": "<p>Écrire <code>attendre_le_fils</code> : elle crée un fils qui envoie <code>SIGUSR1</code> à son père et se termine. Le père appelle <code>travailler()</code>, puis attend ce signal <strong>sans risquer de le manquer</strong>, attend la fin du fils et renvoie 1. Le handler <code>recu</code> est déjà installé par le programme de test. Le signal arrive pendant <code>travailler()</code> : un <code>pause()</code> attendrait pour toujours.</p>",
+      "depart": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n#include <sys/wait.h>\n\nstatic void recu(int sig) { }\n\n/* simule un travail du père : le signal du fils arrive pendant ce temps */\nstatic void travailler(void) { usleep(100000); }\n\nint attendre_le_fils(void)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n#include <sys/wait.h>\n\nstatic void recu(int sig) { }\n\n/* simule un travail du père : le signal du fils arrive pendant ce temps */\nstatic void travailler(void) { usleep(100000); }\n\nint attendre_le_fils(void)\n{\n    sigset_t e, ancien, attente;\n    sigemptyset(&e);\n    sigaddset(&e, SIGUSR1);\n    sigprocmask(SIG_BLOCK, &e, &ancien);   /* avant fork : le signal ne peut plus être perdu */\n    pid_t pid = fork();\n    if (pid == 0) {\n        kill(getppid(), SIGUSR1);\n        _exit(0);\n    }\n    travailler();\n    attente = ancien;\n    sigdelset(&attente, SIGUSR1);\n    sigsuspend(&attente);                  /* débloque et attend, en une seule opération */\n    sigprocmask(SIG_SETMASK, &ancien, NULL);\n    wait(NULL);\n    return 1;\n}\n",
+      "harnais": "\nint main(void)\n{\n    int n;\n    signal(SIGUSR1, recu);\n    scanf(\"%d\", &n);\n    for (int i = 0; i < n; i++)\n        printf(\"%d\\n\", attendre_le_fils());\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "une fois",
+          "entree": "1\n",
+          "sortie": "1\n"
+        },
+        {
+          "nom": "trois fois de suite",
+          "entree": "3\n",
+          "sortie": "1\n1\n1\n"
+        }
+      ],
+      "explication": "<p>On bloque le signal avant <code>fork</code> : s'il arrive, il reste pendant au lieu d'être traité trop tôt. <code>sigsuspend</code> débloque et endort en une seule opération, ce qui supprime l'intervalle où le signal se perdrait. Écrit avec <code>sigprocmask</code> puis <code>pause</code>, le signal serait traité entre les deux appels, et <code>pause</code> attendrait indéfiniment. Cette synchronisation sert au TP Transports.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Les autres primitives",
+        "lien": "../generated_courses/cours-03-signaux.html#les-autres-primitives"
+      },
+      "indices": [
+        "<p>Il faut bloquer <code>SIGUSR1</code> avant que le fils puisse l'envoyer.</p>",
+        "<p>Revoir le complément « Pourquoi sigsuspend plutôt que pause ? ».</p>"
+      ]
+    },
+    {
+      "id": "q10",
+      "type": "code",
+      "langage": "c-posix",
+      "theme": "Sortir d'un handler",
+      "difficulte": 3,
+      "enonce": "<p>Écrire le handler <code>hand</code> et la fonction <code>essayer(f)</code> : elle appelle <code>f</code> et renvoie 0 si <code>f</code> va jusqu'au bout, ou 1 si <code>SIGUSR1</code> arrive pendant <code>f</code>, le handler ramenant alors l'exécution dans <code>essayer</code>. Le handler est installé par <code>sigaction</code>, avec <code>sa_flags = 0</code>. Le programme de test lit des lettres : <code>o</code> appelle une fonction qui s'envoie <code>SIGUSR1</code>, <code>n</code> une fonction qui ne fait rien. Il doit marcher <strong>plusieurs fois de suite</strong>.</p>",
+      "depart": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n#include <setjmp.h>\n\nstatic sigjmp_buf env;\n\nstatic void hand(int sig)\n{\n\n}\n\nint essayer(void (*f)(void))\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <stdlib.h>\n#include <signal.h>\n#include <unistd.h>\n#include <setjmp.h>\n\nstatic sigjmp_buf env;\n\nstatic void hand(int sig)\n{\n    siglongjmp(env, sig);\n}\n\nint essayer(void (*f)(void))\n{\n    if (sigsetjmp(env, 1) == 0) {   /* 1 : sauvegarder le masque */\n        f();\n        return 0;\n    }\n    return 1;\n}\n",
+      "harnais": "\nstatic void avec(void) { raise(SIGUSR1); }\nstatic void sans(void) { }\n\nint main(void)\n{\n    int c;\n    struct sigaction action;\n    action.sa_handler = hand;\n    sigemptyset(&action.sa_mask);\n    action.sa_flags = 0;\n    sigaction(SIGUSR1, &action, NULL);\n    while ((c = getchar()) != EOF) {\n        if (c == 'o') printf(\"%d\\n\", essayer(avec));\n        if (c == 'n') printf(\"%d\\n\", essayer(sans));\n    }\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "sans signal",
+          "entree": "n\n",
+          "sortie": "0\n"
+        },
+        {
+          "nom": "avec signal",
+          "entree": "o\n",
+          "sortie": "1\n"
+        },
+        {
+          "nom": "plusieurs fois de suite",
+          "entree": "ooo\n",
+          "sortie": "1\n1\n1\n"
+        },
+        {
+          "nom": "en alternance",
+          "entree": "onon\n",
+          "sortie": "1\n0\n1\n0\n"
+        }
+      ],
+      "explication": "<p>Le signal est masqué pendant son handler, et sortir par un saut n'est pas un retour de fonction : avec <code>setjmp</code> et <code>longjmp</code>, <code>SIGUSR1</code> resterait bloqué sous Linux, et le deuxième essai renverrait 0. <code>sigsetjmp(env, 1)</code> sauvegarde le masque, et <code>siglongjmp</code> le rétablit. Son premier appel renvoie 0, et le saut le fait revenir avec le numéro du signal.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Précaution d'utilisation",
+        "lien": "../generated_courses/cours-03-signaux.html#precaution-d-utilisation"
+      },
+      "indices": [
+        "<p>Que devient le masque quand on quitte un handler par un saut ?</p>"
+      ]
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

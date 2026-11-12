@@ -1,0 +1,1900 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="codage">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Codes d'étalement et CDMA · Codage L3</title>
+<meta name="description" content="Cours 3B de codage de l'information (L3) : accès multiple FDMA, TDMA et CDMA, rappel sur le GSM, étalement de spectre et relation de Shannon, étalement et désétalement par l'exemple, hypothèses du désétalement, mise en forme en cosinus surélevé, séquences de Walsh-Hadamard, modulations à porteuses multiples et MC-CDMA, détecteurs ZF, MMSE, DFE, SIC et PIC.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-03B-cdma.html" title="Quiz · Codes d'étalement et CDMA">
+<link rel="quiz" href="../generated_quizzes/quiz-exercices-types.html" title="Quiz · Exercices types (tous les cours)">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale (tous les cours)">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Codage</a>
+    <span aria-current="page">Cours 3B · Codes d'étalement et CDMA</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Codage</span> Cours 3B · L3 S5</p>
+    <h1>Codes d'étalement et accès multiple par répartition de codes (CDMA)</h1>
+    <p class="chapeau">Plusieurs utilisateurs doivent partager une même ressource radio. Après le partage en fréquence (FDMA) et en temps (TDMA), ce cours présente le partage par codes : chaque utilisateur multiplie ses bits par une séquence d'étalement qui lui est propre, tous émettent en même temps sur toute la bande, et le récepteur sépare les messages grâce à l'orthogonalité des séquences de Walsh-Hadamard. Il se termine par le MC-CDMA, qui combine étalement et porteuses multiples, et par les détecteurs qui combattent l'interférence entre utilisateurs.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/L3_INFO_C3B_CDMA.pdf">L3_INFO_C3B_CDMA.pdf</a> · 34 diapos</dd></div>
+      <div><dt>Enseignant</dt><dd>Florent Carlier</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-30">30 sept. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Décrire le FDMA et le TDMA, leurs limites (bandes et temps de garde, synchronisation), et situer le CDMA par rapport à eux.</li>
+        <li>Calculer le débit d'un terminal dans un système TDMA, sur l'exemple du GSM.</li>
+        <li>Justifier l'étalement de spectre par la relation de Shannon, et en citer les avantages et les inconvénients.</li>
+        <li>Étaler et désétaler à la main les bits de plusieurs utilisateurs, et énoncer les hypothèses sous lesquelles le désétalement est parfait.</li>
+        <li>Construire une matrice de Walsh-Hadamard d'ordre \(N = 2^P\) et calculer la charge d'un système.</li>
+        <li>Décrire l'émetteur et le récepteur MC-CDMA, et comparer les détecteurs ZF, MMSE, SIC et PIC.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Le paradigme de Shannon et le codage physique (<a href="cours-01-codage-physique-entropie.html">cours 1</a>).</li>
+        <li>Produit scalaire de deux vecteurs, produit de matrices, transposée.</li>
+        <li>Logarithme en base 2 et décibels : \(x_{\text{dB}} = 10 \log_{10} x\).</li>
+        <li>Pour la partie 6 : nombres complexes, notation \(e^{i\theta}\), module et conjugué.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Partager une ressource radio <span class="ref">diapos 2–9</span></h2>
+    <p>Dans un réseau cellulaire, tous les terminaux d'une cellule communiquent avec la même station de base, dans une même bande de fréquences. Il faut donc une règle de partage : c'est l'<dfn>accès multiple</dfn> (<span class="en" lang="en">multiple access</span>). On peut découper la bande, découper le temps, ou, comme dans ce cours, attribuer un code à chaque utilisateur.</p>
+
+    <h3>Contexte <span class="ref">diapos 2–3</span></h3>
+    <p>Les systèmes de communication mobiles poursuivent deux séries d'objectifs. Pour l'usager, il s'agit d'offrir une grande mobilité, plus de débit, et une accessibilité permanente. Pour l'opérateur, il s'agit d'augmenter la capacité en nombre d'utilisateurs et de réduire les coûts.</p>
+    <p>Deux familles de techniques y répondent :</p>
+    <ul>
+      <li>les <strong>modulations à porteuses multiples</strong>, qui apportent une forte <dfn>efficacité spectrale</dfn> (<span class="en" lang="en">spectral efficiency</span>) : des débits toujours plus élevés dans une bande donnée ;</li>
+      <li>les <strong>techniques d'accès multiple par répartition de codes</strong>, qui apportent une forte capacité réseau : un nombre d'utilisateurs croissant.</li>
+    </ul>
+    <p>La combinaison des deux techniques donne les <strong>systèmes MC-CDMA</strong>, présentés à la fin de ce cours.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>CDMA</span> <span class="ref">diapo 3</span></p>
+      <p>Le <dfn>CDMA</dfn> (<span class="en" lang="en">Code Division Multiple Access</span>), en français <dfn>accès multiple par répartition de codes</dfn> (AMRC), est une méthode d'accès multiple fondée sur un partage de la ressource au moyen de <dfn>codes d'étalement</dfn> (<span class="en" lang="en">spreading codes</span>).</p>
+    </div>
+    <p>Le CDMA est issu des transmissions étalées utilisées dans le contexte militaire. Les premières transmissions militaires étalées visaient deux objectifs : résister au mieux à des <dfn>brouilleurs</dfn> à bande étroite (<span class="en" lang="en">narrowband jammers</span>), et réaliser des transmissions « discrètes », difficiles à détecter. Aujourd'hui, l'étalement CDMA sert surtout à maximiser la capacité d'une ressource radio.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Où rencontre-t-on l'étalement ?</span></p>
+      <p><span class="badge hors-programme">Hors programme</span> La téléphonie mobile de deuxième génération américaine (IS-95) et la troisième génération (UMTS, dont l'interface radio s'appelle W-CDMA) reposent sur le CDMA. Le GPS aussi : chaque satellite émet avec son propre code de Gold de 1023 chips (<a href="cours-04-pseudo-aleatoires-cycliques.html">cours 4</a>). Le Wi-Fi 802.11b étale ses bits avec une séquence de Barker de 11 chips. La 4G a choisi une modulation à porteuses multiples sans étalement, l'OFDMA.</p>
+    </div>
+
+    <h3>Accès multiple par répartition en fréquence (FDMA) <span class="ref">diapos 4–5</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>FDMA</span> <span class="ref">diapo 4</span></p>
+      <p>Pour partager les ressources radio entre \(N\) utilisateurs, le <dfn>FDMA</dfn> (<span class="en" lang="en">Frequency Division Multiple Access</span>) divise la bande de fréquences \(B\) en \(N\) sous-bandes disjointes, et alloue une sous-bande à chaque utilisateur. Chaque sous-bande a pour largeur</p>
+      \[ W = \frac{B}{N}. \]
+    </div>
+    <p>La diapo 4 écrit « Frequency Division Multiple Access (CDMA) » : le sigle correct est FDMA. La même coquille figure diapo 6 pour le TDMA.</p>
+    <p>Le FDMA est utilisé dans de nombreux systèmes de transmission filaires. Son problème majeur est la séparation des différentes sous-bandes de fréquence : un filtre réel ne coupe pas net, et deux sous-bandes accolées se chevauchent. Dans la pratique, les sous-bandes ne sont donc pas jointives : elles sont séparées par un <dfn>intervalle de garde</dfn>, ou bande de garde (<span class="en" lang="en">guard band</span>), de largeur \(W_g\).</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 262" width="640" role="img" aria-labelledby="fig-fdma-titre">
+        <title id="fig-fdma-titre">Partage FDMA : en haut, N sous-bandes de largeur W accolées dans la bande B ; en bas, des sous-bandes séparées par des bandes de garde de largeur Wg, moins nombreuses</title>
+        <defs>
+          <marker id="fleche-fdma" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="0" y="16" class="gras">Sans bande de garde (diapo 4)</text>
+        <path class="trait" d="M60 104 V30" marker-end="url(#fleche-fdma)"/>
+        <text x="54" y="44" text-anchor="end" class="t2" font-size="12">puissance</text>
+        <path class="trait" d="M50 100 H600" marker-end="url(#fleche-fdma)"/>
+        <text x="600" y="118" text-anchor="end" class="t2" font-size="12">fréquence</text>
+        <path class="trait" d="M100 56 H190" marker-start="url(#fleche-fdma)" marker-end="url(#fleche-fdma)"/>
+        <text x="145" y="50" text-anchor="middle">W</text>
+        <rect class="boite" x="100" y="64" width="90" height="36"/>
+        <text x="145" y="87" text-anchor="middle">Bde 1</text>
+        <rect class="boite" x="190" y="64" width="90" height="36"/>
+        <text x="235" y="87" text-anchor="middle">Bde 2</text>
+        <text x="340" y="87" text-anchor="middle" class="t2">…</text>
+        <rect class="boite-accent" x="400" y="64" width="90" height="36"/>
+        <text x="445" y="87" text-anchor="middle">Bde N</text>
+        <path class="trait" d="M100 116 H490" marker-start="url(#fleche-fdma)" marker-end="url(#fleche-fdma)"/>
+        <text x="295" y="132" text-anchor="middle" class="t2">bande B = N · W</text>
+
+        <text x="0" y="146" class="gras">Avec bandes de garde (diapo 5)</text>
+        <path class="trait" d="M60 229 V160" marker-end="url(#fleche-fdma)"/>
+        <text x="54" y="174" text-anchor="end" class="t2" font-size="12">puissance</text>
+        <path class="trait" d="M50 225 H600" marker-end="url(#fleche-fdma)"/>
+        <text x="600" y="243" text-anchor="end" class="t2" font-size="12">fréquence</text>
+        <path class="trait" d="M100 181 H180" marker-start="url(#fleche-fdma)" marker-end="url(#fleche-fdma)"/>
+        <text x="140" y="175" text-anchor="middle">W</text>
+        <path class="accent" d="M180 181 H202"/>
+        <text x="191" y="175" text-anchor="middle" class="accent">W<tspan dy="4" font-size="10">g</tspan></text>
+        <rect class="boite" x="100" y="189" width="80" height="36"/>
+        <text x="140" y="212" text-anchor="middle">Bde 1</text>
+        <rect class="boite" x="202" y="189" width="80" height="36"/>
+        <text x="242" y="212" text-anchor="middle">Bde 2</text>
+        <text x="346" y="212" text-anchor="middle" class="t2">…</text>
+        <rect class="boite-accent" x="410" y="189" width="80" height="36"/>
+        <text x="450" y="212" text-anchor="middle">Bde N′</text>
+        <path class="trait" d="M100 241 H490" marker-start="url(#fleche-fdma)" marker-end="url(#fleche-fdma)"/>
+        <text x="295" y="257" text-anchor="middle" class="t2">bande B</text>
+      </svg>
+      <figcaption>Partage FDMA, sans puis avec bandes de garde (redessiné d'après les diapos 4 et 5). Dans la même bande \(B\), les bandes de garde réduisent le nombre de sous-bandes : \(N' \lt N\).</figcaption>
+    </figure>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le coût des bandes de garde</span></p>
+      <p>Avec \(N'\) sous-bandes de largeur \(W\) et une bande de garde entre deux sous-bandes voisines, il faut \(N' W + (N' - 1) W_g \le B\), soit</p>
+      \[ N' = \left\lfloor \frac{B + W_g}{W + W_g} \right\rfloor. \]
+      <p>Toute la largeur consacrée aux bandes de garde est perdue pour les utilisateurs.</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-1">
+      <p class="bloc-titre">Exercice 1 <span>FDMA avec bandes de garde</span></p>
+      <p><span class="badge ajout">Ajout</span> Une bande \(B = 1\) MHz est partagée en sous-bandes de \(W = 30\) kHz. Combien d'utilisateurs peut-on servir sans bande de garde ? Avec des bandes de garde de \(W_g = 10\) kHz ? Quelle part de la bande est alors perdue ?</p>
+      <details class="indice"><summary>Indice</summary><p>Utiliser la formule du complément, et arrondir à l'entier inférieur : une sous-bande incomplète ne sert à rien.</p></details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Sans garde : \(\lfloor 1000 / 30 \rfloor = 33\) utilisateurs. Avec garde : \(\lfloor 1010 / 40 \rfloor = 25\) utilisateurs, qui occupent \(25 \times 30 + 24 \times 10 = 990\) kHz. Les 24 bandes de garde prennent 240 kHz, soit près d'un quart de la bande : on perd 8 utilisateurs sur 33.</p>
+      </details>
+    </div>
+
+    <h3>Accès multiple par répartition dans le temps (TDMA) <span class="ref">diapos 6–7</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>TDMA</span> <span class="ref">diapo 6</span></p>
+      <p>Le <dfn>TDMA</dfn> (<span class="en" lang="en">Time Division Multiple Access</span>) partage les ressources radio entre \(N\) utilisateurs en définissant une durée de <dfn>trame</dfn> (<span class="en" lang="en">frame</span>) \(T_t\), décomposée en \(N\) intervalles de temps, les <dfn>time slots</dfn>, de durée</p>
+      \[ T_s = \frac{T_t}{N}. \]
+      <p>On alloue à chaque utilisateur un time slot dans chaque trame. Il dispose alors de toute la bande, mais seulement pendant son slot.</p>
+    </div>
+    <p>Le TDMA est utilisé dans de nombreuses transmissions radio de voix et de données. Son problème majeur est la synchronisation de l'ensemble des terminaux sur la même horloge. Il faut éviter que les paquets de données, les <dfn>bursts</dfn> (<span class="en" lang="en">burst</span>, salve), émis par deux terminaux qui utilisent des time slots adjacents ne se recouvrent à leur arrivée à la station de base.</p>
+    <p>La solution est encore un <strong>intervalle de garde</strong> : la durée du time slot est supérieure à la durée du burst émis.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 170" width="640" role="img" aria-labelledby="fig-tdma-titre">
+        <title id="fig-tdma-titre">Partage TDMA : une trame de durée Tt découpée en N time slots de durée Ts ; dans chaque slot, le burst émis est plus court que le slot, ce qui laisse un temps de garde</title>
+        <defs>
+          <marker id="fleche-tdma" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <path class="trait" d="M60 114 V40" marker-end="url(#fleche-tdma)"/>
+        <text x="54" y="52" text-anchor="end" class="t2" font-size="12">puissance</text>
+        <path class="trait" d="M50 110 H600" marker-end="url(#fleche-tdma)"/>
+        <text x="600" y="128" text-anchor="end" class="t2" font-size="12">temps</text>
+        <path class="trait" d="M100 30 H200" marker-start="url(#fleche-tdma)" marker-end="url(#fleche-tdma)"/>
+        <text x="150" y="23" text-anchor="middle">time slot T<tspan dy="4" font-size="10">s</tspan></text>
+        <path class="accent" d="M114 60 H186"/>
+        <path class="accent" d="M114 55 V65 M186 55 V65"/>
+        <text x="200" y="64" class="accent" font-size="12">durée du burst</text>
+        <rect class="boite" x="100" y="70" width="100" height="40"/>
+        <rect class="boite-accent" x="114" y="76" width="72" height="34"/>
+        <text x="150" y="97" text-anchor="middle" font-size="12">burst 1</text>
+        <rect class="boite" x="200" y="70" width="100" height="40"/>
+        <rect class="boite-accent" x="214" y="76" width="72" height="34"/>
+        <text x="250" y="97" text-anchor="middle" font-size="12">burst 2</text>
+        <text x="345" y="97" text-anchor="middle" class="t2">…</text>
+        <rect class="boite" x="390" y="70" width="100" height="40"/>
+        <rect class="boite-accent" x="404" y="76" width="72" height="34"/>
+        <text x="440" y="97" text-anchor="middle" font-size="12">burst N</text>
+        <path class="trait" d="M100 140 H490" marker-start="url(#fleche-tdma)" marker-end="url(#fleche-tdma)"/>
+        <text x="295" y="160" text-anchor="middle" class="t2">trame T<tspan dy="4" font-size="10">t</tspan><tspan dy="-4"> = N · T</tspan><tspan dy="4" font-size="10">s</tspan></text>
+      </svg>
+      <figcaption>Partage TDMA avec délai de garde (redessiné d'après les diapos 6 et 7). La marge entre la fin d'un burst et la fin de son slot absorbe les petits décalages d'arrivée.</figcaption>
+    </figure>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>D'où viennent les décalages ?</span></p>
+      <p>Les terminaux sont à des distances différentes de la station de base. Une onde radio parcourt 1 km en \(3{,}3\ \mu\text{s}\) : à 10 km, un burst arrive déjà avec \(33\ \mu\text{s}\) de retard sur un burst émis au pied de l'antenne. Sans marge, il déborderait sur le slot suivant.</p>
+      <p><span class="badge hors-programme">Hors programme</span> En GSM, la station de base mesure ce retard et demande à chaque terminal d'émettre un peu en avance (<span lang="en">timing advance</span>), pour que tous les bursts arrivent alignés.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Trois façons de partager le plan temps-fréquence</span></p>
+      <p>Le FDMA donne à chacun une tranche de fréquences pour tout le temps ; le TDMA donne à chacun toute la bande pendant une tranche de temps. Le CDMA ne découpe rien : tous les utilisateurs émettent en même temps dans toute la bande, et ce sont leurs codes qui les séparent. C'est la troisième dimension, « code », de la figure de la diapo 26.</p>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 196" width="640" role="img" aria-labelledby="fig-partage-titre">
+        <title id="fig-partage-titre">Trois plans temps-fréquence : en FDMA quatre bandes horizontales, une par utilisateur ; en TDMA quatre tranches verticales ; en CDMA des couches superposées qui couvrent tout le plan, une par code</title>
+        <defs>
+          <marker id="fleche-partage" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="105" y="16" text-anchor="middle" class="gras">FDMA</text>
+        <rect class="boite" x="30" y="30" width="150" height="30"/>
+        <rect class="boite-accent" x="30" y="60" width="150" height="30"/>
+        <rect class="boite" x="30" y="90" width="150" height="30"/>
+        <rect class="boite-accent" x="30" y="120" width="150" height="30"/>
+        <text x="105" y="50" text-anchor="middle" font-size="12">utilisateur 1</text>
+        <text x="105" y="80" text-anchor="middle" font-size="12">utilisateur 2</text>
+        <text x="105" y="110" text-anchor="middle" font-size="12">utilisateur 3</text>
+        <text x="105" y="140" text-anchor="middle" font-size="12">utilisateur 4</text>
+        <path class="trait" d="M24 150 H196" marker-end="url(#fleche-partage)"/>
+        <path class="trait" d="M30 156 V24" marker-end="url(#fleche-partage)"/>
+        <text x="196" y="166" text-anchor="end" class="t2" font-size="12">t</text>
+        <text x="22" y="30" text-anchor="end" class="t2" font-size="12">f</text>
+        <text x="105" y="186" text-anchor="middle" class="t2" font-size="12">une sous-bande chacun</text>
+
+        <text x="320" y="16" text-anchor="middle" class="gras">TDMA</text>
+        <rect class="boite" x="245" y="30" width="37.5" height="120"/>
+        <rect class="boite-accent" x="282.5" y="30" width="37.5" height="120"/>
+        <rect class="boite" x="320" y="30" width="37.5" height="120"/>
+        <rect class="boite-accent" x="357.5" y="30" width="37.5" height="120"/>
+        <text x="263.8" y="95" text-anchor="middle" font-size="12">U1</text>
+        <text x="301.3" y="95" text-anchor="middle" font-size="12">U2</text>
+        <text x="338.8" y="95" text-anchor="middle" font-size="12">U3</text>
+        <text x="376.3" y="95" text-anchor="middle" font-size="12">U4</text>
+        <path class="trait" d="M239 150 H411" marker-end="url(#fleche-partage)"/>
+        <path class="trait" d="M245 156 V24" marker-end="url(#fleche-partage)"/>
+        <text x="411" y="166" text-anchor="end" class="t2" font-size="12">t</text>
+        <text x="237" y="30" text-anchor="end" class="t2" font-size="12">f</text>
+        <text x="320" y="186" text-anchor="middle" class="t2" font-size="12">un time slot chacun</text>
+
+        <text x="535" y="16" text-anchor="middle" class="gras">CDMA</text>
+        <rect class="boite" x="488" y="30" width="122" height="92"/>
+        <rect class="boite" x="474" y="44" width="122" height="92"/>
+        <rect class="boite-accent" x="460" y="58" width="122" height="92"/>
+        <text x="494" y="41" font-size="11">U3 · code c₃</text>
+        <text x="480" y="55" font-size="11">U2 · code c₂</text>
+        <text x="521" y="108" text-anchor="middle" font-size="12">U1 · code c₁</text>
+        <path class="trait" d="M454 150 H626" marker-end="url(#fleche-partage)"/>
+        <path class="trait" d="M460 156 V24" marker-end="url(#fleche-partage)"/>
+        <text x="626" y="166" text-anchor="end" class="t2" font-size="12">t</text>
+        <text x="452" y="30" text-anchor="end" class="t2" font-size="12">f</text>
+        <text x="535" y="186" text-anchor="middle" class="t2" font-size="12">tout le plan, un code chacun</text>
+      </svg>
+      <figcaption><span class="badge ajout">Ajout</span> Horizontalement le temps \(t\), verticalement la fréquence \(f\). En CDMA, les signaux se superposent : ce ne sont plus des zones séparées, mais des couches qu'on distingue par leur code.</figcaption>
+    </figure>
+
+    <h3>Liens descendant et montant <span class="ref">diapo 8</span></h3>
+    <p>Une liaison cellulaire a deux sens. Le <dfn>lien descendant</dfn> (<span class="en" lang="en">downlink</span>) va de la station de base vers les terminaux mobiles ; le <dfn>lien montant</dfn> (<span class="en" lang="en">uplink</span>) va des terminaux vers la station de base.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 232" width="640" role="img" aria-labelledby="fig-liens-titre">
+        <title id="fig-liens-titre">À gauche, lien descendant : la station de base émet vers trois terminaux, système synchrone. À droite, lien montant : trois terminaux à des distances différentes émettent vers la station de base, système asynchrone</title>
+        <defs>
+          <marker id="fleche-liens" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="150" y="18" text-anchor="middle" class="gras">Lien descendant</text>
+        <path class="trait" d="M230 62 L214 132 M230 62 L246 132 M219 112 H241 M223 94 H237 M219 112 L237 94 M241 112 L223 94"/>
+        <text x="230" y="150" text-anchor="middle" class="t2" font-size="12">station de base</text>
+        <rect class="boite" x="40" y="44" width="14" height="24" rx="2"/><path class="trait" d="M47 44 V34"/>
+        <rect class="boite" x="30" y="122" width="14" height="24" rx="2"/><path class="trait" d="M37 122 V112"/>
+        <rect class="boite" x="110" y="168" width="14" height="24" rx="2"/><path class="trait" d="M117 168 V158"/>
+        <text x="132" y="186" class="t2" font-size="12">terminal mobile</text>
+        <path class="accent" d="M226 64 L60 54" marker-end="url(#fleche-liens)"/>
+        <path class="accent" d="M226 66 L50 130" marker-end="url(#fleche-liens)"/>
+        <path class="accent" d="M227 68 L126 170" marker-end="url(#fleche-liens)"/>
+        <text x="150" y="222" text-anchor="middle" class="accent">système synchrone</text>
+
+        <path class="trait" d="M320 12 V210"/>
+
+        <text x="480" y="18" text-anchor="middle" class="gras">Lien montant</text>
+        <path class="trait" d="M570 62 L554 132 M570 62 L586 132 M559 112 H581 M563 94 H577 M559 112 L577 94 M581 112 L563 94"/>
+        <text x="570" y="150" text-anchor="middle" class="t2" font-size="12">station de base</text>
+        <rect class="boite" x="380" y="44" width="14" height="24" rx="2"/><path class="trait" d="M387 44 V34"/>
+        <rect class="boite" x="400" y="130" width="14" height="24" rx="2"/><path class="trait" d="M407 130 V120"/>
+        <rect class="boite" x="470" y="168" width="14" height="24" rx="2"/><path class="trait" d="M477 168 V158"/>
+        <path class="accent" d="M398 52 L564 64" marker-end="url(#fleche-liens)"/>
+        <path class="accent" d="M418 134 L564 67" marker-end="url(#fleche-liens)"/>
+        <path class="accent" d="M488 172 L565 70" marker-end="url(#fleche-liens)"/>
+        <text x="480" y="222" text-anchor="middle" class="accent">système asynchrone</text>
+      </svg>
+      <figcaption>Liens descendant et montant (redessiné d'après la diapo 8).</figcaption>
+    </figure>
+
+    <p>Sur le lien descendant, la station de base émet tous les signaux d'un même point et au même instant : le système est <strong>synchrone</strong>. Sur le lien montant, chaque terminal émet avec sa propre horloge, depuis sa propre distance : les signaux arrivent décalés à la station de base, le système est <strong>asynchrone</strong>.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Le multi-trajet désynchronise aussi</span> <span class="ref">diapo 8</span></p>
+      <p>Sur un <dfn>canal multi-trajet</dfn> (<span class="en" lang="en">multipath channel</span>), descendant ou montant, le signal arrive par plusieurs chemins (réflexions sur les bâtiments, le relief), donc en plusieurs exemplaires décalés dans le temps. La problématique est alors similaire au cas « asynchrone », même sur le lien descendant.</p>
+    </div>
+
+    <h3>Rappel sur le GSM <span class="ref">diapo 9</span></h3>
+    <p>Le système GSM fonctionne selon un principe de TDMA. La trame dure environ 4,6 ms et elle est divisée en 8 time slots de 577 µs. Un terminal transmet 116 bits utiles durant son slot de 577 µs, et ce time slot ne « revient » qu'une fois sur 8.</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Débit d'un terminal GSM</span> <span class="ref">diapo 9</span></p>
+      <p>Le débit utile du canal d'un terminal est égal à</p>
+      \[ \frac{116\ \text{bits}}{8 \times 577\ \mu\text{s}} = \frac{116}{4{,}616 \cdot 10^{-3}}\ \text{bit/s} \approx 25{,}13\ \text{kbit/s}. \]
+      <p>Si l'on compte aussi les intervalles de garde et les bits de séquence d'apprentissage, le time slot dure en fait 156,25 bits. Le débit du canal du terminal est alors égal à</p>
+      \[ \frac{156{,}25\ \text{bits}}{8 \times 577\ \mu\text{s}} \approx 33{,}85\ \text{kbit/s}. \]
+      <p>La diapo donne 251,3 kbit/s et 270,8 kbit/s. Le premier résultat a une virgule mal placée : le calcul donne 25,13 kbit/s. Le second vaut \(156{,}25 / 577\ \mu\text{s}\), sans le facteur 8 : c'est le débit brut de la porteuse pendant un slot, partagé entre les 8 terminaux, pas le débit d'un terminal.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les 156,25 bits d'un slot GSM</span></p>
+      <p>Un burst normal contient 2 × 57 bits de données et 2 bits d'indicateur (les 116 bits utiles de la diapo), une <dfn>séquence d'apprentissage</dfn> (<span class="en" lang="en">training sequence</span>) de 26 bits, connue du récepteur, qui lui sert à estimer le canal, 2 × 3 bits de queue, et un temps de garde de 8,25 bits : \(116 + 26 + 6 + 8{,}25 = 156{,}25\). L'estimation du canal reviendra dans le récepteur MC-CDMA (partie 6).</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>L'étalement de spectre <span class="ref">diapos 10–12</span></h2>
+    <p>Le CDMA repose sur une idée à première vue paradoxale : émettre dans une bande beaucoup plus large que nécessaire. La relation de Shannon montre ce qu'on y gagne.</p>
+
+    <h3>La relation de Shannon <span class="ref">diapo 10</span></h3>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Théorème <span>Capacité d'un canal (C. E. Shannon)</span> <span class="ref">diapo 10</span></p>
+      <div class="encadre">
+        \[ C = B \log_2 \left( 1 + \frac{P_s}{P_n} \right) \]
+      </div>
+      <p>où \(C\) est la capacité maximale du canal en bit/s, \(B\) la bande occupée par le signal émis en hertz, \(P_s\) la puissance du signal émis en watts et \(P_n\) la puissance du bruit en watts.</p>
+      <p><span class="badge ajout">Ajout</span> La diapo écrit « log » : pour une capacité en bit/s, le logarithme est en base 2. Le rapport \(P_s/P_n\) est le <dfn>rapport signal à bruit</dfn> (RSB, <span class="en" lang="en">signal-to-noise ratio</span>, SNR).</p>
+    </div>
+
+    <h3>Principe de l'étalement <span class="ref">diapo 11</span></h3>
+    <p>Pour transmettre sans erreur une quantité d'information \(C\) donnée, la relation de Shannon laisse deux possibilités :</p>
+    <ul>
+      <li>une bande \(B\) étroite, qui exige un fort rapport \(P_s/P_n\) ;</li>
+      <li>une large bande \(B\), qui se contente d'un faible rapport \(P_s/P_n\).</li>
+    </ul>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Étalement de spectre</span> <span class="ref">diapo 11</span></p>
+      <p>L'<dfn>étalement de spectre</dfn> (<span class="en" lang="en">spread spectrum</span>) consiste à émettre un signal de bande largement supérieure à celle du signal utile, avec une faible puissance.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Même débit, deux largeurs de bande</span></p>
+      <p><span class="badge ajout">Ajout</span> Pour \(C = 10\) kbit/s, on tire de la relation de Shannon \(P_s/P_n = 2^{C/B} - 1\).</p>
+      <ul>
+        <li>Avec \(B = 5\) kHz : \(P_s/P_n = 2^2 - 1 = 3\), soit 4,8 dB. Le signal doit être trois fois plus puissant que le bruit.</li>
+        <li>Avec \(B = 1{,}25\) MHz : \(P_s/P_n = 2^{0{,}008} - 1 \approx 0{,}0056\), soit −22,5 dB. Un signal 180 fois plus faible que le bruit suffit, en théorie, pour le même débit.</li>
+      </ul>
+      <p>Un signal étalé peut donc être noyé sous le bruit : c'est l'origine de sa discrétion.</p>
+    </div>
+
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="colonne-titre">Avantages</p>
+        <p>L'utilisation de codes orthogonaux permet :</p>
+        <ul>
+          <li>de mettre en œuvre des techniques d'accès multiple par répartition de codes ;</li>
+          <li>une robustesse vis-à-vis des brouilleurs à bande étroite ;</li>
+          <li>une faible probabilité d'interception, et la discrétion.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p class="colonne-titre">Inconvénients</p>
+        <ul>
+          <li>une faible efficacité spectrale ;</li>
+          <li>une bande passante largement supérieure à celle du message à transmettre ;</li>
+          <li>la nécessité d'une réplique synchrone du code en réception.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Faible efficacité spectrale… pour un seul utilisateur</span></p>
+      <p>Étaler d'un facteur \(N\) multiplie la bande par \(N\) pour le même débit : un utilisateur seul gaspille la bande. Le CDMA compense en plaçant jusqu'à \(N\) utilisateurs dans cette même bande, ce qui rend au système son efficacité.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi un brouilleur à bande étroite gêne peu</span></p>
+      <p>À la réception, le désétalement multiplie le signal reçu par le code. Le signal utile, déjà multiplié par ce code à l'émission, retrouve sa bande étroite d'origine. Le brouilleur, lui, n'est multiplié qu'une fois : il est étalé à son tour sur toute la bande. Un filtre qui ne garde que la bande utile élimine donc la plus grande part du brouilleur.</p>
+      <p>Le gain est de l'ordre du <dfn>facteur d'étalement</dfn> \(N = T_b / T_c\) (<span class="en" lang="en">spreading factor</span>), rapport de la durée d'un bit à celle d'un chip (partie 3). On l'appelle aussi <dfn>gain de traitement</dfn> (<span class="en" lang="en">processing gain</span>), et on l'exprime souvent en décibels : \(10 \log_{10} N\). Avec \(N = 128\), le brouilleur perd \(10 \log_{10} 128 \approx 21\) dB.</p>
+    </div>
+
+    <h3>La chaîne d'étalement et de désétalement <span class="ref">diapo 12</span></h3>
+    <p>À l'émission, la donnée \(d_t\), une suite de symboles \(\pm 1\) de durée \(T_d\), est multipliée par le code d'étalement \(C_t\), une suite de symboles \(\pm 1\) de durée \(T_c\) beaucoup plus courte. Le signal émis \(t_x\) traverse le canal. À la réception, le signal \(r_x\) est multiplié par le même code, <strong>synchronisé</strong> sur le signal reçu, ce qui redonne la donnée \(d_r\).</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 200" width="640" role="img" aria-labelledby="fig-etalement-titre">
+        <title id="fig-etalement-titre">Chaîne d'étalement : la donnée dt est multipliée par le code d'étalement Ct, le signal tx traverse le canal, le signal reçu rx est multiplié par le même code synchronisé, ce qui donne dr</title>
+        <defs>
+          <marker id="fleche-etalement" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="40" y="20" width="150" height="160" rx="10"/>
+        <text x="115" y="42" text-anchor="middle" class="gras">Étalement</text>
+        <text x="4" y="70">d<tspan dy="4" font-size="10">t</tspan></text>
+        <path class="trait" d="M0 80 H100" marker-end="url(#fleche-etalement)"/>
+        <circle class="boite" cx="115" cy="80" r="14"/>
+        <path class="trait" d="M106 71 L124 89 M124 71 L106 89"/>
+        <rect class="boite-accent" x="60" y="120" width="110" height="46" rx="6"/>
+        <text x="115" y="139" text-anchor="middle" font-size="12">code</text>
+        <text x="115" y="155" text-anchor="middle" font-size="12">d'étalement</text>
+        <path class="trait" d="M115 120 V95" marker-end="url(#fleche-etalement)"/>
+        <text x="122" y="112">C<tspan dy="4" font-size="10">t</tspan></text>
+        <path class="pointille" d="M129 80 H246" marker-end="url(#fleche-etalement)"/>
+        <text x="212" y="72">t<tspan dy="4" font-size="10">x</tspan></text>
+        <rect class="boite" x="250" y="60" width="110" height="40" rx="6"/>
+        <text x="305" y="85" text-anchor="middle">Canal</text>
+        <text x="305" y="118" text-anchor="middle" class="t2" font-size="12">idéal, gaussien</text>
+        <text x="305" y="133" text-anchor="middle" class="t2" font-size="12">ou de Rayleigh</text>
+        <path class="pointille" d="M360 80 H485" marker-end="url(#fleche-etalement)"/>
+        <text x="392" y="72">r<tspan dy="4" font-size="10">x</tspan></text>
+        <rect class="boite" x="440" y="20" width="170" height="160" rx="10"/>
+        <text x="525" y="42" text-anchor="middle" class="gras">Désétalement</text>
+        <circle class="boite" cx="500" cy="80" r="14"/>
+        <path class="trait" d="M491 71 L509 89 M509 71 L491 89"/>
+        <rect class="boite-accent" x="470" y="120" width="110" height="46" rx="6"/>
+        <text x="525" y="139" text-anchor="middle" font-size="12">code</text>
+        <text x="525" y="155" text-anchor="middle" font-size="12">d'étalement</text>
+        <path class="trait" d="M500 120 V95" marker-end="url(#fleche-etalement)"/>
+        <text x="507" y="112">C<tspan dy="4" font-size="10">t</tspan></text>
+        <path class="trait" d="M514 80 H636" marker-end="url(#fleche-etalement)"/>
+        <text x="604" y="70">d<tspan dy="4" font-size="10">r</tspan></text>
+        <path class="accent" d="M420 80 V150 H466" marker-end="url(#fleche-etalement)"/>
+        <text x="416" y="176" text-anchor="end" class="accent" font-size="12">synchronisation</text>
+      </svg>
+      <figcaption>Étalement et désétalement (redessiné d'après la diapo 12). Le récepteur doit caler sa copie du code sur le signal reçu : c'est la « réplique synchrone » des inconvénients.</figcaption>
+    </figure>
+
+    <p>La diapo 12 envisage trois modèles de canal : le canal idéal, le canal gaussien et le canal de Rayleigh. Elle montre aussi le spectre de chaque signal : celui de la donnée occupe un lobe principal entre \(-1/T_d\) et \(1/T_d\) ; celui du signal étalé s'étend entre \(-1/T_c\) et \(1/T_c\), large et bas ; après désétalement, la donnée retrouve son spectre étroit.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 230" width="640" role="img" aria-labelledby="fig-spectres-titre">
+        <title id="fig-spectres-titre">Densité spectrale de puissance des données, lobe principal étroit et haut de largeur 2 sur Td, et du signal étalé huit fois, lobe large et bas de largeur 2 sur Tc</title>
+        <defs><marker id="fleche-spectres" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="plein"/></marker></defs>
+        <path class="trait" d="M20 180 H628" marker-end="url(#fleche-spectres)"/>
+        <text x="628" y="200" text-anchor="end" class="t2">f</text>
+        <path class="trait" d="M320 184 V18" marker-end="url(#fleche-spectres)"/>
+        <path class="trait" d="M40 180 L41.8 180 L43.5 180 L45.2 180 L47 179.9 L48.8 179.9 L50.5 179.9 L52.2 179.9 L54 179.8 L55.8 179.8 L57.5 179.9 L59.2 179.9 L61 179.9 L62.8 179.9 L64.5 180 L66.2 180 L68 180 L69.8 180 L71.5 180 L73.2 179.9 L75 179.9 L76.8 179.9 L78.5 179.8 L80.2 179.8 L82 179.8 L83.8 179.8 L85.5 179.8 L87.2 179.9 L89 179.9 L90.8 179.9 L92.5 180 L94.2 180 L96 180 L97.8 180 L99.5 180 L101.2 179.9 L103 179.9 L104.8 179.8 L106.5 179.8 L108.2 179.8 L110 179.7 L111.8 179.8 L113.5 179.8 L115.2 179.8 L117 179.9 L118.8 179.9 L120.5 180 L122.2 180 L124 180 L125.8 180 L127.5 180 L129.2 179.9 L131 179.8 L132.8 179.8 L134.5 179.7 L136.2 179.7 L138 179.7 L139.8 179.7 L141.5 179.7 L143.2 179.8 L145 179.8 L146.8 179.9 L148.5 179.9 L150.2 180 L152 180 L153.8 180 L155.5 179.9 L157.2 179.9 L159 179.8 L160.8 179.7 L162.5 179.6 L164.2 179.6 L166 179.5 L167.8 179.5 L169.5 179.6 L171.2 179.7 L173 179.7 L174.8 179.8 L176.5 179.9 L178.2 180 L180 180 L181.8 180 L183.5 179.9 L185.2 179.8 L187 179.7 L188.8 179.6 L190.5 179.4 L192.2 179.3 L194 179.3 L195.8 179.3 L197.5 179.4 L199.2 179.5 L201 179.6 L202.8 179.8 L204.5 179.9 L206.2 180 L208 180 L209.8 180 L211.5 179.9 L213.2 179.7 L215 179.5 L216.8 179.3 L218.5 179.1 L220.2 178.9 L222 178.8 L223.8 178.8 L225.5 178.9 L227.2 179.1 L229 179.3 L230.8 179.6 L232.5 179.8 L234.2 179.9 L236 180 L237.8 179.9 L239.5 179.7 L241.2 179.4 L243 179.1 L244.8 178.6 L246.5 178.2 L248.2 177.9 L250 177.7 L251.8 177.7 L253.5 177.9 L255.2 178.2 L257 178.6 L258.8 179.1 L260.5 179.5 L262.2 179.9 L264 180 L265.8 179.9 L267.5 179.4 L269.2 178.7 L271 177.7 L272.8 176.6 L274.5 175.4 L276.2 174.4 L278 173.7 L279.8 173.4 L281.5 173.6 L283.2 174.3 L285 175.5 L286.8 176.9 L288.5 178.4 L290.2 179.5 L292 180 L293.8 179.4 L295.5 177.3 L297.2 173.4 L299 167.4 L300.8 159.3 L302.5 149 L304.2 136.9 L306 123.3 L307.8 108.7 L309.5 93.9 L311.2 79.6 L313 66.5 L314.8 55.5 L316.5 47.1 L318.2 41.8 L320 40 L321.8 41.8 L323.5 47.1 L325.2 55.5 L327 66.5 L328.8 79.6 L330.5 93.9 L332.2 108.7 L334 123.3 L335.8 136.9 L337.5 149 L339.2 159.3 L341 167.4 L342.8 173.4 L344.5 177.3 L346.2 179.4 L348 180 L349.8 179.5 L351.5 178.4 L353.2 176.9 L355 175.5 L356.8 174.3 L358.5 173.6 L360.2 173.4 L362 173.7 L363.8 174.4 L365.5 175.4 L367.2 176.6 L369 177.7 L370.8 178.7 L372.5 179.4 L374.2 179.9 L376 180 L377.8 179.9 L379.5 179.5 L381.2 179.1 L383 178.6 L384.8 178.2 L386.5 177.9 L388.2 177.7 L390 177.7 L391.8 177.9 L393.5 178.2 L395.2 178.6 L397 179.1 L398.8 179.4 L400.5 179.7 L402.2 179.9 L404 180 L405.8 179.9 L407.5 179.8 L409.2 179.6 L411 179.3 L412.8 179.1 L414.5 178.9 L416.2 178.8 L418 178.8 L419.8 178.9 L421.5 179.1 L423.2 179.3 L425 179.5 L426.8 179.7 L428.5 179.9 L430.2 180 L432 180 L433.8 180 L435.5 179.9 L437.2 179.8 L439 179.6 L440.8 179.5 L442.5 179.4 L444.2 179.3 L446 179.3 L447.8 179.3 L449.5 179.4 L451.2 179.6 L453 179.7 L454.8 179.8 L456.5 179.9 L458.2 180 L460 180 L461.8 180 L463.5 179.9 L465.2 179.8 L467 179.7 L468.8 179.7 L470.5 179.6 L472.2 179.5 L474 179.5 L475.8 179.6 L477.5 179.6 L479.2 179.7 L481 179.8 L482.8 179.9 L484.5 179.9 L486.2 180 L488 180 L489.8 180 L491.5 179.9 L493.2 179.9 L495 179.8 L496.8 179.8 L498.5 179.7 L500.2 179.7 L502 179.7 L503.8 179.7 L505.5 179.7 L507.2 179.8 L509 179.8 L510.8 179.9 L512.5 180 L514.2 180 L516 180 L517.8 180 L519.5 180 L521.2 179.9 L523 179.9 L524.8 179.8 L526.5 179.8 L528.2 179.8 L530 179.7 L531.8 179.8 L533.5 179.8 L535.2 179.8 L537 179.9 L538.8 179.9 L540.5 180 L542.2 180 L544 180 L545.8 180 L547.5 180 L549.2 179.9 L551 179.9 L552.8 179.9 L554.5 179.8 L556.2 179.8 L558 179.8 L559.8 179.8 L561.5 179.8 L563.2 179.9 L565 179.9 L566.8 179.9 L568.5 180 L570.2 180 L572 180 L573.8 180 L575.5 180 L577.2 179.9 L579 179.9 L580.8 179.9 L582.5 179.9 L584.2 179.8 L586 179.8 L587.8 179.9 L589.5 179.9 L591.2 179.9 L593 179.9 L594.8 180 L596.5 180 L598.2 180 L600 180"/>
+        <path class="accent" d="M40 179.4 L41.8 179.5 L43.5 179.5 L45.2 179.5 L47 179.5 L48.8 179.5 L50.5 179.6 L52.2 179.6 L54 179.6 L55.8 179.6 L57.5 179.7 L59.2 179.7 L61 179.7 L62.8 179.7 L64.5 179.8 L66.2 179.8 L68 179.8 L69.8 179.8 L71.5 179.8 L73.2 179.9 L75 179.9 L76.8 179.9 L78.5 179.9 L80.2 179.9 L82 179.9 L83.8 180 L85.5 180 L87.2 180 L89 180 L90.8 180 L92.5 180 L94.2 180 L96 180 L97.8 180 L99.5 180 L101.2 180 L103 180 L104.8 180 L106.5 180 L108.2 179.9 L110 179.9 L111.8 179.9 L113.5 179.9 L115.2 179.8 L117 179.8 L118.8 179.8 L120.5 179.7 L122.2 179.7 L124 179.7 L125.8 179.6 L127.5 179.6 L129.2 179.5 L131 179.4 L132.8 179.4 L134.5 179.3 L136.2 179.2 L138 179.2 L139.8 179.1 L141.5 179 L143.2 178.9 L145 178.8 L146.8 178.7 L148.5 178.6 L150.2 178.5 L152 178.4 L153.8 178.3 L155.5 178.2 L157.2 178.1 L159 177.9 L160.8 177.8 L162.5 177.7 L164.2 177.5 L166 177.4 L167.8 177.3 L169.5 177.1 L171.2 177 L173 176.8 L174.8 176.6 L176.5 176.5 L178.2 176.3 L180 176.1 L181.8 175.9 L183.5 175.8 L185.2 175.6 L187 175.4 L188.8 175.2 L190.5 175 L192.2 174.8 L194 174.6 L195.8 174.4 L197.5 174.2 L199.2 174 L201 173.8 L202.8 173.6 L204.5 173.3 L206.2 173.1 L208 172.9 L209.8 172.7 L211.5 172.5 L213.2 172.2 L215 172 L216.8 171.8 L218.5 171.6 L220.2 171.3 L222 171.1 L223.8 170.9 L225.5 170.6 L227.2 170.4 L229 170.2 L230.8 169.9 L232.5 169.7 L234.2 169.5 L236 169.2 L237.8 169 L239.5 168.8 L241.2 168.6 L243 168.3 L244.8 168.1 L246.5 167.9 L248.2 167.7 L250 167.4 L251.8 167.2 L253.5 167 L255.2 166.8 L257 166.6 L258.8 166.4 L260.5 166.2 L262.2 166 L264 165.8 L265.8 165.6 L267.5 165.4 L269.2 165.3 L271 165.1 L272.8 164.9 L274.5 164.8 L276.2 164.6 L278 164.4 L279.8 164.3 L281.5 164.1 L283.2 164 L285 163.9 L286.8 163.7 L288.5 163.6 L290.2 163.5 L292 163.4 L293.8 163.3 L295.5 163.2 L297.2 163.1 L299 163 L300.8 162.9 L302.5 162.8 L304.2 162.8 L306 162.7 L307.8 162.7 L309.5 162.6 L311.2 162.6 L313 162.6 L314.8 162.5 L316.5 162.5 L318.2 162.5 L320 162.5 L321.8 162.5 L323.5 162.5 L325.2 162.5 L327 162.6 L328.8 162.6 L330.5 162.6 L332.2 162.7 L334 162.7 L335.8 162.8 L337.5 162.8 L339.2 162.9 L341 163 L342.8 163.1 L344.5 163.2 L346.2 163.3 L348 163.4 L349.8 163.5 L351.5 163.6 L353.2 163.7 L355 163.9 L356.8 164 L358.5 164.1 L360.2 164.3 L362 164.4 L363.8 164.6 L365.5 164.8 L367.2 164.9 L369 165.1 L370.8 165.3 L372.5 165.4 L374.2 165.6 L376 165.8 L377.8 166 L379.5 166.2 L381.2 166.4 L383 166.6 L384.8 166.8 L386.5 167 L388.2 167.2 L390 167.4 L391.8 167.7 L393.5 167.9 L395.2 168.1 L397 168.3 L398.8 168.6 L400.5 168.8 L402.2 169 L404 169.2 L405.8 169.5 L407.5 169.7 L409.2 169.9 L411 170.2 L412.8 170.4 L414.5 170.6 L416.2 170.9 L418 171.1 L419.8 171.3 L421.5 171.6 L423.2 171.8 L425 172 L426.8 172.2 L428.5 172.5 L430.2 172.7 L432 172.9 L433.8 173.1 L435.5 173.3 L437.2 173.6 L439 173.8 L440.8 174 L442.5 174.2 L444.2 174.4 L446 174.6 L447.8 174.8 L449.5 175 L451.2 175.2 L453 175.4 L454.8 175.6 L456.5 175.8 L458.2 175.9 L460 176.1 L461.8 176.3 L463.5 176.5 L465.2 176.6 L467 176.8 L468.8 177 L470.5 177.1 L472.2 177.3 L474 177.4 L475.8 177.5 L477.5 177.7 L479.2 177.8 L481 177.9 L482.8 178.1 L484.5 178.2 L486.2 178.3 L488 178.4 L489.8 178.5 L491.5 178.6 L493.2 178.7 L495 178.8 L496.8 178.9 L498.5 179 L500.2 179.1 L502 179.2 L503.8 179.2 L505.5 179.3 L507.2 179.4 L509 179.4 L510.8 179.5 L512.5 179.6 L514.2 179.6 L516 179.7 L517.8 179.7 L519.5 179.7 L521.2 179.8 L523 179.8 L524.8 179.8 L526.5 179.9 L528.2 179.9 L530 179.9 L531.8 179.9 L533.5 180 L535.2 180 L537 180 L538.8 180 L540.5 180 L542.2 180 L544 180 L545.8 180 L547.5 180 L549.2 180 L551 180 L552.8 180 L554.5 180 L556.2 180 L558 179.9 L559.8 179.9 L561.5 179.9 L563.2 179.9 L565 179.9 L566.8 179.9 L568.5 179.8 L570.2 179.8 L572 179.8 L573.8 179.8 L575.5 179.8 L577.2 179.7 L579 179.7 L580.8 179.7 L582.5 179.7 L584.2 179.6 L586 179.6 L587.8 179.6 L589.5 179.6 L591.2 179.5 L593 179.5 L594.8 179.5 L596.5 179.5 L598.2 179.5 L600 179.4"/>
+        <path class="trait" d="M292 177 V183"/>
+        <text x="286" y="198" text-anchor="end" class="t2" font-size="12">−1/T<tspan dy="4" font-size="10">d</tspan><tspan dy="-4"></tspan></text>
+        <path class="trait" d="M348 177 V183"/>
+        <text x="354" y="198" text-anchor="start" class="t2" font-size="12">1/T<tspan dy="4" font-size="10">d</tspan><tspan dy="-4"></tspan></text>
+        <path class="trait" d="M96 177 V183"/>
+        <text x="96" y="198" text-anchor="middle" class="accent" font-size="12">−1/T<tspan dy="4" font-size="10">c</tspan><tspan dy="-4"></tspan></text>
+        <path class="trait" d="M544 177 V183"/>
+        <text x="544" y="198" text-anchor="middle" class="accent" font-size="12">1/T<tspan dy="4" font-size="10">c</tspan><tspan dy="-4"></tspan></text>
+        <text x="360" y="52">données d(t) : bande ≈ 2/T<tspan dy="4" font-size="10">d</tspan><tspan dy="-4"></tspan></text>
+        <text x="24" y="126.5" class="accent">signal étalé : bande ≈ 2/T<tspan dy="4" font-size="10">c</tspan><tspan dy="-4"></tspan></text>
+        <text x="24" y="144.5" class="accent">niveau divisé par N</text>
+        </svg>
+      <figcaption><span class="badge ajout">Ajout</span> Densités spectrales de puissance recalculées pour \(T_c = T_d / 8\) (d'après les encarts de la diapo 12). La puissance totale est la même : le signal étalé occupe une bande 8 fois plus large, avec une densité 8 fois plus faible.</figcaption>
+    </figure>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi le désétalement redonne la donnée</span></p>
+      <p>Les chips valent \(\pm 1\), donc \(C_t^2 = 1\) à chaque instant. Sur un canal idéal (\(r_x = t_x\)) et avec un code parfaitement synchronisé :</p>
+      \[ d_r = r_x \cdot C_t = d_t \cdot C_t \cdot C_t = d_t. \]
+      <p>Si la copie locale est décalée de \(\tau\), le produit \(C_t(t)\, C_t(t - \tau)\) ne vaut plus 1 et la donnée n'est pas retrouvée.</p>
+      <p>Les trois canaux : le <strong>canal idéal</strong> rend le signal intact ; le <strong>canal gaussien</strong> lui ajoute un bruit blanc gaussien (<dfn>BBAG</dfn>, bruit blanc additif gaussien, <span class="en" lang="en">AWGN</span>) ; le <strong>canal de Rayleigh</strong> modélise en plus les multi-trajets, qui font fluctuer l'amplitude reçue (évanouissements).</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le CDMA par l'exemple <span class="ref">diapos 13–18</span></h2>
+    <p>Quatre utilisateurs émettent en même temps, dans la même bande. Chacun multiplie son bit par sa propre séquence ; le récepteur reçoit la somme et doit retrouver les quatre bits.</p>
+
+    <h3>Quatre utilisateurs, quatre séquences <span class="ref">diapos 13–16</span></h3>
+    <p>L'exemple considère 4 utilisateurs en voie montante d'un système cellulaire terrestre. Les utilisateurs sont synchronisés en temps, et il n'y a pas de décalage Doppler. Les 4 utilisateurs utilisent 4 <strong>séquences orthogonales</strong> : des séquences de Hadamard. Chaque utilisateur émet, pendant un temps bit, son bit multiplié par chacun des éléments de sa séquence.</p>
+
+    <div class="tableau centre">
+      <table>
+        <caption>Bits, séquences d'étalement et chips émis par les quatre utilisateurs (diapos 13–16)</caption>
+        <thead><tr><th>Utilisateur</th><th>Bit à transmettre</th><th>Séquence d'étalement</th><th>Chips émis durant un temps bit</th></tr></thead>
+        <tbody>
+          <tr><th>n° 1</th><td>\(a \in \{\pm 1\}\)</td><td>+1 +1 +1 +1</td><td>\(+a\ \ +a\ \ +a\ \ +a\)</td></tr>
+          <tr><th>n° 2</th><td>\(b \in \{\pm 1\}\)</td><td>+1 −1 +1 −1</td><td>\(+b\ \ -b\ \ +b\ \ -b\)</td></tr>
+          <tr><th>n° 3</th><td>\(c \in \{\pm 1\}\)</td><td>+1 +1 −1 −1</td><td>\(+c\ \ +c\ \ -c\ \ -c\)</td></tr>
+          <tr><th>n° 4</th><td>\(d \in \{\pm 1\}\)</td><td>+1 −1 −1 +1</td><td>\(+d\ \ -d\ \ -d\ \ +d\)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Chip, temps chip, temps bit</span> <span class="ref">diapo 16</span></p>
+      <p>Les éléments des séquences d'étalement sont appelés des <dfn>chips</dfn>. Dans l'exemple, chaque séquence est constituée de 4 chips. \(T_c\) représente le <dfn>temps chip</dfn>, durée d'un chip, et \(T_b\) le <dfn>temps bit</dfn>, durée d'un bit :</p>
+      \[ T_b = 4\, T_c. \]
+      <p><span class="badge ajout">Ajout</span> Plus généralement, avec des séquences de \(N\) chips, \(T_b = N\, T_c\) : \(N\) est le facteur d'étalement.</p>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 308" width="640" role="img" aria-labelledby="fig-chips-titre">
+        <title id="fig-chips-titre">Chronogrammes des utilisateurs 2 et 3 : cinq bits, puis les chips émis, quatre par bit, égaux au bit multiplié par la séquence d'étalement</title>
+        <defs><marker id="fleche-chips" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="plein"/></marker></defs>
+        <text x="0" y="69">bit b (utilisateur 2)</text>
+        <path class="trait" d="M182 64 H634" marker-end="url(#fleche-chips)"/>
+        <path class="trait" d="M190 61 V67"/>
+        <path class="trait" d="M276 61 V67"/>
+        <path class="trait" d="M362 61 V67"/>
+        <path class="trait" d="M448 61 V67"/>
+        <path class="trait" d="M534 61 V67"/>
+        <path class="trait" d="M620 61 V67"/>
+        <path class="pointille" d="M190 51 H276 V77 H362 H448 V51 H534 V77 H620"/>
+        <text x="233" y="45" text-anchor="middle" class="t2 mono" font-size="12">+1</text>
+        <text x="319" y="45" text-anchor="middle" class="t2 mono" font-size="12">−1</text>
+        <text x="405" y="45" text-anchor="middle" class="t2 mono" font-size="12">−1</text>
+        <text x="491" y="45" text-anchor="middle" class="t2 mono" font-size="12">+1</text>
+        <text x="577" y="45" text-anchor="middle" class="t2 mono" font-size="12">−1</text>
+        <text x="0" y="121">chips émis</text>
+        <text x="0" y="138" class="t2 mono" font-size="12">b × (+1 −1 +1 −1)</text>
+        <path class="trait" d="M182 124 H634" marker-end="url(#fleche-chips)"/>
+        <path class="trait" d="M190 121 V127"/>
+        <path class="trait" d="M276 121 V127"/>
+        <path class="trait" d="M362 121 V127"/>
+        <path class="trait" d="M448 121 V127"/>
+        <path class="trait" d="M534 121 V127"/>
+        <path class="trait" d="M620 121 V127"/>
+        <path class="accent" d="M190 111 H211.5 V137 H233 V111 H254.5 V137 H276 H297.5 V111 H319 V137 H340.5 V111 H362 V137 H383.5 V111 H405 V137 H426.5 V111 H448 H469.5 V137 H491 V111 H512.5 V137 H534 H555.5 V111 H577 V137 H598.5 V111 H620"/>
+        <text x="0" y="213">bit c (utilisateur 3)</text>
+        <path class="trait" d="M182 208 H634" marker-end="url(#fleche-chips)"/>
+        <path class="trait" d="M190 205 V211"/>
+        <path class="trait" d="M276 205 V211"/>
+        <path class="trait" d="M362 205 V211"/>
+        <path class="trait" d="M448 205 V211"/>
+        <path class="trait" d="M534 205 V211"/>
+        <path class="trait" d="M620 205 V211"/>
+        <path class="pointille" d="M190 195 H276 H362 V221 H448 V195 H534 V221 H620"/>
+        <text x="233" y="189" text-anchor="middle" class="t2 mono" font-size="12">+1</text>
+        <text x="319" y="189" text-anchor="middle" class="t2 mono" font-size="12">+1</text>
+        <text x="405" y="189" text-anchor="middle" class="t2 mono" font-size="12">−1</text>
+        <text x="491" y="189" text-anchor="middle" class="t2 mono" font-size="12">+1</text>
+        <text x="577" y="189" text-anchor="middle" class="t2 mono" font-size="12">−1</text>
+        <text x="0" y="265">chips émis</text>
+        <text x="0" y="282" class="t2 mono" font-size="12">c × (+1 +1 −1 −1)</text>
+        <path class="trait" d="M182 268 H634" marker-end="url(#fleche-chips)"/>
+        <path class="trait" d="M190 265 V271"/>
+        <path class="trait" d="M276 265 V271"/>
+        <path class="trait" d="M362 265 V271"/>
+        <path class="trait" d="M448 265 V271"/>
+        <path class="trait" d="M534 265 V271"/>
+        <path class="trait" d="M620 265 V271"/>
+        <path class="accent" d="M190 255 H211.5 H233 V281 H254.5 H276 V255 H297.5 H319 V281 H340.5 H362 H383.5 H405 V255 H426.5 H448 H469.5 H491 V281 H512.5 H534 H555.5 H577 V255 H598.5 H620"/>
+        <path class="trait" d="M190 26 H276" marker-start="url(#fleche-chips)" marker-end="url(#fleche-chips)"/>
+        <text x="286" y="31">T<tspan dy="4" font-size="10">b</tspan><tspan dy="-4"></tspan> : temps bit</text>
+        <path class="trait" d="M190 154 H211.5" marker-start="url(#fleche-chips)" marker-end="url(#fleche-chips)"/>
+        <text x="219.5" y="159">T<tspan dy="4" font-size="10">c</tspan><tspan dy="-4"></tspan> : temps chip</text>
+        </svg>
+      <figcaption>Bits et chips émis par les utilisateurs 2 et 3 (redessiné d'après les diapos 14 et 15). Un bit \(+1\) émet la séquence telle quelle, un bit \(-1\) l'émet inversée.</figcaption>
+    </figure>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>« Séquence aléatoire » ?</span></p>
+      <p><span class="badge ajout">Ajout</span> Les figures des diapos 14 et 15 nomment la séquence « séquence aléatoire de l'utilisateur ». Ici, c'est une séquence de Hadamard, parfaitement déterministe. Le mot rappelle que, dans d'autres systèmes, on utilise des séquences <em>pseudo-aléatoires</em>, produites par des registres à décalage (<a href="cours-04-pseudo-aleatoires-cycliques.html">cours 4</a>).</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Des bits 0/1 aux symboles ±1</span></p>
+      <p>Les bits d'un message valent 0 ou 1 ; le CDMA les manipule sous la forme \(x = (-1)^{\text{bit}}\), soit \(0 \mapsto +1\) et \(1 \mapsto -1\). Avec cette convention, le ou exclusif devient un produit : \((-1)^{u \xor v} = (-1)^u (-1)^v\). Multiplier un symbole par un chip revient donc à faire un ou exclusif entre le bit et le chip binaire, ce que fait un circuit d'étalement réel.</p>
+    </div>
+
+    <h3>Réception et désétalement <span class="ref">diapo 17</span></h3>
+    <p>Les quatre utilisateurs émettent en même temps : pendant chaque temps chip, le récepteur reçoit la somme des quatre chips. Le signal reçu \(r\) est formé de quatre valeurs :</p>
+    <div class="encadre">
+      \[ r = \big( a+b+c+d,\ \ a-b+c-d,\ \ a+b-c-d,\ \ a-b-c+d \big) \]
+    </div>
+    <p>Pour retrouver le bit d'un utilisateur, on multiplie chaque valeur de \(r\) par le chip correspondant de sa séquence, on additionne, et on divise par 4 :</p>
+    \[
+    \begin{aligned}
+    \hat a &amp;= \tfrac{1}{4}\big( 1.(a+b+c+d) + 1.(a-b+c-d) + 1.(a+b-c-d) + 1.(a-b-c+d) \big) = a, \\
+    \hat b &amp;= \tfrac{1}{4}\big( 1.(a+b+c+d) - 1.(a-b+c-d) + 1.(a+b-c-d) - 1.(a-b-c+d) \big) = b, \\
+    \hat c &amp;= \tfrac{1}{4}\big( 1.(a+b+c+d) + 1.(a-b+c-d) - 1.(a+b-c-d) - 1.(a-b-c+d) \big) = c, \\
+    \hat d &amp;= \tfrac{1}{4}\big( 1.(a+b+c+d) - 1.(a-b+c-d) - 1.(a+b-c-d) + 1.(a-b-c+d) \big) = d.
+    \end{aligned}
+    \]
+    <p>Dans chaque somme, le bit cherché apparaît quatre fois avec le signe +, et chaque autre bit apparaît deux fois avec + et deux fois avec − : il s'annule.</p>
+
+    <figure class="figure">
+<svg class="schema" viewBox="0 0 640 372" width="640" role="img" aria-labelledby="fig-cdma-titre">
+<title id="fig-cdma-titre">Chips émis par les quatre utilisateurs pendant deux temps bit, et signal reçu r, somme des quatre</title>
+<defs><marker id="fleche-cdma" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="plein"/></marker></defs>
+<path class="trait" d="M150 22 H382" marker-start="url(#fleche-cdma)" marker-end="url(#fleche-cdma)"/>
+<text x="266" y="15" text-anchor="middle" class="t2" font-size="12">bit 1 · Tb = 4 Tc</text>
+<text x="498" y="15" text-anchor="middle" class="t2" font-size="12">bit 2</text>
+<path class="trait" d="M382 36 H440" marker-start="url(#fleche-cdma)" marker-end="url(#fleche-cdma)"/>
+<text x="411.0" y="50" text-anchor="middle" class="t2" font-size="12">Tc</text>
+<path class="pointille" d="M150 28 V360"/>
+<path class="pointille" d="M382 28 V360"/>
+<path class="pointille" d="M614 28 V360"/>
+<text x="0" y="79" class="gras" font-size="13">Utilisateur 1</text>
+<text x="0" y="96" class="t2 mono" font-size="12">a = +1 puis −1</text>
+<path class="trait" d="M150 82 H614" stroke-width="0.8"/>
+<path class="pointille" d="M150 64 H208 V64 H266 V64 H324 V64 H382 V100 H440 V100 H498 V100 H556 V100 H614"/>
+<path class="trait" d="M150 69 H208 V69 H266 V69 H324 V69 H382 V95 H440 V95 H498 V95 H556 V95 H614"/>
+<text x="0" y="137" class="gras" font-size="13">Utilisateur 2</text>
+<text x="0" y="154" class="t2 mono" font-size="12">b = −1 puis −1</text>
+<path class="trait" d="M150 140 H614" stroke-width="0.8"/>
+<path class="pointille" d="M150 158 H208 V158 H266 V158 H324 V158 H382 V158 H440 V158 H498 V158 H556 V158 H614"/>
+<path class="trait" d="M150 153 H208 V127 H266 V153 H324 V127 H382 V153 H440 V127 H498 V153 H556 V127 H614"/>
+<text x="0" y="195" class="gras" font-size="13">Utilisateur 3</text>
+<text x="0" y="212" class="t2 mono" font-size="12">c = +1 puis +1</text>
+<path class="trait" d="M150 198 H614" stroke-width="0.8"/>
+<path class="pointille" d="M150 180 H208 V180 H266 V180 H324 V180 H382 V180 H440 V180 H498 V180 H556 V180 H614"/>
+<path class="trait" d="M150 185 H208 V185 H266 V211 H324 V211 H382 V185 H440 V185 H498 V211 H556 V211 H614"/>
+<text x="0" y="253" class="gras" font-size="13">Utilisateur 4</text>
+<text x="0" y="270" class="t2 mono" font-size="12">d = +1 puis −1</text>
+<path class="trait" d="M150 256 H614" stroke-width="0.8"/>
+<path class="pointille" d="M150 238 H208 V238 H266 V238 H324 V238 H382 V274 H440 V274 H498 V274 H556 V274 H614"/>
+<path class="trait" d="M150 243 H208 V269 H266 V269 H324 V243 H382 V269 H440 V243 H498 V243 H556 V269 H614"/>
+<text x="0" y="319" class="gras accent" font-size="13">Signal reçu r</text>
+<text x="0" y="336" class="t2" font-size="12">somme des quatre</text>
+<path class="trait" d="M150 322 H614" stroke-width="0.8"/>
+<path class="accent" d="M150 304 H208 V304 H266 V340 H324 V304 H382 V340 H440 V304 H498 V340 H556 V340 H614"/>
+<text x="179" y="298" text-anchor="middle" class="mono accent" font-size="12">+2</text>
+<text x="237" y="298" text-anchor="middle" class="mono accent" font-size="12">+2</text>
+<text x="295" y="356" text-anchor="middle" class="mono accent" font-size="12">−2</text>
+<text x="353" y="298" text-anchor="middle" class="mono accent" font-size="12">+2</text>
+<text x="411" y="356" text-anchor="middle" class="mono accent" font-size="12">−2</text>
+<text x="469" y="298" text-anchor="middle" class="mono accent" font-size="12">+2</text>
+<text x="527" y="356" text-anchor="middle" class="mono accent" font-size="12">−2</text>
+<text x="585" y="356" text-anchor="middle" class="mono accent" font-size="12">−2</text>
+</svg>
+      <figcaption><span class="badge ajout">Ajout</span> Les quatre utilisateurs pendant deux temps bit : le bit en pointillé, les chips émis en trait plein, et le signal reçu \(r\), leur somme chip par chip. Au premier bit, \(a = +1\), \(b = -1\), \(c = +1\), \(d = +1\) donnent \(r = (2, 2, -2, 2)\), et \(\hat b = \tfrac14(2 - 2 - 2 - 2) = -1\).</figcaption>
+    </figure>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Désétaler</span></p>
+      <p><span class="badge ajout">Ajout</span> Avec \(N\) chips par bit, la séquence \(c_j = (c_{j,1}, \dots, c_{j,N})\) de l'utilisateur \(j\) et le signal reçu \(r = (r_1, \dots, r_N)\) :</p>
+      \[ \hat x_j = \frac{1}{N} \sum_{k=1}^{N} r_k\, c_{j,k} = \frac{1}{N} \langle r, c_j \rangle. \]
+      <p>On décide ensuite le bit d'après le signe : \(+1\) si \(\hat x_j \gt 0\), \(-1\) sinon. Ce <dfn>niveau de décision</dfn> ne sert à rien sur un canal parfait, mais devient indispensable dès que le signal est bruité.</p>
+    </div>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Orthogonalité et désétalement parfait</span></p>
+      <p><span class="badge ajout">Ajout</span> Deux séquences \(c_i\) et \(c_j\) sont <dfn>orthogonales</dfn> quand leur produit scalaire est nul : \(\langle c_i, c_j \rangle = 0\) pour \(i \ne j\). Comme \(\langle c_j, c_j \rangle = N\) (chips \(\pm 1\)), si toutes les séquences sont orthogonales deux à deux et que \(r = \sum_i x_i c_i\), alors \(\hat x_j = x_j\) pour chaque utilisateur.</p>
+      <details class="preuve">
+        <summary>Preuve</summary>
+        <p>Par linéarité du produit scalaire, \(\langle r, c_j \rangle = \sum_i x_i \langle c_i, c_j \rangle = x_j \langle c_j, c_j \rangle + \sum_{i \ne j} x_i \cdot 0 = N x_j\). En divisant par \(N\), on obtient \(\hat x_j = x_j\).</p>
+      </details>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Quatre bits connus</span></p>
+      <p><span class="badge ajout">Ajout</span> Avec \(a = +1\), \(b = -1\), \(c = -1\), \(d = +1\) : \(r = (0,\ 0,\ 0,\ 4)\). Alors \(\hat a = \tfrac14(0 + 0 + 0 + 4) = 1\), \(\hat b = \tfrac14(0 - 0 + 0 - 4) = -1\), \(\hat c = \tfrac14(0 + 0 - 0 - 4) = -1\) et \(\hat d = \tfrac14(0 - 0 - 0 + 4) = 1\). Le signal reçu ne ressemble à aucun des quatre bits, et pourtant chacun se retrouve exactement.</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-2">
+      <p class="bloc-titre">Exercice 2 <span>Étaler et désétaler</span></p>
+      <p><span class="badge ajout">Ajout</span> Avec les séquences des diapos 13 à 16, les utilisateurs émettent \(a = -1\), \(b = +1\), \(c = +1\), \(d = +1\).</p>
+      <p>a) Calculer les quatre valeurs du signal reçu \(r\). b) Désétaler : calculer \(\langle r, c_j \rangle\) pour chaque utilisateur, puis le bit estimé.</p>
+      <details class="indice"><summary>Indice</summary><p>a) Additionner, chip par chip, les colonnes du tableau des chips émis. b) \(\langle r, c_j \rangle\) doit valoir \(\pm 4\).</p></details>
+    </div>
+    <div class="atelier" id="c3b-ex2-signal-recu" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "a) Signal reçu",
+        "consigne": "<p>Écrire des entiers, avec le signe moins du clavier et sans signe + : 2, -2, 0…</p>",
+        "options": { "verrou": "depart", "lignes": false, "ordre": true, "mono": true, "types": { "chip 1": "entier", "chip 2": "entier", "chip 3": "entier", "chip 4": "entier" } },
+        "depart": ["| Signal | chip 1 | chip 2 | chip 3 | chip 4 |", "|---|---|---|---|---|", "| r |  |  |  |  |"],
+        "solution": ["| Signal | chip 1 | chip 2 | chip 3 | chip 4 |", "|---|---|---|---|---|", "| r | 2 | -2 | -2 | -2 |"],
+        "explication": "<p>Chip 1 : a + b + c + d = −1 + 1 + 1 + 1 = 2. Chip 2 : a − b + c − d = −1 − 1 + 1 − 1 = −2. Chip 3 : a + b − c − d = −1 + 1 − 1 − 1 = −2. Chip 4 : a − b − c + d = −1 − 1 − 1 + 1 = −2. Erreur fréquente : oublier d'appliquer le signe de la séquence au bit (b émet +b −b +b −b).</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="c3b-ex2-desetalement" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "b) Désétalement",
+        "consigne": "<p>Pour chaque utilisateur, le produit scalaire du signal reçu avec sa séquence, puis le bit estimé (1 ou -1).</p>",
+        "options": { "verrou": "depart", "lignes": false, "ordre": true, "mono": true, "types": { "⟨r, c⟩": "entier", "bit estimé": "entier" } },
+        "depart": ["| Utilisateur | Séquence | ⟨r, c⟩ | bit estimé |", "|---|---|---|---|", "| 1 (a) | + + + + |  |  |", "| 2 (b) | + - + - |  |  |", "| 3 (c) | + + - - |  |  |", "| 4 (d) | + - - + |  |  |"],
+        "solution": ["| Utilisateur | Séquence | ⟨r, c⟩ | bit estimé |", "|---|---|---|---|", "| 1 (a) | + + + + | -4 | -1 |", "| 2 (b) | + - + - | 4 | 1 |", "| 3 (c) | + + - - | 4 | 1 |", "| 4 (d) | + - - + | 4 | 1 |"],
+        "explication": "<p>Avec r = (2, −2, −2, −2) : ⟨r, c₁⟩ = 2 − 2 − 2 − 2 = −4 ; ⟨r, c₂⟩ = 2 + 2 − 2 + 2 = 4 ; ⟨r, c₃⟩ = 2 − 2 + 2 + 2 = 4 ; ⟨r, c₄⟩ = 2 + 2 + 2 − 2 = 4. En divisant par N = 4 : â = −1, b̂ = ĉ = d̂ = +1, les bits émis. Les produits scalaires valent exactement ± 4 parce que les séquences sont orthogonales et le canal parfait.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice" id="ex-3">
+      <p class="bloc-titre">Exercice 3 <span>Réception bruitée</span></p>
+      <p><span class="badge ajout">Ajout</span> Les mêmes quatre utilisateurs émettent, mais le canal ajoute du bruit. Le récepteur mesure \(r = (2{,}4,\ -1{,}6,\ -2{,}2,\ -1{,}8)\). Estimer les quatre bits. Le bruit a-t-il causé une erreur ?</p>
+      <details class="indice"><summary>Indice</summary><p>Calculer \(\hat x_j = \frac14 \langle r, c_j \rangle\), puis décider d'après le signe.</p></details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>\(\hat a = \frac14(2{,}4 - 1{,}6 - 2{,}2 - 1{,}8) = -0{,}8\) ; \(\hat b = \frac14(2{,}4 + 1{,}6 - 2{,}2 + 1{,}8) = 0{,}9\) ; \(\hat c = \frac14(2{,}4 - 1{,}6 + 2{,}2 + 1{,}8) = 1{,}2\) ; \(\hat d = \frac14(2{,}4 + 1{,}6 + 2{,}2 - 1{,}8) = 1{,}1\).</p>
+        <p>Décisions : \(-1, +1, +1, +1\), les bits de l'exercice 2 : aucune erreur. Le bruit ajouté, \((0{,}4;\ 0{,}4;\ -0{,}2;\ 0{,}2)\), écarte les estimations de \(\pm 1\) sans en changer le signe. Le désétalement fait une moyenne sur les \(N\) chips, ce qui atténue le bruit ; plus \(N\) est grand, plus l'atténuation est forte.</p>
+      </details>
+    </div>
+
+    <h3>Les hypothèses du désétalement <span class="ref">diapo 18</span></h3>
+    <p>Le cas d'école présenté ci-dessus est un cas idéal, pour lequel l'opération de désétalement fonctionne parfaitement sous les hypothèses suivantes.</p>
+    <div class="bloc note">
+      <p class="bloc-titre">Hypothèses <span>Un désétalement parfait</span> <span class="ref">diapo 18</span></p>
+      <ul>
+        <li><strong>(H0)</strong> Les chips émis par les différents utilisateurs ont été supposés synchronisés au niveau du récepteur.</li>
+        <li><strong>(H1)</strong> Aucun bruit n'a été ajouté au signal.</li>
+        <li><strong>(H2)</strong> Les séquences d'étalement utilisées étaient orthogonales.</li>
+        <li><strong>(H3)</strong> Aucun effet Doppler différentiel n'a été considéré.</li>
+      </ul>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Quand une hypothèse tombe</span></p>
+      <ul>
+        <li>Sans <strong>H0</strong>, les séquences décalées ne sont plus orthogonales : un utilisateur désynchronisé pollue les estimations des autres (exercice 4). C'est la situation du lien montant et des canaux multi-trajets.</li>
+        <li>Sans <strong>H1</strong>, l'estimation vaut le bit plus un bruit moyenné (exercice 3) ; il faut un niveau de décision.</li>
+        <li>Sans <strong>H2</strong>, il reste dans \(\hat x_j\) des termes \(x_i \langle c_i, c_j \rangle / N\) venus des autres utilisateurs : c'est l'<strong>interférence d'accès multiple</strong>, étudiée en partie 6.</li>
+        <li>Sans <strong>H3</strong> : l'<dfn>effet Doppler</dfn> décale la fréquence reçue quand l'émetteur se déplace par rapport au récepteur. Des terminaux de vitesses différentes subissent des décalages différents, qui déforment leurs chips et dégradent l'orthogonalité. Le décalage vaut \(f_D = v f_0 / c\) : environ 220 Hz à 120 km/h pour une porteuse \(f_0 = 2\) GHz.</li>
+      </ul>
+    </div>
+
+    <div class="bloc exercice" id="ex-4">
+      <p class="bloc-titre">Exercice 4 <span>Un utilisateur en retard</span></p>
+      <p><span class="badge ajout">Ajout</span> Les utilisateurs 1, 2 et 4 sont synchronisés, mais les chips de l'utilisateur 3 arrivent avec un chip de retard (H0 n'est plus vérifiée). Pendant le temps bit observé, le récepteur voit donc le dernier chip du bit précédent \(c'\) de l'utilisateur 3, puis les trois premiers chips de son bit courant \(c\).</p>
+      <p>a) Écrire les quatre chips reçus de l'utilisateur 3 pendant ce temps bit. b) Calculer \(\hat a\), \(\hat b\), \(\hat c\), \(\hat d\) quand \(c' = c\), puis quand \(c' = -c\). Conclure.</p>
+      <details class="indice"><summary>Indice</summary><p>La séquence de l'utilisateur 3 est \(+1\ +1\ -1\ -1\) : son dernier chip vaut \(-c'\). Les trois autres utilisateurs restent orthogonaux entre eux : seule la contribution de l'utilisateur 3 est à recalculer.</p></details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>a) L'utilisateur 3 contribue \((-c',\ +c,\ +c,\ -c)\) au lieu de \((+c,\ +c,\ -c,\ -c)\).</p>
+        <p>b) Si \(c' = c\), sa contribution est \(c \cdot (-1, +1, +1, -1)\). Ses produits scalaires avec les séquences 1, 2, 3 et 4 valent \(0, 0, 0\) et \(-4\). D'où \(\hat a = a\), \(\hat b = b\), mais \(\hat c = 0\) et \(\hat d = d - c\).</p>
+        <p>Si \(c' = -c\), sa contribution est \(c \cdot (+1, +1, +1, -1)\), de produits scalaires \(2, 2, 2, -2\). D'où \(\hat a = a + c/2\), \(\hat b = b + c/2\), \(\hat c = c/2\) et \(\hat d = d - c/2\).</p>
+        <p>Conclusion : un seul chip de retard suffit à détruire l'orthogonalité. Dans le premier cas, le bit de l'utilisateur 3 disparaît de sa propre estimation et se reporte, inversé, sur l'utilisateur 4 : quand \(d = c\), \(\hat d = 0\) et la décision est impossible. Les séquences de Walsh-Hadamard exigent donc un système synchrone ; en voie montante, on leur préfère des séquences qui restent peu corrélées quel que soit le décalage, comme les codes de Gold (<a href="cours-04-pseudo-aleatoires-cycliques.html">cours 4</a>).</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Des signaux étalés réalistes <span class="ref">diapos 19–23</span></h2>
+    <p>L'exemple précédent manipule des chips abstraits. Un émetteur réel produit un signal échantillonné, dont la forme d'onde doit tenir dans une bande limitée. Les diapos 19 à 23 montrent une chaîne simulée, du train binaire au signal émis.</p>
+
+    <h3>La chaîne d'émission <span class="ref">diapo 19</span></h3>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 108" width="640" role="img" aria-labelledby="fig-chaine-titre">
+        <title id="fig-chaine-titre">Chaîne d'émission : a(kTb), suréchantillonnage N, filtre p(t) d'étalement, e(nTc), suréchantillonnage M, filtre g(t) de mise en forme, s(mTe)</title>
+        <defs>
+          <marker id="fleche-chaine" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="0" y="30">a(kT<tspan dy="4" font-size="10">b</tspan><tspan dy="-4">)</tspan></text>
+        <path class="trait" d="M0 40 H78" marker-end="url(#fleche-chaine)"/>
+        <rect class="boite" x="80" y="22" width="40" height="36"/>
+        <text x="100" y="45" text-anchor="middle">↑N</text>
+        <path class="trait" d="M120 40 H148" marker-end="url(#fleche-chaine)"/>
+        <rect class="boite-accent" x="150" y="22" width="70" height="36"/>
+        <text x="185" y="45" text-anchor="middle">p(t)</text>
+        <path class="trait" d="M220 40 H298" marker-end="url(#fleche-chaine)"/>
+        <text x="259" y="30" text-anchor="middle">e(nT<tspan dy="4" font-size="10">c</tspan><tspan dy="-4">)</tspan></text>
+        <rect class="boite" x="300" y="22" width="40" height="36"/>
+        <text x="320" y="45" text-anchor="middle">↑M</text>
+        <path class="trait" d="M340 40 H368" marker-end="url(#fleche-chaine)"/>
+        <rect class="boite-accent" x="370" y="22" width="70" height="36"/>
+        <text x="405" y="45" text-anchor="middle">g(t)</text>
+        <path class="trait" d="M440 40 H528" marker-end="url(#fleche-chaine)"/>
+        <text x="484" y="30" text-anchor="middle">s(mT<tspan dy="4" font-size="10">e</tspan><tspan dy="-4">)</tspan></text>
+        <text x="100" y="78" text-anchor="middle" class="t2" font-size="12">suréchantillonnage N</text>
+        <text x="185" y="96" text-anchor="middle" class="t2" font-size="12">filtrage (étalement)</text>
+        <text x="320" y="78" text-anchor="middle" class="t2" font-size="12">suréchantillonnage M</text>
+        <text x="405" y="96" text-anchor="middle" class="t2" font-size="12">filtrage (mise en forme)</text>
+      </svg>
+      <figcaption>Chaîne d'émission d'un signal étalé (redessiné d'après la diapo 19).</figcaption>
+    </figure>
+    <p>Les bits \(a(kT_b)\) arrivent au rythme d'un par temps bit. Un <dfn>suréchantillonnage</dfn> (<span class="en" lang="en">upsampling</span>) d'ordre \(N\) insère \(N - 1\) zéros après chaque bit, puis un filtre \(p(t)\) réalise l'<strong>étalement</strong> : on obtient les chips \(e(nT_c)\). Un second suréchantillonnage, d'ordre \(M\), suivi du filtre \(g(t)\), réalise la <dfn>mise en forme</dfn> (<span class="en" lang="en">pulse shaping</span>) : on obtient le signal \(s(mT_e)\), échantillonné à \(T_e = T_c / M\). Sur la diapo 19, \(g\) est un simple rectangle :</p>
+    \[ g(qT_e) = 1 \ \text{ si } q \in [0, M-1], \qquad g(qT_e) = 0 \ \text{ si } q \notin [0, M-1]. \]
+    <p>Chaque chip est alors tenu pendant \(M\) échantillons.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi un filtre étale</span></p>
+      <p>Après le suréchantillonnage, le train contient une impulsion, de hauteur \(\pm 1\), tous les \(N\) échantillons. Le filtrer par \(p\), dont les \(N\) coefficients sont les chips de la séquence, recopie la séquence à chaque impulsion, multipliée par le bit : c'est exactement l'étalement de la partie 3, écrit comme une convolution.</p>
+    </div>
+
+    <p>La diapo 19 applique cette chaîne au train binaire \((+1\ +1\ -1\ +1\ +1\ +1)\), avec la séquence d'étalement de 8 chips \((-1\ -1\ +1\ -1\ -1\ -1\ +1\ +1)\) : 6 bits donnent 48 chips, puis 192 échantillons avec \(M = 4\).</p>
+
+    <figure class="figure">
+<svg class="schema" viewBox="0 0 640 318" width="640" role="img" aria-labelledby="fig-signaux-titre">
+<title id="fig-signaux-titre">Train binaire +1 +1 −1 +1 +1 +1 suréchantillonné, séquence d'étalement de 8 chips, train étalé, puis train étalé mis en forme par un filtre en cosinus surélevé</title>
+<path class="pointille" d="M176 12 V300" stroke-width="1"/>
+<path class="pointille" d="M249.6 12 V300" stroke-width="1"/>
+<path class="pointille" d="M323.2 12 V300" stroke-width="1"/>
+<path class="pointille" d="M396.8 12 V300" stroke-width="1"/>
+<path class="pointille" d="M470.4 12 V300" stroke-width="1"/>
+<path class="pointille" d="M544 12 V300" stroke-width="1"/>
+<path class="pointille" d="M617.6 12 V300" stroke-width="1"/>
+<text x="0" y="37" class="gras" font-size="13">Train binaire</text>
+<text x="0" y="54" class="t2 mono" font-size="11">+1 +1 −1 +1 +1 +1</text>
+<path class="trait" d="M176 40 H617.6" stroke-width="0.8"/>
+<text x="0" y="109" class="gras" font-size="13">Séquence</text>
+<text x="0" y="126" class="t2 mono" font-size="11">−1 −1 +1 −1 −1 −1 +1 +1</text>
+<path class="trait" d="M176 112 H617.6" stroke-width="0.8"/>
+<text x="0" y="181" class="gras" font-size="13">Train étalé</text>
+<text x="0" y="198" class="t2 mono" font-size="11">produit des deux</text>
+<path class="trait" d="M176 184 H617.6" stroke-width="0.8"/>
+<text x="0" y="259" class="gras" font-size="13">Mis en forme</text>
+<text x="0" y="276" class="t2 mono" font-size="11">cosinus surélevé</text>
+<path class="trait" d="M176 262 H617.6" stroke-width="0.8"/>
+<path class="accent" d="M180.6 40 V20"/>
+<circle class="plein-accent" cx="180.6" cy="20" r="3"/>
+<path class="accent" d="M254.2 40 V20"/>
+<circle class="plein-accent" cx="254.2" cy="20" r="3"/>
+<path class="accent" d="M327.8 40 V60"/>
+<circle class="plein-accent" cx="327.8" cy="60" r="3"/>
+<path class="accent" d="M401.4 40 V20"/>
+<circle class="plein-accent" cx="401.4" cy="20" r="3"/>
+<path class="accent" d="M475 40 V20"/>
+<circle class="plein-accent" cx="475" cy="20" r="3"/>
+<path class="accent" d="M548.6 40 V20"/>
+<circle class="plein-accent" cx="548.6" cy="20" r="3"/>
+<path class="trait" d="M176 132 H185.2 V132 H194.4 V92 H203.6 V132 H212.8 V132 H222 V132 H231.2 V92 H240.4 V92 H249.6 V132 H258.8 V132 H268 V92 H277.2 V132 H286.4 V132 H295.6 V132 H304.8 V92 H314 V92 H323.2 V132 H332.4 V132 H341.6 V92 H350.8 V132 H360 V132 H369.2 V132 H378.4 V92 H387.6 V92 H396.8 V132 H406 V132 H415.2 V92 H424.4 V132 H433.6 V132 H442.8 V132 H452 V92 H461.2 V92 H470.4 V132 H479.6 V132 H488.8 V92 H498 V132 H507.2 V132 H516.4 V132 H525.6 V92 H534.8 V92 H544 V132 H553.2 V132 H562.4 V92 H571.6 V132 H580.8 V132 H590 V132 H599.2 V92 H608.4 V92 H617.6"/>
+<path class="accent" d="M176 204 H185.2 V204 H194.4 V164 H203.6 V204 H212.8 V204 H222 V204 H231.2 V164 H240.4 V164 H249.6 V204 H258.8 V204 H268 V164 H277.2 V204 H286.4 V204 H295.6 V204 H304.8 V164 H314 V164 H323.2 V164 H332.4 V164 H341.6 V204 H350.8 V164 H360 V164 H369.2 V164 H378.4 V204 H387.6 V204 H396.8 V204 H406 V204 H415.2 V164 H424.4 V204 H433.6 V204 H442.8 V204 H452 V164 H461.2 V164 H470.4 V204 H479.6 V204 H488.8 V164 H498 V204 H507.2 V204 H516.4 V204 H525.6 V164 H534.8 V164 H544 V204 H553.2 V204 H562.4 V164 H571.6 V204 H580.8 V204 H590 V204 H599.2 V164 H608.4 V164 H617.6"/>
+<path class="accent" d="M176 271.3 L177.2 274 L178.3 276.8 L179.4 279.5 L180.6 282 L181.8 284.3 L182.9 286.3 L184.1 287.9 L185.2 288.8 L186.3 288.9 L187.5 287.9 L188.7 285.6 L189.8 282 L190.9 277.1 L192.1 271.1 L193.2 264.5 L194.4 257.8 L195.6 251.6 L196.7 246.5 L197.8 243.2 L199 242 L200.2 243.1 L201.3 246.4 L202.4 251.5 L203.6 257.8 L204.8 264.7 L205.9 271.4 L207.1 277.4 L208.2 282 L209.3 285.1 L210.5 286.6 L211.7 286.7 L212.8 285.9 L213.9 284.6 L215.1 283.3 L216.2 282.3 L217.4 282 L218.6 282.3 L219.7 283.3 L220.8 284.4 L222 285.5 L223.2 286.1 L224.3 285.8 L225.4 284.5 L226.6 282 L227.8 278.3 L228.9 273.7 L230.1 268.4 L231.2 262.7 L232.3 256.9 L233.5 251.4 L234.7 246.3 L235.8 242 L236.9 238.5 L238.1 235.9 L239.2 234.4 L240.4 233.9 L241.6 234.4 L242.7 235.9 L243.8 238.5 L245 242 L246.1 246.3 L247.3 251.2 L248.4 256.6 L249.6 262.1 L250.8 267.6 L251.9 272.9 L253.1 277.7 L254.2 282 L255.3 285.5 L256.5 288.3 L257.6 290.1 L258.8 290.9 L259.9 290.6 L261.1 289 L262.2 286.1 L263.4 282 L264.6 276.7 L265.7 270.5 L266.9 263.8 L268 257.2 L269.1 251.1 L270.3 246.2 L271.4 243.1 L272.6 242 L273.8 243.2 L274.9 246.4 L276.1 251.5 L277.2 257.8 L278.4 264.7 L279.5 271.4 L280.6 277.3 L281.8 282 L282.9 285.2 L284.1 286.7 L285.2 287 L286.4 286.2 L287.6 284.9 L288.7 283.5 L289.9 282.5 L291 282 L292.1 282.2 L293.3 283 L294.4 284.2 L295.6 285.3 L296.8 286 L297.9 285.8 L299.1 284.5 L300.2 282 L301.4 278.2 L302.5 273.3 L303.6 267.6 L304.8 261.6 L305.9 255.6 L307.1 250.2 L308.2 245.6 L309.4 242 L310.5 239.6 L311.7 238.3 L312.9 238 L314 238.3 L315.1 239.1 L316.3 240.1 L317.4 241.1 L318.6 242 L319.8 242.7 L320.9 243.2 L322 243.5 L323.2 243.6 L324.4 243.5 L325.5 243.3 L326.6 242.8 L327.8 242 L328.9 240.9 L330.1 239.6 L331.2 238.3 L332.4 237.3 L333.5 236.8 L334.7 237.2 L335.9 238.9 L337 242 L338.1 246.5 L339.3 252.3 L340.4 258.9 L341.6 265.8 L342.8 272.1 L343.9 277.3 L345 280.8 L346.2 282 L347.4 280.9 L348.5 277.6 L349.6 272.5 L350.8 266.1 L351.9 259.2 L353.1 252.5 L354.2 246.6 L355.4 242 L356.5 238.9 L357.7 237.4 L358.9 237.2 L360 238 L361.1 239.3 L362.3 240.6 L363.4 241.6 L364.6 242 L365.8 241.8 L366.9 241 L368 239.8 L369.2 238.7 L370.4 238.1 L371.5 238.2 L372.6 239.5 L373.8 242 L374.9 245.8 L376.1 250.6 L377.2 256.3 L378.4 262.3 L379.5 268.3 L380.7 273.8 L381.9 278.4 L383 282 L384.1 284.4 L385.3 285.7 L386.4 286 L387.6 285.7 L388.8 284.9 L389.9 283.9 L391 282.9 L392.2 282 L393.4 281.3 L394.5 280.8 L395.6 280.5 L396.8 280.4 L397.9 280.4 L399.1 280.7 L400.2 281.2 L401.4 282 L402.5 283.1 L403.7 284.4 L404.9 285.7 L406 286.7 L407.1 287.2 L408.3 286.8 L409.4 285.1 L410.6 282 L411.8 277.5 L412.9 271.7 L414 265.1 L415.2 258.3 L416.4 251.9 L417.5 246.7 L418.6 243.3 L419.8 242 L420.9 243.1 L422.1 246.3 L423.2 251.5 L424.4 257.9 L425.5 264.8 L426.7 271.5 L427.9 277.4 L429 282 L430.1 285 L431.3 286.5 L432.4 286.6 L433.6 285.8 L434.8 284.5 L435.9 283.2 L437 282.3 L438.2 282 L439.3 282.4 L440.5 283.3 L441.6 284.4 L442.8 285.5 L443.9 286.1 L445.1 285.8 L446.2 284.5 L447.4 282 L448.5 278.4 L449.7 273.7 L450.8 268.4 L452 262.7 L453.1 256.9 L454.3 251.4 L455.4 246.3 L456.6 242 L457.8 238.5 L458.9 235.9 L460 234.4 L461.2 233.9 L462.3 234.4 L463.5 235.9 L464.6 238.5 L465.8 242 L466.9 246.3 L468.1 251.2 L469.2 256.6 L470.4 262.1 L471.5 267.6 L472.7 272.9 L473.8 277.7 L475 282 L476.1 285.6 L477.3 288.3 L478.4 290.1 L479.6 290.9 L480.8 290.6 L481.9 289 L483 286.1 L484.2 282 L485.3 276.7 L486.5 270.6 L487.6 263.9 L488.8 257.2 L489.9 251.2 L491.1 246.3 L492.2 243.1 L493.4 242 L494.5 243.1 L495.7 246.4 L496.8 251.4 L498 257.7 L499.1 264.6 L500.3 271.4 L501.4 277.3 L502.6 282 L503.8 285.1 L504.9 286.7 L506 286.8 L507.2 286 L508.3 284.7 L509.5 283.3 L510.6 282.4 L511.8 282 L513 282.3 L514.1 283.2 L515.2 284.4 L516.4 285.5 L517.5 286.1 L518.7 285.9 L519.8 284.5 L521 282 L522.1 278.3 L523.3 273.7 L524.5 268.3 L525.6 262.6 L526.8 256.9 L527.9 251.3 L529 246.3 L530.2 242 L531.3 238.5 L532.5 235.9 L533.6 234.4 L534.8 233.8 L536 234.4 L537.1 235.9 L538.2 238.5 L539.4 242 L540.5 246.3 L541.7 251.2 L542.8 256.6 L544 262.1 L545.1 267.6 L546.3 272.9 L547.5 277.7 L548.6 282 L549.8 285.6 L550.9 288.3 L552 290.1 L553.2 290.9 L554.3 290.6 L555.5 289 L556.6 286.1 L557.8 282 L559 276.7 L560.1 270.5 L561.2 263.9 L562.4 257.2 L563.5 251.1 L564.7 246.3 L565.8 243.1 L567 242 L568.1 243.1 L569.3 246.4 L570.5 251.5 L571.6 257.8 L572.8 264.6 L573.9 271.4 L575 277.3 L576.2 282 L577.3 285.1 L578.5 286.7 L579.6 286.9 L580.8 286.1 L582 284.8 L583.1 283.4 L584.2 282.4 L585.4 282 L586.5 282.3 L587.7 283.1 L588.8 284.3 L590 285.4 L591.1 286 L592.3 285.8 L593.5 284.5 L594.6 282 L595.8 278.3 L596.9 273.5 L598 268 L599.2 262.1 L600.3 256.3 L601.5 250.8 L602.6 245.9 L603.8 242 L605 239.1 L606.1 237.1 L607.2 236.2 L608.4 236.1 L609.5 236.7 L610.7 238 L611.8 239.8 L613 242 L614.1 244.5 L615.3 247.2 L616.5 250 L617.6 252.9"/>
+<text x="212.8" y="312" text-anchor="middle" class="t2 mono" font-size="11">bit 1</text>
+<text x="286.4" y="312" text-anchor="middle" class="t2 mono" font-size="11">bit 2</text>
+<text x="360" y="312" text-anchor="middle" class="t2 mono" font-size="11">bit 3</text>
+<text x="433.6" y="312" text-anchor="middle" class="t2 mono" font-size="11">bit 4</text>
+<text x="507.2" y="312" text-anchor="middle" class="t2 mono" font-size="11">bit 5</text>
+<text x="580.8" y="312" text-anchor="middle" class="t2 mono" font-size="11">bit 6</text>
+</svg>
+      <figcaption>Train binaire suréchantillonné (une impulsion tous les 8 chips), séquence d'étalement répétée, train étalé, puis train étalé mis en forme par un cosinus surélevé (recalculé d'après les diapos 19 et 21, avec \(M = 4\) et \(\beta = 0{,}5\), valeur déduite de la diapo 20). Le troisième bit, \(-1\), inverse sa copie de la séquence. Avec le filtre rectangulaire de la diapo 19, le dernier tracé serait identique au troisième.</figcaption>
+    </figure>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Une séquence qui n'est pas de Walsh</span></p>
+      <p><span class="badge ajout">Ajout</span> La somme des chips de \((-1\ -1\ +1\ -1\ -1\ -1\ +1\ +1)\) vaut \(-2\). Or toutes les séquences de Walsh-Hadamard de longueur 8, sauf la première, contiennent autant de \(+1\) que de \(-1\) (partie 5). Cette séquence est donc d'une autre famille, sans doute pseudo-aléatoire.</p>
+    </div>
+
+    <h3>Le filtre en cosinus surélevé <span class="ref">diapo 20</span></h3>
+    <p>Une mise en forme rectangulaire crée des fronts raides, qui occupent une large bande. On lui préfère le <dfn>filtre en cosinus surélevé</dfn> (<span class="en" lang="en">raised-cosine filter</span>), qui arrondit le signal :</p>
+    <div class="encadre">
+      \[ g(qT_e) = \frac{\sin\left( \dfrac{\pi q T_e}{T_c} \right)}{\dfrac{\pi q T_e}{T_c}} \left[ \frac{\cos\left( \beta \dfrac{\pi q T_e}{T_c} \right)}{1 - 4 \left( \dfrac{\beta q T_e}{T_c} \right)^2} \right] \]
+    </div>
+    <p>La diapo écrit \(\sin\left(\beta \frac{\pi q T_e}{T_c}\right)\) dans le second facteur. Avec un sinus, \(g\) serait nul en \(q = 0\), alors que la courbe de la même diapo culmine vers 0,97 au centre. La formule classique, écrite ci-dessus, porte un cosinus.</p>
+    <p>Le paramètre \(\beta\), compris entre 0 et 1, est le <dfn>facteur de retombée</dfn> (<span class="en" lang="en">roll-off factor</span>). La courbe de la diapo 20 trace les 20 coefficients du filtre : un pic d'environ 0,97 au centre, entouré de petits lobes négatifs (environ −0,13) qui s'éteignent vers les bords.</p>
+    <p><span class="badge ajout">Ajout</span> La diapo ne donne ni \(\beta\) ni le nombre d'échantillons par chip. Avec \(M = 4\) échantillons par chip (\(T_e = T_c / 4\)), \(q\) de 1 à 20 centré entre 10 et 11, et \(\beta = 0{,}5\), la formule avec cosinus redonne exactement les points tracés : 0,97 ; 0,76 ; 0,43 ; 0,12 ; −0,08 ; −0,13… C'est la valeur retenue dans les figures de cette partie. Le pic vaut 0,97 et non 1 parce qu'aucun échantillon ne tombe au centre exact du filtre.</p>
+    <figure class="figure">
+<svg class="schema" viewBox="0 0 480 250" width="480" role="img" aria-labelledby="fig-rc-titre">
+<title id="fig-rc-titre">Réponse impulsionnelle du filtre en cosinus surélevé, 20 échantillons, 4 échantillons par chip, facteur de retombée 0,5 : un lobe principal de hauteur 0,97 et deux lobes négatifs de −0,13</title>
+<path class="pointille" d="M60 175.7 H440" stroke-width="0.8"/>
+<text x="52" y="179.7" text-anchor="end" class="t2 mono" font-size="11">0</text>
+<path class="pointille" d="M60 151.4 H440" stroke-width="0.8"/>
+<text x="52" y="155.4" text-anchor="end" class="t2 mono" font-size="11">0,2</text>
+<path class="pointille" d="M60 127.1 H440" stroke-width="0.8"/>
+<text x="52" y="131.1" text-anchor="end" class="t2 mono" font-size="11">0,4</text>
+<path class="pointille" d="M60 102.9 H440" stroke-width="0.8"/>
+<text x="52" y="106.9" text-anchor="end" class="t2 mono" font-size="11">0,6</text>
+<path class="pointille" d="M60 78.6 H440" stroke-width="0.8"/>
+<text x="52" y="82.6" text-anchor="end" class="t2 mono" font-size="11">0,8</text>
+<path class="pointille" d="M60 54.3 H440" stroke-width="0.8"/>
+<text x="52" y="58.3" text-anchor="end" class="t2 mono" font-size="11">1,0</text>
+<path class="trait" d="M60 30 V200 H440"/>
+<text x="60" y="216" text-anchor="middle" class="t2 mono" font-size="11">0</text>
+<text x="98" y="216" text-anchor="middle" class="t2 mono" font-size="11">2</text>
+<text x="136" y="216" text-anchor="middle" class="t2 mono" font-size="11">4</text>
+<text x="174" y="216" text-anchor="middle" class="t2 mono" font-size="11">6</text>
+<text x="212" y="216" text-anchor="middle" class="t2 mono" font-size="11">8</text>
+<text x="250" y="216" text-anchor="middle" class="t2 mono" font-size="11">10</text>
+<text x="288" y="216" text-anchor="middle" class="t2 mono" font-size="11">12</text>
+<text x="326" y="216" text-anchor="middle" class="t2 mono" font-size="11">14</text>
+<text x="364" y="216" text-anchor="middle" class="t2 mono" font-size="11">16</text>
+<text x="402" y="216" text-anchor="middle" class="t2 mono" font-size="11">18</text>
+<text x="440" y="216" text-anchor="middle" class="t2 mono" font-size="11">20</text>
+<text x="250.0" y="236" text-anchor="middle" class="t2" font-size="12">indice d'échantillon q (Tc = 4 Te)</text>
+<text x="52" y="18" text-anchor="end" class="t2" font-size="12">g(qTe)</text>
+<path class="accent" d="M79 173 L98 173.8 L117 178.8 L136 186.9 L155 191.9 L174 185.4 L193 161.6 L212 123.6 L231 83.6 L250 57.8 L269 57.8 L288 83.6 L307 123.6 L326 161.6 L345 185.4 L364 191.9 L383 186.9 L402 178.8 L421 173.8 L440 173"/>
+<circle class="plein-accent" cx="79" cy="173" r="3"/>
+<circle class="plein-accent" cx="98" cy="173.8" r="3"/>
+<circle class="plein-accent" cx="117" cy="178.8" r="3"/>
+<circle class="plein-accent" cx="136" cy="186.9" r="3"/>
+<circle class="plein-accent" cx="155" cy="191.9" r="3"/>
+<circle class="plein-accent" cx="174" cy="185.4" r="3"/>
+<circle class="plein-accent" cx="193" cy="161.6" r="3"/>
+<circle class="plein-accent" cx="212" cy="123.6" r="3"/>
+<circle class="plein-accent" cx="231" cy="83.6" r="3"/>
+<circle class="plein-accent" cx="250" cy="57.8" r="3"/>
+<circle class="plein-accent" cx="269" cy="57.8" r="3"/>
+<circle class="plein-accent" cx="288" cy="83.6" r="3"/>
+<circle class="plein-accent" cx="307" cy="123.6" r="3"/>
+<circle class="plein-accent" cx="326" cy="161.6" r="3"/>
+<circle class="plein-accent" cx="345" cy="185.4" r="3"/>
+<circle class="plein-accent" cx="364" cy="191.9" r="3"/>
+<circle class="plein-accent" cx="383" cy="186.9" r="3"/>
+<circle class="plein-accent" cx="402" cy="178.8" r="3"/>
+<circle class="plein-accent" cx="421" cy="173.8" r="3"/>
+<circle class="plein-accent" cx="440" cy="173" r="3"/>
+</svg>
+      <figcaption>Les 20 coefficients du filtre en cosinus surélevé (redessiné d'après la diapo 20, recalculé avec \(M = 4\) et \(\beta = 0{,}5\)).</figcaption>
+    </figure>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Ce que fait le cosinus surélevé</span></p>
+      <p>Son premier facteur est un sinus cardinal, nul à chaque multiple de \(T_c\) sauf en 0 : l'impulsion d'un chip ne perturbe pas ses voisins aux instants où on les lit. Le second facteur adoucit la décroissance du sinus cardinal, pour que le filtre reste court. Le spectre du signal est alors limité à \((1 + \beta) / (2 T_c)\) : plus \(\beta\) est petit, plus la bande est étroite, mais plus les oscillations sont longues. <span class="badge hors-programme">Hors programme</span> C'est le critère de Nyquist.</p>
+    </div>
+
+    <h3>Plusieurs utilisateurs <span class="ref">diapos 21–23</span></h3>
+    <p>La diapo 21 reprend la chaîne avec le cosinus surélevé : le train étalé et mis en forme devient une courbe lisse, qui dépasse un peu \(\pm 1\) (quatrième tracé de la figure ci-dessus). La diapo 22 montre les signaux étalés et mis en forme de six utilisateurs, chacun avec sa séquence : six courbes d'aspect semblable, comprises entre −2 et 2. La diapo 23 montre le résultat de leur émission simultanée : leur somme, qui varie entre −6 et 6 environ et ne ressemble à aucun des signaux de départ.</p>
+    <figure class="figure">
+<svg class="schema" viewBox="0 0 640 292" width="640" role="img" aria-labelledby="fig-somme-titre">
+<title id="fig-somme-titre">Signal étalé et mis en forme du premier utilisateur, puis somme des signaux de six utilisateurs, dont l'amplitude atteint plusieurs unités</title>
+<path class="pointille" d="M150 12 V270" stroke-width="1"/>
+<path class="pointille" d="M226.8 12 V270" stroke-width="1"/>
+<path class="pointille" d="M303.6 12 V270" stroke-width="1"/>
+<path class="pointille" d="M380.4 12 V270" stroke-width="1"/>
+<path class="pointille" d="M457.2 12 V270" stroke-width="1"/>
+<path class="pointille" d="M534 12 V270" stroke-width="1"/>
+<path class="pointille" d="M610.8 12 V270" stroke-width="1"/>
+<text x="0" y="49" class="gras" font-size="13">Utilisateur 1</text>
+<text x="0" y="66" class="t2" font-size="12">étalé, mis en forme</text>
+<path class="trait" d="M150 52 H610.8" stroke-width="0.8"/>
+<path class="trait" d="M150 65.1 L151.2 68.3 L152.4 70.5 L153.6 71.2 L154.8 70 L156 67 L157.2 62.2 L158.4 56.2 L159.6 49.7 L160.8 43.4 L162 38.2 L163.2 34.9 L164.4 34 L165.6 35.6 L166.8 39.6 L168 45.4 L169.2 52.2 L170.4 59 L171.6 64.7 L172.8 68.6 L174 70 L175.2 68.7 L176.4 64.8 L177.6 59 L178.8 52.1 L180 45.2 L181.2 39.3 L182.4 35.4 L183.6 34 L184.8 35.3 L186 39.2 L187.2 45.1 L188.4 52 L189.6 58.9 L190.8 64.7 L192 68.6 L193.2 70 L194.4 68.6 L195.6 64.7 L196.8 58.9 L198 52 L199.2 45.1 L200.4 39.3 L201.6 35.4 L202.8 34 L204 35.4 L205.2 39.3 L206.4 45.1 L207.6 52 L208.8 58.9 L210 64.7 L211.2 68.6 L212.4 70 L213.6 68.6 L214.8 64.7 L216 58.9 L217.2 52 L218.4 45.1 L219.6 39.3 L220.8 35.4 L222 34 L223.2 35.4 L224.4 39.3 L225.6 45.1 L226.8 52 L228 58.9 L229.2 64.7 L230.4 68.6 L231.6 70 L232.8 68.6 L234 64.7 L235.2 58.9 L236.4 52 L237.6 45.1 L238.8 39.3 L240 35.4 L241.2 34 L242.4 35.4 L243.6 39.3 L244.8 45.1 L246 52 L247.2 58.9 L248.4 64.7 L249.6 68.6 L250.8 70 L252 68.6 L253.2 64.8 L254.4 58.9 L255.6 52.1 L256.8 45.2 L258 39.3 L259.2 35.4 L260.4 34 L261.6 35.4 L262.8 39.3 L264 45.1 L265.2 52 L266.4 59 L267.6 64.8 L268.8 68.7 L270 70 L271.2 68.6 L272.4 64.6 L273.6 58.7 L274.8 51.8 L276 44.9 L277.2 39.1 L278.4 35.3 L279.6 34 L280.8 35.4 L282 39.3 L283.2 44.9 L284.4 51.6 L285.6 58.3 L286.8 64.1 L288 68.1 L289.2 70 L290.4 69.5 L291.6 66.8 L292.8 62.4 L294 56.7 L295.2 50.5 L296.4 44.3 L297.6 38.7 L298.8 34 L300 30.3 L301.2 27.7 L302.4 26.2 L303.6 25.7 L304.8 26.2 L306 27.7 L307.2 30.3 L308.4 34 L309.6 38.7 L310.8 44.3 L312 50.5 L313.2 56.7 L314.4 62.4 L315.6 66.8 L316.8 69.5 L318 70 L319.2 68.1 L320.4 64.1 L321.6 58.3 L322.8 51.6 L324 44.9 L325.2 39.3 L326.4 35.4 L327.6 34 L328.8 35.3 L330 39.1 L331.2 44.9 L332.4 51.8 L333.6 58.7 L334.8 64.6 L336 68.6 L337.2 70 L338.4 68.7 L339.6 64.8 L340.8 59 L342 52 L343.2 45.1 L344.4 39.3 L345.6 35.4 L346.8 34 L348 35.4 L349.2 39.3 L350.4 45.2 L351.6 52.1 L352.8 58.9 L354 64.8 L355.2 68.6 L356.4 70 L357.6 68.6 L358.8 64.7 L360 58.9 L361.2 52 L362.4 45.1 L363.6 39.3 L364.8 35.4 L366 34 L367.2 35.4 L368.4 39.3 L369.6 45.1 L370.8 52 L372 58.9 L373.2 64.7 L374.4 68.6 L375.6 70 L376.8 68.6 L378 64.7 L379.2 58.9 L380.4 52 L381.6 45.1 L382.8 39.3 L384 35.4 L385.2 34 L386.4 35.4 L387.6 39.3 L388.8 45.1 L390 52 L391.2 58.9 L392.4 64.7 L393.6 68.6 L394.8 70 L396 68.6 L397.2 64.7 L398.4 58.9 L399.6 52 L400.8 45.1 L402 39.3 L403.2 35.4 L404.4 34 L405.6 35.4 L406.8 39.2 L408 45.1 L409.2 51.9 L410.4 58.8 L411.6 64.7 L412.8 68.6 L414 70 L415.2 68.6 L416.4 64.7 L417.6 58.9 L418.8 52 L420 45 L421.2 39.2 L422.4 35.3 L423.6 34 L424.8 35.4 L426 39.4 L427.2 45.3 L428.4 52.2 L429.6 59.1 L430.8 64.9 L432 68.7 L433.2 70 L434.4 68.6 L435.6 64.7 L436.8 59.1 L438 52.4 L439.2 45.7 L440.4 39.9 L441.6 35.9 L442.8 34 L444 34.5 L445.2 37.2 L446.4 41.6 L447.6 47.3 L448.8 53.5 L450 59.7 L451.2 65.3 L452.4 70 L453.6 73.7 L454.8 76.3 L456 77.8 L457.2 78.3 L458.4 77.8 L459.6 76.3 L460.8 73.7 L462 70 L463.2 65.3 L464.4 59.7 L465.6 53.5 L466.8 47.3 L468 41.6 L469.2 37.2 L470.4 34.5 L471.6 34 L472.8 35.9 L474 39.9 L475.2 45.7 L476.4 52.4 L477.6 59.1 L478.8 64.7 L480 68.6 L481.2 70 L482.4 68.7 L483.6 64.9 L484.8 59.1 L486 52.2 L487.2 45.3 L488.4 39.4 L489.6 35.4 L490.8 34 L492 35.3 L493.2 39.2 L494.4 45 L495.6 52 L496.8 58.9 L498 64.7 L499.2 68.6 L500.4 70 L501.6 68.6 L502.8 64.7 L504 58.8 L505.2 51.9 L506.4 45.1 L507.6 39.2 L508.8 35.4 L510 34 L511.2 35.4 L512.4 39.3 L513.6 45.1 L514.8 52 L516 58.9 L517.2 64.7 L518.4 68.6 L519.6 70 L520.8 68.6 L522 64.7 L523.2 58.9 L524.4 52 L525.6 45.1 L526.8 39.3 L528 35.4 L529.2 34 L530.4 35.4 L531.6 39.3 L532.8 45.1 L534 52 L535.2 58.9 L536.4 64.7 L537.6 68.6 L538.8 70 L540 68.6 L541.2 64.7 L542.4 58.9 L543.6 52 L544.8 45.1 L546 39.3 L547.2 35.4 L548.4 34 L549.6 35.4 L550.8 39.3 L552 45.1 L553.2 52 L554.4 58.9 L555.6 64.7 L556.8 68.6 L558 70 L559.2 68.6 L560.4 64.7 L561.6 58.9 L562.8 52 L564 45.1 L565.2 39.3 L566.4 35.4 L567.6 34 L568.8 35.4 L570 39.3 L571.2 45.1 L572.4 52 L573.6 58.9 L574.8 64.8 L576 68.7 L577.2 70 L578.4 68.6 L579.6 64.7 L580.8 58.8 L582 51.9 L583.2 45 L584.4 39.2 L585.6 35.3 L586.8 34 L588 35.4 L589.2 39.3 L590.4 45 L591.6 51.8 L592.8 58.6 L594 64.4 L595.2 68.4 L596.4 70 L597.6 69.1 L598.8 65.8 L600 60.6 L601.2 54.4 L602.4 47.8 L603.6 41.8 L604.8 37 L606 34 L607.2 32.8 L608.4 33.5 L609.6 35.7 L610.8 38.8"/>
+<text x="0" y="187" class="gras accent" font-size="13">Somme des six</text>
+<text x="0" y="204" class="t2" font-size="12">signal émis sur le canal</text>
+<text x="144" y="254" text-anchor="end" class="t2 mono" font-size="11">−6</text>
+<path class="trait" d="M150 250 H610.8" stroke-width="0.4"/>
+<text x="144" y="194" text-anchor="end" class="t2 mono" font-size="11">0</text>
+<path class="trait" d="M150 190 H610.8" stroke-width="0.8"/>
+<text x="144" y="134" text-anchor="end" class="t2 mono" font-size="11">+6</text>
+<path class="trait" d="M150 130 H610.8" stroke-width="0.4"/>
+<path class="accent" d="M150 178.8 L151.2 175.8 L152.4 173.2 L153.6 171.2 L154.8 170 L156 169.6 L157.2 170 L158.4 171.4 L159.6 173.5 L160.8 176.5 L162 180.3 L163.2 184.8 L164.4 190 L165.6 195.7 L166.8 201.7 L168 207.9 L169.2 213.9 L170.4 219.4 L171.6 224.1 L172.8 227.7 L174 230 L175.2 230.9 L176.4 230.3 L177.6 228.4 L178.8 225.5 L180 221.9 L181.2 217.8 L182.4 213.8 L183.6 210 L184.8 206.7 L186 203.9 L187.2 201.5 L188.4 199.6 L189.6 197.7 L190.8 195.6 L192 193.1 L193.2 190 L194.4 186.3 L195.6 182 L196.8 177.6 L198 173.4 L199.2 170 L200.4 168 L201.6 167.9 L202.8 170 L204 174.3 L205.2 180.4 L206.4 187.9 L207.6 195.7 L208.8 202.8 L210 208.1 L211.2 210.7 L212.4 210 L213.6 205.8 L214.8 198.4 L216 188.7 L217.2 177.9 L218.4 167.3 L219.6 158.4 L220.8 152.4 L222 150 L223.2 151.6 L224.4 156.9 L225.6 165.2 L226.8 175.3 L228 186 L229.2 196 L230.4 204.3 L231.6 210 L232.8 213 L234 213.2 L235.2 211.2 L236.4 207.5 L237.6 202.9 L238.8 198.2 L240 193.7 L241.2 190 L242.4 187.2 L243.6 185.4 L244.8 184.5 L246 184.4 L247.2 185 L248.4 186.2 L249.6 187.9 L250.8 190 L252 192.5 L253.2 195.3 L254.4 198.2 L255.6 201.2 L256.8 203.9 L258 206.4 L259.2 208.4 L260.4 210 L261.6 211 L262.8 211.4 L264 211 L265.2 209.6 L266.4 207 L267.6 203 L268.8 197.4 L270 190 L271.2 181 L272.4 170.7 L273.6 159.9 L274.8 149.3 L276 140 L277.2 133.2 L278.4 129.6 L279.6 130 L280.8 134.5 L282 142.7 L283.2 153.9 L284.4 166.9 L285.6 180.3 L286.8 192.7 L288 202.9 L289.2 210 L290.4 213.7 L291.6 214 L292.8 211.6 L294 207.3 L295.2 202.1 L296.4 197 L297.6 192.8 L298.8 190 L300 188.7 L301.2 189 L302.4 190.6 L303.6 193.2 L304.8 196.6 L306 200.5 L307.2 205 L308.4 210 L309.6 215.4 L310.8 221 L312 226.4 L313.2 231.2 L314.4 234.6 L315.6 236 L316.8 234.6 L318 230 L319.2 222.2 L320.4 211.6 L321.6 198.9 L322.8 185.5 L324 172.5 L325.2 161.6 L326.4 153.8 L327.6 150 L328.8 150.5 L330 155.1 L331.2 163 L332.4 173.1 L333.6 184.1 L334.8 194.6 L336 203.5 L337.2 210 L338.4 213.7 L339.6 214.6 L340.8 213 L342 209.5 L343.2 204.9 L344.4 199.7 L345.6 194.6 L346.8 190 L348 186 L349.2 182.7 L350.4 179.9 L351.6 177.5 L352.8 175.4 L354 173.5 L355.2 171.7 L356.4 170 L357.6 168.5 L358.8 167.4 L360 166.6 L361.2 166.3 L362.4 166.4 L363.6 167.1 L364.8 168.3 L366 170 L367.2 172.1 L368.4 174.7 L369.6 177.5 L370.8 180.5 L372 183.5 L373.2 186.3 L374.4 188.5 L375.6 190 L376.8 190.7 L378 190.6 L379.2 189.8 L380.4 188.6 L381.6 187.6 L382.8 187.2 L384 187.9 L385.2 190 L386.4 193.5 L387.6 198.2 L388.8 203.6 L390 208.8 L391.2 212.9 L392.4 215 L393.6 214.1 L394.8 210 L396 202.5 L397.2 192.1 L398.4 179.6 L399.6 166.2 L400.8 153.4 L402 142.3 L403.2 134.3 L404.4 130 L405.6 129.7 L406.8 133.3 L408 140.1 L409.2 149.3 L410.4 159.8 L411.6 170.7 L412.8 180.9 L414 190 L415.2 197.5 L416.4 203.2 L417.6 207.2 L418.8 209.8 L420 211.1 L421.2 211.5 L422.4 211 L423.6 210 L424.8 208.4 L426 206.4 L427.2 204 L428.4 201.3 L429.6 198.4 L430.8 195.4 L432 192.6 L433.2 190 L434.4 187.8 L435.6 186 L436.8 184.8 L438 184.3 L439.2 184.5 L440.4 185.5 L441.6 187.4 L442.8 190 L444 193.3 L445.2 197.2 L446.4 201.2 L447.6 205.1 L448.8 208.3 L450 210.4 L451.2 211 L452.4 210 L453.6 207.2 L454.8 202.9 L456 197.3 L457.2 191 L458.4 184.6 L459.6 178.6 L460.8 173.6 L462 170 L463.2 167.9 L464.4 167.5 L465.6 168.6 L466.8 171.1 L468 174.7 L469.2 179.2 L470.4 184.3 L471.6 190 L472.8 196 L474 202.2 L475.2 208.3 L476.4 214.2 L477.6 219.6 L478.8 224.2 L480 227.7 L481.2 230 L482.4 230.9 L483.6 230.4 L484.8 228.5 L486 225.6 L487.2 222 L488.4 217.9 L489.6 213.8 L490.8 210 L492 206.6 L493.2 203.8 L494.4 201.5 L495.6 199.6 L496.8 197.7 L498 195.6 L499.2 193.1 L500.4 190 L501.6 186.3 L502.8 182 L504 177.6 L505.2 173.4 L506.4 170.1 L507.6 168.1 L508.8 168 L510 170 L511.2 174.2 L512.4 180.3 L513.6 187.8 L514.8 195.5 L516 202.7 L517.2 208 L518.4 210.7 L519.6 210 L520.8 205.8 L522 198.3 L523.2 188.4 L524.4 177.3 L525.6 166.6 L526.8 157.6 L528 151.8 L529.2 150 L530.4 152.5 L531.6 159 L532.8 168.6 L534 179.9 L535.2 191.2 L536.4 200.8 L537.6 207.4 L538.8 210 L540 208.3 L541.2 202.5 L542.4 193.5 L543.6 182.7 L544.8 171.6 L546 161.7 L547.2 154.2 L548.4 150 L549.6 149.4 L550.8 152.3 L552 157.9 L553.2 165.3 L554.4 173.2 L555.6 180.6 L556.8 186.4 L558 190 L559.2 191.1 L560.4 189.9 L561.6 186.8 L562.8 182.6 L564 178 L565.2 174 L566.4 171.2 L567.6 170 L568.8 170.6 L570 172.9 L571.2 176.4 L572.4 180.5 L573.6 184.4 L574.8 187.7 L576 189.6 L577.2 190 L578.4 188.8 L579.6 186.1 L580.8 182.5 L582 178.5 L583.2 174.7 L584.4 171.7 L585.6 170.1 L586.8 170 L588 171.6 L589.2 174.8 L590.4 179.4 L591.6 184.9 L592.8 191.1 L594 197.5 L595.2 203.9 L596.4 210 L597.6 215.6 L598.8 220.7 L600 224.9 L601.2 228.4 L602.4 230.7 L603.6 231.8 L604.8 231.6 L606 230 L607.2 227 L608.4 222.6 L609.6 217.3 L610.8 211.3"/>
+<text x="188.4" y="286" text-anchor="middle" class="t2 mono" font-size="11">bit 1</text>
+<text x="265.2" y="286" text-anchor="middle" class="t2 mono" font-size="11">bit 2</text>
+<text x="342" y="286" text-anchor="middle" class="t2 mono" font-size="11">bit 3</text>
+<text x="418.8" y="286" text-anchor="middle" class="t2 mono" font-size="11">bit 4</text>
+<text x="495.6" y="286" text-anchor="middle" class="t2 mono" font-size="11">bit 5</text>
+<text x="572.4" y="286" text-anchor="middle" class="t2 mono" font-size="11">bit 6</text>
+</svg>
+      <figcaption><span class="badge ajout">Ajout</span> Signal du premier utilisateur, puis somme des signaux de six utilisateurs (séquences de Walsh-Hadamard de longueur 8, lignes 2 à 7 de \(H_3\) de la partie 5, bits tirés au hasard, cosinus surélevé avec \(\beta = 0{,}5\)), dans l'esprit des diapos 22 et 23, dont les données ne sont pas connues. Lue au milieu de chaque chip, la courbe redonne exactement la somme des chips, car le cosinus surélevé s'annule aux multiples non nuls de \(T_c\) : le désétalement retrouve alors les 36 bits émis (vérifié par le calcul).</figcaption>
+    </figure>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les séquences de Walsh-Hadamard <span class="ref">diapo 24</span></h2>
+    <p>L'exemple de la partie 3 repose sur quatre séquences orthogonales. Pour servir \(K\) utilisateurs, il en faut \(K\) : la construction de Hadamard en fournit autant qu'on veut, par doublements successifs.</p>
+    <p>Le système sert \(K\) utilisateurs avec des séquences de longueur \(N\) ; généralement, \(K \le N\). En mode synchrone, on utilise les <dfn>séquences de Walsh-Hadamard</dfn> (<span class="en" lang="en">Walsh-Hadamard sequences</span>).</p>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Construction de Sylvester</span> <span class="ref">diapo 24</span></p>
+      <p>Soit \(N = 2^P\). On part de \(H_0 = [1]\) et on double la taille à chaque étape :</p>
+      \[ H_n = \begin{bmatrix} H_{n-1} &amp; H_{n-1} \\ H_{n-1} &amp; -H_{n-1} \end{bmatrix}. \]
+      <p>\(H_P\) est une matrice \(N \times N\) orthogonale, à diviser par \(\sqrt{N}\). Chacune de ses lignes est la séquence d'étalement d'un utilisateur.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Les premières matrices</span></p>
+      <p><span class="badge ajout">Ajout</span></p>
+      \[ H_1 = \begin{bmatrix} 1 &amp; 1 \\ 1 &amp; -1 \end{bmatrix}, \qquad H_2 = \begin{bmatrix} 1 &amp; 1 &amp; 1 &amp; 1 \\ 1 &amp; -1 &amp; 1 &amp; -1 \\ 1 &amp; 1 &amp; -1 &amp; -1 \\ 1 &amp; -1 &amp; -1 &amp; 1 \end{bmatrix}. \]
+      <p>Les quatre lignes de \(H_2\) sont, dans l'ordre, les séquences des utilisateurs 1 à 4 de la partie 3.</p>
+    </div>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Orthogonalité des lignes</span></p>
+      <p><span class="badge ajout">Ajout</span> Pour tout \(n\), \(H_n H_n^T = 2^n I\) : deux lignes distinctes ont un produit scalaire nul, et chaque ligne a pour norme au carré \(N = 2^n\). La matrice \(H_n / \sqrt{N}\) vérifie donc \(\left(\frac{H_n}{\sqrt N}\right)\left(\frac{H_n}{\sqrt N}\right)^T = I\) : c'est le sens de « orthogonale, à diviser par \(\sqrt N\) ».</p>
+      <details class="preuve">
+        <summary>Preuve</summary>
+        <p>Par récurrence. \(H_0 H_0^T = [1] = 2^0 I\). Si \(H_{n-1} H_{n-1}^T = 2^{n-1} I\), alors \(H_n\) est symétrique par blocs et</p>
+        \[ H_n H_n^T = \begin{bmatrix} H_{n-1} &amp; H_{n-1} \\ H_{n-1} &amp; -H_{n-1} \end{bmatrix} \begin{bmatrix} H_{n-1}^T &amp; H_{n-1}^T \\ H_{n-1}^T &amp; -H_{n-1}^T \end{bmatrix} = \begin{bmatrix} 2 H_{n-1}H_{n-1}^T &amp; 0 \\ 0 &amp; 2 H_{n-1}H_{n-1}^T \end{bmatrix} = 2^n I. \]
+      </details>
+    </div>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarques <span class="ref">diapo 24</span></p>
+      <ul>
+        <li>Il est impossible de trouver \(N + 1\) utilisateurs orthogonaux. <span class="badge ajout">Ajout</span> Les séquences sont des vecteurs de dimension \(N\), et un espace de dimension \(N\) contient au plus \(N\) vecteurs non nuls deux à deux orthogonaux.</li>
+        <li>La <dfn>charge du système</dfn> est \(\alpha = K / N\). <span class="badge ajout">Ajout</span> Avec des séquences de Walsh-Hadamard, \(\alpha \le 1\) ; à pleine charge, \(\alpha = 1\).</li>
+      </ul>
+    </div>
+
+    <p><span class="badge ajout">Ajout</span> L'algorithme ci-dessous construit la matrice et désétale un signal reçu. Le <a href="../TP/TP1_A/enonce_TP1_Codage.pdf">TP 1A</a> le programme en C, pour 1, 2, 4, 8 ou 16 utilisateurs sur un canal idéal.</p>
+<pre><code class="language-pseudo"><b>fonction</b> hadamard(P)                <i>// matrice N × N, N = 2^P</i>
+    H ← [[1]]
+    <b>pour</b> n <b>de</b> 1 <b>à</b> P <b>faire</b>
+        m ← taille(H)
+        <b>pour</b> i <b>de</b> 0 <b>à</b> m − 1, j <b>de</b> 0 <b>à</b> m − 1 <b>faire</b>
+            H'[i][j] ← H[i][j] ;      H'[i][j + m] ← H[i][j]
+            H'[i + m][j] ← H[i][j] ;  H'[i + m][j + m] ← −H[i][j]
+        <b>fin pour</b>
+        H ← H'
+    <b>fin pour</b>
+    <b>retourner</b> H
+
+<b>fonction</b> desetaler(r, H, j)          <i>// bit estimé de l'utilisateur j</i>
+    s ← 0
+    <b>pour</b> k <b>de</b> 0 <b>à</b> N − 1 <b>faire</b>
+        s ← s + r[k] × H[j][k]
+    <b>fin pour</b>
+    <b>si</b> s &gt; 0 <b>alors retourner</b> +1 <b>sinon retourner</b> −1</code></pre>
+
+    <div class="bloc exercice" id="ex-5">
+      <p class="bloc-titre">Exercice 5 <span>Huit utilisateurs</span></p>
+      <p><span class="badge ajout">Ajout</span> a) Construire \(H_3\), la matrice de Walsh-Hadamard pour \(N = 8\) : les quatre premières lignes sont données, compléter les quatre dernières. b) Vérifier que les lignes 2 et 7 sont orthogonales. c) Le système sert 6 utilisateurs : quelle est sa charge ?</p>
+      <details class="indice"><summary>Indice</summary><p>\(H_3 = \begin{bmatrix} H_2 &amp; H_2 \\ H_2 &amp; -H_2 \end{bmatrix}\) : chaque ligne du bas recopie une ligne de \(H_2\), puis son opposée.</p></details>
+      <details class="solution">
+        <summary>Solution proposée (questions b et c)</summary>
+        <p>b) Ligne 2 : \((1, -1, 1, -1, 1, -1, 1, -1)\) ; ligne 7 : \((1, 1, -1, -1, -1, -1, 1, 1)\). Produit scalaire : \(1 - 1 - 1 + 1 - 1 + 1 + 1 - 1 = 0\).</p>
+        <p>c) \(\alpha = 6/8 = 0{,}75\). Le système peut encore accueillir 2 utilisateurs.</p>
+      </details>
+    </div>
+    <div class="atelier" id="c3b-ex5-hadamard-8" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "a) Matrice H₃",
+        "consigne": "<p>Remplir les lignes 5 à 8 avec 1 ou -1 (signe moins du clavier).</p>",
+        "options": { "verrou": "depart", "lignes": false, "ordre": true, "mono": true, "types": { "1": "entier", "2": "entier", "3": "entier", "4": "entier", "5": "entier", "6": "entier", "7": "entier", "8": "entier" } },
+        "depart": ["| Ligne | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |", "|---|---|---|---|---|---|---|---|---|", "| 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |", "| 2 | 1 | -1 | 1 | -1 | 1 | -1 | 1 | -1 |", "| 3 | 1 | 1 | -1 | -1 | 1 | 1 | -1 | -1 |", "| 4 | 1 | -1 | -1 | 1 | 1 | -1 | -1 | 1 |", "| 5 |  |  |  |  |  |  |  |  |", "| 6 |  |  |  |  |  |  |  |  |", "| 7 |  |  |  |  |  |  |  |  |", "| 8 |  |  |  |  |  |  |  |  |"],
+        "solution": ["| Ligne | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |", "|---|---|---|---|---|---|---|---|---|", "| 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |", "| 2 | 1 | -1 | 1 | -1 | 1 | -1 | 1 | -1 |", "| 3 | 1 | 1 | -1 | -1 | 1 | 1 | -1 | -1 |", "| 4 | 1 | -1 | -1 | 1 | 1 | -1 | -1 | 1 |", "| 5 | 1 | 1 | 1 | 1 | -1 | -1 | -1 | -1 |", "| 6 | 1 | -1 | 1 | -1 | -1 | 1 | -1 | 1 |", "| 7 | 1 | 1 | -1 | -1 | -1 | -1 | 1 | 1 |", "| 8 | 1 | -1 | -1 | 1 | -1 | 1 | 1 | -1 |"],
+        "explication": "<p>La ligne i + 4 (i = 1 à 4) recopie la ligne i de H₂ sur les colonnes 1 à 4, puis son opposée sur les colonnes 5 à 8 : c'est le bloc (H₂, −H₂) de la construction de Sylvester. Contrôle rapide : chaque ligne sauf la première contient quatre 1 et quatre −1, et deux lignes quelconques coïncident sur exactement 4 positions. Erreur fréquente : inverser aussi les colonnes 1 à 4.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Walsh-Hadamard ou codes pseudo-aléatoires ?</span></p>
+      <p>Les séquences de Walsh-Hadamard sont parfaitement orthogonales, mais seulement si elles sont alignées (exercice 4). Elles conviennent au lien descendant, synchrone. Sur le lien montant, asynchrone, on emploie des séquences pseudo-aléatoires, comme les codes de Gold, dont la corrélation reste faible quel que soit le décalage (<a href="cours-04-pseudo-aleatoires-cycliques.html">cours 4</a>). <span class="badge hors-programme">Hors programme</span> Les réseaux mobiles de 3<sup>e</sup> génération (UMTS) combinent les deux : des codes orthogonaux pour séparer les canaux d'un même émetteur, des codes pseudo-aléatoires pour séparer les émetteurs.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Porteuses multiples et MC-CDMA <span class="ref">diapos 25–28</span></h2>
+    <p>La deuxième famille de solutions annoncée au début du cours est celle des modulations à porteuses multiples. En les combinant avec l'étalement, on obtient le MC-CDMA, dont on décrit l'émetteur et le récepteur.</p>
+
+    <h3>Les modulations à porteuses multiples <span class="ref">diapo 25</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Modulation à porteuses multiples</span> <span class="ref">diapo 25</span></p>
+      <p>Une <dfn>modulation à porteuses multiples</dfn> (<span class="en" lang="en">multicarrier modulation</span>) transmet des données en parallèle sur un ensemble de <dfn>porteuses orthogonales</dfn>. Les symboles en entrée, de durée \(T_d\), passent par une conversion série-parallèle : chacun des \(N_p\) symboles d'un groupe module sa propre porteuse \(f_1, \dots, f_{N_p}\), pendant une durée</p>
+      \[ T_s = N_p\, T_d. \]
+      <p>Le signal obtenu est un signal <dfn>OFDM</dfn> (<span class="en" lang="en">Orthogonal Frequency Division Multiplexing</span>, multiplexage par répartition en fréquences orthogonales).</p>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 222" width="640" role="img" aria-labelledby="fig-ofdm-titre">
+        <title id="fig-ofdm-titre">Modulation à porteuses multiples : des symboles série de durée Td passent par une conversion série-parallèle ; chacun module une porteuse f1 à fNp et dure Ts = Np Td</title>
+        <defs>
+          <marker id="fleche-ofdm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="0" y="72" font-size="12">symboles</text>
+        <text x="0" y="88" font-size="12">en entrée</text>
+        <rect class="boite" x="4" y="100" width="18" height="20"/>
+        <rect class="boite" x="22" y="100" width="18" height="20"/>
+        <text x="52" y="116" class="t2">…</text>
+        <rect class="boite-accent" x="66" y="100" width="18" height="20"/>
+        <text x="75" y="138" text-anchor="middle" font-size="12">T<tspan dy="4" font-size="10">d</tspan></text>
+        <path class="trait" d="M84 110 H118" marker-end="url(#fleche-ofdm)"/>
+        <rect class="boite" x="120" y="30" width="110" height="170"/>
+        <text x="175" y="108" text-anchor="middle">conversion</text>
+        <text x="175" y="126" text-anchor="middle">série → parallèle</text>
+        <path class="trait" d="M230 50 H284" marker-end="url(#fleche-ofdm)"/>
+        <path class="trait" d="M230 110 H284" marker-end="url(#fleche-ofdm)"/>
+        <path class="trait" d="M230 185 H284" marker-end="url(#fleche-ofdm)"/>
+        <text x="258" y="155" text-anchor="middle" class="t2">⋮</text>
+        <circle class="boite" cx="300" cy="50" r="14"/><path class="trait" d="M291 41 L309 59 M309 41 L291 59"/>
+        <circle class="boite" cx="300" cy="110" r="14"/><path class="trait" d="M291 101 L309 119 M309 101 L291 119"/>
+        <circle class="boite" cx="300" cy="185" r="14"/><path class="trait" d="M291 176 L309 194 M309 176 L291 194"/>
+        <path class="trait" d="M300 10 V34" marker-end="url(#fleche-ofdm)"/>
+        <path class="trait" d="M300 72 V94" marker-end="url(#fleche-ofdm)"/>
+        <path class="trait" d="M300 148 V169" marker-end="url(#fleche-ofdm)"/>
+        <text x="308" y="22">f<tspan dy="4" font-size="10">1</tspan></text>
+        <text x="308" y="84">f<tspan dy="4" font-size="10">2</tspan></text>
+        <text x="308" y="160">f<tspan dy="4" font-size="10">Np</tspan></text>
+        <path class="trait" d="M314 50 H396" marker-end="url(#fleche-ofdm)"/>
+        <path class="trait" d="M314 110 H396" marker-end="url(#fleche-ofdm)"/>
+        <path class="trait" d="M314 185 H396" marker-end="url(#fleche-ofdm)"/>
+        <rect class="boite-accent" x="400" y="38" width="120" height="24"/>
+        <rect class="boite-accent" x="400" y="98" width="120" height="24"/>
+        <rect class="boite-accent" x="400" y="173" width="120" height="24"/>
+        <text x="460" y="55" text-anchor="middle" font-size="12">symbole 1</text>
+        <text x="460" y="115" text-anchor="middle" font-size="12">symbole 2</text>
+        <text x="460" y="190" text-anchor="middle" font-size="12">symbole N<tspan dy="4" font-size="9">p</tspan></text>
+        <path class="trait" d="M400 214 H520" marker-start="url(#fleche-ofdm)" marker-end="url(#fleche-ofdm)"/>
+        <text x="528" y="218" font-size="12">T<tspan dy="4" font-size="10">s</tspan><tspan dy="-4"> = N</tspan><tspan dy="4" font-size="10">p</tspan><tspan dy="-4"> T</tspan><tspan dy="4" font-size="10">d</tspan></text>
+      </svg>
+      <figcaption>Principe d'une modulation à porteuses multiples (redessiné d'après la diapo 25). Les spectres des sous-porteuses, espacées de \(1/T_s\), se chevauchent sans se gêner, car les porteuses sont orthogonales.</figcaption>
+    </figure>
+
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="colonne-titre">Avantages</p>
+        <ul>
+          <li>Forte efficacité spectrale.</li>
+          <li>Signal OFDM facilement généré à l'aide d'une transformée de Fourier inverse.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p class="colonne-titre">Inconvénients</p>
+        <ul>
+          <li>Grande dynamique du signal.</li>
+          <li>Sensibilité aux erreurs de synchronisation fréquentielle et temporelle.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Orthogonalité, IFFT et dynamique</span></p>
+      <ul>
+        <li>Deux porteuses \(f_k\) et \(f_l\) sont orthogonales sur une durée \(T_s\) quand \(\int_0^{T_s} e^{i2\pi f_k t}\, \overline{e^{i2\pi f_l t}}\, dt = 0\), ce qui a lieu dès que \(f_k - f_l\) est un multiple non nul de \(1/T_s\). D'où l'espacement \(1/T_s\) : les spectres se chevauchent, mais chaque sous-porteuse s'annule exactement au centre de ses voisines.</li>
+        <li>Additionner \(N_p\) exponentielles de fréquences \(f_0 + k/T_s\), pondérées par les symboles, c'est calculer une transformée de Fourier discrète inverse : une <dfn>IFFT</dfn> (<span class="en" lang="en">inverse fast Fourier transform</span>) le fait en \(O(N_p \log N_p)\) opérations, sans aucun oscillateur par porteuse. Le récepteur fait l'opération inverse par une FFT.</li>
+        <li>Un symbole long résiste mieux aux multi-trajets : un écho de quelques microsecondes ne recouvre qu'une petite fraction d'un symbole de durée \(T_s = N_p T_d\).</li>
+        <li>« Grande dynamique » : quand les \(N_p\) porteuses s'additionnent en phase, le signal atteint des pics bien plus hauts que sa valeur moyenne. Les amplificateurs doivent rester linéaires sur toute cette plage, ce qui coûte en énergie.</li>
+      </ul>
+    </div>
+
+    <figure class="figure">
+<svg class="schema" viewBox="0 0 640 226" width="640" role="img" aria-labelledby="fig-sousporteuses-titre">
+<title id="fig-sousporteuses-titre">Spectres de cinq sous-porteuses espacées de 1/Ts : chaque spectre est un sinus cardinal qui s'annule au centre de toutes les autres sous-porteuses</title>
+<defs><marker id="fleche-sousporteuses" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="plein"/></marker></defs>
+<path class="trait" d="M40 150 H610" marker-end="url(#fleche-sousporteuses)"/>
+<text x="610" y="192" text-anchor="end" class="t2" font-size="12">fréquence</text>
+<path class="pointille" d="M180 20 V178" stroke-width="0.8"/>
+<text x="180" y="192" text-anchor="middle" class="mono t2" font-size="12">f1</text>
+<path class="trait" d="M40 150 L47 155.7 L54 161.4 L61 166.7 L68 170.8 L75 173.3 L82 173.8 L89 171.8 L96 167.2 L103 159.8 L110 150 L117 138 L124 124.3 L131 109.5 L138 94.5 L145 80 L152 66.7 L159 55.6 L166 47.1 L173 41.8 L180 40 L187 41.8 L194 47.1 L201 55.6 L208 66.7 L215 80 L222 94.5 L229 109.5 L236 124.3 L243 138 L250 150 L257 159.8 L264 167.2 L271 171.8 L278 173.8 L285 173.3 L292 170.8 L299 166.7 L306 161.4 L313 155.7 L320 150 L327 144.8 L334 140.6 L341 137.7 L348 136.1 L355 136 L362 137.2 L369 139.5 L376 142.6 L383 146.3 L390 150 L397 153.5 L404 156.4 L411 158.6 L418 159.8 L425 160 L432 159.3 L439 157.7 L446 155.4 L453 152.8 L460 150 L467 147.4 L474 145.1 L481 143.4 L488 142.4 L495 142.2 L502 142.8 L509 144 L516 145.7 L523 147.8 L530 150 L537 152.1 L544 154 L551 155.3 L558 156.2 L565 156.4 L572 155.9 L579 155 L586 153.5 L593 151.8 L600 150"/>
+<path class="pointille" d="M250 20 V178" stroke-width="0.8"/>
+<text x="250" y="192" text-anchor="middle" class="mono t2" font-size="12">f2</text>
+<path class="trait" d="M40 150 L47 146.3 L54 142.6 L61 139.5 L68 137.2 L75 136 L82 136.1 L89 137.7 L96 140.6 L103 144.8 L110 150 L117 155.7 L124 161.4 L131 166.7 L138 170.8 L145 173.3 L152 173.8 L159 171.8 L166 167.2 L173 159.8 L180 150 L187 138 L194 124.3 L201 109.5 L208 94.5 L215 80 L222 66.7 L229 55.6 L236 47.1 L243 41.8 L250 40 L257 41.8 L264 47.1 L271 55.6 L278 66.7 L285 80 L292 94.5 L299 109.5 L306 124.3 L313 138 L320 150 L327 159.8 L334 167.2 L341 171.8 L348 173.8 L355 173.3 L362 170.8 L369 166.7 L376 161.4 L383 155.7 L390 150 L397 144.8 L404 140.6 L411 137.7 L418 136.1 L425 136 L432 137.2 L439 139.5 L446 142.6 L453 146.3 L460 150 L467 153.5 L474 156.4 L481 158.6 L488 159.8 L495 160 L502 159.3 L509 157.7 L516 155.4 L523 152.8 L530 150 L537 147.4 L544 145.1 L551 143.4 L558 142.4 L565 142.2 L572 142.8 L579 144 L586 145.7 L593 147.8 L600 150"/>
+<path class="pointille" d="M320 20 V178" stroke-width="0.8"/>
+<text x="320" y="192" text-anchor="middle" class="mono t2" font-size="12">f3</text>
+<path class="accent" d="M40 150 L47 152.8 L54 155.4 L61 157.7 L68 159.3 L75 160 L82 159.8 L89 158.6 L96 156.4 L103 153.5 L110 150 L117 146.3 L124 142.6 L131 139.5 L138 137.2 L145 136 L152 136.1 L159 137.7 L166 140.6 L173 144.8 L180 150 L187 155.7 L194 161.4 L201 166.7 L208 170.8 L215 173.3 L222 173.8 L229 171.8 L236 167.2 L243 159.8 L250 150 L257 138 L264 124.3 L271 109.5 L278 94.5 L285 80 L292 66.7 L299 55.6 L306 47.1 L313 41.8 L320 40 L327 41.8 L334 47.1 L341 55.6 L348 66.7 L355 80 L362 94.5 L369 109.5 L376 124.3 L383 138 L390 150 L397 159.8 L404 167.2 L411 171.8 L418 173.8 L425 173.3 L432 170.8 L439 166.7 L446 161.4 L453 155.7 L460 150 L467 144.8 L474 140.6 L481 137.7 L488 136.1 L495 136 L502 137.2 L509 139.5 L516 142.6 L523 146.3 L530 150 L537 153.5 L544 156.4 L551 158.6 L558 159.8 L565 160 L572 159.3 L579 157.7 L586 155.4 L593 152.8 L600 150"/>
+<path class="pointille" d="M390 20 V178" stroke-width="0.8"/>
+<text x="390" y="192" text-anchor="middle" class="mono t2" font-size="12">f4</text>
+<path class="trait" d="M40 150 L47 147.8 L54 145.7 L61 144 L68 142.8 L75 142.2 L82 142.4 L89 143.4 L96 145.1 L103 147.4 L110 150 L117 152.8 L124 155.4 L131 157.7 L138 159.3 L145 160 L152 159.8 L159 158.6 L166 156.4 L173 153.5 L180 150 L187 146.3 L194 142.6 L201 139.5 L208 137.2 L215 136 L222 136.1 L229 137.7 L236 140.6 L243 144.8 L250 150 L257 155.7 L264 161.4 L271 166.7 L278 170.8 L285 173.3 L292 173.8 L299 171.8 L306 167.2 L313 159.8 L320 150 L327 138 L334 124.3 L341 109.5 L348 94.5 L355 80 L362 66.7 L369 55.6 L376 47.1 L383 41.8 L390 40 L397 41.8 L404 47.1 L411 55.6 L418 66.7 L425 80 L432 94.5 L439 109.5 L446 124.3 L453 138 L460 150 L467 159.8 L474 167.2 L481 171.8 L488 173.8 L495 173.3 L502 170.8 L509 166.7 L516 161.4 L523 155.7 L530 150 L537 144.8 L544 140.6 L551 137.7 L558 136.1 L565 136 L572 137.2 L579 139.5 L586 142.6 L593 146.3 L600 150"/>
+<path class="pointille" d="M460 20 V178" stroke-width="0.8"/>
+<text x="460" y="192" text-anchor="middle" class="mono t2" font-size="12">f5</text>
+<path class="trait" d="M40 150 L47 151.8 L54 153.5 L61 155 L68 155.9 L75 156.4 L82 156.2 L89 155.3 L96 154 L103 152.1 L110 150 L117 147.8 L124 145.7 L131 144 L138 142.8 L145 142.2 L152 142.4 L159 143.4 L166 145.1 L173 147.4 L180 150 L187 152.8 L194 155.4 L201 157.7 L208 159.3 L215 160 L222 159.8 L229 158.6 L236 156.4 L243 153.5 L250 150 L257 146.3 L264 142.6 L271 139.5 L278 137.2 L285 136 L292 136.1 L299 137.7 L306 140.6 L313 144.8 L320 150 L327 155.7 L334 161.4 L341 166.7 L348 170.8 L355 173.3 L362 173.8 L369 171.8 L376 167.2 L383 159.8 L390 150 L397 138 L404 124.3 L411 109.5 L418 94.5 L425 80 L432 66.7 L439 55.6 L446 47.1 L453 41.8 L460 40 L467 41.8 L474 47.1 L481 55.6 L488 66.7 L495 80 L502 94.5 L509 109.5 L516 124.3 L523 138 L530 150 L537 159.8 L544 167.2 L551 171.8 L558 173.8 L565 173.3 L572 170.8 L579 166.7 L586 161.4 L593 155.7 L600 150"/>
+<circle class="plein-accent" cx="320" cy="40" r="4"/>
+<circle class="plein-accent" cx="250" cy="150" r="4"/>
+<circle class="plein-accent" cx="390" cy="150" r="4"/>
+<path class="trait" d="M390 206 H460" marker-start="url(#fleche-sousporteuses)" marker-end="url(#fleche-sousporteuses)"/>
+<text x="425" y="222" text-anchor="middle" class="t2" font-size="12">1/Ts</text>
+</svg>
+      <figcaption><span class="badge ajout">Ajout</span> Spectres de cinq sous-porteuses espacées de \(1/T_s\), la troisième en couleur. Chacun est un sinus cardinal qui s'annule au centre de toutes les autres (points) : c'est l'orthogonalité qui permet aux spectres de se chevaucher sans se gêner. La diapo 25 dessine ces lobes sous la sortie du convertisseur série-parallèle.</figcaption>
+    </figure>
+
+    <h3>Porteuses multiples et spectre étalé <span class="ref">diapo 26</span></h3>
+    <p>Le principe est d'associer les avantages de l'étalement de spectre et des modulations à porteuses multiples. On classe les systèmes obtenus selon le domaine où se fait l'étalement et selon l'orthogonalité des sous-porteuses.</p>
+    <div class="tableau centre">
+      <table>
+        <caption>Systèmes à porteuses multiples et à spectre étalé (diapo 26)</caption>
+        <thead><tr><th>Domaine d'étalement</th><th>Temporel</th><th>Fréquentiel</th></tr></thead>
+        <tbody>
+          <tr><th>Sous-porteuses orthogonales</th><td>MC-DS-CDMA</td><td>MC-CDMA</td></tr>
+          <tr><th>Sous-porteuses non orthogonales</th><td>MT-CDMA</td><td>×</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Les paramètres du système sont la longueur du code d'étalement \(L_c\) et le type de code, le nombre de porteuses \(N_p\) et la largeur des sous-bandes. En les choisissant, on adapte le signal aux caractéristiques du canal. Comme en CDMA classique, tous les utilisateurs partagent le temps et la fréquence, et sont séparés par leur code : c'est la dimension « code » de la figure de la diapo 26, reprise dans le complément de la partie 1.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Lire le tableau</span></p>
+      <ul>
+        <li>En <strong>MC-CDMA</strong>, l'étalement est fréquentiel : les chips d'un même symbole sont émis en même temps, chacun sur sa sous-porteuse.</li>
+        <li>En <strong>MC-DS-CDMA</strong>, l'étalement est temporel : chaque sous-porteuse porte un signal étalé dans le temps, comme dans la partie 3 (DS pour <span lang="en">direct sequence</span>, séquence directe).</li>
+        <li>En <strong>MT-CDMA</strong> (<span lang="en">multi-tone</span>), l'étalement est aussi temporel, mais les sous-porteuses ne sont pas orthogonales. La case × signifie qu'aucun système n'étale en fréquence sur des sous-porteuses non orthogonales.</li>
+      </ul>
+    </div>
+
+    <h3>L'émetteur MC-CDMA <span class="ref">diapo 27</span></h3>
+    <p>Dans l'émetteur MC-CDMA, le symbole \(d_j\) de l'utilisateur \(j\) est recopié sur \(L_c\) branches. La branche \(k\) le multiplie par le chip \(c_{j,k}\) de la séquence de l'utilisateur, puis par la sous-porteuse \(e^{2i\pi f_k t}\). Un sommateur, réalisé par une IFFT, forme le signal \(s_j(t)\).</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 214" width="640" role="img" aria-labelledby="fig-emetteur-titre">
+        <title id="fig-emetteur-titre">Émetteur MC-CDMA : le symbole dj est recopié sur Lc branches ; chaque branche est multipliée par un chip cj,k puis par une sous-porteuse fk ; une somme réalisée par IFFT donne sj(t)</title>
+        <defs>
+          <marker id="fleche-emetteur" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="0" y="112">d<tspan dy="4" font-size="10">j</tspan></text>
+        <path class="trait" d="M20 120 H80 M80 52 V190"/>
+        <path class="trait" d="M80 52 H124" marker-end="url(#fleche-emetteur)"/>
+        <path class="trait" d="M80 120 H124" marker-end="url(#fleche-emetteur)"/>
+        <path class="trait" d="M80 190 H124" marker-end="url(#fleche-emetteur)"/>
+        <circle class="boite" cx="140" cy="52" r="14"/><path class="trait" d="M131 43 L149 61 M149 43 L131 61"/>
+        <circle class="boite" cx="140" cy="120" r="14"/><path class="trait" d="M131 111 L149 129 M149 111 L131 129"/>
+        <circle class="boite" cx="140" cy="190" r="14"/><path class="trait" d="M131 181 L149 199 M149 181 L131 199"/>
+        <path class="trait" d="M140 14 V36" marker-end="url(#fleche-emetteur)"/>
+        <path class="trait" d="M140 82 V104" marker-end="url(#fleche-emetteur)"/>
+        <path class="trait" d="M140 152 V174" marker-end="url(#fleche-emetteur)"/>
+        <text x="146" y="24" font-size="13">c<tspan dy="4" font-size="10">j,0</tspan></text>
+        <text x="146" y="92" font-size="13">c<tspan dy="4" font-size="10">j,1</tspan></text>
+        <text x="146" y="162" font-size="13">c<tspan dy="4" font-size="10">j,Lc−1</tspan></text>
+        <text x="104" y="160" text-anchor="middle" class="t2">⋮</text>
+        <text x="196" y="160" text-anchor="middle" class="t2">⋮</text>
+        <path class="trait" d="M154 52 H224" marker-end="url(#fleche-emetteur)"/>
+        <path class="trait" d="M154 120 H224" marker-end="url(#fleche-emetteur)"/>
+        <path class="trait" d="M154 190 H224" marker-end="url(#fleche-emetteur)"/>
+        <circle class="boite" cx="240" cy="52" r="14"/><path class="trait" d="M231 43 L249 61 M249 43 L231 61"/>
+        <circle class="boite" cx="240" cy="120" r="14"/><path class="trait" d="M231 111 L249 129 M249 111 L231 129"/>
+        <circle class="boite" cx="240" cy="190" r="14"/><path class="trait" d="M231 181 L249 199 M249 181 L231 199"/>
+        <path class="trait" d="M240 14 V36" marker-end="url(#fleche-emetteur)"/>
+        <path class="trait" d="M240 82 V104" marker-end="url(#fleche-emetteur)"/>
+        <path class="trait" d="M240 152 V174" marker-end="url(#fleche-emetteur)"/>
+        <text x="246" y="24" font-size="13">f<tspan dy="4" font-size="10">0</tspan></text>
+        <text x="246" y="92" font-size="13">f<tspan dy="4" font-size="10">1</tspan></text>
+        <text x="246" y="162" font-size="13">f<tspan dy="4" font-size="10">Np−1</tspan></text>
+        <path class="trait" d="M254 52 H316" marker-end="url(#fleche-emetteur)"/>
+        <path class="trait" d="M254 120 H316" marker-end="url(#fleche-emetteur)"/>
+        <path class="trait" d="M254 190 H316" marker-end="url(#fleche-emetteur)"/>
+        <rect class="boite-accent" x="320" y="30" width="60" height="180"/>
+        <text x="350" y="128" text-anchor="middle" font-size="24">Σ</text>
+        <text x="350" y="200" text-anchor="middle" class="t2" font-size="12">IFFT</text>
+        <path class="trait" d="M380 120 H440" marker-end="url(#fleche-emetteur)"/>
+        <text x="446" y="125">s<tspan dy="4" font-size="10">j</tspan><tspan dy="-4">(t)</tspan></text>
+        <text x="446" y="160" class="t2" font-size="12">un chip par sous-porteuse,</text>
+        <text x="446" y="176" class="t2" font-size="12">tous émis en même temps</text>
+      </svg>
+      <figcaption>Émetteur MC-CDMA (redessiné d'après la diapo 27). Ici \(N_p = L_c\) : chaque chip a sa sous-porteuse, et un chip dure autant que le symbole (\(T_c = T_d\)).</figcaption>
+    </figure>
+    <p>Le signal transmis pour l'utilisateur \(j\) a pour expression :</p>
+    <div class="encadre">
+      \[ s_j(t) = \mathrm{Re}\left\{ \sum_{k=0}^{N_p-1} d_j(t)\, C_{j,k}\, e^{i 2\pi f_k t} \right\}, \qquad f_k = f_0 + \frac{k}{T_d}. \]
+    </div>
+    <p><span class="badge ajout">Ajout</span> Comparé au CDMA de la partie 3, où les \(N\) chips se succèdent dans le temps (\(T_b = N T_c\)), le MC-CDMA émet les \(L_c\) chips simultanément, chacun sur sa sous-porteuse, pendant toute la durée \(T_d\) du symbole. L'étalement se fait en fréquence : le signal occupe environ \(N_p / T_d\) hertz.</p>
+
+    <h3>Le récepteur MC-CDMA <span class="ref">diapo 28</span></h3>
+    <p>Le récepteur fait le chemin inverse. Une FFT ramène chaque sous-porteuse en bande de base (multiplication par \(e^{-2i\pi f_k t}\)). Un bloc d'<dfn>égalisation</dfn> (<span class="en" lang="en">equalization</span>) corrige, sous-porteuse par sous-porteuse, les effets du canal, grâce à une <dfn>estimation du canal</dfn>. Chaque sortie est multipliée par le chip \(c_{j,k}\) de l'utilisateur, les sorties sont additionnées, et un bloc de décision rend la donnée \(d_j\).</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 250" width="640" role="img" aria-labelledby="fig-recepteur-titre">
+        <title id="fig-recepteur-titre">Récepteur MC-CDMA : r(t) passe par une FFT, puis une égalisation guidée par l'estimation du canal ; chaque sous-porteuse est multipliée par le chip cj,k, puis une somme et une décision donnent dj</title>
+        <defs>
+          <marker id="fleche-recepteur" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="0" y="100">r(t)</text>
+        <path class="trait" d="M0 110 H46" marker-end="url(#fleche-recepteur)"/>
+        <rect class="boite" x="50" y="30" width="60" height="160"/>
+        <text x="80" y="115" text-anchor="middle">FFT</text>
+        <path class="trait" d="M110 50 H196" marker-end="url(#fleche-recepteur)"/>
+        <path class="trait" d="M110 110 H196" marker-end="url(#fleche-recepteur)"/>
+        <path class="trait" d="M110 170 H196" marker-end="url(#fleche-recepteur)"/>
+        <text x="130" y="146" text-anchor="middle" class="t2">⋮</text>
+        <path class="trait" d="M160 170 V201" marker-end="url(#fleche-recepteur)"/>
+        <rect class="boite" x="90" y="205" width="130" height="34" rx="6"/>
+        <text x="155" y="227" text-anchor="middle" font-size="12">estimation du canal</text>
+        <path class="trait" d="M220 222 H240 V194" marker-end="url(#fleche-recepteur)"/>
+        <rect class="boite-accent" x="200" y="30" width="80" height="160"/>
+        <text x="240" y="106" text-anchor="middle" font-size="13">égalisation</text>
+        <text x="240" y="126" text-anchor="middle">g<tspan dy="4" font-size="10">k</tspan></text>
+        <path class="trait" d="M280 50 H324" marker-end="url(#fleche-recepteur)"/>
+        <path class="trait" d="M280 110 H324" marker-end="url(#fleche-recepteur)"/>
+        <path class="trait" d="M280 170 H324" marker-end="url(#fleche-recepteur)"/>
+        <circle class="boite" cx="340" cy="50" r="14"/><path class="trait" d="M331 41 L349 59 M349 41 L331 59"/>
+        <circle class="boite" cx="340" cy="110" r="14"/><path class="trait" d="M331 101 L349 119 M349 101 L331 119"/>
+        <circle class="boite" cx="340" cy="170" r="14"/><path class="trait" d="M331 161 L349 179 M349 161 L331 179"/>
+        <path class="trait" d="M340 8 V34" marker-end="url(#fleche-recepteur)"/>
+        <path class="trait" d="M340 72 V94" marker-end="url(#fleche-recepteur)"/>
+        <path class="trait" d="M340 132 V154" marker-end="url(#fleche-recepteur)"/>
+        <text x="346" y="20" font-size="13">c<tspan dy="4" font-size="10">j,0</tspan></text>
+        <text x="346" y="84" font-size="13">c<tspan dy="4" font-size="10">j,1</tspan></text>
+        <text x="346" y="144" font-size="13">c<tspan dy="4" font-size="10">j,Np−1</tspan></text>
+        <path class="trait" d="M354 50 H416" marker-end="url(#fleche-recepteur)"/>
+        <path class="trait" d="M354 110 H416" marker-end="url(#fleche-recepteur)"/>
+        <path class="trait" d="M354 170 H416" marker-end="url(#fleche-recepteur)"/>
+        <rect class="boite" x="420" y="30" width="100" height="160"/>
+        <text x="470" y="106" text-anchor="middle" font-size="24">Σ</text>
+        <text x="470" y="132" text-anchor="middle" font-size="12">décision</text>
+        <path class="trait" d="M520 110 H570" marker-end="url(#fleche-recepteur)"/>
+        <text x="576" y="115">d<tspan dy="4" font-size="10">j</tspan></text>
+        <path class="trait" d="M577 100 L580.5 96 L584 100"/>
+      </svg>
+      <figcaption>Récepteur MC-CDMA (redessiné d'après la diapo 28).</figcaption>
+    </figure>
+    <p>Le signal reçu est la somme des signaux des \(N_u\) utilisateurs, chacun convolué (\(\otimes\)) par la réponse impulsionnelle \(h(t)\) du canal, plus un bruit \(\eta(t)\) :</p>
+    \[ r(t) = \sum_{j=0}^{N_u - 1} s_j(t) \otimes h(t) + \eta(t). \]
+    <p>Après FFT, égalisation par les coefficients \(g_k\) et désétalement, la donnée reçue pour l'utilisateur \(i\) se décompose en trois termes :</p>
+    <div class="encadre">
+      \[ \hat d_i = \underbrace{\sum_{k=0}^{N_p-1} C_{k,i}^2\, g_k h_k\, d_i}_{\text{signal utile}} + \underbrace{\sum_{\substack{j=0 \\ j \ne i}}^{N_u-1} \sum_{k=0}^{N_p-1} C_{k,i}\, C_{k,j}\, g_k h_k\, d_j}_{\text{interférence d'accès multiple}} + \underbrace{\sum_{k=0}^{N_p-1} C_{k,i}\, g_k\, \eta_k}_{\text{bruit du canal}} \]
+    </div>
+    <p><span class="badge ajout">Ajout</span> Sur la diapo elle-même, cette formule est en partie illisible : plusieurs symboles y sont remplacés par « ¿ ». On lit seulement \(g_k h_k d_j\) sous l'accolade « Interférence d'Accès Multiple » et \(\sum_{k=0}^{N_p-1} C_{k,i}\, g_k \eta_k\) sous « Bruit du canal » ; le reste est reconstruit à partir du récepteur de la diapo. C'est la décomposition classique du signal désétalé, et elle redonne les deux termes lisibles. \(h_k\) est le coefficient du canal sur la sous-porteuse \(k\), \(g_k\) le coefficient d'égalisation et \(\eta_k\) le bruit sur la sous-porteuse \(k\). La diapo 28 écrit \(C_{k,i}\) (sous-porteuse, utilisateur) le coefficient que la diapo 27 note \(C_{j,k}\) (utilisateur, chip).</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Interférence d'accès multiple</span></p>
+      <p><span class="badge ajout">Ajout</span> L'<dfn>interférence d'accès multiple</dfn> (<span class="en" lang="en">multiple access interference</span>, MAI) est la part de l'estimation \(\hat d_i\) qui vient des données \(d_j\) des autres utilisateurs.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>D'où vient la formule, et quand la MAI s'annule</span></p>
+      <p>Une convolution dans le temps devient une multiplication en fréquence : après la FFT, la sous-porteuse \(k\) reçoit \(R_k = h_k \sum_j C_{k,j} d_j + \eta_k\). On égalise (\(g_k R_k\)), on multiplie par le chip \(C_{k,i}\) et on somme sur \(k\) : on obtient les trois termes.</p>
+      <p>Si \(g_k h_k\) est le même pour toutes les sous-porteuses (canal plat, ou canal parfaitement égalisé), la MAI vaut \(g h \sum_{j \ne i} d_j \langle c_i, c_j \rangle = 0\) : on retrouve le cas idéal de la partie 3. Sur un canal <strong>sélectif en fréquence</strong>, où les \(h_k\) diffèrent d'une sous-porteuse à l'autre, les chips sont pondérés inégalement et l'orthogonalité est perdue.</p>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Deux utilisateurs, deux sous-porteuses</span></p>
+      <p><span class="badge ajout">Ajout</span> Séquences \(c_1 = (+1, +1)\) et \(c_2 = (+1, -1)\), canal \(h = (1;\ 0{,}5)\), sans bruit. En divisant par \(N_p = 2\) :</p>
+      <ul>
+        <li>sans égalisation (\(g_k = 1\)) : \(\hat d_1 = \frac12\big(1 \cdot (d_1 + d_2) + 0{,}5\,(d_1 - d_2)\big) = 0{,}75\, d_1 + 0{,}25\, d_2\). La MAI vaut \(0{,}25\, d_2\) ;</li>
+        <li>avec \(g_k = 1/h_k = (1;\ 2)\) : \(g_k h_k = 1\) partout, et \(\hat d_1 = d_1\). La MAI a disparu.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Combattre l'interférence d'accès multiple <span class="ref">diapos 29–33</span></h2>
+    <p>Dès que les hypothèses du désétalement tombent (désynchronisation, multi-trajets, canal sélectif en fréquence), l'interférence d'accès multiple apparaît. Les détecteurs de cette partie cherchent à la réduire, avec plus ou moins de calcul.</p>
+
+    <h3>Techniques d'annulation temporelles <span class="ref">diapo 29</span></h3>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 234" width="640" role="img" aria-labelledby="fig-detection-titre">
+        <title id="fig-detection-titre">À gauche, détection linéaire : un filtre adapté par utilisateur suivi d'une décision Q. À droite, détection à maximum de vraisemblance : les filtres adaptés alimentent un algorithme de détection multi-utilisateur</title>
+        <defs>
+          <marker id="fleche-detection" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <path class="trait" d="M0 115 H20 M20 45 V185"/>
+        <path class="trait" d="M20 45 H44" marker-end="url(#fleche-detection)"/>
+        <path class="trait" d="M20 115 H44" marker-end="url(#fleche-detection)"/>
+        <path class="trait" d="M20 185 H44" marker-end="url(#fleche-detection)"/>
+        <rect class="boite" x="46" y="27" width="110" height="36"/>
+        <text x="101" y="42" text-anchor="middle" font-size="12">filtre adapté</text>
+        <text x="101" y="57" text-anchor="middle" font-size="12">utilisateur 1</text>
+        <rect class="boite" x="46" y="97" width="110" height="36"/>
+        <text x="101" y="112" text-anchor="middle" font-size="12">filtre adapté</text>
+        <text x="101" y="127" text-anchor="middle" font-size="12">utilisateur 2</text>
+        <text x="101" y="158" text-anchor="middle" class="t2">⋮</text>
+        <rect class="boite" x="46" y="167" width="110" height="36"/>
+        <text x="101" y="182" text-anchor="middle" font-size="12">filtre adapté</text>
+        <text x="101" y="197" text-anchor="middle" font-size="12">utilisateur N<tspan dy="3" font-size="9">u</tspan></text>
+        <path class="trait" d="M156 45 H196" marker-end="url(#fleche-detection)"/>
+        <path class="trait" d="M156 115 H196" marker-end="url(#fleche-detection)"/>
+        <path class="trait" d="M156 185 H196" marker-end="url(#fleche-detection)"/>
+        <rect class="boite-accent" x="198" y="31" width="44" height="28"/><text x="220" y="50" text-anchor="middle" font-size="13">Q(·)</text>
+        <rect class="boite-accent" x="198" y="101" width="44" height="28"/><text x="220" y="120" text-anchor="middle" font-size="13">Q(·)</text>
+        <rect class="boite-accent" x="198" y="171" width="44" height="28"/><text x="220" y="190" text-anchor="middle" font-size="13">Q(·)</text>
+        <path class="trait" d="M242 45 H264" marker-end="url(#fleche-detection)"/>
+        <path class="trait" d="M242 115 H264" marker-end="url(#fleche-detection)"/>
+        <path class="trait" d="M242 185 H264" marker-end="url(#fleche-detection)"/>
+        <text x="268" y="50">x̂<tspan dy="4" font-size="10">1</tspan></text>
+        <text x="268" y="120">x̂<tspan dy="4" font-size="10">2</tspan></text>
+        <text x="268" y="190">x̂<tspan dy="4" font-size="10">Nu</tspan></text>
+        <text x="150" y="226" text-anchor="middle" class="gras">détection linéaire</text>
+
+        <path class="trait" d="M318 12 V210"/>
+
+        <path class="trait" d="M330 115 H350 M350 45 V185"/>
+        <path class="trait" d="M350 45 H374" marker-end="url(#fleche-detection)"/>
+        <path class="trait" d="M350 115 H374" marker-end="url(#fleche-detection)"/>
+        <path class="trait" d="M350 185 H374" marker-end="url(#fleche-detection)"/>
+        <rect class="boite" x="376" y="27" width="100" height="36"/>
+        <text x="426" y="42" text-anchor="middle" font-size="12">filtre adapté</text>
+        <text x="426" y="57" text-anchor="middle" font-size="12">utilisateur 1</text>
+        <rect class="boite" x="376" y="97" width="100" height="36"/>
+        <text x="426" y="112" text-anchor="middle" font-size="12">filtre adapté</text>
+        <text x="426" y="127" text-anchor="middle" font-size="12">utilisateur 2</text>
+        <text x="426" y="158" text-anchor="middle" class="t2">⋮</text>
+        <rect class="boite" x="376" y="167" width="100" height="36"/>
+        <text x="426" y="182" text-anchor="middle" font-size="12">filtre adapté</text>
+        <text x="426" y="197" text-anchor="middle" font-size="12">utilisateur N<tspan dy="3" font-size="9">u</tspan></text>
+        <path class="trait" d="M476 45 H506" marker-end="url(#fleche-detection)"/>
+        <path class="trait" d="M476 115 H506" marker-end="url(#fleche-detection)"/>
+        <path class="trait" d="M476 185 H506" marker-end="url(#fleche-detection)"/>
+        <rect class="boite-accent" x="508" y="27" width="76" height="176"/>
+        <text x="546" y="94" text-anchor="middle" font-size="12">algorithme</text>
+        <text x="546" y="110" text-anchor="middle" font-size="12">de détection</text>
+        <text x="546" y="126" text-anchor="middle" font-size="12">multi-</text>
+        <text x="546" y="142" text-anchor="middle" font-size="12">utilisateur</text>
+        <path class="trait" d="M584 45 H606" marker-end="url(#fleche-detection)"/>
+        <path class="trait" d="M584 115 H606" marker-end="url(#fleche-detection)"/>
+        <path class="trait" d="M584 185 H606" marker-end="url(#fleche-detection)"/>
+        <text x="610" y="50">x̂<tspan dy="4" font-size="10">1</tspan></text>
+        <text x="610" y="120">x̂<tspan dy="4" font-size="10">2</tspan></text>
+        <text x="610" y="190">x̂<tspan dy="4" font-size="10">Nu</tspan></text>
+        <text x="480" y="226" text-anchor="middle" class="gras">maximum de vraisemblance</text>
+      </svg>
+      <figcaption>Détection linéaire et détection à maximum de vraisemblance (redessiné d'après la diapo 29). Les sorties sont les décisions \(Q(\hat x_1), \dots, Q(\hat x_{N_u})\).</figcaption>
+    </figure>
+    <p>La <strong>détection linéaire</strong> traite chaque utilisateur séparément : un <dfn>filtre adapté</dfn> (<span class="en" lang="en">matched filter</span>) à sa séquence, suivi d'une décision \(Q(\cdot)\). La <strong>détection à maximum de vraisemblance</strong> fait passer les sorties de tous les filtres adaptés dans un algorithme de détection multi-utilisateur, qui décide de tous les bits ensemble.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Filtre adapté et maximum de vraisemblance</span></p>
+      <ul>
+        <li>Le filtre adapté à un utilisateur calcule la corrélation du signal reçu avec sa séquence : c'est exactement le désétalement \(\frac1N \langle r, c_j \rangle\) de la partie 3. \(Q(\cdot)\) est la décision, ici le signe.</li>
+        <li>Le détecteur à <dfn>maximum de vraisemblance</dfn> (<span class="en" lang="en">maximum likelihood</span>) cherche la combinaison de bits \((x_1, \dots, x_{N_u})\) qui explique le mieux le signal reçu. Il est optimal, mais il y a \(2^{N_u}\) combinaisons : 65 536 pour 16 utilisateurs. D'où la recherche de détecteurs plus simples.</li>
+      </ul>
+    </div>
+
+    <h3>Techniques fréquentielles mono-utilisateur <span class="ref">diapo 30</span></h3>
+    <p>Les techniques mono-utilisateur font une détection linéaire, ou <strong>égalisation</strong> : chaque sous-porteuse est multipliée par un coefficient \(g_k\), puis on désétale. La diapo 30 en présente trois.</p>
+    <div class="tableau">
+      <table>
+        <caption>Égaliseurs mono-utilisateur (diapo 30)</caption>
+        <thead><tr><th>Combinaison</th><th>Coefficient</th><th>Avantage</th><th>Inconvénient</th></tr></thead>
+        <tbody>
+          <tr><th>Restauration d'orthogonalité (ZF)</th><td>\(g_k = \dfrac{1}{h_k}\)</td><td>Annulation complète de la MAI</td><td>Amplification du bruit</td></tr>
+          <tr><th>Erreur quadratique moyenne minimale (MMSE)</th><td>\(g_k = \dfrac{h_k^*}{|h_k|^2 + \dfrac{1}{\gamma_k}}\)</td><td>Compromis entre la minimisation de la MAI et la maximisation du rapport signal à bruit</td><td>Nécessite l'estimation du rapport signal à bruit \(\gamma_k\) pour chaque sous-porteuse</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Dans la formule MMSE de la diapo, l'exposant de \(h_k\) au numérateur est remplacé par « ¿ » : c'est le conjugué \(h_k^*\) de la formule classique, retenu ici. La diapo écrit \(\|h_k\|^2\) pour \(|h_k|^2\), le carré du module.</p>
+    <p>Le <dfn>ZF</dfn> (<span class="en" lang="en">zero forcing</span>) inverse exactement le canal ; le <dfn>MMSE</dfn> (<span class="en" lang="en">minimum mean square error</span>) minimise l'erreur quadratique moyenne entre la donnée émise et son estimation. Tous deux suivent le schéma d'une méthode linéaire : l'entrée \(\mathbf{y}\) traverse un filtre \(\mathbf{C}\), qui donne \(\mathbf{z}\), puis une décision, qui donne \(\hat{\mathbf{s}}\).</p>
+
+    <div class="bloc exercice" id="ex-6">
+      <p class="bloc-titre">Exercice 6 <span>Une sous-porteuse évanouie</span></p>
+      <p><span class="badge ajout">Ajout</span> Sur la sous-porteuse \(k\), le canal est très atténué : \(h_k = 0{,}1\) (réel), et le rapport signal à bruit vaut \(\gamma_k = 10\). Calculer \(g_k\) pour le ZF puis pour le MMSE. Par combien la puissance du bruit de cette sous-porteuse est-elle multipliée dans chaque cas ?</p>
+      <details class="indice"><summary>Indice</summary><p>Le bruit \(\eta_k\) est multiplié par \(g_k\), donc sa puissance par \(|g_k|^2\).</p></details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>ZF : \(g_k = 1/0{,}1 = 10\). La puissance du bruit est multipliée par 100 : cette sous-porteuse, presque vide de signal, injecte un bruit énorme dans la somme.</p>
+        <p>MMSE : \(g_k = \dfrac{0{,}1}{0{,}01 + 0{,}1} \approx 0{,}91\), soit une puissance de bruit multipliée par 0,83 environ. Le produit \(g_k h_k \approx 0{,}09\) reste loin de 1 : le MMSE renonce à restaurer l'orthogonalité sur cette sous-porteuse (un peu de MAI subsiste) plutôt que d'y amplifier le bruit.</p>
+        <p>Cas limites : quand \(\gamma_k \to \infty\) (pas de bruit), \(g_k \to 1/h_k\), le MMSE devient le ZF ; quand \(\gamma_k\) est très faible, \(g_k \approx \gamma_k h_k^*\) : on se contente de pondérer chaque sous-porteuse par sa qualité.</p>
+      </details>
+    </div>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Détecteur à retour de décision (DFE)</span> <span class="ref">diapo 30</span></p>
+      <p>Dans un <dfn>détecteur à retour de décision</dfn> (<span class="en" lang="en">decision feedback equalizer</span>, DFE), l'entrée \(\mathbf{y}_m\) traverse un filtre direct \(\mathbf{C}_T(z)\). On ajoute au résultat la sortie d'un filtre de retour \(\mathbf{C}_R(z)\), alimenté par les décisions déjà prises, pour former \(\mathbf{z}_m\) ; une décision donne alors \(\hat{\mathbf{s}}_m\).</p>
+      <p><span class="badge ajout">Ajout</span> Le filtre de retour reconstruit l'interférence due aux symboles déjà décidés et la retranche. Le risque est la propagation d'erreurs : une mauvaise décision fausse la soustraction suivante.</p>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 176" width="640" role="img" aria-labelledby="fig-egaliseurs-titre">
+        <title id="fig-egaliseurs-titre">À gauche, méthode linéaire : y traverse le filtre C, ce qui donne z, puis une décision donne s chapeau. À droite, retour de décision : ym traverse CT(z) ; on y ajoute la sortie de CR(z), alimenté par les décisions, ce qui donne zm, puis la décision donne sm chapeau</title>
+        <defs>
+          <marker id="fleche-egaliseurs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="150" y="18" text-anchor="middle" class="gras">Méthode linéaire (ZF, MMSE)</text>
+        <text x="10" y="62" class="mono">y</text>
+        <path class="trait" d="M8 70 H78" marker-end="url(#fleche-egaliseurs)"/>
+        <rect class="boite-accent" x="80" y="52" width="60" height="36"/>
+        <text x="110" y="75" text-anchor="middle" class="mono">C</text>
+        <path class="trait" d="M140 70 H198" marker-end="url(#fleche-egaliseurs)"/>
+        <text x="170" y="62" text-anchor="middle" class="mono">z</text>
+        <rect class="boite" x="200" y="52" width="40" height="36"/>
+        <path class="trait" d="M208 80 H220 V60 H232"/>
+        <path class="trait" d="M240 70 H290" marker-end="url(#fleche-egaliseurs)"/>
+        <text x="266" y="62" text-anchor="middle" class="mono">ŝ</text>
+        <text x="150" y="120" text-anchor="middle" class="t2" font-size="12">ZF : C = 1/h ; MMSE : C = h* / (|h|² + 1/γ)</text>
+        <path class="pointille" d="M314 10 V166"/>
+        <text x="480" y="18" text-anchor="middle" class="gras">Retour de décision (DFE)</text>
+        <text x="330" y="62" class="mono">y<tspan dy="4" font-size="10">m</tspan></text>
+        <path class="trait" d="M330 70 H370" marker-end="url(#fleche-egaliseurs)"/>
+        <rect class="boite-accent" x="372" y="52" width="66" height="36"/>
+        <text x="405" y="75" text-anchor="middle" class="mono">C<tspan dy="4" font-size="10">T</tspan><tspan dy="-4">(z)</tspan></text>
+        <path class="trait" d="M438 70 H472" marker-end="url(#fleche-egaliseurs)"/>
+        <circle class="boite" cx="486" cy="70" r="12"/>
+        <path class="trait" d="M479 70 H493 M486 63 V77"/>
+        <path class="trait" d="M498 70 H538" marker-end="url(#fleche-egaliseurs)"/>
+        <text x="518" y="62" text-anchor="middle" class="mono">z<tspan dy="4" font-size="10">m</tspan></text>
+        <rect class="boite" x="540" y="52" width="40" height="36"/>
+        <path class="trait" d="M548 80 H560 V60 H572"/>
+        <path class="trait" d="M580 70 H634" marker-end="url(#fleche-egaliseurs)"/>
+        <text x="622" y="62" text-anchor="middle" class="mono">ŝ<tspan dy="4" font-size="10">m</tspan></text>
+        <path class="accent" d="M606 70 V130 H568" marker-end="url(#fleche-egaliseurs)"/>
+        <rect class="boite-accent" x="500" y="112" width="66" height="36"/>
+        <text x="533" y="135" text-anchor="middle" class="mono">C<tspan dy="4" font-size="10">R</tspan><tspan dy="-4">(z)</tspan></text>
+        <path class="accent" d="M500 130 H486 V84" marker-end="url(#fleche-egaliseurs)"/>
+        <text x="533" y="168" text-anchor="middle" class="accent" font-size="12">décisions déjà prises</text>
+      </svg>
+      <figcaption>Méthode linéaire et détecteur à retour de décision (redessiné d'après la diapo 30). \(\mathbf{C}_T(z)\) et \(\mathbf{C}_R(z)\) sont des filtres, notés par leur transformée en \(z\).</figcaption>
+    </figure>
+
+    <h3>Techniques fréquentielles multi-utilisateurs <span class="ref">diapo 31</span></h3>
+    <p>Les techniques multi-utilisateurs changent de point de vue : au lieu de subir la MAI comme un bruit, elles la traitent comme un signal déterministe. On estime la MAI afin de mieux détecter le signal de l'utilisateur considéré.</p>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="colonne-titre">Avantage</p>
+        <ul><li>Meilleures performances.</li></ul>
+      </div>
+      <div class="colonne contre">
+        <p class="colonne-titre">Inconvénient</p>
+        <ul><li>Mise en œuvre plus complexe.</li></ul>
+      </div>
+    </div>
+    <p>Les principaux détecteurs sont le détecteur à annulation d'interférences série (SIC) et le détecteur à annulation d'interférences parallèle (PIC).</p>
+
+    <h3>Annulation d'interférences série (SIC) <span class="ref">diapo 32</span></h3>
+    <p>Le <dfn>SIC</dfn> (<span class="en" lang="en">successive interference cancellation</span>) détecte les utilisateurs un par un, et retire du signal reçu chaque utilisateur détecté.</p>
+    <ol class="etapes">
+      <li><strong>Détecter</strong> le signal de l'utilisateur 1 (égalisation, désétalement, décision).</li>
+      <li><strong>Reconstruire</strong> le signal MC-CDMA de l'utilisateur 1 : réétaler la décision et lui appliquer le canal estimé.</li>
+      <li><strong>Soustraire</strong> ce signal interférent au signal reçu.</li>
+      <li><strong>Détecter</strong> le signal de l'utilisateur 2 dans le signal ainsi nettoyé, et ainsi de suite.</li>
+    </ol>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 206" width="640" role="img" aria-labelledby="fig-sic-titre">
+        <title id="fig-sic-titre">Boucle du SIC : le signal reçu, moins les signaux déjà reconstruits, est égalisé et désétalé ; on sélectionne l'utilisateur de plus grande estimation, on décide son bit, on le réétale et on émule le canal pour le soustraire au signal reçu</title>
+        <defs>
+          <marker id="fleche-sic" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="4" y="52">r</text>
+        <path class="trait" d="M0 60 H46" marker-end="url(#fleche-sic)"/>
+        <circle class="boite" cx="60" cy="60" r="12"/>
+        <path class="trait" d="M53 60 H67 M60 53 V67"/>
+        <text x="40" y="52" class="t2" font-size="12">+</text>
+        <text x="70" y="88" class="t2" font-size="12">−</text>
+        <path class="trait" d="M72 60 H108" marker-end="url(#fleche-sic)"/>
+        <rect class="boite" x="110" y="38" width="120" height="44"/>
+        <text x="170" y="56" text-anchor="middle" font-size="12">égalisation</text>
+        <text x="170" y="72" text-anchor="middle" font-size="12">désétalement</text>
+        <path class="trait" d="M230 60 H258" marker-end="url(#fleche-sic)"/>
+        <rect class="boite" x="260" y="38" width="110" height="44"/>
+        <text x="315" y="56" text-anchor="middle" font-size="12">sélection</text>
+        <text x="315" y="72" text-anchor="middle" font-size="12">du maximum</text>
+        <path class="trait" d="M370 60 H398" marker-end="url(#fleche-sic)"/>
+        <rect class="boite-accent" x="400" y="42" width="50" height="36"/>
+        <text x="425" y="65" text-anchor="middle" font-size="13">Q(·)</text>
+        <path class="trait" d="M450 60 H530" marker-end="url(#fleche-sic)"/>
+        <text x="534" y="56" font-size="12">bit décidé de</text>
+        <text x="534" y="72" font-size="12">l'utilisateur</text>
+        <text x="534" y="88" font-size="12">le plus fort</text>
+        <path class="accent" d="M490 60 V150 H454" marker-end="url(#fleche-sic)"/>
+        <rect class="boite" x="350" y="128" width="100" height="44"/>
+        <text x="400" y="155" text-anchor="middle" font-size="12">étalement</text>
+        <path class="accent" d="M350 150 H294" marker-end="url(#fleche-sic)"/>
+        <rect class="boite" x="170" y="128" width="120" height="44"/>
+        <text x="230" y="146" text-anchor="middle" font-size="12">émulation</text>
+        <text x="230" y="162" text-anchor="middle" font-size="12">du canal</text>
+        <path class="accent" d="M170 150 H60 V74" marker-end="url(#fleche-sic)"/>
+        <text x="320" y="198" text-anchor="middle" class="t2" font-size="12">le signal reconstruit est retiré de r, puis on recommence avec l'utilisateur suivant</text>
+      </svg>
+      <figcaption>Boucle du détecteur SIC (redessiné et simplifié d'après la diapo 32).</figcaption>
+    </figure>
+    <p>La simulation de la diapo 32 utilise \(N_p = L_c = 16\) sous-porteuses et chips, des codes de Walsh-Hadamard, et une estimation parfaite du canal. Elle trace le <dfn>taux d'erreur binaire</dfn> (TEB, <span class="en" lang="en">bit error rate</span>) en fonction du rapport \(E_b/N_0\), pour \(N_u = N_p = 16\) utilisateurs, donc à pleine charge.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 310" width="640" role="img" aria-labelledby="fig-teb-sic-titre">
+<title id="fig-teb-sic-titre">Taux d'erreur binaire en fonction de Eb/N0 pour le détecteur SIC : la courbe du canal gaussien mono-utilisateur est la meilleure, puis SIC-MMSE 0,15, SIC-MMSE 0,0, et SIC-ZF loin derrière</title>
+<path class="pointille" d="M70 20.0 H470" stroke-width="0.6"/>
+<text x="62" y="24.0" text-anchor="end" class="t2 mono" font-size="11">10⁰</text>
+<path class="pointille" d="M70 60.0 H470" stroke-width="0.6"/>
+<text x="62" y="64.0" text-anchor="end" class="t2 mono" font-size="11">10⁻¹</text>
+<path class="pointille" d="M70 100.0 H470" stroke-width="0.6"/>
+<text x="62" y="104.0" text-anchor="end" class="t2 mono" font-size="11">10⁻²</text>
+<path class="pointille" d="M70 140.0 H470" stroke-width="0.6"/>
+<text x="62" y="144.0" text-anchor="end" class="t2 mono" font-size="11">10⁻³</text>
+<path class="pointille" d="M70 180.0 H470" stroke-width="0.6"/>
+<text x="62" y="184.0" text-anchor="end" class="t2 mono" font-size="11">10⁻⁴</text>
+<path class="pointille" d="M70 220.0 H470" stroke-width="0.6"/>
+<text x="62" y="224.0" text-anchor="end" class="t2 mono" font-size="11">10⁻⁵</text>
+<path class="pointille" d="M70 260.0 H470" stroke-width="0.6"/>
+<text x="62" y="264.0" text-anchor="end" class="t2 mono" font-size="11">10⁻⁶</text>
+<path class="pointille" d="M70.0 20 V260.0" stroke-width="0.6"/>
+<text x="70.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">0</text>
+<path class="pointille" d="M110.0 20 V260.0" stroke-width="0.6"/>
+<text x="110.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">2</text>
+<path class="pointille" d="M150.0 20 V260.0" stroke-width="0.6"/>
+<text x="150.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">4</text>
+<path class="pointille" d="M190.0 20 V260.0" stroke-width="0.6"/>
+<text x="190.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">6</text>
+<path class="pointille" d="M230.0 20 V260.0" stroke-width="0.6"/>
+<text x="230.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">8</text>
+<path class="pointille" d="M270.0 20 V260.0" stroke-width="0.6"/>
+<text x="270.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">10</text>
+<path class="pointille" d="M310.0 20 V260.0" stroke-width="0.6"/>
+<text x="310.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">12</text>
+<path class="pointille" d="M350.0 20 V260.0" stroke-width="0.6"/>
+<text x="350.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">14</text>
+<path class="pointille" d="M390.0 20 V260.0" stroke-width="0.6"/>
+<text x="390.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">16</text>
+<path class="pointille" d="M430.0 20 V260.0" stroke-width="0.6"/>
+<text x="430.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">18</text>
+<path class="pointille" d="M470.0 20 V260.0" stroke-width="0.6"/>
+<text x="470.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">20</text>
+<path class="trait" d="M70 20 V260.0 H470"/>
+<text x="270.0" y="296.0" text-anchor="middle" class="t2" font-size="12">Eb/N0 (dB)</text>
+<text x="16" y="140" text-anchor="middle" class="t2" font-size="12" transform="rotate(-90 16 140)">taux d'erreur binaire</text>
+<text x="270.0" y="12" text-anchor="middle" class="gras" font-size="12">MC-CDMA, détecteur SIC, Nu = Np = 16</text>
+<path class="pointille" d="M70 63.4 L110 76.8 L150 96.1 L190 124.8 L230 168 L270 238.2"/>
+<text x="278" y="242.2" class="t2" font-size="12">BBAG</text>
+<path class="trait" d="M70 44.1 L110 48 L150 53 L190 59.2 L230 67.2 L270 75.9 L310 86.3 L350 94.8 L390 105 L430 112.4 L470 121.5"/>
+<rect class="boite" x="67" y="41.1" width="6" height="6"/>
+<rect class="boite" x="107" y="45" width="6" height="6"/>
+<rect class="boite" x="147" y="50" width="6" height="6"/>
+<rect class="boite" x="187" y="56.2" width="6" height="6"/>
+<rect class="boite" x="227" y="64.2" width="6" height="6"/>
+<rect class="boite" x="267" y="72.9" width="6" height="6"/>
+<rect class="boite" x="307" y="83.3" width="6" height="6"/>
+<rect class="boite" x="347" y="91.8" width="6" height="6"/>
+<rect class="boite" x="387" y="102" width="6" height="6"/>
+<rect class="boite" x="427" y="109.4" width="6" height="6"/>
+<rect class="boite" x="467" y="118.5" width="6" height="6"/>
+<text x="478" y="125.5" class="t2" font-size="12">SIC-ZF</text>
+<path class="accent" d="M70 51.3 L110 57.6 L150 66.2 L190 78.7 L230 93 L270 111 L310 131.3 L350 153.9 L390 177.6 L430 193.9 L470 213" stroke-dasharray="6 4"/>
+<path class="plein-accent" d="M66 48.3 H74 L70 55.3 Z"/>
+<path class="plein-accent" d="M106 54.6 H114 L110 61.6 Z"/>
+<path class="plein-accent" d="M146 63.2 H154 L150 70.2 Z"/>
+<path class="plein-accent" d="M186 75.7 H194 L190 82.7 Z"/>
+<path class="plein-accent" d="M226 90 H234 L230 97 Z"/>
+<path class="plein-accent" d="M266 108 H274 L270 115 Z"/>
+<path class="plein-accent" d="M306 128.3 H314 L310 135.3 Z"/>
+<path class="plein-accent" d="M346 150.9 H354 L350 157.9 Z"/>
+<path class="plein-accent" d="M386 174.6 H394 L390 181.6 Z"/>
+<path class="plein-accent" d="M426 190.9 H434 L430 197.9 Z"/>
+<path class="plein-accent" d="M466 210 H474 L470 217 Z"/>
+<text x="478" y="213" class="accent" font-size="12">SIC-MMSE 0,0</text>
+<path class="accent" d="M70 53 L110 60 L150 70.1 L190 84.8 L230 105 L270 126.3 L310 149.5 L350 173 L390 189.5 L430 205.5 L470 225"/>
+<circle class="plein-accent" cx="70" cy="53" r="3"/>
+<circle class="plein-accent" cx="110" cy="60" r="3"/>
+<circle class="plein-accent" cx="150" cy="70.1" r="3"/>
+<circle class="plein-accent" cx="190" cy="84.8" r="3"/>
+<circle class="plein-accent" cx="230" cy="105" r="3"/>
+<circle class="plein-accent" cx="270" cy="126.3" r="3"/>
+<circle class="plein-accent" cx="310" cy="149.5" r="3"/>
+<circle class="plein-accent" cx="350" cy="173" r="3"/>
+<circle class="plein-accent" cx="390" cy="189.5" r="3"/>
+<circle class="plein-accent" cx="430" cy="205.5" r="3"/>
+<circle class="plein-accent" cx="470" cy="225" r="3"/>
+<text x="478" y="235" class="accent" font-size="12">SIC-MMSE 0,15</text>
+</svg>
+      <figcaption>Taux d'erreur binaire du détecteur SIC (redessiné d'après la diapo 32 à partir des valeurs relevées sur les courbes ; <a href="img/cours-03B-cdma-1.png">image d'origine</a>).</figcaption>
+    </figure>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Lire les courbes</span></p>
+      <ul>
+        <li>\(E_b/N_0\) est le rapport entre l'énergie d'un bit et la densité spectrale du bruit, en dB : plus il est grand, plus la transmission est facile. Un bon système atteint un TEB donné avec un \(E_b/N_0\) faible.</li>
+        <li>La courbe <strong>BBAG</strong> sert de référence : un utilisateur seul sur un canal à bruit blanc additif gaussien, sans interférence ni évanouissement. Aucun détecteur ne fait mieux.</li>
+        <li>Le SIC avec égalisation <strong>ZF</strong> est le moins bon : l'amplification du bruit par les sous-porteuses faibles domine. Le SIC avec égalisation <strong>MMSE</strong> gagne plus d'un facteur 100 sur le TEB à 20 dB. La diapo ne précise pas le sens des valeurs 0.0 et 0.15 qui distinguent les deux courbes MMSE.</li>
+        <li><span class="badge ajout">Ajout</span> Pour un TEB de \(10^{-3}\), il faut environ 7 dB sur le canal BBAG, 11 dB avec SIC-MMSE 0,15 et 13 dB avec SIC-MMSE 0,0 ; le SIC-ZF n'y parvient pas avant 20 dB.</li>
+        <li>« Sélection du maximum » : à chaque tour, on détecte d'abord l'utilisateur dont l'estimation est la plus forte, donc la plus fiable. Une erreur sur le premier utilisateur fausserait toutes les soustractions suivantes.</li>
+      </ul>
+    </div>
+
+    <h3>Annulation d'interférences parallèle (PIC) <span class="ref">diapo 33</span></h3>
+    <p>Le <dfn>PIC</dfn> (<span class="en" lang="en">parallel interference cancellation</span>) traite tous les utilisateurs en même temps, par étages successifs.</p>
+    <ol class="etapes">
+      <li><strong>Détecter simultanément</strong> les \(N_u - 1\) signaux perturbateurs à l'aide de détecteurs mono-utilisateur.</li>
+      <li><strong>Reconstruire</strong> le signal MC-CDMA interférent : réétaler toutes ces décisions, les additionner et appliquer le canal estimé.</li>
+      <li><strong>Soustraire</strong> ce signal interférent au signal reçu, puis égaliser, désétaler et décider pour l'utilisateur considéré.</li>
+    </ol>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 234" width="640" role="img" aria-labelledby="fig-pic-titre">
+        <title id="fig-pic-titre">Un étage du PIC : les estimations de l'étage précédent pour les autres utilisateurs sont décidées, réétalées, additionnées et passées dans l'émulation du canal ; le résultat est soustrait du signal reçu retardé, puis égalisé, désétalé et décidé</title>
+        <defs>
+          <marker id="fleche-pic" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="0" y="20">r</text>
+        <path class="trait" d="M14 24 H258" marker-end="url(#fleche-pic)"/>
+        <rect class="boite" x="260" y="8" width="70" height="32"/>
+        <text x="295" y="29" text-anchor="middle" font-size="12">délai</text>
+        <path class="trait" d="M330 24 H538 V104" marker-end="url(#fleche-pic)"/>
+        <text x="546" y="100" class="t2" font-size="12">+</text>
+        <text x="0" y="86" font-size="12">x̂<tspan dy="4" font-size="9">1</tspan><tspan dy="-4"> (étage m−1)</tspan></text>
+        <text x="40" y="126" class="t2">⋮</text>
+        <text x="0" y="156" font-size="12">x̂<tspan dy="4" font-size="9">Nu</tspan><tspan dy="-4"> (étage m−1)</tspan></text>
+        <path class="trait" d="M104 90 H128" marker-end="url(#fleche-pic)"/>
+        <path class="trait" d="M104 150 H128" marker-end="url(#fleche-pic)"/>
+        <rect class="boite-accent" x="130" y="70" width="44" height="100"/>
+        <text x="152" y="124" text-anchor="middle" font-size="13">Q(·)</text>
+        <path class="trait" d="M174 90 H196" marker-end="url(#fleche-pic)"/>
+        <path class="trait" d="M174 150 H196" marker-end="url(#fleche-pic)"/>
+        <rect class="boite" x="198" y="70" width="86" height="100"/>
+        <text x="241" y="124" text-anchor="middle" font-size="12">étalement</text>
+        <path class="trait" d="M284 90 H306" marker-end="url(#fleche-pic)"/>
+        <path class="trait" d="M284 150 H306" marker-end="url(#fleche-pic)"/>
+        <rect class="boite" x="308" y="70" width="36" height="100"/>
+        <text x="326" y="127" text-anchor="middle" font-size="20">Σ</text>
+        <path class="trait" d="M344 120 H368" marker-end="url(#fleche-pic)"/>
+        <rect class="boite" x="370" y="98" width="110" height="44"/>
+        <text x="425" y="116" text-anchor="middle" font-size="12">émulation</text>
+        <text x="425" y="132" text-anchor="middle" font-size="12">du canal</text>
+        <path class="trait" d="M480 120 H524" marker-end="url(#fleche-pic)"/>
+        <text x="510" y="112" class="t2" font-size="12">−</text>
+        <circle class="boite" cx="538" cy="120" r="12"/>
+        <path class="trait" d="M531 120 H545 M538 113 V127"/>
+        <path class="accent" d="M538 132 V178" marker-end="url(#fleche-pic)"/>
+        <rect class="boite" x="480" y="180" width="116" height="44"/>
+        <text x="538" y="198" text-anchor="middle" font-size="12">égalisation</text>
+        <text x="538" y="214" text-anchor="middle" font-size="12">désétalement</text>
+        <path class="accent" d="M480 202 H430" marker-end="url(#fleche-pic)"/>
+        <rect class="boite-accent" x="380" y="186" width="48" height="32"/>
+        <text x="404" y="207" text-anchor="middle" font-size="13">Q(·)</text>
+        <path class="accent" d="M380 202 H332" marker-end="url(#fleche-pic)"/>
+        <text x="326" y="207" text-anchor="end" font-size="12">x̂<tspan dy="4" font-size="9">i</tspan><tspan dy="-4"> (étage m)</tspan></text>
+      </svg>
+      <figcaption>Un étage du détecteur PIC, pour l'utilisateur \(i\) (redessiné d'après la diapo 33). Le délai aligne le signal reçu sur le signal reconstruit.</figcaption>
+    </figure>
+    <p>La simulation de la diapo 33 utilise les mêmes paramètres que pour le SIC (\(N_p = L_c = 16\), codes de Walsh-Hadamard, estimation parfaite du canal), avec un PIC à 2 étages et \(N_u = 16\).</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 310" width="640" role="img" aria-labelledby="fig-teb-pic-titre">
+<title id="fig-teb-pic-titre">Taux d'erreur binaire en fonction de Eb/N0 pour le détecteur PIC à deux étages : le second étage gagne environ 2 dB sur le premier, le canal gaussien reste la référence</title>
+<path class="pointille" d="M70 20.0 H470" stroke-width="0.6"/>
+<text x="62" y="24.0" text-anchor="end" class="t2 mono" font-size="11">10⁰</text>
+<path class="pointille" d="M70 60.0 H470" stroke-width="0.6"/>
+<text x="62" y="64.0" text-anchor="end" class="t2 mono" font-size="11">10⁻¹</text>
+<path class="pointille" d="M70 100.0 H470" stroke-width="0.6"/>
+<text x="62" y="104.0" text-anchor="end" class="t2 mono" font-size="11">10⁻²</text>
+<path class="pointille" d="M70 140.0 H470" stroke-width="0.6"/>
+<text x="62" y="144.0" text-anchor="end" class="t2 mono" font-size="11">10⁻³</text>
+<path class="pointille" d="M70 180.0 H470" stroke-width="0.6"/>
+<text x="62" y="184.0" text-anchor="end" class="t2 mono" font-size="11">10⁻⁴</text>
+<path class="pointille" d="M70 220.0 H470" stroke-width="0.6"/>
+<text x="62" y="224.0" text-anchor="end" class="t2 mono" font-size="11">10⁻⁵</text>
+<path class="pointille" d="M70 260.0 H470" stroke-width="0.6"/>
+<text x="62" y="264.0" text-anchor="end" class="t2 mono" font-size="11">10⁻⁶</text>
+<path class="pointille" d="M70.0 20 V260.0" stroke-width="0.6"/>
+<text x="70.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">0</text>
+<path class="pointille" d="M110.0 20 V260.0" stroke-width="0.6"/>
+<text x="110.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">2</text>
+<path class="pointille" d="M150.0 20 V260.0" stroke-width="0.6"/>
+<text x="150.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">4</text>
+<path class="pointille" d="M190.0 20 V260.0" stroke-width="0.6"/>
+<text x="190.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">6</text>
+<path class="pointille" d="M230.0 20 V260.0" stroke-width="0.6"/>
+<text x="230.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">8</text>
+<path class="pointille" d="M270.0 20 V260.0" stroke-width="0.6"/>
+<text x="270.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">10</text>
+<path class="pointille" d="M310.0 20 V260.0" stroke-width="0.6"/>
+<text x="310.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">12</text>
+<path class="pointille" d="M350.0 20 V260.0" stroke-width="0.6"/>
+<text x="350.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">14</text>
+<path class="pointille" d="M390.0 20 V260.0" stroke-width="0.6"/>
+<text x="390.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">16</text>
+<path class="pointille" d="M430.0 20 V260.0" stroke-width="0.6"/>
+<text x="430.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">18</text>
+<path class="pointille" d="M470.0 20 V260.0" stroke-width="0.6"/>
+<text x="470.0" y="276.0" text-anchor="middle" class="t2 mono" font-size="11">20</text>
+<path class="trait" d="M70 20 V260.0 H470"/>
+<text x="270.0" y="296.0" text-anchor="middle" class="t2" font-size="12">Eb/N0 (dB)</text>
+<text x="16" y="140" text-anchor="middle" class="t2" font-size="12" transform="rotate(-90 16 140)">taux d'erreur binaire</text>
+<text x="270.0" y="12" text-anchor="middle" class="gras" font-size="12">PIC à 2 étages, Nu = 16</text>
+<path class="pointille" d="M70 63.4 L110 76.8 L150 96.1 L190 124.8 L230 168 L270 238.2"/>
+<text x="278" y="242.2" class="t2" font-size="12">canal gaussien</text>
+<path class="trait" d="M70 53 L110 58.8 L150 66.2 L190 76.8 L230 89.8 L270 105.2 L310 124.1 L350 145 L390 168.4 L430 193.1 L470 214.2"/>
+<rect class="boite" x="67" y="50" width="6" height="6"/>
+<rect class="boite" x="107" y="55.8" width="6" height="6"/>
+<rect class="boite" x="147" y="63.2" width="6" height="6"/>
+<rect class="boite" x="187" y="73.8" width="6" height="6"/>
+<rect class="boite" x="227" y="86.8" width="6" height="6"/>
+<rect class="boite" x="267" y="102.2" width="6" height="6"/>
+<rect class="boite" x="307" y="121.1" width="6" height="6"/>
+<rect class="boite" x="347" y="142" width="6" height="6"/>
+<rect class="boite" x="387" y="165.4" width="6" height="6"/>
+<rect class="boite" x="427" y="190.1" width="6" height="6"/>
+<rect class="boite" x="467" y="211.2" width="6" height="6"/>
+<text x="478" y="216.2" class="t2" font-size="12">étage 1 · MMSE 0,00</text>
+<path class="accent" d="M70 52.2 L110 58.8 L150 68.9 L190 84.1 L230 102.8 L270 126.3 L310 151.7 L350 177.3 L390 198.2 L430 217.6 L470 232.4"/>
+<circle class="plein-accent" cx="70" cy="52.2" r="3"/>
+<circle class="plein-accent" cx="110" cy="58.8" r="3"/>
+<circle class="plein-accent" cx="150" cy="68.9" r="3"/>
+<circle class="plein-accent" cx="190" cy="84.1" r="3"/>
+<circle class="plein-accent" cx="230" cy="102.8" r="3"/>
+<circle class="plein-accent" cx="270" cy="126.3" r="3"/>
+<circle class="plein-accent" cx="310" cy="151.7" r="3"/>
+<circle class="plein-accent" cx="350" cy="177.3" r="3"/>
+<circle class="plein-accent" cx="390" cy="198.2" r="3"/>
+<circle class="plein-accent" cx="430" cy="217.6" r="3"/>
+<circle class="plein-accent" cx="470" cy="232.4" r="3"/>
+<text x="478" y="240.4" class="accent" font-size="12">étage 2 · MMSE 0,15</text>
+</svg>
+      <figcaption>Taux d'erreur binaire du détecteur PIC à deux étages (redessiné d'après la diapo 33 à partir des valeurs relevées sur les courbes ; <a href="img/cours-03B-cdma-2.png">image d'origine</a>).</figcaption>
+    </figure>
+    <p><span class="badge ajout">Ajout</span> Le second étage, qui part des décisions du premier, améliore le TEB à tous les \(E_b/N_0\) : chaque étage retire une interférence mieux estimée. Les deux étages restent au-dessus de la référence du canal gaussien, qui ne connaît pas de MAI. Pour un TEB de \(10^{-3}\), le second étage gagne environ 2 dB : 11 dB au lieu de 13,5 dB.</p>
+
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="colonne-titre">SIC</p>
+        <ul>
+          <li><span class="badge ajout">Ajout</span> Un utilisateur à la fois, du plus fort au plus faible.</li>
+          <li>Efficace quand les puissances reçues sont très différentes.</li>
+          <li>Délai qui croît avec le nombre d'utilisateurs ; une erreur précoce se propage.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p class="colonne-titre">PIC</p>
+        <ul>
+          <li><span class="badge ajout">Ajout</span> Tous les utilisateurs à la fois, par étages.</li>
+          <li>Efficace quand les puissances reçues sont proches.</li>
+          <li>Délai fixe par étage, mais plus de calcul par étage ; le premier étage part d'estimations encore bruitées.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Vocabulaire</h2>
+    <dl class="glossaire">
+      <dt>FDMA, AMRF <span class="en" lang="en">Frequency Division Multiple Access</span></dt>
+      <dd>Accès multiple par répartition en fréquence : une sous-bande par utilisateur.</dd>
+      <dt>TDMA, AMRT <span class="en" lang="en">Time Division Multiple Access</span></dt>
+      <dd>Accès multiple par répartition dans le temps : un time slot par utilisateur dans chaque trame.</dd>
+      <dt>CDMA, AMRC <span class="en" lang="en">Code Division Multiple Access</span></dt>
+      <dd>Accès multiple par répartition de codes : tous les utilisateurs émettent en même temps dans toute la bande, séparés par leur séquence d'étalement.</dd>
+      <dt>Chip <span class="en" lang="en">chip</span></dt>
+      <dd>Élément d'une séquence d'étalement, de durée \(T_c\) ; un bit dure \(T_b = N T_c\).</dd>
+      <dt>Facteur d'étalement <span class="en" lang="en">spreading factor</span></dt>
+      <dd>Nombre \(N = T_b / T_c\) de chips par bit ; rapport entre la bande du signal étalé et celle du signal utile.</dd>
+      <dt>Charge <span class="en" lang="en">load</span></dt>
+      <dd>\(\alpha = K / N\) : nombre d'utilisateurs rapporté à la longueur des séquences.</dd>
+      <dt>OFDM <span class="en" lang="en">Orthogonal Frequency Division Multiplexing</span></dt>
+      <dd>Modulation à porteuses multiples orthogonales, produite par une IFFT.</dd>
+      <dt>MC-CDMA <span class="en" lang="en">Multi-Carrier CDMA</span></dt>
+      <dd>CDMA à porteuses multiples, étalé en fréquence : un chip par sous-porteuse.</dd>
+      <dt>MAI <span class="en" lang="en">Multiple Access Interference</span></dt>
+      <dd>Interférence d'accès multiple : part de l'estimation d'un utilisateur due aux autres.</dd>
+      <dt>ZF, MMSE <span class="en" lang="en">Zero Forcing, Minimum Mean Square Error</span></dt>
+      <dd>Égaliseurs mono-utilisateur : restauration d'orthogonalité \(g_k = 1/h_k\) ; erreur quadratique moyenne minimale \(g_k = h_k^* / (|h_k|^2 + 1/\gamma_k)\).</dd>
+      <dt>DFE <span class="en" lang="en">Decision Feedback Equalizer</span></dt>
+      <dd>Détecteur à retour de décision : retranche l'interférence des symboles déjà décidés.</dd>
+      <dt>SIC, PIC <span class="en" lang="en">Successive / Parallel Interference Cancellation</span></dt>
+      <dd>Détecteurs multi-utilisateurs à annulation d'interférences, série et parallèle.</dd>
+      <dt>BBAG <span class="en" lang="en">AWGN</span></dt>
+      <dd>Bruit blanc additif gaussien ; canal de référence des simulations.</dd>
+      <dt>TEB <span class="en" lang="en">BER, bit error rate</span></dt>
+      <dd>Taux d'erreur binaire : proportion de bits faux après décision.</dd>
+    </dl>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>FDMA : \(N\) sous-bandes \(W = B/N\), séparées en pratique par des bandes de garde \(W_g\). TDMA : trame \(T_t\) en \(N\) time slots \(T_s = T_t/N\), avec temps de garde et synchronisation des terminaux. CDMA : tout le monde, tout le temps, toute la bande, un code chacun.</li>
+        <li>Lien descendant synchrone, lien montant asynchrone ; un canal multi-trajet pose le même problème que le cas asynchrone.</li>
+        <li>GSM : 8 slots de 577 µs, 116 bits utiles par slot, soit \(116 / (8 \times 577\ \mu\text{s}) \approx 25{,}1\) kbit/s par terminal (et non 251,3 comme sur la diapo).</li>
+        <li>Shannon : \(C = B \log_2(1 + P_s/P_n)\). À débit fixé, élargir la bande permet de réduire le rapport signal à bruit : l'étalement émet dans une bande bien plus large que nécessaire, avec une faible puissance.</li>
+        <li>Étalement : chaque bit \(\pm 1\) est multiplié par une séquence de \(N\) chips, \(T_b = N T_c\). Le récepteur reçoit la somme \(r\) et désétale : \(\hat x_j = \frac1N \langle r, c_j \rangle\), puis décide selon le signe.</li>
+        <li>Le désétalement est parfait sous quatre hypothèses : chips synchronisés (H0), pas de bruit (H1), séquences orthogonales (H2), pas de Doppler différentiel (H3).</li>
+        <li>Walsh-Hadamard : \(H_0 = [1]\), \(H_n = \begin{bmatrix} H_{n-1} &amp; H_{n-1} \\ H_{n-1} &amp; -H_{n-1} \end{bmatrix}\), \(N = 2^P\), \(H H^T = N I\). Au plus \(N\) utilisateurs orthogonaux ; charge \(\alpha = K/N\).</li>
+        <li>Mise en forme : suréchantillonnage puis filtrage ; le cosinus surélevé limite la bande sans perturber les chips voisins.</li>
+        <li>OFDM : données en parallèle sur des porteuses orthogonales, générées par IFFT ; forte efficacité spectrale, mais grande dynamique et sensibilité à la synchronisation. MC-CDMA : un chip par sous-porteuse ; la donnée reçue vaut signal utile + MAI + bruit.</li>
+        <li>Égalisation ZF (\(g_k = 1/h_k\)) : MAI annulée, bruit amplifié ; MMSE : compromis, demande le RSB de chaque sous-porteuse. Les détecteurs multi-utilisateurs SIC (série) et PIC (parallèle) estiment et retranchent la MAI : meilleurs, mais plus complexes.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi le FDMA et le TDMA ne peuvent-ils pas utiliser toute leur ressource ?</summary>
+        <div><p>Il faut séparer les utilisateurs : des bandes de garde \(W_g\) entre les sous-bandes en FDMA (les filtres ne coupent pas net), des temps de garde dans chaque slot en TDMA (les bursts arrivent décalés). Ces marges ne transportent aucune donnée.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un signal étalé peut être plus faible que le bruit. Pourquoi est-ce possible, et pourquoi est-ce utile ?</summary>
+        <div><p>D'après Shannon, \(C = B \log_2(1 + P_s/P_n)\) : pour un débit fixé, une bande \(B\) très large se contente d'un \(P_s/P_n\) très faible. C'est utile pour la discrétion (le signal est noyé dans le bruit) et pour partager la bande entre de nombreux utilisateurs.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Les séquences \((+1, +1, -1, -1)\) et \((+1, -1, -1, +1)\) sont-elles orthogonales ?</summary>
+        <div><p>Oui : \(1 - 1 + 1 - 1 = 0\). Ce sont les séquences des utilisateurs 3 et 4 de l'exemple.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Avec les séquences de l'exemple, on reçoit \(r = (0, 4, 0, 0)\). Quels bits ont été émis ?</summary>
+        <div><p>\(\hat a = \frac14(0 + 4 + 0 + 0) = 1\), \(\hat b = \frac14(0 - 4 + 0 - 0) = -1\), \(\hat c = \frac14(0 + 4 - 0 - 0) = 1\), \(\hat d = \frac14(0 - 4 - 0 + 0) = -1\). Vérification : \(a - b + c - d = 1 + 1 + 1 + 1 = 4\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un système utilise des séquences de Walsh-Hadamard de longueur 16 et sert 12 utilisateurs. Quelle est sa charge ? Combien d'utilisateurs peut-il encore accueillir ?</summary>
+        <div><p>\(\alpha = 12/16 = 0{,}75\). Il reste 4 séquences orthogonales libres : 4 utilisateurs de plus, pas un de plus, car on ne trouve pas 17 vecteurs orthogonaux en dimension 16.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi les séquences de Walsh-Hadamard conviennent-elles au lien descendant, mais mal au lien montant ?</summary>
+        <div><p>Leur orthogonalité n'existe que si les chips sont alignés (H0). La station de base émet tous les signaux ensemble : ils restent alignés. Sur le lien montant, les terminaux arrivent décalés, et un seul chip de décalage peut faire basculer un utilisateur sur un autre (exercice 4).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quel est le défaut de l'égaliseur ZF sur une sous-porteuse très atténuée ?</summary>
+        <div><p>Il multiplie par \(1/h_k\), très grand : la MAI disparaît, mais le bruit de cette sous-porteuse est amplifié d'autant (puissance × \(1/|h_k|^2\)). Le MMSE limite ce gain grâce au terme \(1/\gamma_k\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle différence entre SIC et PIC ?</summary>
+        <div><p>Le SIC détecte, reconstruit et retranche les utilisateurs un par un, du plus fort au plus faible. Le PIC détecte tous les interférents en même temps, retranche leur somme reconstruite, et recommence par étages. Les deux traitent la MAI comme un signal à estimer.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Références</h2>
+    <p>Bibliographie de la diapo 34 :</p>
+    <ul>
+      <li>S. Verdú, <cite lang="en">Multiuser Detection</cite>, 1998.</li>
+      <li>J. Proakis, <cite lang="en">Digital Communications</cite>, 2000.</li>
+      <li>S. Haykin, <cite lang="en">Communication Systems</cite>, 2000.</li>
+      <li>T. Cover, <cite lang="en">Elements of Information Theory</cite>, 1991.</li>
+      <li>L. Brunel, <cite>Algorithmes de décodage de canal pour l'AMRC</cite>, 1999.</li>
+    </ul>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-03A-codes-correcteurs.html"><small>← Précédent</small>Codes correcteurs d'erreurs</a>
+    <a class="suivant" href="cours-04-pseudo-aleatoires-cycliques.html"><small>Suivant →</small>Codes pseudo-aléatoires et cycliques</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Codage · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

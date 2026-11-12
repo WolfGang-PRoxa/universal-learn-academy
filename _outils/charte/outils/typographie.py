@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Applique la typographie française aux pages de cours (studies/_outils/charte).
+"""Applique la typographie française aux pages de cours (_outils/charte).
 
 Usage :
     python _outils/charte/outils/typographie.py FICHIER.html [FICHIER.html ...]

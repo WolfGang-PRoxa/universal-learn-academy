@@ -30,7 +30,7 @@ function construireMenu() {
         { label: "Imprimer…", accelerator: "CmdOrCtrl+P", click: surFenetre(fenetres.imprimer) },
         { label: "Enregistrer en PDF…", accelerator: "CmdOrCtrl+Shift+S", click: surFenetre(fenetres.enregistrerPdf) },
         { type: "separator" },
-        { label: "Ouvrir le dossier studies", click: () => shell.openPath(RACINE) },
+        { label: "Ouvrir le dossier des données (ula)", click: () => shell.openPath(RACINE) },
         ...(hote ? [{ label: "Paramètres de l'application…", accelerator: "CmdOrCtrl+,", click: () => hote.ouvrirParametres() }] : []),
         { type: "separator" },
         { label: "Fermer la fenêtre", role: "close", accelerator: "CmdOrCtrl+W" },
@@ -57,9 +57,9 @@ function construireMenu() {
         { label: "Précédent", accelerator: "Alt+Left", click: surFenetre((f) => f.webContents.navigationHistory.goBack()) },
         { label: "Suivant", accelerator: "Alt+Right", click: surFenetre((f) => f.webContents.navigationHistory.goForward()) },
         { type: "separator" },
-        aller("Portail", fenetres.PORTAIL, "Alt+Home"),
-        aller("Accueil général", "index.html"),
-        aller("Suivi (TODO)", "_outils/todo/index.html")
+        aller("Accueil", fenetres.PORTAIL, "Alt+Home"),
+        aller("Mes révisions", "_outils/quiz/portail.html"),
+        aller("Mon suivi (TODO)", "_outils/todo/index.html")
       ]
     },
     {
@@ -83,7 +83,7 @@ function construireMenu() {
         { label: "Journal du serveur", click: () => shell.openPath(serveur.JOURNAL) },
         ...(hote ? [{ label: "Rechercher une mise à jour", click: () => hote.verifierMiseAJour() }] : []),
         { type: "separator" },
-        { label: "À propos de Studies " + (hote ? hote.version : paquet.version) + " (Electron " + process.versions.electron + ")", enabled: false }
+        { label: "À propos d’Universal Learn Academy " + (hote ? hote.version : paquet.version) + " (Electron " + process.versions.electron + ")", enabled: false }
       ]
     }
   ]);

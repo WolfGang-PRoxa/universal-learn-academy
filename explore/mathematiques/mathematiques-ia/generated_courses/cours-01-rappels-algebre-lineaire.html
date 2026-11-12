@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Introduction et rappels d'algèbre linéaire · Mathématiques et IA L3</title>
+<meta name="description" content="Cours 1 de Mathématiques et IA (L3) : données multi-dimensionnelles et apprentissage automatique, vecteurs, normes Lp, produit scalaire, orthogonalité, familles libres, matrices, produit matriciel et de Hadamard, matrices diagonales, systèmes linéaires, rang, déterminant, mineurs, comatrice et inverse, avec numpy.">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-01-rappels-algebre-lineaire.html" title="Quiz · Rappels d'algèbre linéaire">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-2023.html" title="Annale · Examen de janvier 2023">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Mathématiques</a>
+    <a href="index.html">Mathématiques et IA</a>
+    <span aria-current="page">Cours 1 · Algèbre linéaire</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Mathématiques et IA</span> Cours 1 · L3 · octobre 2026</p>
+    <h1>Introduction et rappels d'algèbre linéaire</h1>
+    <p class="chapeau">En apprentissage automatique, une donnée est décrite par plusieurs nombres à la fois : c'est un vecteur, et un jeu de données est une matrice. Ce premier chapitre présente le module, puis rappelle les outils d'algèbre linéaire qui serviront partout ensuite : normes et produit scalaire, opérations sur les matrices, déterminant et inverse. Rien de nouveau par rapport à la L1 et la L2, mais tout est repris avec numpy.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/l3_maths_algebre.pdf">l3_maths_algebre.pdf</a> · 44 diapos ; notebook <a href="../cours/cm1_maths_multi.ipynb">cm1_maths_multi.ipynb</a></dd></div>
+      <div><dt>Enseignante</dt><dd>Marie Tahon</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-17">17 octobre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Situer le module : données multi-dimensionnelles, classification et régression.</li>
+        <li>Calculer les normes \(L^1\), \(L^2\) et \(L^\infty\) d'un vecteur, un produit scalaire et une distance, et reconnaître des vecteurs orthogonaux ou colinéaires.</li>
+        <li>Distinguer produit matriciel, produit scalaire et produit terme à terme, en mathématiques comme en numpy.</li>
+        <li>Calculer un rang, un déterminant, des mineurs et une comatrice, puis l'inverse d'une matrice carrée.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Algèbre linéaire de L1 et L2 : vecteurs, matrices, systèmes linéaires.</li>
+        <li>Python de base ; numpy s'importe avec <code>import numpy as np</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <section>
+    <h2>Le module et les données <span class="ref">diapos 2–9</span></h2>
+    <p>Le module s'intitule « Mathématiques pour les données multi-dimensionnelles ». Il rassemble les outils mathématiques dont l'apprentissage automatique a besoin, et cette introduction explique pourquoi les données y sont presque toujours multi-dimensionnelles.</p>
+
+    <h3>Objectifs et organisation</h3>
+    <p>Le module a trois objectifs : savoir dériver et intégrer des fonctions multi-dimensionnelles, savoir utiliser des couples de variables aléatoires, et connaître le modèle bayésien naïf (<span class="en" lang="en">Naive Bayes</span>).</p>
+    <p>Il compte 5 cours de 2 h et 4 TD de 2 h. Un mini-projet se fait à la maison, sur machine, en Python. Une séance de TD de 2 h corrige ce projet et sert aux révisions. L'évaluation finale est un contrôle terminal (CT) de 2 h.</p>
+
+    <h3>Apprentissage automatique</h3>
+    <p>Comme en base de données, une donnée est généralement décrite par plusieurs <dfn>descripteurs</dfn> (<span class="en" lang="en">features</span>). Ces descripteurs sont soit qualitatifs (une couleur, une marque, une ville), soit quantitatifs (un poids, une amplitude, une pression, une couleur).</p>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>La couleur, qualitative ou quantitative ?</span></p>
+      <p><span class="badge ajout">Ajout</span> La couleur figure dans les deux listes de la diapo, et ce n'est pas une erreur. Le nom d'une couleur (« rouge », « vert ») est qualitatif. Son code RVB, trois intensités entre 0 et 255, est quantitatif. Le type d'un descripteur dépend de la façon dont on le représente.</p>
+    </div>
+    <p>L'<dfn>apprentissage automatique</dfn> (<span class="en" lang="en">machine learning</span>) consiste à acquérir une connaissance sur les données. Il faut deux choses. D'abord des données pour apprendre un modèle : elles sont représentées par des descripteurs et possèdent des propriétés (des concepts). Ensuite un algorithme qui optimise le modèle.</p>
+    <p>Le but est d'<em>inférer</em> des propriétés, représentées par des variables cibles, sur de nouvelles données, à partir de données connues. On note \(X\) le vecteur des descripteurs d'une donnée et \(Y\) la variable cible à prédire. Deux grandes familles de problèmes se distinguent par le type de \(Y\).</p>
+    <div class="colonnes">
+      <div class="colonne">
+        <p class="colonne-titre">Classification</p>
+        <p>La variable cible est de type fini et discret. On prédit à quelle classe \(c\) appartient la donnée, en estimant la probabilité \(P(Y = c \mid x)\).</p>
+        <p>Exemples de cibles : une couleur, une marque, une ville.</p>
+      </div>
+      <div class="colonne">
+        <p class="colonne-titre">Régression</p>
+        <p>La variable cible est de type continu. On cherche la fonction qui renvoie la cible de la donnée : \(f\colon x \mapsto Y = f(x)\).</p>
+        <p>Exemples de cibles : un poids, une amplitude, une pression, une couleur.</p>
+      </div>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Où intervient chaque partie du module</span></p>
+      <p>Estimer \(P(Y = c \mid x)\) quand \(x\) a plusieurs composantes demande des lois de probabilité à plusieurs dimensions (cours 3 et 4). Le modèle bayésien naïf du cours 5 est justement un classifieur : il choisit la classe \(c\) qui rend \(P(Y = c \mid x)\) maximale. Chercher la meilleure fonction \(f\) en régression revient à minimiser une erreur qui dépend de plusieurs paramètres : on dérive alors une fonction multi-dimensionnelle (cours 2).</p>
+    </div>
+
+    <h3>Les types de données</h3>
+    <p>Les données rencontrées en pratique sont de plusieurs sortes :</p>
+    <ul>
+      <li>des <strong>tableaux d'attributs</strong> : données bancaires, de santé, traces internet ;</li>
+      <li>des <strong>signaux</strong> : vidéos, audios, images (la diapo montre la photo d'un avion au décollage) ;</li>
+      <li>des <strong>séquences</strong> : séquences d'ADN, itinéraires, déplacements ;</li>
+      <li>du <strong>texte</strong>, par exemple la phrase « Je suis en licence 3 d'informatique ».</li>
+    </ul>
+    <p>Toutes ces données sont multi-dimensionnelles, et même souvent en grande dimension.</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>La dimension d'une image</span></p>
+      <p><span class="badge ajout">Ajout</span> Une image en niveaux de gris de 28 × 28 pixels, chaque pixel codé sur 8 bits, est un vecteur de \(28 \times 28 = 784\) composantes entières, chacune dans \(\{0, 1, \dots, 255\}\). Elle vit donc dans un espace de dimension 784. Une seule photo couleur de taille ordinaire compte des millions de composantes.</p>
+    </div>
+
+    <h3>Ce qui a été vu en L1 et L2, et ce qui vient</h3>
+    <p>Le module reprend trois domaines déjà abordés :</p>
+    <div class="tableau">
+      <table>
+        <thead><tr><th>Domaine</th><th>Vu en L1 et L2</th><th>Dans ce module</th></tr></thead>
+        <tbody>
+          <tr><td>Probabilités et statistiques</td><td>dénombrement, probabilités discrètes et conditionnelles, variables aléatoires à une dimension, discrètes et continues</td><td>variables aléatoires à deux dimensions, discrètes et continues (cours 3 à 5)</td></tr>
+          <tr><td>Analyse</td><td>fonctions, dérivation, intégration, continuité ; suites, récurrence, limites</td><td>fonctions multi-dimensionnelles : dérivation, intégration, continuité (cours 2)</td></tr>
+          <tr><td>Algèbre</td><td>espaces vectoriels, vecteurs, matrices, opérations matricielles (inversion, diagonalisation, déterminant) ; systèmes linéaires ; normes et distances</td><td>rappels seulement (ce cours 1) : rien de nouveau</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Scalaires et vecteurs <span class="ref">diapos 11–12</span></h2>
+    <p>Les deux objets de base sont le nombre seul et la liste ordonnée de nombres. On fixe ici les notations du cours.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Scalaire</span></p>
+      <p>Un <dfn>scalaire</dfn> est un nombre unique. Une variable qui contient un scalaire s'écrit généralement en minuscules : \(x = 2\) (un entier), \(a = 2{,}0\) (un réel).</p>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Vecteur</span></p>
+      <p>Un <dfn>vecteur</dfn> est un tableau ordonné de nombres, classés par des indices. Une variable qui contient un vecteur s'écrit en minuscules et en gras : \(\mathbf{x}\). Son premier élément est le nombre \(x_1\), le deuxième \(x_2\), etc.</p>
+      <p>On précise le type des nombres stockés : si chaque élément est dans \(\R\) et que le vecteur en contient \(n\), alors \(\mathbf{x} \in \R^n\) et on l'écrit en colonne :</p>
+      \[ \mathbf{x} = \begin{bmatrix} x_1 \\ x_2 \\ \vdots \\ x_n \end{bmatrix}. \]
+    </div>
+    <p>En Python, une liste fait l'affaire pour commencer. Attention, les indices commencent à 0 : <code>x[0]</code> est l'élément que les mathématiques notent \(x_1\).</p>
+<pre data-fichier="vecteurs.py"><code class="language-python">x = [2.2, -0.1, 5.5]
+print("1er élément : ", x[0])
+print("2ème élément : ", x[1])
+print("longueur de x : ", len(x))</code></pre>
+<pre class="terminal"><code>$ python vecteurs.py
+1er élément :  2.2
+2ème élément :  -0.1
+longueur de x :  3</code></pre>
+  </section>
+
+  <section>
+    <h2>Normes d'un vecteur <span class="ref">diapos 13–15, 18</span></h2>
+    <p>On a souvent besoin de mesurer la taille d'un vecteur, par exemple pour savoir si deux données sont proches. On utilise pour cela une fonction appelée norme.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Norme</span> <span class="ref">diapo 13</span></p>
+      <p>Une <dfn>norme</dfn> est une application \(\Vert \cdot \Vert\) d'un espace vectoriel \(E\) de dimension \(n\) vers \(\R\) qui vérifie les propriétés suivantes :</p>
+      <ul>
+        <li>la norme d'un vecteur est toujours positive : \(\forall \mathbf{x},\ \Vert \mathbf{x} \Vert \ge 0\) ;</li>
+        <li>\(\Vert \mathbf{x} \Vert = 0 \Rightarrow \mathbf{x} = \mathbf{0}\) ;</li>
+        <li>\(\Vert \mathbf{x} + \mathbf{y} \Vert \le \Vert \mathbf{x} \Vert + \Vert \mathbf{y} \Vert\) (inégalité triangulaire, ou de Minkowski) ;</li>
+        <li>pour tout \(\alpha \in \R\), \(\Vert \alpha \mathbf{x} \Vert = \lvert \alpha \rvert \cdot \Vert \mathbf{x} \Vert\).</li>
+      </ul>
+    </div>
+    <p>La diapo demande : « Que connaissez-vous comme normes ? ». La réponse suit : les plus utilisées sont les normes \(L^p\).</p>
+
+    <h3>Les normes \(L^p\)</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Norme \(L^p\)</span> <span class="ref">diapo 14</span></p>
+      <p>Les normes \(L^p\), ou normes de Hölder, sont définies pour un réel \(p \ge 1\). La norme de degré \(p\) d'un vecteur \(\mathbf{x}\) de dimension \(n\) est :</p>
+      \[ \Vert \mathbf{x} \Vert_p = \left( \sum_{i=1}^{n} \lvert x_i \rvert^p \right)^{1/p}. \]
+      <p><span class="badge a-verifier">À vérifier</span> La diapo écrit « \(p \in \R\) (\(p \le 1\)) ». C'est \(p \ge 1\) qu'il faut lire. Pour \(p \lt 1\), la formule ne vérifie plus l'inégalité triangulaire et ne définit donc pas une norme.</p>
+    </div>
+    <p>Cette norme se décline suivant la valeur de \(p\) :</p>
+    <ul>
+      <li>norme \(L^1\) (\(p = 1\)) : \(\Vert \mathbf{x} \Vert_1 = \sum_{i=1}^{n} \lvert x_i \rvert\), la somme des valeurs absolues ;</li>
+      <li>norme euclidienne \(L^2\) (\(p = 2\)) : \(\Vert \mathbf{x} \Vert_2 = \sqrt{\sum_{i=1}^{n} x_i^2}\) ;</li>
+      <li>norme \(L^p\) en général : \(\Vert \mathbf{x} \Vert_p = \left( \sum_{i=1}^{n} \lvert x_i \rvert^p \right)^{1/p}\) ;</li>
+      <li>norme max (\(p = \infty\)) : \(\Vert \mathbf{x} \Vert_\infty = \max_{i = 1..n} \lvert x_i \rvert\).</li>
+    </ul>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi la norme max s'appelle \(L^\infty\)</span></p>
+      <p>Quand \(p\) grandit, la plus grande composante écrase les autres dans la somme \(\sum \lvert x_i \rvert^p\). Pour \(\mathbf{x} = (3, 1)\) : \(\Vert \mathbf{x} \Vert_1 = 4\), \(\Vert \mathbf{x} \Vert_2 \approx 3{,}16\), \(\Vert \mathbf{x} \Vert_{10} \approx 3{,}000005\). La limite quand \(p \to \infty\) est \(\max \lvert x_i \rvert = 3\). Pour tout vecteur, \(\Vert \mathbf{x} \Vert_\infty \le \Vert \mathbf{x} \Vert_2 \le \Vert \mathbf{x} \Vert_1\).</p>
+      <p>La figure montre la « boule unité » de chaque norme, c'est-à-dire l'ensemble des vecteurs du plan de norme 1.</p>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 440 250" width="440" role="img" aria-labelledby="fig-boules-titre">
+        <title id="fig-boules-titre">Boules unité dans le plan : un losange pour la norme L1, un cercle pour la norme L2, un carré pour la norme max</title>
+        <path class="trait" d="M30 125 H250 M140 235 V15"/>
+        <rect class="pointille" x="60" y="45" width="160" height="160"/>
+        <circle class="trait" cx="140" cy="125" r="80"/>
+        <path class="accent" d="M140 45 L220 125 L140 205 L60 125 Z"/>
+        <text x="226" y="120" class="t2 mono" font-size="12">1</text>
+        <text x="146" y="40" class="t2 mono" font-size="12">1</text>
+        <text x="40" y="120" class="t2 mono" font-size="12">−1</text>
+        <text x="146" y="220" class="t2 mono" font-size="12">−1</text>
+        <path class="accent" d="M270 60 H300"/>
+        <text x="308" y="64">L1 : |x₁| + |x₂| = 1</text>
+        <path class="trait" d="M270 110 H300"/>
+        <text x="308" y="114">L2 : x₁² + x₂² = 1</text>
+        <path class="pointille" d="M270 160 H300"/>
+        <text x="308" y="164">L∞ : max |xᵢ| = 1</text>
+      </svg>
+      <figcaption>Vecteurs de norme 1 dans le plan, selon la norme choisie. Le losange \(L^1\) est inscrit dans le cercle \(L^2\), lui-même inscrit dans le carré \(L^\infty\).</figcaption>
+    </figure>
+
+    <h3>La norme euclidienne</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Norme euclidienne</span> <span class="ref">diapo 15</span></p>
+      <p>La <dfn>norme euclidienne</dfn> est la norme \(L^2\), avec \(p = 2\). Elle représente la distance euclidienne entre l'origine du repère et le point de coordonnées \(\mathbf{x}\) :</p>
+      \[ \Vert \mathbf{x} \Vert_2 = \sqrt{\sum_{i=1}^{n} x_i^2}. \]
+      <p>Une norme est dite euclidienne si elle est induite par un produit scalaire. C'est le cas ici : \(\Vert \mathbf{x} \Vert_2 = \sqrt{\mathbf{x}^T \mathbf{x}} = \sqrt{\langle \mathbf{x}, \mathbf{x} \rangle}\), autrement dit \(\Vert \mathbf{x} \Vert_2^2 = \mathbf{x}^T \mathbf{x}\).</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Distance entre deux vecteurs</span> <span class="badge examen">Examen</span></p>
+      <p>Une norme donne une distance : \(d(\mathbf{x}, \mathbf{y}) = \Vert \mathbf{x} - \mathbf{y} \Vert\). Avec la norme \(L^2\), c'est la <dfn>distance euclidienne</dfn> :</p>
+      \[ d(\mathbf{x}, \mathbf{y}) = \Vert \mathbf{x} - \mathbf{y} \Vert_2 = \sqrt{\sum_{i=1}^{n} (x_i - y_i)^2}. \]
+      <p>Par exemple, entre \((1, 0, 2)\) et \((2, 2, 0)\), la différence vaut \((-1, -2, 2)\) et la distance \(\sqrt{1 + 4 + 4} = 3\). L'examen de 2023 demandait une distance euclidienne de ce type, avec une norme \(L^1\) et une norme \(L^2\).</p>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Normes de deux vecteurs</span> <span class="ref">diapo 18</span></p>
+      <p>Calculer les normes \(L^1\) et \(L^2\) des vecteurs \(\mathbf{x} = \begin{bmatrix} 2 \\ 3 \\ -1 \end{bmatrix}\) et \(\mathbf{y} = \begin{bmatrix} 2 \\ 3 \\ 10 \end{bmatrix}\).</p>
+      <details class="correction">
+        <summary>Correction</summary>
+        <p>\(\Vert \mathbf{x} \Vert_1 = 2 + 3 + 1 = 6\) et \(\Vert \mathbf{x} \Vert_2 = \sqrt{4 + 9 + 1} = \sqrt{14} \approx 3{,}74\).</p>
+        <p>\(\Vert \mathbf{y} \Vert_1 = 2 + 3 + 10 = 15\) et \(\Vert \mathbf{y} \Vert_2 = \sqrt{4 + 9 + 100} = \sqrt{113} \approx 10{,}63\).</p>
+        <p>Le notebook du cours fait le calcul avec numpy. Les opérations s'y appliquent terme à terme : <code>np.abs(a)</code> prend la valeur absolue de chaque composante, <code>a*a</code> les élève au carré.</p>
+<pre data-fichier="normes.py"><code class="language-python">import numpy as np
+
+def norme_l1(a):
+    return np.sum(np.abs(a))
+
+def norme_l2(a):
+    return np.sqrt(np.sum(a*a))
+
+x = np.array([2, 3, -1])
+y = np.array([2, 3, 10])
+
+print(norme_l1(x), norme_l2(x), norme_l1(y), norme_l2(y))</code></pre>
+<pre class="terminal"><code>$ python normes.py
+6 3.7416573867739413 15 10.63014581273465</code></pre>
+        <p><span class="badge ajout">Ajout</span> numpy fournit aussi <code>np.linalg.norm(x, 1)</code>, <code>np.linalg.norm(x)</code> (norme 2 par défaut) et <code>np.linalg.norm(x, np.inf)</code>. La norme \(L^\infty\) vaut 3 pour \(\mathbf{x}\) et 10 pour \(\mathbf{y}\).</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2>Produit scalaire, angle et orthogonalité <span class="ref">diapos 16–17, 21–22</span></h2>
+    <p>On a parfois besoin de multiplier deux vecteurs pour obtenir un scalaire : c'est le produit scalaire. Il mesure à la fois les longueurs des deux vecteurs et l'angle qu'ils forment.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Produit scalaire</span> <span class="ref">diapo 21</span></p>
+      <p>Soit \(E\) un espace vectoriel de dimension \(n\). Un <dfn>produit scalaire</dfn> (<span class="en" lang="en">dot product</span>) est une application de type produit qui associe à deux vecteurs un scalaire, noté \(\mathbf{x} \cdot \mathbf{y}\) ou \(\langle \mathbf{x}, \mathbf{y} \rangle\). Il vérifie :</p>
+      <ul>
+        <li>la symétrie : \(\mathbf{x} \cdot \mathbf{y} = \mathbf{y} \cdot \mathbf{x}\) ;</li>
+        <li>le caractère défini positif : \(\mathbf{x} \cdot \mathbf{x} \ge 0\), et \(\mathbf{x} \cdot \mathbf{x} = 0 \Rightarrow \mathbf{x} = \mathbf{0}\).</li>
+      </ul>
+      <p><span class="badge ajout">Ajout</span> Il est aussi <strong>bilinéaire</strong> : linéaire par rapport à chacun des deux vecteurs, par exemple \((a\mathbf{x} + \mathbf{z}) \cdot \mathbf{y} = a\, (\mathbf{x} \cdot \mathbf{y}) + \mathbf{z} \cdot \mathbf{y}\). Ces trois propriétés réunies définissent un produit scalaire.</p>
+    </div>
+    <p>La diapo donne deux exemples de produits scalaires. Le premier est le produit usuel de \(\R^n\), celui qu'on utilisera tout le temps :</p>
+    \[ \varphi\colon E \times E \to \R, \quad (\mathbf{x}, \mathbf{y}) \mapsto \mathbf{x} \cdot \mathbf{y} = \sum_{i=1}^{n} x_i y_i. \]
+    <p>Le second porte sur des fonctions, intégrables sur un intervalle \([a, b]\) avec \(a \lt b\) :</p>
+    \[ \varphi\colon E \times E \to \R, \quad (f, g) \mapsto f \cdot g = \int_a^b f g. \]
+
+    <h3>Produit scalaire et angle</h3>
+    <p>Le produit scalaire s'écrit aussi comme un produit matriciel (voir plus loin), et en fonction des normes des deux vecteurs et de l'angle \(\theta\) qu'ils forment :</p>
+    \[ \mathbf{x} \cdot \mathbf{y} = \mathbf{x}^T \mathbf{y} = \mathbf{y}^T \mathbf{x} = \Vert \mathbf{x} \Vert_2 \, \Vert \mathbf{y} \Vert_2 \cos \theta. \]
+    <p>C'est le seul cas où le produit matriciel est systématiquement commutatif.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 420 230" width="420" role="img" aria-labelledby="fig-angle-titre">
+        <title id="fig-angle-titre">Deux vecteurs x et y issus de l'origine forment un angle thêta ; leurs longueurs sont leurs normes</title>
+        <defs>
+          <marker id="fleche-vec" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <path class="trait" d="M40 200 H400" marker-end="url(#fleche-vec)"/>
+        <path class="trait" d="M60 220 V20" marker-end="url(#fleche-vec)"/>
+        <text x="392" y="220" class="t2">x₁</text>
+        <text x="70" y="26" class="t2">x₂</text>
+        <path class="accent" d="M60 200 L330 120" marker-end="url(#fleche-vec)"/>
+        <path class="trait" d="M60 200 L190 50" marker-end="url(#fleche-vec)"/>
+        <path class="pointille" d="M138.6 176.7 A 82 82 0 0 0 113.7 138.0"/>
+        <text x="140" y="148">θ</text>
+        <text x="250" y="132" class="gras">‖x‖</text>
+        <text x="96" y="96" class="gras">‖y‖</text>
+      </svg>
+      <figcaption>Le produit scalaire vaut \(\Vert \mathbf{x} \Vert \, \Vert \mathbf{y} \Vert \cos \theta\). Il est positif si l'angle est aigu, nul si les vecteurs sont perpendiculaires, négatif si l'angle est obtus.</figcaption>
+    </figure>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La similarité cosinus</span></p>
+      <p>On en tire \(\cos \theta = \dfrac{\mathbf{x} \cdot \mathbf{y}}{\Vert \mathbf{x} \Vert_2 \, \Vert \mathbf{y} \Vert_2}\), qui reste entre −1 et 1. En apprentissage automatique, cette quantité s'appelle la <dfn>similarité cosinus</dfn> (<span class="en" lang="en">cosine similarity</span>). Elle compare deux données d'après leur direction seulement, sans tenir compte de leur taille : c'est la mesure habituelle pour comparer deux textes représentés par des fréquences de mots.</p>
+    </div>
+
+    <h3>Norme euclidienne et Pythagore</h3>
+    <p>La norme euclidienne et le produit scalaire sont liés par quelques identités, qu'on retrouve en développant \(\Vert \mathbf{x} + \mathbf{y} \Vert_2^2 = (\mathbf{x} + \mathbf{y}) \cdot (\mathbf{x} + \mathbf{y})\).</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Pythagore et la médiane</span> <span class="ref">diapo 17</span></p>
+      <ul>
+        <li>Pythagore généralisé : \(\Vert \mathbf{x} + \mathbf{y} \Vert^2 = \Vert \mathbf{x} \Vert^2 + \Vert \mathbf{y} \Vert^2 + 2\, \mathbf{x} \cdot \mathbf{y}\).</li>
+        <li>Égalité de la médiane (ou du parallélogramme) : \(\Vert \mathbf{x} + \mathbf{y} \Vert^2 + \Vert \mathbf{x} - \mathbf{y} \Vert^2 = 2 \Vert \mathbf{x} \Vert^2 + 2 \Vert \mathbf{y} \Vert^2\).</li>
+        <li>Pythagore : \(\Vert \mathbf{x} + \mathbf{y} \Vert^2 = \Vert \mathbf{x} \Vert^2 + \Vert \mathbf{y} \Vert^2 \Leftrightarrow \mathbf{x} \cdot \mathbf{y} = 0\) (orthogonalité des vecteurs).</li>
+      </ul>
+      <p><span class="badge a-verifier">À vérifier</span> La diapo écrit \(\Vert {+\mathbf{y}} \Vert^2\) au lieu de \(\Vert \mathbf{y} \Vert^2\) dans les deux formules de Pythagore, et \(\Vert {+2\mathbf{y}} \Vert^2\) au lieu de \(2 \Vert \mathbf{y} \Vert^2\) dans celle de la médiane. Ce sont des coquilles : avec \(\Vert 2\mathbf{y} \Vert^2 = 4 \Vert \mathbf{y} \Vert^2\), l'égalité serait fausse.</p>
+      <details class="preuve">
+        <summary>Preuve</summary>
+        <p>Par bilinéarité et symétrie : \(\Vert \mathbf{x} + \mathbf{y} \Vert^2 = \mathbf{x} \cdot \mathbf{x} + \mathbf{x} \cdot \mathbf{y} + \mathbf{y} \cdot \mathbf{x} + \mathbf{y} \cdot \mathbf{y} = \Vert \mathbf{x} \Vert^2 + 2\, \mathbf{x} \cdot \mathbf{y} + \Vert \mathbf{y} \Vert^2\).</p>
+        <p>De même, \(\Vert \mathbf{x} - \mathbf{y} \Vert^2 = \Vert \mathbf{x} \Vert^2 - 2\, \mathbf{x} \cdot \mathbf{y} + \Vert \mathbf{y} \Vert^2\). En ajoutant les deux, les doubles produits s'annulent : c'est l'égalité de la médiane.</p>
+        <p>Enfin, d'après la première formule, \(\Vert \mathbf{x} + \mathbf{y} \Vert^2 = \Vert \mathbf{x} \Vert^2 + \Vert \mathbf{y} \Vert^2\) exactement quand \(2\, \mathbf{x} \cdot \mathbf{y} = 0\).</p>
+      </details>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 420 230" width="420" role="img" aria-labelledby="fig-para-titre">
+        <title id="fig-para-titre">Parallélogramme construit sur x et y : ses diagonales sont x plus y et x moins y</title>
+        <defs>
+          <marker id="fleche-para" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <path class="pointille" d="M290 150 L360 40 M130 90 L360 40"/>
+        <path class="trait" d="M60 200 L290 150" marker-end="url(#fleche-para)"/>
+        <path class="trait" d="M60 200 L130 90" marker-end="url(#fleche-para)"/>
+        <path class="accent" d="M60 200 L360 40" marker-end="url(#fleche-para)"/>
+        <path class="accent" d="M130 90 L290 150" marker-end="url(#fleche-para)"/>
+        <text x="180" y="200" class="gras">x</text>
+        <text x="70" y="140" class="gras">y</text>
+        <text x="250" y="78" class="gras">x + y</text>
+        <text x="200" y="138" class="gras">x − y</text>
+      </svg>
+      <figcaption>Les côtés du parallélogramme sont \(\mathbf{x}\) et \(\mathbf{y}\), ses diagonales \(\mathbf{x} + \mathbf{y}\) et \(\mathbf{x} - \mathbf{y}\). L'égalité de la médiane dit que la somme des carrés des diagonales égale la somme des carrés des quatre côtés.</figcaption>
+    </figure>
+
+    <h3>Vecteurs orthogonaux</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Vecteurs orthogonaux</span> <span class="ref">diapo 22</span></p>
+      <p>Deux vecteurs d'un espace vectoriel \(E\) sont dits <dfn>orthogonaux</dfn> si et seulement si leur produit scalaire est nul :</p>
+      \[ \mathbf{x} \perp \mathbf{y} \Leftrightarrow \mathbf{x} \cdot \mathbf{y} = 0. \]
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Deux vecteurs orthogonaux ?</span> <span class="ref">diapo 22</span></p>
+      <p>Les vecteurs \(\mathbf{x} = \begin{bmatrix} 1 \\ -1 \\ 1 \end{bmatrix}\) et \(\mathbf{y} = \begin{bmatrix} 0 \\ 2 \\ 2 \end{bmatrix}\) sont-ils orthogonaux ?</p>
+      <details class="correction">
+        <summary>Correction</summary>
+        <p>\(\mathbf{x} \cdot \mathbf{y} = 1 \times 0 + (-1) \times 2 + 1 \times 2 = 0\) : les deux vecteurs sont orthogonaux. Le notebook du cours le vérifie avec <code>np.sum(x*y)</code>, la somme des produits terme à terme.</p>
+<pre data-fichier="produit_scalaire.py"><code class="language-python">import numpy as np
+
+x = np.array([1, -1, 1])
+y = np.array([0, 2, 2])
+print('dimension de x: ', x.shape)  # 1 dimension, 3 valeurs possibles
+print('produit scalaire (produit terme à terme): ', np.sum(x*y))
+print('produit d un vecteur par un scalaire: ', 3.1*x)</code></pre>
+<pre class="terminal"><code>$ python produit_scalaire.py
+dimension de x:  (3,)
+produit scalaire (produit terme à terme):  0
+produit d un vecteur par un scalaire:  [ 3.1 -3.1  3.1]</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2>Espaces vectoriels, colinéarité, familles libres <span class="ref">diapos 19–20</span></h2>
+    <p>Les vecteurs d'un même ensemble s'additionnent et se multiplient par des nombres. Cette structure, l'espace vectoriel, permet de parler de combinaisons linéaires, et donc de vecteurs qui dépendent les uns des autres.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Espace vectoriel</span> <span class="ref">diapo 19</span></p>
+      <p>Un <dfn>espace vectoriel</dfn> est un ensemble de vecteurs que l'on peut additionner entre eux et multiplier par un scalaire (pour les étirer, les rétrécir, les retourner, etc.). C'est une structure qui permet d'effectuer des <dfn>combinaisons linéaires</dfn>.</p>
+      <p>Formellement, c'est un triplet \((E, \oplus, \otimes)\) sur un ensemble de scalaires \(K\), où :</p>
+      <ul>
+        <li>les vecteurs sont dans \(E\) : \(\mathbf{u} \in E\) ;</li>
+        <li>les valeurs des vecteurs sont dans \(K\) : \(\mathbf{u} = [u_1, u_2, \dots, u_n] \Rightarrow u_i \in K\) ;</li>
+        <li>\(\oplus\) est une opération entre deux vecteurs ;</li>
+        <li>\(\otimes\) est une opération entre un scalaire de \(K\) et un vecteur : \(a \otimes \mathbf{u}\).</li>
+      </ul>
+    </div>
+    <p>Deux exemples. Le cas « classique » : \(K = \R\), \(E = \R^3\), avec l'addition \(+\) et la multiplication \(\times\) arithmétiques. Le cas booléen : \(K = \{0, 1\}\), \(E = K^2\), \(\oplus\) = OU et \(\otimes\) = ET. Le cours ne considère que le premier cas.</p>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Calculer \(a \otimes (\mathbf{u} \oplus \mathbf{v})\)</span> <span class="ref">diapo 19</span></p>
+      <p>La diapo demande de calculer \(a \otimes (\mathbf{u} \oplus \mathbf{v})\) dans les deux cas, sans donner de valeurs. <span class="badge ajout">Ajout</span> On prend, dans le cas classique, \(a = 2\), \(\mathbf{u} = (1, 0, -1)\), \(\mathbf{v} = (3, 1, 2)\) ; dans le cas booléen, \(a = 1\), \(\mathbf{u} = (1, 0)\), \(\mathbf{v} = (1, 1)\).</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Cas classique : \(\mathbf{u} + \mathbf{v} = (4, 1, 1)\), donc \(2 \times (\mathbf{u} + \mathbf{v}) = (8, 2, 2)\). On obtient le même résultat avec \(2\mathbf{u} + 2\mathbf{v} = (2, 0, -2) + (6, 2, 4)\).</p>
+        <p>Cas booléen : \(\mathbf{u} \oplus \mathbf{v} = (1 \text{ OU } 1,\ 0 \text{ OU } 1) = (1, 1)\), puis \(1 \otimes (1, 1) = (1 \text{ ET } 1,\ 1 \text{ ET } 1) = (1, 1)\). Avec \(a = 0\), on obtiendrait \((0, 0)\).</p>
+      </details>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Colinéarité, famille libre</span> <span class="ref">diapo 20</span></p>
+      <p>Soit un espace vectoriel \(E\). Deux vecteurs \(\mathbf{u}\) et \(\mathbf{v}\) sont <dfn>colinéaires</dfn> s'il existe un scalaire \(a\) tel que \(\mathbf{u} = a \cdot \mathbf{v}\). Les deux vecteurs sont alors linéairement dépendants : on dit qu'ils sont <dfn>liés</dfn>.</p>
+      <p>Soit une famille de vecteurs \(\mathbf{u}_i \in E\). La famille est <dfn>libre</dfn> si les vecteurs sont tous linéairement indépendants.</p>
+      <p><span class="badge ajout">Ajout</span> « Linéairement indépendants » signifie qu'aucun vecteur de la famille n'est combinaison linéaire des autres. De façon équivalente, la seule combinaison nulle est la combinaison triviale : \(\lambda_1 \mathbf{u}_1 + \dots + \lambda_k \mathbf{u}_k = \mathbf{0} \Rightarrow \lambda_1 = \dots = \lambda_k = 0\). Pour deux vecteurs, être liés revient à être colinéaires.</p>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Familles libres</span> <span class="ref">diapo 20</span></p>
+      <p>Déterminer les vecteurs qui forment une famille libre :</p>
+      \[ \mathbf{u}_1 = \begin{bmatrix} 1 \\ 2 \\ 0 \\ 1 \end{bmatrix}, \quad \mathbf{u}_2 = \begin{bmatrix} 0 \\ 0 \\ 2 \\ 2 \end{bmatrix}, \quad \mathbf{u}_3 = \begin{bmatrix} 2 \\ 4 \\ 2 \\ 4 \end{bmatrix}, \quad \mathbf{u}_4 = \begin{bmatrix} 3 \\ 6 \\ 0 \\ 3 \end{bmatrix}. \]
+      <details class="indice"><summary>Indice</summary><p>Comparer \(\mathbf{u}_4\) à \(\mathbf{u}_1\), puis essayer d'écrire \(\mathbf{u}_3\) avec \(\mathbf{u}_1\) et \(\mathbf{u}_2\).</p></details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>\(\mathbf{u}_4 = 3\mathbf{u}_1\) : ces deux vecteurs sont colinéaires. Et \(\mathbf{u}_3 = 2\mathbf{u}_1 + \mathbf{u}_2\) : on vérifie \((2, 4, 0, 2) + (0, 0, 2, 2) = (2, 4, 2, 4)\).</p>
+        <p>En revanche, \(\mathbf{u}_1\) et \(\mathbf{u}_2\) ne sont pas colinéaires (la troisième composante de \(\mathbf{u}_1\) est nulle, pas celle de \(\mathbf{u}_2\)) : \(\{\mathbf{u}_1, \mathbf{u}_2\}\) est une famille libre.</p>
+        <p>Les quatre vecteurs sont donc tous combinaisons de \(\mathbf{u}_1\) et \(\mathbf{u}_2\). Toute famille de trois vecteurs ou plus est liée. Les familles libres sont les paires non colinéaires, c'est-à-dire toutes les paires sauf \(\{\mathbf{u}_1, \mathbf{u}_4\}\). La famille entière est de rang 2 : <code>np.linalg.matrix_rank</code> appliqué à la matrice de colonnes \(\mathbf{u}_1, \dots, \mathbf{u}_4\) renvoie 2.</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2>Matrices et transposition <span class="ref">diapos 24–25</span></h2>
+    <p>Un jeu de données se range naturellement dans un tableau à deux dimensions : une ligne par donnée, une colonne par descripteur. C'est une matrice.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Matrice</span> <span class="ref">diapo 24</span></p>
+      <p>Une <dfn>matrice</dfn> est un tableau 2D ordonné de nombres, où chaque élément est identifié par deux indices. Une variable qui contient une matrice s'écrit en majuscule et en gras : \(\mathbf{A}\). L'élément de la ligne \(i\) et de la colonne \(j\) est le nombre \(a_{i,j}\) :</p>
+      \[ \mathbf{A} = \begin{bmatrix} a_{1,1} &amp; a_{1,2} &amp; \dots &amp; a_{1,n} \\ a_{2,1} &amp; a_{2,2} &amp; \dots &amp; a_{2,n} \\ \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ a_{m,1} &amp; a_{m,2} &amp; \dots &amp; a_{m,n} \end{bmatrix}. \]
+      <p>Cette matrice a \(m\) lignes et \(n\) colonnes : elle est de dimension \(m \times n\), et on écrit \(\mathbf{A} \in \R^{m \times n}\).</p>
+      <p><span class="badge a-verifier">À vérifier</span> La diapo dit « l'élément de \(\mathbf{A}\) correspondant à la colonne \(i\) et la ligne \(j\) est le nombre \(a_{i,j}\) ». C'est l'inverse : le premier indice est celui de la ligne, comme le montre la matrice écrite sur la même diapo, où \(a_{m,1}\) est en dernière ligne.</p>
+    </div>
+    <p>En Python, une matrice peut être une liste de listes ou un tableau numpy. Seul le tableau numpy connaît les opérations matricielles.</p>
+<pre data-fichier="matrices.py"><code class="language-python">import numpy as np
+A = [[2.2, -2.1, 2.5],
+     [0.2, -0.1, 0.5],
+     [5.2, -5.1, 5.5]]           # liste de listes
+B = np.array([[2.2, -2.1, 2.5],
+              [0.2, -0.1, 0.5],
+              [5.2, -5.1, 5.5]])  # tableau numpy
+print(A[0])
+print(B[0])
+print(len(A), B.size, B.shape)</code></pre>
+<pre class="terminal"><code>$ python matrices.py
+[2.2, -2.1, 2.5]
+[ 2.2 -2.1  2.5]
+3 9 (3, 3)</code></pre>
+    <p><code>A[0]</code> et <code>B[0]</code> donnent la première ligne. <code>len</code> compte les lignes, <code>B.size</code> le nombre total d'éléments, <code>B.shape</code> les dimensions (lignes, colonnes). Le notebook montre aussi <code>B[1:, 1]</code>, la colonne d'indice 1 à partir de la deuxième ligne : <code>[-0.1 -5.1]</code>. Sur la diapo, la parenthèse fermante de <code>np.array(…)</code> manque ; le code ci-dessus la rétablit.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Transposition</span> <span class="ref">diapo 25</span></p>
+      <p>La <dfn>transposée</dfn> d'une matrice est son image miroir par rapport à sa diagonale. La transposée de \(\mathbf{A}\), notée \(\mathbf{A}^T\), est définie par \(a^T_{i,j} = a_{j,i}\) :</p>
+      \[ \mathbf{A} = \begin{bmatrix} a_{1,1} &amp; a_{1,2} \\ a_{2,1} &amp; a_{2,2} \\ a_{3,1} &amp; a_{3,2} \end{bmatrix} \Rightarrow \mathbf{A}^T = \begin{bmatrix} a_{1,1} &amp; a_{2,1} &amp; a_{3,1} \\ a_{1,2} &amp; a_{2,2} &amp; a_{3,2} \end{bmatrix}. \]
+      <p>Une matrice \(m \times n\) a donc une transposée \(n \times m\).</p>
+    </div>
+    <p>Un vecteur peut être vu comme une matrice \(m \times n\) à une seule colonne (\(n = 1\)). Sa transposée est une matrice à une seule ligne (\(m = 1\)) :</p>
+    \[ \mathbf{x} = \begin{bmatrix} x_1 \\ x_2 \\ x_3 \end{bmatrix} \Rightarrow \mathbf{x}^T = [x_1, x_2, x_3]. \]
+    <p>numpy ne fait pas cette distinction tant que le tableau n'a qu'une dimension : sa forme est <code>(3,)</code>, et <code>.T</code> ne change rien. Pour obtenir un vrai vecteur colonne ou ligne, il faut lui donner deux dimensions avec <code>reshape</code>, comme dans le notebook :</p>
+<pre data-fichier="transposition.py"><code class="language-python">import numpy as np
+x = np.array([2.2, -2.1, 0.5])
+print(x.shape, x.T.shape)  # un tableau à 1 dimension : .T ne change rien
+z = x.reshape((3, 1))
+print(z.shape)             # vecteur colonne
+print(z.T.shape)           # vecteur ligne</code></pre>
+<pre class="terminal"><code>$ python transposition.py
+(3,) (3,)
+(3, 1)
+(1, 3)</code></pre>
+  </section>
+
+  <section>
+    <h2>Opérations sur les matrices <span class="ref">diapos 26–29</span></h2>
+    <p>Les matrices s'additionnent et se multiplient par des nombres terme à terme. La multiplication de deux matrices entre elles est plus subtile : il en existe deux, qu'il ne faut pas confondre.</p>
+
+    <h3>Opérations linéaires</h3>
+    <p>Soient \(\mathbf{A}\) et \(\mathbf{B}\) deux matrices de dimension \(m \times n\).</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Addition, multiplication par un scalaire</span> <span class="ref">diapo 26</span></p>
+      <p><strong>Addition.</strong> On additionne deux matrices de même dimension en ajoutant leurs éléments un à un : si \(\mathbf{C} = \mathbf{A} + \mathbf{B}\), alors \(c_{i,j} = a_{i,j} + b_{i,j}\).</p>
+      <p><strong>Multiplication par un scalaire.</strong> On peut multiplier une matrice par un scalaire, ou lui ajouter un scalaire. Si \(a\) et \(c\) sont deux scalaires et \(\mathbf{D} = a \cdot \mathbf{B} + c\), alors \(d_{i,j} = a \cdot b_{i,j} + c\).</p>
+      <p><strong>Addition d'une matrice et d'un vecteur.</strong> On peut avoir besoin d'ajouter un vecteur \(\mathbf{b}\) de dimension \(n\) à la matrice \(\mathbf{A}\). On note \(\mathbf{C} = \mathbf{A} + \mathbf{b}\) (notation abusive) : \(c_{i,j} = a_{i,j} + b_j\). Le vecteur \(\mathbf{b}\) est ajouté à toutes les lignes de la matrice.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les mêmes opérations en numpy</span></p>
+      <p>numpy écrit ces opérations comme en mathématiques. L'ajout d'un scalaire ou d'un vecteur à une matrice s'appelle le <dfn>broadcasting</dfn> : numpy répète le scalaire, ou le vecteur ligne, autant de fois qu'il faut.</p>
+<pre data-fichier="operations.py"><code class="language-python">import numpy as np
+A = np.array([[1, 2, 3],
+              [4, 5, 6]])
+b = np.array([10, 20, 30])
+print(A.T)        # transposée, ou np.transpose(A)
+print(A + A)      # addition terme à terme
+print(2 * A + 1)  # d = a·b + c pour chaque terme
+print(A + b)      # b est ajouté à chaque ligne</code></pre>
+<pre class="terminal"><code>$ python operations.py
+[[1 4]
+ [2 5]
+ [3 6]]
+[[ 2  4  6]
+ [ 8 10 12]]
+[[ 3  5  7]
+ [ 9 11 13]]
+[[11 22 33]
+ [14 25 36]]</code></pre>
+    </div>
+
+    <h3>Produit matriciel et produit de Hadamard</h3>
+    <p>La multiplication est l'opération la plus importante entre des matrices.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Produit matriciel</span> <span class="ref">diapo 27</span></p>
+      <p>Soient \(\mathbf{A}\) de dimension \(m \times n\) et \(\mathbf{B}\) de dimension \(n \times p\). Le <dfn>produit matriciel</dfn> \(\mathbf{C} = \mathbf{A}\mathbf{B}\) a pour dimension \(m \times p\), et :</p>
+      \[ c_{i,j} = \sum_{k=1}^{n} a_{i,k}\, b_{k,j}. \]
+      <p>Le produit n'existe que si le nombre de colonnes de \(\mathbf{A}\) égale le nombre de lignes de \(\mathbf{B}\).</p>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Deux produits différents</span> <span class="ref">diapo 27</span></p>
+      <p>Le produit matriciel est différent du <dfn>produit terme à terme</dfn>, ou produit de Hadamard, qui exige deux matrices de même dimension :</p>
+      \[ \mathbf{C} = \mathbf{A} \odot \mathbf{B} \Rightarrow c_{i,j} = a_{i,j} \times b_{i,j}. \]
+      <p>La diapo recommande de ne surtout pas noter le produit matriciel avec l'opérateur \(\cdot\) (<span class="en" lang="en">dot product</span>), réservé au produit scalaire ou au produit terme à terme.</p>
+      <p><span class="badge ajout">Ajout</span> En numpy, c'est l'inverse qui piège : <code>A * B</code> est le produit de Hadamard, tandis que <code>A.dot(B)</code>, <code>np.dot(A, B)</code> et <code>A @ B</code> calculent le produit matriciel.</p>
+    </div>
+    <p>Le notebook compare les deux produits sur deux matrices \(3 \times 3\) :</p>
+<pre data-fichier="produits.py"><code class="language-python">import numpy as np
+A = np.array([[2, -2, 0],
+              [2, -1, 1],
+              [0, 1, 1]])
+B = 1 + A        # ajoute 1 à chaque terme
+print(A * B)     # produit terme à terme (Hadamard)
+print(A.dot(B))  # produit matriciel, comme A @ B
+print(B.dot(A))  # différent : le produit n'est pas commutatif</code></pre>
+<pre class="terminal"><code>$ python produits.py
+[[6 2 0]
+ [6 0 2]
+ [0 2 2]]
+[[ 0 -2 -2]
+ [ 4  0  2]
+ [ 4  2  4]]
+[[ 4 -4  0]
+ [ 6 -4  2]
+ [ 6 -2  4]]</code></pre>
+
+    <h3>Le cas des vecteurs</h3>
+    <p>Un vecteur colonne est une matrice \(n \times 1\). Le produit scalaire devient alors un produit matriciel.</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Produit scalaire et produit matriciel</span> <span class="ref">diapo 28</span></p>
+      <p>Soient deux vecteurs de \(E\), donc de même dimension. Alors \(\mathbf{x}^T \mathbf{y} = \mathbf{x} \cdot \mathbf{y} = \langle \mathbf{x}, \mathbf{y} \rangle\).</p>
+      <p>La diapo ajoute : « Le produit matriciel entre deux vecteurs \(\mathbf{x}\) et \(\mathbf{y}\) de dimensions \(n\) et \(m\) est donné par \(\mathbf{x}^T \cdot \mathbf{y}\) qui a pour dimension \(m \times n\) ». <span class="badge a-verifier">À vérifier</span> Avec des vecteurs colonnes, \(\mathbf{x}^T \mathbf{y}\) n'existe que si \(n = m\), et c'est une matrice \(1 \times 1\) : le produit scalaire. Le produit qui donne une matrice est \(\mathbf{x}\mathbf{y}^T\), de dimension \(n \times m\), appelé <dfn>produit extérieur</dfn> (<span class="en" lang="en">outer product</span>). L'exercice suivant montre les deux.</p>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Produits de deux vecteurs</span> <span class="ref">diapo 28</span></p>
+      <p>Soient les vecteurs \(\mathbf{x} = \begin{bmatrix} 1 \\ 3 \\ -1 \end{bmatrix}\) et \(\mathbf{y} = \begin{bmatrix} 0 \\ 2 \\ 3 \end{bmatrix}\).</p>
+      <ol>
+        <li>Quelles sont les dimensions de ces deux vecteurs (nombre de lignes \(m\), nombre de colonnes \(n\)) ?</li>
+        <li>Calculer le produit scalaire \(\mathbf{x} \cdot \mathbf{y}\).</li>
+        <li>Calculer le produit matriciel entre \(\mathbf{x}\) et \(\mathbf{y}\).</li>
+        <li>Quelles sont les dimensions des vecteurs \(\mathbf{x}^T\) et \(\mathbf{y}\) ?</li>
+        <li>Calculer le produit matriciel entre \(\mathbf{x}\) et \(\mathbf{y}^T\).</li>
+        <li>Calculer le produit matriciel entre \(\mathbf{x}^T\) et \(\mathbf{y}\).</li>
+      </ol>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <ol>
+          <li>Ce sont deux vecteurs colonnes : \(m = 3\) lignes et \(n = 1\) colonne, soit \(3 \times 1\).</li>
+          <li>\(\mathbf{x} \cdot \mathbf{y} = 1 \times 0 + 3 \times 2 + (-1) \times 3 = 3\).</li>
+          <li>\(\mathbf{x}\mathbf{y}\) n'existe pas : \(\mathbf{x}\) a 1 colonne et \(\mathbf{y}\) a 3 lignes.</li>
+          <li>\(\mathbf{x}^T\) est \(1 \times 3\) (un vecteur ligne), \(\mathbf{y}\) reste \(3 \times 1\).</li>
+          <li>\((3 \times 1)(1 \times 3)\) donne une matrice \(3 \times 3\), de terme \(x_i y_j\) :
+            \[ \mathbf{x}\mathbf{y}^T = \begin{bmatrix} 0 &amp; 2 &amp; 3 \\ 0 &amp; 6 &amp; 9 \\ 0 &amp; -2 &amp; -3 \end{bmatrix}. \]</li>
+          <li>\((1 \times 3)(3 \times 1)\) donne une matrice \(1 \times 1\) : \(\mathbf{x}^T\mathbf{y} = [3]\), le produit scalaire.</li>
+        </ol>
+        <p>Le notebook reprend l'exercice avec numpy. Le produit de <code>c</code>, de forme (3, 1), par <code>b</code>, de forme (3,), échoue, comme la question 3.</p>
+<pre data-fichier="produits_vecteurs.py"><code class="language-python">import numpy as np
+x = np.array([1, 3, -1])
+y = np.array([0, 2, 3])
+c = x.reshape(3, 1)   # vecteur colonne (3, 1)
+d = y.reshape(1, 3)   # vecteur ligne (1, 3)
+print(x.shape, c.shape, d.shape)
+print(x * y)          # produit terme à terme
+print(x.dot(y))       # produit scalaire
+print(c.dot(d))       # (3, 1)·(1, 3) → matrice (3, 3)
+print(d.dot(c))       # (1, 3)·(3, 1) → matrice (1, 1)</code></pre>
+<pre class="terminal"><code>$ python produits_vecteurs.py
+(3,) (3, 1) (1, 3)
+[ 0  6 -3]
+3
+[[ 0  2  3]
+ [ 0  6  9]
+ [ 0 -2 -3]]
+[[3]]</code></pre>
+      </details>
+    </div>
+
+    <h3>Propriétés du produit matriciel</h3>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Règles de calcul</span> <span class="ref">diapo 29</span></p>
+      <ol>
+        <li>Distributivité : \(\mathbf{A}(\mathbf{B} + \mathbf{C}) = \mathbf{A}\mathbf{B} + \mathbf{A}\mathbf{C}\).</li>
+        <li>Associativité : \(\mathbf{A}(\mathbf{B}\mathbf{C}) = (\mathbf{A}\mathbf{B})\mathbf{C}\).</li>
+        <li><strong>Non-commutativité</strong> : en général, \(\mathbf{A}\mathbf{B} \ne \mathbf{B}\mathbf{A}\).</li>
+        <li>Sauf dans le cas de vecteurs : \(\mathbf{x}^T\mathbf{y} = \mathbf{y}^T\mathbf{x}\).</li>
+        <li>Transposée du produit : \((\mathbf{A}\mathbf{B})^T = \mathbf{B}^T\mathbf{A}^T\), l'ordre s'inverse.</li>
+      </ol>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Trois produits</span> <span class="ref">diapo 29</span></p>
+      <p>Soient les matrices \(\mathbf{A} = \begin{bmatrix} 2 &amp; -1 \\ -6 &amp; 3 \end{bmatrix}\), \(\mathbf{B} = \begin{bmatrix} 1 &amp; 2 \\ 1 &amp; 1 \end{bmatrix}\) et \(\mathbf{C} = \begin{bmatrix} 0 &amp; -1 \\ 1 &amp; -1 \end{bmatrix}\). Calculer les produits matriciels \(\mathbf{A}\mathbf{B}\), \(\mathbf{B}\mathbf{A}\) et \(\mathbf{A}\mathbf{C}\).</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Chaque terme est le produit scalaire d'une ligne de la première matrice par une colonne de la seconde. Par exemple, le terme \((1, 1)\) de \(\mathbf{A}\mathbf{B}\) vaut \(2 \times 1 + (-1) \times 1 = 1\).</p>
+        \[ \mathbf{A}\mathbf{B} = \begin{bmatrix} 1 &amp; 3 \\ -3 &amp; -9 \end{bmatrix}, \quad \mathbf{B}\mathbf{A} = \begin{bmatrix} -10 &amp; 5 \\ -4 &amp; 2 \end{bmatrix}, \quad \mathbf{A}\mathbf{C} = \begin{bmatrix} -1 &amp; -1 \\ 3 &amp; 3 \end{bmatrix}. \]
+        <p>\(\mathbf{A}\mathbf{B} \ne \mathbf{B}\mathbf{A}\) : le produit n'est pas commutatif. On remarque aussi que la deuxième ligne de \(\mathbf{A}\) vaut −3 fois la première. Cette relation se retrouve dans chaque produit \(\mathbf{A}\mathbf{M}\), où la ligne 2 vaut −3 fois la ligne 1 ; on y reviendra avec le rang.</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2>Matrices diagonales, systèmes linéaires et inverse <span class="ref">diapos 30–34</span></h2>
+    <p>Certaines matrices ont une forme qui simplifie les calculs : les matrices diagonales, et en particulier l'identité. Elles conduisent à l'inverse d'une matrice, qui permet de résoudre un système linéaire.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Matrice diagonale, matrice identité</span> <span class="ref">diapo 30</span></p>
+      <p>Une <dfn>matrice diagonale</dfn> ne contient que des zéros en dehors de sa diagonale : \(\mathbf{D}\) est diagonale si et seulement si \(d_{i,j} = 0\) pour tout \(i \ne j\).</p>
+      <p>La <dfn>matrice identité</dfn> \(\mathbf{I}_n\), de taille \(n \times n\), est diagonale, avec des 1 sur la diagonale : \(d_{i,j} = 0\) pour \(i \ne j\) et \(d_{i,i} = 1\). C'est l'élément neutre du produit matriciel par un vecteur : \(\forall \mathbf{x} \in \R^n,\ \mathbf{I}_n \mathbf{x} = \mathbf{x}\).</p>
+      \[ \mathbf{I}_n = \begin{bmatrix} 1 &amp; 0 &amp; \dots &amp; 0 \\ 0 &amp; 1 &amp; \dots &amp; 0 \\ \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ 0 &amp; 0 &amp; \dots &amp; 1 \end{bmatrix} \]
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Diagonale ne veut pas dire carrée</span></p>
+      <p>Une matrice diagonale n'est pas nécessairement carrée. Une matrice diagonale rectangulaire ne peut pas être inversée, mais les multiplications s'appliquent de la même façon.</p>
+    </div>
+    <p>À partir d'un vecteur \(\mathbf{v}\) de dimension \(n\), on définit la matrice carrée diagonale associée :</p>
+    \[ \mathbf{v} = \begin{bmatrix} v_1 \\ v_2 \\ \vdots \\ v_n \end{bmatrix} \Rightarrow \operatorname{diag}(\mathbf{v}) = \begin{bmatrix} v_1 &amp; 0 &amp; \dots &amp; 0 \\ 0 &amp; v_2 &amp; \dots &amp; 0 \\ \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\ 0 &amp; 0 &amp; \dots &amp; v_n \end{bmatrix}. \]
+    <p>Pour calculer \(\operatorname{diag}(\mathbf{v})\,\mathbf{x}\), il suffit de calculer les produits terme à terme \(v_i x_i\) : \(\operatorname{diag}(\mathbf{v})\,\mathbf{x} = \mathbf{v} \odot \mathbf{x}\). C'est beaucoup moins coûteux qu'un produit matriciel complet. Dans beaucoup de cas, on décrit un algorithme général avec des matrices quelconques, puis on obtient une version moins coûteuse (mais moins descriptive) en restreignant certaines matrices à leur diagonale.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Matrices diagonales en numpy</span></p>
+      <p><code>np.diag(v)</code> construit \(\operatorname{diag}(\mathbf{v})\) et <code>np.eye(n)</code> construit \(\mathbf{I}_n\). Avec \(\mathbf{v} = (2, 4, -1)\) et \(\mathbf{x} = (1, 1, 1)\), <code>np.diag(v).dot(x)</code> et <code>v * x</code> donnent tous les deux <code>[ 2  4 -1]</code>.</p>
+      <p>Au cours 4, la matrice de covariance d'une loi normale multivariée dont les composantes sont indépendantes sera diagonale : c'est la simplification qu'exploite le modèle bayésien naïf.</p>
+    </div>
+
+    <h3>Systèmes linéaires</h3>
+    <p>Un système de \(m\) équations à \(n\) inconnues s'écrit avec un produit matriciel. On range les inconnues dans un vecteur \(\mathbf{x} = [x_1, x_2, \dots, x_n]\) et les coefficients dans \(\mathbf{A} \in \R^{m \times n}\) et \(\mathbf{b} \in \R^m\) :</p>
+    \[ \begin{cases} a_{1,1}x_1 + a_{1,2}x_2 + \dots + a_{1,n}x_n = b_1 \\ a_{2,1}x_1 + a_{2,2}x_2 + \dots + a_{2,n}x_n = b_2 \\ \quad \vdots \\ a_{m,1}x_1 + a_{m,2}x_2 + \dots + a_{m,n}x_n = b_m \end{cases} \Leftrightarrow \begin{bmatrix} a_{1,1} &amp; \dots &amp; a_{1,n} \\ \vdots &amp; \ddots &amp; \vdots \\ a_{m,1} &amp; \dots &amp; a_{m,n} \end{bmatrix} \begin{bmatrix} x_1 \\ \vdots \\ x_n \end{bmatrix} = \begin{bmatrix} b_1 \\ \vdots \\ b_m \end{bmatrix} \Leftrightarrow \mathbf{A}\mathbf{x} = \mathbf{b}. \]
+    <p>Le produit matriciel donne au système une forme compacte <span class="ref">diapo 32</span>.</p>
+
+    <h3>Matrice inverse</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Matrice inverse</span> <span class="ref">diapo 33</span></p>
+      <p>L'<dfn>inverse</dfn> d'une matrice carrée \(\mathbf{A}\) de taille \(n\) est la matrice \(\mathbf{A}^{-1}\) telle que \(\mathbf{A}^{-1}\mathbf{A} = \mathbf{A}\mathbf{A}^{-1} = \mathbf{I}_n\).</p>
+      <p><span class="badge a-verifier">À vérifier</span> La diapo part d'une matrice de dimension \(m \times n\), avec un inverse de taille \(n \times m\). Or \(\mathbf{A}^{-1}\mathbf{A}\) est \(n \times n\) et \(\mathbf{A}\mathbf{A}^{-1}\) est \(m \times m\) : les deux ne peuvent égaler la même identité que si \(m = n\). Seules les matrices carrées ont un inverse au sens de cette définition, comme le dit la suite du cours (« Inversion d'une matrice carrée »).</p>
+    </div>
+    <p>Grâce à l'inverse, on résout le système linéaire \(\mathbf{A}\mathbf{x} = \mathbf{b}\) en multipliant à gauche par \(\mathbf{A}^{-1}\) :</p>
+    \[ \mathbf{A}\mathbf{x} = \mathbf{b} \;\Rightarrow\; \mathbf{A}^{-1}\mathbf{A}\mathbf{x} = \mathbf{A}^{-1}\mathbf{b} \;\Rightarrow\; \mathbf{I}_n\mathbf{x} = \mathbf{A}^{-1}\mathbf{b} \;\Rightarrow\; \mathbf{x} = \mathbf{A}^{-1}\mathbf{b}. \]
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Pratique en théorie seulement</span> <span class="ref">diapo 33</span></p>
+      <p>Si l'inverse est pratique en théorie, il l'est beaucoup moins en pratique. L'inversion d'une matrice, quand elle existe, est une opération coûteuse. De plus, un ordinateur représente la matrice inverse avec une précision limitée. Des algorithmes ont été développés pour estimer l'inverse, mais ce cours ne les aborde pas.</p>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Résoudre un système de deux équations</span></p>
+      <p><span class="badge ajout">Ajout</span> Le système \(2x_1 + x_2 = 5\), \(x_1 - x_2 = 1\) s'écrit \(\mathbf{A}\mathbf{x} = \mathbf{b}\) avec \(\mathbf{A} = \begin{bmatrix} 2 &amp; 1 \\ 1 &amp; -1 \end{bmatrix}\) et \(\mathbf{b} = \begin{bmatrix} 5 \\ 1 \end{bmatrix}\). Avec \(\mathbf{A}^{-1} = \frac13 \begin{bmatrix} 1 &amp; 1 \\ 1 &amp; -2 \end{bmatrix}\) (calculé plus loin par les cofacteurs), \(\mathbf{x} = \mathbf{A}^{-1}\mathbf{b} = \frac13 \begin{bmatrix} 6 \\ 3 \end{bmatrix} = \begin{bmatrix} 2 \\ 1 \end{bmatrix}\). On vérifie : \(2 \times 2 + 1 = 5\) et \(2 - 1 = 1\).</p>
+      <p>En numpy, <code>np.linalg.solve(A, b)</code> résout le système sans calculer l'inverse, ce qui est plus rapide et plus précis que <code>np.linalg.inv(A).dot(b)</code>. Les deux renvoient ici <code>[2. 1.]</code>.</p>
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Inverse d'une matrice diagonale</span> <span class="ref">diapo 34</span></p>
+      <p>Soit une matrice diagonale \(\mathbf{D} = \operatorname{diag}(\mathbf{v})\), avec \(\mathbf{v}\) un vecteur de dimension \(n\). Son inverse est la matrice diagonale de coefficients \(d^{-1}_{i,i} = \dfrac{1}{d_{i,i}}\).</p>
+      <p><span class="badge ajout">Ajout</span> Cela suppose que tous les \(d_{i,i}\) sont non nuls ; sinon \(\mathbf{D}\) n'est pas inversible. Par exemple, \(\operatorname{diag}(2, 4, -1)^{-1} = \operatorname{diag}\left(\frac12, \frac14, -1\right)\) : le produit des deux donne bien \(\operatorname{diag}(1, 1, 1) = \mathbf{I}_3\).</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Rang, déterminant et mineurs <span class="ref">diapos 35–40</span></h2>
+    <p>Une matrice n'a pas toujours d'inverse. Le rang et le déterminant permettent de savoir si elle en a un ; les mineurs sont les déterminants de ses sous-matrices.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Rang</span> <span class="ref">diapo 35</span></p>
+      <p>Soit \(\mathbf{M}\) une matrice de dimension \(m \times n\). Le <dfn>rang</dfn> de \(\mathbf{M}\) est le nombre de vecteurs lignes (ou colonnes) linéairement indépendants. C'est aussi l'ordre du plus grand mineur non nul de la matrice.</p>
+      <p><span class="badge a-verifier">À vérifier</span> La diapo dit « le plus grand des mineurs non nuls » ; il faut comprendre la <em>taille</em> (l'ordre) du plus grand mineur non nul, pas sa valeur. Les mineurs sont définis plus bas.</p>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Calculer un rang</span> <span class="ref">diapo 35</span></p>
+      <p>Calculer le rang de la matrice \(\mathbf{A} = \begin{bmatrix} 1 &amp; 0 &amp; 2 &amp; 3 \\ 2 &amp; 0 &amp; 4 &amp; 6 \\ 0 &amp; 2 &amp; 2 &amp; 0 \\ 1 &amp; 2 &amp; 4 &amp; 3 \end{bmatrix}\).</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>On cherche des relations entre les lignes \(L_1, \dots, L_4\). La ligne 2 vaut deux fois la ligne 1 : \(L_2 = 2L_1\). La ligne 4 est la somme des lignes 1 et 3 : \((1, 0, 2, 3) + (0, 2, 2, 0) = (1, 2, 4, 3)\), donc \(L_4 = L_1 + L_3\).</p>
+        <p>Il reste \(L_1\) et \(L_3\), qui ne sont pas colinéaires (la deuxième composante de \(L_1\) est nulle, pas celle de \(L_3\)). Le rang vaut donc <strong>2</strong>. Avec les mineurs : \(\begin{vmatrix} 1 &amp; 0 \\ 0 &amp; 2 \end{vmatrix} = 2 \ne 0\) (lignes 1 et 3, colonnes 1 et 2), et tous les mineurs d'ordre 3 sont nuls.</p>
+      </details>
+    </div>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Déterminant</span> <span class="ref">diapo 36</span></p>
+      <p>Le <dfn>déterminant</dfn> d'une matrice carrée \(\mathbf{A}\) de taille \(n\) se calcule en développant suivant une ligne \(i\), à l'aide des sous-matrices \(\mathbf{A}_{i,j}\) obtenues en supprimant la ligne \(i\) et la colonne \(j\) :</p>
+      \[ \det(\mathbf{A}) = \sum_{j=1}^{n} (-1)^{i+j}\, a_{i,j} \det(\mathbf{A}_{i,j}). \]
+      <ul>
+        <li>Pour \(n = 1\), \(\mathbf{A}\) est un scalaire \(a\) et \(\det(\mathbf{A}) = a\).</li>
+        <li>Pour \(n = 2\), \(\mathbf{A} = \begin{bmatrix} a &amp; b \\ c &amp; d \end{bmatrix}\) et \(\det(\mathbf{A}) = \begin{vmatrix} a &amp; b \\ c &amp; d \end{vmatrix} = ad - bc\).</li>
+        <li>Pour \(n = 3\), en développant suivant la première ligne :
+          \[ \det(\mathbf{A}) = a_{11} \begin{vmatrix} a_{22} &amp; a_{23} \\ a_{32} &amp; a_{33} \end{vmatrix} - a_{12} \begin{vmatrix} a_{21} &amp; a_{23} \\ a_{31} &amp; a_{33} \end{vmatrix} + a_{13} \begin{vmatrix} a_{21} &amp; a_{22} \\ a_{31} &amp; a_{32} \end{vmatrix}. \]</li>
+      </ul>
+    </div>
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>Le signe \((-1)^{i+j}\)</span></p>
+      <p><span class="badge ajout">Ajout</span> Les signes forment un damier qui commence par \(+\) en haut à gauche : \(\begin{bmatrix} + &amp; - &amp; + \\ - &amp; + &amp; - \\ + &amp; - &amp; + \end{bmatrix}\). On a intérêt à développer suivant la ligne (ou la colonne) qui contient le plus de zéros : les termes correspondants disparaissent.</p>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Un déterminant d'ordre 3</span> <span class="ref">diapo 36</span></p>
+      <p>Calculer le déterminant de la matrice \(\mathbf{A} = \begin{bmatrix} 2 &amp; 2 &amp; 2 \\ 2 &amp; 4 &amp; 0 \\ 2 &amp; 0 &amp; 6 \end{bmatrix}\).</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>En développant suivant la première ligne :</p>
+        \[ \det(\mathbf{A}) = 2 \begin{vmatrix} 4 &amp; 0 \\ 0 &amp; 6 \end{vmatrix} - 2 \begin{vmatrix} 2 &amp; 0 \\ 2 &amp; 6 \end{vmatrix} + 2 \begin{vmatrix} 2 &amp; 4 \\ 2 &amp; 0 \end{vmatrix} = 2 \times 24 - 2 \times 12 + 2 \times (-8) = 8. \]
+        <p><code>np.linalg.det</code> renvoie <code>7.999999999999998</code> : le calcul en virgule flottante n'est pas exact, comme l'annonçait la diapo 33.</p>
+      </details>
+    </div>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Mineurs</span> <span class="ref">diapo 37</span></p>
+      <p>Les déterminants des matrices carrées obtenues en supprimant certaines lignes et certaines colonnes de \(\mathbf{A}\) s'appellent les <dfn>mineurs</dfn> de \(\mathbf{A}\). On note \(m_{ij}\) le mineur obtenu en supprimant la ligne \(i\) et la colonne \(j\). Par exemple, en supprimant la ligne 1 et la colonne 3 :</p>
+      \[ \mathbf{A}_{1,3} = \begin{bmatrix} a_{21} &amp; a_{22} \\ a_{31} &amp; a_{32} \end{bmatrix} \Rightarrow m_{13} = \det \mathbf{A}_{1,3}. \]
+    </div>
+    <p>Le déterminant s'écrit alors avec les mineurs de la première ligne : \(\det \mathbf{A} = a_{11} m_{11} - a_{12} m_{12} + a_{13} m_{13}\).</p>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Mineurs et déterminant</span> <span class="ref">diapos 37–38</span></p>
+      <p>Supposons que \(\mathbf{A} = \begin{bmatrix} 2 &amp; 1 &amp; 3 \\ 2 &amp; 1 &amp; 5 \\ 3 &amp; 1 &amp; a \end{bmatrix}\). La diapo commence la liste de ses mineurs :</p>
+      \[ m_{11} = \begin{vmatrix} 1 &amp; 5 \\ 1 &amp; a \end{vmatrix}, \quad m_{12} = \begin{vmatrix} 2 &amp; 5 \\ 3 &amp; a \end{vmatrix}, \quad m_{21} = \begin{vmatrix} 1 &amp; 3 \\ 1 &amp; a \end{vmatrix}, \quad m_{22} = \begin{vmatrix} 2 &amp; 3 \\ 3 &amp; a \end{vmatrix}, \dots \]
+      <p>Compléter les neuf mineurs, puis calculer le déterminant à partir des mineurs.</p>
+      <p><span class="badge a-verifier">À vérifier</span> La diapo 38 écrit « \(\det \mathbf{A} = +a_{11}m_{11} - a_{12}m_{12} + a_{12}m_{13}\) » ; le dernier terme est \(a_{13}m_{13}\).</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <div class="tableau compact">
+          <table>
+            <thead><tr><th></th><th>\(j = 1\)</th><th>\(j = 2\)</th><th>\(j = 3\)</th></tr></thead>
+            <tbody>
+              <tr><th>\(i = 1\)</th><td>\(m_{11} = a - 5\)</td><td>\(m_{12} = 2a - 15\)</td><td>\(m_{13} = \begin{vmatrix} 2 &amp; 1 \\ 3 &amp; 1 \end{vmatrix} = -1\)</td></tr>
+              <tr><th>\(i = 2\)</th><td>\(m_{21} = a - 3\)</td><td>\(m_{22} = 2a - 9\)</td><td>\(m_{23} = \begin{vmatrix} 2 &amp; 1 \\ 3 &amp; 1 \end{vmatrix} = -1\)</td></tr>
+              <tr><th>\(i = 3\)</th><td>\(m_{31} = \begin{vmatrix} 1 &amp; 3 \\ 1 &amp; 5 \end{vmatrix} = 2\)</td><td>\(m_{32} = \begin{vmatrix} 2 &amp; 3 \\ 2 &amp; 5 \end{vmatrix} = 4\)</td><td>\(m_{33} = \begin{vmatrix} 2 &amp; 1 \\ 2 &amp; 1 \end{vmatrix} = 0\)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        \[ \det \mathbf{A} = 2(a - 5) - 1 \times (2a - 15) + 3 \times (-1) = 2a - 10 - 2a + 15 - 3 = 2. \]
+        <p>Le déterminant vaut 2 quel que soit \(a\) : la matrice est toujours inversible. On peut le vérifier en développant suivant la troisième ligne, avec les signes \(+, -, +\) : \(3 \times 2 - 1 \times 4 + a \times 0 = 2\). Ce développement-là ne fait pas intervenir \(a\), puisque \(m_{33} = 0\).</p>
+      </details>
+    </div>
+
+    <h3>Mineurs principaux</h3>
+    <p>Pour une matrice carrée, en particulier symétrique, on s'intéresse aux mineurs obtenus en supprimant les <em>mêmes</em> lignes et colonnes.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Mineur principal</span> <span class="ref">diapo 39</span></p>
+      <p>Soit \(\mathbf{A}\) une matrice carrée symétrique de dimension \((n, n)\). Un <dfn>mineur principal</dfn> (ou fondamental) d'ordre \(k\) est le déterminant de la sous-matrice obtenue en supprimant \(n - k\) lignes et les \(n - k\) colonnes de mêmes numéros.</p>
+      <p>Pour \(\mathbf{A} = \begin{bmatrix} a_{11} &amp; a_{12} &amp; a_{13} \\ a_{21} &amp; a_{22} &amp; a_{23} \\ a_{31} &amp; a_{32} &amp; a_{33} \end{bmatrix}\) :</p>
+      <ul>
+        <li>3 mineurs principaux d'ordre 1 : \(a_{11}\), \(a_{22}\) et \(a_{33}\) ;</li>
+        <li>3 mineurs principaux d'ordre 2 : \(\begin{vmatrix} a_{22} &amp; a_{23} \\ a_{32} &amp; a_{33} \end{vmatrix}\), \(\begin{vmatrix} a_{11} &amp; a_{13} \\ a_{31} &amp; a_{33} \end{vmatrix}\), \(\begin{vmatrix} a_{11} &amp; a_{12} \\ a_{21} &amp; a_{22} \end{vmatrix}\) ;</li>
+        <li>1 mineur principal d'ordre 3 : \(\det \mathbf{A}\).</li>
+      </ul>
+      <p><span class="badge a-verifier">À vérifier</span> La diapo donne pour l'ordre 1 « \(a_{11}\), \(a_{12}\) et \(a_{13}\) ». En supprimant deux lignes et les deux colonnes de mêmes numéros, il ne reste qu'un élément diagonal : ce sont \(a_{11}\), \(a_{22}\) et \(a_{33}\).</p>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Mineur principal diagonal</span> <span class="ref">diapo 40</span></p>
+      <p>Le <dfn>mineur principal diagonal</dfn> d'ordre \(k\), noté \(D_k\), est le déterminant de la sous-matrice \(k \times k\) obtenue en supprimant les \(n - k\) <em>dernières</em> lignes et les \(n - k\) dernières colonnes de \(\mathbf{A}\) : c'est le bloc en haut à gauche.</p>
+      \[ D_1 = a_{11}, \quad D_2 = \begin{vmatrix} a_{11} &amp; a_{12} \\ a_{21} &amp; a_{22} \end{vmatrix}, \quad D_3 = \begin{vmatrix} a_{11} &amp; a_{12} &amp; a_{13} \\ a_{21} &amp; a_{22} &amp; a_{23} \\ a_{31} &amp; a_{32} &amp; a_{33} \end{vmatrix}. \]
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>À quoi servent les mineurs principaux diagonaux</span> <span class="badge hors-programme">Hors programme</span></p>
+      <p>Le critère de Sylvester dit qu'une matrice symétrique est <em>définie positive</em> (\(\mathbf{x}^T\mathbf{A}\mathbf{x} \gt 0\) pour tout \(\mathbf{x} \ne \mathbf{0}\)) si et seulement si tous ses \(D_k\) sont strictement positifs. Ce critère sert à classer les points critiques d'une fonction de plusieurs variables à l'aide de sa matrice hessienne, et à vérifier qu'une matrice de covariance est valide. Les diapos ne le citent pas : c'est une piste pour les cours 2 et 4.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Comatrice et inversion <span class="ref">diapos 41–44</span></h2>
+    <p>Les mineurs, munis d'un signe, forment la comatrice. Elle donne une formule explicite de l'inverse, utilisable à la main pour les petites matrices.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Cofacteurs, comatrice</span> <span class="ref">diapo 41</span></p>
+      <p>Soit \(\mathbf{A}\) une matrice carrée de dimension \(n \times n\). Sa <dfn>comatrice</dfn> \(\operatorname{com}\mathbf{A}\), de dimension \(n \times n\), est formée des <dfn>cofacteurs</dfn> :</p>
+      \[ c_{i,j} = (-1)^{i+j} \det(\mathbf{A}_{i,j}) = (-1)^{i+j}\, m_{ij}, \]
+      <p>où \(\mathbf{A}_{i,j}\) est la sous-matrice carrée de taille \(n - 1\) obtenue en supprimant la \(i\)-ème ligne et la \(j\)-ème colonne de \(\mathbf{A}\). Son déterminant fait partie des mineurs de \(\mathbf{A}\).</p>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Une comatrice</span> <span class="ref">diapo 41</span></p>
+      <p>Déterminer la comatrice de la matrice \(\mathbf{A} = \begin{bmatrix} 1 &amp; 0 &amp; 2 \\ 2 &amp; 0 &amp; 4 \\ 0 &amp; 2 &amp; 2 \end{bmatrix}\).</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Première ligne : \(c_{11} = +\begin{vmatrix} 0 &amp; 4 \\ 2 &amp; 2 \end{vmatrix} = -8\), \(c_{12} = -\begin{vmatrix} 2 &amp; 4 \\ 0 &amp; 2 \end{vmatrix} = -4\), \(c_{13} = +\begin{vmatrix} 2 &amp; 0 \\ 0 &amp; 2 \end{vmatrix} = 4\).</p>
+        <p>Deuxième ligne : \(c_{21} = -\begin{vmatrix} 0 &amp; 2 \\ 2 &amp; 2 \end{vmatrix} = 4\), \(c_{22} = +\begin{vmatrix} 1 &amp; 2 \\ 0 &amp; 2 \end{vmatrix} = 2\), \(c_{23} = -\begin{vmatrix} 1 &amp; 0 \\ 0 &amp; 2 \end{vmatrix} = -2\).</p>
+        <p>Troisième ligne : \(c_{31} = +\begin{vmatrix} 0 &amp; 2 \\ 0 &amp; 4 \end{vmatrix} = 0\), \(c_{32} = -\begin{vmatrix} 1 &amp; 2 \\ 2 &amp; 4 \end{vmatrix} = 0\), \(c_{33} = +\begin{vmatrix} 1 &amp; 0 \\ 2 &amp; 0 \end{vmatrix} = 0\).</p>
+        \[ \operatorname{com}\mathbf{A} = \begin{bmatrix} -8 &amp; -4 &amp; 4 \\ 4 &amp; 2 &amp; -2 \\ 0 &amp; 0 &amp; 0 \end{bmatrix}. \]
+        <p>La deuxième ligne de \(\mathbf{A}\) vaut deux fois la première, donc \(\det \mathbf{A} = 0\) : la comatrice existe, mais \(\mathbf{A}\) n'est pas inversible. On le retrouve avec la première ligne : \(1 \times (-8) + 0 \times (-4) + 2 \times 4 = 0\).</p>
+      </details>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Matrice symétrique</span> <span class="ref">diapo 42</span></p>
+      <p>Une matrice carrée <dfn>symétrique</dfn> est égale à sa transposée : \(\mathbf{A}^T = \mathbf{A}\), c'est-à-dire \(a_{i,j} = a_{j,i}\) pour tout \((i, j)\). Exemple :</p>
+      \[ \mathbf{A} = \begin{bmatrix} 1 &amp; 2 &amp; 0 \\ 2 &amp; 4 &amp; -1 \\ 0 &amp; -1 &amp; 1 \end{bmatrix}. \]
+      <p>Les matrices symétriques modélisent des fonctions pour lesquelles l'ordre entre lignes et colonnes n'a pas d'importance.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Des matrices symétriques dans la suite du module</span></p>
+      <p>Une matrice de distances entre données est symétrique, puisque \(d(\mathbf{x}, \mathbf{y}) = d(\mathbf{y}, \mathbf{x})\). La matrice de covariance des cours 3 et 4 l'est aussi, puisque \(\operatorname{Cov}(X, Y) = \operatorname{Cov}(Y, X)\). De même, la matrice hessienne du cours 2 est symétrique pour les fonctions usuelles.</p>
+    </div>
+
+    <h3>Inverser une matrice carrée</h3>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Existence de l'inverse</span> <span class="ref">diapo 43</span></p>
+      <p>Pour une matrice carrée \(\mathbf{A}\) de taille \(n\), les propriétés suivantes sont équivalentes :</p>
+      <ul>
+        <li>\(\mathbf{A}\) est inversible ;</li>
+        <li>le déterminant de \(\mathbf{A}\) est non nul ;</li>
+        <li>le rang de \(\mathbf{A}\) est égal à \(n\) ;</li>
+        <li>le système linéaire \(\mathbf{A}\mathbf{x} = \mathbf{0}\) a pour seule solution le vecteur nul ;</li>
+        <li>les colonnes de \(\mathbf{A}\) sont linéairement indépendantes.</li>
+      </ul>
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Méthode des cofacteurs</span> <span class="ref">diapos 43–44</span></p>
+      <p>Si \(\mathbf{A}\) est inversible, son inverse s'obtient avec la transposée de sa comatrice :</p>
+      \[ \mathbf{A}^{-1} = \frac{1}{\det(\mathbf{A})} (\operatorname{com}\mathbf{A})^T, \qquad \text{avec } (\operatorname{com}\mathbf{A})_{i,j} = (-1)^{i+j} \det(\mathbf{A}_{i,j}). \]
+      <p>Pour des matrices de grande dimension, cette approche récursive n'est pas efficace.</p>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Matrices rectangulaires</span> <span class="ref">diapo 43</span></p>
+      <p>La diapo ajoute : « Une matrice rectangulaire est inversible (c'est-à-dire que son inverse existe) si et seulement si l'équation \(\mathbf{A}\mathbf{x} = \mathbf{b}\) admet au plus une solution \(\forall \mathbf{b}\) ». <span class="badge a-verifier">À vérifier</span> Une matrice rectangulaire n'a pas d'inverse au sens \(\mathbf{A}^{-1}\mathbf{A} = \mathbf{A}\mathbf{A}^{-1} = \mathbf{I}\). La condition citée caractérise l'existence d'un inverse <em>à gauche</em> seulement, une matrice \(\mathbf{G}\) telle que \(\mathbf{G}\mathbf{A} = \mathbf{I}_n\). C'est le cas quand les colonnes de \(\mathbf{A}\) sont indépendantes.</p>
+    </div>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Inverser une matrice à la main</span></p>
+      <ol class="etapes">
+        <li>Calculer \(\det \mathbf{A}\). S'il est nul, la matrice n'est pas inversible : on s'arrête.</li>
+        <li>Calculer les \(n^2\) cofacteurs \(c_{i,j} = (-1)^{i+j} m_{ij}\) et former \(\operatorname{com}\mathbf{A}\).</li>
+        <li>Transposer la comatrice, puis diviser par \(\det \mathbf{A}\).</li>
+        <li>Vérifier que \(\mathbf{A}\mathbf{A}^{-1} = \mathbf{I}_n\), au moins sur une ligne.</li>
+      </ol>
+      <p><span class="badge ajout">Ajout</span> Pour \(n = 2\), la méthode donne une formule à connaître : \(\begin{bmatrix} a &amp; b \\ c &amp; d \end{bmatrix}^{-1} = \dfrac{1}{ad - bc} \begin{bmatrix} d &amp; -b \\ -c &amp; a \end{bmatrix}\). On échange les termes diagonaux et on change le signe des deux autres.</p>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Deux inverses par les cofacteurs</span> <span class="ref">diapo 44</span></p>
+      <p>À l'aide de la méthode des cofacteurs, calculer l'inverse des matrices suivantes si elles existent :</p>
+      \[ \mathbf{A} = \begin{bmatrix} 1 &amp; 2 \\ 3 &amp; 4 \end{bmatrix} \quad \text{et} \quad \mathbf{B} = \begin{bmatrix} -1 &amp; 1 &amp; 0 \\ 3 &amp; 2 &amp; 5 \\ 0 &amp; 2 &amp; 2 \end{bmatrix}. \]
+      <details class="correction">
+        <summary>Correction (matrice \(\mathbf{A}\), d'après le notebook)</summary>
+        <p>\(\det \mathbf{A} = 1 \times 4 - 2 \times 3 = -2 \ne 0\) : \(\mathbf{A}\) est inversible. Le notebook donne l'inverse trouvé en cours :</p>
+        \[ \mathbf{A}^{-1} = -\frac12 \begin{bmatrix} 4 &amp; -2 \\ -3 &amp; 1 \end{bmatrix} = \begin{bmatrix} -2 &amp; 1 \\ 1{,}5 &amp; -0{,}5 \end{bmatrix}. \]
+        <p><span class="badge ajout">Ajout</span> Le détail : \(\operatorname{com}\mathbf{A} = \begin{bmatrix} 4 &amp; -3 \\ -2 &amp; 1 \end{bmatrix}\) (par exemple \(c_{12} = -3\), puisque supprimer la ligne 1 et la colonne 2 laisse le seul nombre 3), d'où \((\operatorname{com}\mathbf{A})^T = \begin{bmatrix} 4 &amp; -2 \\ -3 &amp; 1 \end{bmatrix}\).</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée (matrice \(\mathbf{B}\))</summary>
+        <p>En développant suivant la première ligne :</p>
+        \[ \det \mathbf{B} = -1 \begin{vmatrix} 2 &amp; 5 \\ 2 &amp; 2 \end{vmatrix} - 1 \begin{vmatrix} 3 &amp; 5 \\ 0 &amp; 2 \end{vmatrix} + 0 = -1 \times (-6) - 6 = 0. \]
+        <p>Le déterminant est nul : \(\mathbf{B}\) n'est <strong>pas inversible</strong>, et son rang vaut 2. En effet, la ligne 2 est une combinaison des deux autres : \(L_2 = -3L_1 + \frac52 L_3\), soit \((3, -3, 0) + (0, 5, 5) = (3, 2, 5)\).</p>
+        <p>Le notebook calcule ce déterminant avec <code>np.linalg.det(B)</code>, sans commentaire. Le script suivant reprend les deux matrices et montre au passage les erreurs d'arrondi : \(\mathbf{A}^{-1}\mathbf{A}\) n'est égal à \(\mathbf{I}_2\) qu'à \(10^{-16}\) près.</p>
+<pre data-fichier="inverses.py"><code class="language-python">import numpy as np
+A = np.array([[1, 2], [3, 4]])
+print(np.linalg.det(A))
+print(np.linalg.inv(A))
+print(np.linalg.inv(A).dot(A))
+B = np.array([[-1, 1, 0], [3, 2, 5], [0, 2, 2]])
+print(np.linalg.det(B))
+print(np.linalg.matrix_rank(B))</code></pre>
+<pre class="terminal"><code>$ python inverses.py
+-2.0000000000000004
+[[-2.   1. ]
+ [ 1.5 -0.5]]
+[[1.00000000e+00 0.00000000e+00]
+ [1.11022302e-16 1.00000000e+00]]
+0.0
+2</code></pre>
+        <p>Appeler <code>np.linalg.inv(B)</code> lèverait l'erreur <code>LinAlgError: Singular matrix</code>.</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Une donnée décrite par \(n\) descripteurs est un vecteur de \(\R^n\) ; un jeu de données est une matrice (une ligne par donnée). Classification : cible discrète, on estime \(P(Y = c \mid x)\). Régression : cible continue, on cherche \(f\).</li>
+        <li>Norme \(L^p\) (\(p \ge 1\)) : \(\Vert \mathbf{x} \Vert_p = \left(\sum \lvert x_i \rvert^p\right)^{1/p}\) ; \(L^1\) = somme des valeurs absolues, \(L^2\) = norme euclidienne, \(L^\infty\) = plus grande valeur absolue. Distance : \(d(\mathbf{x}, \mathbf{y}) = \Vert \mathbf{x} - \mathbf{y} \Vert\).</li>
+        <li>Produit scalaire : \(\mathbf{x} \cdot \mathbf{y} = \sum x_i y_i = \mathbf{x}^T\mathbf{y} = \Vert \mathbf{x} \Vert_2 \Vert \mathbf{y} \Vert_2 \cos \theta\), et \(\Vert \mathbf{x} \Vert_2^2 = \mathbf{x}^T\mathbf{x}\). Orthogonalité : \(\mathbf{x} \cdot \mathbf{y} = 0\).</li>
+        <li>Pythagore généralisé : \(\Vert \mathbf{x} + \mathbf{y} \Vert^2 = \Vert \mathbf{x} \Vert^2 + \Vert \mathbf{y} \Vert^2 + 2\,\mathbf{x} \cdot \mathbf{y}\).</li>
+        <li>Colinéaires : \(\mathbf{u} = a\mathbf{v}\). Famille libre : aucune combinaison linéaire nulle autre que la triviale.</li>
+        <li>Produit matriciel : \((m \times n)(n \times p) \to m \times p\), \(c_{i,j} = \sum_k a_{i,k} b_{k,j}\) ; non commutatif ; \((\mathbf{A}\mathbf{B})^T = \mathbf{B}^T\mathbf{A}^T\). Hadamard : terme à terme. En numpy : <code>*</code> = Hadamard, <code>.dot</code> ou <code>@</code> = produit matriciel.</li>
+        <li>Pour deux vecteurs colonnes : \(\mathbf{x}^T\mathbf{y}\) est un scalaire, \(\mathbf{x}\mathbf{y}^T\) une matrice.</li>
+        <li>\(\operatorname{diag}(\mathbf{v})\,\mathbf{x} = \mathbf{v} \odot \mathbf{x}\) ; l'inverse d'une diagonale inverse chaque coefficient diagonal.</li>
+        <li>\(\mathbf{A}\mathbf{x} = \mathbf{b} \Rightarrow \mathbf{x} = \mathbf{A}^{-1}\mathbf{b}\) quand \(\mathbf{A}\) est carrée inversible ; inversible \(\Leftrightarrow \det \ne 0 \Leftrightarrow\) rang \(n\) \(\Leftrightarrow\) colonnes indépendantes.</li>
+        <li>\(\det\) d'ordre 2 : \(ad - bc\) ; d'ordre 3 : développement suivant une ligne avec les signes \((-1)^{i+j}\). Mineur \(m_{ij}\) : déterminant après suppression de la ligne \(i\) et de la colonne \(j\) ; cofacteur \(c_{i,j} = (-1)^{i+j}m_{ij}\).</li>
+        <li>\(\mathbf{A}^{-1} = \frac{1}{\det \mathbf{A}}(\operatorname{com}\mathbf{A})^T\) ; en 2 × 2 : échanger la diagonale, changer le signe du reste, diviser par \(ad - bc\).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Calculer \(\Vert \mathbf{x} \Vert_1\), \(\Vert \mathbf{x} \Vert_2\) et \(\Vert \mathbf{x} \Vert_\infty\) pour \(\mathbf{x} = (3, -4)\).</summary>
+        <div><p>\(\Vert \mathbf{x} \Vert_1 = 3 + 4 = 7\), \(\Vert \mathbf{x} \Vert_2 = \sqrt{9 + 16} = 5\), \(\Vert \mathbf{x} \Vert_\infty = 4\). On retrouve \(\Vert \mathbf{x} \Vert_\infty \le \Vert \mathbf{x} \Vert_2 \le \Vert \mathbf{x} \Vert_1\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>La formule \(\left(\sum \lvert x_i \rvert^{1/2}\right)^2\) définit-elle une norme ?</summary>
+        <div><p>Non : pour \(p = \frac12 \lt 1\), l'inégalité triangulaire échoue. Avec \(\mathbf{x} = (1, 0)\) et \(\mathbf{y} = (0, 1)\), on trouve 1 pour chacun mais \((1 + 1)^2 = 4\) pour \(\mathbf{x} + \mathbf{y}\), et \(4 \gt 1 + 1\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Les vecteurs \((1, 1, 0)\) et \((1, -1, 5)\) sont-ils orthogonaux ?</summary>
+        <div><p>Oui : \(1 - 1 + 0 = 0\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Avec <code>x = np.array([1, 2])</code> et <code>y = np.array([3, 4])</code>, que valent <code>x * y</code> et <code>x.dot(y)</code> ?</summary>
+        <div><p><code>x * y</code> est le produit terme à terme : <code>[3 8]</code>. <code>x.dot(y)</code> est le produit scalaire : \(3 + 8 = 11\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>\(\mathbf{A}\) est \(2 \times 3\) et \(\mathbf{B}\) est \(3 \times 4\). Quelles sont les dimensions de \(\mathbf{A}\mathbf{B}\) ? Et \(\mathbf{B}\mathbf{A}\) ?</summary>
+        <div><p>\(\mathbf{A}\mathbf{B}\) est \(2 \times 4\). \(\mathbf{B}\mathbf{A}\) n'existe pas : \(\mathbf{B}\) a 4 colonnes et \(\mathbf{A}\) a 2 lignes.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Exprimer \((\mathbf{A}\mathbf{B}\mathbf{C})^T\) avec les transposées.</summary>
+        <div><p>\(\mathbf{C}^T\mathbf{B}^T\mathbf{A}^T\) : l'ordre s'inverse.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Inverser \(\begin{bmatrix} 3 &amp; 1 \\ 4 &amp; 2 \end{bmatrix}\).</summary>
+        <div><p>\(\det = 6 - 4 = 2\), donc l'inverse vaut \(\frac12 \begin{bmatrix} 2 &amp; -1 \\ -4 &amp; 3 \end{bmatrix} = \begin{bmatrix} 1 &amp; -0{,}5 \\ -2 &amp; 1{,}5 \end{bmatrix}\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quel est l'inverse de \(\operatorname{diag}\left(2, -1, \frac13\right)\) ?</summary>
+        <div><p>\(\operatorname{diag}\left(\frac12, -1, 3\right)\) : on inverse chaque coefficient diagonal.</p></div>
+      </details>
+      <details class="carte">
+        <summary>La troisième ligne d'une matrice \(3 \times 3\) est la somme des deux premières. Est-elle inversible ?</summary>
+        <div><p>Non : ses lignes sont liées, donc son rang est au plus 2 et son déterminant est nul.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quel est le signe du cofacteur \(c_{2,3}\) par rapport au mineur \(m_{23}\) ?</summary>
+        <div><p>\((-1)^{2+3} = -1\) : \(c_{2,3} = -m_{23}\).</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="index.html"><small>← Matière</small>Mathématiques et IA</a>
+    <a class="suivant" href="cours-02-fonctions-multidimensionnelles.html"><small>Cours 2 →</small>Fonctions multi-dimensionnelles</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Mathématiques et IA · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

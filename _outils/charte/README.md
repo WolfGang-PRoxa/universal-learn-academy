@@ -21,7 +21,7 @@ _outils/charte/
 ├── outils/
 │   ├── verifier.py         contrôle automatique d'une page ou d'un dossier
 │   ├── typographie.py      espaces insécables de la typographie française
-│   └── index_niveau.py     accueils des niveaux (L1/index.html, L2/…, L3/…) et accueil général (index.html)
+│   └── index_niveau.py     accueils des domaines (explore/<domaine>/index.html) et accueil général (index.html)
 └── vendor/                 bibliothèques locales, pour lire les cours hors ligne
     ├── katex/              KaTeX 0.16.47 : formules
     └── highlight/          highlight.js 11.12.0 : coloration du code (+ langues/)
@@ -31,30 +31,31 @@ _outils/charte/
 
 | Élément | Emplacement |
 |---|---|
-| Pages d'une matière | `<Niveau>/<Matière>/generated_courses/`, par exemple `L3/Codage/generated_courses/` |
+| Pages d'une matière | `explore/<domaine>/<cours>/generated_courses/`, par exemple `explore/informatique/codage/generated_courses/` |
 | Accueil de la matière | `…/generated_courses/index.html`, à partir de `modeles/index-matiere.html` |
-| Accueil d'un niveau | `<Niveau>/index.html`, produit par `outils/index_niveau.py` à partir des accueils de matière (jamais modifié à la main) |
-| Accueil général | `index.html` à la racine de `studies/` : L1, L2 et L3 et leurs matières, produit par le même outil (jamais modifié à la main) |
+| Fiche d'un cours | `explore/<domaine>/<cours>/ula-cours.json` : identifiant, titre, domaine, niveau, origine, teinte (voir `_outils/ula/README.md`) |
+| Accueil d'un domaine | `explore/<domaine>/index.html`, produit par `outils/index_niveau.py` à partir des accueils de cours (jamais modifié à la main) |
+| Accueil général | `index.html` à la racine (`ula/`) : les domaines et leurs cours, produit par le même outil (jamais modifié à la main) ; servi par le serveur local, il est remplacé par l'accueil dynamique (profils, cursus, catalogue : `_outils/ula/accueil.html`) |
 | Cours n° N | `cours-NN-<slug>.html`, par exemple `cours-01-hadamard.html` |
 | TD ou TP n° N | `td-NN-<slug>.html`, `tp-NN-<slug>.html` |
 | Images extraites d'une source | `…/generated_courses/img/<page>-<n>.png` |
 
 - `NN` sur deux chiffres. Le slug est court, en minuscules, sans accents, avec des tirets entre les mots.
 - Les sources (PDF, énoncés) restent où elles sont. La page y renvoie par un lien relatif, par exemple `../cours/L3_INFO_C1.pdf`.
-- Depuis `<Niveau>/<Matière>/generated_courses/`, la charte se trouve à `../../../_outils/charte/`, et c'est le chemin écrit dans les modèles. À une autre profondeur (par exemple `lycée/Mathématiques/Terminale/generated_courses/`, qui demande `../../../../_outils/charte/`), il faut ajuster le nombre de `../`. `verifier.py` signale un chemin faux.
+- Depuis `explore/<domaine>/<cours>/generated_courses/`, la charte se trouve à `../../../../_outils/charte/`, et c'est le chemin écrit dans les modèles. À une autre profondeur (par exemple une page directement dans `explore/<domaine>/<cours>/`, qui demande `../../../_outils/charte/`), il faut ajuster le nombre de `../`. `verifier.py` signale un chemin faux.
 
 ## Traiter un cours : marche à suivre
 
 1. **Lire toute la source** avant d'écrire.
    - PDF : outil Read, par tranches de 20 pages au plus.
-   - Diapos enregistrées en HTML (par exemple `L3/POO/Cours 01 (89 diapos).html`) : le contenu est dans les images `…_files/Diapositive*.png`, à lire une par une.
+   - Diapos enregistrées en HTML (par exemple `explore/informatique/programmation-objet/Cours 01 (89 diapos).html`) : le contenu est dans les images `…_files/Diapositive*.png`, à lire une par une.
    - `.docx` : compétence docx.
    - `.gdoc` et `.gslides` : simples raccourcis Google Drive, illisibles sur le disque. Les lire avec le connecteur Google Drive, ou demander un export PDF.
 2. **Établir le plan** : regrouper les diapos en parties (h2, de 3 à 8 par page) et en sous-parties (h3), en notant les numéros de diapos de chacune.
 3. **Copier le modèle** `modeles/cours.html` à sa place et remplir l'en-tête : matière, titre, source, enseignant, date.
 4. **Rédiger** en suivant les règles ci-dessous, avec les composants du tableau « Quel composant pour quel contenu ».
 5. **Terminer** par « À retenir » puis « Auto-évaluation ».
-6. **Relier la page** : créer ou mettre à jour `index.html` de la matière, et la pagination des chapitres voisins ; puis régénérer les accueils de niveau : `python _outils/charte/outils/index_niveau.py`.
+6. **Relier la page** : créer ou mettre à jour `index.html` de la matière, et la pagination des chapitres voisins ; puis régénérer les accueils de domaine et l'accueil général : `python _outils/charte/outils/index_niveau.py`.
 7. **Vérifier** : lancer `python _outils/charte/outils/typographie.py <pages>`, puis `python _outils/charte/outils/verifier.py <page ou dossier>`, qui doit finir sans erreur. Relire aussi les avertissements. Quand c'est possible, ouvrir la page pour contrôler les schémas et les formules.
 8. **Rendre compte** : ce qui a été ajouté (blocs Complément), ce qui reste douteux (badges À vérifier), ce qui n'a pas pu être lu.
 
@@ -84,7 +85,7 @@ _outils/charte/
 
 L'ordre est fixe, c'est celui du modèle :
 
-1. `header.barre` : fil d'Ariane (studies › Niveau › Matière › page), comme dans le modèle. « studies » mène à l'accueil général (`../../../index.html` depuis `generated_courses/`, `generated_quizzes/` ou `annales/`), le niveau à l'accueil du niveau (`../../index.html`). Toute page commence ainsi, y compris les pages d'outils (« studies › Quiz › … ») ; `verifier.py` le contrôle. `cours.js` ajoute à droite une icône maison qui mène au même accueil général (la cible du premier lien du fil) : rien à écrire dans la page.
+1. `header.barre` : fil d'Ariane (ULA › Domaine › Cours › page), comme dans le modèle. « ULA » mène à l'accueil général (`../../../../index.html` depuis `generated_courses/`, `generated_quizzes/` ou `annales/`), le domaine à l'accueil du domaine (`../../index.html`). Toute page commence ainsi, y compris les pages d'outils (« ULA › Quiz › … ») ; `verifier.py` le contrôle. `cours.js` ajoute à droite une icône maison qui mène au même accueil général (la cible du premier lien du fil) : rien à écrire dans la page.
 2. `header.entete` : surtitre, h1, chapeau, métadonnées (`dl.meta`).
 3. `div.cadre-intro` : objectifs et prérequis.
 4. Les sections numérotées : un `<section>` par h2, avec des h3 si besoin. Un h4 reste rare, et on ne descend jamais plus bas.
@@ -209,7 +210,7 @@ Le libellé d'un bloc est écrit dans le HTML : `theoreme` sert aussi pour « Le
 | `web` | Web | violet |
 | `maths` | Mathématiques | pourpre |
 | `communication` | Communication, PPP | rose |
-| `licence` | Page d'accueil d'un niveau (`L1/index.html`…) | ambre |
+| `licence` | Accueils (accueil général, accueils de domaine) | ambre |
 
 Pour une nouvelle matière, ajouter une ligne dans la section 2 de `cours.css`, dans ce tableau et dans le nuancier de `composants.html`.
 
@@ -243,3 +244,4 @@ Pour une nouvelle matière, ajouter une ligne dans la section 2 de `cours.css`, 
 - **1.15**, 4 novembre 2026 : teinte `securite` (sécurité informatique, sarcelle, 181°), entre `bd` et `reseau`.
 - **1.16**, 9 novembre 2026 : ligne « Part de Claude » dans l'en-tête des pages à source mince ou très complétées, badge « Rédigé par Claude » quand Claude est la source principale.
 - **1.6**, 23 septembre 2026 : TD interactifs et exemples manipulables avec l'atelier (`_outils/atelier/`) : ligne du tableau « Quel composant », variante TD ; `verifier.py` reconnaît les pages de l'atelier et ignore les modèles quand il parcourt un dossier.
+- **1.17**, 12 novembre 2026 : réorganisation ula. Les pages vont dans `explore/<domaine>/<cours>/generated_courses/` (charte à `../../../../_outils/charte/`), chaque cours a sa fiche `ula-cours.json` ; `index_niveau.py` produit les accueils de domaine (`explore/<domaine>/index.html`) et l'accueil général ; le fil d'Ariane commence par « ULA », puis le domaine ; `verifier.py` l'exige et accepte les liens écrits depuis la racine du serveur (`/_outils/…`, `/explore/…`), propres aux pages de l'espace d'un profil (`ULA_RACINE` donne la racine des données quand les outils sont livrés à part).

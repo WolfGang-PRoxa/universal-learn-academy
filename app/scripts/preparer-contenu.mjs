@@ -1,16 +1,16 @@
-// Prépare les cours livrés avec l'application : `npm run contenu`.
+// Prépare les outils livrés avec l'application : `npm run contenu`.
 //
-// Copie dans app/.contenu/ les fichiers suivis par git dans studies/, moins ceux
-// qu'écartent les règles de contenu-regles.cjs (données personnelles, programme de
-// l'application, fichiers de git). electron-builder les place ensuite dans
-// resources/cours/. Un manifeste (.studies-contenu.json) donne la taille et
-// l'empreinte de chaque fichier : l'application s'en sert pour mettre à jour la
-// copie locale des cours sans toucher au travail de l'utilisateur.
+// Depuis la version 2.0.0, les cours ne sont plus dans l'installeur : ils se
+// téléchargent depuis le catalogue (scripts/catalogue.mjs). L'application ne livre
+// que les outils : les fichiers suivis par git sous _outils/, moins ceux
+// qu'écartent les règles (scans, réglages locaux…), copiés dans app/.outils/ avec
+// leur chemin (.outils/_outils/…). electron-builder les place dans
+// resources/outils/. Un manifeste (.ula-outils.json) donne la taille et
+// l'empreinte de chaque fichier : l'application s'en sert pour mettre à jour sa
+// copie locale des outils.
 //
 // Seuls les fichiers suivis par git entrent : un fichier oublié dans le dossier
 // (brouillon, export, sauvegarde) ne peut pas se retrouver dans un exécutable.
-// Les dossiers de TP ne sont jamais copiés du dossier de travail : les fichiers
-// fournis listés dans tp-fournis.json sont extraits de git dans leur version d'origine.
 
 import { execFileSync } from 'node:child_process';
 import crypto from 'node:crypto';
@@ -24,7 +24,7 @@ const regles = require('./contenu-regles.cjs');
 
 const app = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const racine = path.resolve(app, '..');
-const sortie = path.join(app, '.contenu');
+const sortie = path.join(app, '.outils');
 
 function empreinte(fichier) {
   return crypto.createHash('sha256').update(fs.readFileSync(fichier)).digest('hex');
@@ -38,10 +38,11 @@ function placer(source, cible) {
 }
 
 export function preparer({ silencieux = false } = {}) {
-  const suivis = execFileSync('git', ['ls-files', '-z'], { cwd: racine, maxBuffer: 1 << 28 })
+  const suivis = execFileSync('git', ['-c', 'core.quotepath=false', 'ls-files', '-z', '--', '_outils'], { cwd: racine, maxBuffer: 1 << 28 })
     .toString('utf8').split('\0').filter(Boolean);
 
   fs.rmSync(sortie, { recursive: true, force: true });
+  fs.rmSync(path.join(app, '.contenu'), { recursive: true, force: true });   // ancien dossier (versions 1.x)
   fs.mkdirSync(sortie, { recursive: true });
 
   const fichiers = {};
@@ -58,29 +59,15 @@ export function preparer({ silencieux = false } = {}) {
     octets += taille;
   }
 
-  // Fichiers de TP : version d'origine tirée de git, d'après la liste blanche
-  const tp = JSON.parse(fs.readFileSync(path.join(app, 'tp-fournis.json'), 'utf8')).fichiers;
-  for (const [chemin, o] of Object.entries(tp)) {
-    const contenu = execFileSync('git', ['cat-file', 'blob', `${o.commit}:${o.source}`], { cwd: racine, maxBuffer: 1 << 28 });
-    const e = crypto.createHash('sha256').update(contenu).digest('hex');
-    if (e !== o.empreinte) throw new Error(`tp-fournis.json : empreinte inattendue pour ${chemin}`);
-    const cible = path.join(sortie, ...chemin.split('/'));
-    fs.mkdirSync(path.dirname(cible), { recursive: true });
-    fs.writeFileSync(cible, contenu);
-    fichiers[chemin] = { taille: contenu.length, empreinte: e };
-    octets += contenu.length;
-  }
-  if (!silencieux) console.log(`  dont ${Object.keys(tp).length} fichiers de TP fournis, dans leur version d’origine (tp-fournis.json)`);
-
-  const empreinteContenu = crypto.createHash('sha256')
+  const empreinteOutils = crypto.createHash('sha256')
     .update(JSON.stringify(Object.entries(fichiers).sort(([a], [b]) => (a < b ? -1 : 1))))
     .digest('hex');
   const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: racine }).toString().trim();
-  const manifeste = { version: empreinteContenu, commit, cree: new Date().toISOString(), fichiers };
+  const manifeste = { version: empreinteOutils, commit, cree: new Date().toISOString(), fichiers };
   fs.writeFileSync(path.join(sortie, regles.MANIFESTE), JSON.stringify(manifeste));
 
   if (!silencieux) {
-    console.log(`✓ ${Object.keys(fichiers).length} fichiers de cours (${(octets / 1e6).toFixed(0)} Mo) dans app/.contenu`);
+    console.log(`✓ ${Object.keys(fichiers).length} fichiers d’outils (${(octets / 1e6).toFixed(1)} Mo) dans app/.outils`);
     for (const [raison, n] of Object.entries(ecartes)) console.log(`  écartés : ${n} × ${raison}`);
   }
   return manifeste;

@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="poo">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TD 4 · Classes Ruby et polymorphisme · POO L3</title>
+<meta name="description" content="TD 4 interactif d'introduction à la POO (L3) : diviseurs et rationnels, exercices classiques sur les chaînes, pile, file et expression postfixée, pokémons, leur collection et un module de détente, reduce ; code Ruby et diagrammes de classes, corrections de l'enseignant cachées.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">POO</a>
+    <span aria-current="page">TD 4 · Classes Ruby et polymorphisme</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">POO</span> TD 4 · L3 S5 · interactif</p>
+    <h1>Classes Ruby et polymorphisme</h1>
+    <p class="chapeau">On ajoute des méthodes aux classes de Ruby (<code>Integer</code>, <code>String</code>, <code>Array</code>), on écrit une classe de nombres rationnels, puis une hiérarchie de pokémons comparables, leur collection énumérable et une capacité partagée par un module. Pour finir, six méthodes à écrire avec <code>reduce</code>.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TD/TD4/TD4%202026.pdf">TD4 2026.pdf</a> · 2 pages</dd></div>
+      <div><dt>Cours</dt><dd><a href="cours-04-manipuler-des-donnees.html">Cours 4 · Manipuler des données</a>, <a href="cours-modules-ruby.html">Les modules Ruby</a>, <a href="cours-03-heritage.html">Cours 3 · L'héritage</a></dd></div>
+      <div><dt>Séance</dt><dd>TD de POO du 18 novembre 2026</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Rouvrir une classe existante de Ruby pour lui ajouter des méthodes.</li>
+        <li>Écrire une classe de valeurs (les rationnels) dont les opérations rendent de nouveaux objets.</li>
+        <li>Concevoir une hiérarchie polymorphe, la rendre comparable (<code>Comparable</code>) et sa collection énumérable (<code>Enumerable</code>).</li>
+        <li>Donner une capacité à quelques classes seulement, par un module qui porte des variables d'instance.</li>
+        <li>Exprimer un parcours avec <code>reduce</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Notions utilisées</p>
+      <ul>
+        <li><a href="cours-04-manipuler-des-donnees.html#les-blocs">Blocs et <code>yield</code></a>, <a href="cours-04-manipuler-des-donnees.html#reduce">reduce</a>, <a href="cours-04-manipuler-des-donnees.html#le-mixin-comparable">Comparable</a>, <a href="cours-04-manipuler-des-donnees.html#le-module-enumerable">Enumerable</a> (cours 4)</li>
+        <li><a href="cours-modules-ruby.html">Les modules Ruby</a> : <code>include</code>, variables d'instance d'un module</li>
+        <li><a href="cours-03-heritage.html">Héritage, classes abstraites</a> (cours 3)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Mode d'emploi</p>
+    <ul>
+      <li>Le code s'écrit dans l'éditeur Ruby (Tab indente) ; Ruby ne s'exécute pas ici. Les diagrammes se dessinent dans l'atelier : double-clic sur le fond pour une classe ; « Les deux » montre aussi la vue texte.</li>
+      <li>Le bouton <strong>Correction</strong> montre la correction de l'enseignant (diagramme et programme de démonstration des pokémons, dossier <code>TD/TD4/</code>) ; le bouton <strong>Solution</strong>, une solution proposée, exécutée avec Ruby 3.3. Les deux demandent une confirmation : fais l'exercice d'abord.</li>
+      <li>Le travail s'enregistre tout seul. Avec le serveur local (<code>studies/lancer.bat</code>), il va dans <code>td_results/</code> et Claude est disponible pour t'aider ou te corriger.</li>
+    </ul>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Diviseurs et nombres rationnels <span class="ref">TD, sujet 1</span></h2>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Sujet 1 <span>Reprise de l'exercice du TP 1 et du cours sur les diviseurs (des maths)</span></p>
+      <p>Des maths ! Ajoutez à la classe <code>Integer</code> de Ruby les trois méthodes suivantes :</p>
+      <ol>
+        <li><code>listeDesDiviseurs()</code> qui retourne dans un tableau la liste des diviseurs de a. Exemple : pour a=6 on obtient la liste <code>(1,2,3,6)</code>.</li>
+        <li><code>listeDesNonsDiviseurs()</code> qui retourne dans un tableau la liste des non diviseurs de a. Exemple : pour a=6 on obtient la liste <code>(4,5)</code>.</li>
+        <li><code>RapDivNonDiv()</code> calcule et retourne le rationnel représentant le rapport entre la somme des diviseurs de <code>a</code> (inférieurs à <code>a</code>) et la somme des nonsDiviseurs de <code>a</code>. Pour a=6 le résultat est <code>6/9</code> : 6 a pour diviseurs inférieurs à 6 : 1, 2, 3 et la somme de ceux-ci vaut 6 ; 6 a pour non diviseurs inférieurs à 6 : 4 et 5 et la somme de ceux-ci vaut 9.</li>
+      </ol>
+      <p>On souhaite manipuler ce rapport sous la forme d'un nombre rationnel, donc de la forme <code>a/b</code> où <code>a/b</code> est une fraction irréductible (<code>a/b</code> est irréductible si elle n'est plus simplifiable). Dans l'exemple précédent on préfèrera donc afficher <code>2/3</code> plutôt que <code>6/9</code>.</p>
+      <p>Pour cela on vous demande de donner le code de la classe <code>NR</code> qui fournit quelques opérations simples sur les nombres rationnels. Les opérations retourneront toujours les résultats sous forme de fractions irréductibles. La classe <code>NR</code> permettra de réaliser les opérations suivantes :</p>
+      <ul>
+        <li>Construire un rationnel irréductible associé au nombre rationnel a/b : <code>NR.simplifier(6,9)</code> permet de créer un rationnel dont le numérateur est 2 et le dénominateur 3.</li>
+        <li><code>ajouter</code>, <code>multiplier</code>, <code>soustraire</code> et <code>diviser</code> par un rationnel.</li>
+        <li><code>afficher</code> un rationnel et déterminer si deux rationnels sont <code>égaux</code>.</li>
+      </ul>
+      <p>Vos classes doivent permettre d'exécuter le programme Ruby suivant :</p>
+      <pre data-fichier="Programme de test"><code class="language-ruby">######## Programme de Test ########
+puts "\n\tTest de la classe Integer"
+puts "\t=========================="
+print "Les Diviseurs de 6      = "
+p 6.listeDesDiviseurs()
+print "Les Nons Diviseurs de 6 = "
+p 6.listeDesNonsDiviseurs()
+print "Le raport des deux      = "
+puts 6.rapDivNonDiv()
+
+puts "\n\tTest de la classe NR"
+puts "\t===================="
+a=NR.simplifier(6,9)
+b=NR.simplifier(5,3)
+c=NR.simplifier(15,18)
+d= NR.simplifier(5,20)
+puts "(#{a}) + (#{b}) = #{e=a.ajouter(b)}"
+puts "(#{e}) - (#{c}) = #{f=e.soustraire(c)}"
+puts "(#{f}) / (#{d}) = #{g=f.diviser(d)}"
+puts "(#{e}) / (#{e}) = #{g.diviser(g)}"</code></pre>
+      <pre class="terminal"><code>	Test de la classe Integer
+	==========================
+Les Diviseurs de 6      = [1, 2, 3, 6]
+Les Nons Diviseurs de 6 = [4, 5]
+Le raport des deux      = 2/3
+
+	Test de la classe NR
+	====================
+(2/3) + (5/3) = 7/3
+(7/3) - (5/6) = 3/2
+(3/2) / (1/4) = 6
+(7/3) / (7/3) = 1</code></pre>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Deux détails du programme de test</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>Le texte nomme la troisième méthode <code>RapDivNonDiv</code>, le programme l'appelle <code>rapDivNonDiv</code> : c'est ce second nom qu'il faut définir. La dernière ligne affiche « (7/3) / (7/3) » mais calcule <code>g.diviser(g)</code>, soit 6 / 6 : le résultat est 1 dans les deux cas.</p>
+    </div>
+    <div class="atelier" id="td4-s1-integer" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "Les trois méthodes de Integer",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class Integer",
+          "  # Les diviseurs de self, self compris : 6.listeDesDiviseurs => [1, 2, 3, 6]",
+          "  def listeDesDiviseurs()",
+          "    (1..self).select { |d| self % d == 0 }",
+          "  end",
+          "",
+          "  # Les entiers de 1 à self qui ne divisent pas self : 6.listeDesNonsDiviseurs => [4, 5]",
+          "  def listeDesNonsDiviseurs()",
+          "    (1..self).reject { |d| self % d == 0 }",
+          "  end",
+          "",
+          "  # Somme des diviseurs inférieurs à self / somme des non-diviseurs, en rationnel irréductible",
+          "  def rapDivNonDiv()",
+          "    sommeDiv = (listeDesDiviseurs() - [self]).sum",
+          "    NR.simplifier(sommeDiv, listeDesNonsDiviseurs().sum)",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p>On rouvre la classe <code>Integer</code> : les méthodes s'appliquent à tout entier, <code>self</code> étant l'entier receveur. <code>select</code> et <code>reject</code> partagent l'intervalle 1..a selon la même condition. Pour le rapport, on retire a lui-même de ses diviseurs (« inférieurs à a ») ; les non-diviseurs sont tous inférieurs à a. Le résultat est un <code>NR</code> : la méthode a besoin de la classe de la question suivante. Avec le programme de test : <code>[1, 2, 3, 6]</code>, <code>[4, 5]</code> et <code>2/3</code>.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p><code>(1..self).select { … }</code> garde les entiers qui vérifient une condition ; <code>reject</code> garde les autres. Pour simplifier une fraction, on divise ses deux termes par leur plus grand commun diviseur : Ruby le donne par <code>a.gcd(b)</code>.</p></div>
+    </details>
+    <div class="atelier" id="td4-s1-nr" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "La classe NR",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class NR",
+          "  # @num : le numérateur ; @den : le dénominateur (> 0), premiers entre eux",
+          "  attr_reader :num, :den",
+          "",
+          "  private_class_method :new",
+          "",
+          "  # Le rationnel irréductible égal à a/b : NR.simplifier(6, 9) => 2/3",
+          "  def NR.simplifier(a, b)",
+          "    raise ZeroDivisionError, \"dénominateur nul\" if b == 0",
+          "    p = a.gcd(b)",
+          "    p = -p if b < 0          # le signe va au numérateur",
+          "    new(a / p, b / p)",
+          "  end",
+          "",
+          "  def initialize(num, den)",
+          "    @num = num",
+          "    @den = den",
+          "  end",
+          "",
+          "  def ajouter(r)",
+          "    NR.simplifier(@num * r.den + r.num * @den, @den * r.den)",
+          "  end",
+          "",
+          "  def soustraire(r)",
+          "    NR.simplifier(@num * r.den - r.num * @den, @den * r.den)",
+          "  end",
+          "",
+          "  def multiplier(r)",
+          "    NR.simplifier(@num * r.num, @den * r.den)",
+          "  end",
+          "",
+          "  def diviser(r)",
+          "    NR.simplifier(@num * r.den, @den * r.num)",
+          "  end",
+          "",
+          "  # Deux rationnels irréductibles sont égaux quand leurs termes le sont",
+          "  def ==(r)",
+          "    r.is_a?(NR) && @num == r.num && @den == r.den",
+          "  end",
+          "",
+          "  def to_s",
+          "    @den == 1 ? @num.to_s : \"#{@num}/#{@den}\"",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p>Toutes les créations passent par <code>NR.simplifier</code>, qui divise les deux termes par leur pgcd (<code>Integer#gcd</code>) : tout rationnel est irréductible, avec un dénominateur positif. Les quatre opérations calculent la fraction brute et la confient à <code>simplifier</code>. Grâce à cette forme normale, deux rationnels sont égaux quand leurs termes le sont (<code>==</code>). <code>to_s</code> sert à l'affichage (« afficher ») et n'écrit pas le dénominateur 1, d'où <code>6</code> et <code>1</code> dans le test.</p><p>Vérifié avec Ruby 3.3 : la sortie du programme de test est celle du sujet ; de plus <code>NR.simplifier(2,-4)</code> donne <code>-1/2</code> et <code>NR.simplifier(4,6) == NR.simplifier(2,3)</code> vaut <code>true</code>. Ruby a sa propre classe <code>Rational</code> (<code>6r/9</code> vaut <code>(2/3)</code>) : le TD demande de l'écrire soi-même.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les exercices classiques <span class="ref">TD, sujet 2</span></h2>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Sujet 2 · 1 <span>Renverser une chaîne de caractères par mot</span></p>
+      <p>Ex : <code>"Ruby est très joli".reverseParMot()</code> → <code>"joli très est Ruby"</code></p>
+    </div>
+    <div class="atelier" id="td4-s2-q1" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "1. reverseParMot",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class String",
+          "  # \"Ruby est très joli\".reverseParMot() => \"joli très est Ruby\"",
+          "  def reverseParMot()",
+          "    split(\" \").reverse.join(\" \")",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p><code>split(\" \")</code> découpe en mots (les espaces multiples comptent pour un), <code>reverse</code> renverse le tableau, <code>join(\" \")</code> recolle. Résultat : <code>\"joli très est Ruby\"</code>.</p>"
+      }
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Sujet 2 · 2 <span>enleveStr</span></p>
+      <p>Écrire une méthode <code>enleveStr(s2)</code> de la classe <code>String</code> permettant d'enlever toutes les occurrences de la chaîne <code>s2</code> dans la chaîne receveuse.</p>
+      <p><strong>Solution en C :</strong></p>
+      <pre><code class="language-c">char * enleveStr(char * s1, const char * s2){
+   char * p;
+      while (p = strstr(s1, s2)){
+           strcpy(p, p + strlen(s2));
+      }
+   return s1;
+}</code></pre>
+    </div>
+    <div class="atelier" id="td4-s2-q2" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "2. enleveStr",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class String",
+          "  # Enlève toutes les occurrences de s2 ; rend une nouvelle chaîne, le receveur ne change pas",
+          "  def enleveStr(s2)",
+          "    resultat = self.dup",
+          "    # Comme en C : tant qu'on trouve s2, on le retire",
+          "    while (p = resultat.index(s2))",
+          "      resultat[p, s2.length] = \"\"",
+          "    end",
+          "    resultat",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p>La même boucle que la version C : <code>index</code> joue le rôle de <code>strstr</code>, et l'affectation d'une tranche à <code>\"\"</code> celui du <code>strcpy</code> qui recolle la fin. La méthode travaille sur une copie (<code>dup</code>) : en Ruby, une méthode qui modifie son receveur se nomme d'habitude avec un point d'exclamation (<code>enleveStr!</code>). Autre écriture : <code>gsub(s2, \"\")</code>, qui diffère dans un cas : <code>\"abaabb\".enleveStr(\"ab\")</code> rend <code>\"\"</code>, comme en C (le retrait de « ab » en forme un nouveau), alors que <code>gsub</code> rend <code>\"ab\"</code>. Vérifié : <code>\"abracadabra\".enleveStr(\"bra\")</code> donne <code>\"acada\"</code>.</p>"
+      }
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Sujet 2 · 3 <span>enleveChr</span></p>
+      <p>Écrire une méthode <code>enleveChr(s2)</code> de la classe <code>String</code> permettant d'enlever toutes les occurrences des caractères de la chaîne <code>s2</code> dans la chaîne receveuse.</p>
+      <p>Ex : <code>"12345678901234567890".enleveChr("13579")</code> → <code>"2468024680"</code></p>
+    </div>
+    <div class="atelier" id="td4-s2-q3" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "3. enleveChr",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class String",
+          "  # \"12345678901234567890\".enleveChr(\"13579\") => \"2468024680\"",
+          "  def enleveChr(s2)",
+          "    chars.reject { |c| s2.include?(c) }.join",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p><code>chars</code> donne le tableau des caractères ; on rejette ceux qui figurent dans <code>s2</code>. Ruby a aussi <code>delete</code> : <code>\"12345678901234567890\".delete(\"13579\")</code>. Résultat : <code>\"2468024680\"</code>.</p>"
+      }
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Sujet 2 · 4 <span>enlevePasChr</span></p>
+      <p>Écrire une méthode <code>enlevePasChr(s2)</code> de la classe <code>String</code> permettant de ne garder de la chaîne receveuse que les caractères de la chaîne <code>s2</code>.</p>
+      <p>Ex : <code>"Despres".enlevePasChr("aeiouy")</code> → <code>"ee"</code></p>
+    </div>
+    <div class="atelier" id="td4-s2-q4" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "4. enlevePasChr",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class String",
+          "  # \"Despres\".enlevePasChr(\"aeiouy\") => \"ee\"",
+          "  def enlevePasChr(s2)",
+          "    chars.select { |c| s2.include?(c) }.join",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p>La même chose qu'<code>enleveChr</code>, avec <code>select</code> au lieu de <code>reject</code>. Équivalent en Ruby : <code>\"Despres\".delete(\"^aeiouy\")</code>. Résultat : <code>\"ee\"</code>.</p>"
+      }
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Sujet 2 · 5 et 6 <span>Les TDA Pile et File</span></p>
+      <ol start="5">
+        <li>Donner une réalisation en Ruby du TDA <code>Pile</code> (<code>sommet</code>, <code>empiler</code>, <code>dépiler</code>, <code>estVide</code>, <code>taille</code>).</li>
+        <li>Donner une réalisation en Ruby du TDA <code>File</code> (<code>entrer</code>, <code>sortir</code>, <code>estVide</code>, <code>taille</code>).</li>
+      </ol>
+    </div>
+    <div class="atelier" id="td4-s2-q5" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "5. Le TDA Pile",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class Pile",
+          "  # @elements : les éléments, le sommet à la fin du tableau",
+          "",
+          "  def initialize",
+          "    @elements = []",
+          "  end",
+          "",
+          "  def sommet",
+          "    raise \"pile vide\" if estVide",
+          "    @elements.last",
+          "  end",
+          "",
+          "  def empiler(element)",
+          "    @elements.push(element)",
+          "    self",
+          "  end",
+          "",
+          "  def depiler",
+          "    raise \"pile vide\" if estVide",
+          "    @elements.pop",
+          "  end",
+          "",
+          "  def estVide",
+          "    @elements.empty?",
+          "  end",
+          "",
+          "  def taille",
+          "    @elements.size",
+          "  end",
+          "",
+          "  def to_s",
+          "    \"[\" + @elements.join(\", \") + \"> sommet\"",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p>Un tableau dont la fin est le sommet : <code>push</code> et <code>pop</code> sont en O(1). Le tableau reste privé (pas d'accesseur) : on ne touche à la pile que par son interface. Dépiler ou consulter le sommet d'une pile vide lève une erreur. Vérifié : après avoir empilé 1, 2, 3, le sommet est 3, <code>depiler</code> rend 3 et la taille devient 2.</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td4-s2-q6" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "6. Le TDA File",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "# File existe déjà en Ruby (les fichiers) : on appelle la classe FileFIFO",
+          "class FileFIFO",
+          "  # @elements : les éléments, le premier entré en tête du tableau",
+          "",
+          "  def initialize",
+          "    @elements = []",
+          "  end",
+          "",
+          "  def entrer(element)",
+          "    @elements.push(element)",
+          "    self",
+          "  end",
+          "",
+          "  def sortir",
+          "    raise \"file vide\" if estVide",
+          "    @elements.shift",
+          "  end",
+          "",
+          "  def estVide",
+          "    @elements.empty?",
+          "  end",
+          "",
+          "  def taille",
+          "    @elements.size",
+          "  end",
+          "",
+          "  def to_s",
+          "    \"<\" + @elements.join(\", \") + \"<\"",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p>On entre à la fin (<code>push</code>), on sort au début (<code>shift</code>). Le nom <code>File</code> est pris par Ruby (la classe des fichiers) : la classe s'appelle <code>FileFIFO</code>. Vérifié : après avoir fait entrer a, b, c, <code>sortir</code> rend \"a\" et la taille devient 2.</p>"
+      }
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Sujet 2 · 7 <span>Évaluation d'expression</span></p>
+      <ol>
+        <li>Ajouter à la classe <code>String</code> les méthodes suivantes :
+          <ul>
+            <li><code>isDigit?()</code> une méthode qui retourne vrai si la chaîne est un chiffre ;</li>
+            <li><code>isSeparator?()</code> une méthode qui retourne vrai si la chaîne représente un séparateur ;</li>
+            <li><code>digitValue()</code> une méthode qui renvoie l'entier correspondant au chiffre.</li>
+          </ul>
+        </li>
+        <li>Ajouter une méthode <code>evaluePostfixe</code> à la classe <code>String</code> qui renvoie le résultat de l'évaluation de l'expression postfixée contenue dans la chaîne receveuse. Ex : <code>"128 12+10-2*".evaluePostfixe</code> =&gt; <code>260</code></li>
+      </ol>
+      <p>Rappel de l'algorithme d'évaluation :</p>
+      <pre><code class="language-pseudo">s est une chaine qui contient une expression postfixée (on ne vérifie pas)
+1) parcours de s
+     <b>si</b> le caractère courant est un chiffre
+       <b>alors</b> ajouter ce chiffre au nombre déjà lu
+     <b>sinon</b>
+       empiler le nombre lu
+       remettre le nombre a 0
+       <b>si</b> le caractère courant est un séparateur (espace, tab, cr et...)
+         <b>alors</b> rien
+         <b>sinon</b> <i>(c'est un opérateur)</i>
+           dépiler dans opérande droit
+           dépiler dans l'opérande gauche
+           appliquer l'opérateur aux deux opérandes
+           empiler le résultat
+2) retourner le sommet de pile</code></pre>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Un nombre lu n'existe pas toujours</span></p>
+      <p>Pris à la lettre, l'algorithme empile « le nombre lu » à chaque caractère qui n'est pas un chiffre, même quand aucun chiffre ne précède : dans <code>"128 12+10-2*"</code>, l'opérateur <code>+</code> suit <code>12</code>, mais <code>-</code> suit <code>10</code> et <code>*</code> suit <code>2</code>, et l'espace après <code>128</code> est suivie de <code>1</code>. Un opérateur qui suit un autre opérateur (<code>"3 4 5*+"</code>) empilerait un 0 de trop. Il faut donc n'empiler que si au moins un chiffre a été lu depuis le dernier empilement.</p>
+    </div>
+    <div class="atelier" id="td4-s2-q7" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "7. Évaluation d'une expression postfixée",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class String",
+          "  # Vrai si la chaîne est un chiffre",
+          "  def isDigit?()",
+          "    self.length == 1 && self >= \"0\" && self <= \"9\"",
+          "  end",
+          "",
+          "  # Vrai si la chaîne est un séparateur : espace, tabulation, retour chariot, fin de ligne",
+          "  def isSeparator?()",
+          "    [\" \", \"\\t\", \"\\r\", \"\\n\"].include?(self)",
+          "  end",
+          "",
+          "  # L'entier qui correspond au chiffre : \"7\".digitValue() => 7",
+          "  def digitValue()",
+          "    self.ord - \"0\".ord",
+          "  end",
+          "",
+          "  # \"128 12+10-2*\".evaluePostfixe => 260",
+          "  def evaluePostfixe()",
+          "    pile = Pile.new",
+          "    nombre = nil                      # nombre en cours de lecture (nil : aucun)",
+          "    self.each_char do |c|",
+          "      if c.isDigit?",
+          "        nombre = (nombre || 0) * 10 + c.digitValue",
+          "      else",
+          "        unless nombre.nil?",
+          "          pile.empiler(nombre)        # le nombre lu est terminé",
+          "          nombre = nil",
+          "        end",
+          "        unless c.isSeparator?         # un opérateur",
+          "          droit = pile.depiler",
+          "          gauche = pile.depiler",
+          "          pile.empiler(gauche.send(c, droit))",
+          "        end",
+          "      end",
+          "    end",
+          "    pile.empiler(nombre) unless nombre.nil?",
+          "    pile.sommet",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p>La méthode suit l'algorithme du sujet, avec la classe <code>Pile</code> de la question 5. Le nombre en cours vaut <code>nil</code> tant qu'aucun chiffre n'a été lu : on n'empile que s'il existe (voir l'encadré). <code>gauche.send(c, droit)</code> applique l'opérateur lu : <code>12.send(\"+\", 10)</code> vaut <code>12 + 10</code>. L'ordre des dépilements compte pour <code>-</code> et <code>/</code> : le premier dépilé est l'opérande droit.</p><p>Vérifié avec Ruby 3.3 : <code>\"128 12+10-2*\"</code> donne 260 ; <code>\"3 4 5*+\"</code>, 23 ; <code>\"42\"</code>, 42 ; <code>\"100 7/\"</code>, 14 (division entière).</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les pokémons <span class="ref">TD, sujet 3</span></h2>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Sujet 3 <span>Les Pokemons, questions 1 à 3</span></p>
+      <p>Les Pokémons sont des gentils animaux qui sont passionnés par la programmation objet en général et par le polymorphisme en particulier. Il existe quatre grandes catégories de pokémons :</p>
+      <ul>
+        <li><strong>Les sportifs</strong> : ces pokémons sont caractérisés par un nom, un poids (en kg), un nombre de pattes, une taille (en mètres) et une fréquence cardiaque mesurée en nombre de pulsations à la minute. Ces pokémons se déplacent sur la terre à une certaine vitesse que l'on peut calculer grâce à la formule suivante : <code>vitesse = nombre de pattes * taille * 3</code></li>
+        <li><strong>Les casaniers</strong> : ces pokémons sont caractérisés par un nom, un poids (en kg), un nombre de pattes, une taille (en mètres) et le nombre d'heures par jour où ils regardent la télévision. Ces pokémons se déplacent également sur la terre à une certaine vitesse que l'on peut calculer grâce à la formule suivante : <code>vitesse = nombre de pattes * taille * 3</code></li>
+        <li><strong>Les marins</strong> : ces pokémons sont caractérisés par un nom, un poids (en kg) et un nombre de nageoires. Ces pokémons ne se déplacent que dans la mer à une vitesse que l'on peut calculer grâce à la formule suivante : <code>vitesse = poids / 25 * nombre de nageoires</code></li>
+        <li><strong>Les croisières</strong> : ces pokémons sont caractérisés par un nom, un poids (en kg) et un nombre de nageoires. Ces pokémons ne se déplacent que dans la mer à une vitesse que l'on peut calculer grâce à la formule suivante : <code>vitesse = (poids / 25 * nombre de nageoires) / 2</code></li>
+      </ul>
+      <p>On doit pouvoir afficher toutes les caractéristiques et comparer les Pokemons suivant leur vitesse.</p>
+      <ul>
+        <li>Sur un pokémon sportif : <code>"Je suis le pokémon Pikachu mon poids est de 18 kg, ma vitesse est de 5,1 km/h j'ai 2 pattes, ma taille est de 0,85m ma fréquence cardiaque est de 120 pulsations à la minute"</code></li>
+        <li>Sur un pokémon casanier : <code>"Je suis le pokémon Salameche mon poids est de 12 kg, ma vitesse est de 3,9 km/h j'ai 2 pattes, ma taille est de 0,65m je regarde la télé 8h par jour"</code></li>
+        <li>Sur un pokémon marin : <code>"Je suis le pokémon Rondoudou mon poids est de 45 kg, ma vitesse est de 3,6 km/h j'ai 2 nageoires"</code></li>
+        <li>Et enfin sur un pokémon de croisière : <code>"Je suis le pokémon Bulbizarre mon poids est de 15 kg, ma vitesse est de 0,9 km/h j'ai 3 nageoires"</code></li>
+      </ul>
+      <ol>
+        <li>Proposer un diagramme de classes <strong>PROPRE LISIBLE ET COMPLET</strong> représentant les classes nécessaires.</li>
+        <li>Programmer ces classes en Ruby.</li>
+        <li>Écrire un programme de test qui mettent en œuvre les fonctionnalités développées.</li>
+      </ol>
+    </div>
+    <div class="atelier" id="td4-s3-diagramme" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "1. Le diagramme des pokémons",
+        "options": {
+          "methodes": true
+        },
+        "hauteur": 560,
+        "solution": [
+          "classe abstraite Pokemon",
+          "  - nom : String",
+          "  - poids : Numeric",
+          "  + initialize(nom, poids)",
+          "  + poids() : Numeric",
+          "  + vitesse() : Numeric",
+          "  + to_s() : String",
+          "  + <=>(autre) : Integer",
+          "classe abstraite Terrestre",
+          "  - taille : Numeric",
+          "  - pattes : Integer",
+          "  + initialize(nom, poids, taille, pattes)",
+          "  + vitesse() : Numeric",
+          "  + to_s() : String",
+          "classe Sportif",
+          "  - frequenceCardiaque : Integer",
+          "  + initialize(nom, poids, taille, pattes, frequenceCardiaque)",
+          "  + to_s() : String",
+          "classe Casanier",
+          "  - tempsTV : Numeric",
+          "  + initialize(nom, poids, taille, pattes, tempsTV)",
+          "  + to_s() : String",
+          "classe Marin",
+          "  - nageoires : Integer",
+          "  + initialize(nom, poids, nageoires)",
+          "  + vitesse() : Numeric",
+          "  + to_s() : String",
+          "classe Croisiere",
+          "  + vitesse() : Numeric",
+          "classe Comparable <<module>>",
+          "Terrestre --|> Pokemon",
+          "Marin --|> Pokemon",
+          "Sportif --|> Terrestre",
+          "Casanier --|> Terrestre",
+          "Croisiere --|> Marin",
+          "Pokemon ..> Comparable : include"
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Partie du diagramme Mermaid de l'enseignant (<code>TD/TD4/class-diagram-pokemon.txt</code>) qui répond aux questions 1 à 3 ; le reste vient à la question 5. <code>Terrestre</code> regroupe ce que sportifs et casaniers partagent (taille, pattes, formule de vitesse) ; <code>Pokemon</code> et <code>Terrestre</code> sont abstraites. <code>Croisiere</code> ne redéfinit que <code>vitesse</code>. L'inclusion de <code>Comparable</code> est notée par une dépendance étiquetée « include ». L'enseignant précise aussi que <code>new</code> est privée dans <code>Pokemon</code> et le reste dans <code>Terrestre</code>.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Sportifs et casaniers partagent leurs caractéristiques et leur formule de vitesse : une classe intermédiaire, abstraite, les regroupe. Un croisière est un marin deux fois plus lent. Pour comparer suivant la vitesse, une seule méthode <code>&lt;=&gt;</code> et le module <code>Comparable</code>.</p></div>
+    </details>
+    <div class="atelier" id="td4-s3-classes" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "2. Les classes des pokémons",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "# Classe abstraite : nom, poids, et une vitesse que chaque catégorie calcule",
+          "class Pokemon",
+          "  include Comparable",
+          "",
+          "  attr_reader :nom, :poids",
+          "",
+          "  private_class_method :new",
+          "",
+          "  def initialize(nom, poids)",
+          "    @nom = nom",
+          "    @poids = poids",
+          "  end",
+          "",
+          "  # Méthode abstraite",
+          "  def vitesse",
+          "    raise NotImplementedError, \"#{self.class} doit définir vitesse\"",
+          "  end",
+          "",
+          "  # Comparable fournit <, <=, ==, >, >=, between? et permet sort",
+          "  def <=>(autre)",
+          "    vitesse <=> autre.vitesse",
+          "  end",
+          "",
+          "  def to_s",
+          "    \"Je suis le pokémon #{self.class} '#{@nom}' mon poids est de #{@poids}kg, \" \\",
+          "    \"ma vitesse est de #{vitesse.round(2)} km/h\"",
+          "  end",
+          "end",
+          "",
+          "# Classe abstraite : les pokémons qui se déplacent sur terre",
+          "class Terrestre < Pokemon",
+          "  def initialize(nom, poids, taille, pattes)",
+          "    super(nom, poids)",
+          "    @taille = taille",
+          "    @pattes = pattes",
+          "  end",
+          "",
+          "  def vitesse",
+          "    @pattes * @taille * 3",
+          "  end",
+          "",
+          "  def to_s",
+          "    super + \" j'ai #{@pattes} pattes, ma taille est de #{@taille}m\"",
+          "  end",
+          "end",
+          "",
+          "class Sportif < Terrestre",
+          "  public_class_method :new",
+          "",
+          "  def initialize(nom, poids, taille, pattes, frequenceCardiaque)",
+          "    super(nom, poids, taille, pattes)",
+          "    @frequenceCardiaque = frequenceCardiaque",
+          "  end",
+          "",
+          "  def to_s",
+          "    super + \", ma fréquence cardiaque est de #{@frequenceCardiaque} pulsations à la minute.\"",
+          "  end",
+          "end",
+          "",
+          "class Casanier < Terrestre",
+          "  public_class_method :new",
+          "",
+          "  def initialize(nom, poids, taille, pattes, tempsTV)",
+          "    super(nom, poids, taille, pattes)",
+          "    @tempsTV = tempsTV",
+          "  end",
+          "",
+          "  def to_s",
+          "    super + \" je regarde la télé #{@tempsTV}h par jour\"",
+          "  end",
+          "end",
+          "",
+          "class Marin < Pokemon",
+          "  public_class_method :new",
+          "",
+          "  def initialize(nom, poids, nageoires)",
+          "    super(nom, poids)",
+          "    @nageoires = nageoires",
+          "  end",
+          "",
+          "  # 25.0 et non 25 : 45 / 25 vaudrait 1 (division entière)",
+          "  def vitesse",
+          "    @poids / 25.0 * @nageoires",
+          "  end",
+          "",
+          "  def to_s",
+          "    super + \" j'ai #{@nageoires} nageoires.\"",
+          "  end",
+          "end",
+          "",
+          "class Croisiere < Marin",
+          "  # La vitesse d'un marin, divisée par deux",
+          "  def vitesse",
+          "    super / 2",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p>Solution proposée, écrite pour que le programme de démonstration de l'enseignant (questions 3 et 7) donne exactement sa sortie. <code>to_s</code> se construit par <code>super + …</code> à chaque niveau ; <code>self.class</code> écrit la catégorie. <code>new</code> est privée dans les classes abstraites et rendue publique dans les concrètes (<code>public_class_method :new</code>), puisque le programme de l'enseignant écrit <code>Sportif.new(…)</code>.</p><ul><li>Vitesse d'un marin : <code>45 / 25 * 2</code> vaut 2 en entiers ; avec <code>25.0</code>, 3,6.</li><li>Les vitesses sont arrondies à l'affichage (<code>round(2)</code>) : <code>2 * 0.85 * 3</code> vaut 5.1000000000000005 en virgule flottante.</li><li>L'affichage de l'enseignant (« Je suis le pokémon Sportif 'Pikachu' mon poids est de 18kg… ») diffère un peu de celui de l'énoncé (« Je suis le pokémon Pikachu mon poids est de 18 kg… », virgule décimale) : la solution suit l'enseignant.</li></ul>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td4-s3-test" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "3. Le programme de test",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "# ============================================================",
+          "# Programme de démonstration",
+          "# ============================================================",
+          "",
+          "pikachu = Sportif.new(\"Pikachu\", 18, 0.85, 2, 120)",
+          "salameche = Casanier.new(\"Salameche\", 12, 0.65, 2, 8)",
+          "rondoudou = Marin.new(\"Rondoudou\", 45, 2)",
+          "bulbizarre = Croisiere.new(\"Bulbizarre\", 15, 3)",
+          "",
+          "maCollec = CollectionPokemons.new",
+          "",
+          "maCollec",
+          "  .ajouter(pikachu)",
+          "  .ajouter(salameche)",
+          "  .ajouter(rondoudou)",
+          "  .ajouter(bulbizarre)",
+          "",
+          "puts \"\\n=== Affichage de la collection ===\"",
+          "puts maCollec",
+          "",
+          "puts \"\\n=== Comparaison par vitesse ===\"",
+          "puts \"Pikachu > Salameche : #{pikachu > salameche}\"",
+          "puts \"Rondoudou > Bulbizarre : #{rondoudou > bulbizarre}\"",
+          "",
+          "puts \"\\n=== Moyenne des vitesses ===\"",
+          "puts \"#{maCollec.moyenne.round(2)} km/h\"",
+          "",
+          "# affichage des deux tris sous le bon titre.",
+          "puts \"\\n=== Collection triée par vitesse ===\"",
+          "puts maCollec.sort.collect(&:to_s).join(\"\\n\")",
+          "",
+          "puts \"\\n=== Collection triée par poids ===\"",
+          "puts maCollec.sort { |a, b| a.poids <=> b.poids }",
+          "             .collect(&:to_s)",
+          "             .join(\"\\n\")",
+          ""
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Première partie du programme de démonstration de l'enseignant (<code>TD/TD4/a-test-program.txt</code>). Il se sert déjà de la collection de la question 4 (<code>ajouter</code> chaînés, <code>moyenne</code>, <code>sort</code>). La comparaison <code>pikachu &gt; salameche</code> vient de <code>Comparable</code> ; <code>maCollec.sort</code> trie par vitesse grâce à <code>&lt;=&gt;</code> ; le tri par poids passe un bloc à <code>sort</code>. Sortie attendue, d'après le fichier de l'enseignant (obtenue telle quelle avec la solution proposée) :</p><pre class='terminal'><code>=== Comparaison par vitesse ===\nPikachu &gt; Salameche : true\nRondoudou &gt; Bulbizarre : true\n\n=== Moyenne des vitesses ===\n3.38 km/h</code></pre>"
+      }
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Sujet 3 <span>La collection, question 4</span></p>
+      <p>On désire maintenant définir une classe <code>CollectionPokemon</code> qui comporte en attribut une liste pouvant contenir des pokémons de catégories quelconques.</p>
+      <ol start="4">
+        <li>Écrire la classe <code>CollectionPokemon</code>. Cette classe doit proposer en particulier :
+          <ul>
+            <li>une méthode qui insère un pokémon dans la collection ;</li>
+            <li>une méthode qui calcule la vitesse moyenne des pokémons de la collection.</li>
+          </ul>
+        </li>
+      </ol>
+    </div>
+    <div class="atelier" id="td4-s3-collection" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "4. La classe CollectionPokemons",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class CollectionPokemons",
+          "  include Enumerable          # sort, collect, select… à partir de each",
+          "",
+          "  def initialize",
+          "    @lesPokemons = []",
+          "  end",
+          "",
+          "  # Une copie : on n'ajoute qu'en passant par ajouter",
+          "  def lesPokemons",
+          "    @lesPokemons.dup",
+          "  end",
+          "",
+          "  def ajouter(pokemon)",
+          "    @lesPokemons << pokemon",
+          "    self                      # pour enchaîner les ajouts",
+          "  end",
+          "",
+          "  def each(&bloc)",
+          "    @lesPokemons.each(&bloc)",
+          "    self",
+          "  end",
+          "",
+          "  def moyenne",
+          "    return 0 if @lesPokemons.empty?",
+          "    @lesPokemons.sum(&:vitesse) / @lesPokemons.size",
+          "  end",
+          "",
+          "  def to_s",
+          "    @lesPokemons.join(\"\\n\")",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p>Le nom et l'interface suivent le diagramme de l'enseignant (<code>CollectionPokemons</code>, avec un s ; l'énoncé écrit <code>CollectionPokemon</code>). <code>ajouter</code> rend la collection, ce qui permet d'enchaîner les ajouts. En définissant <code>each</code> et en incluant <code>Enumerable</code>, la collection reçoit <code>sort</code>, <code>collect</code>, <code>select</code>… L'accesseur <code>lesPokemons</code> rend une copie : sinon, on pourrait ajouter un pokémon sans passer par <code>ajouter</code>. Moyenne obtenue avec les quatre pokémons de l'énoncé : (5,1 + 3,9 + 3,6 + 0,9) / 4 = 3,375, affichée 3.38.</p>"
+      }
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Sujet 3 <span>Les séances de détente, questions 5 à 7</span></p>
+      <p>À l'inverse des <code>Sportifs</code> et des <code>Marins</code>, les pokémons <code>Casaniers</code> et de <code>Croisière</code> peuvent participer à des séances de détente : les premiers devant la télévision, les seconds au cours de leurs promenades en mer. Pour chaque <code>Pokémon</code> concerné, on souhaite pouvoir :</p>
+      <ul>
+        <li>enregistrer une séance de détente en précisant sa durée en minutes ;</li>
+        <li>consulter le nombre de séances effectuées ;</li>
+        <li>connaître la durée totale consacrée à ces séances.</li>
+      </ul>
+      <p>Un pokémon qui n'a encore participé à aucune séance doit avoir un nombre de séances et une durée totale nuls.</p>
+      <ol start="5">
+        <li>Proposez une solution qui permette d'implémenter ces fonctionnalités et complétez votre diagramme de classes.</li>
+        <li>Programmez cette solution en Ruby.</li>
+        <li>Écrire un programme de test illustrant le fonctionnement de votre solution.</li>
+      </ol>
+    </div>
+    <div class="atelier" id="td4-s3-diagramme-complet" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "5. Le diagramme complété",
+        "options": {
+          "methodes": true
+        },
+        "hauteur": 640,
+        "consigne": "<p>Reprendre le diagramme de la question 1, puis ajouter la collection et la solution de la question 5.</p>",
+        "solution": [
+          "classe abstraite Pokemon",
+          "  - nom : String",
+          "  - poids : Numeric",
+          "  + initialize(nom, poids)",
+          "  + poids() : Numeric",
+          "  + vitesse() : Numeric",
+          "  + to_s() : String",
+          "  + <=>(autre) : Integer",
+          "classe abstraite Terrestre",
+          "  - taille : Numeric",
+          "  - pattes : Integer",
+          "  + initialize(nom, poids, taille, pattes)",
+          "  + vitesse() : Numeric",
+          "  + to_s() : String",
+          "classe Sportif",
+          "  - frequenceCardiaque : Integer",
+          "  + initialize(nom, poids, taille, pattes, frequenceCardiaque)",
+          "  + to_s() : String",
+          "classe Casanier",
+          "  - tempsTV : Numeric",
+          "  + initialize(nom, poids, taille, pattes, tempsTV)",
+          "  + to_s() : String",
+          "classe Marin",
+          "  - nageoires : Integer",
+          "  + initialize(nom, poids, nageoires)",
+          "  + vitesse() : Numeric",
+          "  + to_s() : String",
+          "classe Croisiere",
+          "  + vitesse() : Numeric",
+          "classe Comparable <<module>>",
+          "Terrestre --|> Pokemon",
+          "Marin --|> Pokemon",
+          "Sportif --|> Terrestre",
+          "Casanier --|> Terrestre",
+          "Croisiere --|> Marin",
+          "Pokemon ..> Comparable : include",
+          "classe Detente <<module>>",
+          "  - nombre_seances : Integer",
+          "  - duree_totale_detente : Numeric",
+          "  + enregistrer_detente(duree)",
+          "  + nombre_seances() : Integer",
+          "  + duree_totale_detente() : Numeric",
+          "classe CollectionPokemons",
+          "  - lesPokemons : Array",
+          "  + initialize()",
+          "  + lesPokemons() : Array",
+          "  + ajouter(pokemon) : CollectionPokemons",
+          "  + each()",
+          "  + moyenne() : Numeric",
+          "  + to_s() : String",
+          "classe Enumerable <<module>>",
+          "Casanier ..> Detente : include",
+          "Croisiere ..> Detente : include",
+          "CollectionPokemons ..> Enumerable : include",
+          "CollectionPokemons \"0..*\" o-- \"0..*\" Pokemon : contient"
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Diagramme Mermaid de l'enseignant (<code>TD/TD4/class-diagram-pokemon.txt</code>), complet. La détente est un module, <code>Detente</code>, inclus par <code>Casanier</code> et <code>Croisiere</code> seulement : leurs objets répondent à <code>enregistrer_detente</code>, ceux des sportifs et des marins non. Les deux compteurs sont des variables d'instance du module, donc de chaque pokémon (note de l'enseignant : « Les compteurs sont propres à chaque Pokémon »). La collection inclut <code>Enumerable</code> et agrège des pokémons de toutes catégories.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Casanier et Croisière n'ont pas de superclasse commune qui ne soit aussi celle d'un sportif ou d'un marin : la capacité ne peut pas se mettre dans la hiérarchie. Un module inclus par les deux classes la leur donne, avec ses variables d'instance. Reste à les initialiser : voir <a href="cours-modules-ruby.html">les modules Ruby</a>.</p></div>
+    </details>
+    <div class="atelier" id="td4-s3-detente" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "6. Le module Detente",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "# Une capacité, et non une catégorie : un module que seules certaines classes incluent",
+          "module Detente",
+          "  # Les compteurs sont des variables d'instance de chaque pokémon,",
+          "  # créées au premier accès (initialisation paresseuse) : 0 sans séance",
+          "  def nombre_seances",
+          "    @nombre_seances ||= 0",
+          "  end",
+          "",
+          "  def duree_totale_detente",
+          "    @duree_totale_detente ||= 0",
+          "  end",
+          "",
+          "  # Enregistre une séance de duree minutes",
+          "  def enregistrer_detente(duree)",
+          "    unless duree.is_a?(Numeric) && duree > 0",
+          "      raise ArgumentError, \"La durée d'une séance doit être un nombre strictement positif.\"",
+          "    end",
+          "    @nombre_seances = nombre_seances + 1",
+          "    @duree_totale_detente = duree_totale_detente + duree",
+          "    self",
+          "  end",
+          "end",
+          "",
+          "class Casanier",
+          "  include Detente",
+          "end",
+          "",
+          "class Croisiere",
+          "  include Detente",
+          "end",
+          ""
+        ],
+        "explication": "<p>Le module ne peut pas compter sur l'<code>initialize</code> des classes qui l'incluent : les compteurs sont créés au premier accès (initialisation paresseuse, <code>@x ||= 0</code>), ce qui donne bien 0 et 0 à un pokémon sans séance. Les méthodes du module passent elles-mêmes par ces accesseurs. Une durée qui n'est pas un nombre strictement positif lève <code>ArgumentError</code>, avec le message qu'affiche le programme de l'enseignant. On rouvre <code>Casanier</code> et <code>Croisiere</code> pour inclure le module ; dans un vrai fichier, on écrirait <code>include Detente</code> dans leur définition.</p><p>Vérifié avec Ruby 3.3 : le programme de démonstration de l'enseignant donne exactement la sortie écrite à sa fin, jusqu'à « Tous les tests de détente ont réussi. » et l'erreur attendue.</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td4-s3-test-detente" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "7. Le programme de test de la détente",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "# ============================================================",
+          "#  démonstration de la nouvelle fonctionnalité",
+          "# ============================================================",
+          "",
+          "puts \"\\n=== Avant toute séance de détente ===\"",
+          "",
+          "puts \"Salameche : #{salameche.nombre_seances} séance(s), #{salameche.duree_totale_detente} minute(s)\"",
+          "",
+          "puts \"Bulbizarre : #{bulbizarre.nombre_seances} séance(s), #{bulbizarre.duree_totale_detente} minute(s)\"",
+          "",
+          "",
+          "puts \"\\n=== Enregistrement de séances ===\"",
+          "",
+          "salameche.enregistrer_detente(30)",
+          "salameche.enregistrer_detente(45)",
+          "",
+          "bulbizarre.enregistrer_detente(20)",
+          "",
+          "puts \"Salameche : #{salameche.nombre_seances} séance(s), #{salameche.duree_totale_detente} minute(s)\"",
+          "# => Salameche : 2 séance(s), 75 minute(s)",
+          "",
+          "puts \"Bulbizarre : #{bulbizarre.nombre_seances} séance(s), #{bulbizarre.duree_totale_detente} minute(s)\"",
+          "# => Bulbizarre : 1 séance(s), 20 minute(s)",
+          "",
+          "",
+          "autre_casanier = Casanier.new(\"Ronflex\", 100, 2.0, 2, 10)",
+          "",
+          "puts \"\\n=== Un autre Casanier n'a encore aucune séance ===\"",
+          "",
+          "puts \"Ronflex : #{autre_casanier.nombre_seances} séance(s), #{autre_casanier.duree_totale_detente} minute(s)\"",
+          "# => Ronflex : 0 séance(s), 0 minute(s)",
+          "",
+          "",
+          "# Vérifie que les autres catégories ne proposent pas cette fonctionnalité.",
+          "puts \"\\n=== Disponibilité de la fonctionnalité ===\"",
+          "",
+          "maCollec.each do |pokemon|",
+          "  puts \"#{pokemon.class} : \" \\",
+          "       \"#{pokemon.respond_to?(:enregistrer_detente)}\"",
+          "end",
+          "",
+          "# Sportif : false",
+          "# Casanier : true",
+          "# Marin : false",
+          "# Croisiere : true",
+          "",
+          "",
+          "# Tests automatiques simples.",
+          "# On déclenche un RunTime error si les résultats ne sont pas ceux Attendus",
+          "# première ébauche de tests unitaires",
+          "raise \"Compteur incorrect\" unless salameche.nombre_seances == 2",
+          "raise \"Durée incorrecte\" unless salameche.duree_totale_detente == 75",
+          "",
+          "raise \"États non indépendants\" unless bulbizarre.nombre_seances == 1",
+          "raise \"États non indépendants\" unless autre_casanier.nombre_seances == 0",
+          "",
+          "raise \"Sportif ne doit pas avoir cette capacité\" if pikachu.respond_to?(:enregistrer_detente)",
+          "raise \"Marin ne doit pas avoir cette capacité\" if rondoudou.respond_to?(:enregistrer_detente)",
+          "",
+          "puts \"\\nTous les tests de détente ont réussi.\"",
+          "",
+          "",
+          "# Exemple de rejet d'une durée invalide.",
+          "begin",
+          "  salameche.enregistrer_detente(-10)",
+          "rescue ArgumentError => e",
+          "  puts \"\\nErreur attendue : #{e.message}\"",
+          "end",
+          ""
+        ],
+        "solution_source": "enseignant",
+        "explication": "<p>Seconde partie du programme de démonstration de l'enseignant. Elle vérifie les compteurs à zéro avant toute séance, leur indépendance d'un pokémon à l'autre, l'absence de la capacité chez les sportifs et les marins (<code>respond_to?</code>), et le refus d'une durée négative. Les <code>raise … unless …</code> sont une « première ébauche de tests unitaires » : le programme s'arrête sur une erreur si un résultat n'est pas celui attendu.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Jouons avec reduce <span class="ref">TD, sujet 4</span></h2>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Sujet 4 <span>Jouons avec reduce</span></p>
+      <p>Le sujet rappelle la documentation de <code>reduce</code> (module <code>Enumerable</code>, Ruby 2.7.3) : <code>reduce(initial, sym)</code>, <code>reduce(sym)</code>, <code>reduce(initial) { |memo, obj| block }</code>, <code>reduce { |memo, obj| block }</code> ; <code>inject</code> et <code>reduce</code> sont synonymes. À chaque élément, le bloc reçoit l'accumulateur (<i>memo</i>) et l'élément, et sa valeur devient le nouvel accumulateur ; sans valeur initiale, le premier élément sert d'accumulateur de départ. Exemples :</p>
+      <pre><code class="language-ruby"># Sum some numbers
+(5..10).reduce(:+)                              #=> 45
+# Same using a block and inject
+(5..10).inject { |sum, n| sum + n }             #=> 45
+# Multiply some numbers
+(5..10).reduce(1, :*)                           #=> 151200
+# Same using a block
+(5..10).inject(1) { |product, n| product * n }  #=> 151200
+# find the longest word
+longest = %w{ cat sheep bear }.inject do |memo, word|
+   memo.length &gt; word.length ? memo : word
+end
+longest                                         #=> "sheep"</code></pre>
+      <p><strong>Toutes ces méthodes doivent être écrites en utilisant la méthode <code>reduce</code> du module <code>Enumerable</code>.</strong></p>
+      <ol>
+        <li>Écrire une méthode <code>produit</code> de la classe <code>Array</code> permettant de faire le produit des éléments (on suppose que les éléments du tableau sont multipliables entre eux). <code>[12,6,3,10,5,16,8,4,2,1].produit</code> → <code>11059200</code></li>
+        <li>Écrire une méthode <code>element?</code> de la classe <code>Array</code> permettant de savoir si un élément appartient au tableau. <code>[12,6,3,10,5,16,8,4,2,1].element?(10)</code> → <code>true</code> ; <code>[12,6,3,10,5,16,8,4,2,1].element?(49)</code> → <code>false</code></li>
+        <li>Écrire une méthode <code>monMap</code> de la classe <code>Array</code> permettant de parcourir le tableau et dont le résultat est un <code>Array</code> contenant les résultats d'application du bloc sur chacun des éléments (bref il s'agit de réécrire <code>collect</code> (ou <code>map</code>)). <code>(1..10).to_a.monMap {|x| x*x}</code> → <code>[1, 4, 9, 16, 25, 36, 49, 64, 81, 100]</code></li>
+        <li>Écrire une méthode <code>maximum</code> de la classe <code>Array</code> permettant de retourner le maximum d'un <code>Array</code>. <code>[12,6,3,10,5,16,8,4,2,1].maximum</code> → <code>16</code></li>
+        <li>Écrire une méthode <code>monReverse</code> de la classe <code>Array</code> permettant de renverser un <code>Array</code>. <code>[12,6,3,10,5,16,8,4,2,1].monReverse</code> → <code>[1, 2, 4, 8, 16, 5, 10, 3, 6, 12]</code></li>
+        <li>Écrire une méthode <code>monFilter</code> de la classe <code>Array</code> permettant de filtrer les éléments d'un <code>Array</code> satisfaisant un critère (bref réécrire <code>select</code>).
+          <ul>
+            <li><code>(1..10).to_a.monFilter {|x| x%2==0}</code> → <code>[10, 8, 6, 4, 2]</code></li>
+            <li><code>["Hubert","Janine","Juliette","Agathe"].monFilter {|x| x.include? "a"}</code> → <code>["Agathe", "Janine"]</code></li>
+            <li><code>["Hubert","Janine","Juliette","Agathe"].monFilter {|x| x.include? "a"}</code> → <code>["Juliette", "Hubert"]</code></li>
+            <li><code>["Hubert","Janine","Juliette","Agathe"].monFilter {|x| x.include? "a"}</code> → <code>["Juliette", "Janine"]</code></li>
+          </ul>
+        </li>
+      </ol>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Les exemples de monFilter</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>Les trois derniers exemples ont le même bloc et trois résultats différents : les deux derniers correspondent en fait à <code>x.include? "u"</code> (Hubert, Juliette) et à <code>x.include? "J"</code> (Janine, Juliette). Tous les résultats sont aussi donnés dans l'ordre inverse du tableau : <code>select</code> rendrait <code>[2, 4, 6, 8, 10]</code>. C'est le résultat d'un <code>reduce</code> qui place chaque élément gardé <em>devant</em> l'accumulateur, comme <code>monReverse</code>. La question dit « réécrire <code>select</code> » : la solution proposée garde l'ordre, et donne la variante de l'énoncé.</p>
+    </div>
+    <div class="atelier" id="td4-s4-q1" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "1. produit",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class Array",
+          "  # [12,6,3,10,5,16,8,4,2,1].produit => 11059200",
+          "  def produit",
+          "    reduce(1) { |acc, x| acc * x }",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p>L'accumulateur part de 1 (élément neutre de la multiplication) ; on peut aussi écrire <code>reduce(1, :*)</code>, ou <code>reduce(:*)</code> qui part du premier élément mais rend <code>nil</code> sur un tableau vide. Résultat : 11059200.</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td4-s4-q2" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "2. element?",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class Array",
+          "  # [12,6,3,10,5,16,8,4,2,1].element?(10) => true",
+          "  def element?(e)",
+          "    reduce(false) { |trouve, x| trouve || x == e }",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p>L'accumulateur est un booléen qui passe à <code>true</code> dès qu'un élément est égal à celui cherché. Contrairement à <code>include?</code>, le parcours ne s'arrête pas au premier trouvé : <code>reduce</code> va toujours jusqu'au bout. Résultats : <code>true</code> pour 10, <code>false</code> pour 49.</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td4-s4-q3" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "3. monMap",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class Array",
+          "  # (1..10).to_a.monMap { |x| x*x } => [1, 4, 9, …, 100]",
+          "  def monMap",
+          "    reduce([]) { |acc, x| acc << yield(x) }",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p>L'accumulateur est le tableau des résultats, que l'on complète avec <code>yield(x)</code>, la valeur du bloc pour l'élément. <code>acc &lt;&lt; …</code> rend <code>acc</code> lui-même, qui devient le nouvel accumulateur. Résultat : <code>[1, 4, 9, 16, 25, 36, 49, 64, 81, 100]</code>.</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td4-s4-q4" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "4. maximum",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class Array",
+          "  # [12,6,3,10,5,16,8,4,2,1].maximum => 16",
+          "  def maximum",
+          "    reduce { |max, x| x > max ? x : max }",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p>Sans valeur initiale, l'accumulateur part du premier élément, et le bloc garde le plus grand des deux. Sur un tableau vide, le résultat est <code>nil</code>, comme pour <code>max</code>. Résultat : 16.</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td4-s4-q5" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "5. monReverse",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class Array",
+          "  # [12,6,3,10,5,16,8,4,2,1].monReverse => [1, 2, 4, 8, 16, 5, 10, 3, 6, 12]",
+          "  def monReverse",
+          "    reduce([]) { |acc, x| [x] + acc }",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p>Chaque élément est placé devant ceux déjà rangés : <code>[x] + acc</code>. Résultat : <code>[1, 2, 4, 8, 16, 5, 10, 3, 6, 12]</code>. Avec <code>acc.unshift(x)</code>, même résultat sans créer un tableau à chaque tour.</p>"
+      }
+      </script>
+    </div>
+    <div class="atelier" id="td4-s4-q6" data-editeur="code">
+      <script type="application/json">
+      {
+        "titre": "6. monFilter",
+        "options": {
+          "langage": "ruby"
+        },
+        "solution": [
+          "class Array",
+          "  # (1..10).to_a.monFilter { |x| x % 2 == 0 } => [2, 4, 6, 8, 10]",
+          "  def monFilter",
+          "    reduce([]) { |acc, x| yield(x) ? acc << x : acc }",
+          "  end",
+          "end",
+          ""
+        ],
+        "explication": "<p>On ajoute l'élément à l'accumulateur quand le bloc l'accepte, sinon on rend l'accumulateur tel quel (le bloc de <code>reduce</code> doit toujours rendre le nouvel accumulateur). Résultats : <code>[2, 4, 6, 8, 10]</code>, <code>[\"Janine\", \"Agathe\"]</code>. Pour obtenir l'ordre des exemples de l'énoncé (<code>[10, 8, 6, 4, 2]</code>, <code>[\"Agathe\", \"Janine\"]</code>…), placer l'élément devant : <code>yield(x) ? [x] + acc : acc</code>.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>En Ruby, une classe reste ouverte : <code>class Integer … end</code> ajoute des méthodes à tous les entiers, <code>self</code> désignant le receveur.</li>
+        <li>Une classe de valeurs (les rationnels) garde ses objets sous une forme normale (fraction irréductible, signe au numérateur) : l'égalité se réduit alors à celle des termes.</li>
+        <li>Définir <code>&lt;=&gt;</code> et inclure <code>Comparable</code> donne <code>&lt;</code>, <code>&gt;</code>, <code>between?</code> et le tri ; définir <code>each</code> et inclure <code>Enumerable</code> donne <code>sort</code>, <code>collect</code>, <code>select</code>, <code>reduce</code>…</li>
+        <li>Une capacité partagée par des classes sans ancêtre commun propre va dans un module ; ses variables d'instance vivent dans chaque objet, et une initialisation paresseuse (<code>@x ||= 0</code>) les rend nulles sans rien demander aux classes.</li>
+        <li><code>reduce</code> parcourt une collection en transportant un accumulateur : somme, produit, maximum, construction d'un tableau (<code>acc &lt;&lt; x</code> garde l'ordre, <code>[x] + acc</code> l'inverse).</li>
+        <li>Attention à la division entière : <code>45 / 25</code> vaut 1 ; écrire <code>45 / 25.0</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Que vaut <code>NR.simplifier(2, -4)</code> avec la solution proposée, et pourquoi ?</summary>
+        <div><p><code>-1/2</code> : le pgcd vaut 2, et on le prend négatif quand le dénominateur l'est, pour que le signe passe au numérateur.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi la classe de la file ne s'appelle-t-elle pas <code>File</code> ?</summary>
+        <div><p><code>File</code> existe déjà en Ruby (les fichiers) : écrire <code>class File</code> rouvrirait cette classe au lieu d'en créer une.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que faut-il écrire pour que <code>pikachu &gt; salameche</code> compare les vitesses ?</summary>
+        <div><p><code>include Comparable</code> dans <code>Pokemon</code>, et une méthode <code>&lt;=&gt;(autre)</code> qui rend <code>vitesse &lt;=&gt; autre.vitesse</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi la détente est-elle un module et non une classe de la hiérarchie ?</summary>
+        <div><p>Casanier hérite de Terrestre et Croisière de Marin ; leur seul ancêtre commun, Pokemon, est aussi celui des sportifs et des marins, qui ne doivent pas avoir la capacité. Ruby n'a pas d'héritage multiple : un module inclus dans les deux classes la leur donne.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que rend <code>[3, 1, 2].reduce([]) { |acc, x| [x] + acc }</code> ?</summary>
+        <div><p><code>[2, 1, 3]</code> : chaque élément est placé devant les précédents, le tableau est renversé.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="td-03-heritage-polymorphisme.html"><small>← TD 3</small>Héritage et polymorphisme</a>
+    <a class="suivant" href="td-05-modules-conception.html"><small>Suivant →</small>TD 5 · Modules et conception objet</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">POO · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

@@ -2,7 +2,7 @@
 # Ouvre Jupyter dans l'environnement Python commun des notebooks (cours, devoirs, TP).
 # La première fois, crée l'environnement hors du dépôt (quelques minutes), puis le remet
 # à jour quand _outils/environnements/python/requirements.txt change.
-#   ./lancer-jupyter.sh                       Jupyter à la racine de studies
+#   ./lancer-jupyter.sh                       Jupyter à la racine d’ula
 #   ./lancer-jupyter.sh <dossier|notebook>    Jupyter sur ce dossier ou ce notebook
 #   ./lancer-jupyter.sh --installer           crée ou met à jour l'environnement, sans lancer Jupyter
 # Ctrl+C arrête Jupyter.
@@ -37,7 +37,7 @@ if [ "$1" = "--installer" ]; then
   exit 0
 fi
 
-# Sans argument, Jupyter s'ouvre sur la racine de studies ; avec un dossier, sur ce dossier ;
+# Sans argument, Jupyter s'ouvre sur la racine d’ula ; avec un dossier, sur ce dossier ;
 # avec un notebook, sur la racine, notebook ouvert. Les arguments suivants vont à Jupyter.
 cible="${1:-$racine}"
 [ $# -gt 0 ] && shift

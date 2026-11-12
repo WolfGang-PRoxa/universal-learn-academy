@@ -61,7 +61,7 @@
     function majAide() {
       var C = Q().connexion;
       var ok = C && C.executable && C.executable("sql");
-      aide.textContent = ok ? "Ctrl+Entrée · chaque exécution repart des mêmes données" : "Pour exécuter le SQL, ouvrir la page depuis le serveur local (studies/lancer.bat).";
+      aide.textContent = ok ? "Ctrl+Entrée · chaque exécution repart des mêmes données" : "Pour exécuter le SQL, ouvrir la page depuis le serveur local (lancer.bat).";
       b.disabled = !ok;
     }
     majAide();

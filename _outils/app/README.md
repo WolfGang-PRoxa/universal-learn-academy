@@ -1,14 +1,14 @@
-# Application de bureau Studies
+# Application de bureau (Universal Learn Academy)
 
 Le portail, les cours, les quiz, les TD et le suivi dans leur propre fenêtre : ni navigateur, ni terminal. Les pages et le serveur sont ceux de `lancer.bat` ; l'application ajoute la fenêtre, avec son icône dans le menu Démarrer et la barre des tâches.
 
-Ce dossier est le programme de la fenêtre, lancé sans installation par `lancer-app.bat`. Le même programme tourne dans **l'application installable** (`app/`, voir `app/README.md`) : installeur Windows et AppImage Linux publiés en releases GitHub, mises à jour automatiques, paramètres. Celle-ci publie `global.studiesHote` avant de charger `principal.js` ; sans cet hôte, rien ne change ici.
+Ce dossier est le programme de la fenêtre, lancé sans installation par `lancer-app.bat`. La copie construite par `lancer-app.bat` garde son nom technique d'origine, **Studies** (exécutable, raccourcis) ; l'application installée s'appelle **Universal Learn Academy**. La page de départ est l'accueil (profils, cursus, catalogue), servi par le serveur local à la place de `index.html`. Le même programme tourne dans **l'application installable** (`app/`, voir `app/README.md`) : installeur Windows et AppImage Linux publiés en releases GitHub, mises à jour automatiques, paramètres. Celle-ci publie `global.studiesHote` avant de charger `principal.js` ; sans cet hôte, rien ne change ici.
 
 ## Utilisation
 
 ### Installer et lancer
 
-Double-cliquer sur `lancer-app.bat`, à la racine de `studies` (`lancer-app.sh` dans un terminal). Il faut Node.js 22.12 ou plus récent.
+Double-cliquer sur `lancer-app.bat`, à la racine d’`ula` (`lancer-app.sh` dans un terminal). Il faut Node.js 22.12 ou plus récent.
 
 - La première fois, l'application s'installe en quelques minutes, puis s'ouvre. Elle crée les raccourcis **Studies** sur le Bureau et dans le menu Démarrer ; on peut l'épingler à la barre des tâches.
 - Ensuite, on l'ouvre par ces raccourcis, ou par `lancer-app.bat`, qui l'ouvre directement.
@@ -44,7 +44,7 @@ Les deux restent possibles. `lancer.bat` ouvre le portail dans le navigateur ; s
 
 ### En cas de problème
 
-- **« Le dossier studies est introuvable »** : le dossier noté dans `racine.json` n'existe plus (ou son lecteur n'est pas encore monté) ; attendre, puis « Réessayer ». Si `studies` a changé de place (il est passé de Google Drive à `C:\Users\piaur\Prog\studies` le 12 novembre 2026), relancer `lancer-app.bat` depuis le nouvel emplacement.
+- **« Le dossier studies est introuvable »** (racine du dépôt, `ula` depuis le 12 novembre 2026) : le dossier noté dans `racine.json` n'existe plus (ou son lecteur n'est pas encore monté) ; attendre, puis « Réessayer ». Si `studies` a changé de place (il est passé de Google Drive à `C:\Users\piaur\Prog\studies` le 12 novembre 2026), relancer `lancer-app.bat` depuis le nouvel emplacement.
 - **Le serveur s'arrête** : l'application propose de le relancer ou d'ouvrir son journal (`%LOCALAPPDATA%\studies-quiz\app\serveur.log`, aussi dans le menu Aide).
 
 ## Contenu du dossier
@@ -86,3 +86,4 @@ _outils/app/
 
 - **1.0**, 31 octobre 2026 : création. Fenêtre, menu, raccourcis, recherche dans la page, impression et PDF, reprise de la dernière page, notifications de fin de génération, raccordement à un serveur déjà lancé, reprise après une panne du serveur.
 - 12 novembre 2026 : le programme sert aussi à l'application installable (`app/`). Avec son hôte, la fenêtre s'ouvre selon le réglage « Fenêtre au lancement », le menu gagne « Paramètres de l'application… » (Ctrl+,) et « Rechercher une mise à jour », et la fenêtre des paramètres ne compte pas comme une fenêtre de cours. Sans hôte, aucun changement.
+- **12 novembre 2026** : réorganisation ula. La page de départ est l'accueil (`index.html`, servi dynamiquement : profils, cursus, catalogue) ; menu **Aller** : Accueil, Mes révisions, Mon suivi ; le serveur reçoit la racine des données de l'hôte (`ULA_RACINE`) et refuse de se raccorder au serveur d'un autre dossier ; titres « Universal Learn Academy ».

@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cours de Python · Probabilités et statistiques L2</title>
+<meta name="description" content="Cours de Python, préalable aux TP de probabilités et statistiques (L2) : interprétation et bytecode, types et expressions, entrées-sorties, conditions et exceptions, boucles et listes, chaînes, fonctions ; compléments sur les dictionnaires, les fichiers et numpy, matplotlib, scipy.stats.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<link rel="quiz" href="../generated_quizzes/quiz-python-scipy.html" title="Quiz · Python, numpy et scipy.stats">
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Mathématiques</a>
+    <a href="index.html">Probabilités et statistiques</a>
+    <span aria-current="page">Cours 0 · Python</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Probabilités et statistiques</span> Cours 0 · L2 · révisions 2020-2021</p>
+    <h1>Cours de Python</h1>
+    <p class="chapeau">Les TP de probabilités et statistiques se font en Python, dans des notebooks Jupyter. Ce cours de révision reprend les bases du langage : types et expressions, conditions, boucles et listes, chaînes, fonctions. Deux compléments ajoutent ce dont les TP ont besoin et que les diapos annoncent sans le traiter : dictionnaires et fichiers, puis numpy, matplotlib et scipy.stats.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/CM1_python.pdf">CM1_python.pdf</a> · 75 diapos</dd></div>
+      <div><dt>Enseignant</dt><dd>Antoine Laurent</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Prévoir le type et la valeur d'une expression, divisions et conversions comprises.</li>
+        <li>Écrire des conditions, des boucles <code>while</code> et <code>for</code>, et gérer une exception avec <code>try</code> / <code>except</code>.</li>
+        <li>Manipuler listes et chaînes : indices, tranches, méthodes.</li>
+        <li>Définir des fonctions avec paramètres, valeurs de retour multiples, récursivité.</li>
+        <li>Lire un fichier de données et en tirer des statistiques avec numpy et scipy.stats.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Le cours de Python de L1 (le TP 5 renvoie au « TP 3 du module d'introduction à Python »).</li>
+        <li>Pour lancer les notebooks : <code>lancer-jupyter.bat</code> ou <code>lancer-jupyter.sh</code>, à la racine de <code>studies</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <section>
+    <h2>Le langage Python <span class="ref">diapos 1–15</span></h2>
+    <p>Avant d'écrire du code, il faut savoir comment Python l'exécute, et sous quelles formes on peut lui en donner. Le plan des diapos annonce neuf parties ; les six premières sont traitées, les dictionnaires, les expressions régulières et les fichiers sont seulement listés.</p>
+
+    <h3>Principales caractéristiques</h3>
+    <ul>
+      <li>Python est un langage de programmation inventé en 1991 par Guido van Rossum ; il est interprété, multiplateforme et multiparadigme (impératif, objet, fonctionnel), à la fois simple et puissant.</li>
+      <li>Son <dfn>typage</dfn> est dynamique et fort (<span class="en" lang="en">dynamic, strong typing</span>), avec un ramasse-miettes (<span class="en" lang="en">garbage collector</span>) qui libère la mémoire.</li>
+      <li>On peut travailler en interactif ; le langage est libre (<span lang="en">open source</span>) ; il fournit des types de données structurés (tuples, ensembles, listes, dictionnaires), un système de gestion des exceptions et de très nombreuses bibliothèques.</li>
+      <li>Python est utilisé partout (NASA, GAFA, Dropbox, Instagram, IBM) : applications web (Django, Flask), applications de bureau, serveurs réseau, apprentissage automatique (pandas, scikit-learn), médias… Les diapos 7 et 8 le montrent parmi les langages les mieux payés aux États-Unis et les plus utilisés sur GitHub.</li>
+    </ul>
+
+    <h3>Compiler, interpréter</h3>
+    <div class="colonnes">
+      <div class="colonne">
+        <p class="colonne-titre">Compilation <span class="ref">diapo 9</span></p>
+        <p>Le source est traduit en langage objet en au moins quatre phases : trois phases d'analyse (lexicale, syntaxique, sémantique), une phase de production de code objet, puis l'édition de liens. La compilation est contraignante, mais elle offre au final une grande vitesse d'exécution.</p>
+      </div>
+      <div class="colonne">
+        <p class="colonne-titre">Interprétation <span class="ref">diapo 10</span></p>
+        <p>Chaque ligne du source est analysée et traduite au fur et à mesure en instructions ; aucun programme objet n'est généré. La technique est très souple, mais le code produit est peu performant.</p>
+      </div>
+    </div>
+    <p>Python utilise une technique mixte, l'interprétation du <dfn>bytecode</dfn> compilé : le source est d'abord compilé en une forme intermédiaire, le bytecode, qu'une machine virtuelle interprète. C'est un bon compromis entre la facilité de développement et la rapidité d'exécution, et le bytecode est portable sur tout ordinateur muni de la machine virtuelle Python <span class="ref">diapo 11</span>.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 70" width="640" role="img" aria-labelledby="fig-prod-titre">
+        <title id="fig-prod-titre">Chaîne de production de Python : le source passe par le compilateur, qui produit du bytecode, que l'interpréteur exécute pour donner le résultat</title>
+        <defs><marker id="fleche-prod" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="plein" d="M0 0 L10 5 L0 10 Z"/></marker></defs>
+        <rect class="boite" x="4" y="15" width="96" height="40" rx="6"/>
+        <text x="52" y="40" text-anchor="middle">source</text>
+        <rect class="boite-accent" x="136" y="15" width="110" height="40" rx="6"/>
+        <text x="191" y="40" text-anchor="middle" class="gras">compilateur</text>
+        <rect class="boite" x="282" y="15" width="96" height="40" rx="6"/>
+        <text x="330" y="40" text-anchor="middle" class="mono">bytecode</text>
+        <rect class="boite-accent" x="414" y="15" width="110" height="40" rx="6"/>
+        <text x="469" y="40" text-anchor="middle" class="gras">interpréteur</text>
+        <rect class="boite" x="560" y="15" width="76" height="40" rx="6"/>
+        <text x="598" y="40" text-anchor="middle">résultat</text>
+        <path class="trait" d="M100 35 H132" marker-end="url(#fleche-prod)"/>
+        <path class="trait" d="M246 35 H278" marker-end="url(#fleche-prod)"/>
+        <path class="trait" d="M378 35 H410" marker-end="url(#fleche-prod)"/>
+        <path class="trait" d="M524 35 H556" marker-end="url(#fleche-prod)"/>
+      </svg>
+      <figcaption>Technique mixte de Python (diapo 11, redessinée).</figcaption>
+    </figure>
+
+    <h3>Trois façons d'exécuter du Python</h3>
+    <ul>
+      <li><strong>Mode interactif</strong> <span class="ref">diapo 12</span> : on tape <code>python</code> dans un terminal, puis une ligne après l'autre ; la réponse s'affiche après chaque retour chariot. C'est un bon test pour vérifier que Python est bien installé. On quitte avec <code>exit()</code> ou <code>quit()</code>.</li>
+      <li><strong>Mode script</strong> <span class="ref">diapo 13</span> : la plupart des programmes sont beaucoup plus longs ; on les écrit dans un fichier, que Python exécute. Par convention, ce fichier a le suffixe <code>.py</code>, et peut commencer par <code># coding: utf-8</code>.</li>
+      <li><strong>Jupyter notebook</strong> <span class="ref">diapo 14</span> : un document qui mêle du texte en Markdown et des cellules de code Python, très utilisé en science des données pour explorer et analyser des données. C'est le format des TP de ce module.</li>
+    </ul>
+<pre class="terminal"><code>$ python
+&gt;&gt;&gt; x = 1
+&gt;&gt;&gt; print(x)
+1
+&gt;&gt;&gt; x = x + 1
+&gt;&gt;&gt; print(x)
+2
+&gt;&gt;&gt; exit()</code></pre>
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>Dans un notebook</span></p>
+      <p><span class="badge ajout">Ajout</span> Une cellule s'exécute avec Maj+Entrée ; la valeur de la dernière expression s'affiche sans <code>print</code>. Les cellules partagent les mêmes variables, dans l'ordre où on les a <em>exécutées</em>, pas dans l'ordre de la page : en cas de doute, « Restart &amp; Run All ». Le dossier courant est celui du notebook, ce qui permet d'ouvrir <code>data2.csv</code> sans chemin dans le TP 4.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Constantes, variables, types, expressions <span class="ref">diapos 16–31</span></h2>
+    <p>Un programme est fait de mots (variables, mots réservés), assemblés en phrases qui respectent la syntaxe, pour raconter une « histoire » : un traitement qui a un but. Tout usage illégal d'un mot réservé, ou toute formulation qui ne respecte pas la syntaxe de Python, provoque une <code>SyntaxError</code>.</p>
+
+    <h3>Identifiants et mots réservés</h3>
+    <p>Il faut une politique cohérente de nommage des identifiants <span class="ref">diapo 17</span> : <code>UPPER_CASE</code> pour les constantes, <code>TitleCase</code> pour les classes, <code>camelCase</code> pour les fonctions, les méthodes et les interfaces graphiques, <code>lower_case</code> pour tous les autres identifiants.</p>
+<pre data-fichier="nommage.py"><code class="language-python">NB_ITEMS = 12             # UPPER_CASE
+class MaClasse: pass      # TitleCase
+def maFonction(): pass    # camelCase
+mon_id = 5                # lower_case</code></pre>
+    <p>Les mots réservés ne peuvent pas servir d'identifiants. Le module <code>keyword</code> les liste <span class="ref">diapo 18</span> :</p>
+<pre data-fichier="mots_reserves.py"><code class="language-python">import keyword
+for e in (keyword.kwlist):
+    print(e, end="\t")</code></pre>
+    <p>On obtient 35 mots en Python 3.11 : <code>False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield</code>.</p>
+
+    <h3>Expressions numériques</h3>
+    <p>Une instruction d'affectation (<code>x = 2</code>) donne une valeur à une variable ; on peut affecter une expression (<code>x = x + 2</code>), et afficher avec <code>print(x)</code>. Une expression combine des variables, des opérateurs, des constantes et des appels de fonctions <span class="ref">diapo 19</span>.</p>
+    <div class="tableau compact centre mono">
+      <table>
+        <caption>Opérateurs numériques (diapo 20)</caption>
+        <thead><tr><th>Opérateur</th><th>Opération</th><th>Exemple</th></tr></thead>
+        <tbody>
+          <tr><td>+</td><td>addition</td><td>2 + 2 → 4</td></tr>
+          <tr><td>-</td><td>soustraction</td><td>5 - 7 → -2</td></tr>
+          <tr><td>*</td><td>multiplication</td><td>440 * 12 → 5280</td></tr>
+          <tr><td>/</td><td>division</td><td>5280 / 1000 → 5.28</td></tr>
+          <tr><td>//</td><td>division entière</td><td>5280 // 1000 → 5</td></tr>
+          <tr><td>**</td><td>puissance</td><td>2 ** 3 → 8</td></tr>
+          <tr><td>%</td><td>modulo (reste)</td><td>5280 % 1000 → 280</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Règle <span>Priorité des opérateurs</span> <span class="ref">diapos 21–22</span></p>
+      <ol>
+        <li>parenthèses ;</li>
+        <li>puissances ;</li>
+        <li>multiplications et divisions (<code>*</code>, <code>/</code>, <code>//</code>, <code>%</code>) ;</li>
+        <li>additions et soustractions ;</li>
+      </ol>
+      <p>à priorité égale, de gauche à droite. Ainsi <code>x = 1 + 2 ** 3 // 4 * 5</code> se calcule \(1 + 8 // 4 * 5 = 1 + 2 * 5 = 1 + 10 = 11\).</p>
+    </div>
+
+    <h3>Types et conversions</h3>
+    <p>En Python, les constantes littérales et les variables sont typées <span class="ref">diapo 23</span>. Python distingue un entier d'une chaîne, et c'est ce qui donne leur sens aux opérateurs : <code>+</code> signifie « addition » pour les nombres et « concaténation » pour les chaînes, <code>*</code> « multiplication » pour les nombres et « concaténation multiple » pour les chaînes.</p>
+<pre data-fichier="types.py"><code class="language-python">v1 = 1 + 4
+print(v1)                  # 5
+v2 = 'hello ' + 'there'
+print(v2)                  # hello there
+v3 = 'abc' * 5
+print(v3)                  # abcabcabcabcabc</code></pre>
+    <p>Quand une expression mêle entiers et nombres à virgule flottante, les entiers sont implicitement convertis en <code>float</code> : le type <code>float</code> est « contaminant ». On peut aussi forcer une conversion avec <code>int()</code> et <code>float()</code> ; <code>type()</code> donne le type d'une valeur <span class="ref">diapo 24</span>.</p>
+<pre data-fichier="conversions.py"><code class="language-python">print(2 * 2.5)       # 5.0
+n = 42
+print(type(n))       # &lt;class 'int'&gt;
+f = float(n)
+print(f, type(f))    # 42.0 &lt;class 'float'&gt;
+i = int(f)
+print(i, type(i))    # 42 &lt;class 'int'&gt;</code></pre>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Type d'une division</span> <span class="ref">diapos 25–26</span></p>
+      <p>Qu’affichent les instructions suivantes ? <code>print(4 / 2)</code>, <code>print(4 // 2)</code>, <code>print(4.5 / 2)</code>, <code>print(4.5 // 2)</code>, <code>print(int(4.5) / 2)</code>, <code>print(int(4.5) // 2)</code>.</p>
+      <details class="solution">
+        <summary>Correction</summary>
+        <p>2.0, 2, 2.25, 2.0, 2.0 et 2. La règle :</p>
+        <div class="tableau compact centre">
+          <table>
+            <caption>Type du quotient selon les opérandes (diapo 26)</caption>
+            <thead><tr><th>Dividende</th><th>Division</th><th>Diviseur</th><th>Quotient</th></tr></thead>
+            <tbody>
+              <tr><td>int ou float</td><td><code>/</code></td><td>int ou float</td><td>toujours float</td></tr>
+              <tr><td>int</td><td><code>//</code></td><td>int</td><td>int</td></tr>
+              <tr><td>float (l'un des deux)</td><td><code>//</code></td><td>float (l'un des deux)</td><td>float</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><code>int(4.5)</code> vaut 4 : <code>int()</code> tronque.</p>
+      </details>
+    </div>
+    <p>Pour convertir une chaîne en entier ou en flottant, on utilise <code>int()</code> ou <code>float()</code> ; on obtient une erreur si la chaîne contient autre chose que des chiffres <span class="ref">diapo 27</span>.</p>
+<pre class="terminal"><code>&gt;&gt;&gt; sval = '123'
+&gt;&gt;&gt; print(sval + 1)
+TypeError: can only concatenate str (not "int") to str
+&gt;&gt;&gt; ival = int(sval)
+&gt;&gt;&gt; print(ival + 1)
+124
+&gt;&gt;&gt; int('hello bob')
+ValueError: invalid literal for int() with base 10: 'hello bob'</code></pre>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Messages d'erreur</span></p>
+      <p>La diapo 27 affiche le message de Python 3.4, « Can't convert 'int' object to str implicitly » ; les versions récentes disent « can only concatenate str (not "int") to str ». Le sens est le même : Python ne convertit jamais une chaîne en nombre tout seul.</p>
+    </div>
+
+    <h3>Entrées-sorties</h3>
+    <p>La fonction <code>input()</code> bloque le déroulement du programme et attend une saisie au clavier ; elle retourne une <strong>chaîne de caractères</strong>. La fonction <code>print()</code> affiche des données (constantes, variables, expressions) séparées par des virgules, chaque virgule donnant une espace <span class="ref">diapo 28</span>. Pour lire un nombre, il faut convertir la chaîne <span class="ref">diapo 30</span> :</p>
+<pre data-fichier="age.py"><code class="language-python">an_cour = 2020
+an_nais = input('Année de naissance :')    # saisie : 1983
+age = an_cour - int(an_nais)
+print('Vous avez', age, 'ans')             # Vous avez 37 ans</code></pre>
+    <p>L'opérateur <code>%</code> formate une chaîne : <code>chaîne à formater % variable, expression ou tuple</code>, avec <code>%s</code> pour une chaîne, <code>%i</code> pour un entier, <code>%.2f</code> pour un flottant à deux décimales <span class="ref">diapo 29</span>.</p>
+<pre data-fichier="format.py"><code class="language-python">prenom = 'Jérôme'
+print('Bonjour %s' % prenom)              # Bonjour Jérôme
+v2 = 745.8183
+print('Résultat = %.2f' % v2)             # Résultat = 745.82 (arrondi)
+num, rue, pos, vil = 13, 'avenue René Laennec', 72000, 'Le Mans'
+adr = '%i %s %i %s' % (num, rue, pos, vil)
+print(adr)                                # 13 avenue René Laennec 72000 Le Mans
+print(f'Résultat = {v2:.2f}')             # même chose avec une f-string</code></pre>
+    <p><span class="badge ajout">Ajout</span> La dernière ligne utilise une <em>f-string</em> (Python 3.6 et plus), la forme la plus courante aujourd'hui : les expressions entre accolades sont évaluées, et <code>:.2f</code> fixe le format.</p>
+    <p>Tout ce qui suit <code>#</code>, ou se trouve entre <code>'''</code> et <code>'''</code>, est ignoré par Python (enfin, presque : une chaîne entre triples guillemets en tête de fonction en devient la documentation). Les commentaires servent à expliquer une portion de code, à documenter qui l'a écrit, ou à désactiver temporairement une ligne <span class="ref">diapo 31</span>.</p>
+  </section>
+
+  <section>
+    <h2>Conditions et exceptions <span class="ref">diapos 32–41</span></h2>
+    <p>Un programme doit pouvoir choisir ce qu'il fait selon les données, et réagir proprement quand une donnée est invalide.</p>
+
+    <h3>Étapes conditionnelles</h3>
+<pre data-fichier="if.py"><code class="language-python">x = 5
+if x &lt; 10:
+    print('Smaller')
+if x &gt; 20:
+    print('Bigger')
+print('OK')
+# Affiche : Smaller, puis OK</code></pre>
+    <p>Les expressions booléennes contrôlent le déroulement du programme. Elles utilisent les opérateurs de comparaison <code>&lt;</code>, <code>&lt;=</code>, <code>==</code>, <code>&gt;=</code>, <code>&gt;</code>, <code>!=</code> (différent) et l'opérateur unaire <code>not</code>, et valent vrai ou faux. Les opérateurs de comparaison examinent les variables mais ne les modifient pas <span class="ref">diapo 34</span>.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>= et ==</span></p>
+      <p><code>=</code> affecte une valeur, <code>==</code> compare. <code>if x = 5:</code> est une <code>SyntaxError</code>.</p>
+    </div>
+    <div class="bloc methode">
+      <p class="bloc-titre">Règles <span>Indentation</span> <span class="ref">diapo 35</span></p>
+      <ul>
+        <li>On augmente l'indentation après le mot-clé <code>if</code> (et ses <code>:</code>) pour ouvrir le bloc ; on la maintient pour indiquer la portée du bloc ; on la ramène au niveau du <code>if</code> pour fermer le bloc.</li>
+        <li>Les lignes vides sont ignorées : elles n'affectent pas l'indentation.</li>
+        <li>Ne jamais mélanger tabulations et espaces : on obtient des <code>IndentationError</code> même si tout paraît normal. La plupart des éditeurs transforment les tabulations en espaces (dans Notepad++ : Settings › Preferences › Language, Tab Settings).</li>
+      </ul>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Que penser de ces structures ?</span> <span class="ref">diapos 36–37</span></p>
+<pre><code class="language-python"># Structure A
+if x &lt; 2:
+    print('Below 2')
+elif x &gt;= 2:
+    print('Two or more')
+else:
+    print('Something else')</code></pre>
+<pre><code class="language-python"># Structure B
+if x &lt; 2:
+    print('Below 2')
+elif x &lt; 20:
+    print('Below 20')
+elif x &lt; 10:
+    print('Below 10')
+else:
+    print('Something else')</code></pre>
+      <details class="solution">
+        <summary>Correction</summary>
+        <p>Certaines lignes ne sont jamais exécutées. Dans A, <code>x &lt; 2</code> ou <code>x &gt;= 2</code> est toujours vrai : le <code>else</code> est inaccessible. Dans B, un <code>x</code> inférieur à 10 est déjà inférieur à 20 : la branche <code>Below 10</code> est inaccessible. Pour vérifier une structure, on construit son « puzzle » : quelles valeurs de <code>x</code> mènent à chaque branche ? Dans une suite de <code>elif</code>, seule la <em>première</em> condition vraie compte.</p>
+      </details>
+    </div>
+
+    <h3>Expressions booléennes</h3>
+    <p>Une <dfn>expression booléenne</dfn> (<span class="en" lang="en">Boolean expression</span>) n'a que deux valeurs possibles, <code>True</code> et <code>False</code> ; son type est <code>&lt;class 'bool'&gt;</code>. On peut la ranger dans une variable <span class="ref">diapo 38</span>.</p>
+    <div class="tableau compact centre mono">
+      <table>
+        <caption>Tables de vérité de not, and et or (diapo 38)</caption>
+        <thead><tr><th>A</th><th>B</th><th>not A</th><th>A and B</th><th>A or B</th></tr></thead>
+        <tbody>
+          <tr><td>False</td><td>False</td><td>True</td><td>False</td><td>False</td></tr>
+          <tr><td>False</td><td>True</td><td>True</td><td>False</td><td>True</td></tr>
+          <tr><td>True</td><td>False</td><td>False</td><td>False</td><td>True</td></tr>
+          <tr><td>True</td><td>True</td><td>False</td><td>True</td><td>True</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Comme pour les expressions numériques, on combine opérateurs et parenthèses quand l'expression se complexifie, et toute expression booléenne peut servir de condition <span class="ref">diapo 39</span> :</p>
+<pre><code class="language-python">valide = ((a &gt; b) and (b &gt; c)) or (a == 0)
+if valide: ...
+if not(valide): ...
+if x &gt; 0 and valide: ...</code></pre>
+
+    <h3>Gestion des exceptions</h3>
+    <p>Certaines erreurs ne peuvent pas être évitées : si l'utilisateur tape <code>SALUT</code> au lieu d'une année, <code>int()</code> lève une <code>ValueError</code> et le programme s'arrête. On les appelle des <dfn>exceptions</dfn> (<span class="en" lang="en">exceptions</span>) <span class="ref">diapo 40</span>.</p>
+    <p>On peut les anticiper et les gérer avec la structure <code>try</code> / <code>except</code>. Il faut identifier la portion de code où l'exception peut être levée, écrire le traitement normal (s'il n'y a pas d'exception) et le traitement exceptionnel <span class="ref">diapo 41</span>.</p>
+<pre data-fichier="age_exception.py"><code class="language-python">ANNEE = 2020
+try:
+    naissance = int(input('Année de naissance :'))
+except:
+    print("Erreur: vous n'avez pas saisi une année")
+    exit()
+age = ANNEE - naissance
+print('Vous avez %i ans' % age)</code></pre>
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>Nommer l'exception attendue</span></p>
+      <p><span class="badge ajout">Ajout</span> Un <code>except:</code> seul attrape tout, y compris une faute de frappe dans le nom d'une variable. On préfère écrire <code>except ValueError:</code>, l'exception que lève <code>int()</code>.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Boucles et listes <span class="ref">diapos 42–54</span></h2>
+    <p>Répéter une opération, et ranger plusieurs valeurs dans une même structure, sont les deux besoins de base d'une simulation : générer \(N\) tirages, puis calculer leur fréquence.</p>
+
+    <h3>La boucle while</h3>
+<pre data-fichier="feu.py"><code class="language-python">n = 5
+while n &gt; 0:
+    print(n)
+    n = n - 1
+print('FEU')
+# Affiche 5 4 3 2 1 (une valeur par ligne), puis FEU</code></pre>
+    <p>Tant que la condition est vraie, le bloc est répété. Si rien ne la rend fausse, la boucle ne s'arrête jamais <span class="ref">diapo 44</span> :</p>
+<pre><code class="language-python">n = 5
+while n &gt; 0:          # n n'est jamais modifié : boucle infinie
+    print('Laver')
+    print('Rincer')
+print('Sécher')       # jamais atteint</code></pre>
+
+    <h3>Le type liste</h3>
+    <p>La <dfn>liste</dfn> (<span class="en" lang="en">list</span>) est un type structuré, une structure de données linéaire et ordonnée, composée de valeurs quelconques (entiers, flottants, chaînes…), éventuellement hétérogènes. Ses éléments sont séparés par des virgules, entre crochets <span class="ref">diapo 45</span>.</p>
+<pre data-fichier="listes.py"><code class="language-python">lst = [1, 2, 3, 'hello', 3.14]
+print(len(lst))      # 5
+print(lst[0])        # 1  : l'index du premier élément est 0
+print(lst[3])        # hello
+lst[3] = 'bonjour'   # modifier un élément
+del lst[4]           # supprimer (attention : pas de parenthèses)
+lst.append(9999)     # ajouter à la fin : méthode de l'objet liste
+print(lst)           # [1, 2, 3, 'bonjour', 9999]</code></pre>
+    <p>Accéder, modifier ou supprimer un élément qui n'existe pas (<code>lst[5]</code> sur une liste de 5 éléments) lève une <code>IndexError: list index out of range</code> <span class="ref">diapos 46–48</span>. La syntaxe <code>lst.append(…)</code> est l'appel d'une méthode : en Python, les listes sont des objets à part entière <span class="ref">diapo 49</span>.</p>
+    <p>Une liste pouvant contenir des valeurs de n'importe quel type, elle peut contenir des listes : on obtient une structure à deux entrées <span class="ref">diapo 50</span>.</p>
+<pre><code class="language-python">lst = [[1, 2, 3], [4, 5, 6]]
+print(lst[0])        # [1, 2, 3]
+print(lst[0][1])     # 2
+lst.append([7, 8, 9])
+print(lst)           # [[1, 2, 3], [4, 5, 6], [7, 8, 9]]</code></pre>
+
+    <h3>La boucle for</h3>
+    <p>Une boucle <code>for</code> parcourt une liste et exécute un bloc pour chacun de ses éléments. Si la liste est vide, le bloc est sauté ; sinon, il est répété autant de fois qu'il y a d'éléments. Contrairement à la boucle <code>while</code>, la boucle <code>for</code> s'arrête à coup sûr <span class="ref">diapos 51–52</span>.</p>
+<pre><code class="language-python">for element in [1, 2, 3, 'hello', 3.14]:
+    print('bonjour', element)     # bonjour 1, bonjour 2, …, bonjour 3.14</code></pre>
+    <p>Pour faire varier <code>i</code> de 1 à 1000, on peut utiliser une boucle <code>while</code> avec une variable d'itération, ou une boucle <code>for</code> sur <code>range(1, 1001)</code> : la borne inférieure est incluse, la borne supérieure exclue <span class="ref">diapo 53</span>.</p>
+<pre><code class="language-python">i = 1
+while i &lt; 1001:
+    print(i)
+    i = i + 1</code></pre>
+<pre><code class="language-python">for i in range(1, 1001):
+    print(i)</code></pre>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>while ou for ?</span> <span class="ref">diapo 54</span></p>
+      <ul>
+        <li>Quand on connaît à l'avance le nombre d'éléments sur lesquels on itère : boucle <code>for</code>.</li>
+        <li>Quand on ne le connaît pas : boucle <code>while</code>.</li>
+        <li>Tout ce que fait une boucle <code>for</code> peut s'écrire avec <code>while</code>, de façon un peu plus « verbeuse ».</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Chaînes de caractères <span class="ref">diapos 55–57</span></h2>
+    <p>Les données des TP arrivent sous forme de texte : savoir découper une chaîne est le premier pas pour les lire.</p>
+    <p>Le type chaîne (<code>str</code>) représente des séquences de caractères Unicode. C'est un type <strong>non modifiable</strong> : une chaîne ne peut plus être modifiée une fois créée, et toute transformation produit une nouvelle valeur distincte. On peut voir une chaîne comme une liste de caractères, traitée avec les fonctions communes aux séquences, ou avec des méthodes propres aux chaînes <span class="ref">diapo 55</span>.</p>
+<pre data-fichier="chaines.py"><code class="language-python">ch = 'Python 3.5'
+print(len(ch))                    # 10
+print(ch.upper())                 # PYTHON 3.5
+print(ch[0], ch[3], ch[5])        # P h n
+print(ch[2:6])                    # thon   (de l'indice 2 inclus à 6 exclu)
+print(ch[:6], ch[2:], ch[-1])     # Python thon 3.5 5
+print(ch.find('thon'))            # 2      (position de la sous-chaîne)
+print(ch.replace('thon', 'tule')) # Pytule 3.5
+print(ch.split())                 # ['Python', '3.5']
+print('-'.join(['Python', '3.5']))  # Python-3.5
+for c in ch:                      # une chaîne est une séquence
+    print(c)</code></pre>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>split avec un séparateur</span></p>
+      <p><span class="badge ajout">Ajout</span> <code>split()</code> sans argument coupe sur les espaces ; <code>split(';')</code> coupe sur le point-virgule, le séparateur des fichiers CSV des TP 4 et 5. <code>strip()</code> retire les espaces et le saut de ligne aux deux bouts : <code>line.strip().split(';')</code> est la formule des notebooks.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Fonctions <span class="ref">diapos 58–75</span></h2>
+    <p>Une fonction est une « boîte noire » qui reçoit des entrées typées (les arguments) et produit une sortie typée (le résultat), parfois avec des effets de bord. Il n'est pas nécessaire de connaître son code pour l'utiliser : il suffit de savoir comment l'appeler <span class="ref">diapo 59</span>.</p>
+
+    <h3>Fonctions prédéfinies</h3>
+    <ul>
+      <li><code>float()</code> prend un entier, un flottant ou une chaîne et rend un flottant ; <code>sin()</code> prend un nombre et rend un flottant ; <code>random()</code> ne prend rien et rend un flottant différent à chaque appel <span class="ref">diapo 60</span>.</li>
+      <li><code>print()</code> et <code>input()</code> ont des <dfn>effets de bord</dfn> (<span class="en" lang="en">side effects</span>) : affichage, saisie. <code>input()</code> rend la chaîne saisie <span class="ref">diapo 61</span>.</li>
+      <li><code>max()</code> est « polymorphe » : sur une chaîne elle rend le plus grand caractère (<code>max('hello world')</code> → <code>'w'</code>, <code>max('Hello World')</code> → <code>'r'</code>, car les majuscules sont avant les minuscules) ; sur plusieurs nombres, le plus grand (<code>max(5, 6, 4)</code> → 6) ; sur un seul nombre, une <code>TypeError: 'int' object is not iterable</code> <span class="ref">diapo 62</span>.</li>
+    </ul>
+    <p>Attention au nombre et au type des arguments : <code>float(3)</code>, <code>float(3.0)</code> et <code>float('3')</code>, ou <code>max('abc')</code> et <code>max('abc', 'axc')</code>, ne font pas le même traitement sous le même nom <span class="ref">diapo 63</span>. La liste des fonctions prédéfinies est sur <a href="https://docs.python.org/3/library/functions.html">docs.python.org</a> <span class="ref">diapo 64</span>.</p>
+
+    <h3>Bibliothèques</h3>
+    <p>La plupart des fonctions sont rangées par familles : les fonctions mathématiques dans <code>math</code>, les générateurs aléatoires dans <code>random</code>, les fonctions système dans <code>sys</code> et <code>os</code>. Il faut importer la bibliothèque au début du programme, de l'une de trois façons <span class="ref">diapo 65</span> :</p>
+<pre data-fichier="imports.py"><code class="language-python">import math
+print(math.sin(math.pi / 2))     # 1.0 : on préfixe par le nom du module
+
+from math import pi, sin
+print(sin(pi / 2))               # 1.0 : seulement les noms choisis
+
+from math import *
+print(sin(pi / 2))               # 1.0 : tout le module (déconseillé : conflits de noms)</code></pre>
+    <p><span class="badge ajout">Ajout</span> Les notebooks utilisent une quatrième forme, l'alias : <code>import numpy as np</code>, <code>import numpy.random as rdm</code>.</p>
+
+    <h3>Définir ses fonctions</h3>
+    <p>Si une même portion de code est dupliquée à plusieurs endroits, ou si l'on a écrit un algorithme réutilisable, on a intérêt à définir une nouvelle fonction avec <code>def</code> <span class="ref">diapo 66</span>. Un <dfn>argument</dfn> est une valeur transmise à la fonction au moment de l'appel ; un <dfn>paramètre</dfn> est une variable de la définition, qui prend la valeur de l'argument lors de l'appel <span class="ref">diapo 67</span>.</p>
+<pre data-fichier="bonjour.py"><code class="language-python">def bonjour(lang):            # lang est un paramètre
+    if lang == 'es':
+        print('Hola')
+    elif lang == 'fr':
+        print('Bonjour')
+    else:
+        print('Hello')
+
+bonjour('fr')                 # 'fr' est un argument : affiche Bonjour
+print(lang)                   # NameError: name 'lang' is not defined</code></pre>
+    <p>La <dfn>portée</dfn> d'une variable est la portion de code où elle possède une valeur. Celle d'un paramètre est la définition de la fonction : en dehors, il n'est pas défini, d'où la <code>NameError</code> <span class="ref">diapo 68</span>.</p>
+
+    <h3>Valeurs de retour</h3>
+    <p>Une fonction qui renvoie un résultat dans l'expression appelante comporte le mot-clé <code>return</code> ; le type d'une fonction est celui de la valeur retournée <span class="ref">diapo 69</span>. Il peut y avoir plusieurs <code>return</code> : dès qu'un <code>return</code> est exécuté, l'exécution sort de la fonction. Dans l'exemple des mois, une suite de <code>if</code> et une suite de <code>elif</code> sont donc équivalentes <span class="ref">diapo 70</span>.</p>
+<pre data-fichier="retour.py"><code class="language-python">def bonjour():
+    return "Hello"
+
+print(bonjour(), "Glenn")     # Hello Glenn
+
+def foobar(a, b):
+    x = a + b
+    y = a - b
+    return (x, y)             # un tuple
+
+(i, j) = foobar(1, 2)
+print(i, j)                   # 3 -1</code></pre>
+    <p>Pour renvoyer plusieurs valeurs, on renvoie un <dfn>tuple</dfn>, un groupe de valeurs réunies dans un même objet, que l'on récupère par une affectation multiple <span class="ref">diapo 71</span>.</p>
+
+    <h3>Récursivité</h3>
+    <p>Une fonction récursive s'utilise elle-même pour produire son résultat. Sans cas d'arrêt, la récursion est infinie <span class="ref">diapos 72–73</span> :</p>
+<pre data-fichier="facto.py"><code class="language-python">def facto_faux(n):
+    return n * facto_faux(n - 1)     # facto_faux(3) : RecursionError
+
+def facto(n):
+    if n == 0:
+        return 1                     # cas sans appel récursif
+    else:
+        return n * facto(n - 1)
+
+print(facto(3))                      # 6</code></pre>
+    <p>Il faut toujours identifier un cas (ou plusieurs) sans appel récursif ; sinon l'appel génère une erreur ou un plantage. Les diapos parlent de <code>RuntimeError: maximum recursion depth exceeded</code> ; depuis Python 3.5, l'exception s'appelle <code>RecursionError</code>, une sorte de <code>RuntimeError</code>.</p>
+    <div class="bloc astuce">
+      <p class="bloc-titre">Conseils <span>Organiser son code</span> <span class="ref">diapos 74–75</span></p>
+      <ul>
+        <li>Organiser le code en « paragraphes » qui capturent une pensée complète, et les nommer.</li>
+        <li>Si un code fonctionne quelque part, ne pas le répéter : le réutiliser, en en faisant une fonction.</li>
+        <li>Si le code devient trop long ou trop complexe, le séparer en parties logiques, et faire des fonctions de ces morceaux.</li>
+        <li>Construire une bibliothèque des opérations que l'on répète continuellement, et la partager.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Dictionnaires et fichiers</h2>
+    <p>Le plan des diapos annonce les dictionnaires, les expressions régulières et les fichiers (parties 7 à 9, la dernière numérotée 6 par erreur), mais les diapos s'arrêtent aux fonctions. Les notebooks des TP 4 et 5 lisent leurs données avec un dictionnaire et <code>open</code> : cette section donne ce qu'il faut pour les comprendre. Les expressions régulières ne servent pas dans le module.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les dictionnaires</span></p>
+      <p>Un <dfn>dictionnaire</dfn> (<span class="en" lang="en">dictionary</span>, type <code>dict</code>) associe des <em>valeurs</em> à des <em>clés</em> : on accède à une valeur par sa clé, et non par une position. Les clés sont souvent des chaînes.</p>
+<pre data-fichier="dictionnaires.py"><code class="language-python">effectifs = {'Masculin': 3386, 'Feminin': 3506}
+print(effectifs['Feminin'])          # 3506
+effectifs['Total'] = 6892            # ajouter (ou remplacer) une entrée
+print('Total' in effectifs)          # True : test d'appartenance d'une clé
+for cle, valeur in effectifs.items():
+    print(cle, valeur)
+
+# Accumuler des listes par clé, comme dans le notebook du TP 4
+dic = {}
+for h, v in [('altitude', 2768), ('pente', 22), ('altitude', 4108)]:
+    if h in dic:
+        dic[h].append(v)
+    else:
+        dic[h] = [v]
+print(dic)                           # {'altitude': [2768, 4108], 'pente': [22]}</code></pre>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Lire un fichier texte</span></p>
+      <p><code>open(chemin, 'r')</code> ouvre un fichier en lecture ; dans un bloc <code>with</code>, il est refermé automatiquement à la sortie du bloc. Une boucle <code>for</code> sur le fichier donne une ligne à la fois, saut de ligne compris ; <code>enumerate</code> donne en plus le numéro de la ligne, ce qui permet de traiter la ligne d'en-tête à part.</p>
+<pre data-fichier="lire_csv.py"><code class="language-python">with open('donnees.csv', 'w') as f:            # on crée un petit fichier
+    f.write('x;y\n1;2.5\n2;4.1\n3;6.2\n')
+
+xs, ys = [], []
+with open('donnees.csv', 'r') as f:
+    for i, line in enumerate(f):
+        tab = line.strip().split(';')
+        if i == 0:
+            headers = tab                         # ['x', 'y']
+        else:
+            xs.append(int(tab[0]))
+            ys.append(float(tab[1]))
+print(headers, xs, ys)                            # ['x', 'y'] [1, 2, 3] [2.5, 4.1, 6.2]</code></pre>
+      <p>Deux pièges vus dans les données des TP : les nombres à virgule décimale française (<code>132,4</code> dans <code>ressources_eau2018.csv</code>) se convertissent avec <code>float(s.replace(',', '.'))</code> ; un fichier enregistré en UTF-8 avec un en-tête BOM s'ouvre avec <code>open(…, encoding='utf-8-sig')</code>, surtout sous Windows, où l'encodage par défaut n'est pas l'UTF-8.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Vers les TP : numpy, matplotlib, scipy.stats</h2>
+    <p>Les notebooks supposent connues trois bibliothèques « vues au semestre précédent ». Ce rappel en donne l'essentiel pour le module, sans faire les questions des TP.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>numpy : calculer sur des tableaux</span></p>
+      <p>Un tableau numpy (<code>np.array</code>) applique les opérations à tous ses éléments d'un coup, sans boucle. <code>numpy.random</code> génère des nombres aléatoires.</p>
+<pre data-fichier="numpy_base.py"><code class="language-python">import numpy as np
+import numpy.random as rdm
+
+x = np.array([249, 248, 256, 252, 242])
+print(x - 250)                      # [-1 -2  6  2 -8] : opération élément par élément
+print(np.mean(x), np.std(x, ddof=1))   # moyenne, écart-type empirique S(n-1)
+print(x[x &gt; 250])                   # [256 252] : masque booléen
+print(np.linspace(0, 1, 5))         # [0.   0.25 0.5  0.75 1.  ]
+
+rdm.seed(0)                         # pour retrouver les mêmes tirages
+u = rdm.random(1000)                # 1000 flottants uniformes dans [0, 1[
+print(np.mean(u &lt; 0.3))             # proche de 0.3 : fréquence d'un succès</code></pre>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>matplotlib : tracer</span></p>
+<pre data-fichier="tracer.py"><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+
+x = np.linspace(-4, 4, 200)
+plt.plot(x, np.exp(-x**2 / 2) / np.sqrt(2 * np.pi), label='densité')
+plt.hist(np.random.normal(0, 1, 1000), bins=20, density=True, label='tirages')
+plt.bar([0, 1], [0.7, 0.3])          # diagramme en bâtons
+plt.title('titre'); plt.xlabel('x'); plt.ylabel('y'); plt.legend()
+plt.show()</code></pre>
+      <p>Dans <code>plt.hist</code>, <code>density=True</code> normalise l'histogramme pour que son aire vaille 1 : on peut alors le comparer à une densité (TP 3).</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>scipy.stats : les lois du cours</span></p>
+      <p>Chaque loi est un objet avec les mêmes méthodes : <code>pmf</code> (loi d'une variable discrète, \(P(X = k)\)), <code>pdf</code> (densité), <code>cdf</code> (fonction de répartition \(P(X \le x)\)), <code>sf</code> (\(P(X \gt x)\)), <code>ppf</code> (réciproque de <code>cdf</code>), <code>mean</code>, <code>var</code>, <code>std</code>, <code>rvs</code> (tirages), <code>interval</code> (intervalle central). Le <a href="cours-02-variables-aleatoires-discretes.html">cours 2</a> et le <a href="cours-03-variables-aleatoires-continues.html">cours 3</a> en donnent des exemples.</p>
+<pre data-fichier="lois_scipy.py"><code class="language-python">from scipy.stats import binom, poisson, norm, expon
+
+print(round(binom.pmf(3, 15, 0.3), 4))   # P(X = 3) pour B(15 ; 0,3) : 0.17
+print(round(poisson.cdf(2, 3), 4))       # P(X ≤ 2) pour P(3) : 0.4232
+print(round(norm.cdf(1.96), 4))          # 0.975
+print(round(norm.ppf(0.975), 2))         # 1.96 : le z_alpha du cours 4
+print(expon(scale=1/4).mean())           # 0.25 : E(4) se paramètre par scale = 1/λ</code></pre>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Python compile le source en bytecode, interprété par une machine virtuelle ; on l'utilise en interactif, en script <code>.py</code> ou en notebook.</li>
+        <li>Priorités : parenthèses, <code>**</code>, puis <code>* / // %</code>, puis <code>+ -</code>, de gauche à droite.</li>
+        <li><code>/</code> rend toujours un <code>float</code> ; <code>//</code> rend un <code>int</code> si les deux opérandes sont entiers ; le <code>float</code> est contaminant.</li>
+        <li><code>input()</code> rend une chaîne : la convertir avec <code>int()</code> ou <code>float()</code>, dans un <code>try</code> / <code>except ValueError</code> si la saisie peut être invalide.</li>
+        <li>Le bloc d'un <code>if</code>, d'un <code>while</code>, d'un <code>for</code> ou d'un <code>def</code> est défini par l'indentation ; dans une suite de <code>elif</code>, seule la première condition vraie compte.</li>
+        <li>Listes : indices à partir de 0, <code>append</code>, <code>del</code>, tranches <code>[début:fin]</code> avec fin exclue ; <code>range(a, b)</code> va de \(a\) à \(b - 1\).</li>
+        <li>Les chaînes ne sont pas modifiables ; <code>strip()</code> et <code>split(';')</code> découpent une ligne de CSV.</li>
+        <li>Une fonction rend sa valeur par <code>return</code> (plusieurs valeurs : un tuple) ; ses paramètres n'existent qu'à l'intérieur ; une fonction récursive a toujours un cas d'arrêt.</li>
+        <li>Pour les TP : <code>np.mean</code>, <code>np.std(x, ddof=1)</code>, <code>plt.hist(…, density=True)</code>, et les méthodes <code>pmf</code>, <code>pdf</code>, <code>cdf</code>, <code>ppf</code> de <code>scipy.stats</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Que vaut <code>2 + 3 * 4 ** 2 // 10</code> ?</summary>
+        <div><p>\(4^2 = 16\), puis \(3 \times 16 = 48\), \(48 // 10 = 4\), enfin \(2 + 4 = 6\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Qu'affichent <code>print(7 / 2)</code>, <code>print(7 // 2)</code> et <code>print(7.0 // 2)</code> ?</summary>
+        <div><p>3.5, 3 et 3.0.</p></div>
+      </details>
+      <details class="carte">
+        <summary><code>n = input('n ? ')</code> puis <code>print(n * 2)</code> avec la saisie 21 : qu'affiche-t-on ?</summary>
+        <div><p><code>2121</code> : <code>input</code> rend la chaîne <code>'21'</code>, et <code>*</code> sur une chaîne la répète. Il fallait <code>int(input(…))</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Combien de fois s'exécute le corps de <code>for i in range(3, 10, 2):</code> ?</summary>
+        <div><p>4 fois, pour \(i = 3, 5, 7, 9\) : le troisième argument est le pas, et 10 est exclu.</p></div>
+      </details>
+      <details class="carte">
+        <summary><code>ch = 'statistiques'</code> : que valent <code>ch[0:4]</code>, <code>ch[-3:]</code> et <code>ch.count('t')</code> ?</summary>
+        <div><p><code>'stat'</code>, <code>'ues'</code> et 3.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi <code>lst[len(lst)]</code> lève-t-il toujours une erreur ?</summary>
+        <div><p>Les indices vont de 0 à <code>len(lst) - 1</code> : l'indice <code>len(lst)</code> est en dehors de la liste (<code>IndexError</code>). Le dernier élément est <code>lst[-1]</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que renvoie une fonction qui se termine sans <code>return</code> ?</summary>
+        <div><p><code>None</code>. <code>x = print('a')</code> affiche <code>a</code> et met <code>None</code> dans <code>x</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle différence entre <code>np.std(x)</code> et <code>np.std(x, ddof=1)</code> ?</summary>
+        <div><p>La première divise par \(n\), la seconde par \(n - 1\) : c'est l'écart-type empirique \(S_{n-1}\) du cours 4, dont le carré estime la variance sans biais.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="index.html"><small>← Matière</small>Tous les chapitres</a>
+    <a class="suivant" href="cours-01-probabilites-bayes.html"><small>Suivant →</small>Probabilités, dénombrement et formule de Bayes</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Probabilités et statistiques · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

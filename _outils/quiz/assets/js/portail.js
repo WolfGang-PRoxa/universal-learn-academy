@@ -28,7 +28,7 @@
     this.zone.innerHTML = "";
     if (!C.enLigne) {
       var b = el("div", "quiz-bandeau hors-ligne");
-      b.appendChild(html("p", null, "<strong>Le portail a besoin du serveur local.</strong> Lancer <code>studies/lancer.bat</code> (double-clic) : le portail s'ouvre alors tout seul dans le navigateur."));
+      b.appendChild(html("p", null, "<strong>Le portail a besoin du serveur local.</strong> Lancer <code>lancer.bat</code> (double-clic) : le portail s'ouvre alors tout seul dans le navigateur."));
       if (C.serveurDetecte) {
         var a = el("a", "bouton petit", "Ouvrir le portail du serveur");
         a.href = C.urlServeur("_outils/quiz/portail.html");

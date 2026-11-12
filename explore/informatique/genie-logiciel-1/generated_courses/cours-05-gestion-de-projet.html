@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="gl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Introduction à la gestion de projet informatique · Génie logiciel L3</title>
+<meta name="description" content="Cours 5 de génie logiciel (L3) : principes de la gestion de projet (triangle d'or, phases d'un projet), découpage PBS, WBS, OBS, ordonnancement des tâches avec le PERT (dates au plus tôt et au plus tard, marges, chemin critique) et le Gantt, puis mesure et estimation du logiciel (COCOMO, points de fonction, homme-mois, lignes de code), répartition des moyens humains et organisation du travail ; exercices corrigés.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<link rel="quiz" href="../generated_quizzes/quiz-cours-05-gestion-de-projet.html" title="Quiz · Gestion de projet">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Génie logiciel 1</a>
+    <span aria-current="page">Cours 5 · Gestion de projet</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Génie logiciel 1</span> Cours 5 · L3 S5</p>
+    <h1>Introduction à la gestion de projet informatique</h1>
+    <p class="chapeau">Le processus de gestion du cours 1, outillé : découper le projet, ordonnancer ses tâches avec le PERT et le Gantt, estimer sa taille, son effort et sa durée (COCOMO, points de fonction), répartir les personnes et organiser le travail de l'équipe. Les calculs de PERT sont au programme de l'examen.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/L3-175UD15-C5-Etu-1.pdf">L3-175UD15-C5-Etu-1.pdf</a> · 20 diapos (partie 1) ; <a href="../cours/L3-175UD15-C5-Etu-2.pdf">L3-175UD15-C5-Etu-2.pdf</a> · 48 diapos (partie 2) ; corrigé <a href="../TD/TD5/PERT_GANTT_Picnic.pdf">PERT_GANTT_Picnic.pdf</a></dd></div>
+      <div><dt>Enseignante</dt><dd>C. Piau-Toffolon</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-17">17 oct. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Définir un projet et les dimensions de sa gestion (objectifs, moyens, délais, qualité).</li>
+        <li>Distinguer PBS, WBS, OBS et RBS.</li>
+        <li>Construire un PERT, calculer les dates au plus tôt et au plus tard, les marges et le chemin critique, puis tracer le Gantt.</li>
+        <li>Estimer l'effort et la durée d'un projet : COCOMO, points de fonction, homme-mois.</li>
+        <li>Répartir les moyens humains et organiser le travail d'une équipe.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-01-problematique-developpement.html#les-processus-logiciels">Cours 1</a> : le processus de gestion ; <a href="cours-02-activites-cycle-de-vie.html">cours 2</a> : les phases et les documents d'un projet.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Principes généraux <span class="ref">partie 1, diapos 3–7 ; partie 2, diapo 2</span></h2>
+    <p>Le processus de développement se décompose en trois sous-processus : le processus technique, le processus d'assurance qualité et le processus de gestion. Ce dernier fixe les objectifs, les moyens et les livrables du projet.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Projet (AFNOR Z67-101)</span></p>
+      <p>« Un <dfn>projet</dfn> est défini par un ensemble d'activités qui sont prises en charge, dans un délai donné et dans des limites de ressources imparties, par des personnes qui y sont affectées, dans le but d'atteindre des objectifs définis. Un projet est mis en œuvre pour répondre au besoin d'un client (…) et implique un objectif et des besoins à entreprendre avec des ressources données. »</p>
+      <p>Un projet réalise une idée nouvelle, qui crée un changement ; il est unique, mesurable, a un début et une fin, et mobilise d'une personne à des milliers.</p>
+    </div>
+
+    <h3>Pourquoi gérer un projet</h3>
+    <p>Pour les raisons du cours 1 : les chiffres des échecs, le coût des erreurs, et les risques à gérer. Toute gestion de projet cherche l'équilibre du <dfn>triangle d'or</dfn> entre les <strong>objectifs</strong>, les <strong>moyens</strong> et le <strong>délai</strong> : on ne peut en changer un sans toucher aux deux autres. La <strong>qualité</strong> s'y ajoute, comme activité transversale. La diapo 5 montre aussi les liens entre les notions : le besoin détermine le retour sur investissement, le budget, les délais et les fonctionnalités ; le budget limite les ressources ; le chef de projet gère les ressources et le planning, dont on tire le chemin critique.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Les dimensions de la gestion de projet (diapo 6)</caption>
+        <thead><tr><th>Dimension</th><th>Gestion</th><th>Exemples</th></tr></thead>
+        <tbody>
+          <tr><td>Délai</td><td>gestion du temps</td><td>jalons, calendrier</td></tr>
+          <tr><td>Moyens</td><td>gestion des ressources</td><td>personnes, matériel, budget</td></tr>
+          <tr><td>Objectifs</td><td>management de la production</td><td>livrables, fonctionnalités</td></tr>
+          <tr><td>Qualité</td><td>gestion de la qualité</td><td>contrôles, revues</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Pour cela, on dispose de modèles et de méthodes, de techniques, de langages et d'outils.</p>
+
+    <h3>Les phases de la vie d'un projet</h3>
+    <p>Après l'avant-projet, qui part d'une idée et aboutit à une demande de projet, un projet passe par trois temps (diapo 7) :</p>
+    <ol class="etapes">
+      <li><strong>Organisation</strong>, par l'équipe de management : initialisation, préparation, planification.</li>
+      <li><strong>Réalisation</strong> : le suivi du projet par l'équipe de management, en parallèle de son exécution par l'équipe technique, qui livre le produit.</li>
+      <li><strong>Phase finale</strong> : le bilan.</li>
+    </ol>
+    <p>La gestion de projet tourne en boucle (partie 2, diapo 2) : <strong>organiser et planifier</strong> (quoi ? comment ? qui ? quand ? combien ?) fournit un référentiel ; on <strong>exécute</strong> ; on <strong>mesure</strong> les réalisations ; on <strong>contrôle</strong> les écarts au référentiel, et l'on prend des actions correctrices, ou l'on replanifie si nécessaire.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Organiser un projet : PBS, WBS, OBS <span class="ref">partie 1, diapos 9–12</span></h2>
+    <p>Avant d'ordonnancer, on découpe : le produit, le travail, l'organisation et les ressources, chacun en une arborescence.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Les quatre découpages d'un projet</caption>
+        <thead><tr><th>Question</th><th>Découpage</th><th>Ce qu'il décompose</th></tr></thead>
+        <tbody>
+          <tr><td>Quoi ?</td><td>PBS (<span lang="en">Product Breakdown Structure</span>)</td><td>le produit en sous-ensembles (un tracteur en moteur, essieux, bloc…)</td></tr>
+          <tr><td>Comment ?</td><td>WBS (<span lang="en">Work Breakdown Structure</span>)</td><td>le travail en lots, puis en tâches (achat, fabrication, étude ; offre, contrat, essais, plans)</td></tr>
+          <tr><td>Qui ?</td><td>OBS (<span lang="en">Organization Breakdown Structure</span>)</td><td>l'organisation en services et personnes (direction, bureau d'études, achats…)</td></tr>
+          <tr><td>Avec quoi ?</td><td>RBS (<span lang="en">Resource Breakdown Structure</span>)</td><td>les ressources matérielles et humaines</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>WBS (guide PMBOK)</span></p>
+      <p>La WBS est une « décomposition hiérarchique, axée sur les livrables, du travail que l'équipe de projet doit exécuter pour atteindre les objectifs du projet et produire les livrables voulus ». Chaque feuille est un <dfn>lot de travail</dfn>, avec son délai, son coût et son responsable.</p>
+    </div>
+    <p>On croise ensuite les découpages : la matrice WBS × OBS dit quel service ou quelle personne réalise chaque tâche (par exemple, l'étude des plans par le petit bureau d'études, l'achat des matières premières par les services commande, réception et magasin, les essais par les services qualité et essais) ; la relation WBS × PBS rattache chaque tâche à la partie du produit qu'elle réalise.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Intérêt et critères du découpage</span> <span class="ref">diapo 10, à compléter</span></p>
+      <p>Découper permet d'estimer (on évalue mieux une petite tâche qu'un projet entier), de planifier, d'affecter un responsable à chaque lot, et de suivre l'avancement. On découpe selon les livrables, les phases du cycle de vie, les sous-systèmes ou les compétences, jusqu'à des lots assez petits pour être estimés et suivis (quelques jours à quelques semaines), mais pas au point de noyer le suivi dans le détail.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Ordonnancer les tâches : le PERT <span class="ref">partie 1, diapos 13–17</span></h2>
+    <p>L'ordonnancement consiste à prévoir l'organisation temporelle, séquentielle ou parallèle, des tâches. Le <dfn>PERT</dfn> (<span lang="en">Program Evaluation and Review Technique</span>) la représente par un graphe.</p>
+    <dl class="glossaire">
+      <dt>Tâche</dt><dd>un travail à faire, avec une durée ; dans un PERT potentiel-étapes, c'est un arc, étiqueté par son nom et sa durée.</dd>
+      <dt>Nœud, ou étape</dt><dd>un événement : la fin des tâches qui y arrivent et le début de celles qui en partent ; un cercle avec son numéro, sa date au plus tôt et sa date au plus tard.</dd>
+      <dt>Contrainte, condition d'entrée</dt><dd>une tâche ne peut commencer que quand ses tâches antérieures sont terminées.</dd>
+      <dt>Maille</dt><dd><span class="badge ajout">Ajout</span> un circuit du graphe, formé de deux chemins parallèles entre deux étapes.</dd>
+      <dt>Date au plus tôt, au plus tard</dt><dd>la date à laquelle une étape peut être atteinte au plus tôt ; la date à laquelle elle doit l'être au plus tard sans retarder la fin du projet.</dd>
+      <dt>Chemin critique</dt><dd>le chemin le plus long du début à la fin : ses tâches n'ont aucune marge, tout retard sur elles retarde le projet.</dd>
+    </dl>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Potentiel-étapes ou potentiel-tâches ?</span> <span class="badge examen">Examen</span></p>
+      <p>L'examen de 2020 demandait d'expliquer la différence. Dans un <strong>PERT potentiel-étapes</strong> (celui du cours), les tâches sont les arcs et les nœuds sont des étapes ; quand une tâche dépend de plusieurs autres sans qu'on puisse les faire converger sur une même étape, on ajoute des <dfn>tâches fictives</dfn>, de durée nulle, en pointillés. Dans un <strong>PERT potentiel-tâches</strong> (méthode des potentiels, ou MPM), les tâches sont les nœuds et les arcs portent les contraintes d'antériorité : il n'y a jamais besoin de tâche fictive.</p>
+    </div>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Réaliser un PERT</span> <span class="badge examen">Test</span></p>
+      <ol>
+        <li>Dessiner l'enchaînement des tâches.</li>
+        <li>Affecter à chaque tâche une durée.</li>
+        <li>Calculer pour chaque nœud la date au plus tôt : en partant du début (date 0), date au plus tôt d'une étape = le <strong>maximum</strong>, sur les tâches qui y arrivent, de (date au plus tôt de leur origine + durée).</li>
+        <li>Repartir de la date finale et calculer pour chaque nœud la date au plus tard : date au plus tard d'une étape = le <strong>minimum</strong>, sur les tâches qui en partent, de (date au plus tard de leur extrémité − durée).</li>
+        <li>Définir le chemin critique : les étapes où date au plus tôt = date au plus tard, reliées par des tâches sans marge.</li>
+        <li>Définir pour les tâches non critiques leurs marges de temps.</li>
+      </ol>
+      <p>(D'après le corrigé du test de 2025-26.) <span class="badge ajout">Ajout</span> Pour une tâche <var>X</var> de durée <var>d</var>, allant de l'étape <var>i</var> à l'étape <var>j</var> : la <dfn>marge totale</dfn> vaut \(MT = \text{tard}(j) - \text{tôt}(i) - d\), le retard possible sans retarder le projet ; la <dfn>marge libre</dfn> vaut \(ML = \text{tôt}(j) - \text{tôt}(i) - d\), le retard possible sans retarder aucune autre tâche.</p>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Calculer les dates d'un PERT</span> <span class="ref">diapo 14</span></p>
+      <p>Le PERT potentiel-étapes a dix étapes, de 0 (début) à 9 (fin), et treize tâches : A (0 → 1, 3), B (0 → 6, 1), C (1 → 2, 4), M (1 → 4, 1), I (2 → 3, 2), F (2 → 5, 4), K (3 → 9, 2), D (6 → 4, 2), E (6 → 7, 4), G (4 → 8, 3), H (7 → 8, 6), J (5 → 8, 9), L (8 → 9, 3). Calculer les dates au plus tôt et au plus tard de chaque étape, les marges des tâches et le chemin critique.</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <div>
+          <div class="tableau compact">
+            <table>
+              <caption>Dates des étapes</caption>
+              <thead><tr><th>Étape</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th></tr></thead>
+              <tbody>
+                <tr><th>Au plus tôt</th><td>0</td><td>3</td><td>7</td><td>9</td><td>4</td><td>11</td><td>1</td><td>5</td><td>20</td><td>23</td></tr>
+                <tr><th>Au plus tard</th><td>0</td><td>3</td><td>7</td><td>21</td><td>17</td><td>11</td><td>10</td><td>14</td><td>20</td><td>23</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Par exemple, l'étape 4 reçoit M (depuis 1, au plus tôt 3) et D (depuis 6, au plus tôt 1) : tôt(4) = max(3 + 1, 1 + 2) = 4. L'étape 8 reçoit G, H et J : tôt(8) = max(4 + 3, 5 + 6, 11 + 9) = 20. En remontant, tard(6) = min(tard(4) − 2, tard(7) − 4) = min(15, 10) = 10.</p>
+          <div class="tableau compact">
+            <table>
+              <caption>Marges des tâches</caption>
+              <thead><tr><th>Tâche</th><th>A</th><th>B</th><th>C</th><th>M</th><th>I</th><th>F</th><th>K</th><th>D</th><th>E</th><th>G</th><th>H</th><th>J</th><th>L</th></tr></thead>
+              <tbody>
+                <tr><th>Marge totale</th><td>0</td><td>9</td><td>0</td><td>13</td><td>12</td><td>0</td><td>12</td><td>14</td><td>9</td><td>13</td><td>9</td><td>0</td><td>0</td></tr>
+                <tr><th>Marge libre</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>12</td><td>1</td><td>0</td><td>13</td><td>9</td><td>0</td><td>0</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Le projet dure <strong>23</strong> unités de temps ; le chemin critique est <strong>A – C – F – J – L</strong> (3 + 4 + 4 + 9 + 3 = 23), par les étapes 0, 1, 2, 5, 8, 9. Calculs vérifiés par programme.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercices 2 à 4 <span>Dessiner un PERT à partir des antériorités</span> <span class="ref">diapos 15–17</span></p>
+      <div class="tableau compact">
+        <table>
+          <caption>Les tâches et leurs tâches antérieures</caption>
+          <thead><tr><th>Exercice 2</th><th>Exercice 3</th><th>Exercice 4</th></tr></thead>
+          <tbody>
+            <tr><td>A : /, B : /, C : A, D : A, E : D, B, F : C, E</td><td>A : /, B : A, C : /, D : C, A</td><td>A : /, B : A, C : A, D : B, E : C, B, F : D, E</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <div>
+          <p><strong>Exercice 2</strong> (le graphe est donné sur la diapo) : A (1 → 2), B (1 → 3), C (2 → 4), D (2 → 3), E (3 → 4), F (4 → 5). E part de l'étape 3, où arrivent B et D : elle attend bien ses deux antérieures, sans tâche fictive.</p>
+          <p><strong>Exercice 3</strong> : A (1 → 2), C (1 → 3), une tâche fictive (2 → 3) qui fait attendre la fin de A à l'étape 3, D (3 → 4), B (2 → 4). Sans la tâche fictive, il faudrait faire arriver A sur l'étape d'où part D, et B, qui ne dépend que de A, devrait alors attendre C à tort.</p>
+          <p><strong>Exercice 4</strong> : A (1 → 2), B (2 → 3), C (2 → 4), une tâche fictive (3 → 4), D (3 → 5), E (4 → 5), F (5 → 6). E dépend de B et de C : l'étape 4 doit attendre les deux, d'où la tâche fictive depuis la fin de B ; D, qui ne dépend que de B, part directement de l'étape 3.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le diagramme de Gantt et la planification <span class="ref">partie 1, diapos 18–20</span></h2>
+    <p>Le PERT montre les dépendances ; le Gantt montre le calendrier. C'est une représentation graphique en barres de la WBS, avec en abscisse les dates et en ordonnée les tâches ou les ressources. Une tâche est un trait horizontal, dont la longueur est proportionnelle à sa durée ; la diapo le fait aller de la date de début au plus tôt à la date de fin au plus tard.</p>
+    <p><span class="badge a-verifier">À vérifier</span> Dans un Gantt usuel, la barre va du début au plus tôt à la fin au plus tôt (sa longueur est alors la durée de la tâche), et la marge se dessine à la suite, en pointillés, jusqu'à la fin au plus tard : la définition de la diapo mélange les deux.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 5 <span>Le projet Picnic</span> <span class="ref">diapo 19</span> <span class="badge examen">Examen</span></p>
+      <p>Le projet « Picnic », la préparation d'un pique-nique, comporte 11 activités (durées en minutes) : 1 début (0) ; 2 préparer le thé (15) ; 3 préparer les sandwichs (10) ; 4 préparer les fruits (2) ; 5 préparer le panier (3), après 2, 3 et 4 ; 6 rassembler les couvertures (2) ; 7 rassembler les affaires (7) ; 8 charger la voiture (4), après 5, 6 et 7 ; 9 mettre de l'essence (6), après 8 ; 10 aller au pique-nique (20), après 9 ; 11 fin (0). Les activités 2, 3, 4, 6 et 7 suivent le début. Compléter le tableau : prédécesseurs, successeurs, fin au plus tôt et au plus tard, début au plus tôt et au plus tard, marge totale et marge libre ; tracer le Gantt.</p>
+      <details class="solution">
+        <summary>Correction</summary>
+        <div>
+          <p>D'après les éléments de corrigé de l'enseignante (2023-2024), complétés par la marge libre :</p>
+          <div class="tableau compact">
+            <table>
+              <caption>Dates du projet Picnic (en minutes)</caption>
+              <thead><tr><th>Activité</th><th>Durée</th><th>Préd.</th><th>Début + tôt</th><th>Début + tard</th><th>Fin + tôt</th><th>Fin + tard</th><th>Marge totale</th><th>Marge libre</th></tr></thead>
+              <tbody>
+                <tr><td>1 Début</td><td>0</td><td>—</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+                <tr><td>2 Thé</td><td>15</td><td>1</td><td>0</td><td>0</td><td>15</td><td>15</td><td>0</td><td>0</td></tr>
+                <tr><td>3 Sandwichs</td><td>10</td><td>1</td><td>0</td><td>5</td><td>10</td><td>15</td><td>5</td><td>5</td></tr>
+                <tr><td>4 Fruits</td><td>2</td><td>1</td><td>0</td><td>13</td><td>2</td><td>15</td><td>13</td><td>13</td></tr>
+                <tr><td>5 Panier</td><td>3</td><td>2, 3, 4</td><td>15</td><td>15</td><td>18</td><td>18</td><td>0</td><td>0</td></tr>
+                <tr><td>6 Couvertures</td><td>2</td><td>1</td><td>0</td><td>16</td><td>2</td><td>18</td><td>16</td><td>16</td></tr>
+                <tr><td>7 Affaires</td><td>7</td><td>1</td><td>0</td><td>11</td><td>7</td><td>18</td><td>11</td><td>11</td></tr>
+                <tr><td>8 Charger la voiture</td><td>4</td><td>5, 6, 7</td><td>18</td><td>18</td><td>22</td><td>22</td><td>0</td><td>0</td></tr>
+                <tr><td>9 Essence</td><td>6</td><td>8</td><td>22</td><td>22</td><td>28</td><td>28</td><td>0</td><td>0</td></tr>
+                <tr><td>10 Aller au picnic</td><td>20</td><td>9</td><td>28</td><td>28</td><td>48</td><td>48</td><td>0</td><td>0</td></tr>
+                <tr><td>11 Fin</td><td>0</td><td>10</td><td>48</td><td>48</td><td>48</td><td>48</td><td>0</td><td>0</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Le pique-nique commence au bout de <strong>48 minutes</strong> ; le chemin critique est début – thé – panier – charger la voiture – essence – aller au picnic. On peut retarder les sandwichs de 5 minutes, les fruits de 13, les affaires de 11 et les couvertures de 16 sans retarder le départ. Le tableau du corrigé titre « Successeurs » la colonne des prédécesseurs, et donne une durée de 9 à l'activité Fin, qui dure 0. Les calculs ont été refaits par programme.</p>
+          <p>Le Gantt : en abscisse les minutes de 0 à 48 ; les barres du thé (0–15), des sandwichs (0–10), des fruits (0–2), des couvertures (0–2) et des affaires (0–7) commencent ensemble ; puis le panier (15–18), le chargement (18–22), l'essence (22–28) et le trajet (28–48) se suivent.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Planifier un projet</span> <span class="ref">diapo 20</span></p>
+      <ol>
+        <li>Découper le projet en phases.</li>
+        <li>Découper les phases en tâches.</li>
+        <li>Définir la logique d'enchaînement : le PERT.</li>
+        <li>Analyser les résultats du PERT.</li>
+        <li>Optimiser le planning.</li>
+        <li>Éditer le planning sous une forme temporelle claire et adaptée : Gantt et planning synthétique.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Mesurer le logiciel <span class="ref">partie 2, diapos 4–9, 15–16</span></h2>
+    <p>« La production du logiciel n'est pas contrôlée si l'on ne fait pas de mesure, et on ne peut contrôler ce que l'on ne peut pas mesurer » (Tom DeMarco). Les estimations de la suite du cours reposent sur des mesures.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Mesurer</span></p>
+      <p>L'acte de mesurer consiste à affecter des valeurs (nombres, symboles) à des attributs d'entités du monde réel, de manière à les décrire selon des règles clairement établies. Exemple : on affecte la valeur 10 à l'attribut « temps passé en homme-mois » de l'entité « codage du programme P5 ».</p>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Ces affirmations sont-elles des mesures ?</span> <span class="ref">diapos 4–5</span></p>
+      <p>« 80 % des coûts du logiciel sont des coûts de maintenance » ; « il y a en moyenne 55 bogues par 1 000 lignes de code » ; « la méthode X permet d'accroître la productivité des études de 25 % » ; « en consacrant plus de temps à la spécification, on diminue le coût total du projet » ; « ce logiciel est convivial, fiable, maintenable » ; « tel algorithme de tri a une efficacité de n log n ». Correspondent-elles à la définition ?</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <div>
+          <ul>
+            <li>Les deux premières sont des mesures : une valeur numérique affectée à un attribut précis (la part de maintenance dans les coûts, la densité de bogues), selon une règle établie.</li>
+            <li>La troisième est une mesure comparative, à condition de savoir comment la productivité a été mesurée.</li>
+            <li>La quatrième est une affirmation causale, pas une mesure : il faudrait mesurer les coûts de projets comparables pour l'établir.</li>
+            <li>« Convivial, fiable, maintenable » ne sont pas des mesures : aucune valeur, aucune règle. Il faudrait des métriques (taux de pannes, temps moyen de correction…).</li>
+            <li>« n log n » est une mesure théorique de la complexité de l'algorithme, pas de l'entité réelle qu'est le programme qui s'exécute.</li>
+          </ul>
+        </div>
+      </details>
+    </div>
+    <p>On a besoin de mesurer pour : connaître le coût des processus (déterminer le prix) ; mesurer la productivité du personnel ; mesurer la qualité du logiciel (comparer les projets, prévoir, se donner des objectifs d'amélioration) ; définir des objectifs mesurables (par exemple la couverture de tests) ; trouver les facteurs qui affectent le coût et la productivité ; évaluer l'efficacité des méthodes et des outils. Et pour évaluer et prédire : surveiller la qualité d'un système qui évolue (modifications, erreurs trouvées en revue ou en test), spécifier des exigences de qualité et de performance testables, obtenir une certification, faire des prévisions.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Ce que la mesure permet, selon le niveau (diapo 9)</caption>
+        <thead><tr><th>Niveau</th><th>Usage</th></tr></thead>
+        <tbody>
+          <tr><td>Projet</td><td>déterminer une enveloppe budgétaire, estimer le poids du projet en effort, estimer la rentabilité de l'investissement, évaluer une durée vraisemblable</td></tr>
+          <tr><td>Phase</td><td>planifier précisément, annoncer le calendrier des résultats intermédiaires, suivre le projet pour surveiller les écarts, prévoir l'affectation des ressources</td></tr>
+          <tr><td>Étape</td><td>ajuster le découpage, sous-traiter, prévoir les délais et les ressources</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>On mesure la qualité (fiabilité, maintenabilité, convivialité, efficacité…) et la productivité (coûts, délais).</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Estimer les moyens <span class="ref">partie 2, diapos 10–14</span></h2>
+    <p>L'estimation est une tâche difficile mais importante, puisqu'elle définit le budget du contrat avec le client. Elle comporte trois estimations : la <strong>taille</strong> du projet, l'<strong>effort</strong> humain en hommes-mois, et la <strong>durée</strong> (en jours, semaines ou mois).</p>
+    <p>Le processus d'estimation (diapo 10) enchaîne : recueillir les besoins initiaux ; estimer la taille de l'ouvrage, puis la charge, en s'appuyant sur l'histoire des projets ; calculer les délais selon les ressources disponibles ; estimer le coût avec un ratio de coût ; approuver les estimations ; réaliser l'ouvrage ; puis analyser le processus d'estimation en comparant les estimations approuvées à la taille et aux charges réelles, et réestimer si besoin.</p>
+    <h3>Que prendre en compte ?</h3>
+    <p>Les activités de développement, mais aussi les tâches récurrentes : la rédaction des documents, la préparation des démonstrations au client, la formation des développeurs, l'intégration à l'existant, la récupération des données existantes, les revues et réunions, la maintenance d'anciens projets pendant le nouveau, les contrôles de la gestion qualité, les absences (congés, maladie, RTT…).</p>
+    <h3>Comment estimer ?</h3>
+    <ul>
+      <li>Prendre l'avis de ceux qui vont réaliser le travail, surtout des développeurs aguerris : estimer par consensus.</li>
+      <li>Prendre en compte les niveaux de difficulté (facile, moyen, difficile), l'expérience et la compétence de l'équipe, les risques (techniques, technologiques, de gestion).</li>
+      <li>Utiliser les données des projets précédents : capitaliser l'expérience, par exemple en rédigeant des règles de bonne gestion.</li>
+      <li>Découper le projet en tâches élémentaires : il est plus facile d'évaluer une tâche précise qu'un projet global, et la somme des temps estimés donne un temps vraisemblable pour chaque phase. Exemple : réaliser une interface d'affichage d'une liste de données = <var>x</var> heures d'analyse + <var>y</var> heures de conception + <var>z</var> heures de développement + <var>h</var> heures de tests ; une réunion de revue avec le client = <var>x</var> heures, plus les frais de déplacement.</li>
+      <li>Utiliser l'ingénierie des exigences : réfléchir à la manière de répondre à chaque besoin et à ses conséquences informatiques. Pour « la liste des données client doit être affichée » : quelles données ? peut-on les limiter, selon quels critères, choisis comment ? comment les trier, et comment présenter les tris ? faut-il des totaux intermédiaires à l'impression, d'autres données sur les impressions ?</li>
+    </ul>
+    <p>Le budget s'établit alors : pour chaque tâche estimée, nombre d'heures × taux horaire ; plus le coût réel des frais de mission (avion, hôtel, forfait kilométrique, défraiement) ; plus le coût des réalisations par des tiers × un facteur.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les modèles de coût : COCOMO et points de fonction <span class="ref">partie 2, diapos 17–24</span></h2>
+    <p>L'objectif est de découvrir combien va coûter le développement d'un logiciel. Ses composants : le matériel, les logiciels de base, la formation et les voyages, l'effort (le salaire des ingénieurs), les bâtiments, le chauffage, l'éclairage, les communications et réseaux, les pensions et l'assurance maladie… L'effort en est la part principale, et c'est lui qu'estiment les modèles.</p>
+
+    <h3>Le modèle COCOMO de base</h3>
+    <p>COCOMO (<span class="en" lang="en">COnstructive COst MOdel</span>) a été développé par B. Boehm et son équipe dans les années 70, à partir d'une base de données de plus de 60 projets. Il estime le coût de développement en mois-hommes (l'effort <var>E</var>) et le temps de développement (<var>TDEV</var>), à partir du nombre de lignes de code : en milliers d'instructions source livrées (KDSI, <span lang="en">Kilo Delivered Source Instructions</span>) ou de lignes (KLOC, <span lang="en">Kilo Lines Of Code</span>).</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Les trois modes de COCOMO et leurs formules (diapos 19–20)</caption>
+        <thead><tr><th>Mode</th><th>Caractéristiques</th><th>Effort (mois-hommes)</th><th>Durée (mois), selon la diapo</th></tr></thead>
+        <tbody>
+          <tr><th>Organique</th><td>petites équipes, applications maîtrisées, problèmes bien compris, pas de besoins non fonctionnels difficiles</td><td>\(E = 2{,}4 \times \text{KLOC}^{1{,}05}\)</td><td>\(TDEV = 2{,}5 \times \text{KLOC}^{0{,}38}\)</td></tr>
+          <tr><th>Semi-détaché</th><td>expérience variée des membres, contraintes non fonctionnelles possibles, type d'application non maîtrisé</td><td>\(E = 3{,}0 \times \text{KLOC}^{1{,}12}\)</td><td>\(TDEV = 2{,}5 \times \text{KLOC}^{0{,}35}\)</td></tr>
+          <tr><th>Embarqué</th><td>contraintes serrées, équipe peu expérimentée dans l'application, problèmes complexes</td><td>\(E = 3{,}6 \times \text{KLOC}^{1{,}20}\)</td><td>\(TDEV = 2{,}5 \times \text{KLOC}^{0{,}32}\)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Formule générale : \(E = a \times \text{KLOC}^b\), où <var>a</var> et <var>b</var> sont estimés à partir de données empiriques.</p>
+    <p><span class="badge a-verifier">À vérifier</span> Dans le modèle de Boehm, la durée se calcule à partir de l'effort, et non du nombre de lignes : \(TDEV = 2{,}5 \times E^{0{,}38}\) (organique), \(E^{0{,}35}\) (semi-détaché), \(E^{0{,}32}\) (embarqué). La diapo 20 écrit KLOC à la place de <var>E</var>.</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Un projet organique de 10 000 lignes</span> <span class="badge ajout">Ajout</span></p>
+      <p>\(E = 2{,}4 \times 10^{1{,}05} \approx 2{,}4 \times 11{,}2 \approx 26{,}9\) mois-hommes. Avec la formule de Boehm, \(TDEV = 2{,}5 \times 26{,}9^{0{,}38} \approx 2{,}5 \times 3{,}5 \approx 8{,}7\) mois, soit une équipe moyenne de \(26{,}9 / 8{,}7 \approx 3\) personnes. (Avec la formule de la diapo, on trouverait \(2{,}5 \times 10^{0{,}38} \approx 6\) mois.) L'exposant supérieur à 1 traduit une déséconomie d'échelle : doubler la taille fait plus que doubler l'effort.</p>
+    </div>
+    <h3>Les autres modèles COCOMO</h3>
+    <ul>
+      <li><strong>Modèle intermédiaire</strong> : il corrige l'estimation brute du modèle de base selon des attributs du logiciel (besoin en fiabilité, taille de la base de données, complexité du produit), du matériel (contraintes de temps d'exécution, de mémoire, de stockage, de synchronisation entre processus), du projet (techniques de programmation modernes, POO, programmation événementielle, utilisation d'AGL, contraintes de temps et de budget) et du personnel (compétences de l'analyste et du programmeur, expérience du langage, du domaine et du matériel).</li>
+      <li><strong>Modèle expert</strong> : il inclut le modèle intermédiaire, plus l'impact des facteurs de coût sur chaque étape du cycle de développement, et analyse le projet comme une hiérarchie (module, sous-système, système). Il permet une véritable gestion de projet, sert aux grands projets, et ses paramètres s'ajustent aux habitudes de développement locales.</li>
+    </ul>
+
+    <h3>L'analyse en points de fonction</h3>
+    <p>Plutôt que d'estimer le nombre de lignes de code, il peut être plus judicieux d'estimer des <dfn>points de fonction</dfn>. On recense les éléments les plus courants : les <strong>interrogations</strong> (paires requête-réponse), les <strong>entrées</strong> (les champs individuels ne sont pas comptés séparément : nom, prénom… comptent pour 1), les <strong>sorties</strong> (comme les entrées), les <strong>fichiers internes</strong> (tels que le client les comprend) et les <strong>interfaces externes</strong> (données partagées avec d'autres programmes). Chaque élément reçoit un coefficient selon sa complexité, et la somme pondérée donne les points de fonction du logiciel.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Coefficients des points de fonction (diapo 24)</caption>
+        <thead><tr><th>Élément</th><th>Simple</th><th>Moyen</th><th>Complexe</th></tr></thead>
+        <tbody>
+          <tr><td>Sorties</td><td>4</td><td>5</td><td>7</td></tr>
+          <tr><td>Interrogations</td><td>3</td><td>4</td><td>6</td></tr>
+          <tr><td>Entrées</td><td>3</td><td>4</td><td>6</td></tr>
+          <tr><td>Fichiers</td><td>7</td><td>10</td><td>15</td></tr>
+          <tr><td>Interfaces</td><td>5</td><td>7</td><td>10</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Limites : il manque un standard pour compter les points de fonction ; les coefficients et la relation entre points de fonction et coût sont à estimer en interne.</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Compter les points de fonction</span> <span class="badge ajout">Ajout</span></p>
+      <p>Une petite application a 10 entrées simples, 5 sorties moyennes, 4 interrogations simples, 3 fichiers moyens et 2 interfaces simples : \(10 \times 3 + 5 \times 5 + 4 \times 3 + 3 \times 10 + 2 \times 5 = 30 + 25 + 12 + 30 + 10 = 107\) points de fonction. Avec un ratio interne de, par exemple, 1 homme-jour par point, on estime environ 107 hommes-jours.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Productivité, qualité et métriques <span class="ref">partie 2, diapos 25–38</span></h2>
+    <p>Pour estimer, il faut des unités : la taille (lignes de code, points de fonction), l'effort (homme-mois) et la durée.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Qualité (Martin, 1987 ; NF X50-120)</span></p>
+      <p>La qualité d'un logiciel est son aptitude à satisfaire les besoins, exprimés ou potentiels, des utilisateurs. Elle se décline en facteurs, critères et métriques (ISO 25010, <a href="cours-01-problematique-developpement.html#la-qualite">cours 1</a>).</p>
+    </div>
+    <div class="colonnes">
+      <div class="colonne">
+        <p><strong>Attributs externes</strong> : mesurables seulement par rapport à la façon dont le produit, le processus ou la ressource se relient à leur environnement. Exemples : la maintenabilité d'une spécification, d'une conception ou du code, la fiabilité, la facilité d'utilisation, la portabilité, l'efficacité, la capacité fonctionnelle.</p>
+      </div>
+      <div class="colonne">
+        <p><strong>Attributs internes</strong> : mesurables en termes de produit, de processus ou de ressource seuls. Exemples : la longueur (taille d'un produit), la modularité, le couplage, la cohésion d'une conception, la structure du flot de contrôle, la complexité cyclomatique, l'effort en personnes et en temps, le nombre d'incidents en cours de processus.</p>
+      </div>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> La maintenabilité y est citée comme attribut externe, alors que le <a href="cours-01-problematique-developpement.html#facteurs-de-qualite-et-metriques">cours 1</a> distingue ce que voit l'utilisateur et ce que voit le développeur, ce qui la rangerait plutôt parmi les facteurs internes. Les quiz n'interrogent pas ce point.</p>
+
+    <h3>L'effort : l'homme-mois</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Effort, ou charge</span></p>
+      <p>L'<dfn>effort</dfn> (ou charge) est la quantité de travail nécessaire, indépendamment du nombre de personnes qui vont le réaliser. Il permet d'obtenir un coût prévisionnel, et s'exprime en homme-jour, homme-mois ou homme-année. Un <dfn>homme-mois</dfn> (HM) représente le travail d'une personne pendant un mois, généralement 20 jours ; deux hommes-mois, c'est deux personnes pendant un mois ou une personne pendant deux mois.</p>
+    </div>
+    <p>Exemple : un projet de 60 hommes-mois équivaut au travail d'une personne pendant 60 mois ; à 50 k€ l'homme-mois en moyenne, il est estimé à 3 M€. La diapo demande combien d'heures fait un homme-mois : <span class="badge ajout">Ajout</span> 20 jours de 7 heures, soit environ 140 heures (environ 152 heures avec la durée légale de 35 heures par semaine).</p>
+    <div class="tableau compact">
+      <table>
+        <caption>La taille d'un projet selon sa charge (diapo 32)</caption>
+        <thead><tr><th>Charge</th><th>Projet</th></tr></thead>
+        <tbody>
+          <tr><td>moins de 6 HM</td><td>très petit</td></tr>
+          <tr><td>de 6 à 12 HM</td><td>petit</td></tr>
+          <tr><td>de 12 à 30 HM</td><td>moyen</td></tr>
+          <tr><td>de 30 à 100 HM</td><td>grand</td></tr>
+          <tr><td>plus de 100 HM</td><td>très grand</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>La durée dépend du nombre de personnes : 60 HM peuvent correspondre à 1 personne pendant 5 ans, 5 personnes pendant un an, 10 personnes pendant 6 mois, ou 60 personnes pendant un mois.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Le mythe de l'homme-mois (Brooks)</span></p>
+      <p>« L'homme-mois comme unité pour mesurer la taille d'un travail est un mythe dangereux et trompeur. Il implique que les hommes et les mois sont interchangeables. Les hommes et les mois sont des biens interchangeables seulement lorsqu'une tâche peut être partitionnée entre plusieurs employés sans qu'il faille une communication entre eux. » <span class="badge ajout">Ajout</span> 60 personnes ne font pas en un mois le travail de 60 hommes-mois : elles passeraient leur temps à communiquer. C'est le sujet de l'article de Brooks lu au TD 1.</p>
+    </div>
+
+    <h3>La taille : les lignes de code</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Ligne de code (Fenton, 1991)</span></p>
+      <p>Une ligne de code est toute ligne du texte d'un programme qui n'est ni une ligne de commentaire ni une ligne blanche, quel que soit le nombre d'instructions ou de fragments d'instructions qu'elle contient. Sont incluses toutes les lignes contenant des en-têtes de programmes, des déclarations, et des instructions exécutables ou non.</p>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Compter les lignes d'un programme Ada</span> <span class="ref">diapos 34–35</span></p>
+      <p>Combien de lignes de code compte, selon cette définition, le programme Ada de la diapo 35 ? Il copie les caractères d'un fichier d'entrée vers un fichier de sortie, et s'arrête quand tous les caractères ont été copiés ou quand un caractère NULL est lu.</p>
+<pre><code class="language-plaintext">With TEXT_IO ; Use TEXT_IO ;
+Procedure Main is
+  -- Ce programme copie les caractères d'un fichier entrée vers un fichier
+  -- sortie. Il s'arrête soit quand tous les caractères ont été copiés
+  -- ou quand un caractère NULL est entré
+  Nullchar, Eof : exception ;
+  Char : CHARACTER
+  Input_file, Output_file, Console : FILE_TYPE ;
+Begin
+  Loop
+    Open (FILE => Input_file, MODE => IN_FILE, NAME =>
+      « CharsIn ») ;
+    Open (FILE => Output_file, MODE => OUT_FILE, NAME =>
+      « CharOut ») ;
+    Get (Input_file, Char) ;
+    If END_OF_FILE (Input_file) then
+      raise Eof ;
+    elseif Char = ASCII.NUL then
+      raise Nullchar ;
+    else
+      Put (Output_file, Char) ;
+    End if ;
+  End loop ;
+Exception
+  When Eof => Put (Console, « no null characters ») ;
+  When Nullchar => Put (Console, « null terminator ») ;
+End Main ;</code></pre>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <div>
+          <p>Selon la définition de Fenton, on compte toutes les lignes sauf les commentaires et les lignes blanches : <strong>24 lignes</strong> (toutes les lignes, sauf celles du commentaire d'en-tête). Les deux appels <code>Open</code>, écrits chacun sur deux lignes, comptent pour 4. Si l'on comptait plutôt les instructions (une instruction sur deux lignes compte pour une), on en trouverait 22 : c'est précisément le problème des lignes de code, que les diapos suivantes discutent. (Le programme est recopié avec ses coquilles, seul le commentaire d'en-tête a été remis en forme : <code>Char : CHARACTER</code> sans point-virgule, <code>elseif</code> pour <code>elsif</code>.)</p>
+        </div>
+      </details>
+    </div>
+    <p>Selon les définitions, le nombre de lignes d'un même programme peut varier de 1 à 5. Le même traitement s'écrit en une ligne en C++ (<code>if (x++ == a) a++;</code>) et en quatre en Ada 95. Que mesurer avec ce nombre ? Pas vraiment l'effort, puisque certaines lignes sont plus difficiles à écrire que d'autres (il faudrait les pondérer) ; pas la fonctionnalité, puisque selon le langage la même fonctionnalité prend plus ou moins de lignes. D'où des questions et des hypothèses discutables : qu'est-ce qu'une ligne de code ? quels programmes font partie du système ? existe-t-il une relation linéaire entre le volume de la documentation et la taille du système ? Avec les lignes de code comme mesure de la productivité, plus le langage est de bas niveau, et plus le style est verbeux, plus le programmeur paraît productif.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Productivité comparée (diapo 38)</caption>
+        <thead><tr><th>Langage</th><th>Taille (lignes)</th><th>Effort (semaines)</th><th>Productivité</th></tr></thead>
+        <tbody>
+          <tr><td>Assembleur</td><td>5 000</td><td>28</td><td>714 lignes/mois</td></tr>
+          <tr><td>Langage de haut niveau</td><td>1 500</td><td>20</td><td>300 lignes/mois</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Le paradoxe : le même logiciel est fait plus vite en langage de haut niveau (20 semaines au lieu de 28), mais sa « productivité » en lignes par mois paraît deux fois moindre. Mesurer la productivité en lignes de code récompense le code verbeux ; les points de fonction évitent ce biais.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Répartir les moyens humains <span class="ref">partie 2, diapos 39–41</span></h2>
+    <p>Compte tenu des tâches à réaliser et de leur ordonnancement, la répartition des moyens humains consiste à affecter des personnes à chaque tâche. On utilise un diagramme de Gantt, par exemple avec les logiciels libres OpenProj ou GanttProject.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Exemple d'affectation de quatre personnes (A, B, C, D) sur dix mois (diapo 40)</caption>
+        <thead><tr><th>Mois</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th></tr></thead>
+        <tbody>
+          <tr><th>Total mensuel (h-m)</th><td>1</td><td>2</td><td>2</td><td>3</td><td>4</td><td>4</td><td>1</td><td>2</td><td>2</td><td>1</td></tr>
+          <tr><th>Cumul (h-m)</th><td>1</td><td>3</td><td>5</td><td>8</td><td>12</td><td>16</td><td>17</td><td>19</td><td>21</td><td>22</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Les tâches 1, 2.1 à 2.5 et 3 sont réparties sur les quatre personnes ; par exemple, la tâche 2.2 (A et C) totalise 4 hommes-mois et la tâche 2.3 (B, puis B et D) 5 hommes-mois, pour un total de 22 hommes-mois sur 10 mois.</p>
+    <p>Le nombre de personnes affectées à une tâche dépend de sa taille et de son type :</p>
+    <ul>
+      <li><strong>tâche bien partitionnable</strong> (codage, tests unitaires) : plus de personnes, moins de durée, la durée décroît avec l'effectif ;</li>
+      <li><strong>tâche non partitionnable</strong> (analyse, conception générale) : ajouter des personnes ne réduit pas la durée ;</li>
+      <li><strong>tâche exigeant une interaction complexe</strong> (le processus technique) : au-delà d'un certain effectif, la communication allonge la durée.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Organiser le travail <span class="ref">partie 2, diapos 42–48</span></h2>
+    <p>Reste à organiser l'équipe de la maîtrise d'œuvre : qui fait quoi, et comment ils communiquent.</p>
+    <h3>Des rôles</h3>
+    <p>On affecte à chaque personne un rôle : chef de projet, responsable qualité, responsable d'intégration, de la validation, de la maintenance, de la documentation… Une même personne peut avoir plusieurs rôles ; il faut bien définir le périmètre de chacun (une liste de responsabilités) pour que toutes les responsabilités soient attribuées.</p>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p><strong>Avantages</strong></p>
+        <ul>
+          <li>La responsabilisation motive : on n'a pas l'impression d'être un personnel quelconque.</li>
+          <li>Chaque aspect étant défendu, on aboutit à de bons compromis (éviter un seul point de vue).</li>
+          <li>Le travail a plus de chances d'être fait : on ne peut pas compter sur les autres pour faire le sien.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p><strong>Désavantages</strong></p>
+        <ul>
+          <li>Des conflits entre missions incompatibles, par exemple le compromis entre la qualité (responsable qualité) et le temps (chef de projet).</li>
+        </ul>
+      </div>
+    </div>
+    <h3>Des profils selon les phases</h3>
+    <div class="tableau compact">
+      <table>
+        <caption>Les qualités requises par phase (diapo 43)</caption>
+        <thead><tr><th>Phase</th><th>Profil</th></tr></thead>
+        <tbody>
+          <tr><td>Spécification</td><td>clarté, précision, rigueur, cohérence</td></tr>
+          <tr><td>Conception</td><td>capacité à communiquer, formaliser, abstraire</td></tr>
+          <tr><td>Réalisation</td><td>discipline de programmation, rigueur, communication, sens du groupe</td></tr>
+          <tr><td>Intégration</td><td>compétence d'un ingénieur système</td></tr>
+          <tr><td>Recette</td><td>ingénieur d'application, proche du domaine du produit</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Communiquer</h3>
+    <p>Le dilemme de la communication : elle est nécessaire et améliore le développement, mais il ne faut pas trop communiquer (ne pas passer son temps en réunion, éviter que tout le monde communique avec tout le monde), ni remplacer la documentation écrite, mémoire à long terme, par l'oral.</p>
+    <ul>
+      <li><strong>Réunions et comptes rendus</strong>, en présence ou à distance : seules les personnes concernées sont convoquées ; un ordre du jour est établi à l'avance ; un compte rendu, rédigé au fur et à mesure avec l'accord de tous, expose les résultats en items : répartir les <strong>A</strong>ctions, prendre des <strong>D</strong>écisions, émettre des <strong>R</strong>ecommandations, procéder à des <strong>C</strong>onstatations. Les actions non achevées sont reprises à la réunion suivante.</li>
+      <li><strong>Revues</strong> : vérifier l'exactitude d'un livrable, sur le fond (complétude, cohérence) et sur la forme (grammaire, respect des règles de gestion de configuration). Une revue est faite par un tiers spécialiste, jamais par celui qui livre. Impliquer le client répartit mieux les responsabilités : si le projet bloque, ce n'est pas toujours la faute des développeurs. Sans revues, on ne sait pas où l'on arrive ; avec des revues, l'objectif attendu est atteint.</li>
+      <li><strong>Classement ordonné des documents communs</strong>, accessibles à tous par un outil de gestion de versions : un nom judicieux pour chaque fichier et dossier, un préfixe AAMMJJ pour les documents définitifs (non modifiables), chaque document à sa place : documents de management de projet, documents remis par le client, documents des développeurs par module (spécification, conception, tests unitaires), documents pour l'utilisateur final, documents d'analyse, de conception générale et de tests d'intégration, et la liste des livrables remis au client.</li>
+    </ul>
+    <h3>Les facteurs humains</h3>
+    <p>Les relations avec l'extérieur (le client, les utilisateurs), la formation et l'expérience individuelle et collective, et de grandes variations entre les personnes : de 1 à 25 pour le temps de codage, de 1 à 10 pour le nombre d'erreurs. L'expérience, les outils et les méthodes réduisent ces écarts sans jamais les annuler. Comptent enfin les motivations individuelles et collectives : responsabiliser, savoir expliquer pour motiver, donner envie de s'améliorer.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Un projet : des activités, dans un délai et des ressources donnés, pour des objectifs définis ; le triangle d'or objectifs – moyens – délai, plus la qualité.</li>
+        <li>PBS (quoi ?), WBS (comment ?), OBS (qui ?), RBS (avec quoi ?) ; la WBS découpe le travail en lots, chacun avec un délai, un coût et un responsable.</li>
+        <li>PERT : dates au plus tôt en avançant (maximum), au plus tard en reculant (minimum) ; chemin critique = tâches sans marge.</li>
+        <li>Marge totale = tard(fin) − tôt(début) − durée ; marge libre = tôt(fin) − tôt(début) − durée.</li>
+        <li>En potentiel-étapes, les tâches sont les arcs et l'on ajoute des tâches fictives ; en potentiel-tâches, les tâches sont les nœuds.</li>
+        <li>Le Gantt traduit le PERT en calendrier, et sert à répartir les personnes.</li>
+        <li>Estimer : taille, puis effort (homme-mois), puis durée ; découper, prendre l'avis des développeurs, capitaliser les projets passés.</li>
+        <li>COCOMO : \(E = a \times \text{KLOC}^b\), selon le mode (organique, semi-détaché, embarqué) ; points de fonction : somme pondérée des entrées, sorties, interrogations, fichiers et interfaces.</li>
+        <li>Les hommes et les mois ne sont pas interchangeables (Brooks) ; les lignes de code mesurent mal la productivité.</li>
+        <li>Organiser le travail : des rôles, des profils par phase, des réunions avec compte rendu (A, D, R, C), des revues par un tiers, des documents classés.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Quelles sont les trois pointes du triangle d'or ?</summary>
+        <div><p>Les objectifs, les moyens et le délai ; la qualité s'y ajoute comme activité transversale. Changer l'un impose d'ajuster les deux autres.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle différence entre WBS et OBS ?</summary>
+        <div><p>La WBS décompose le travail à faire (comment ?), en lots et en tâches ; l'OBS décompose l'organisation qui le fait (qui ?), en services et personnes. Leur matrice croisée dit qui fait quoi.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Comment calcule-t-on la date au plus tôt d'une étape où arrivent plusieurs tâches ?</summary>
+        <div><p>C'est le maximum, sur ces tâches, de la date au plus tôt de leur étape de départ augmentée de leur durée : l'étape n'est atteinte que quand toutes sont finies.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Qu'est-ce qu'une tâche fictive, et quand en faut-il une ?</summary>
+        <div><p>Une tâche de durée nulle, en pointillés, dans un PERT potentiel-étapes : elle traduit une dépendance qu'on ne peut pas représenter autrement, quand une tâche dépend de plusieurs autres dont certaines ont d'autres successeurs.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Une tâche a une marge totale de 5 et une marge libre de 0. Qu'est-ce que cela signifie ?</summary>
+        <div><p>On peut la retarder de 5 sans retarder la fin du projet, mais tout retard décale le début au plus tôt d'au moins une tâche qui la suit.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi 60 personnes ne font-elles pas en un mois un projet de 60 hommes-mois ?</summary>
+        <div><p>Toutes les tâches ne se partitionnent pas, et plus l'équipe est grande, plus la communication coûte : c'est le mythe de l'homme-mois de Brooks.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Dans quel mode COCOMO classer une équipe peu expérimentée qui développe un logiciel temps réel sous fortes contraintes ?</summary>
+        <div><p>Le mode embarqué : contraintes serrées, peu d'expérience de l'application, problèmes complexes. C'est celui dont l'exposant (1,20) fait le plus croître l'effort avec la taille.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Qui fait une revue d'un livrable ?</summary>
+        <div><p>Un tiers spécialiste, jamais celui qui livre ; le client peut y être associé, pour partager les responsabilités.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-04-modeles-uml.html"><small>← Cours 4</small>Modèles et UML</a>
+    <a class="suivant" href="td-01-crise-du-logiciel-processus.html"><small>TD 1 →</small>Crise du logiciel, processus et maintenance</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Génie logiciel 1 · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

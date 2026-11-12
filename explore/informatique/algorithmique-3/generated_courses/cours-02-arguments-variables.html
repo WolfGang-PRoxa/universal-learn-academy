@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="c">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fonctions à nombre variable d'arguments · Algorithmique 3 L2</title>
+<meta name="description" content="Écrire une fonction C à nombre variable d'arguments : prototype avec points de suspension, méthode argc/argv, méthode de la pile avec stdarg.h (nombre ou sentinelle), méthode printf avec une chaîne de format.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-02-arguments-variables.html" title="Quiz · Les arguments variables">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Algorithmique 3</a>
+    <span aria-current="page">Cours 2 · Arguments variables</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Algorithmique 3</span> Cours 2 · L2 Informatique</p>
+    <h1>Fonctions à nombre variable d'arguments</h1>
+    <p class="chapeau"><code>printf</code> accepte un, deux ou dix arguments. Ce chapitre montre comment écrire soi-même une telle fonction en C, par trois méthodes : à la manière de <code>argc</code> et <code>argv</code>, en lisant les arguments dans la pile avec <code>&lt;stdarg.h&gt;</code>, et à la manière de <code>printf</code>, avec une chaîne de format.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/cours_arg_variables.pdf">cours_arg_variables.pdf</a> · 4 p. ; programmes de <a href="../cours/Exemples_Arg_Variables/">Exemples_Arg_Variables/</a></dd></div>
+      <div><dt>Enseignant</dt><dd>Bruno Jacob</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Écrire le prototype d'une fonction à nombre variable d'arguments.</li>
+        <li>Parcourir les arguments en surnombre avec <code>va_list</code>, <code>va_start</code>, <code>va_arg</code> et <code>va_end</code>.</li>
+        <li>Choisir entre nombre d'arguments, sentinelle et chaîne de format, et connaître les promotions de types.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-01-pointeurs.html">Cours 1</a> : pointeurs, tableaux de chaînes.</li>
+        <li>Les paramètres <code>argc</code> et <code>argv</code> de <code>main</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <section>
+    <h2>Le problème <span class="ref">p. 1</span></h2>
+    <p>La fonction <code>printf</code> prend un nombre variable d'arguments :</p>
+<pre><code class="language-c">printf( "coucou\n" ) ;                       /* 1 argument */
+printf( "x=%d\n" , x ) ;                     /* 2 arguments */
+printf( "nom=%s prenom=%s score=%d\n"
+        , nom , prenom , score ) ;           /* 4 arguments */</code></pre>
+    <p>Programmer une telle fonction pose deux problèmes.</p>
+    <ol>
+      <li><strong>Faire accepter les appels par le compilateur.</strong> En C, une fonction a un nombre fixe de paramètres : le compilateur vérifie que le nombre de <dfn>paramètres effectifs</dfn> (ceux que l'on passe à l'appel) est égal au nombre de <dfn>paramètres formels</dfn> (ceux du prototype). Solution : une extension de la définition des prototypes, la section suivante.</li>
+      <li><strong>Transmettre correctement les arguments.</strong> Il existe plusieurs méthodes, plus ou moins simples et portables : <code>argc</code>/<code>argv</code>, la pile, la méthode de <code>printf</code>.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Le prototype avec points de suspension <span class="ref">p. 2</span></h2>
+    <p>La norme du C autorise une fonction dont la fin de la liste d'arguments est inconnue.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Prototype variadique</span></p>
+      <p>La liste inconnue d'arguments s'écrit à la fin du prototype : une virgule, puis trois points de suspension <code>, ...</code>. Elle doit suivre au moins un paramètre nommé.</p>
+    </div>
+<pre data-fichier="prototypes.c"><code class="language-c">void f1( int x, int y , ... )   /* OK */
+{
+}
+
+void f2( char * format , ... )   /* OK */
+{
+}
+
+/* error: syntax error before ',' token */
+void f3( ,... ) /* KO */
+{
+
+}</code></pre>
+    <p>Les points de suspension disent au compilateur de ne pas s'occuper du nom, du nombre ni du type des arguments en surnombre. Le compilateur gère les arguments correspondant aux paramètres formels ; les arguments en surnombre, c'est le programmeur qui les gère.</p>
+    <div class="bloc note">
+      <p class="bloc-titre">Note <span>Depuis C23</span> <span class="badge hors-programme">Hors programme</span></p>
+      <p>La norme C23 accepte <code>void f( ... )</code>, sans paramètre nommé. Le cours suit les normes précédentes, où au moins un paramètre formel est obligatoire, et c'est ce qu'attend gcc par défaut.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>La méthode argc, argv <span class="ref">p. 2</span></h2>
+    <p>La première méthode n'utilise pas les points de suspension : elle imite le passage des arguments de <code>main</code>. On passe un nombre d'arguments et un tableau de chaînes.</p>
+<pre data-fichier="methode_argc_argv.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+#define MAXARG 10
+
+void f( int argc , char * argv[]  )
+{
+  int i ;
+
+  for( i=0 ; i&lt;argc ; i++ )
+    {
+      printf( "\tfoncton f : argv[%d] = %s\n" , i , argv[i] ) ;
+    }
+  return ;
+}
+
+int main( int argc , char * argv[] )
+{
+  int f_argc ;
+  char * f_argv[MAXARG] ;
+  int i ;
+
+  /* Construction des parametres */
+  f_argc = 3 ;
+  f_argv[0] = malloc( sizeof(char) * strlen("azertyuiop")+1 ) ;
+  strcpy( f_argv[0] , "azertyuiop" ) ;
+  f_argv[1] = malloc( sizeof(char) * strlen("123")+1 ) ;
+  strcpy( f_argv[1] , "123" ) ;
+  f_argv[2] = malloc( sizeof(char) * strlen("45.67")+1 ) ;
+  strcpy( f_argv[2] , "45.67" ) ;
+
+  /* Appel de la fonction avec nombre variable de parametres */
+  printf(" 1er appel de f avec 3 arguments\n");
+  f( f_argc , f_argv ) ;
+
+  for( i=0 ; i&lt;3 ; i++ )
+    free( f_argv[i] ) ;
+
+ /* Construction des parametres */
+  f_argc = 2 ;
+  f_argv[0] = malloc( sizeof(char)*strlen("WWW")+1 );
+  strcpy( f_argv[0] , "WWW" );
+  f_argv[1] = malloc( sizeof(char)*strlen("XXXXXXX")+1 );
+  strcpy( f_argv[1] , "XXXXXXX" );
+
+ /* Appel de la fonction avec nombre variable de parametres */
+  printf(" 1er appel de f avec 2 arguments\n");
+  f( f_argc , f_argv ) ;
+
+  for( i=0 ; i&lt;2 ; i++ )
+    free(f_argv[i]) ;
+
+  return(0) ;
+}</code></pre>
+<pre class="terminal"><code>$ ./methode_argc_argv
+ 1er appel de f avec 3 arguments
+	foncton f : argv[0] = azertyuiop
+	foncton f : argv[1] = 123
+	foncton f : argv[2] = 45.67
+ 1er appel de f avec 2 arguments
+	foncton f : argv[0] = WWW
+	foncton f : argv[1] = XXXXXXX</code></pre>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="cadre-titre">Avantage</p>
+        <ul><li>Totalement portable : c'est du C ordinaire.</li></ul>
+      </div>
+      <div class="colonne contre">
+        <p class="cadre-titre">Inconvénient</p>
+        <ul><li>L'écriture du passage des paramètres est « un peu » lourde : il faut construire le tableau avant chaque appel, et tout passer sous forme de chaînes.</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>La méthode de la pile <span class="ref">p. 3</span></h2>
+    <p>La deuxième méthode utilise le prototype <code>, ...</code> et va chercher les arguments en surnombre dans la pile d'exécution, où l'appelant les a déposés. Les outils sont dans <code>&lt;stdarg.h&gt;</code>.</p>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Parcourir les arguments en surnombre</span></p>
+      <ol class="etapes">
+        <li>Déclarer une variable <code>va_list ap ;</code>, qui pointera successivement sur chacun des arguments en surnombre.</li>
+        <li><code>va_start( ap , dernier ) ;</code> : initialiser <code>ap</code> sur le premier argument en surnombre ; <code>dernier</code> est le nom du <em>dernier paramètre formel</em>.</li>
+        <li><code>va_arg( ap , type )</code> : renvoyer l'argument courant, lu avec le type indiqué, et passer au suivant.</li>
+        <li><code>va_end( ap ) ;</code> : terminer proprement, comme l'exige la norme.</li>
+      </ol>
+    </div>
+
+    <p>La fonction doit savoir combien d'arguments lire. Le programme <code>methode_pile.c</code> montre les deux variantes : passer le nombre en paramètre formel, ou terminer la liste par une <dfn>sentinelle</dfn>, ici <code>NULL</code>.</p>
+<pre data-fichier="methode_pile.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+#include &lt;stdarg.h&gt;	/* Utilisation :
+			 *  - du type va_list
+			 *  - des fonctions va_start, va_arg, va_end
+			 */
+
+/* Variante avec le nombre d'arguments */
+void f_nb( int x , int y , int nb_arg , ...  )
+{
+  int i = 0 ;
+  /* ap est une va_list qui pointera successivement sur chacun des arguments en surnombre */
+  va_list ap ;
+
+  printf( "Arguments formels\n" )  ;
+  printf( "\tx = %d\n" , x ) ;
+  printf( "\ty = %d\n" , y ) ;
+  printf( "\tnb_arg = %d\n" , nb_arg ) ;
+
+  /* on initialise ap pour qu'il pointe sur le 1er argument en surnombre  */
+  va_start( ap , nb_arg ) ;
+
+  printf("Arguments en surnombre\n") ;
+  for( i=0 ; i&lt;nb_arg ; i++ )
+    {
+      /*
+       * a chaque appel va_arg renvoie un argument
+       * il faut  lui preciser le type de cet argument attendu
+       * Ici tous les arguments sont du meme type : des chaines de caracteres
+       */
+      printf( "\t numero %d = %s\n" , i , va_arg( ap , char * ) ) ;
+    }
+
+  /* Pour terminer proprement, d'apres la norme */
+  va_end(ap) ;
+
+  return ;
+}
+
+/* Variante sans le nombre d'arguments */
+void f_sentinelle( int x , int y , ...  )
+{
+  int i = 0 ;
+  char * arg ;
+  va_list ap ;
+
+  printf( "Arguments formels\n" )  ;
+  printf( "\tx = %d\n" , x ) ;
+  printf( "\ty = %d\n" , y ) ;
+
+  /* on initialise ap pour qu'il pointe sur le 1er argument en surnombre  */
+  va_start( ap , y ) ;
+  arg = va_arg( ap , char * ) ;
+
+  printf("Arguments en surnombre\n") ;
+  while( arg != NULL )
+    {
+      printf( "\t numero %d = %s\n" , i ,  arg ) ;
+      i++ ;
+      arg = va_arg( ap , char * );
+    }
+
+  va_end(ap) ;
+
+  return ;
+}
+
+int main( int argc , char * argv[] )
+{
+  int bidon1 = 99 ;
+  int bidon2 = 88 ;
+
+  /* Appel de la fonction en indiquant le nombre de parametres */
+  printf("\n\n1er appel de f en precisant le nombre  d'arguments\n");
+  f_nb( bidon1 , bidon2 , 5 , "aaaaa" , "bbbb" , "ccc" , "dd" , "e" ) ;
+
+  /* Appel de la fonction avec sentinelle NULL apres les parametres */
+  printf("\n\n2ieme appel de f sans le nombre d'arguments\n");
+  f_sentinelle( bidon1 , bidon2 , "aaaaa" , "bbbb" , "ccc" , "dd" , "e" , NULL ) ;
+
+  return(0) ;
+}</code></pre>
+<pre class="terminal"><code>$ ./methode_pile
+
+
+1er appel de f en precisant le nombre  d'arguments
+Arguments formels
+	x = 99
+	y = 88
+	nb_arg = 5
+Arguments en surnombre
+	 numero 0 = aaaaa
+	 numero 1 = bbbb
+	 numero 2 = ccc
+	 numero 3 = dd
+	 numero 4 = e
+
+
+2ieme appel de f sans le nombre d'arguments
+Arguments formels
+	x = 99
+	y = 88
+Arguments en surnombre
+	 numero 0 = aaaaa
+	 numero 1 = bbbb
+	 numero 2 = ccc
+	 numero 3 = dd
+	 numero 4 = e</code></pre>
+
+    <h3>Les promotions de types</h3>
+    <p>Les arguments en surnombre n'ont pas de type déclaré : le compilateur les convertit selon des règles anciennes, héritées du C d'avant les prototypes. Il faut lire chaque argument avec <code>va_arg</code> sous son type <em>après</em> conversion.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Conversions implicites archaïques (table 1 du polycopié)</caption>
+        <thead><tr><th>Type original</th><th>Type après conversion</th></tr></thead>
+        <tbody>
+          <tr><td><code>int</code> et <code>short</code></td><td><code>int</code></td></tr>
+          <tr><td><code>unsigned char</code></td><td><code>unsigned int</code></td></tr>
+          <tr><td><code>unsigned short</code></td><td><code>unsigned int</code></td></tr>
+          <tr><td><code>float</code></td><td><code>double</code></td></tr>
+          <tr><td>tableau de <code>type_t</code></td><td>pointeur sur <code>type_t</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Ce que dit la norme</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>La norme parle de <dfn>promotions des arguments par défaut</dfn> (<span class="en" lang="en">default argument promotions</span>) : <code>char</code>, <code>short</code> et leurs versions <code>unsigned</code> deviennent <code>int</code> quand <code>int</code> peut représenter toutes leurs valeurs, ce qui est le cas sur les machines courantes ; <code>unsigned int</code> sinon. Le tableau du polycopié, qui envoie <code>unsigned char</code> et <code>unsigned short</code> vers <code>unsigned int</code>, ne correspond donc pas aux compilateurs actuels, et il oublie <code>char</code> (promu en <code>int</code>). En pratique : <code>va_arg( ap , int )</code> pour tout entier plus petit qu'un <code>int</code>, <code>va_arg( ap , double )</code> pour un <code>float</code>.</p>
+    </div>
+
+    <p>Quand les arguments en surnombre sont de types différents, la fonction doit connaître l'ordre dans lequel ils arrivent :</p>
+<pre data-fichier="methode_pile_heterogene.c (extrait)"><code class="language-c">void f( int x , int y , ...  )
+{
+  va_list ap ;
+  /* … affichage de x et y … */
+  va_start( ap , y ) ;
+
+  printf("Arguments en surnombre\n") ;
+  /* Le 1er doit etre un int */
+  printf( "\t1er (int) = %d\n" , va_arg( ap , int ) );
+  /*
+   * Le 2ieme un float MAIS
+   * float est promu en double quand c'est passe par ...
+   * si pas traite comme un double alors plantage
+   */
+  printf( "\t2ieme (float) = %G\n" , va_arg( ap , double ) ) ; /* OK */
+  /*   printf( "\t2ieme (float) = %G\n" , va_arg( ap , float ) ) ; /\* KO *\/ */
+  /* Le 3ieme un double */
+  printf( "\t3ieme (double) = %G\n" , va_arg( ap , double ) ) ;
+  /* Le 4ieme un char * */
+  printf( "\t4ieme (char *) = %s\n" , va_arg( ap , char * ) ) ;
+
+  va_end(ap) ;
+}
+/* appel */
+f( bidon1 , bidon2 , 12 , 34.56 , 12E-10 , "azertyuiop" , NULL ) ;</code></pre>
+<pre class="terminal"><code>$ ./methode_pile_heterogene
+…
+Arguments en surnombre
+	1er (int) = 12
+	2ieme (float) = 34.56
+	3ieme (double) = 1.2E-09
+	4ieme (char *) = azertyuiop</code></pre>
+    <p>Lire un <code>float</code> par <code>va_arg( ap , float )</code> est une erreur : l'argument a été transmis comme un <code>double</code>. gcc avertit d'ailleurs que le programme s'arrêtera s'il passe par là (<code>'float' is promoted to 'double' when passed through '...'</code>).</p>
+
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="cadre-titre">Avantage</p>
+        <ul><li>L'appel s'écrit simplement, avec des arguments de tout type, sans construire de tableau.</li></ul>
+      </div>
+      <div class="colonne contre">
+        <p class="cadre-titre">Inconvénients</p>
+        <ul>
+          <li>Pas totalement portable, mais la partie non portable se réduit au fichier <code>&lt;stdarg.h&gt;</code>.</li>
+          <li>La variante à sentinelle est dangereuse si l'appelant « oublie » le <code>NULL</code> final : la fonction lit au-delà des arguments.</li>
+          <li>Il faut tenir compte des promotions de types.</li>
+          <li>Avec des arguments hétérogènes, la fonction doit connaître leur ordre d'arrivée, sinon les erreurs sont probables.</li>
+          <li>Il faut au moins un argument formel, nécessaire à <code>va_start</code>.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Portabilité et sentinelle</span></p>
+      <ul>
+        <li><code>&lt;stdarg.h&gt;</code> fait partie de la norme depuis C89 : le code qui l'utilise est portable. Ce qui ne l'est pas, c'est la façon dont les macros sont réalisées (sur x86-64, les premiers arguments passent par des registres et non par la pile), et c'est justement ce que l'en-tête cache.</li>
+        <li><code>NULL</code> peut être défini comme l'entier <code>0</code>. Passé dans <code>...</code>, il n'est alors pas converti en pointeur, et lire un <code>char *</code> à sa place est faux là où un <code>int</code> et un pointeur n'ont pas la même taille. La sentinelle sûre est <code>(char *)NULL</code>, comme pour <code>execl</code>.</li>
+        <li>gcc vérifie la sentinelle si l'on déclare <code>void f_sentinelle( int x , int y , ... ) __attribute__((sentinel)) ;</code> : un appel sans <code>NULL</code> final provoque un avertissement.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>La méthode printf <span class="ref">p. 4</span></h2>
+    <p>La troisième méthode fait comme <code>printf</code> : le premier argument, une chaîne de format, décrit le nombre et le type des arguments qui suivent. Les arguments peuvent alors être hétérogènes, dans n'importe quel ordre.</p>
+<pre data-fichier="methode_printf.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+#include &lt;stdarg.h&gt;
+
+void f( char * format, ...  )
+{
+  va_list ap ;
+  int i = 0 ;
+  int nb_arg = 0 ;
+
+  printf( "Arguments formels\n" )  ;
+  printf( "\tformat = %s\n" , format ) ;
+
+  va_start( ap , format ) ;
+
+  printf("Arguments en surnombre\n") ;
+  nb_arg = strlen(format) ;
+  for(i=0 ; i&lt;nb_arg ; i++)
+    {
+      printf("\t numero %d " , i );
+      switch(format[i])
+	{
+	case 'd' :  /* C'est un int */
+	  printf( "(int) = %d\n" , va_arg( ap , int ) );
+	  break ;
+	case 'f' : /* C'est un float mais il a ete converti en double */
+	  printf( "(float) = %G\n" , va_arg( ap , double ) ) ;
+	  break ;
+	case 'D' : /* C'est un double */
+	  printf( "(double) = %G\n" , va_arg( ap , double ) ) ;
+	  break ;
+	case 's' : /* C'est un char * */
+	  printf( "(char *) = %s\n" , va_arg( ap , char * ) ) ;
+	  break ;
+	default :
+	  printf( "format inconnu\n" );
+	  break ;
+	}
+    }
+  va_end(ap) ;
+
+  return ;
+}
+
+int main( int argc , char * argv[] )
+{
+
+  /* Appel de la fonction avec nombre variable de parametres */
+
+  printf("\n\nAppel de f_nb( \"dfDs\" , 12 , 34.56 , 12E-10 , \"azertyuiop\" , NULL ) \n") ;
+  f( "dfDs" , 12 , 34.56 , 12E-10 , "azertyuiop" ) ;
+
+  printf( "\n\nAppel de   f( \"sds\" , \"coucou\" , 99 , \"bonjour\" ) ; \n") ;
+  f( "sds" , "coucou" , 99 , "bonjour" ) ;
+
+  return(0) ;
+}</code></pre>
+<pre class="terminal"><code>$ ./methode_printf
+…
+Arguments formels
+	format = dfDs
+Arguments en surnombre
+	 numero 0 (int) = 12
+	 numero 1 (float) = 34.56
+	 numero 2 (double) = 1.2E-09
+	 numero 3 (char *) = azertyuiop
+…
+Arguments formels
+	format = sds
+Arguments en surnombre
+	 numero 0 (char *) = coucou
+	 numero 1 (int) = 99
+	 numero 2 (char *) = bonjour</code></pre>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="cadre-titre">Avantage</p>
+        <ul><li>Des arguments hétérogènes, dans n'importe quel ordre : le format dit à la fonction ce qu'elle doit lire.</li></ul>
+      </div>
+      <div class="colonne contre">
+        <p class="cadre-titre">Inconvénient</p>
+        <ul><li>Elle repose sur la méthode de la pile : elle n'est donc pas totalement portable non plus.</li></ul>
+      </div>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Le format fait foi</span> <span class="badge ajout">Ajout</span></p>
+      <p>Si le format ne correspond pas aux arguments (un <code>d</code> pour une chaîne, ou plus de lettres que d'arguments), <code>va_arg</code> lit n'importe quoi : comportement indéfini. Pour <code>printf</code> elle-même, gcc compare format et arguments (<code>-Wformat</code>, inclus dans <code>-Wall</code>) ; pour sa propre fonction, l'attribut <code>__attribute__((format(printf, 1, 2)))</code> n'aide que si le format suit les conventions de <code>printf</code>.</p>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>La somme de n entiers</span> <span class="badge ajout">Ajout</span></p>
+      <p>Écrire une fonction <code>int somme( int n , ... )</code> qui renvoie la somme des <code>n</code> entiers qui suivent : <code>somme( 3 , 10 , 20 , 30 )</code> vaut 60, et <code>somme( 0 )</code> vaut 0.</p>
+      <details class="indice"><summary>Indice</summary><p>C'est la variante « avec le nombre d'arguments » de la méthode de la pile ; le dernier paramètre formel est <code>n</code>.</p></details>
+      <details class="solution"><summary>Solution proposée</summary>
+<pre data-fichier="somme.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdarg.h&gt;
+
+int somme( int n , ... )
+{
+  va_list ap ;
+  int s = 0 ;
+  va_start( ap , n ) ;
+  for( int i = 0 ; i &lt; n ; i++ )
+    s += va_arg( ap , int ) ;
+  va_end( ap ) ;
+  return s ;
+}
+
+int main()
+{
+  printf( "%d %d\n" , somme( 3 , 10 , 20 , 30 ) , somme( 0 ) ) ;
+  return 0 ;
+}</code></pre>
+<pre class="terminal"><code>$ ./somme
+60 0</code></pre>
+        <p>Un appel <code>somme( 2 , 1.5 , 2.5 )</code> compilerait sans erreur mais donnerait n'importe quoi : les arguments sont des <code>double</code>, lus comme des <code>int</code>.</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Le prototype d'une fonction variadique finit par <code>, ...</code>, après au moins un paramètre formel : <code>void f( char * format , ... )</code>.</li>
+        <li>Le compilateur ne vérifie ni le nombre ni le type des arguments en surnombre : c'est au programmeur de les gérer.</li>
+        <li>Méthode argc/argv : un nombre et un tableau de chaînes ; portable, mais lourde à l'appel.</li>
+        <li>Méthode de la pile (<code>&lt;stdarg.h&gt;</code>) : <code>va_list ap</code>, <code>va_start(ap, dernier_formel)</code>, <code>va_arg(ap, type)</code> pour chaque argument, <code>va_end(ap)</code>.</li>
+        <li>La fonction doit savoir où s'arrêter : un nombre passé en paramètre, ou une sentinelle (<code>NULL</code>) que l'appelant ne doit pas oublier.</li>
+        <li>Promotions : un <code>float</code> arrive en <code>double</code>, un <code>char</code> ou un <code>short</code> en <code>int</code> ; <code>va_arg(ap, float)</code> est une erreur.</li>
+        <li>Méthode printf : une chaîne de format décrit le type et l'ordre des arguments, qui peuvent être hétérogènes.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi <code>void f3( , ... )</code> ne compile-t-il pas ?</summary>
+        <div><p>La liste variable doit suivre au moins un paramètre formel ; <code>va_start</code> en a besoin pour situer le premier argument en surnombre.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quel est le second argument de <code>va_start</code> ?</summary>
+        <div><p>Le nom du dernier paramètre formel de la fonction, celui qui précède les <code>...</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>On passe <code>3.5f</code> dans les <code>...</code>. Comment le lire ?</summary>
+        <div><p><code>va_arg( ap , double )</code> : un <code>float</code> est promu en <code>double</code> quand il passe par les points de suspension.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quel est le risque de la méthode avec sentinelle ?</summary>
+        <div><p>Si l'appelant oublie le <code>NULL</code> final, la fonction continue de lire au-delà des arguments réels : comportement indéfini, plantage probable.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quel avantage la méthode printf a-t-elle sur la méthode de la pile simple ?</summary>
+        <div><p>La chaîne de format indique le type de chaque argument : ils peuvent être hétérogènes et dans n'importe quel ordre.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle méthode est totalement portable, et pourquoi n'est-elle pas toujours choisie ?</summary>
+        <div><p>La méthode argc/argv, qui n'utilise que du C ordinaire ; mais il faut construire un tableau de chaînes avant chaque appel, ce qui est lourd.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-01-pointeurs.html"><small>← Précédent</small>Retour sur les pointeurs en C</a>
+    <a class="suivant" href="cours-03-recursivite.html"><small>Suivant →</small>La récursivité</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Algorithmique 3 · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="c">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Les bases du C · Algorithmique 2 L2</title>
+<meta name="description" content="Quiz interactif sur les bases du C (Algorithmique 2, L2) : littéraux, préprocesseur, getchar et putchar, scanf, boucles et switch, chaînes, pointeurs, malloc et structures, avec six programmes C exécutés.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="../generated_courses/index.html">Algorithmique 2</a>
+    <span aria-current="page">Quiz · Les bases du C</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Algorithmique 2</span> Quiz · L2</p>
+    <h1>Les bases du C</h1>
+    <p class="chapeau">Vingt questions sur les trois cours d'Algorithmique 2 : littéraux et préprocesseur, lecture caractère par caractère, scanf, boucles et switch, chaînes, pointeurs, allocation dynamique et structures. Six questions demandent d'écrire un programme ou une fonction C, compilés et testés.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-01-bases-du-c.html">Cours 1 · Les bases du langage C</a>, <a href="../generated_courses/cours-02-entrees-sorties-controle.html">Cours 2 · Entrées-sorties et contrôle</a>, <a href="../generated_courses/cours-03-pointeurs-allocation-structures.html">Cours 3 · Pointeurs et structures</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 novembre 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "algo2-bases-du-c",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 1 · Les bases du langage C",
+      "lien": "../generated_courses/cours-01-bases-du-c.html"
+    },
+    {
+      "titre": "Cours 2 · Entrées-sorties et structures de contrôle",
+      "lien": "../generated_courses/cours-02-entrees-sorties-controle.html"
+    },
+    {
+      "titre": "Cours 3 · Pointeurs, allocation dynamique et structures",
+      "lien": "../generated_courses/cours-03-pointeurs-allocation-structures.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "qcm",
+      "theme": "Types, constantes et codage",
+      "difficulte": 1,
+      "enonce": "<p>Qu'affiche l'instruction suivante ?</p><pre><code class='language-c'>printf(\"%d\\n\", 017);</code></pre>",
+      "choix": [
+        "15",
+        "17",
+        "23",
+        "Rien : erreur de compilation"
+      ],
+      "reponse": 0,
+      "explication": "<p>Un littéral entier qui commence par <code>0</code> est écrit en base 8 : \\(017 = 1 \\times 8 + 7 = 15\\). Le choix « 17 » est le piège : le zéro de tête n'est pas décoratif. Seul <code>08</code> ou <code>09</code> serait une erreur, 8 et 9 n'étant pas des chiffres octaux.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les entiers et leur base",
+        "lien": "../generated_courses/cours-01-bases-du-c.html#les-entiers-et-leur-base"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "numerique",
+      "theme": "Types, constantes et codage",
+      "difficulte": 2,
+      "enonce": "<p>Que vaut <code>CARRE(2 + 3)</code> avec la définition suivante ?</p><pre><code class='language-c'>#define CARRE(x) x * x</code></pre>",
+      "reponse": 11,
+      "tolerance": 0,
+      "indices": [
+        "<p>Le préprocesseur remplace le texte <code>x</code> par le texte <code>2 + 3</code>, sans ajouter de parenthèses.</p>",
+        "<p>On obtient <code>2 + 3 * 2 + 3</code> : appliquer la priorité de <code>*</code>.</p>"
+      ],
+      "explication": "<p>Le remplacement est purement textuel : <code>CARRE(2 + 3)</code> devient <code>2 + 3 * 2 + 3</code>, soit \\(2 + 6 + 3 = 11\\), et non 25. On écrit <code>#define CARRE(x) ((x) * (x))</code>.</p>",
+      "revoir": {
+        "texte": "Cours 1 · La directive #define",
+        "lien": "../generated_courses/cours-01-bases-du-c.html#la-directive-define"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "qcm",
+      "theme": "Types, constantes et codage",
+      "difficulte": 2,
+      "enonce": "<p>Pourquoi ce programme ne compile-t-il pas ?</p><pre><code class='language-c'>#define N 10;\n\nint main(void)\n{\n    int t[N];\n    return 0;\n}</code></pre>",
+      "choix": [
+        "Le préprocesseur remplace <code>N</code> par <code>10;</code>, ce qui donne <code>int t[10;];</code>",
+        "Une constante de <code>#define</code> ne peut pas servir de taille de tableau",
+        "<code>N</code> doit être déclaré avec <code>const int</code> avant <code>main</code>",
+        "Les directives du préprocesseur doivent être placées dans <code>main</code>"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Le préprocesseur fait un remplacement de texte, caractère pour caractère.</p>"
+      ],
+      "explication": "<p>Tout ce qui suit le nom dans un <code>#define</code>, point-virgule compris, est recopié à chaque utilisation. Sans le point-virgule, <code>#define N 10</code> est justement la façon habituelle de fixer la taille d'un tableau.</p>",
+      "revoir": {
+        "texte": "Cours 1 · La directive #define",
+        "lien": "../generated_courses/cours-01-bases-du-c.html#la-directive-define"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "qcm",
+      "theme": "Entrées-sorties",
+      "difficulte": 2,
+      "enonce": "<p>Pourquoi déclare-t-on <code>int c;</code> et non <code>char c;</code> dans la boucle <code>while ((c = getchar()) != EOF)</code> ?</p>",
+      "choix": [
+        "Pour que <code>c</code> puisse contenir <code>EOF</code> (−1) en plus des 256 valeurs d'octet, sans confusion",
+        "Parce que <code>putchar</code> refuse un <code>char</code>",
+        "Parce qu'un <code>char</code> ne peut pas contenir une lettre accentuée",
+        "Pour gagner de la place en mémoire"
+      ],
+      "reponse": 0,
+      "explication": "<p><code>getchar</code> renvoie un <code>int</code> : soit le code d'un caractère (0 à 255), soit <code>EOF</code>. Un <code>char</code> n'a que 256 valeurs ; rangée dedans, une de ces valeurs se confondrait avec <code>EOF</code>, et la boucle s'arrêterait trop tôt ou jamais.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Lire et écrire un caractère",
+        "lien": "../generated_courses/cours-01-bases-du-c.html#lire-et-ecrire-un-caractere"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "numerique",
+      "theme": "Types, constantes et codage",
+      "difficulte": 3,
+      "enonce": "<p>Quelle valeur décimale représente le <code>float</code> IEEE 754 dont les 32 bits valent <code>41 20 00 00</code> en hexadécimal ?</p>",
+      "reponse": 10,
+      "tolerance": 0,
+      "indices": [
+        "<p>Écrire les bits : <code>0100 0001 0010 0000 …</code>, puis séparer 1 bit de signe, 8 bits d'exposant, 23 bits de mantisse.</p>",
+        "<p>Valeur : \\((-1)^s \\times 1{,}m \\times 2^{e-127}\\).</p>"
+      ],
+      "explication": "<p>Signe 0 ; exposant <code>10000010</code> = 130, d'où \\(2^{130-127} = 2^3\\) ; mantisse <code>01000…</code>, d'où \\(1{,}01_2 = 1{,}25\\). Valeur : \\(1{,}25 \\times 8 = 10\\).</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les nombres flottants : la norme IEEE 754",
+        "lien": "../generated_courses/cours-01-bases-du-c.html#les-nombres-flottants-la-norme-ieee-754"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "code",
+      "langage": "c",
+      "theme": "Entrées-sorties",
+      "difficulte": 1,
+      "enonce": "<p>Écrire un programme qui recopie son entrée standard sur sa sortie standard avec <code>getchar</code> et <code>putchar</code>, en remplaçant chaque minuscule non accentuée (de <code>'a'</code> à <code>'z'</code>) par la majuscule correspondante. Les autres caractères sont recopiés tels quels. N'utiliser ni <code>toupper</code> ni <code>&lt;ctype.h&gt;</code>.</p>",
+      "depart": "#include <stdio.h>\n\nint main(void)\n{\n  int c;\n  \n  return 0;\n}\n",
+      "solution": "#include <stdio.h>\n\nint main(void)\n{\n  int c;\n  while ((c = getchar()) != EOF) {\n    if (c >= 'a' && c <= 'z')\n      c = c - 'a' + 'A';\n    putchar(c);\n  }\n  return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "une phrase",
+          "entree": "Bonjour le Monde\n",
+          "sortie": "BONJOUR LE MONDE\n"
+        },
+        {
+          "nom": "chiffres et ponctuation",
+          "entree": "abc 123 xyz !\nZz\n",
+          "sortie": "ABC 123 XYZ !\nZZ\n"
+        },
+        {
+          "nom": "entrée vide",
+          "entree": "",
+          "sortie": ""
+        }
+      ],
+      "indices": [
+        "<p>Partir de la boucle <code>while ((c = getchar()) != EOF)</code> et modifier <code>c</code> avant <code>putchar</code>.</p>",
+        "<p>Les lettres se suivent dans la table ASCII : <code>c - 'a' + 'A'</code>.</p>"
+      ],
+      "explication": "<p>On teste <code>EOF</code> seul dans la condition de boucle, et on convertit dans le corps : <code>c - 'a'</code> donne le rang de la lettre (0 pour <code>'a'</code>), auquel on ajoute le code de <code>'A'</code>.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Lire et écrire un caractère",
+        "lien": "../generated_courses/cours-01-bases-du-c.html#lire-et-ecrire-un-caractere"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "code",
+      "langage": "c",
+      "theme": "Structures de contrôle",
+      "difficulte": 2,
+      "enonce": "<p>Écrire un programme qui lit toute son entrée avec <code>getchar</code> et affiche son nombre de mots, suivi d'un passage à la ligne (<code>printf(\"%d\\n\", nb)</code>). Un mot est une suite de caractères autres que l'espace, la tabulation et le passage à la ligne.</p>",
+      "depart": "#include <stdio.h>\n\nint main(void)\n{\n  \n  return 0;\n}\n",
+      "solution": "#include <stdio.h>\n\nint main(void)\n{\n  int c, dans_mot = 0, nb = 0;\n  while ((c = getchar()) != EOF) {\n    if (c == ' ' || c == '\\t' || c == '\\n')\n      dans_mot = 0;\n    else if (!dans_mot) {\n      dans_mot = 1;\n      nb++;\n    }\n  }\n  printf(\"%d\\n\", nb);\n  return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "espaces multiples",
+          "entree": "un deux   trois\n",
+          "sortie": "3\n"
+        },
+        {
+          "nom": "tabulations et lignes",
+          "entree": "a\nb\tc d\n",
+          "sortie": "4\n"
+        },
+        {
+          "nom": "que des blancs",
+          "entree": "  \n\t\n",
+          "sortie": "0\n"
+        },
+        {
+          "nom": "sans passage à la ligne final",
+          "entree": "fin",
+          "sortie": "1\n"
+        }
+      ],
+      "indices": [
+        "<p>Compter les débuts de mots : il faut savoir si le caractère précédent était un blanc.</p>",
+        "<p>Une variable <code>dans_mot</code>, mise à 0 sur un blanc et à 1 sur un autre caractère ; on compte quand elle passe de 0 à 1.</p>"
+      ],
+      "explication": "<p>Compter les blancs ne marche pas : plusieurs espaces à la suite ou un texte qui commence par un blanc fausseraient le compte. On compte plutôt les passages « hors d'un mot → dans un mot ». Les compteurs sont initialisés un par un : <code>int c, dans_mot, nb = 0;</code> n'initialiserait que <code>nb</code>.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les boucles",
+        "lien": "../generated_courses/cours-02-entrees-sorties-controle.html#les-boucles"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "qcm",
+      "theme": "Entrées-sorties",
+      "difficulte": 2,
+      "enonce": "<p>L'utilisateur tape <code>12abc</code> puis Entrée. Que valent <code>r</code>, <code>a</code> et <code>c</code> ?</p><pre><code class='language-c'>int a = 0, r, c;\nr = scanf(\"%d\", &amp;a);\nc = getchar();</code></pre>",
+      "choix": [
+        "<code>r</code> vaut 1, <code>a</code> vaut 12, <code>c</code> vaut <code>'a'</code>",
+        "<code>r</code> vaut 12, <code>a</code> vaut 12, <code>c</code> vaut <code>'a'</code>",
+        "<code>r</code> vaut 1, <code>a</code> vaut 12, <code>c</code> vaut <code>'\\n'</code>",
+        "<code>r</code> vaut 0, <code>a</code> vaut 0 : <code>12abc</code> n'est pas un entier"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p><code>scanf</code> renvoie un nombre de conversions réussies, pas la valeur lue.</p>",
+        "<p>Le caractère qui arrête la lecture n'est pas consommé.</p>"
+      ],
+      "explication": "<p><code>scanf</code> lit <code>12</code>, s'arrête sur <code>a</code>, qui ne peut pas faire partie d'un entier, et le laisse dans le flux : le <code>getchar</code> suivant le lit. Elle renvoie 1, le nombre de valeurs rangées.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Où s'arrête scanf",
+        "lien": "../generated_courses/cours-02-entrees-sorties-controle.html#ou-s-arrete-scanf"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "qcm-multi",
+      "theme": "Entrées-sorties",
+      "difficulte": 2,
+      "enonce": "<p>Lesquelles de ces affirmations sont <strong>exactes</strong> ?</p>",
+      "choix": [
+        "<code>printf</code> renvoie le nombre de caractères qu'elle a écrits",
+        "Pour lire un <code>double</code>, <code>scanf</code> demande le format <code>%lf</code>",
+        "<code>fflush(stdin)</code> vide l'entrée standard sur tous les systèmes",
+        "<code>scanf(\"%d\", &amp;n)</code> renvoie la valeur lue",
+        "<code>fflush(stdout)</code> force l'affichage de ce qui attend dans le tampon de sortie"
+      ],
+      "reponses": [
+        0,
+        1,
+        4
+      ],
+      "indices": [
+        "<p>La norme ne définit <code>fflush</code> que pour les flux de sortie.</p>"
+      ],
+      "explication": "<p><code>printf</code> renvoie bien un nombre de caractères, <code>scanf</code> un nombre de conversions (pas la valeur). <code>%lf</code> est obligatoire dans <code>scanf</code> pour un <code>double</code>. <code>fflush(stdin)</code> a un comportement indéfini : il ne fait rien sous Linux ; on vide l'entrée en lisant jusqu'au <code>'\\n'</code>.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Vider un flux : fflush",
+        "lien": "../generated_courses/cours-02-entrees-sorties-controle.html#vider-un-flux-fflush"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "qcm",
+      "theme": "Structures de contrôle",
+      "difficulte": 2,
+      "enonce": "<p>Cette boucle doit redemander la réponse tant qu'elle n'est ni <code>'o'</code> ni <code>'n'</code>. Que se passe-t-il ?</p><pre><code class='language-c'>do {\n    printf(\"Continuer (o/n) ? \");\n    scanf(\" %c\", &amp;rep);\n} while (rep != 'o' || rep != 'n');</code></pre>",
+      "choix": [
+        "Elle ne s'arrête jamais : la condition est toujours vraie",
+        "Elle s'arrête dès que l'on tape <code>o</code> ou <code>n</code>",
+        "Elle s'arrête seulement si l'on tape <code>o</code>",
+        "Elle ne fait aucun tour"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Essayer avec <code>rep</code> valant <code>'o'</code> : que vaut chacune des deux comparaisons ?</p>"
+      ],
+      "explication": "<p>Si <code>rep</code> vaut <code>'o'</code>, il est différent de <code>'n'</code>, et inversement : l'une des deux comparaisons est toujours vraie. « Ni o ni n » s'écrit <code>rep != 'o' &amp;&amp; rep != 'n'</code> (De Morgan). C'est l'erreur du TP 0 sur la monnaie.</p>",
+      "revoir": {
+        "texte": "Cours 2 · if et else",
+        "lien": "../generated_courses/cours-02-entrees-sorties-controle.html#if-et-else"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "qcm",
+      "theme": "Structures de contrôle",
+      "difficulte": 2,
+      "enonce": "<p>Qu'affiche ce fragment, avec <code>k</code> valant 2 ?</p><pre><code class='language-c'>switch (k) {\n    case 1: printf(\"un \");\n    case 2: printf(\"deux \");\n    case 3: printf(\"trois \"); break;\n    default: printf(\"autre \");\n}</code></pre>",
+      "choix": [
+        "<code>deux trois</code>",
+        "<code>deux</code>",
+        "<code>un deux trois</code>",
+        "<code>deux trois autre</code>"
+      ],
+      "reponse": 0,
+      "explication": "<p>Le <code>switch</code> saute au <code>case 2</code>, puis exécute tout ce qui suit jusqu'au premier <code>break</code> : « deux » puis « trois ». Le <code>break</code> du <code>case 3</code> empêche d'atteindre <code>default</code>.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le choix multiple : switch",
+        "lien": "../generated_courses/cours-02-entrees-sorties-controle.html#le-choix-multiple-switch"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "ordre",
+      "theme": "Pointeurs, mémoire et structures",
+      "difficulte": 1,
+      "enonce": "<p>Remettre dans l'ordre les étapes de l'utilisation d'un tableau dynamique de <code>n</code> entiers.</p>",
+      "elements": [
+        "<code>int *t = malloc(n * sizeof *t);</code>",
+        "<code>if (t == NULL) exit(1);</code>",
+        "<code>for (i = 0; i &lt; n; i++) t[i] = 0;</code>",
+        "<code>free(t);</code>",
+        "<code>t = NULL;</code>"
+      ],
+      "explication": "<p>On alloue, on vérifie que <code>malloc</code> n'a pas renvoyé <code>NULL</code> avant toute utilisation, on se sert de la zone, on la libère, puis on remet le pointeur à <code>NULL</code> pour qu'un second <code>free</code> ou un test ultérieur soit sans danger.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Libérer : free",
+        "lien": "../generated_courses/cours-03-pointeurs-allocation-structures.html#liberer-free"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "code",
+      "langage": "c",
+      "theme": "Chaînes de caractères",
+      "difficulte": 1,
+      "enonce": "<p>Écrire la fonction <code>int longueur(const char *s)</code>, qui renvoie le nombre de caractères de la chaîne <code>s</code>, sans compter le <code>'\\0'</code> final, comme <code>strlen</code> (que l'on n'utilisera pas). Le programme de test lit une ligne et affiche le résultat.</p>",
+      "depart": "#include <stdio.h>\n\nint longueur(const char *s)\n{\n  return 0;\n}\n",
+      "solution": "#include <stdio.h>\n\nint longueur(const char *s)\n{\n  int n = 0;\n  while (s[n] != '\\0')\n    n++;\n  return n;\n}\n",
+      "harnais": "\n#include <string.h>\nint main(void)\n{\n  char s[256];\n  if (fgets(s, sizeof s, stdin) == NULL)\n    s[0] = '\\0';\n  s[strcspn(s, \"\\n\")] = '\\0';\n  printf(\"%d\\n\", longueur(s));\n  return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "un mot",
+          "entree": "Bonjour\n",
+          "sortie": "7\n"
+        },
+        {
+          "nom": "avec des espaces",
+          "entree": "a b c\n",
+          "sortie": "5\n"
+        },
+        {
+          "nom": "chaîne vide",
+          "entree": "\n",
+          "sortie": "0\n"
+        }
+      ],
+      "indices": [
+        "<p>Avancer un indice tant que le caractère n'est pas <code>'\\0'</code>.</p>"
+      ],
+      "explication": "<p>Une chaîne n'a pas de longueur enregistrée : seule la sentinelle <code>'\\0'</code> marque sa fin. On compare à <code>'\\0'</code> (un caractère, entre apostrophes), jamais à <code>\"\\0\"</code>, qui est l'adresse d'une chaîne.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Les chaînes de caractères",
+        "lien": "../generated_courses/cours-03-pointeurs-allocation-structures.html#les-chaines-de-caracteres"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "code",
+      "langage": "c",
+      "theme": "Chaînes de caractères",
+      "difficulte": 2,
+      "enonce": "<p>Écrire la fonction <code>void minuscules(char *s)</code>, qui remplace sur place chaque majuscule non accentuée de <code>s</code> par la minuscule correspondante. Les autres caractères ne changent pas. Le programme de test lit une ligne, appelle la fonction et affiche la chaîne.</p>",
+      "depart": "#include <stdio.h>\n\nvoid minuscules(char *s)\n{\n  \n}\n",
+      "solution": "#include <stdio.h>\n\nvoid minuscules(char *s)\n{\n  for (int i = 0; s[i] != '\\0'; i++)\n    if (s[i] >= 'A' && s[i] <= 'Z')\n      s[i] += 'a' - 'A';\n}\n",
+      "harnais": "\n#include <string.h>\nint main(void)\n{\n  char s[256];\n  if (fgets(s, sizeof s, stdin) == NULL)\n    s[0] = '\\0';\n  s[strcspn(s, \"\\n\")] = '\\0';\n  minuscules(s);\n  printf(\"%s\\n\", s);\n  return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "une phrase",
+          "entree": "Bonjour LE Monde\n",
+          "sortie": "bonjour le monde\n"
+        },
+        {
+          "nom": "bornes A et Z",
+          "entree": "AZaz@[`{ 42\n",
+          "sortie": "azaz@[`{ 42\n"
+        },
+        {
+          "nom": "chaîne vide",
+          "entree": "\n",
+          "sortie": "\n"
+        }
+      ],
+      "indices": [
+        "<p>La fonction reçoit l'adresse de la chaîne : elle peut modifier <code>s[i]</code> directement, sans rien renvoyer.</p>",
+        "<p>La condition est <code>s[i] &gt;= 'A' &amp;&amp; s[i] &lt;= 'Z'</code>, avec <code>&amp;&amp;</code>.</p>"
+      ],
+      "explication": "<p>Avec <code>||</code>, comme dans le brouillon du TD 6, la condition serait toujours vraie et tous les caractères seraient décalés de 32. Le test « bornes » vérifie aussi que <code>@</code> et <code>[</code>, voisins de <code>A</code> et <code>Z</code> dans la table ASCII, restent intacts.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Les chaînes de caractères",
+        "lien": "../generated_courses/cours-03-pointeurs-allocation-structures.html#les-chaines-de-caracteres"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "code",
+      "langage": "c",
+      "theme": "Chaînes de caractères",
+      "difficulte": 3,
+      "enonce": "<p>Écrire la fonction <code>void inverse(char *s)</code>, qui retourne la chaîne <code>s</code> sur place : <code>\"abc\"</code> devient <code>\"cba\"</code>. Le programme de test lit une ligne, appelle la fonction et affiche la chaîne.</p>",
+      "depart": "#include <stdio.h>\n\nvoid inverse(char *s)\n{\n  \n}\n",
+      "solution": "#include <stdio.h>\n\nvoid inverse(char *s)\n{\n  int i = 0, j = 0;\n  while (s[j] != '\\0')\n    j++;\n  j--;\n  while (i < j) {\n    char t = s[i];\n    s[i] = s[j];\n    s[j] = t;\n    i++;\n    j--;\n  }\n}\n",
+      "harnais": "\n#include <string.h>\nint main(void)\n{\n  char s[256];\n  if (fgets(s, sizeof s, stdin) == NULL)\n    s[0] = '\\0';\n  s[strcspn(s, \"\\n\")] = '\\0';\n  inverse(s);\n  printf(\"[%s]\\n\", s);\n  return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "longueur impaire",
+          "entree": "abc\n",
+          "sortie": "[cba]\n"
+        },
+        {
+          "nom": "longueur paire",
+          "entree": "Hello world!\n",
+          "sortie": "[!dlrow olleH]\n"
+        },
+        {
+          "nom": "deux caractères",
+          "entree": "ab\n",
+          "sortie": "[ba]\n"
+        },
+        {
+          "nom": "chaîne vide",
+          "entree": "\n",
+          "sortie": "[]\n"
+        }
+      ],
+      "indices": [
+        "<p>Trouver d'abord l'indice du dernier caractère (juste avant <code>'\\0'</code>).</p>",
+        "<p>Échanger <code>s[i]</code> et <code>s[j]</code> en rapprochant <code>i</code> et <code>j</code>, tant que <code>i &lt; j</code>.</p>"
+      ],
+      "explication": "<p>Deux indices partent des extrémités et se rejoignent au milieu ; chaque échange passe par une variable temporaire. Le <code>'\\0'</code> ne doit pas bouger : sinon la chaîne commencerait par la fin de chaîne et paraîtrait vide. Aucun tableau local n'est nécessaire, et il ne faut surtout pas en renvoyer un.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Les chaînes de caractères",
+        "lien": "../generated_courses/cours-03-pointeurs-allocation-structures.html#les-chaines-de-caracteres"
+      }
+    },
+    {
+      "id": "q16",
+      "type": "qcm",
+      "theme": "Pointeurs, mémoire et structures",
+      "difficulte": 2,
+      "enonce": "<p>Qu'affiche ce fragment ?</p><pre><code class='language-c'>int a = 3, b = 7;\nint *p = &amp;a, *q = &amp;b;\n*p = *q + 1;\np = q;\n*p = 0;\nprintf(\"%d %d\\n\", a, b);</code></pre>",
+      "choix": [
+        "<code>8 0</code>",
+        "<code>0 7</code>",
+        "<code>8 7</code>",
+        "<code>0 8</code>"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p><code>*p = …</code> modifie la variable pointée ; <code>p = q</code> change seulement la cible de <code>p</code>.</p>"
+      ],
+      "explication": "<p><code>*p = *q + 1</code> range \\(7 + 1 = 8\\) dans <code>a</code>. Ensuite <code>p = q</code> fait pointer <code>p</code> sur <code>b</code>, si bien que <code>*p = 0</code> met <code>b</code> à 0. Le choix « 0 7 » oublie que <code>p</code> a changé de cible.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Les pointeurs",
+        "lien": "../generated_courses/cours-03-pointeurs-allocation-structures.html#les-pointeurs"
+      }
+    },
+    {
+      "id": "q17",
+      "type": "code",
+      "langage": "c",
+      "theme": "Pointeurs, mémoire et structures",
+      "difficulte": 2,
+      "enonce": "<p>Écrire la fonction <code>void echange(int *a, int *b)</code>, qui échange les valeurs des deux entiers dont elle reçoit les adresses. Le programme de test lit deux entiers <code>x</code> et <code>y</code>, appelle <code>echange(&amp;x, &amp;y)</code> et affiche <code>x y</code>.</p>",
+      "depart": "#include <stdio.h>\n\nvoid echange(int *a, int *b)\n{\n  \n}\n",
+      "solution": "#include <stdio.h>\n\nvoid echange(int *a, int *b)\n{\n  int t = *a;\n  *a = *b;\n  *b = t;\n}\n",
+      "harnais": "\nint main(void)\n{\n  int x, y;\n  if (scanf(\"%d %d\", &x, &y) != 2)\n    return 1;\n  echange(&x, &y);\n  printf(\"%d %d\\n\", x, y);\n  return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "deux valeurs",
+          "entree": "1 2\n",
+          "sortie": "2 1\n"
+        },
+        {
+          "nom": "négatif",
+          "entree": "-3 7\n",
+          "sortie": "7 -3\n"
+        },
+        {
+          "nom": "grandes valeurs",
+          "entree": "2147483647 0\n",
+          "sortie": "0 2147483647\n"
+        }
+      ],
+      "indices": [
+        "<p>On travaille sur <code>*a</code> et <code>*b</code>, les variables pointées, pas sur <code>a</code> et <code>b</code>.</p>"
+      ],
+      "explication": "<p>La fonction reçoit des copies des adresses, mais ces adresses désignent les variables de l'appelant : écrire dans <code>*a</code> et <code>*b</code> les modifie. Échanger <code>a</code> et <code>b</code> eux-mêmes (<code>int *t = a; a = b; b = t;</code>) n'échangerait que les copies locales des pointeurs.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Modifier une variable dans une fonction",
+        "lien": "../generated_courses/cours-03-pointeurs-allocation-structures.html#modifier-une-variable-dans-une-fonction"
+      }
+    },
+    {
+      "id": "q18",
+      "type": "reponse-courte",
+      "theme": "Pointeurs, mémoire et structures",
+      "difficulte": 1,
+      "enonce": "<p><code>p</code> est un pointeur sur une <code>struct personne</code>, qui a un champ <code>age</code>. Comment écrit-on le champ <code>age</code> de la structure pointée, avec l'opérateur <code>-&gt;</code> ?</p>",
+      "reponses": [
+        "p->age",
+        "p -> age",
+        "p->age;"
+      ],
+      "explication": "<p><code>p-&gt;age</code> abrège <code>(*p).age</code>. Les parenthèses sont nécessaires dans la forme longue, car le point est prioritaire sur l'étoile : <code>*p.age</code> serait lu <code>*(p.age)</code>.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Pointeur sur structure",
+        "lien": "../generated_courses/cours-03-pointeurs-allocation-structures.html#pointeur-sur-structure"
+      }
+    },
+    {
+      "id": "q19",
+      "type": "qcm",
+      "theme": "Pointeurs, mémoire et structures",
+      "difficulte": 2,
+      "enonce": "<p>Avec la déclaration suivante, quelle instruction est correcte ?</p><pre><code class='language-c'>struct date { int jour, mois, annee; };\nstruct personne {\n    char *nom;\n    struct date naissance;\n} p3;</code></pre>",
+      "choix": [
+        "<code>p3.naissance.annee = 1985;</code>",
+        "<code>personne.naissance.annee = 1985;</code>",
+        "<code>p3.annee = 1985;</code>",
+        "<code>p3-&gt;naissance.annee = 1985;</code>"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Le point s'applique à une variable de type structure, pas au nom du modèle.</p>"
+      ],
+      "explication": "<p><code>p3</code> est la variable ; son champ <code>naissance</code> est une <code>struct date</code>, dont on prend le champ <code>annee</code> : les points s'enchaînent. <code>personne</code> est le nom du modèle, pas une variable ; <code>annee</code> n'est pas un champ direct de <code>p3</code> ; <code>-&gt;</code> demanderait un pointeur.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Accéder à un champ",
+        "lien": "../generated_courses/cours-03-pointeurs-allocation-structures.html#acceder-a-un-champ"
+      }
+    },
+    {
+      "id": "q20",
+      "type": "ouverte",
+      "theme": "Pointeurs, mémoire et structures",
+      "difficulte": 2,
+      "enonce": "<p>Expliquer pourquoi on écrit <code>scanf(\"%d\", &amp;n)</code> et non <code>scanf(\"%d\", n)</code>, et pourquoi, en revanche, on écrit <code>scanf(\"%49s\", mot)</code> sans <code>&amp;</code> quand <code>mot</code> est un tableau de 50 <code>char</code>.</p>",
+      "reponse_modele": "<p>En C, une fonction reçoit une copie de ses arguments (passage par valeur). Avec <code>n</code>, <code>scanf</code> recevrait la valeur actuelle de <code>n</code> et ne pourrait pas modifier la variable. <code>&amp;n</code> lui donne l'adresse de <code>n</code>, où elle range le nombre lu. Pour un tableau, le nom <code>mot</code> vaut déjà l'adresse de sa première case : <code>scanf</code> sait donc où écrire les caractères, et <code>&amp;</code> est inutile. La largeur 49 laisse la place du <code>'\\0'</code>.</p>",
+      "criteres": [
+        "Les arguments sont passés par valeur : la fonction reçoit une copie",
+        "<code>&amp;n</code> est l'adresse de <code>n</code>, qui permet à <code>scanf</code> d'y écrire",
+        "Le nom d'un tableau vaut l'adresse de sa première case"
+      ],
+      "revoir": {
+        "texte": "Cours 3 · Modifier une variable dans une fonction",
+        "lien": "../generated_courses/cours-03-pointeurs-allocation-structures.html#modifier-une-variable-dans-une-fonction"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

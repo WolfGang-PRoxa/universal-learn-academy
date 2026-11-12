@@ -15,11 +15,11 @@ Chaque atelier offre :
 - **Claude** (serveur local) : conversation sur l'exercice, ou correction complète avec appréciation et remarques posées sur les éléments du dessin ;
 - l'**enregistrement** automatique du travail : dans le navigateur, et avec le serveur dans le dossier de la matière (`td_results/`).
 
-> Pour voir chaque éditeur, ouvrir `demo.html` depuis le serveur local (`studies/lancer.bat`, puis `http://127.0.0.1:5178/_outils/atelier/demo.html`). Exemple de TD réel : `L3/BDD/generated_courses/td-01-modeles-entites-associations.html` (repérage d'erreurs, modèle corrigé, modèle relationnel, huit requêtes SQL sur deux jeux de données).
+> Pour voir chaque éditeur, ouvrir `demo.html` depuis le serveur local (`lancer.bat`, puis `http://127.0.0.1:5178/_outils/atelier/demo.html`). Exemple de TD réel : `explore/informatique/bases-de-donnees-3/generated_courses/td-01-modeles-entites-associations.html` (repérage d'erreurs, modèle corrigé, modèle relationnel, huit requêtes SQL sur deux jeux de données).
 
 ## Utilisation
 
-- Le **serveur local** de l'outil de quiz fait aussi tourner l'atelier : `studies/lancer.bat`. Il apporte Claude, l'exécution du SQL et l'enregistrement dans `td_results/`. Le portail affiche, pour chaque matière, les TD interactifs et leur avancement.
+- Le **serveur local** de l'outil de quiz fait aussi tourner l'atelier : `lancer.bat`. Il apporte Claude, l'exécution du SQL et l'enregistrement dans `td_results/`. Le portail affiche, pour chaque matière, les TD interactifs et leur avancement.
 - Sans serveur, une page ouverte depuis le disque fonctionne quand même : dessin, contrôles, comparaison et solution. Le travail reste dans le navigateur, le SQL ne s'exécute pas, et « Claude » copie la demande pour claude.ai.
 - Sur le dessin :
   - double-clic sur le fond : nouvel élément ; sur un élément : le modifier (formulaire) ;
@@ -66,8 +66,8 @@ L'atelier s'appuie sur l'outil de quiz, qu'il charge s'il est absent : connexion
 
 | Élément | Emplacement |
 |---|---|
-| TD interactif | `<Niveau>/<Matière>/generated_courses/td-NN-<slug>.html`, par exemple `L3/BDD/generated_courses/td-01-diagrammes-de-classes.html` ; `tp-NN-…` pour un TP |
-| Travail enregistré | `<Niveau>/<Matière>/td_results/<nom de la page>.json` (écrit par le serveur) |
+| TD interactif | `explore/<domaine>/<cours>/generated_courses/td-NN-<slug>.html`, par exemple `explore/informatique/bases-de-donnees-3/generated_courses/td-01-diagrammes-de-classes.html` ; `tp-NN-…` pour un TP |
+| Travail enregistré | `<profil>/<cursus>/<cours>/td_results/<nom de la page>.json` (écrit par le serveur) |
 
 Un TD interactif est une page de la charte comme les autres : même en-tête, même vérificateur, lien depuis l'accueil de la matière (`index.html`, section des TD, badge `TD`). Il porte le nom du TD d'origine ; si une version papier mise en forme existe déjà, la version interactive la remplace ou s'appelle `td-NN-<slug>-interactif.html`.
 
@@ -379,3 +379,4 @@ La page charge alors `atelier.css` et `atelier.js`, comme un TD.
 - **1.7**, 1er novembre 2026 : objets dans l'éditeur `classes` (`objet c1 : Carre`, option `objets`, liens sans multiplicités, classe et valeurs comparées), pour le diagramme d'objets du TD 4 de génie logiciel. Boutons « + Classe » et « + Nœud » : le nouvel élément prend la première place libre, comme dans l'éditeur `cas` (`placeLibre`). Deux associations réflexives sur une classe se répartissent sur ses deux coins, une classe d'association réflexive se place à droite de sa boucle, les rôles longs ne passent plus sous les boîtes. Comparaison : écart de multiplicité d'une composition ou d'une agrégation corrigé (paire illisible, et signalé même quand le lien manquait).
 - **1.8**, 1er novembre 2026 : option `pert` du graphe (PERT potentiel-étapes : étapes datées, tâches fictives, placement en colonnes, contrôles et comparaison sur les tâches) et option `organigramme` des arbres (WBS, PBS), pour le TD 5 de génie logiciel. Table : une liste se compare avec ou sans espace après la virgule. Chronogramme : grille dense au-delà de 120 cases, pour les Gantt. `disposition` s'applique aussi au dessin de la solution.
 - **1.9**, 8 novembre 2026 : Ruby dans l'éditeur `code` : une définition préfixée (`private def …`, `protected def`, `public def`, `module_function def`) ouvre bien un bloc, et les commentaires `=begin … =end` sont ignorés dans le compte des `end`. Éditeur `classes` : les méthodes opérateurs de Ruby (`<=>(autre)`, `==`, `[]`, `+`) sont acceptées. Pour les TD 3 à 5 de POO.
+- **1.10**, 12 novembre 2026 : réorganisation ula. Le travail enregistré va dans l'espace du profil actif (`<profil>/<cursus>/<cours>/td_results/`), jamais dans `explore/` ; `outils/saisir.js` aussi. `outils/verifier.js` accepte les liens écrits depuis la racine du serveur et lit `ULA_RACINE`.

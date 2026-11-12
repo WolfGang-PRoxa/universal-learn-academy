@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="reseau">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · TCP et UDP · Réseaux L2</title>
+<meta name="description" content="Quiz interactif sur la couche transport : ports, multiplexage, en-tête TCP, indicateurs, séquence et acquittement, poignée de main, UDP (Réseaux, L2).">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="../generated_courses/index.html">Réseaux</a>
+    <span aria-current="page">Quiz · TCP et UDP</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Réseaux</span> Quiz · L2</p>
+    <h1>TCP et UDP : la couche transport</h1>
+    <p class="chapeau">Services de la couche transport, ports et multiplexage, en-tête TCP et indicateurs, numéros de séquence et d'acquittement, ouverture et fermeture, retransmission, UDP, choix entre TCP et UDP. 16 questions.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-06-couche-transport.html">Cours 6 · TCP et UDP : la couche transport</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 novembre 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Réseaux · L2 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "reseau-cours-06-couche-transport",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 6 · TCP et UDP : la couche transport",
+      "lien": "../generated_courses/cours-06-couche-transport.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "qcm-multi",
+      "theme": "Rôle et ports",
+      "difficulte": 1,
+      "enonce": "<p>Quels sont les trois services de la couche transport ?</p>",
+      "choix": [
+        "Le suivi des conversations",
+        "La segmentation et le réassemblage",
+        "L'identification des applications",
+        "Le routage entre réseaux",
+        "L'accès au média"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "explication": "<p>Le routage est le rôle de la couche réseau, l'accès au média celui de la couche liaison.</p>",
+      "revoir": {
+        "texte": "Cours 6 · Rôle de la couche transport",
+        "lien": "../generated_courses/cours-06-couche-transport.html#role-de-la-couche-transport"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "vrai-faux",
+      "theme": "Rôle et ports",
+      "difficulte": 2,
+      "enonce": "<p>Un routeur lit l'en-tête TCP des paquets pour choisir leur route.</p>",
+      "reponse": false,
+      "explication": "<p>Les routeurs ne lisent que l'en-tête IP. TCP et UDP ne sont traités que par les deux hôtes d'extrémité : ils vont de bout en bout.</p>",
+      "revoir": {
+        "texte": "Cours 6 · Deux protocoles : TCP et UDP",
+        "lien": "../generated_courses/cours-06-couche-transport.html#deux-protocoles-tcp-et-udp"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "numerique",
+      "theme": "Rôle et ports",
+      "difficulte": 1,
+      "enonce": "<p>Sur combien de bits est codé un numéro de port ?</p>",
+      "reponse": 16,
+      "tolerance": 0,
+      "unite": "bits",
+      "explication": "<p>16 bits, soit 65 536 valeurs, de 0 à 65 535.</p>",
+      "revoir": {
+        "texte": "Cours 6 · Les numéros de port",
+        "lien": "../generated_courses/cours-06-couche-transport.html#les-numeros-de-port"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "association",
+      "theme": "Rôle et ports",
+      "difficulte": 2,
+      "enonce": "<p>Associer chaque port bien connu à son service.</p>",
+      "paires": [
+        [
+          "22",
+          "SSH"
+        ],
+        [
+          "23",
+          "Telnet"
+        ],
+        [
+          "25",
+          "SMTP"
+        ],
+        [
+          "53",
+          "DNS"
+        ],
+        [
+          "80",
+          "HTTP"
+        ],
+        [
+          "443",
+          "HTTPS"
+        ]
+      ],
+      "intrus": [
+        "POP3"
+      ],
+      "explication": "<p>Ports à connaître : 20/21 FTP, 22 SSH, 23 Telnet, 25 SMTP, 53 DNS, 67/68 DHCP, 80 HTTP, 110 POP3, 143 IMAP, 443 HTTPS.</p>",
+      "revoir": {
+        "texte": "Cours 6 · Ports bien connus",
+        "lien": "../generated_courses/cours-06-couche-transport.html#ports-bien-connus"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "qcm",
+      "theme": "Rôle et ports",
+      "difficulte": 2,
+      "enonce": "<p>Quelles valeurs identifient une connexion TCP ?</p>",
+      "choix": [
+        "IP source, port source, IP destination, port destination",
+        "Port source et port destination seulement",
+        "IP source et IP destination seulement",
+        "Adresse MAC source et port destination"
+      ],
+      "reponse": 0,
+      "explication": "<p>Il faut les quatre : deux connexions vers le même serveur et le même port se distinguent par le port source ou l'adresse source.</p>",
+      "revoir": {
+        "texte": "Cours 6 · Multiplexage des connexions",
+        "lien": "../generated_courses/cours-06-couche-transport.html#multiplexage-des-connexions"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "association",
+      "theme": "En-tête TCP",
+      "difficulte": 2,
+      "enonce": "<p>Associer chaque champ de l'en-tête TCP à son rôle.</p>",
+      "paires": [
+        [
+          "Numéro de séquence",
+          "Position du premier octet de données dans le flux"
+        ],
+        [
+          "Numéro d'acquittement",
+          "Prochain octet attendu"
+        ],
+        [
+          "Fenêtre",
+          "Octets que le destinataire accepte encore de recevoir"
+        ],
+        [
+          "Somme de contrôle",
+          "Détection des erreurs"
+        ]
+      ],
+      "explication": "<p>Séquence et acquittement servent à remettre en ordre et confirmer la réception ; la fenêtre règle le débit (contrôle de flux).</p>",
+      "revoir": {
+        "texte": "Cours 6 · L'en-tête TCP",
+        "lien": "../generated_courses/cours-06-couche-transport.html#l-en-tete-tcp"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "qcm",
+      "theme": "En-tête TCP",
+      "difficulte": 3,
+      "enonce": "<p>L'octet des indicateurs d'un segment vaut 0x12. Quels indicateurs sont à 1 ?</p>",
+      "choix": [
+        "SYN et ACK",
+        "FIN et ACK",
+        "SYN seul",
+        "PSH et ACK"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Écrire 0x12 en binaire, puis lire chaque bit.</p>"
+      ],
+      "explication": "<p>0x12 = 0001 0010 : ACK (0001 0000) + SYN (0000 0010). C'est le deuxième temps de l'ouverture. FIN + ACK vaudrait 0x11, PSH + ACK 0x18.</p>",
+      "revoir": {
+        "texte": "Cours 6 · Les indicateurs",
+        "lien": "../generated_courses/cours-06-couche-transport.html#les-indicateurs"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "ordre",
+      "theme": "Connexion TCP",
+      "difficulte": 1,
+      "enonce": "<p>Remettre dans l'ordre les segments de l'ouverture d'une connexion TCP.</p>",
+      "elements": [
+        "Client → serveur : SYN",
+        "Serveur → client : SYN, ACK",
+        "Client → serveur : ACK"
+      ],
+      "explication": "<p>La poignée de main en trois temps : chacun envoie son SYN et acquitte celui de l'autre.</p>",
+      "revoir": {
+        "texte": "Cours 6 · Ouverture, échange et fermeture",
+        "lien": "../generated_courses/cours-06-couche-transport.html#ouverture-echange-et-fermeture"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "numerique",
+      "theme": "Connexion TCP",
+      "difficulte": 2,
+      "enonce": "<p>Un segment porte le numéro de séquence 7000 et 400 octets de données. Quel numéro d'acquittement le destinataire renvoie-t-il ?</p>",
+      "reponse": 7400,
+      "tolerance": 0,
+      "explication": "<p>Acquittement = séquence + nombre d'octets reçus = 7 400 : le numéro du prochain octet attendu.</p>",
+      "revoir": {
+        "texte": "Cours 6 · Numéros de séquence et d'acquittement",
+        "lien": "../generated_courses/cours-06-couche-transport.html#numeros-de-sequence-et-d-acquittement"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "numerique",
+      "theme": "Connexion TCP",
+      "difficulte": 3,
+      "enonce": "<p>Le client ouvre une connexion avec un numéro de séquence initial de 1000. Quel numéro d'acquittement porte le SYN, ACK du serveur ?</p>",
+      "reponse": 1001,
+      "tolerance": 0,
+      "indices": [
+        "<p>Un SYN ou un FIN compte pour un octet.</p>"
+      ],
+      "explication": "<p>Le SYN compte pour un octet, bien qu'il ne porte pas de données : le serveur attend ensuite l'octet 1001.</p>",
+      "revoir": {
+        "texte": "Cours 6 · Numéros de séquence et d'acquittement",
+        "lien": "../generated_courses/cours-06-couche-transport.html#numeros-de-sequence-et-d-acquittement"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "qcm",
+      "theme": "Connexion TCP",
+      "difficulte": 2,
+      "enonce": "<p>Combien de segments compte la fermeture normale d'une connexion TCP ?</p>",
+      "choix": [
+        "Quatre : FIN, ACK, FIN, ACK",
+        "Trois : FIN, FIN/ACK, ACK",
+        "Un seul RST",
+        "Deux : FIN, ACK"
+      ],
+      "reponse": 0,
+      "explication": "<p>Chaque sens se ferme séparément : FIN acquitté, puis FIN de l'autre côté, acquitté. RST, lui, coupe brutalement.</p>",
+      "revoir": {
+        "texte": "Cours 6 · Ouverture, échange et fermeture",
+        "lien": "../generated_courses/cours-06-couche-transport.html#ouverture-echange-et-fermeture"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "qcm",
+      "theme": "Connexion TCP",
+      "difficulte": 2,
+      "enonce": "<p>Que fait l'émetteur TCP si l'acquittement d'un segment n'arrive pas avant la fin de son minuteur ?</p>",
+      "choix": [
+        "Il retransmet le segment",
+        "Il ferme la connexion",
+        "Il envoie un RST",
+        "Il attend indéfiniment"
+      ],
+      "reponse": 0,
+      "explication": "<p>À l'expiration du minuteur armé à l'envoi, il réémet. Si l'original arrive quand même, le destinataire reconnaît le doublon à son numéro de séquence.</p>",
+      "revoir": {
+        "texte": "Cours 6 · Acquittement et retransmission",
+        "lien": "../generated_courses/cours-06-couche-transport.html#acquittement-et-retransmission"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "qcm-multi",
+      "theme": "UDP",
+      "difficulte": 2,
+      "enonce": "<p>Quels champs contient l'en-tête UDP ?</p>",
+      "choix": [
+        "Port source",
+        "Port destination",
+        "Longueur",
+        "Somme de contrôle",
+        "Numéro de séquence",
+        "Fenêtre"
+      ],
+      "reponses": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "explication": "<p>L'en-tête UDP n'a que 4 champs de 16 bits (8 octets). Séquence et fenêtre sont propres à TCP.</p>",
+      "revoir": {
+        "texte": "Cours 6 · UDP",
+        "lien": "../generated_courses/cours-06-couche-transport.html#udp"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "vrai-faux",
+      "theme": "UDP",
+      "difficulte": 1,
+      "enonce": "<p>UDP garantit que les datagrammes arrivent dans l'ordre d'envoi.</p>",
+      "reponse": false,
+      "explication": "<p>UDP n'a ni connexion, ni ordre, ni garantie d'arrivée : il est non fiable mais rapide.</p>",
+      "revoir": {
+        "texte": "Cours 6 · UDP",
+        "lien": "../generated_courses/cours-06-couche-transport.html#udp"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "association",
+      "theme": "TCP ou UDP",
+      "difficulte": 2,
+      "enonce": "<p>Quel protocole de transport convient à chaque usage ?</p>",
+      "paires": [
+        [
+          "Téléphonie sur IP",
+          "UDP : une donnée en retard ne sert plus"
+        ],
+        [
+          "Téléchargement d'un fichier",
+          "TCP : rien ne doit manquer"
+        ],
+        [
+          "Requête DNS",
+          "UDP : une question, une réponse, courtes"
+        ],
+        [
+          "Session SSH",
+          "TCP : chaque frappe compte, dans l'ordre"
+        ]
+      ],
+      "explication": "<p>UDP pour la vitesse, le temps réel et les petits échanges ; TCP quand la perte ou le désordre sont inacceptables.</p>",
+      "revoir": {
+        "texte": "Cours 6 · Choisir entre TCP et UDP",
+        "lien": "../generated_courses/cours-06-couche-transport.html#choisir-entre-tcp-et-udp"
+      }
+    },
+    {
+      "id": "q16",
+      "type": "ouverte",
+      "theme": "TCP ou UDP",
+      "difficulte": 3,
+      "enonce": "<p>Comparer TCP et UDP en quatre points.</p>",
+      "reponse_modele": "<p>TCP est orienté connexion (ouverture en trois temps), UDP sans connexion. TCP est fiable : il numérote, acquitte et retransmet, et remet les données dans l'ordre ; UDP ne garantit ni l'arrivée ni l'ordre. L'en-tête TCP fait au moins 20 octets, celui d'UDP 8. UDP est donc plus rapide et léger, adapté au temps réel et aux petits échanges ; TCP convient quand aucune perte n'est admise.</p>",
+      "criteres": [
+        "Connexion (TCP) ou non (UDP)",
+        "Fiabilité : acquittements, retransmission, ordre",
+        "Taille d'en-tête ou rapidité",
+        "Exemples d'usages"
+      ],
+      "revoir": {
+        "texte": "Cours 6 · Choisir entre TCP et UDP",
+        "lien": "../generated_courses/cours-06-couche-transport.html#choisir-entre-tcp-et-udp"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

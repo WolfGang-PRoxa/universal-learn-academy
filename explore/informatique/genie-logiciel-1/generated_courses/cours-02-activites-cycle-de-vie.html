@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="gl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Activités de développement et cycle de vie · Génie logiciel L3</title>
+<meta name="description" content="Cours 2 de génie logiciel (L3) : les activités de développement et leurs documents, phase par phase (avant-projet, initialisation, analyse et spécification, conception, réalisation et tests, recette, déploiement, maintenance), la gestion de configuration, puis les modèles de cycle de vie linéaires (cascade, V) et non linéaires (prototypage, incrémental, évolutif, spirale, fontaine, Y), avec leurs avantages et leurs limites.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<link rel="quiz" href="../generated_quizzes/quiz-cours-02-cycle-de-vie.html" title="Quiz · Activités et cycle de vie">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Génie logiciel 1</a>
+    <span aria-current="page">Cours 2 · Activités et cycle de vie</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Génie logiciel 1</span> Cours 2 · L3 S5</p>
+    <h1>Activités de développement et cycle de vie</h1>
+    <p class="chapeau">Le processus technique du cours 1, vu de près : les phases d'un projet, de l'avant-projet à la maintenance, ce que chacune produit et qui la valide ; puis les façons d'organiser ces phases, les modèles de cycle de vie, des plus linéaires (cascade, V) aux itératifs (incrémental, évolutif, spirale).</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/L3-175UD15-C2-etuPrint-Complet.pdf">L3-175UD15-C2-etuPrint-Complet.pdf</a> · 40 diapos ; fiches <a href="../cours/Fiches-Activit%C3%A9s%20du%20logiciel-20261016/">Activités du logiciel</a> (modèles de cycle de vie, initialisation et analyse, conception, réalisation, maintenance)</dd></div>
+      <div><dt>Enseignante</dt><dd>C. Piau-Toffolon</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-16">16 oct. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Nommer les phases d'un projet, leurs objectifs, leurs produits et la revue qui les clôt.</li>
+        <li>Associer chaque document à sa phase.</li>
+        <li>Distinguer les types de maintenance.</li>
+        <li>Décrire les modèles en cascade, en V, incrémental, évolutif, en spirale, et dire quand les choisir.</li>
+        <li>Citer les avantages et les limites des modèles linéaires et non linéaires.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-01-problematique-developpement.html">Cours 1</a> : processus technique, de gestion et qualité ; coût des erreurs selon leur origine ; maîtrise d'ouvrage et maîtrise d'œuvre.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les activités de développement <span class="ref">diapos 3–4</span></h2>
+    <p>Le cycle de vie d'un logiciel constitue le processus technique de développement. Il est géré par le processus de gestion et contrôlé par le processus qualité ; il représente l'évolution du développement, du cahier des charges au produit logiciel.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 560 200" width="560" role="img" aria-labelledby="fig-cycle-titre">
+        <title id="fig-cycle-titre">Le cahier des charges entre dans le processus technique, qui produit le produit logiciel ; le processus de gestion gère le processus technique, le processus qualité le contrôle.</title>
+        <defs>
+          <marker id="fleche-cycle" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="10" y="80" width="120" height="44" rx="8"/>
+        <text x="70" y="99" text-anchor="middle">Cahier</text>
+        <text x="70" y="116" text-anchor="middle">des charges</text>
+        <rect class="boite-accent" x="210" y="80" width="140" height="44" rx="8"/>
+        <text x="280" y="99" text-anchor="middle" class="gras accent">Processus</text>
+        <text x="280" y="116" text-anchor="middle" class="gras accent">technique</text>
+        <rect class="boite" x="430" y="80" width="120" height="44" rx="8"/>
+        <text x="490" y="99" text-anchor="middle">Produit</text>
+        <text x="490" y="116" text-anchor="middle">logiciel</text>
+        <path class="trait" d="M130 102 H206" marker-end="url(#fleche-cycle)"/>
+        <path class="trait" d="M350 102 H426" marker-end="url(#fleche-cycle)"/>
+        <rect class="boite" x="210" y="10" width="140" height="36" rx="8"/>
+        <text x="280" y="33" text-anchor="middle">Processus de gestion</text>
+        <path class="pointille" d="M280 46 V76" marker-end="url(#fleche-cycle)"/>
+        <text x="290" y="66" class="t2">gère</text>
+        <rect class="boite" x="210" y="156" width="140" height="36" rx="8"/>
+        <text x="280" y="179" text-anchor="middle">Processus qualité</text>
+        <path class="pointille" d="M280 156 V128" marker-end="url(#fleche-cycle)"/>
+        <text x="290" y="146" class="t2">contrôle</text>
+      </svg>
+      <figcaption>Le cycle de vie, processus technique, entre gestion et qualité (diapo 3).</figcaption>
+    </figure>
+    <p>Le cycle de vie est formé d'activités de développement, et l'organisation de ces activités donne différents types de cycle (sections 6 et 7).</p>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Principe <span>Les trois grandes étapes</span></p>
+      <p>Tout cycle de vie inclut trois grandes étapes successives : 1) comprendre les besoins du client ; 2) concevoir une solution pour répondre aux besoins ; 3) programmer la solution.</p>
+    </div>
+    <p>Pourquoi se contraindre à respecter ces trois étapes ?</p>
+    <ul>
+      <li><strong>Parce que les autres démarches sont inefficaces</strong> : si l'on néglige l'analyse des besoins, il faudra modifier ou refaire la conception et la programmation ; si l'on néglige la conception, il faudra la faire ou la terminer en même temps que la programmation, qui sera inutilement difficile.</li>
+      <li><strong>Parce que c'est une démarche logique et efficace</strong> : il est plus facile de découper son travail en étapes précises et de les respecter que de vouloir tout faire en même temps. Et les trois étapes existent de toute façon, d'une manière ou d'une autre : un logiciel a besoin d'être programmé pour exister, il aura forcément in fine une architecture, même si elle n'a pas été conçue, et il devra forcément répondre aux besoins, sinon il ne sera pas accepté par le client.</li>
+      <li><strong>Parce que les trois étapes permettent de faire un produit de qualité.</strong></li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les phases et les documents <span class="ref">diapos 5–6</span></h2>
+    <p>Un cycle se déroule en plusieurs phases, regroupées en trois temps : l'avant-projet, le projet, puis l'exploitation et la maintenance. Chaque phase produit des documents.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 620 260" width="620" role="img" aria-labelledby="fig-phases-titre">
+        <title id="fig-phases-titre">Les phases d'un cycle dans le temps : l'avant-projet, puis le projet (initialisation, développement — analyse et spécification, conception, réalisation — et recette), puis l'exploitation et la maintenance ; sous chaque phase, ses documents : PQ et PD pour l'initialisation, DB pour l'analyse, CG et CD pour la conception, PR, CU et CI pour la réalisation, CV pour la recette, DI et DM pour l'exploitation et la maintenance.</title>
+        <defs>
+          <marker id="fleche-phases" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <path class="trait" d="M10 16 H110" marker-end="url(#fleche-phases)"/>
+        <text x="10" y="11" class="t2">temps</text>
+        <rect class="boite" x="10" y="26" width="60" height="40" rx="6"/>
+        <text x="40" y="43" text-anchor="middle" class="gras">Avant-</text>
+        <text x="40" y="59" text-anchor="middle" class="gras">projet</text>
+        <rect class="boite-accent" x="76" y="26" width="440" height="40" rx="6"/>
+        <text x="296" y="51" text-anchor="middle" class="gras accent">Projet</text>
+        <rect class="boite" x="524" y="26" width="90" height="40" rx="6"/>
+        <text x="569" y="43" text-anchor="middle" class="gras">Exploitation</text>
+        <text x="569" y="59" text-anchor="middle" class="t2">Maintenance</text>
+        <rect class="boite" x="76" y="74" width="30" height="96" rx="6"/>
+        <text x="96" y="122" text-anchor="middle" transform="rotate(-90 96 122)">Initialisation</text>
+        <rect class="boite" x="112" y="74" width="320" height="34" rx="6"/>
+        <text x="272" y="96" text-anchor="middle">Développement</text>
+        <rect class="boite" x="438" y="74" width="78" height="34" rx="6"/>
+        <text x="477" y="96" text-anchor="middle">Recette</text>
+        <rect class="boite" x="112" y="114" width="100" height="40" rx="6"/>
+        <text x="162" y="131" text-anchor="middle">Analyse &amp;</text>
+        <text x="162" y="147" text-anchor="middle">spécification</text>
+        <rect class="boite" x="222" y="114" width="100" height="40" rx="6"/>
+        <text x="272" y="139" text-anchor="middle">Conception</text>
+        <rect class="boite" x="332" y="114" width="100" height="40" rx="6"/>
+        <text x="382" y="139" text-anchor="middle">Réalisation</text>
+        <path class="pointille" d="M73 70 V255 M109 160 V255 M217 160 V255 M327 160 V255 M435 70 V255 M520 26 V255"/>
+        <g class="mono">
+          <text x="90" y="192" text-anchor="middle">PQ</text>
+          <text x="90" y="212" text-anchor="middle">PD</text>
+          <text x="162" y="192" text-anchor="middle">DB</text>
+          <text x="272" y="192" text-anchor="middle">CG</text>
+          <text x="272" y="212" text-anchor="middle">CD</text>
+          <text x="382" y="192" text-anchor="middle">PR</text>
+          <text x="382" y="212" text-anchor="middle">CU</text>
+          <text x="382" y="232" text-anchor="middle">CI</text>
+          <text x="477" y="192" text-anchor="middle">CV</text>
+          <text x="569" y="172" text-anchor="middle">DI</text>
+          <text x="569" y="192" text-anchor="middle">DM</text>
+        </g>
+      </svg>
+      <figcaption>Les phases d'un cycle et leurs documents (diapo 5). Les sigles sont détaillés dans le tableau suivant.</figcaption>
+    </figure>
+
+    <div class="tableau compact">
+      <table>
+        <caption>Les principaux documents d'un projet</caption>
+        <thead><tr><th>Famille</th><th>Sigle</th><th>Document</th><th>Contenu</th></tr></thead>
+        <tbody>
+          <tr><th rowspan="2">Planification</th><td>PQ</td><td>Plan d'assurance qualité</td><td>démarche qualité, outils, contrôles prévus</td></tr>
+          <tr><td>PD</td><td>Plan de développement</td><td>moyens, coût et planning prévus</td></tr>
+          <tr><th rowspan="3">Étude</th><td>DB</td><td>Dossier de définition des besoins</td><td>l'existant, les besoins et les contraintes</td></tr>
+          <tr><td>CG</td><td>Dossier de conception générale</td><td>architecture et fonctionnement global</td></tr>
+          <tr><td>CD</td><td>Dossier de conception détaillée</td><td>rôle, architecture et fonctionnement de chaque module</td></tr>
+          <tr><th rowspan="6">Techniques</th><td>PR</td><td>Dossier de programme</td><td>description technique de chaque module</td></tr>
+          <tr><td>CU</td><td>Cahier de tests unitaires</td><td>tests de chaque module</td></tr>
+          <tr><td>CI</td><td>Cahier de tests d'intégration</td><td>tests de tous les modules</td></tr>
+          <tr><td>CV</td><td>Cahier de tests de validation</td><td>tests en situation d'exploitation</td></tr>
+          <tr><td>DI</td><td>Dossier d'installation</td><td>description des procédures d'installation</td></tr>
+          <tr><td>DM</td><td>Dossier de maintenance</td><td>historique des modifications</td></tr>
+          <tr><th>Utilisateurs</th><td>—</td><td>Mode d'emploi, documents de formation</td><td>manuels, tutoriels…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les phases une à une <span class="ref">diapos 7–20 · fiches Initialisation-Analyse, Conception, Réalisation, Maintenance</span></h2>
+    <p>Chaque phase se décrit de la même façon : ses objectifs, ses produits (les livrables), ses moyens, et la revue qui la clôt, où la maîtrise d'ouvrage valide les livrables avant de passer à la suite.</p>
+
+    <h3>L'avant-projet (phase préliminaire)</h3>
+    <p>L'avant-projet définit les rôles et les responsabilités entre la maîtrise d'ouvrage et la maîtrise d'œuvre, puis établit le cahier des charges, en accord avec le client et le fournisseur.</p>
+    <dl class="glossaire">
+      <dt>Maîtrise d'ouvrage (MOA)</dt>
+      <dd>Elle commande la réalisation à un fournisseur, maître d'œuvre interne ou externe ; pour les gros projets, le développement peut être organisé en lots. Elle peut lancer un appel d'offres pour choisir ses fournisseurs, négocie avec eux, budgétise et finance le projet.</dd>
+      <dt>Maîtrise d'œuvre (MOE)</dt>
+      <dd>Le fournisseur qui réalise le produit : le chef de projet, responsable de la gestion du projet, et l'équipe projet, qui développe le produit.</dd>
+    </dl>
+    <p><strong>Produits</strong> : l'appel d'offres éventuel (document d'appel à réalisation) et le cahier des charges (document présentant les besoins du client, cours 3). <strong>Moyens</strong> : la maîtrise d'ouvrage. <strong>Revue de contrat</strong> : validation du cahier des charges et du contrat avant de passer à la phase suivante.</p>
+
+    <h3>L'initialisation (étude d'opportunité ou de faisabilité)</h3>
+    <p>L'initialisation organise le développement du projet : prévoir les moyens de gestion, la planification des tâches et les moyens humains selon le budget, et rédiger le plan de développement logiciel.</p>
+    <p><strong>Produits</strong> : le plan de développement (PD), qui décrit les livrables, les phases, les moyens de gestion, le planning prévisionnel, les coûts, les risques et les procédures correctives ; le plan d'assurance qualité (PQ). <strong>Moyens</strong> : le chef de projet de la MOE établit le PD. <strong>Revue de planification</strong> : validation des livrables de la phase par la MOA.</p>
+    <p>La fiche « Initialisation » regroupe sous le nom d'<dfn>étude préalable</dfn> les tâches techniques de cette phase : dresser un état de l'existant et analyser ses forces et ses faiblesses, identifier les idées ou les besoins de l'utilisateur, formuler des solutions possibles, faire des études de faisabilité, planifier au besoin la transition entre l'ancien logiciel et le nouveau, définir les principaux besoins des utilisateurs.</p>
+
+    <h3>L'analyse et la spécification des besoins</h3>
+    <p>Cette phase étudie et comprend les besoins des utilisateurs, définit leur domaine métier (l'existant) et les contraintes :</p>
+    <ul>
+      <li>les <dfn>contraintes fonctionnelles</dfn> (CF), liées directement au métier : la logique d'accès aux fonctionnalités, des interfaces de saisie aussi proches que possible des documents papier… ;</li>
+      <li>les <dfn>contraintes techniques</dfn> (CT), liées aux conditions d'exploitation : certains types de périphériques, des temps de traitement acceptables, les technologies employées…</li>
+    </ul>
+    <p>On y rédige en commun le dossier de définition des besoins (consensus sur les fonctionnalités du produit et les raisons de ces choix ; chaque fonctionnalité est décrite par son apport au métier de l'utilisateur, en entrées, traitements et sorties) et un dossier de tests de validation, qui fixe des critères d'acceptation pour chaque fonction métier ; ces tests seront réalisés à la recette.</p>
+    <p><strong>Produits</strong> : le dossier de définition des besoins (DB), les spécifications des IHM (interfaces homme-machine), le dossier de tests de validation. <strong>Moyens</strong> : la MOE fournit les livrables ; des analystes recueillent les besoins (audit sur le lieu de travail, réunions avec le client et des utilisateurs finaux, interviews d'experts du domaine) ; des ergonomes et des spécialistes des IHM réalisent et présentent des interfaces ; on utilise un langage de modélisation, par exemple les diagrammes de cas d'utilisation et de séquence d'UML (cours 4). <strong>Revue de spécifications</strong> : validation des livrables par la MOA.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Définition et spécification des besoins (fiche Analyse)</span></p>
+      <p>La <dfn>définition des besoins</dfn> est un énoncé, en langue naturelle, des services que le système est censé fournir à l'utilisateur, compréhensible par les décideurs côté client et côté contractant, et par les utilisateurs et acheteurs potentiels. La <dfn>spécification des besoins</dfn> est un document structuré qui énonce ces services plus en détail : assez précis pour servir de base contractuelle entre le client et le fournisseur, il peut utiliser des techniques de spécification formelle, selon le bagage technique du client.</p>
+    </div>
+    <p>Selon la fiche, une spécification comporte la description de l'environnement du logiciel, la spécification fonctionnelle (toutes les fonctions à offrir), le comportement en cas d'erreur, les performances requises (temps de réponse, encombrement mémoire, sécurité de fonctionnement), les interfaces avec l'utilisateur, les interfaces avec d'autres logiciels et le matériel, et les contraintes de réalisation (environnement de développement, langage, normes à suivre). Pendant l'analyse, on prépare aussi les tests de réception (<span class="en" lang="en">acceptance test</span>) et une version provisoire des manuels.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Les points clés de l'analyse</span></p>
+      <ul>
+        <li>Pour les gros systèmes, il est difficile de formuler une spécification définitive : on suppose que les besoins initiaux sont incomplets et incohérents.</li>
+        <li>Dans un langage naturel non structuré, les incohérences et les oublis sont difficiles à détecter : il faut toujours imposer une structure à la définition des besoins.</li>
+        <li>Les besoins changent inévitablement : le cahier des charges doit être facilement modifiable.</li>
+      </ul>
+    </div>
+
+    <h3>La conception <span class="badge examen">Test</span></h3>
+    <p>La conception établit l'architecture générale, puis l'architecture détaillée : deux processus successifs. Selon la fiche, c'est la période pendant laquelle l'architecture logicielle, les composants, les données et les interfaces sont conçus et documentés pour satisfaire les exigences.</p>
+    <dl class="glossaire">
+      <dt>Conception générale (architecturale, <span lang="en">preliminary design</span>)</dt>
+      <dd>Définition de l'architecture : découpage en modules métiers et en modules techniques ; description statique (structure : en UML, diagrammes de classes, de composants, de déploiement) et dynamique (fonctionnement : diagrammes de communication, d'états-transitions, d'activité) ; schémas des bases de données relationnelles. On réévalue au besoin la planification (PD et PQ), on rédige le dossier de conception générale et le dossier des tests d'intégration, qui seront effectués pendant la réalisation. Si nécessaire, on ébauche d'abord plusieurs variantes et l'on choisit celle qui offre le meilleur rapport coûts-avantages.</dd>
+      <dt>Conception détaillée (<span lang="en">detailed design</span>)</dt>
+      <dd>Architecture détaillée de chaque module, jusqu'à des composants faciles à implémenter et à tester ; reprise de modules existants sur le marché, notamment techniques (<span lang="en">frameworks</span> d'accès aux SGBDR, de journalisation, de gestion des connexions et des autorisations) ; application de patrons de conception (<span lang="en">design patterns</span>) ; description statique et dynamique interne ; pour chaque composant, son interface, ses algorithmes, le traitement des erreurs, ses performances. On rédige le dossier de conception détaillée et celui des tests unitaires.</dd>
+    </dl>
+    <p><strong>Produits</strong> : dossier de conception générale (CG), dossier de tests d'intégration, dossier de conception détaillée (CD), dossier de tests unitaires. <strong>Moyens</strong> : la MOE fournit les livrables. <strong>Revues</strong> : revue de conception générale, puis revue de conception détaillée, chacune validée par la MOA avant de poursuivre.</p>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Cohésion et couplage</span></p>
+      <p>La composante la plus importante de la qualité d'une conception est la maintenabilité. On l'obtient en maximisant la <dfn>cohésion</dfn> à l'intérieur des composants et en minimisant le <dfn>couplage</dfn> entre eux (fiche Conception).</p>
+    </div>
+
+    <h3>La réalisation</h3>
+    <p>La réalisation code les modules, en implémentant la conception détaillée. On y réutilise au maximum l'existant, on utilise des outils d'automatisation (génération de squelettes d'application, ateliers de création d'IHM qui génèrent le code, outils d'aide à la gestion des erreurs), on respecte des standards de programmation (commentaires, règles de nommage…), on rédige une documentation de programme pour chaque module, et l'on contrôle le respect des standards par une revue de code, menée par le chef de projet ou un autre membre de l'équipe.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Les deux niveaux de tests de la réalisation</caption>
+        <thead><tr><th></th><th>Tests unitaires</th><th>Tests d'intégration</th></tr></thead>
+        <tbody>
+          <tr><th>Portée</th><td>chaque module</td><td>tous les modules assemblés</td></tr>
+          <tr><th>Préparés pendant</th><td>la conception détaillée</td><td>la conception générale</td></tr>
+          <tr><th>Exécutés par</th><td>le programmeur ou un testeur</td><td>des testeurs extérieurs à l'équipe : dérouler les scénarios, vérifier que les résultats sont conformes</td></tr>
+          <tr><th>Document</th><td>cahier de tests unitaires (CU)</td><td>cahier de tests d'intégration (CI)</td></tr>
+          <tr><th>Contrôle</th><td>revue de tests unitaires par le chef de projet</td><td>revue d'intégration par le chef de projet</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>Produits</strong> : les programmes, la documentation de programme (PR), les cahiers CU et CI. <strong>Moyens</strong> : la MOE ; codage par les membres de l'équipe, revue de code par lecture croisée, revues de tests unitaires et d'intégration par le chef de projet.</p>
+    <p>La fiche Réalisation détaille le test unitaire (un jeu de données de test par composant, exécution, comparaison des résultats obtenus aux résultats attendus, consignation ; un composant erroné est renvoyé à son auteur, puis retesté) et l'intégration (assembler un composant à partir de plus petits, le tester, comparer, engager une modification s'il n'est pas conforme, sinon rédiger le compte rendu et archiver sources, objets, exécutables, jeux de tests et résultats). Elle ajoute une <dfn>phase d'installation</dfn> (<span lang="en">delivery</span>) : installer le logiciel dans son environnement d'exploitation, ou dans un environnement qui le simule, et vérifier qu'il se comporte comme le demande la spécification.</p>
+
+    <h3>La recette</h3>
+    <p>La recette est la réception, par la MOA, des produits développés par la MOE : programmes, documents…</p>
+    <ol class="etapes">
+      <li><strong>Contrôle de recevabilité</strong> : vérifier que tous les livrables sont livrés ; la MOA et la MOE signent le bordereau de livraison.</li>
+      <li><strong>Qualification</strong> : des tests métiers, en conditions proches des conditions réelles d'exploitation, préparés pendant les spécifications et exécutés par des utilisateurs finaux, qui remplissent un cahier de tests de validation.</li>
+      <li><strong>Revue de recette</strong> par la MOA ; en cas d'accord, signature du procès-verbal de recette.</li>
+    </ol>
+    <p><strong>Produits</strong> : le bordereau de livraison, le cahier de tests de validation (CV), le <dfn>procès-verbal de recette</dfn>, qui transfère la responsabilité de la conception et de la réalisation de la MOE à la MOA. <strong>Moyens</strong> : la MOA réceptionne les produits, contrôle leur recevabilité, fait les tests de validation et la revue de recette.</p>
+
+    <h3>Le déploiement</h3>
+    <p>Le déploiement installe le logiciel (rédiger le dossier d'installation, c'est-à-dire les procédures de déploiement), le diffuse, met en place l'assistance, puis l'exploite, c'est-à-dire l'utilise dans un environnement de production.</p>
+    <ul>
+      <li>Faible diffusion : dupliquer la procédure d'installation. Large diffusion : créer un <span lang="en">packaging</span> (le logiciel et les documents utilisateur imprimés) et choisir un ou plusieurs canaux de distribution.</li>
+      <li>Assistance : procédure de remontée des anomalies vers le fournisseur (MOE), formation des utilisateurs finaux, <span lang="en">hot line</span>.</li>
+    </ul>
+    <p><strong>Produits</strong> : le dossier d'installation (DI), le <span lang="en">packaging</span>. <strong>Moyens</strong> : pour un projet important, l'équipe de développement de la MOE assiste l'équipe d'exploitation du client pour l'installation et le début de l'exploitation ; en cas de large diffusion, des distributeurs, des formations, une hot line. <strong>Revue d'installation</strong> par la MOA.</p>
+
+    <h3>La maintenance <span class="badge examen">QCM</span></h3>
+    <p>La maintenance corrige les anomalies d'exploitation et fait évoluer les fonctionnalités du produit. Elle produit les mises à jour des documents concernés et du logiciel, et le dossier de maintenance (DM) ; elle est confiée à l'équipe de maintenance de la MOE, en liaison avec les distributeurs.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Les types de maintenance selon la diapo 20</caption>
+        <thead><tr><th>But</th><th>Type</th><th>Définition</th></tr></thead>
+        <tbody>
+          <tr><th rowspan="2">Corriger les anomalies</th><td>Corrective</td><td>correction de simples bugs (mise à jour des dossiers de programme et de tests)</td></tr>
+          <tr><td>Évolutive</td><td>correction qui nécessite une mise à jour de la conception, de la réalisation et des tests</td></tr>
+          <tr><th rowspan="2">Faire évoluer les fonctionnalités</th><td>Adaptative</td><td>ajout, modification ou retrait suite à un manque constaté en exploitation ou à une évolution des besoins</td></tr>
+          <tr><td>Préventive</td><td>ajout ou modification pour anticiper de futures demandes, ou pour suivre ou devancer la concurrence</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Dans les deux derniers cas, on met à jour les spécifications, la conception, la réalisation et les tests.</p>
+    <p>La fiche Maintenance découpe autrement, avec la part de chaque type dans la maintenance totale :</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Les types de maintenance selon la fiche Maintenance</caption>
+        <thead><tr><th>Type</th><th>Définition</th><th>Part</th></tr></thead>
+        <tbody>
+          <tr><td>Corrective</td><td>corrige les erreurs et les défauts (utilité, utilisabilité, fiabilité), localise la partie du code responsable, estime l'impact d'une modification ; donne lieu à de nouvelles livraisons (<span lang="en">releases</span>)</td><td>21 %</td></tr>
+          <tr><td>Adaptative</td><td>ajuste le logiciel à l'évolution de son environnement d'exécution, des fonctions à satisfaire et des conditions d'utilisation : changement de SGBD, de machine, de taux de TVA, passage à l'an 2000…</td><td>25 %</td></tr>
+          <tr><td>Perfective et d'extension (évolutive)</td><td>accroît et améliore les possibilités du logiciel (services offerts, interface, performances), et donne lieu à de nouvelles versions</td><td>50 %</td></tr>
+          <tr><td>Préventive</td><td>prévient une maintenance future</td><td>4 %</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> Les deux classements ne donnent pas le même sens aux mots : pour la diapo, la maintenance « évolutive » est une correction qui remonte jusqu'à la conception, et l'« adaptative » répond à un manque ou à une évolution des besoins ; pour la fiche, l'« évolutive » (ou perfective) ajoute des possibilités, et l'« adaptative » suit l'environnement technique. Le QCM 1 (question 11) reprend les définitions de la diapo : la maintenance adaptative y est l'« ajout, modification ou retrait suite à un manque constaté en exploitation ou une évolution des besoins ».</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Toute correction a un coût</span></p>
+      <p>La plupart des corrections introduisent de nouvelles erreurs, et le coût d'une correction augmente exponentiellement avec le délai de détection. Sauf pour des dépannages mineurs, la maintenance réapplique le cycle de développement, sous une forme simplifiée (fiche Maintenance).</p>
+    </div>
+    <p>La fiche décrit aussi le <dfn>support</dfn> (dépanner, réappliquer le cycle pour les modifications importantes, distribuer les mises à jour, fournir une assistance technique et un journal des demandes) et la <dfn>phase de retrait</dfn> (<span lang="en">retirement phase</span>) : avertir les utilisateurs, exploiter en parallèle le logiciel retiré et son successeur, arrêter le support.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Gestion de version et de configuration <span class="ref">diapo 21</span></h2>
+    <p>Tout au long du cycle, le logiciel et ses documents changent de version : il faut savoir à tout moment ce qui compose chaque version, et pourquoi elle a changé.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Gestion de configuration (SWEBOK)</span></p>
+      <p>« Une discipline d'identification de la configuration d'un système à des points distincts, dans le temps, ayant pour but de contrôler systématiquement les changements à la configuration, et maintenir son intégrité et sa traçabilité de configuration tout au long du cycle de vie du système » (Ber97).</p>
+    </div>
+    <p>C'est une activité transversale, qui sert aux autres activités. <span class="badge ajout">Ajout</span> Aujourd'hui, elle passe par des outils de gestion de versions comme Git : chaque modification est enregistrée, datée, attribuée et réversible, et une version livrée correspond à un état identifié des sources, des tests et des documents.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Cycle de vie et modèles de développement <span class="ref">diapos 22–23</span></h2>
+    <p>Un modèle de cycle de vie organise les activités précédentes dans le temps. Il établit un paradigme, une façon de faire ; il définit les activités et les produits du projet ; il fournit un vocabulaire commun ; il rend le processus visible et contrôlable.</p>
+    <p>Selon la fiche « Modèles de cycle de vie », il apporte stabilité, contrôle et organisation à une activité qui peut vite devenir chaotique, et favorise une meilleure estimation des coûts et des besoins, une meilleure coordination, une meilleure productivité, une meilleure visibilité. Adopter et appliquer un cycle de vie est un signe de maturité pour une entreprise.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Les modèles de développement</caption>
+        <thead><tr><th>Modèles linéaires</th><th>Modèles non linéaires</th></tr></thead>
+        <tbody>
+          <tr><td>en cascade, en V, en X (et, selon la fiche, transformationnel)</td><td>incrémental, évolutif, en spirale, en Y, de la fontaine</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le cycle PDCA</span> <span class="badge examen">QCM</span></p>
+      <p>La diapo 23 cite aussi le <dfn>modèle PDCA</dfn> (Shewhart, 1938 ; Arthur, 1992), la « roue de Deming » de l'amélioration continue, sur laquelle le QCM 1 pose une question. Ses quatre temps : <strong>P</strong>lan (planifier), <strong>D</strong>o (réaliser), <strong>C</strong>heck (vérifier), <strong>A</strong>ct (agir, améliorer), puis l'on recommence. Ce n'est pas un modèle de cycle de vie du logiciel, mais le principe de la démarche qualité du cours 1, que les modèles itératifs reprennent.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les modèles linéaires <span class="ref">diapos 24–28</span></h2>
+    <p>Dans un modèle linéaire, les phases se suivent dans un ordre fixe, du besoin des utilisateurs au produit fini, chacune validée avant la suivante.</p>
+
+    <h3>Le modèle en cascade <span class="badge examen">Test</span></h3>
+    <p>C'est le plus simple des modèles. Il repose sur une succession de phases : la sortie d'une phase est l'entrée de la suivante, il n'y a en principe pas de retour en arrière, et chaque phase est validée avant de passer à la suivante. Chaque phase a un produit principal, une activité principale (la production de ce produit) et ses propres acteurs.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 600 330" width="600" role="img" aria-labelledby="fig-cascade-titre">
+        <title id="fig-cascade-titre">Le modèle en cascade : spécification du logiciel (dossier de définition des besoins, plan d'assurance qualité, plan de développement), conception préliminaire (dossier de conception préliminaire), conception détaillée (dossier de conception détaillée), codage (dossier de programme), tests unitaires (cahier de tests), intégration (programme de référence), validation (produit logiciel), exploitation et maintenance ; des revues de spécifications, de conception préliminaire et de conception détaillée ferment les premières phases.</title>
+        <defs>
+          <marker id="fleche-cascade" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <g>
+          <rect class="boite" x="10" y="10" width="110" height="32" rx="6"/><text x="65" y="31" text-anchor="middle">Spécification</text>
+          <rect class="boite" x="60" y="50" width="110" height="32" rx="6"/><text x="115" y="71" text-anchor="middle">Concep. prélim.</text>
+          <rect class="boite" x="110" y="90" width="110" height="32" rx="6"/><text x="165" y="111" text-anchor="middle">Concep. détaillée</text>
+          <rect class="boite" x="160" y="130" width="110" height="32" rx="6"/><text x="215" y="151" text-anchor="middle">Codage</text>
+          <rect class="boite" x="210" y="170" width="110" height="32" rx="6"/><text x="265" y="191" text-anchor="middle">Tests unitaires</text>
+          <rect class="boite" x="260" y="210" width="110" height="32" rx="6"/><text x="315" y="231" text-anchor="middle">Intégration</text>
+          <rect class="boite" x="310" y="250" width="110" height="32" rx="6"/><text x="365" y="271" text-anchor="middle">Validation</text>
+          <rect class="boite-accent" x="360" y="290" width="110" height="34" rx="6"/><text x="415" y="304" text-anchor="middle" class="accent">Exploitation</text><text x="415" y="319" text-anchor="middle" class="accent">Maintenance</text>
+        </g>
+        <path class="trait" d="M65 42 V46 H72" marker-end="url(#fleche-cascade)"/>
+        <path class="trait" d="M115 82 V86 H122" marker-end="url(#fleche-cascade)"/>
+        <path class="trait" d="M165 122 V126 H172" marker-end="url(#fleche-cascade)"/>
+        <path class="trait" d="M215 162 V166 H222" marker-end="url(#fleche-cascade)"/>
+        <path class="trait" d="M265 202 V206 H272" marker-end="url(#fleche-cascade)"/>
+        <path class="trait" d="M315 242 V246 H322" marker-end="url(#fleche-cascade)"/>
+        <path class="trait" d="M365 282 V286 H372" marker-end="url(#fleche-cascade)"/>
+        <g class="t2">
+          <text x="128" y="23">→ besoins (DB), plan qualité (PQ),</text>
+          <text x="140" y="37">plan de développement (PD)</text>
+          <text x="178" y="71">→ dossier de conception préliminaire</text>
+          <text x="228" y="111">→ dossier de conception détaillée</text>
+          <text x="278" y="151">→ dossier de programme</text>
+          <text x="328" y="191">→ cahier de tests</text>
+          <text x="378" y="231">→ programme de référence</text>
+          <text x="428" y="271">→ produit logiciel</text>
+        </g>
+      </svg>
+      <figcaption>Le modèle en cascade et le produit de chaque phase (diapo 25). Une revue clôt la spécification, la conception préliminaire et la conception détaillée.</figcaption>
+    </figure>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p><strong>Apports</strong></p>
+        <ul>
+          <li>Convient au développement de logiciels sans risque de faisabilité.</li>
+          <li>Il est très précis et très détaillé.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p><strong>Limites</strong></p>
+        <ul>
+          <li>Rigidité des phases : vue trop idéalisée du processus.</li>
+          <li>Difficulté d'intégrer et d'anticiper le changement.</li>
+          <li>Client trop absent du processus.</li>
+          <li>Si une phase n'est pas maîtrisée, risque d'erreurs en avalanche.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Le modèle en V <span class="badge examen">Examen</span></h3>
+    <p>Le modèle en V améliore le modèle en cascade : on « plie » la ligne pour mettre en évidence la correspondance entre la production d'un produit et sa validation par des tests. La branche descendante décompose et définit ; la branche montante intègre et vérifie. Chaque étape de la descente prépare le plan de test de l'étape qui lui fait face, et c'est cette étape qui la valide.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 600 300" width="600" role="img" aria-labelledby="fig-v-titre">
+        <title id="fig-v-titre">Le modèle en V : à gauche, en descendant, définition des besoins, conception architecturale, conception détaillée, codage ; à droite, en remontant, tests unitaires, tests d'intégration, tests système, tests d'acceptation. Chaque étape de gauche fournit un plan de test à l'étape de droite qui lui fait face, et cette étape la valide : tests d'acceptation et besoins, tests système et conception architecturale, tests d'intégration et conception détaillée, tests unitaires et codage.</title>
+        <defs>
+          <marker id="fleche-v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="20" y="20" width="130" height="44" rx="6"/><text x="85" y="39" text-anchor="middle" class="gras">Définition</text><text x="85" y="55" text-anchor="middle" class="gras">des besoins</text>
+        <rect class="boite" x="65" y="90" width="130" height="44" rx="6"/><text x="130" y="109" text-anchor="middle" class="gras">Conception</text><text x="130" y="125" text-anchor="middle" class="gras">architecturale</text>
+        <rect class="boite" x="110" y="160" width="130" height="44" rx="6"/><text x="175" y="179" text-anchor="middle" class="gras">Conception</text><text x="175" y="195" text-anchor="middle" class="gras">détaillée</text>
+        <rect class="boite-accent" x="155" y="230" width="130" height="44" rx="6"/><text x="220" y="257" text-anchor="middle" class="gras accent">Codage</text>
+        <rect class="boite" x="450" y="20" width="130" height="44" rx="6"/><text x="515" y="39" text-anchor="middle" class="gras">Tests</text><text x="515" y="55" text-anchor="middle" class="gras">d'acceptation</text>
+        <rect class="boite" x="405" y="90" width="130" height="44" rx="6"/><text x="470" y="117" text-anchor="middle" class="gras">Tests système</text>
+        <rect class="boite" x="360" y="160" width="130" height="44" rx="6"/><text x="425" y="179" text-anchor="middle" class="gras">Tests</text><text x="425" y="195" text-anchor="middle" class="gras">d'intégration</text>
+        <rect class="boite" x="315" y="230" width="130" height="44" rx="6"/><text x="380" y="249" text-anchor="middle" class="gras">Tests</text><text x="380" y="265" text-anchor="middle" class="gras">unitaires</text>
+        <path class="trait" d="M85 64 L110 87" marker-end="url(#fleche-v)"/>
+        <path class="trait" d="M130 134 L155 157" marker-end="url(#fleche-v)"/>
+        <path class="trait" d="M175 204 L200 227" marker-end="url(#fleche-v)"/>
+        <path class="trait" d="M405 230 L425 207" marker-end="url(#fleche-v)"/>
+        <path class="trait" d="M450 160 L470 137" marker-end="url(#fleche-v)"/>
+        <path class="trait" d="M495 90 L515 67" marker-end="url(#fleche-v)"/>
+        <path class="trait" d="M150 36 H446" marker-end="url(#fleche-v)"/>
+        <text x="298" y="30" text-anchor="middle" class="t2">plan de test</text>
+        <path class="pointille" d="M450 50 H154" marker-end="url(#fleche-v)"/>
+        <text x="298" y="64" text-anchor="middle" class="t2">valide</text>
+        <path class="trait" d="M195 106 H401" marker-end="url(#fleche-v)"/>
+        <path class="pointille" d="M405 120 H199" marker-end="url(#fleche-v)"/>
+        <path class="trait" d="M240 176 H356" marker-end="url(#fleche-v)"/>
+        <path class="pointille" d="M360 190 H244" marker-end="url(#fleche-v)"/>
+        <path class="trait" d="M285 246 H311" marker-end="url(#fleche-v)"/>
+        <path class="pointille" d="M315 260 H289" marker-end="url(#fleche-v)"/>
+        <text x="10" y="150" class="t2" transform="rotate(62 10 150)">décomposition et définition</text>
+        <text x="575" y="205" class="t2" transform="rotate(-62 575 205)">intégration et vérification</text>
+      </svg>
+      <figcaption>Le modèle en V (diapo 27) : en traits pleins, le plan de test préparé à gauche ; en pointillés, la validation faite à droite.</figcaption>
+    </figure>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p><strong>Apports</strong></p>
+        <ul>
+          <li>À chaque phase du développement correspond une phase explicite de validation.</li>
+          <li>Meilleure gestion des erreurs, en limitant l'effet de linéarité (même si cela reste un modèle linéaire).</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p><strong>Limites</strong></p>
+        <ul>
+          <li>Les inconvénients du modèle en cascade.</li>
+        </ul>
+      </div>
+    </div>
+    <p>Les « compléments de réponses de cours » de l'enseignante, qui répondent à la question de l'examen de 2020 sur les avantages du modèle en V, ajoutent : validation systématique de chaque étape, décomposition du projet en éléments maîtrisables, tests bien structurés, hiérarchisation du système à développer, validation par rapport aux besoins, rôle important des documents ; et comme limites : évaluation seulement après le codage, validation trop tardive (très coûteuse si des erreurs sont constatées), un modèle qui ne précise pas la portée des retours arrière.</p>
+
+    <h3>Avantages et limites des modèles linéaires <span class="badge examen">Test</span></h3>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p><strong>Avantages</strong></p>
+        <ul>
+          <li>Processus ordonné et discipliné.</li>
+          <li>Simple et facile à comprendre.</li>
+          <li>Décomposition du projet en éléments maîtrisables ; meilleure maîtrise de la gestion de projet.</li>
+          <li>À chaque phase correspond une phase explicite de validation.</li>
+          <li>Force la documentation : une phase ne se termine pas sans document validé.</li>
+          <li>Progrès tangibles pour l'équipe de développement.</li>
+          <li>Convient aux logiciels sans risque de faisabilité : modèles précis et détaillés.</li>
+          <li>En V : meilleure gestion des erreurs, tests inhérents à chaque phase.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p><strong>Limites</strong></p>
+        <ul>
+          <li>Rigidité des phases, sans recoupement entre elles.</li>
+          <li>Difficulté d'intégrer et d'anticiper le changement.</li>
+          <li>Client trop absent du processus.</li>
+          <li>Une phase mal maîtrisée provoque des erreurs en avalanche.</li>
+          <li>Validation trop tardive, très coûteuse si les besoins ont été mal compris.</li>
+          <li>Modèle dirigé par les documents : un gros effort de documentation à chaque phase, pas toujours compréhensible pour le client, pour qui le produit attendu est le produit final.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les modèles non linéaires <span class="ref">diapos 29–39</span></h2>
+    <p>Les modèles non linéaires semblent les plus appropriés pour prendre en compte le caractère évolutif des besoins des utilisateurs et les applications novatrices. Les logiciels y sont complétés par itérations ou incréments successifs, et les détails de réalisation peuvent être reportés, afin de produire une version opérationnelle le plus tôt possible : ce sont des approches à base de prototypage. La diapo 29 les illustre par le cycle itératif du processus unifié (modélisation métier, exigences, analyse et conception, implémentation, test, déploiement, évaluation, autour de la gestion de configuration) et par le sprint de Scrum (backlog du produit, backlog du sprint, mêlée quotidienne, produit potentiellement livrable).</p>
+
+    <h3>Le prototypage</h3>
+    <p>Les prototypes assistent le développement à différentes étapes du cycle de vie : étude de faisabilité, analyse des besoins, conception et réalisation. On distingue différents types de prototypes et de prototypage, selon la nature du problème que le prototype éclaire, la technique de sa construction et son utilisation finale.</p>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p><strong>Avantages</strong> (fiche)</p>
+        <ul>
+          <li>Impliquer l'utilisateur et éclaircir les zones d'incertitude.</li>
+          <li>Évaluer des risques et tester une solution.</li>
+          <li>Utile dans tous les modèles non linéaires ; il existe des outils de maquettage et de prototypage.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p><strong>Limites</strong></p>
+        <ul>
+          <li>Le client doit comprendre ce qui est propre au prototype.</li>
+          <li>Coût mal compris par les managers et les clients.</li>
+          <li>Tentation de construire la version finale à partir du prototype, avec des solutions non optimales.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Incrémental ou évolutif : l'architecture</h3>
+    <div class="tableau compact">
+      <table>
+        <caption>Deux façons de faire grandir un logiciel (diapo 31)</caption>
+        <thead><tr><th>Architecture stable (incrémental)</th><th>Architecture évolutive (évolutif)</th></tr></thead>
+        <tbody>
+          <tr><td>La première version fournit une enveloppe complète.</td><td>La première version constitue le noyau.</td></tr>
+          <tr><td>Chaque nouvelle version fournit un ou plusieurs sous-systèmes, en respectant l'architecture.</td><td>Les versions suivantes s'appuient sur l'existant et étendent l'architecture.</td></tr>
+          <tr><td>Le développement en parallèle est possible, surtout pour les incréments.</td><td>Chaque version donne lieu à un cycle de vie complet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Selon la fiche, le modèle incrémental convient aux projets dont les exigences sont relativement stables et se divisent en parties fonctionnelles indépendantes ; le modèle évolutif, à ceux dont les exigences évoluent souvent.</p>
+
+    <h3>Le modèle incrémental</h3>
+    <p>Le projet est découpé en sous-projets, chacun développé suivant un cycle en cascade, séquentiellement ou en parallèle. Un sous-projet porte une ou plusieurs « grosses » fonctionnalités, et chaque phase d'un sous-projet complète la même phase du sous-projet précédent : le produit est construit en plusieurs <dfn>incréments</dfn> (incrément 1, …, incrément <var>i</var>, …, incrément <var>n</var>, chacun de la spécification à l'intégration).</p>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p><strong>Apports</strong></p>
+        <ul>
+          <li>Un projet complexe ou important est mieux maîtrisé (« réduire pour réussir »).</li>
+          <li>Le logiciel est livré progressivement : meilleure prise en compte des retours des clients.</li>
+          <li>Changement plus facile à intégrer ; moins de blocage en cas de spécification incomplète ; cycle plus souple.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p><strong>Limites</strong></p>
+        <ul>
+          <li>Découpage parfois difficile, si les fonctionnalités sont trop interdépendantes.</li>
+          <li>Chaque extension ne doit pas déstabiliser le logiciel déjà réalisé.</li>
+          <li>Gestion de projet plus complexe (choix, planification et suivi des incréments), gestion de configuration aussi.</li>
+        </ul>
+      </div>
+    </div>
+    <p>La diapo 34 (J. Printz, CNAM) en donne une vision temporelle : à partir de l'expression des besoins, des cahiers de conception fonctionnelle (CdCF 1, 2, 3) lancent des réalisations d'incréments successives (conception, développement, intégration), qui aboutissent au déploiement, au support et au maintien en condition opérationnelle ; le retour d'expérience nourrit les besoins suivants. La durée optimale d'un cycle de réalisation est d'environ 9 à 15 mois.</p>
+
+    <h3>Le modèle évolutif (programmation exploratoire)</h3>
+    <p>Le développement évolutif réalise une version provisoire du logiciel, un prototype construit sur les besoins connus et mis en exploitation, puis de nouvelles versions de ce logiciel opérationnel, avec de nouvelles fonctionnalités ou des fonctionnalités modifiées. La version finale comporte toute la documentation, la formation et la mise en exploitation.</p>
+    <ul>
+      <li>Pas de spécifications précises ; un prototype évolutif, dont il faut surveiller l'évolution.</li>
+      <li>Adapté aux petits projets, de courte durée, ou quand on ne peut pas faire autrement (spécifications difficiles à formuler).</li>
+      <li>À la base des méthodes agiles.</li>
+    </ul>
+
+    <h3>Le modèle en spirale</h3>
+    <p>Élaboré par B. W. Boehm (IEEE Computer, 1988), c'est un modèle orienté risque. Chaque tour de spirale traverse quatre quadrants : 1. détermination des objectifs ; 2. identification et réduction des risques (prototypes 1, 2, puis prototype opérationnel) ; 3. développement et tests (conception détaillée, code, intégration, test, implantation) ; 4. planification de l'itération suivante. Le coût cumulé grandit avec le rayon de la spirale.</p>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p><strong>Apports</strong></p>
+        <ul>
+          <li>Prototypage en liaison avec le client : on lui montre des « choses ».</li>
+          <li>Prise en compte rapide des changements du cahier des charges.</li>
+          <li>Limite les risques en général : idéal pour les projets innovants.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p><strong>Limites</strong></p>
+        <ul>
+          <li>Peut être fastidieux pour le client.</li>
+          <li>Nécessite un cycle de développement rapide.</li>
+          <li>Peut pousser à ajouter sans arrêt de nouvelles fonctionnalités.</li>
+          <li>Ne s'applique pas à tous les types de projets.</li>
+        </ul>
+      </div>
+    </div>
+    <p>Ses principes : un modèle cyclique, qui convient aux projets risqués ; un cycle correspond à un niveau du produit ; un prototype est fourni rapidement, puis raffiné jusqu'à l'application finale, chaque cycle s'appuyant sur les précédents.</p>
+
+    <h3>Le modèle de la fontaine</h3>
+    <p>C'est la contribution de l'approche objet : les phases se chevauchent et remontent comme l'eau d'une fontaine (exigences, analyse objet, conception objet, implémentation, intégration, puis exploitation, maintenance et nouveaux développements). Les phases analytiques sont :</p>
+    <ol>
+      <li><strong>Spécification des exigences du système</strong> : une analyse de haut niveau en termes d'objets et de services.</li>
+      <li><strong>Identifier les objets</strong>, sans les décomposer (c'est un choix de conception) : se limiter aux objets du domaine et à leurs responsabilités.</li>
+      <li><strong>Identifier les interactions entre les objets</strong>, en termes de services offerts et de services requis.</li>
+    </ol>
+    <p>S'y ajoutent les phases synthétiques. <span class="badge a-verifier">À vérifier</span> Le titre de la diapo 38 écrit « fontaire ».</p>
+
+    <h3>Le modèle en Y : le processus 2TUP</h3>
+    <p>Le processus <dfn>2TUP</dfn> (<span class="en" lang="en">2 Tracks Unified Process</span>, Roques et Vallée, <cite>UML en action</cite>) sépare deux branches. La branche fonctionnelle part des contraintes fonctionnelles (capture des besoins fonctionnels, analyse) ; la branche technique part des contraintes techniques (capture des besoins techniques, conception générique, avec un prototype). Elles se rejoignent dans la branche de réalisation : conception préliminaire, conception détaillée, codage et tests, recette. <span class="badge ajout">Ajout</span> L'intérêt est de traiter la complexité technologique (architecture, <span lang="en">frameworks</span>) indépendamment du métier : l'une et l'autre peuvent changer sans tout reprendre.</p>
+
+    <h3>Avantages et limites des modèles non linéaires <span class="badge examen">Test</span></h3>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p><strong>Avantages</strong></p>
+        <ul>
+          <li>Le logiciel final est obtenu par une suite de versions provisoires, chacune améliorant la précédente.</li>
+          <li>Une première version opérationnelle est livrée rapidement (en général pas mise en production).</li>
+          <li>Les besoins des utilisateurs et des développeurs sont cernés avant d'engager de grosses dépenses (ergonomie et architecture validées dès les premières versions).</li>
+          <li>L'effort de maintenance d'une version provisoire est négligeable ; le logiciel entre dans un cycle permanent de développement et d'évolution.</li>
+          <li>Risques d'échec diminués : problèmes découverts tôt, parties importantes livrées et testées en premier, exigences ajoutées à tout moment, sans remettre en cause l'architecture.</li>
+          <li>La version <var>n</var> − 1 sert à la fois d'outil de production et de prototype validé par les utilisateurs.</li>
+          <li>Évolutif : les versions ne sont pas planifiées à l'avance. Incrémental : chaque version provisoire a la robustesse et la qualité de la version finale.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p><strong>Limites</strong></p>
+        <ul>
+          <li>Risque de blocage s'il y a beaucoup d'utilisateurs pour évaluer les versions intermédiaires, et difficulté d'obtenir leurs évaluations dans les délais.</li>
+          <li>Risque d'itérations sans fin.</li>
+          <li>Gestion de projet plus difficile : contrôle des coûts et des délais, changements fréquents pour les clients, gestion des versions et de la configuration permanente.</li>
+          <li>Chaque cycle peut être complexe ; les évolutions qui remettent en cause l'architecture ne sont pas traitées ; il est difficile d'intégrer beaucoup de changements dans une même version.</li>
+          <li>Il faut analyser l'impact de chaque modification sur tous les composants et mettre à jour la documentation avant chaque livraison ; la qualité du prototype et de sa documentation est difficile à évaluer.</li>
+          <li>Incrémental : incréments difficiles à définir ; trop peu, on revient à la cascade ; trop, le projet devient ingérable ; une architecture stable et évolutive est difficile à concevoir dès le début.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Choisir un modèle <span class="ref">diapo 40 · fiche Modèles de cycle de vie</span></h2>
+    <p>Chaque modèle de cycle de vie a ses forces et ses faiblesses : il n'y a pas de modèle idéal. Le choix doit prendre en compte l'organisation, le mode de gestion, le management et les forces des équipes, et la nature du produit. On peut aussi mixer des modèles de cycle de vie.</p>
+    <ul>
+      <li>Le modèle en cascade est risqué pour les projets innovants ; le modèle évolutif est coûteux pour les projets clairs dès le début.</li>
+      <li>Pour les projets de taille petite ou moyenne, une approche incrémentale est souvent plus appropriée.</li>
+      <li>Pour les grands projets (plusieurs sites, plusieurs équipes), on peut préconiser une approche mixte : par exemple un prototype pour stabiliser les exigences, puis un développement en V.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Tout cycle comprend trois étapes : comprendre les besoins, concevoir une solution, la programmer.</li>
+        <li>Les phases : avant-projet (cahier des charges, revue de contrat), initialisation (PD, PQ), analyse et spécification (DB, tests de validation), conception générale et détaillée (CG, CD, plans de tests), réalisation (PR, CU, CI), recette (CV, procès-verbal), déploiement (DI), maintenance (DM).</li>
+        <li>Chaque phase se clôt par une revue où la MOA valide les livrables ; le procès-verbal de recette transfère la responsabilité de la MOE à la MOA.</li>
+        <li>Les tests se préparent tôt : validation pendant les spécifications, intégration pendant la conception générale, unitaires pendant la conception détaillée.</li>
+        <li>L'architecture logicielle est l'objectif principal de la conception générale.</li>
+        <li>Maintenance (diapo) : corrective et évolutive pour corriger, adaptative et préventive pour faire évoluer ; la maintenance perfective et évolutive représente la moitié de la maintenance (fiche).</li>
+        <li>Cascade : phases successives, sans retour, chacune validée ; en V : chaque phase de conception a sa phase de test en vis-à-vis.</li>
+        <li>Modèles non linéaires : versions successives, à base de prototypage ; incrémental (architecture stable), évolutif (architecture qui grandit, base des méthodes agiles), spirale (orientée risque).</li>
+        <li>Pas de modèle idéal : on choisit selon le projet, l'organisation et les équipes, et l'on peut mixer les modèles.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Dans quelle phase l'architecture logicielle est-elle l'objectif principal ?</summary>
+        <div><p>La conception générale (ou architecturale) : découpage en modules métiers et techniques, structure et fonctionnement global.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pendant quelle phase prépare-t-on les tests d'intégration ? Et les tests de validation ?</summary>
+        <div><p>Les tests d'intégration, pendant la conception générale ; les tests de validation, pendant l'analyse et la spécification des besoins. Ils sont exécutés plus tard, à la réalisation et à la recette.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quel document transfère la responsabilité du produit de la MOE à la MOA ?</summary>
+        <div><p>Le procès-verbal de recette, signé à l'issue de la revue de recette quand la MOA accepte le produit.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Le passage du taux de TVA de 20 % à 21 % demande une maintenance de quel type ?</summary>
+        <div><p>Adaptative, selon la fiche : le logiciel s'ajuste à l'évolution de son environnement (ici la réglementation). Selon la diapo, c'est aussi de la maintenance adaptative : une modification suite à une évolution des besoins.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Citer deux avantages du modèle en V.</summary>
+        <div><p>À chaque phase de développement correspond une phase explicite de validation, dont le plan de test est préparé en amont ; les erreurs sont mieux gérées, car chaque niveau est vérifié par rapport à la phase qui l'a défini.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Qu'est-ce qui distingue le modèle incrémental du modèle évolutif ?</summary>
+        <div><p>L'incrémental garde une architecture stable dès la première version, et ses incréments sont planifiés à l'avance ; l'évolutif part d'un noyau dont l'architecture s'étend à chaque version, sans planification préalable des versions.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi le modèle en cascade est-il risqué pour un projet innovant ?</summary>
+        <div><p>Les besoins y sont figés au début, le client est absent ensuite, et la validation n'arrive qu'à la fin : si les besoins étaient mal compris, on s'en aperçoit quand la correction coûte le plus cher.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Sur quel cycle repose la roue de Deming ?</summary>
+        <div><p>PDCA : planifier (Plan), réaliser (Do), vérifier (Check), améliorer (Act), puis recommencer.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-01-problematique-developpement.html"><small>← Cours 1</small>Problématique du développement</a>
+    <a class="suivant" href="cours-03-cahier-des-charges.html"><small>Cours 3 →</small>Cahier des charges</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Génie logiciel 1 · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

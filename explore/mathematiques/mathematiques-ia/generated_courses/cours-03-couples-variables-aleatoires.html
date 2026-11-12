@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Couples de variables aléatoires · Mathématiques et IA L3</title>
+<meta name="description" content="Cours 3 de Mathématiques et IA (L3) : rappels sur les variables aléatoires, probabilités conditionnelles, formule de Bayes, indépendance, covariance et corrélation, probabilité jointe, fonction de répartition, lois marginales et conditionnelles, espérance généralisée et moments.">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-03-couples-variables-aleatoires.html" title="Quiz · Couples de variables aléatoires">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-2023.html" title="Annale · Examen de janvier 2023">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Mathématiques</a>
+    <a href="index.html">Mathématiques et IA</a>
+    <span aria-current="page">Cours 3 · Couples de variables aléatoires</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Mathématiques et IA</span> Cours 3 · L3 · novembre 2025</p>
+    <h1>Couples de variables aléatoires</h1>
+    <p class="chapeau">Une donnée est rarement décrite par un seul nombre : une image, un signal ou une personne en demandent beaucoup, et ces nombres ne varient pas indépendamment. Ce chapitre passe d'une variable aléatoire à plusieurs : probabilité jointe, lois marginales et conditionnelles, formule de Bayes, indépendance, covariance et espérance généralisée. C'est le socle du classifieur bayésien du cours 5.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/l3_maths_vamulti.pdf">l3_maths_vamulti.pdf</a> · 43 diapos ; notebook <a href="../cours/script_cm3.ipynb">script_cm3.ipynb</a></dd></div>
+      <div><dt>Enseignante</dt><dd>Marie Tahon</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-01">1<sup>er</sup> nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Remarque <span>Version du support</span></p>
+    <p>Le support est celui de l'an dernier (novembre 2025). Si l'enseignante en distribue une nouvelle version, la page sera revue. Les figures sont redessinées à partir des formules du notebook, sauf la surface en trois dimensions de la diapo 21, que le notebook trace.</p>
+  </div>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Revoir les variables aléatoires à une dimension : fonction de répartition, densité de probabilité.</li>
+        <li>Connaître la probabilité jointe et son lien avec les probabilités conditionnelles.</li>
+        <li>Calculer des lois marginales et conditionnelles, et tester l'indépendance.</li>
+        <li>Comprendre l'espérance généralisée, et calculer une covariance.</li>
+        <li>Interpréter la visualisation d'une distribution.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Probabilités de base : événements, union, intersection.</li>
+        <li><a href="cours-02-fonctions-multidimensionnelles.html">Cours 2</a> : intégrales doubles, théorème de Fubini, coordonnées polaires, courbes de niveau.</li>
+      </ul>
+    </div>
+  </div>
+
+  <section>
+    <h2>Variables aléatoires à une dimension <span class="ref">diapos 4–10</span></h2>
+    <p>Une variable aléatoire représente une grandeur incertaine : le résultat d'une expérience, comme un lancer de dé, ou une mesure du monde réel qui varie, comme une température. Certaines valeurs s'observent plus souvent que d'autres : c'est ce que capture sa distribution de probabilité.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Variable aléatoire</span> <span class="ref">diapo 4</span></p>
+      <p>Soit une expérience, et \(\Omega\) l'ensemble de ses réalisations possibles \(\omega_i\). Une <dfn>variable aléatoire</dfn> (VA), notée \(X\), est une application :</p>
+      \[ X\colon \Omega \to X(\Omega) \subset \R, \quad \omega_i \mapsto X(\omega_i). \]
+      <p>Elle peut prendre plusieurs valeurs \(\{x_i\}_{i \in I}\).</p>
+    </div>
+
+    <h3>Le cas discret</h3>
+    <p>Une VA est <dfn>discrète</dfn> si elle ne prend que des valeurs discrètes : \(X(\Omega) \subset \N\), un ensemble dénombrable dont le nombre d'éléments est \(\operatorname{card}(\Omega)\). Ces valeurs peuvent être ordonnées ou non, et en nombre fini ou infini :</p>
+    <div class="tableau">
+      <table>
+        <caption>Quatre exemples de VA discrètes (diapo 5)</caption>
+        <thead><tr><th>Type</th><th>Exemple</th><th>\(X(\Omega)\)</th></tr></thead>
+        <tbody>
+          <tr><td>Ordonnée</td><td>lancer de dé</td><td>\(\{1, 2, 3, 4, 5, 6\}\)</td></tr>
+          <tr><td>Non ordonnée</td><td>observation du temps</td><td>{soleil, pluie, nuageux, neige}</td></tr>
+          <tr><td>Finie</td><td>piocher une carte parmi 52</td><td>\(\{1, \ldots, 52\}\)</td></tr>
+          <tr><td>Infinie</td><td>nombre de personnes dans le prochain train</td><td>\(\N\)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Le temps qu'il fait n'est pas un nombre : pour rester dans \(\N\), on numérote ses valeurs, sans que l'ordre ait de sens.</p>
+    <p>À chaque valeur possible \(x_i\), on associe la probabilité \(P(X = x_i)\) que \(X\) prenne cette valeur. La <dfn>fonction de répartition</dfn> cumule ces probabilités.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Probabilité et fonction de répartition, cas discret</span> <span class="ref">diapo 6</span></p>
+      \[ P\colon X(\Omega) \to [0, 1],\quad x_i \mapsto P(X = x_i) \]
+      \[ F_X\colon X(\Omega) \to [0, 1],\quad x_i \mapsto P(X \le x_i) = \sum_{k=1}^{i} P(X = x_k) \]
+      <p>Les probabilités de toutes les valeurs ont pour somme 1 :</p>
+      \[ \sum_{x_k \in X(\Omega)} P(X = x_k) = 1. \]
+    </div>
+    <p>Une distribution discrète se visualise de trois façons : un graphique en barres, où la hauteur est la probabilité ; une fonction de répartition, où la hauteur est la probabilité cumulée ; un <dfn>diagramme de Hinton</dfn>, où l'aire d'un carré est la probabilité.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 620 225" width="620" role="img" aria-labelledby="fig-de-titre">
+        <title id="fig-de-titre">À gauche, les probabilités des six faces d'un dé biaisé, en barres. À droite, sa fonction de répartition, en escalier, qui monte de 0 à 1.</title>
+      <path class="trait" d="M50 30 V180 H280"/>
+      <path class="trait" d="M69.2 180 v4"/><text x="69.2" y="196" text-anchor="middle" class="t2">1</text>
+      <path class="trait" d="M107.5 180 v4"/><text x="107.5" y="196" text-anchor="middle" class="t2">2</text>
+      <path class="trait" d="M145.8 180 v4"/><text x="145.8" y="196" text-anchor="middle" class="t2">3</text>
+      <path class="trait" d="M184.2 180 v4"/><text x="184.2" y="196" text-anchor="middle" class="t2">4</text>
+      <path class="trait" d="M222.5 180 v4"/><text x="222.5" y="196" text-anchor="middle" class="t2">5</text>
+      <path class="trait" d="M260.8 180 v4"/><text x="260.8" y="196" text-anchor="middle" class="t2">6</text>
+      <path class="trait" d="M50 180.0 h-4"/><text x="42" y="184.0" text-anchor="end" class="t2">0</text>
+      <path class="trait" d="M50 130.0 h-4"/><text x="42" y="134.0" text-anchor="end" class="t2">0,1</text>
+      <path class="trait" d="M50 80.0 h-4"/><text x="42" y="84.0" text-anchor="end" class="t2">0,2</text>
+      <path class="trait" d="M50 30.0 h-4"/><text x="42" y="34.0" text-anchor="end" class="t2">0,3</text>
+      <text x="165.0" y="212" text-anchor="middle" class="t2">face du dé</text>
+      <text x="50" y="16" text-anchor="middle" class="t2">P(X = k)</text>
+      <rect class="boite-accent" x="54.6" y="94.9" width="29.1" height="85.1"/>
+      <rect class="boite-accent" x="92.9" y="73.6" width="29.1" height="106.4"/>
+      <rect class="boite-accent" x="131.3" y="116.2" width="29.1" height="63.8"/>
+      <rect class="boite-accent" x="169.6" y="105.5" width="29.1" height="74.5"/>
+      <rect class="boite-accent" x="207.9" y="63.0" width="29.1" height="117.0"/>
+      <rect class="boite-accent" x="246.3" y="126.8" width="29.1" height="53.2"/>
+      <path class="trait" d="M350 30 V180 H580"/>
+      <path class="trait" d="M350.0 180 v4"/><text x="350.0" y="196" text-anchor="middle" class="t2">0</text>
+      <path class="trait" d="M385.4 180 v4"/><text x="385.4" y="196" text-anchor="middle" class="t2">1</text>
+      <path class="trait" d="M420.8 180 v4"/><text x="420.8" y="196" text-anchor="middle" class="t2">2</text>
+      <path class="trait" d="M456.2 180 v4"/><text x="456.2" y="196" text-anchor="middle" class="t2">3</text>
+      <path class="trait" d="M491.5 180 v4"/><text x="491.5" y="196" text-anchor="middle" class="t2">4</text>
+      <path class="trait" d="M526.9 180 v4"/><text x="526.9" y="196" text-anchor="middle" class="t2">5</text>
+      <path class="trait" d="M562.3 180 v4"/><text x="562.3" y="196" text-anchor="middle" class="t2">6</text>
+      <path class="trait" d="M350 180.0 h-4"/><text x="342" y="184.0" text-anchor="end" class="t2">0</text>
+      <path class="trait" d="M350 105.0 h-4"/><text x="342" y="109.0" text-anchor="end" class="t2">0,5</text>
+      <path class="trait" d="M350 30.0 h-4"/><text x="342" y="34.0" text-anchor="end" class="t2">1</text>
+      <text x="465.0" y="212" text-anchor="middle" class="t2">k</text>
+      <text x="350" y="16" text-anchor="middle" class="t2">F(k) = P(X ≤ k)</text>
+      <path class="accent" d="M350.0 180.0 L385.4 180.0 L385.4 154.5 L420.8 154.5 L420.8 122.6 L456.2 122.6 L456.2 103.4 L491.5 103.4 L491.5 81.1 L526.9 81.1 L526.9 46.0 L562.3 46.0 L562.3 30.0 L580.0 30.0"/>
+      </svg>
+      <figcaption>Un dé biaisé : probabilités en barres, et fonction de répartition en escalier (diapo 7, effectifs du notebook).</figcaption>
+    </figure>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 520 128" width="520" role="img" aria-labelledby="fig-hinton-titre">
+        <title id="fig-hinton-titre">Diagramme de Hinton : six carrés, un par valeur, dont l'aire est proportionnelle à la probabilité.</title>
+      <rect class="boite" x="20" y="10" width="480" height="90"/>
+      <rect class="plein-accent" x="27.0" y="22.0" width="66.0" height="66.0"/>
+      <text x="60" y="118" text-anchor="middle" class="t2">soleil</text>
+      <rect class="plein-accent" x="103.1" y="18.1" width="73.8" height="73.8"/>
+      <text x="140" y="118" text-anchor="middle" class="t2">pluie</text>
+      <rect class="plein-accent" x="191.4" y="26.4" width="57.2" height="57.2"/>
+      <text x="220" y="118" text-anchor="middle" class="t2">neige</text>
+      <rect class="plein-accent" x="269.1" y="24.1" width="61.7" height="61.7"/>
+      <text x="300" y="118" text-anchor="middle" class="t2">nuage</text>
+      <rect class="plein-accent" x="341.3" y="16.3" width="77.4" height="77.4"/>
+      <text x="380" y="118" text-anchor="middle" class="t2">vent</text>
+      <rect class="plein-accent" x="433.9" y="28.9" width="52.2" height="52.2"/>
+      <text x="460" y="118" text-anchor="middle" class="t2">couvert</text>
+      </svg>
+      <figcaption>La même distribution en diagramme de Hinton, avec les étiquettes du notebook : l'aire de chaque carré est la probabilité.</figcaption>
+    </figure>
+
+    <h3>Le cas continu</h3>
+    <p>Une VA est <dfn>continue</dfn> si elle prend des valeurs continues : \(X(\Omega) \subset \R\). L'intervalle peut être borné, comme le temps mis pour faire un examen de 2 h, \(X(\Omega) = [0, 2]\), ou non, comme le temps d'attente du prochain bus, \(X(\Omega) = [0, +\infty[\).</p>
+    <p>Pour chaque valeur \(x\), la probabilité \(P(X = x)\) tend vers 0 : il y a trop de valeurs possibles. On définit donc une densité de probabilité.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Densité et fonction de répartition, cas continu</span> <span class="ref">diapo 9</span></p>
+      \[ F_X\colon X(\Omega) \to [0, 1],\quad x \mapsto P(X \le x) = \int_{-\infty}^{x} f(u)\,du \]
+      \[ f\colon X(\Omega) \to \R,\quad x \mapsto f(x) = F'(x) \]
+      <p>La <dfn>densité de probabilité</dfn> \(f\) est la dérivée de la fonction de répartition, et son intégrale vaut 1 :</p>
+      \[ \int_{X(\Omega)} f(u)\,du = 1. \]
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Une densité n'est pas une probabilité</span> <span class="ref">diapo 10</span></p>
+      <p>La diapo met « proba » entre guillemets, à juste titre : la hauteur \(f(x)\) n'est pas une probabilité, et elle peut dépasser 1. Seule l'aire sous la courbe en est une : \(P(a \le X \le b) = \int_a^b f(x)\,dx\).</p>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 620 225" width="620" role="img" aria-labelledby="fig-densite-titre">
+        <title id="fig-densite-titre">À gauche, une densité à deux bosses, autour de 0,8 et de 2. À droite, sa fonction de répartition, qui croît de 0 à 1 et s'aplatit entre les deux bosses.</title>
+      <path class="trait" d="M50 30 V180 H280"/>
+      <path class="trait" d="M50.0 180 v4"/><text x="50.0" y="196" text-anchor="middle" class="t2">−1</text>
+      <path class="trait" d="M107.5 180 v4"/><text x="107.5" y="196" text-anchor="middle" class="t2">0</text>
+      <path class="trait" d="M165.0 180 v4"/><text x="165.0" y="196" text-anchor="middle" class="t2">1</text>
+      <path class="trait" d="M222.5 180 v4"/><text x="222.5" y="196" text-anchor="middle" class="t2">2</text>
+      <path class="trait" d="M280.0 180 v4"/><text x="280.0" y="196" text-anchor="middle" class="t2">3</text>
+      <path class="trait" d="M50 180.0 h-4"/><text x="42" y="184.0" text-anchor="end" class="t2">0</text>
+      <path class="trait" d="M50 111.8 h-4"/><text x="42" y="115.8" text-anchor="end" class="t2">0,5</text>
+      <path class="trait" d="M50 43.6 h-4"/><text x="42" y="47.6" text-anchor="end" class="t2">1</text>
+      <text x="165.0" y="212" text-anchor="middle" class="t2">temps avant le prochain bus</text>
+      <text x="50" y="16" text-anchor="middle" class="t2">f(x)</text>
+      <path class="accent" d="M50.0 180.0 L52.3 180.0 L54.6 180.0 L56.9 180.0 L59.2 180.0 L61.5 180.0 L63.8 180.0 L66.1 179.9 L68.4 179.9 L70.8 179.9 L73.1 179.8 L75.4 179.8 L77.7 179.7 L80.0 179.6 L82.3 179.4 L84.6 179.2 L86.9 179.0 L89.2 178.6 L91.5 178.2 L93.8 177.7 L96.1 177.0 L98.4 176.1 L100.7 175.1 L103.0 173.9 L105.3 172.4 L107.6 170.7 L109.9 168.7 L112.3 166.4 L114.6 163.8 L116.9 160.9 L119.2 157.7 L121.5 154.2 L123.8 150.5 L126.1 146.6 L128.4 142.5 L130.7 138.4 L133.0 134.3 L135.3 130.3 L137.6 126.4 L139.9 122.9 L142.2 119.7 L144.5 117.0 L146.8 114.8 L149.1 113.2 L151.5 112.3 L153.8 112.0 L156.1 112.4 L158.4 113.5 L160.7 115.2 L163.0 117.5 L165.3 120.4 L167.6 123.6 L169.9 127.3 L172.2 131.1 L174.5 135.2 L176.8 139.3 L179.1 143.3 L181.4 147.2 L183.7 150.9 L186.0 154.1 L188.3 156.8 L190.7 158.6 L193.0 159.4 L195.3 158.7 L197.6 156.2 L199.9 151.5 L202.2 144.2 L204.5 134.3 L206.8 121.9 L209.1 107.4 L211.4 91.8 L213.7 76.2 L216.0 62.3 L218.3 51.4 L220.6 44.8 L222.9 43.4 L225.2 47.3 L227.5 56.1 L229.8 68.8 L232.2 84.2 L234.5 100.7 L236.8 116.9 L239.1 131.8 L241.4 144.6 L243.7 155.0 L246.0 163.1 L248.3 169.0 L250.6 173.1 L252.9 175.9 L255.2 177.6 L257.5 178.7 L259.8 179.3 L262.1 179.6 L264.4 179.8 L266.7 179.9 L269.0 180.0 L271.4 180.0 L273.7 180.0 L276.0 180.0 L278.3 180.0"/>
+      <path class="trait" d="M350 30 V180 H580"/>
+      <path class="trait" d="M350.0 180 v4"/><text x="350.0" y="196" text-anchor="middle" class="t2">−1</text>
+      <path class="trait" d="M407.5 180 v4"/><text x="407.5" y="196" text-anchor="middle" class="t2">0</text>
+      <path class="trait" d="M465.0 180 v4"/><text x="465.0" y="196" text-anchor="middle" class="t2">1</text>
+      <path class="trait" d="M522.5 180 v4"/><text x="522.5" y="196" text-anchor="middle" class="t2">2</text>
+      <path class="trait" d="M580.0 180 v4"/><text x="580.0" y="196" text-anchor="middle" class="t2">3</text>
+      <path class="trait" d="M350 180.0 h-4"/><text x="342" y="184.0" text-anchor="end" class="t2">0</text>
+      <path class="trait" d="M350 108.6 h-4"/><text x="342" y="112.6" text-anchor="end" class="t2">0,5</text>
+      <path class="trait" d="M350 37.1 h-4"/><text x="342" y="41.1" text-anchor="end" class="t2">1</text>
+      <text x="465.0" y="212" text-anchor="middle" class="t2">temps avant le prochain bus</text>
+      <text x="350" y="16" text-anchor="middle" class="t2">F(x)</text>
+      <path class="accent" d="M350.0 180.0 L352.3 180.0 L354.6 180.0 L356.9 180.0 L359.2 180.0 L361.5 180.0 L363.8 180.0 L366.1 180.0 L368.4 180.0 L370.8 180.0 L373.1 180.0 L375.4 180.0 L377.7 180.0 L380.0 179.9 L382.3 179.9 L384.6 179.9 L386.9 179.9 L389.2 179.8 L391.5 179.7 L393.8 179.7 L396.1 179.5 L398.4 179.4 L400.7 179.2 L403.0 179.0 L405.3 178.7 L407.6 178.3 L409.9 177.9 L412.3 177.3 L414.6 176.7 L416.9 175.9 L419.2 175.0 L421.5 174.0 L423.8 172.8 L426.1 171.5 L428.4 170.0 L430.7 168.3 L433.0 166.4 L435.3 164.4 L437.6 162.2 L439.9 159.9 L442.2 157.4 L444.5 154.8 L446.8 152.1 L449.1 149.3 L451.5 146.5 L453.8 143.6 L456.1 140.8 L458.4 137.9 L460.7 135.2 L463.0 132.5 L465.3 130.0 L467.6 127.6 L469.9 125.3 L472.2 123.2 L474.5 121.2 L476.8 119.5 L479.1 117.8 L481.4 116.4 L483.7 115.1 L486.0 114.0 L488.3 113.0 L490.7 112.1 L493.0 111.2 L495.3 110.3 L497.6 109.3 L499.9 108.2 L502.2 106.8 L504.5 105.1 L506.8 102.9 L509.1 100.0 L511.4 96.6 L513.7 92.5 L516.0 87.7 L518.3 82.5 L520.6 76.9 L522.9 71.2 L525.2 65.5 L527.5 60.1 L529.8 55.3 L532.2 51.0 L534.5 47.4 L536.8 44.5 L539.1 42.2 L541.4 40.6 L543.7 39.4 L546.0 38.5 L548.3 38.0 L550.6 37.6 L552.9 37.4 L555.2 37.3 L557.5 37.2 L559.8 37.2 L562.1 37.2 L564.4 37.2 L566.7 37.1 L569.0 37.1 L571.4 37.1 L573.7 37.1 L576.0 37.1 L578.3 37.1"/>
+      </svg>
+      <figcaption>Le temps avant le prochain bus : une densité et sa fonction de répartition (diapo 10).</figcaption>
+    </figure>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo 10 écrit « on associe la probabilité \(P(X = k)\) » pour une VA continue, ce que la diapo 9 exclut. Sa courbe culmine à 2, car elle additionne deux gaussiennes, d'aire totale 2 : ce n'est pas une densité. La figure ci-dessus divise cette somme par 2, ce qui donne une aire de 1 et ne change pas la forme.</p>
+  </section>
+
+  <section>
+    <h2>Probabilités conditionnelles et indépendance <span class="ref">diapos 11–13</span></h2>
+    <p>Dès qu'on observe deux grandeurs, la question devient : savoir l'une change-t-il ce qu'on attend de l'autre ? Ces rappels s'appliquent à deux VA \(X\) et \(Y\), discrètes ou continues.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Probabilité conditionnelle</span> <span class="ref">diapo 11</span></p>
+      <p>La <dfn>probabilité conditionnelle</dfn> de \(X\) sachant \(Y\) est :</p>
+      \[ P(X \mid Y) = \frac{P(X \cap Y)}{P(Y)}. \]
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Théorème <span>Formule de Bayes</span> <span class="ref">diapo 11</span></p>
+      <p>Soient deux VA \(X\) et \(Y\), telles que \(P(Y) \ne 0\). Alors :</p>
+      <div class="encadre">\[ P(X \mid Y) = \frac{P(Y \mid X)\,P(X)}{P(Y)}. \]</div>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Piocher un as et un pique</span> <span class="ref">diapo 11</span></p>
+      <p><span class="badge ajout">Ajout</span> La diapo cite seulement l'exemple. Dans un jeu de 52 cartes, \(P(\text{as} \cap \text{pique}) = \frac{1}{52}\) et \(P(\text{pique}) = \frac{13}{52}\), donc \(P(\text{as} \mid \text{pique}) = \frac{1/52}{13/52} = \frac{1}{13}\). Bayes donne l'autre sens : \(P(\text{pique} \mid \text{as}) = \frac{1/13 \times 13/52}{4/52} = \frac{1}{4}\).</p>
+    </div>
+    <p>Un <dfn>système complet d'événements</dfn> \(\{Y_1, \ldots, Y_n\}\) de \(\Omega\) est formé d'événements disjoints deux à deux, \(Y_i \cap Y_j = \emptyset\) pour \(i \ne j\), et qui forment une partition de \(\Omega\) : \(\Omega = Y_1 \cup \ldots \cup Y_n\).</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Théorème <span>Formule des probabilités totales</span> <span class="ref">diapo 12</span></p>
+      \[ P(X) = \sum_{i=1}^{n} P(X \cap Y_i) = \sum_{i=1}^{n} P(X \mid Y_i)\,P(Y_i). \]
+      <p>Par exemple, \(Y\) et \(\bar{Y}\) forment un système complet, donc \(P(X) = P(X \cap Y) + P(X \cap \bar{Y})\).</p>
+    </div>
+    <p>La diapo l'intitule « formule de Bayes généralisée ». <span class="badge ajout">Ajout</span> Elle sert surtout à calculer le dénominateur de la formule de Bayes.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Indépendance</span> <span class="ref">diapo 13</span></p>
+      <p>\(X\) et \(Y\) sont <dfn>indépendantes</dfn> si la réalisation de l'une n'a aucune influence sur celle de l'autre. On a alors :</p>
+      \[ P(X \cap Y) = P(X) \times P(Y). \]
+      <p>Pour un système d'événements indépendants \(\{Y_1, \ldots, Y_n\}\) de \(\Omega\) :</p>
+      \[ P(Y_1 \cap \ldots \cap Y_n) = \prod_{i=1}^{n} P(Y_i). \]
+    </div>
+    <p><span class="badge ajout">Ajout</span> L'as et le pique sont indépendants : \(\frac{4}{52} \times \frac{13}{52} = \frac{1}{52}\). Connaître la couleur d'une carte n'apprend rien sur sa valeur.</p>
+  </section>
+
+  <section>
+    <h2>Covariance et corrélation <span class="ref">diapos 14–15</span></h2>
+    <p>Quand on considère deux VA simultanément, on connaît leur espérance et leur variance individuelles. On peut avoir besoin de savoir, en plus, comment elles sont liées.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Covariance, coefficient de corrélation</span> <span class="ref">diapo 14</span></p>
+      <p>La <dfn>covariance</dfn> de \(X\) et \(Y\) est :</p>
+      \[ \operatorname{Cov}(X, Y) = E\big[(X - E(X))(Y - E(Y))\big] = E(XY) - E(X)\,E(Y). \]
+      <p>Le <dfn>coefficient de corrélation</dfn> est :</p>
+      \[ \rho(X, Y) = \frac{\operatorname{Cov}(X, Y)}{\sqrt{V(X)\,V(Y)}}. \]
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Covariance et corrélation</span> <span class="ref">diapo 15</span></p>
+      <ul>
+        <li>Si \(X\) et \(Y\) sont indépendantes, \(\operatorname{Cov}(X, Y) = 0\), car \(E(XY) = E(X)\,E(Y)\).</li>
+        <li>Pour tous \(a, b \in \R\) : \(V(aX + bY) = a^2 V(X) + 2ab\operatorname{Cov}(X, Y) + b^2 V(Y)\).</li>
+        <li>\(\operatorname{Cov}(X, Y)^2 \le V(X)\,V(Y)\).</li>
+        <li>\(\rho(X, Y) \in [-1, 1]\).</li>
+      </ul>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>La réciproque est fausse</span></p>
+      <p><span class="badge ajout">Ajout</span> Une covariance nulle ne prouve pas l'indépendance. Si \(X\) vaut \(-1\), 0 ou 1 de façon équiprobable, et si \(Y = X^2\), alors \(E(XY) = E(X^3) = 0 = E(X)\,E(Y)\), donc \(\operatorname{Cov}(X, Y) = 0\), alors que \(Y\) est entièrement déterminée par \(X\). La covariance ne mesure qu'un lien linéaire.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Probabilité jointe <span class="ref">diapos 17–23</span></h2>
+    <p>Pour décrire deux variables à la fois, il ne suffit pas de connaître chacune séparément : il faut la probabilité de chaque couple de valeurs.</p>
+
+    <h3>Le cas discret</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Probabilité jointe</span> <span class="ref">diapo 17</span></p>
+      <p>La <dfn>probabilité jointe</dfn> est la probabilité que le couple \((X, Y)\) prenne la valeur \((x, y)\). On la note \(P(x, y)\), où la virgule se lit « et » :</p>
+      \[ P[(X, Y) = (x, y)] = P[(X = x) \cap (Y = y)] = P(x, y). \]
+      <p>Elle est liée aux probabilités conditionnelles :</p>
+      \[ P(x, y) = P[X = x \mid Y = y] \times P[Y = y]. \]
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo 17 écrit \((X = x) \cap (X = y)\) : il s'agit de \((Y = y)\).</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Tous les couples ne sont pas pris</span> <span class="ref">diapo 17</span></p>
+      <p>Tous les couples \((x, y)\) possibles ne sont pas forcément pris par \((X, Y)\) : certaines probabilités jointes sont nulles.</p>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Lancer deux dés non biaisés</span> <span class="ref">diapo 18</span></p>
+      <p>\(X\) est le nombre d'un dé, \(Y\) celui de l'autre. Quel est le nombre de couples \((x, y)\) possibles ? Quelle est la probabilité que les deux faces soient identiques, \(P(x, x)\) ? Si les dés sont discernables, quelle est la probabilité \(P[(X, Y) = (x, y)]\) avec \(x \ne y\) ? S'ils sont indiscernables, avec \(x \ge y\), quelle est cette probabilité avec \(x \gt y\) ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>Dés discernables : 36 couples, tous de probabilité \(\frac{1}{36}\), y compris \(P(x, x)\).</p>
+        <p>Dés indiscernables : il reste 21 couples avec \(x \ge y\). Un couple de faces égales garde la probabilité \(\frac{1}{36}\). Pour \(x \gt y\), les deux tirages \((x, y)\) et \((y, x)\) se confondent : la probabilité est \(\frac{2}{36} = \frac{1}{18}\). On vérifie : \(6 \times \frac{1}{36} + 15 \times \frac{2}{36} = 1\).</p>
+      </details>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 560 230" width="560" role="img" aria-labelledby="fig-des-titre">
+        <title id="fig-des-titre">Deux diagrammes de Hinton de six lignes et six colonnes. À gauche, dés discernables : 36 carrés égaux. À droite, dés indiscernables avec x ≥ y : la diagonale porte de petits carrés, le triangle au-dessus des carrés d'aire double, le reste est vide.</title>
+      <rect class="boite" x="40" y="10" width="192" height="192"/>
+      <rect class="plein-accent" x="45.8" y="15.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="77.8" y="15.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="109.8" y="15.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="141.8" y="15.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="173.8" y="15.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="205.8" y="15.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="45.8" y="47.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="77.8" y="47.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="109.8" y="47.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="141.8" y="47.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="173.8" y="47.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="205.8" y="47.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="45.8" y="79.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="77.8" y="79.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="109.8" y="79.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="141.8" y="79.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="173.8" y="79.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="205.8" y="79.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="45.8" y="111.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="77.8" y="111.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="109.8" y="111.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="141.8" y="111.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="173.8" y="111.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="205.8" y="111.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="45.8" y="143.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="77.8" y="143.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="109.8" y="143.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="141.8" y="143.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="173.8" y="143.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="205.8" y="143.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="45.8" y="175.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="77.8" y="175.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="109.8" y="175.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="141.8" y="175.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="173.8" y="175.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="205.8" y="175.8" width="20.4" height="20.4"/>
+      <text x="56.0" y="216" text-anchor="middle" class="t2">x1</text>
+      <text x="88.0" y="216" text-anchor="middle" class="t2">x2</text>
+      <text x="120.0" y="216" text-anchor="middle" class="t2">x3</text>
+      <text x="152.0" y="216" text-anchor="middle" class="t2">x4</text>
+      <text x="184.0" y="216" text-anchor="middle" class="t2">x5</text>
+      <text x="216.0" y="216" text-anchor="middle" class="t2">x6</text>
+      <text x="34" y="30.0" text-anchor="end" class="t2">y1</text>
+      <text x="34" y="62.0" text-anchor="end" class="t2">y2</text>
+      <text x="34" y="94.0" text-anchor="end" class="t2">y3</text>
+      <text x="34" y="126.0" text-anchor="end" class="t2">y4</text>
+      <text x="34" y="158.0" text-anchor="end" class="t2">y5</text>
+      <text x="34" y="190.0" text-anchor="end" class="t2">y6</text>
+      <rect class="boite" x="330" y="10" width="192" height="192"/>
+      <rect class="plein-accent" x="335.8" y="15.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="363.6" y="11.6" width="28.8" height="28.8"/>
+      <rect class="plein-accent" x="395.6" y="11.6" width="28.8" height="28.8"/>
+      <rect class="plein-accent" x="427.6" y="11.6" width="28.8" height="28.8"/>
+      <rect class="plein-accent" x="459.6" y="11.6" width="28.8" height="28.8"/>
+      <rect class="plein-accent" x="491.6" y="11.6" width="28.8" height="28.8"/>
+      <rect class="plein-accent" x="367.8" y="47.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="395.6" y="43.6" width="28.8" height="28.8"/>
+      <rect class="plein-accent" x="427.6" y="43.6" width="28.8" height="28.8"/>
+      <rect class="plein-accent" x="459.6" y="43.6" width="28.8" height="28.8"/>
+      <rect class="plein-accent" x="491.6" y="43.6" width="28.8" height="28.8"/>
+      <rect class="plein-accent" x="399.8" y="79.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="427.6" y="75.6" width="28.8" height="28.8"/>
+      <rect class="plein-accent" x="459.6" y="75.6" width="28.8" height="28.8"/>
+      <rect class="plein-accent" x="491.6" y="75.6" width="28.8" height="28.8"/>
+      <rect class="plein-accent" x="431.8" y="111.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="459.6" y="107.6" width="28.8" height="28.8"/>
+      <rect class="plein-accent" x="491.6" y="107.6" width="28.8" height="28.8"/>
+      <rect class="plein-accent" x="463.8" y="143.8" width="20.4" height="20.4"/>
+      <rect class="plein-accent" x="491.6" y="139.6" width="28.8" height="28.8"/>
+      <rect class="plein-accent" x="495.8" y="175.8" width="20.4" height="20.4"/>
+      <text x="346.0" y="216" text-anchor="middle" class="t2">x1</text>
+      <text x="378.0" y="216" text-anchor="middle" class="t2">x2</text>
+      <text x="410.0" y="216" text-anchor="middle" class="t2">x3</text>
+      <text x="442.0" y="216" text-anchor="middle" class="t2">x4</text>
+      <text x="474.0" y="216" text-anchor="middle" class="t2">x5</text>
+      <text x="506.0" y="216" text-anchor="middle" class="t2">x6</text>
+      <text x="324" y="30.0" text-anchor="end" class="t2">y1</text>
+      <text x="324" y="62.0" text-anchor="end" class="t2">y2</text>
+      <text x="324" y="94.0" text-anchor="end" class="t2">y3</text>
+      <text x="324" y="126.0" text-anchor="end" class="t2">y4</text>
+      <text x="324" y="158.0" text-anchor="end" class="t2">y5</text>
+      <text x="324" y="190.0" text-anchor="end" class="t2">y6</text>
+      </svg>
+      <figcaption>Deux dés : discernables à gauche, indiscernables avec x ≥ y à droite (diapo 18, valeurs théoriques).</figcaption>
+    </figure>
+    <p><span class="badge ajout">Ajout</span> La figure donne les valeurs théoriques ; les diagrammes de la diapo viennent d'une simulation, d'où leurs carrés irréguliers.</p>
+    <p>La probabilité jointe se définit pour des VA discrètes ou continues, et la probabilité totale vaut toujours 1 : somme sur les variables discrètes, intégration sur les variables continues. On s'intéresse en général à plus de deux variables (diapo 19) :</p>
+    <ul>
+      <li>\(P(X, Y, Z)\) : distribution jointe entre les scalaires \(x\), \(y\), \(z\) ;</li>
+      <li>\(P(\mathbf{x})\) : distribution jointe entre les éléments d'une variable multidimensionnelle \(\mathbf{x} = [x_1, x_2, \ldots, x_n]^T\) ;</li>
+      <li>\(P(\mathbf{x}, \mathbf{y})\) : distribution jointe entre tous les éléments des variables multidimensionnelles \(\mathbf{x}\) et \(\mathbf{y}\).</li>
+    </ul>
+
+    <h3>Le cas continu</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Densité d'un couple</span> <span class="ref">diapo 20</span></p>
+      <p>Si \((X, Y) \in \R^2\) sont continues, le couple possède une densité \(f\colon \R^2 \to \R\), positive, continue par morceaux, et telle que :</p>
+      \[ \iint_{\R^2} f(x, y)\,dx\,dy = 1. \]
+      <p>La probabilité que \((X, Y)\) soit dans une partie \(D\) assez régulière de \(\R^2\) est alors :</p>
+      \[ P[(X, Y) \in D] = \iint_{D} f(x, y)\,dx\,dy. \]
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Loi uniforme sur le carré unité</span> <span class="ref">diapo 20</span></p>
+      <p>Le couple \((X, Y)\) suit une loi uniforme sur l'intérieur du carré unitaire. Sa densité est \(f(x, y) = a\) pour \(0 \lt x \lt 1\) et \(0 \lt y \lt 1\), et \(f(x, y) = 0\) ailleurs. Donner la valeur de \(a\).</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>L'intégrale de la densité vaut 1 : \(\int_0^1 \int_0^1 a\,dx\,dy = a = 1\). Donc \(a = 1\).</p>
+      </details>
+    </div>
+    <p>Une densité de deux variables se visualise comme une fonction du cours 2 : par ses courbes de niveau, ou isolignes, et par sa surface (diapo 21). La figure de la section suivante montre les isolignes d'une densité à deux bosses.</p>
+
+    <h3>La fonction de répartition</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Fonction de répartition d'un couple</span> <span class="ref">diapo 22</span></p>
+      <p>À une dimension, \(F(x) = P(X \lt x)\), soit \(\sum_{x_i \lt x} P(X = x_i)\) dans le cas discret et \(\int_{-\infty}^{x} f(u)\,du\) dans le cas continu. À deux dimensions :</p>
+      \[ F(x, y) = P[(X \lt x) \cap (Y \lt y)], \]
+      <p>soit \(\sum_{x_i \lt x,\, y_j \lt y} P[(X = x_i) \cap (Y = y_j)]\) dans le cas discret, et dans le cas continu :</p>
+      \[ F(x, y) = \int_{-\infty}^{x} \int_{-\infty}^{y} f(u, v)\,du\,dv. \]
+      <p>La densité du couple est sa dérivée seconde :</p>
+      <div class="encadre">\[ f(x, y) = \frac{\partial^2 F}{\partial x\,\partial y}(x, y). \]</div>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> Les diapos 6 et 9 définissent \(F\) avec \(\le\), la diapo 22 avec \(\lt\) : la différence ne compte que pour une VA discrète. La diapo écrit aussi \(F(x) = \sum_x P(X = x)\), sans dire que la somme porte sur les valeurs inférieures à \(x\).</p>
+  </section>
+
+  <section>
+    <h2>Lois marginales <span class="ref">diapos 24–28</span></h2>
+    <p>À partir de la probabilité jointe de \((X, Y)\), on peut retrouver la distribution d'une seule des variables : on « oublie » l'autre en sommant sur toutes ses valeurs.</p>
+    <p>Dans le cas discret, l'événement \((X = x_i)\) est la réunion des événements incompatibles \((X, Y) = (x_i, y_j)\), lorsque \(j\) décrit les valeurs possibles de \(Y\).</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Distributions marginales</span> <span class="ref">diapo 24</span></p>
+      <p>La <dfn>distribution marginale</dfn> de \(X\) est donnée par :</p>
+      \[ P(X = x_i) = \sum_{j} P[(X, Y) = (x_i, y_j)] \quad \text{(cas discret)}, \]
+      \[ f_X(x) = \int f(x, y)\,dy \quad \text{(cas continu)}. \]
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Marginales d'un tableau</span> <span class="ref">diapo 25</span></p>
+      <p>Soit \((X, Y)\) un couple dont la loi est donnée par le tableau ci-dessous. Les valeurs de \(X\) sont comprises entre 1 et 4 (en ligne), celles de \(Y\) entre 1 et 6 (en colonnes). Donner les lois marginales de \(X\) et de \(Y\).</p>
+      <div class="tableau centre">
+        <table>
+          <caption>Loi du couple \((X, Y)\), en cinquantièmes</caption>
+          <thead><tr><th>\(X\) ; \(Y\)</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead>
+          <tbody>
+            <tr><th>1</th><td>2</td><td></td><td>4</td><td>1</td><td>8</td><td></td></tr>
+            <tr><th>2</th><td></td><td>1</td><td>2</td><td>5</td><td></td><td>1</td></tr>
+            <tr><th>3</th><td>3</td><td>2</td><td>4</td><td></td><td>4</td><td>3</td></tr>
+            <tr><th>4</th><td>1</td><td>3</td><td></td><td>2</td><td>1</td><td>3</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>On additionne les lignes pour \(X\) et les colonnes pour \(Y\) :</p>
+        <div class="tableau centre mono">
+          <table>
+            <caption>Lois marginales, en cinquantièmes</caption>
+            <thead><tr><th>Valeur</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead>
+            <tbody>
+              <tr><th>\(P(X)\)</th><td>15</td><td>9</td><td>16</td><td>10</td><td>—</td><td>—</td></tr>
+              <tr><th>\(P(Y)\)</th><td>6</td><td>6</td><td>10</td><td>8</td><td>13</td><td>7</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Dans les deux cas, le total vaut 50 cinquantièmes, soit 1. Ces totaux sont écrits dans les marges du tableau : d'où le nom de « marginale ».</p>
+      </details>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Marginales d'une densité</span> <span class="ref">diapo 26</span></p>
+      <p>Soit \((X, Y)\) un couple dont la densité est donnée par ses isolignes. Donner l'allure des lois marginales de \(X\) et de \(Y\).</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 540 385" width="540" role="img" aria-labelledby="fig-marginales-titre">
+        <title id="fig-marginales-titre">Isolignes d'une densité à deux bosses, en (0,8 ; 4) et en (0,5 ; 8). À gauche, la densité marginale de Y, à deux bosses. En dessous, la densité marginale de X, à une seule bosse près de 0,8, avec un épaulement à gauche.</title>
+      <path class="trait" d="M230 20 V210 H470"/>
+      <path class="trait" d="M230.0 210 v4"/><text x="230.0" y="226" text-anchor="middle" class="t2">−1</text>
+      <path class="trait" d="M290.0 210 v4"/><text x="290.0" y="226" text-anchor="middle" class="t2">0</text>
+      <path class="trait" d="M350.0 210 v4"/><text x="350.0" y="226" text-anchor="middle" class="t2">1</text>
+      <path class="trait" d="M410.0 210 v4"/><text x="410.0" y="226" text-anchor="middle" class="t2">2</text>
+      <path class="trait" d="M470.0 210 v4"/><text x="470.0" y="226" text-anchor="middle" class="t2">3</text>
+      <path class="trait" d="M230 210.0 h-4"/><text x="222" y="214.0" text-anchor="end" class="t2">0</text>
+      <path class="trait" d="M230 172.0 h-4"/><text x="222" y="176.0" text-anchor="end" class="t2">2</text>
+      <path class="trait" d="M230 134.0 h-4"/><text x="222" y="138.0" text-anchor="end" class="t2">4</text>
+      <path class="trait" d="M230 96.0 h-4"/><text x="222" y="100.0" text-anchor="end" class="t2">6</text>
+      <path class="trait" d="M230 58.0 h-4"/><text x="222" y="62.0" text-anchor="end" class="t2">8</text>
+      <path class="trait" d="M230 20.0 h-4"/><text x="222" y="24.0" text-anchor="end" class="t2">10</text>
+      <text x="350.0" y="242" text-anchor="middle" class="t2">x</text>
+      <text x="230" y="6" text-anchor="middle" class="t2">y</text>
+      <path class="accent" d="M282.8 20.0 L281.3 20.6 L279.8 21.3 L278.2 22.0 L276.6 22.8 L274.9 23.6 L273.4 24.4 L272.2 25.1 L270.9 25.9 L269.3 26.9 L268.2 27.6 L266.9 28.5 L265.6 29.5 L264.5 30.4 L263.2 31.4 L262.1 32.4 L261.1 33.3 L259.8 34.6 L258.9 35.6 L258.1 36.5 L257.0 37.8 L256.1 39.1 L255.2 40.3 L254.3 41.6 L253.6 42.9 L252.9 44.1 L252.3 45.4 L251.7 46.8 L251.0 48.6 L250.6 49.9 L250.1 51.8 L249.9 53.0 L249.6 54.9 L249.4 56.9 L249.4 58.8 L249.5 60.7 L249.8 62.6 L250.1 64.0 L250.5 65.8 L250.9 67.0 L251.6 68.9 L252.1 70.2 L252.7 71.5 L253.4 72.7 L254.1 74.0 L254.9 75.3 L255.8 76.6 L256.7 77.8 L257.8 79.1 L258.9 80.4 L259.7 81.2 L260.7 82.3 L262.1 83.5 L262.9 84.3 L264.3 85.5 L265.3 86.3 L266.8 87.4 L267.7 88.0 L269.3 89.1 L270.6 89.9 L271.7 90.6 L273.3 91.5 L274.9 92.4 L276.3 93.1 L277.6 93.7 L279.0 94.4 L280.6 95.1 L282.2 95.7 L283.8 96.4 L285.4 97.0 L287.0 97.5 L289.0 98.2 L291.0 98.8 L292.6 99.3 L294.2 99.7 L295.8 100.1 L297.8 100.7 L299.8 101.3 L301.4 101.9 L302.9 102.6 L303.9 103.2 L305.3 104.5 L306.2 105.8 L306.7 107.1 L307.1 108.9 L307.1 110.2 L307.1 112.1 L307.0 113.4 L306.9 115.3 L306.6 117.2 L306.4 119.1 L306.3 120.6 L306.1 122.3 L305.9 124.2 L305.7 126.1 L305.6 128.0 L305.5 129.9 L305.4 131.2 L305.4 133.1 L305.4 135.0 L305.5 136.4 L305.5 138.2 L305.6 140.1 L305.8 142.0 L306.0 143.9 L306.3 145.5 L306.5 147.1 L306.8 149.0 L307.1 150.3 L307.5 152.2 L307.9 153.5 L308.3 155.4 L308.7 156.6 L309.3 158.5 L309.8 159.8 L310.3 161.1 L311.1 163.0 L311.6 164.2 L312.2 165.5 L312.9 166.8 L313.5 168.1 L314.3 169.3 L315.1 170.6 L315.9 171.9 L316.8 173.1 L317.8 174.4 L318.8 175.7 L319.9 176.9 L320.7 177.7 L321.9 178.9 L323.1 179.9 L324.3 180.8 L325.5 181.6 L327.1 182.6 L328.5 183.3 L329.9 183.9 L331.7 184.6 L333.5 185.1 L335.2 185.4 L337.6 185.6 L340.0 185.5 L341.8 185.2 L344.0 184.7 L345.6 184.2 L347.2 183.5 L348.8 182.7 L349.8 182.0 L351.2 181.1 L352.6 180.1 L353.6 179.3 L354.8 178.2 L356.0 177.0 L356.8 176.1 L357.7 175.1 L358.7 173.8 L359.7 172.5 L360.5 171.2 L361.4 170.0 L362.1 168.7 L362.8 167.4 L363.5 166.2 L364.1 164.9 L364.8 163.2 L365.5 161.7 L366.0 160.4 L366.5 159.1 L367.1 157.3 L367.5 156.0 L368.0 154.1 L368.3 152.8 L368.8 150.9 L369.0 149.6 L369.4 147.7 L369.7 146.1 L369.9 144.5 L370.1 142.6 L370.3 140.7 L370.4 138.8 L370.5 137.6 L370.6 135.7 L370.6 133.7 L370.6 131.8 L370.5 129.9 L370.4 128.7 L370.3 126.8 L370.1 124.8 L369.9 122.9 L369.7 121.5 L369.4 119.8 L369.1 117.9 L368.8 116.6 L368.5 114.7 L368.1 112.9 L367.8 111.5 L367.3 109.6 L367.0 108.3 L366.6 106.4 L366.3 105.2 L366.0 103.2 L365.7 101.3 L365.6 100.1 L365.7 98.8 L365.9 96.9 L366.5 95.3 L367.3 93.7 L368.1 92.6 L368.9 91.7 L370.0 90.5 L371.3 89.4 L372.1 88.6 L373.6 87.4 L374.5 86.6 L375.9 85.5 L376.9 84.6 L378.0 83.5 L379.3 82.3 L380.1 81.5 L381.1 80.4 L382.2 79.1 L383.3 77.8 L384.1 76.7 L384.9 75.5 L385.7 74.3 L386.5 72.9 L387.3 71.5 L387.9 70.2 L388.4 68.9 L388.9 67.6 L389.5 65.8 L389.8 64.5 L390.2 62.6 L390.5 60.7 L390.5 59.4 L390.6 57.5 L390.5 56.2 L390.3 54.3 L390.0 52.4 L389.7 51.1 L389.2 49.2 L388.8 48.0 L388.1 46.3 L387.4 44.8 L386.8 43.5 L386.0 42.2 L385.3 41.0 L384.4 39.7 L383.5 38.4 L382.5 37.2 L381.7 36.3 L380.8 35.3 L379.5 34.0 L378.5 33.0 L377.5 32.1 L376.1 30.9 L375.2 30.2 L373.7 29.0 L372.7 28.3 L371.3 27.3 L369.8 26.4 L368.8 25.7 L367.3 24.8 L365.7 23.9 L364.3 23.2 L363.0 22.5 L361.6 21.9 L360.0 21.2 L358.4 20.5"/>
+      <path class="accent" d="M335.2 177.0 L337.6 177.2 L340.0 177.1 L341.6 176.8 L343.5 176.3 L345.2 175.7 L346.5 175.1 L348.0 174.2 L349.5 173.1 L350.4 172.5 L351.8 171.2 L352.8 170.3 L353.7 169.3 L354.8 168.1 L355.8 166.8 L356.7 165.5 L357.5 164.2 L358.2 163.0 L358.9 161.7 L359.6 160.4 L360.2 159.2 L360.8 157.6 L361.5 156.0 L362.0 154.7 L362.4 153.2 L362.9 151.5 L363.3 150.3 L363.7 148.4 L364.0 146.9 L364.4 145.2 L364.7 143.3 L364.8 141.7 L365.0 140.1 L365.2 138.2 L365.3 136.3 L365.3 134.4 L365.3 132.5 L365.2 130.6 L365.1 128.7 L364.9 126.8 L364.8 125.5 L364.5 123.6 L364.2 121.7 L363.9 120.4 L363.5 118.5 L363.2 117.2 L362.7 115.3 L362.4 114.0 L361.8 112.1 L361.3 110.9 L360.8 109.5 L360.1 107.7 L359.6 106.4 L359.1 105.2 L358.4 103.6 L357.7 102.0 L357.1 100.7 L356.6 99.4 L356.0 98.1 L355.3 96.3 L354.9 95.0 L354.6 93.1 L354.5 91.2 L355.0 89.3 L355.5 88.0 L356.3 86.7 L357.3 85.5 L358.4 84.3 L359.2 83.5 L360.5 82.3 L361.6 81.2 L362.6 80.4 L363.9 79.1 L364.8 78.2 L365.9 77.2 L367.1 75.9 L368.1 74.8 L368.9 73.8 L369.7 72.7 L370.5 71.5 L371.3 70.2 L372.1 68.8 L372.9 67.1 L373.4 65.8 L373.8 64.5 L374.3 62.6 L374.6 61.3 L374.8 59.4 L374.8 57.5 L374.7 55.6 L374.5 54.2 L374.1 52.4 L373.7 51.0 L373.0 49.2 L372.5 48.0 L371.8 46.7 L371.1 45.4 L370.3 44.1 L369.3 42.9 L368.3 41.6 L367.3 40.4 L366.5 39.6 L365.3 38.4 L364.0 37.3 L363.1 36.5 L361.6 35.4 L360.5 34.6 L359.2 33.8 L357.6 32.8 L356.4 32.1 L355.2 31.4 L353.6 30.6 L352.0 29.8 L350.4 29.1 L348.8 28.5 L347.2 27.9 L345.6 27.3 L344.0 26.8 L342.4 26.3 L340.1 25.7 L338.4 25.3 L336.8 24.9 L334.3 24.5 L332.7 24.2 L330.3 23.9 L328.7 23.7 L326.3 23.5 L323.9 23.4 L321.5 23.3 L319.1 23.3 L316.7 23.4 L314.3 23.5 L311.9 23.7 L310.3 23.8 L307.9 24.1 L306.0 24.4 L303.8 24.8 L302.2 25.2 L299.9 25.7 L298.2 26.1 L296.6 26.6 L295.0 27.1 L293.4 27.6 L291.7 28.3 L290.1 28.9 L288.6 29.6 L287.0 30.3 L285.4 31.1 L283.8 31.9 L282.5 32.7 L281.4 33.4 L279.8 34.4 L278.6 35.3 L277.4 36.2 L276.2 37.2 L274.9 38.2 L274.1 39.1 L272.8 40.3 L271.7 41.6 L270.9 42.5 L270.1 43.6 L269.3 44.8 L268.5 46.1 L267.7 47.6 L267.0 49.2 L266.5 50.5 L266.1 51.8 L265.6 53.7 L265.3 55.6 L265.2 56.9 L265.2 58.8 L265.3 60.3 L265.5 61.9 L266.0 63.8 L266.4 65.1 L266.9 66.6 L267.7 68.3 L268.3 69.6 L269.1 70.8 L269.9 72.1 L270.9 73.4 L271.7 74.4 L272.5 75.4 L273.7 76.6 L274.9 77.8 L275.8 78.5 L277.3 79.7 L278.2 80.4 L279.8 81.6 L280.8 82.3 L282.2 83.1 L283.8 84.1 L285.2 84.8 L286.5 85.5 L287.8 86.1 L289.4 86.8 L291.0 87.5 L292.6 88.1 L294.2 88.6 L296.1 89.3 L298.2 89.9 L299.8 90.3 L301.4 90.8 L303.0 91.2 L305.5 91.8 L307.1 92.2 L308.7 92.6 L310.3 93.2 L311.9 93.8 L313.5 94.6 L314.7 95.6 L315.8 96.9 L316.3 98.2 L316.6 100.1 L316.4 102.0 L316.1 103.9 L315.8 105.2 L315.3 107.1 L315.0 108.3 L314.4 110.2 L314.1 111.5 L313.6 113.4 L313.2 114.7 L312.8 116.6 L312.5 117.9 L312.1 119.8 L311.9 121.0 L311.5 122.9 L311.3 124.8 L311.1 126.7 L310.9 128.0 L310.8 129.9 L310.7 131.8 L310.7 133.7 L310.7 135.7 L310.8 137.6 L310.9 139.5 L311.1 141.0 L311.3 142.6 L311.5 144.5 L311.9 146.5 L312.1 147.7 L312.6 149.6 L312.9 150.9 L313.4 152.8 L313.8 154.1 L314.3 155.4 L315.0 157.3 L315.5 158.5 L316.1 159.8 L316.7 161.1 L317.5 162.5 L318.3 163.9 L319.1 165.2 L319.9 166.3 L320.7 167.4 L321.7 168.7 L322.9 170.0 L323.9 171.0 L324.9 171.9 L326.3 173.0 L327.4 173.8 L328.7 174.6 L330.3 175.5 L331.9 176.1 L333.5 176.6 L335.2 177.0"/>
+      <path class="accent" d="M335.2 170.7 L337.6 171.0 L340.0 170.8 L341.6 170.5 L343.4 170.0 L344.8 169.3 L346.4 168.5 L348.0 167.4 L348.8 166.8 L350.2 165.5 L351.2 164.5 L352.0 163.6 L353.0 162.3 L353.9 161.1 L354.7 159.8 L355.5 158.5 L356.1 157.3 L356.8 155.9 L357.6 154.1 L358.1 152.8 L358.6 151.5 L359.2 149.6 L359.5 148.4 L360.0 146.5 L360.3 145.2 L360.6 143.3 L360.8 141.6 L361.0 140.1 L361.2 138.2 L361.3 136.3 L361.4 134.4 L361.3 132.5 L361.3 130.6 L361.1 128.7 L360.9 126.8 L360.7 125.5 L360.4 123.6 L360.0 121.7 L359.7 120.4 L359.2 118.5 L358.9 117.2 L358.4 115.9 L357.8 114.0 L357.3 112.8 L356.7 111.5 L356.0 110.0 L355.2 108.5 L354.4 107.1 L353.7 105.8 L352.8 104.5 L352.0 103.3 L351.2 102.3 L350.4 101.3 L349.4 100.1 L348.2 98.8 L347.2 97.8 L346.2 96.9 L344.8 95.6 L344.0 95.0 L342.4 93.7 L341.4 93.1 L340.0 92.1 L338.5 91.2 L337.6 90.5 L336.5 89.3 L337.2 88.0 L338.4 86.8 L339.2 86.1 L340.6 84.8 L341.6 84.1 L343.0 82.9 L344.0 82.2 L345.5 81.0 L346.4 80.3 L348.0 79.1 L348.8 78.4 L350.3 77.2 L351.2 76.5 L352.6 75.3 L353.6 74.3 L354.6 73.4 L355.8 72.1 L356.8 70.9 L357.6 69.9 L358.4 68.7 L359.2 67.4 L360.0 65.9 L360.7 64.5 L361.1 63.2 L361.6 61.3 L361.8 60.0 L361.9 58.1 L361.8 56.2 L361.6 54.9 L361.2 53.0 L360.7 51.8 L360.0 50.2 L359.2 48.7 L358.4 47.4 L357.6 46.3 L356.8 45.3 L355.7 44.1 L354.4 42.9 L353.6 42.2 L352.1 41.0 L351.2 40.3 L349.6 39.2 L348.3 38.4 L347.2 37.8 L345.6 37.0 L344.0 36.2 L342.4 35.6 L340.8 34.9 L339.2 34.4 L337.6 33.9 L335.5 33.3 L333.5 32.9 L331.9 32.6 L329.5 32.2 L327.9 31.9 L325.5 31.7 L323.1 31.5 L320.7 31.5 L318.3 31.5 L315.9 31.6 L313.5 31.8 L311.1 32.1 L309.5 32.3 L307.3 32.7 L305.5 33.1 L303.8 33.5 L302.2 34.0 L300.2 34.6 L298.4 35.3 L296.8 35.9 L295.4 36.5 L294.1 37.2 L292.6 37.9 L291.0 38.8 L289.7 39.7 L288.6 40.4 L287.0 41.6 L286.2 42.3 L284.9 43.5 L283.8 44.7 L283.0 45.6 L282.1 46.7 L281.2 48.0 L280.4 49.2 L279.8 50.6 L279.0 52.4 L278.7 53.7 L278.3 55.6 L278.1 56.9 L278.1 58.8 L278.2 60.0 L278.6 61.9 L279.0 63.4 L279.6 65.1 L280.2 66.4 L281.0 67.7 L281.8 68.9 L282.8 70.2 L283.8 71.3 L284.6 72.2 L285.8 73.4 L287.0 74.3 L288.2 75.3 L289.4 76.1 L291.0 77.2 L292.1 77.8 L293.4 78.5 L295.0 79.3 L296.6 80.0 L298.2 80.7 L299.8 81.3 L301.4 81.8 L303.0 82.3 L305.3 82.9 L307.1 83.3 L308.7 83.7 L311.1 84.2 L312.7 84.5 L314.7 84.8 L316.7 85.2 L318.4 85.5 L320.7 85.9 L322.3 86.2 L324.7 86.7 L326.3 87.1 L327.9 87.5 L329.5 88.0 L331.1 88.7 L332.7 89.8 L332.7 90.6 L331.9 91.9 L331.0 93.1 L329.9 94.3 L328.8 95.6 L327.9 96.7 L327.1 97.7 L326.3 98.8 L325.4 100.1 L324.5 101.3 L323.7 102.6 L322.9 103.9 L322.2 105.2 L321.5 106.4 L320.7 107.9 L319.9 109.6 L319.3 110.9 L318.8 112.1 L318.3 113.5 L317.7 115.3 L317.2 116.6 L316.7 118.5 L316.4 119.8 L315.9 121.7 L315.7 122.9 L315.3 124.8 L315.1 126.8 L314.9 128.0 L314.8 129.9 L314.7 131.8 L314.6 133.7 L314.7 135.7 L314.8 137.6 L314.9 139.5 L315.1 141.0 L315.3 142.6 L315.6 144.5 L315.9 145.8 L316.3 147.7 L316.7 149.1 L317.2 150.9 L317.7 152.2 L318.3 153.8 L318.9 155.4 L319.5 156.6 L320.2 157.9 L320.9 159.2 L321.7 160.4 L322.5 161.7 L323.5 163.0 L324.6 164.2 L325.5 165.2 L326.5 166.2 L327.9 167.3 L328.9 168.1 L330.3 168.9 L331.9 169.7 L333.5 170.3 L335.2 170.7"/>
+      <path class="accent" d="M337.6 165.6 L339.2 165.5 L341.6 165.1 L343.2 164.5 L344.8 163.7 L345.9 163.0 L347.2 162.0 L348.3 161.1 L349.5 159.8 L350.4 158.7 L351.2 157.7 L352.0 156.5 L352.8 155.1 L353.6 153.6 L354.3 152.2 L354.8 150.9 L355.3 149.6 L356.0 147.7 L356.3 146.5 L356.8 144.5 L357.1 143.3 L357.4 141.4 L357.6 139.6 L357.8 138.2 L357.9 136.3 L358.0 134.4 L357.9 132.5 L357.8 130.6 L357.7 128.7 L357.5 127.4 L357.2 125.5 L356.8 123.6 L356.6 122.3 L356.0 120.4 L355.6 119.1 L355.2 117.9 L354.4 116.0 L353.9 114.7 L353.2 113.4 L352.5 112.1 L351.8 110.9 L350.9 109.6 L350.0 108.3 L348.9 107.1 L348.0 106.1 L347.0 105.2 L345.6 104.1 L344.4 103.2 L343.2 102.6 L341.6 101.9 L339.2 101.3 L337.6 101.2 L336.0 101.4 L333.7 102.0 L332.3 102.6 L331.1 103.3 L329.5 104.4 L328.7 105.2 L327.4 106.4 L326.3 107.7 L325.5 108.7 L324.7 109.9 L323.9 111.1 L323.1 112.5 L322.4 114.0 L321.8 115.3 L321.2 116.6 L320.7 118.0 L320.1 119.8 L319.8 121.0 L319.3 122.9 L319.0 124.2 L318.7 126.1 L318.4 128.0 L318.3 129.3 L318.1 131.2 L318.1 133.1 L318.1 135.0 L318.1 136.9 L318.3 138.8 L318.4 140.1 L318.7 142.0 L319.1 143.9 L319.3 145.2 L319.8 147.1 L320.2 148.4 L320.7 149.7 L321.4 151.5 L322.0 152.8 L322.6 154.1 L323.3 155.4 L324.1 156.6 L325.0 157.9 L326.0 159.2 L327.1 160.4 L327.9 161.3 L329.2 162.3 L330.3 163.2 L331.9 164.1 L333.5 164.8 L335.2 165.3 L336.8 165.5"/>
+      <path class="accent" d="M319.9 76.6 L322.3 76.6 L324.0 76.6 L326.3 76.4 L328.7 76.0 L330.3 75.7 L332.1 75.3 L334.1 74.6 L335.7 74.0 L337.1 73.4 L338.4 72.7 L340.0 71.7 L341.3 70.8 L342.4 70.0 L343.6 68.9 L344.8 67.7 L345.6 66.8 L346.4 65.7 L347.2 64.4 L348.0 62.8 L348.5 61.3 L348.8 60.0 L348.9 58.1 L348.8 56.2 L348.5 54.9 L348.0 53.4 L347.2 51.8 L346.4 50.5 L345.6 49.5 L344.8 48.6 L343.5 47.3 L342.4 46.4 L341.0 45.4 L340.0 44.7 L338.4 43.8 L336.8 43.1 L335.2 42.4 L333.5 41.8 L331.9 41.3 L330.3 40.9 L327.9 40.4 L326.3 40.1 L323.9 39.9 L321.5 39.7 L319.9 39.7 L318.3 39.7 L315.9 39.9 L313.5 40.2 L311.9 40.4 L309.5 40.9 L307.9 41.4 L306.3 41.9 L304.6 42.5 L303.0 43.2 L301.4 44.0 L300.0 44.8 L299.0 45.4 L297.4 46.6 L296.5 47.3 L295.2 48.6 L294.2 49.7 L293.4 50.8 L292.6 52.1 L291.9 53.7 L291.5 54.9 L291.1 56.9 L291.1 58.8 L291.4 60.7 L291.8 62.1 L292.6 63.8 L293.4 65.1 L294.2 66.3 L295.0 67.2 L296.1 68.3 L297.4 69.4 L298.4 70.2 L299.8 71.1 L301.4 72.1 L302.8 72.7 L304.3 73.4 L305.9 74.0 L307.8 74.6 L309.5 75.1 L311.1 75.5 L313.4 75.9 L315.1 76.2 L317.5 76.4 L319.4 76.6"/>
+      <path class="accent" d="M336.8 160.5 L339.2 160.5 L340.8 160.2 L342.4 159.6 L344.0 158.8 L345.3 157.9 L346.4 157.0 L347.4 156.0 L348.5 154.7 L349.4 153.4 L350.2 152.2 L350.9 150.9 L351.5 149.6 L352.1 148.4 L352.8 146.5 L353.2 145.2 L353.6 143.7 L354.0 142.0 L354.3 140.1 L354.5 138.8 L354.7 136.9 L354.8 135.0 L354.8 133.1 L354.7 131.2 L354.5 129.3 L354.3 128.0 L354.0 126.1 L353.6 124.3 L353.3 122.9 L352.8 121.5 L352.2 119.8 L351.6 118.5 L351.0 117.2 L350.4 116.0 L349.6 114.7 L348.7 113.4 L347.7 112.1 L346.5 110.9 L345.6 110.1 L344.1 109.0 L343.0 108.3 L341.6 107.7 L339.2 107.1 L337.6 107.0 L336.0 107.2 L334.3 107.7 L332.7 108.4 L331.1 109.4 L330.1 110.2 L328.8 111.5 L327.9 112.5 L327.1 113.5 L326.3 114.7 L325.5 116.1 L324.7 117.6 L324.1 119.1 L323.6 120.4 L323.1 121.7 L322.6 123.6 L322.2 124.8 L321.9 126.8 L321.6 128.7 L321.4 129.9 L321.3 131.8 L321.2 133.7 L321.3 135.7 L321.4 137.6 L321.5 138.8 L321.8 140.7 L322.1 142.6 L322.4 143.9 L323.0 145.8 L323.4 147.1 L323.9 148.4 L324.7 150.2 L325.4 151.5 L326.2 152.8 L327.0 154.1 L327.9 155.2 L328.7 156.1 L329.9 157.3 L331.1 158.2 L332.7 159.2 L334.1 159.8 L336.0 160.3"/>
+      <path class="accent" d="M318.3 64.5 L320.7 64.6 L322.3 64.5 L324.7 63.9 L326.3 63.3 L327.6 62.6 L328.7 61.6 L329.5 60.7 L330.3 58.8 L330.4 57.5 L330.0 56.2 L329.2 54.9 L327.9 53.8 L326.8 53.0 L325.4 52.4 L323.2 51.8 L321.5 51.5 L319.1 51.5 L316.8 51.8 L315.1 52.3 L313.5 52.9 L312.3 53.7 L311.1 54.7 L310.3 55.8 L309.7 57.5 L309.9 59.4 L310.6 60.7 L311.7 61.9 L312.7 62.6 L314.3 63.5 L315.9 64.0 L318.2 64.5"/>
+      <path class="accent" d="M336.0 156.0 L338.4 156.3 L340.3 156.0 L342.0 155.4 L343.2 154.7 L344.8 153.5 L345.6 152.8 L346.7 151.5 L347.6 150.3 L348.4 149.0 L349.1 147.7 L349.7 146.5 L350.4 144.5 L350.8 143.3 L351.2 141.7 L351.5 140.1 L351.8 138.2 L352.0 136.3 L352.1 135.0 L352.1 133.1 L352.0 131.8 L351.8 129.9 L351.6 128.0 L351.2 126.3 L350.8 124.8 L350.4 123.4 L349.7 121.7 L349.2 120.4 L348.5 119.1 L347.8 117.9 L346.9 116.6 L345.8 115.3 L344.8 114.3 L343.6 113.4 L342.4 112.7 L340.8 112.0 L338.4 111.5 L336.0 111.7 L334.3 112.3 L332.7 113.1 L331.5 114.0 L330.3 115.2 L329.5 116.1 L328.6 117.2 L327.8 118.5 L327.1 119.8 L326.3 121.5 L325.8 122.9 L325.3 124.2 L324.8 126.1 L324.5 127.4 L324.2 129.3 L324.0 131.2 L323.9 133.1 L323.9 135.0 L324.0 136.9 L324.3 138.8 L324.6 140.7 L324.9 142.0 L325.4 143.9 L325.8 145.2 L326.3 146.5 L327.1 148.1 L327.9 149.6 L328.7 150.8 L329.5 151.8 L330.5 152.8 L331.9 154.1 L332.8 154.7 L334.3 155.5 L336.0 156.0"/>
+      <path class="accent" d="M336.0 147.9 L338.4 148.3 L340.5 147.7 L341.6 147.1 L343.1 145.8 L344.0 144.7 L344.8 143.4 L345.5 142.0 L345.9 140.7 L346.4 139.2 L346.7 137.6 L347.0 135.7 L347.0 133.7 L346.9 131.8 L346.6 129.9 L346.4 128.7 L345.8 126.8 L345.2 125.5 L344.6 124.2 L343.7 122.9 L342.6 121.7 L341.6 120.8 L340.0 120.0 L338.4 119.7 L336.8 119.8 L335.1 120.4 L333.5 121.5 L332.7 122.4 L331.8 123.6 L331.1 124.8 L330.3 126.4 L329.8 128.0 L329.5 129.3 L329.2 131.2 L329.0 133.1 L329.0 135.0 L329.2 136.9 L329.5 138.8 L329.9 140.1 L330.3 141.5 L331.1 143.3 L331.9 144.5 L332.7 145.6 L333.6 146.5 L335.2 147.5"/>
+      <path class="trait" d="M170.0 210.0 L169.9 207.5 L169.9 204.9 L169.8 202.4 L169.7 199.8 L169.5 197.3 L169.3 194.7 L168.9 192.2 L168.4 189.7 L167.6 187.1 L166.6 184.6 L165.2 182.0 L163.3 179.5 L160.8 177.0 L157.7 174.4 L153.8 171.9 L149.0 169.3 L143.3 166.8 L136.7 164.2 L129.2 161.7 L120.8 159.2 L111.8 156.6 L102.4 154.1 L92.8 151.5 L83.5 149.0 L74.7 146.5 L66.9 143.9 L60.4 141.4 L55.6 138.8 L52.7 136.3 L51.8 133.7 L53.1 131.2 L56.3 128.7 L61.4 126.1 L68.0 123.6 L75.9 121.0 L84.6 118.5 L93.6 116.0 L102.6 113.4 L111.2 110.9 L119.0 108.3 L125.8 105.8 L131.2 103.2 L135.1 100.7 L137.4 98.2 L138.0 95.6 L136.9 93.1 L134.1 90.5 L129.8 88.0 L123.9 85.5 L116.9 82.9 L108.8 80.4 L100.0 77.8 L91.0 75.3 L82.0 72.7 L73.6 70.2 L66.0 67.7 L59.8 65.1 L55.3 62.6 L52.6 60.0 L52.0 57.5 L53.5 54.9 L57.0 52.4 L62.3 49.9 L69.2 47.3 L77.4 44.8 L86.3 42.2 L95.8 39.7 L105.4 37.2 L114.7 34.6 L123.5 32.1 L131.6 29.5 L138.9 27.0 L145.2 24.4 L150.6 21.9"/>
+      <text x="105" y="14" text-anchor="middle" class="t2">f<tspan dy="3" font-size="10">Y</tspan><tspan dy="-3">(y)</tspan></text>
+      <path class="trait" d="M230 255 V345 H470"/>
+      <path class="trait" d="M230.0 345 v4"/><text x="230.0" y="361" text-anchor="middle" class="t2">−1</text>
+      <path class="trait" d="M290.0 345 v4"/><text x="290.0" y="361" text-anchor="middle" class="t2">0</text>
+      <path class="trait" d="M350.0 345 v4"/><text x="350.0" y="361" text-anchor="middle" class="t2">1</text>
+      <path class="trait" d="M410.0 345 v4"/><text x="410.0" y="361" text-anchor="middle" class="t2">2</text>
+      <path class="trait" d="M470.0 345 v4"/><text x="470.0" y="361" text-anchor="middle" class="t2">3</text>
+      <text x="350.0" y="377" text-anchor="middle" class="t2">x</text>
+      <path class="trait" d="M230.0 344.7 L233.2 344.6 L236.4 344.5 L239.6 344.3 L242.8 344.1 L246.1 343.8 L249.3 343.5 L252.5 343.1 L255.7 342.6 L258.9 342.0 L262.1 341.3 L265.3 340.4 L268.5 339.5 L271.7 338.4 L274.9 337.2 L278.2 335.9 L281.4 334.5 L284.6 333.0 L287.8 331.5 L291.0 329.9 L294.2 328.3 L297.4 326.7 L300.6 325.0 L303.8 323.1 L307.1 320.8 L310.3 317.9 L313.5 313.9 L316.7 308.3 L319.9 301.2 L323.1 292.5 L326.3 283.1 L329.5 274.1 L332.7 267.1 L336.0 263.4 L339.2 264.1 L342.4 269.2 L345.6 277.9 L348.8 288.7 L352.0 300.2 L355.2 310.9 L358.4 319.9 L361.6 327.0 L364.8 332.1 L368.1 335.7 L371.3 338.1 L374.5 339.8 L377.7 341.0 L380.9 341.8 L384.1 342.5 L387.3 343.0 L390.5 343.5 L393.7 343.8 L397.0 344.1 L400.2 344.3 L403.4 344.5 L406.6 344.6 L409.8 344.7 L413.0 344.8 L416.2 344.9 L419.4 344.9 L422.6 344.9 L425.9 345.0 L429.1 345.0 L432.3 345.0 L435.5 345.0 L438.7 345.0 L441.9 345.0 L445.1 345.0 L448.3 345.0 L451.5 345.0 L454.7 345.0 L458.0 345.0 L461.2 345.0 L464.4 345.0 L467.6 345.0"/>
+      <text x="500" y="300" class="t2">f<tspan dy="3" font-size="10">X</tspan><tspan dy="-3">(x)</tspan></text>
+      </svg>
+      <figcaption>Isolignes de la densité, densité marginale de Y à gauche et de X en dessous (diapos 21 et 26, formule du notebook, ramenée à une aire de 1).</figcaption>
+    </figure>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>La densité a deux bosses, l'une en \(y = 4\) et l'autre en \(y = 8\) : \(f_Y\) a donc deux maxima. En \(x\), les deux bosses se recouvrent, centrées en 0,8 et en 0,5 : \(f_X\) n'a qu'un maximum, près de 0,8, avec un épaulement à gauche dû à la bosse plus large. La diapo donne ces deux courbes.</p>
+      </details>
+    </div>
+    <p>Dans le notebook, ces marginales s'obtiennent en sommant la grille des valeurs selon un axe :</p>
+<pre data-fichier="script_cm3.ipynb"><code class="language-python">import numpy as np
+
+x0 = np.linspace(-1, 3, 500)
+y0 = np.linspace(0, 10, 500)
+x, y = np.meshgrid(x0, y0)
+fxy = 1/(2*np.pi*.2*1)*np.exp(-(((x-.8)/.2)**2 + ((y-4)/1)**2) /2) \
+    + 1/(2*np.pi*.5*1)*np.exp(-(((x-.5)/.5)**2 + ((y-8)/1)**2) /2)
+
+px = np.sum(fxy, axis = 0)     # une valeur par x : marginale de x
+py = np.sum(fxy, axis = 1)     # une valeur par y : marginale de y</code></pre>
+    <h3>Généralisation</h3>
+    <p>Avec quatre VA \(W\), \(X\), \(Y\), \(Z\), où \(W\) est discrète et \(Z\) continue, la probabilité jointe de \(X\) et \(Y\) est la loi marginale par rapport à ces deux VA :</p>
+    \[ P(X, Y) = \sum_{W} \int P(W, X, Y, Z = z)\,dz. \]
+    <p>Dans la suite, on confond la VA \(X\) et l'événement \((X = x)\), en notant \(P(X = x) = P(x)\). La formule devient :</p>
+    \[ P(x, y) = \sum_{w} \int P(w, x, y, z)\,dz. \]
+  </section>
+
+  <section>
+    <h2>Lois conditionnelles et formule de Bayes <span class="ref">diapos 29–33</span></h2>
+    <p>La probabilité \(P(x \cap y)\) s'exprime aussi par une probabilité jointe. La définition de la probabilité conditionnelle devient alors un outil de calcul.</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Probabilité jointe et conditionnelle</span> <span class="ref">diapo 29</span></p>
+      \[ P(x \mid y) = \frac{P(x, y)}{P(y)} \]
+      <div class="encadre">\[ P(x, y) = P(x \mid y)\,P(y) \]</div>
+      <p>où \(P(y) = \int P(x, y)\,dx\) est la probabilité marginale de \(Y\). La diapo la qualifie de « très importante ».</p>
+    </div>
+    <p>En l'appliquant de proche en proche, on décompose une loi jointe en un produit de conditionnelles (diapo 30) :</p>
+    \[ \begin{aligned} P(w, x, y, z) &= P(w, x, y \mid z)\,P(z) \\ &= P(w, x \mid y, z)\,P(y \mid z)\,P(z) \\ &= P(w \mid x, y, z)\,P(x \mid y, z)\,P(y \mid z)\,P(z). \end{aligned} \]
+    <p>Les probabilités conditionnelles sont en fait des <dfn>vues en coupe</dfn> de la distribution jointe, dont l'aire sous la courbe est normalisée à 1.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 590 215" width="590" role="img" aria-labelledby="fig-coupes-titre">
+        <title id="fig-coupes-titre">Deux vues en coupe normalisées de la densité. Pour x = 1, deux bosses en y = 4 et y = 8, la première plus haute. Pour x = −0,1, une seule bosse en y = 8.</title>
+      <path class="trait" d="M50 30 V170 H270"/>
+      <path class="trait" d="M50.0 170 v4"/><text x="50.0" y="186" text-anchor="middle" class="t2">0</text>
+      <path class="trait" d="M94.0 170 v4"/><text x="94.0" y="186" text-anchor="middle" class="t2">2</text>
+      <path class="trait" d="M138.0 170 v4"/><text x="138.0" y="186" text-anchor="middle" class="t2">4</text>
+      <path class="trait" d="M182.0 170 v4"/><text x="182.0" y="186" text-anchor="middle" class="t2">6</text>
+      <path class="trait" d="M226.0 170 v4"/><text x="226.0" y="186" text-anchor="middle" class="t2">8</text>
+      <path class="trait" d="M270.0 170 v4"/><text x="270.0" y="186" text-anchor="middle" class="t2">10</text>
+      <path class="trait" d="M50 170.0 h-4"/><text x="42" y="174.0" text-anchor="end" class="t2">0</text>
+      <path class="trait" d="M50 107.8 h-4"/><text x="42" y="111.8" text-anchor="end" class="t2">0,2</text>
+      <path class="trait" d="M50 45.6 h-4"/><text x="42" y="49.6" text-anchor="end" class="t2">0,4</text>
+      <text x="160.0" y="202" text-anchor="middle" class="t2">y</text>
+      <text x="50" y="16" text-anchor="middle" class="t2">P(y | x = 1)</text>
+      <path class="accent" d="M50.0 170.0 L52.9 169.9 L55.9 169.9 L58.8 169.9 L61.8 169.8 L64.7 169.7 L67.7 169.5 L70.6 169.2 L73.5 168.8 L76.5 168.2 L79.4 167.4 L82.4 166.4 L85.3 164.9 L88.3 163.1 L91.2 160.7 L94.1 157.8 L97.1 154.2 L100.0 149.9 L103.0 144.9 L105.9 139.2 L108.9 132.9 L111.8 126.1 L114.7 119.0 L117.7 111.7 L120.6 104.7 L123.6 98.0 L126.5 92.1 L129.5 87.3 L132.4 83.6 L135.4 81.4 L138.3 80.8 L141.2 81.7 L144.2 84.2 L147.1 88.1 L150.1 93.2 L153.0 99.2 L156.0 105.8 L158.9 112.8 L161.8 119.9 L164.8 126.7 L167.7 133.1 L170.7 138.9 L173.6 143.8 L176.6 147.9 L179.5 151.1 L182.4 153.4 L185.4 154.7 L188.3 155.2 L191.3 155.0 L194.2 154.0 L197.2 152.5 L200.1 150.5 L203.0 148.2 L206.0 145.7 L208.9 143.1 L211.9 140.6 L214.8 138.4 L217.8 136.6 L220.7 135.3 L223.6 134.5 L226.6 134.3 L229.5 134.8 L232.5 135.8 L235.4 137.4 L238.4 139.5 L241.3 142.0 L244.2 144.7 L247.2 147.6 L250.1 150.4 L253.1 153.3 L256.0 155.9 L259.0 158.4 L261.9 160.6 L264.8 162.5 L267.8 164.1"/>
+      <path class="trait" d="M340 30 V170 H560"/>
+      <path class="trait" d="M340.0 170 v4"/><text x="340.0" y="186" text-anchor="middle" class="t2">0</text>
+      <path class="trait" d="M384.0 170 v4"/><text x="384.0" y="186" text-anchor="middle" class="t2">2</text>
+      <path class="trait" d="M428.0 170 v4"/><text x="428.0" y="186" text-anchor="middle" class="t2">4</text>
+      <path class="trait" d="M472.0 170 v4"/><text x="472.0" y="186" text-anchor="middle" class="t2">6</text>
+      <path class="trait" d="M516.0 170 v4"/><text x="516.0" y="186" text-anchor="middle" class="t2">8</text>
+      <path class="trait" d="M560.0 170 v4"/><text x="560.0" y="186" text-anchor="middle" class="t2">10</text>
+      <path class="trait" d="M340 170.0 h-4"/><text x="332" y="174.0" text-anchor="end" class="t2">0</text>
+      <path class="trait" d="M340 107.8 h-4"/><text x="332" y="111.8" text-anchor="end" class="t2">0,2</text>
+      <path class="trait" d="M340 45.6 h-4"/><text x="332" y="49.6" text-anchor="end" class="t2">0,4</text>
+      <text x="450.0" y="202" text-anchor="middle" class="t2">y</text>
+      <text x="340" y="16" text-anchor="middle" class="t2">P(y | x = −0,1)</text>
+      <path class="accent" d="M340.0 170.0 L342.9 170.0 L345.9 170.0 L348.8 170.0 L351.8 170.0 L354.7 170.0 L357.7 170.0 L360.6 170.0 L363.5 170.0 L366.5 170.0 L369.4 170.0 L372.4 170.0 L375.3 170.0 L378.3 170.0 L381.2 170.0 L384.1 170.0 L387.1 170.0 L390.0 170.0 L393.0 170.0 L395.9 170.0 L398.9 170.0 L401.8 170.0 L404.7 170.0 L407.7 170.0 L410.6 170.0 L413.6 170.0 L416.5 170.0 L419.5 170.0 L422.4 170.0 L425.4 169.9 L428.3 169.9 L431.2 169.9 L434.2 169.8 L437.1 169.8 L440.1 169.6 L443.0 169.5 L446.0 169.2 L448.9 168.8 L451.8 168.2 L454.8 167.3 L457.7 166.2 L460.7 164.6 L463.6 162.5 L466.6 159.8 L469.5 156.4 L472.4 152.1 L475.4 146.9 L478.3 140.7 L481.3 133.5 L484.2 125.3 L487.2 116.3 L490.1 106.6 L493.0 96.4 L496.0 86.1 L498.9 76.1 L501.9 66.8 L504.8 58.5 L507.8 51.7 L510.7 46.8 L513.6 43.9 L516.6 43.2 L519.5 44.8 L522.5 48.5 L525.4 54.2 L528.4 61.7 L531.3 70.4 L534.2 80.1 L537.2 90.2 L540.1 100.5 L543.1 110.5 L546.0 120.0 L549.0 128.7 L551.9 136.5 L554.8 143.3 L557.8 149.1"/>
+      </svg>
+      <figcaption>Deux vues en coupe normalisées de la même densité (diapo 31).</figcaption>
+    </figure>
+    <p><span class="badge a-verifier">À vérifier</span> Sur la diapo 31, le notebook trace ces coupes en fonction de \(x\) (de −1 à 3), alors qu'elles dépendent de \(y\) : la figure ci-dessus utilise le bon axe. Sa deuxième coupe, intitulée \(x = -0{,}1\), est en réalité prise en \(x \approx 2{,}2\) (colonne 400 de la grille), où l'allure est la même.</p>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Une loi conditionnelle</span> <span class="ref">diapo 32</span></p>
+      <p>Avec le tableau de la diapo 25, donner la loi de probabilité conditionnelle \(P(X \mid Y = 1)\).</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>La colonne \(Y = 1\) contient 2, 0, 3 et 1 cinquantièmes, de total 6. On la normalise : \(P(X = 1 \mid Y = 1) = \frac{2}{6} = \frac{1}{3}\), \(P(X = 2 \mid Y = 1) = 0\), \(P(X = 3 \mid Y = 1) = \frac{3}{6} = \frac{1}{2}\), \(P(X = 4 \mid Y = 1) = \frac{1}{6}\). La somme vaut bien 1.</p>
+      </details>
+    </div>
+    <h3>La formule de Bayes</h3>
+    <p>Par symétrie, \(P(x, y) = P(x \mid y)\,P(y) = P(y \mid x)\,P(x)\). En remplaçant \(P(x)\) par sa définition marginale :</p>
+    <div class="encadre">\[ P(y \mid x) = \frac{P(x \mid y)\,P(y)}{P(x)} = \frac{P(x \mid y)\,P(y)}{\int P(x, y)\,dy} = \frac{P(x \mid y)\,P(y)}{\int P(x \mid y)\,P(y)\,dy}. \]</div>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo 33 écrit \(dx\) au dernier dénominateur : c'est sur \(y\) qu'on intègre.</p>
+    <p>Dans une logique où l'on cherche à prédire la classe la plus probable, on pose \(y = c\), et les attributs sont représentés par \(x\) :</p>
+    <dl class="glossaire">
+      <dt>Vraisemblance (<span class="en" lang="en">likelihood</span>)</dt><dd>\(P(x \mid y = c)\)</dd>
+      <dt>Probabilité a priori</dt><dd>\(P(y)\)</dd>
+      <dt>Probabilité a posteriori</dt><dd>\(P(y = c \mid x)\)</dd>
+      <dt>Évidence</dt><dd>\(P(x)\)</dd>
+    </dl>
+    <p><span class="badge ajout">Ajout</span> C'est le vocabulaire du <a href="index.html">cours 5</a> sur le classifieur bayésien naïf, et du TD 3.</p>
+  </section>
+
+  <section>
+    <h2>Indépendance de deux variables <span class="ref">diapos 34–36</span></h2>
+    <p>Si la connaissance de \(X\) n'apprend rien sur les variations de \(Y\), les deux VA sont indépendantes. Toutes les coupes ont alors la même forme, et la loi jointe se factorise.</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Indépendance</span> <span class="ref">diapo 34</span></p>
+      \[ P(x \mid y) = P(x), \qquad P(y \mid x) = P(y), \]
+      <p>et surtout :</p>
+      <div class="encadre">\[ P(x, y) = P(x \mid y)\,P(y) = P(x)\,P(y). \]</div>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 410 255" width="410" role="img" aria-labelledby="fig-independance-titre">
+        <title id="fig-independance-titre">Diagramme de Hinton de deux variables indépendantes, quatre colonnes et dix lignes, et deux coupes, pour y = 3 et y = 6, qui ont exactement la même forme.</title>
+      <rect class="boite" x="40" y="10" width="88" height="220"/>
+      <rect class="plein-accent" x="49.0" y="19.0" width="3.9" height="3.9"/>
+      <rect class="plein-accent" x="71.4" y="19.4" width="3.2" height="3.2"/>
+      <rect class="plein-accent" x="94.2" y="20.2" width="1.7" height="1.7"/>
+      <rect class="plein-accent" x="116.7" y="20.7" width="0.6" height="0.6"/>
+      <rect class="plein-accent" x="46.8" y="38.8" width="8.4" height="8.4"/>
+      <rect class="plein-accent" x="69.6" y="39.6" width="6.7" height="6.7"/>
+      <rect class="plein-accent" x="93.2" y="41.2" width="3.6" height="3.6"/>
+      <rect class="plein-accent" x="116.4" y="42.4" width="1.2" height="1.2"/>
+      <rect class="plein-accent" x="44.2" y="58.2" width="13.7" height="13.7"/>
+      <rect class="plein-accent" x="67.5" y="59.5" width="11.0" height="11.0"/>
+      <rect class="plein-accent" x="92.1" y="62.1" width="5.9" height="5.9"/>
+      <rect class="plein-accent" x="116.0" y="64.0" width="1.9" height="1.9"/>
+      <rect class="plein-accent" x="42.0" y="78.0" width="18.1" height="18.1"/>
+      <rect class="plein-accent" x="65.8" y="79.8" width="14.5" height="14.5"/>
+      <rect class="plein-accent" x="91.1" y="83.1" width="7.7" height="7.7"/>
+      <rect class="plein-accent" x="115.7" y="85.7" width="2.5" height="2.5"/>
+      <rect class="plein-accent" x="41.1" y="99.1" width="19.8" height="19.8"/>
+      <rect class="plein-accent" x="65.1" y="101.1" width="15.9" height="15.9"/>
+      <rect class="plein-accent" x="90.8" y="104.8" width="8.5" height="8.5"/>
+      <rect class="plein-accent" x="115.6" y="107.6" width="2.8" height="2.8"/>
+      <rect class="plein-accent" x="42.0" y="122.0" width="18.1" height="18.1"/>
+      <rect class="plein-accent" x="65.8" y="123.8" width="14.5" height="14.5"/>
+      <rect class="plein-accent" x="91.1" y="127.1" width="7.7" height="7.7"/>
+      <rect class="plein-accent" x="115.7" y="129.7" width="2.5" height="2.5"/>
+      <rect class="plein-accent" x="44.2" y="146.2" width="13.7" height="13.7"/>
+      <rect class="plein-accent" x="67.5" y="147.5" width="11.0" height="11.0"/>
+      <rect class="plein-accent" x="92.1" y="150.1" width="5.9" height="5.9"/>
+      <rect class="plein-accent" x="116.0" y="152.0" width="1.9" height="1.9"/>
+      <rect class="plein-accent" x="46.8" y="170.8" width="8.4" height="8.4"/>
+      <rect class="plein-accent" x="69.6" y="171.6" width="6.7" height="6.7"/>
+      <rect class="plein-accent" x="93.2" y="173.2" width="3.6" height="3.6"/>
+      <rect class="plein-accent" x="116.4" y="174.4" width="1.2" height="1.2"/>
+      <rect class="plein-accent" x="49.0" y="195.0" width="3.9" height="3.9"/>
+      <rect class="plein-accent" x="71.4" y="195.4" width="3.2" height="3.2"/>
+      <rect class="plein-accent" x="94.2" y="196.2" width="1.7" height="1.7"/>
+      <rect class="plein-accent" x="116.7" y="196.7" width="0.6" height="0.6"/>
+      <rect class="plein-accent" x="50.4" y="218.4" width="1.2" height="1.2"/>
+      <rect class="plein-accent" x="72.5" y="218.5" width="1.0" height="1.0"/>
+      <rect class="plein-accent" x="94.7" y="218.7" width="0.5" height="0.5"/>
+      <rect class="plein-accent" x="116.9" y="218.9" width="0.2" height="0.2"/>
+      <text x="51.0" y="244" text-anchor="middle" class="t2">x1</text>
+      <text x="73.0" y="244" text-anchor="middle" class="t2">x2</text>
+      <text x="95.0" y="244" text-anchor="middle" class="t2">x3</text>
+      <text x="117.0" y="244" text-anchor="middle" class="t2">x4</text>
+      <text x="34" y="25.0" text-anchor="end" class="t2">y1</text>
+      <text x="34" y="47.0" text-anchor="end" class="t2">y2</text>
+      <text x="34" y="69.0" text-anchor="end" class="t2">y3</text>
+      <text x="34" y="91.0" text-anchor="end" class="t2">y4</text>
+      <text x="34" y="113.0" text-anchor="end" class="t2">y5</text>
+      <text x="34" y="135.0" text-anchor="end" class="t2">y6</text>
+      <text x="34" y="157.0" text-anchor="end" class="t2">y7</text>
+      <text x="34" y="179.0" text-anchor="end" class="t2">y8</text>
+      <text x="34" y="201.0" text-anchor="end" class="t2">y9</text>
+      <text x="34" y="223.0" text-anchor="end" class="t2">y10</text>
+      <text x="190" y="34" class="t2">P(x | y = 3)</text>
+      <rect class="boite" x="190" y="40" width="200" height="50"/>
+      <rect class="plein-accent" x="192.5" y="42.5" width="45.0" height="45.0"/>
+      <rect class="plein-accent" x="247.0" y="47.0" width="36.1" height="36.1"/>
+      <rect class="plein-accent" x="305.4" y="55.4" width="19.3" height="19.3"/>
+      <rect class="plein-accent" x="361.8" y="61.8" width="6.3" height="6.3"/>
+      <text x="215.0" y="104" text-anchor="middle" class="t2">x1</text>
+      <text x="265.0" y="104" text-anchor="middle" class="t2">x2</text>
+      <text x="315.0" y="104" text-anchor="middle" class="t2">x3</text>
+      <text x="365.0" y="104" text-anchor="middle" class="t2">x4</text>
+      <text x="190" y="124" class="t2">P(x | y = 6)</text>
+      <rect class="boite" x="190" y="130" width="200" height="50"/>
+      <rect class="plein-accent" x="192.5" y="132.5" width="45.0" height="45.0"/>
+      <rect class="plein-accent" x="247.0" y="137.0" width="36.1" height="36.1"/>
+      <rect class="plein-accent" x="305.4" y="145.4" width="19.3" height="19.3"/>
+      <rect class="plein-accent" x="361.8" y="151.8" width="6.3" height="6.3"/>
+      <text x="215.0" y="194" text-anchor="middle" class="t2">x1</text>
+      <text x="265.0" y="194" text-anchor="middle" class="t2">x2</text>
+      <text x="315.0" y="194" text-anchor="middle" class="t2">x3</text>
+      <text x="365.0" y="194" text-anchor="middle" class="t2">x4</text>
+      </svg>
+      <figcaption>Deux variables indépendantes : les coupes ont la même forme (diapo 34).</figcaption>
+    </figure>
+    <p>La figure trace deux binomiales indépendantes, celles du notebook, en valeurs théoriques : les coupes pour \(y = 3\) et \(y = 6\) sont identiques.</p>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Le tableau est-il indépendant ?</span> <span class="ref">diapo 35</span></p>
+      <p>Avec le tableau de la diapo 25, les variables aléatoires sont-elles indépendantes ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>Non. \(P(X = 2, Y = 1) = 0\), alors que \(P(X = 2)\,P(Y = 1) = \frac{9}{50} \times \frac{6}{50} \ne 0\). Un seul couple qui ne vérifie pas la factorisation suffit.</p>
+      </details>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Jeu de fléchettes</span> <span class="ref">diapos 23, 28 et 36 ; TD 3, exercice 3</span></p>
+      <p>On lance des fléchettes sur une cible circulaire \(D\) de centre \(O\) et de rayon \(a\), et on touche toujours la cible. La probabilité de tomber sur une partie du disque est proportionnelle à l'aire de cette partie. Soient \(X\) et \(Y\) les VA représentant les coordonnées cartésiennes du point d'impact.</p>
+      <ol>
+        <li>Donner la loi du couple \((X, Y)\) et les lois marginales de \(X\) et de \(Y\).</li>
+        <li>Les variables \(X\) et \(Y\) sont-elles indépendantes ?</li>
+        <li>On appelle \(R\) et \(\theta\) les coordonnées polaires du point d'impact, avec \(0 \le R \lt a\) et \(0 \le \theta \le 2\pi\). Trouver la loi du couple \((R, \theta)\) et les lois marginales de \(R\) et \(\theta\).</li>
+        <li>Les variables \(R\) et \(\theta\) sont-elles indépendantes ?</li>
+      </ol>
+      <details class="indice"><summary>Indice</summary><p>La densité est constante sur le disque. Pour les coordonnées polaires, le changement de variable du cours 2 fait apparaître \(r\,dr\,d\theta\).</p></details>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>1. La densité est constante sur \(D\), d'aire \(\pi a^2\) : \(f(x, y) = \frac{1}{\pi a^2}\) sur \(D\), et 0 ailleurs. Pour \(|x| \lt a\), on intègre sur la corde :</p>
+        \[ f_X(x) = \int_{-\sqrt{a^2 - x^2}}^{\sqrt{a^2 - x^2}} \frac{dy}{\pi a^2} = \frac{2\sqrt{a^2 - x^2}}{\pi a^2}, \]
+        <p>et de même pour \(Y\), par symétrie.</p>
+        <p>2. Non : \(f(x, y) \ne f_X(x)\,f_Y(y)\). Un point proche de \((a, a)\) a des marginales non nulles, mais il est hors du disque, donc de densité nulle. Connaître \(x\) limite les valeurs possibles de \(y\).</p>
+        <p>3. Par le changement de variable polaire, \(\iint \frac{1}{\pi a^2}\,dx\,dy = \iint \frac{r}{\pi a^2}\,dr\,d\theta\). La densité de \((R, \theta)\) est donc \(g(r, \theta) = \frac{r}{\pi a^2}\) sur \([0, a[ \times [0, 2\pi]\). Les marginales sont :</p>
+        \[ f_R(r) = \int_0^{2\pi} \frac{r}{\pi a^2}\,d\theta = \frac{2r}{a^2}, \qquad f_\theta(\theta) = \int_0^a \frac{r}{\pi a^2}\,dr = \frac{1}{2\pi}. \]
+        <p>4. Oui : \(g(r, \theta) = f_R(r)\,f_\theta(\theta)\). La distance au centre et l'angle n'ont pas d'influence l'une sur l'autre.</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2>Espérance, variance et moments <span class="ref">diapos 38–43</span></h2>
+    <p>L'espérance résume une distribution par sa valeur moyenne. En remplaçant \(x\) par une fonction \(h(x)\), la même formule donne la variance, les moments et la covariance.</p>
+    <h3>Rappels à une dimension</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Espérance, variance</span> <span class="ref">diapos 38–39</span></p>
+      <p>Soit \(X\) une VA discrète sur \(\{x_i\}_{i \in J}\), avec \(P(X = x_i) = p_i\), ou une VA continue sur \(\R\), de densité \(f\). L'<dfn>espérance</dfn> et la <dfn>variance</dfn> sont :</p>
+      <div class="tableau">
+        <table>
+          <caption>Espérance et variance</caption>
+          <thead><tr><th></th><th>Cas discret</th><th>Cas continu</th></tr></thead>
+          <tbody>
+            <tr><th>\(E[X]\)</th><td>\(\sum_i x_i p_i\)</td><td>\(\int_{-\infty}^{+\infty} x f(x)\,dx\)</td></tr>
+            <tr><th>\(V[X]\)</th><td>\(\sum_i (x_i - E[X])^2 p_i = \left(\sum_i x_i^2 p_i\right) - E[X]^2\)</td><td>\(\int_{-\infty}^{+\infty} (x - E[X])^2 f(x)\,dx = \left(\int_{-\infty}^{+\infty} x^2 f(x)\,dx\right) - E[X]^2\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>L'espérance représente la valeur moyenne de \(X\), ou la valeur attendue ; \(p_i\) ou \(f(x)\) joue le rôle d'une pondération des valeurs possibles.</p>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo 38 écrit \(\int t \cdot f(x)\,dx\), pour \(\int x f(x)\,dx\). La diapo 40 écrit \(\sum_i (x - E[X])^2 p_i - E[X]^2\) : le dernier terme est en trop, voir le tableau.</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Théorème <span>Théorème de transfert</span> <span class="ref">diapo 39</span></p>
+      <p>Pour une fonction \(h\) définie sur l'ensemble des valeurs possibles de \(X\) :</p>
+      \[ E[h(X)] = \sum_i h(x_i)\,p_i \quad \text{(discret)}, \qquad E[h(X)] = \int_{-\infty}^{+\infty} h(x)\,f(x)\,dx \quad \text{(continu)}. \]
+      <p>Pour l'espérance, \(h(x) = x\). Pour la variance, \(h(x) = (x - E[X])^2\).</p>
+    </div>
+    <h3>L'espérance généralisée</h3>
+    <div class="tableau">
+      <table>
+        <caption>Ce que donne l'espérance de \(h(X)\) (diapo 40)</caption>
+        <thead><tr><th>Fonction \(h\)</th><th>Espérance</th></tr></thead>
+        <tbody>
+          <tr><td>\(x\)</td><td>moyenne \(\mu\)</td></tr>
+          <tr><td>\(x^k\)</td><td>moment d'ordre \(k\) autour de 0</td></tr>
+          <tr><td>\((x - \mu)^2\)</td><td>variance \(\sigma^2\)</td></tr>
+          <tr><td>\((x - \mu)^k\)</td><td>moment d'ordre \(k\) autour de la moyenne</td></tr>
+          <tr><td>\((x - \mu)^3\)</td><td><span lang="en">skewness</span></td></tr>
+          <tr><td>\((x - \mu)^4\)</td><td>kurtosis</td></tr>
+          <tr><td>\((x - \mu_x)(y - \mu_y)\)</td><td>covariance entre \(X\) et \(Y\)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 590 130" width="590" role="img" aria-labelledby="fig-moments-titre">
+        <title id="fig-moments-titre">À gauche, une distribution à queue étalée vers la droite, de skewness positive, et sa symétrique, de skewness négative. À droite, trois courbes en cloche, de la plus pointue (a) à la plus aplatie (c).</title>
+      <path class="trait" d="M30 115 H180"/><path class="accent" d="M30.0 115.0 L33.0 102.0 L36.0 84.4 L39.0 68.2 L42.1 54.9 L45.1 45.1 L48.1 38.4 L51.1 34.6 L54.1 33.2 L57.1 33.7 L60.2 35.7 L63.2 38.8 L66.2 42.7 L69.2 47.1 L72.2 51.8 L75.2 56.6 L78.2 61.4 L81.3 66.1 L84.3 70.6 L87.3 74.9 L90.3 78.9 L93.3 82.7 L96.3 86.1 L99.3 89.3 L102.4 92.2 L105.4 94.8 L108.4 97.1 L111.4 99.3 L114.4 101.1 L117.4 102.8 L120.5 104.3 L123.5 105.7 L126.5 106.9 L129.5 107.9 L132.5 108.8 L135.5 109.6 L138.5 110.3 L141.6 110.9 L144.6 111.5 L147.6 111.9 L150.6 112.4 L153.6 112.7 L156.6 113.0 L159.6 113.3 L162.7 113.5 L165.7 113.7 L168.7 113.9 L171.7 114.1 L174.7 114.2 L177.7 114.3"/><text x="105" y="16" text-anchor="middle" class="t2">skewness &gt; 0</text>
+      <path class="trait" d="M210 115 H360"/><path class="accent" d="M360.0 115.0 L357.0 102.0 L354.0 84.4 L351.0 68.2 L347.9 54.9 L344.9 45.1 L341.9 38.4 L338.9 34.6 L335.9 33.2 L332.9 33.7 L329.8 35.7 L326.8 38.8 L323.8 42.7 L320.8 47.1 L317.8 51.8 L314.8 56.6 L311.8 61.4 L308.7 66.1 L305.7 70.6 L302.7 74.9 L299.7 78.9 L296.7 82.7 L293.7 86.1 L290.7 89.3 L287.6 92.2 L284.6 94.8 L281.6 97.1 L278.6 99.3 L275.6 101.1 L272.6 102.8 L269.5 104.3 L266.5 105.7 L263.5 106.9 L260.5 107.9 L257.5 108.8 L254.5 109.6 L251.5 110.3 L248.4 110.9 L245.4 111.5 L242.4 111.9 L239.4 112.4 L236.4 112.7 L233.4 113.0 L230.4 113.3 L227.3 113.5 L224.3 113.7 L221.3 113.9 L218.3 114.1 L215.3 114.2 L212.3 114.3"/><text x="285" y="16" text-anchor="middle" class="t2">skewness &lt; 0</text>
+      <path class="trait" d="M400 115 H570"/><text x="485" y="16" text-anchor="middle" class="t2">kurtosis (a) &gt; (b) &gt; (c)</text>
+      <path class="accent" d="M400.0 115.0 L402.6 115.0 L405.1 115.0 L407.7 115.0 L410.3 115.0 L412.8 115.0 L415.4 115.0 L417.9 115.0 L420.5 115.0 L423.1 115.0 L425.6 115.0 L428.2 115.0 L430.8 115.0 L433.3 115.0 L435.9 115.0 L438.4 115.0 L441.0 114.9 L443.6 114.8 L446.1 114.7 L448.7 114.3 L451.3 113.7 L453.8 112.7 L456.4 110.9 L458.9 108.2 L461.5 104.1 L464.1 98.5 L466.6 91.2 L469.2 82.2 L471.8 71.9 L474.3 61.1 L476.9 50.7 L479.4 41.9 L482.0 35.8 L484.6 33.2 L487.1 34.5 L489.7 39.5 L492.3 47.5 L494.8 57.5 L497.4 68.3 L499.9 78.9 L502.5 88.4 L505.1 96.3 L507.6 102.5 L510.2 107.0 L512.8 110.1 L515.3 112.2 L517.9 113.4 L520.5 114.2 L523.0 114.6 L525.6 114.8 L528.1 114.9 L530.7 115.0 L533.3 115.0 L535.8 115.0 L538.4 115.0 L541.0 115.0 L543.5 115.0 L546.1 115.0 L548.6 115.0 L551.2 115.0 L553.8 115.0 L556.3 115.0 L558.9 115.0 L561.5 115.0 L564.0 115.0 L566.6 115.0 L569.1 115.0"/>
+      <path class="trait" d="M400.0 115.0 L402.6 115.0 L405.1 115.0 L407.7 115.0 L410.3 114.9 L412.8 114.9 L415.4 114.8 L417.9 114.8 L420.5 114.6 L423.1 114.5 L425.6 114.2 L428.2 113.9 L430.8 113.4 L433.3 112.8 L435.9 111.9 L438.4 110.9 L441.0 109.5 L443.6 107.8 L446.1 105.8 L448.7 103.3 L451.3 100.4 L453.8 97.1 L456.4 93.4 L458.9 89.4 L461.5 85.1 L464.1 80.6 L466.6 76.1 L469.2 71.6 L471.8 67.5 L474.3 63.8 L476.9 60.7 L479.4 58.3 L482.0 56.7 L484.6 56.1 L487.1 56.4 L489.7 57.7 L492.3 59.8 L494.8 62.7 L497.4 66.2 L499.9 70.2 L502.5 74.6 L505.1 79.1 L507.6 83.6 L510.2 88.0 L512.8 92.1 L515.3 95.9 L517.9 99.4 L520.5 102.4 L523.0 105.0 L525.6 107.2 L528.1 109.0 L530.7 110.5 L533.3 111.6 L535.8 112.5 L538.4 113.2 L541.0 113.7 L543.5 114.1 L546.1 114.4 L548.6 114.6 L551.2 114.7 L553.8 114.8 L556.3 114.9 L558.9 114.9 L561.5 115.0 L564.0 115.0 L566.6 115.0 L569.1 115.0"/>
+      <path class="pointille" d="M400.0 113.8 L402.6 113.6 L405.1 113.2 L407.7 112.8 L410.3 112.4 L412.8 111.9 L415.4 111.2 L417.9 110.5 L420.5 109.7 L423.1 108.8 L425.6 107.8 L428.2 106.6 L430.8 105.4 L433.3 104.0 L435.9 102.5 L438.4 100.9 L441.0 99.2 L443.6 97.4 L446.1 95.6 L448.7 93.6 L451.3 91.6 L453.8 89.6 L456.4 87.7 L458.9 85.7 L461.5 83.8 L464.1 82.0 L466.6 80.3 L469.2 78.8 L471.8 77.5 L474.3 76.3 L476.9 75.4 L479.4 74.7 L482.0 74.3 L484.6 74.1 L487.1 74.2 L489.7 74.5 L492.3 75.1 L494.8 76.0 L497.4 77.1 L499.9 78.4 L502.5 79.8 L505.1 81.5 L507.6 83.2 L510.2 85.1 L512.8 87.0 L515.3 89.0 L517.9 91.0 L520.5 93.0 L523.0 94.9 L525.6 96.8 L528.1 98.6 L530.7 100.4 L533.3 102.0 L535.8 103.5 L538.4 104.9 L541.0 106.2 L543.5 107.4 L546.1 108.5 L548.6 109.4 L551.2 110.3 L553.8 111.0 L556.3 111.7 L558.9 112.2 L561.5 112.7 L564.0 113.1 L566.6 113.5 L569.1 113.7"/>
+      </svg>
+      <figcaption>Asymétrie et aplatissement d'une distribution (diapo 40).</figcaption>
+    </figure>
+    <p><span class="badge ajout">Ajout</span> La <span lang="en">skewness</span> mesure l'asymétrie : elle est positive quand la queue de la distribution s'étale vers la droite. Le kurtosis mesure l'aplatissement : plus il est grand, plus la distribution est pointue. On les divise en général par \(\sigma^3\) et \(\sigma^4\), pour obtenir des nombres sans unité.</p>
+    <h3>À plusieurs variables</h3>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Espérance à deux variables</span> <span class="ref">diapo 41</span></p>
+      \[ E[h(x, y)] = \iint h(x, y)\,P(x, y)\,dx\,dy. \]
+      <p>L'espérance est linéaire, et elle se factorise pour des variables indépendantes :</p>
+      <ul>
+        <li>pour une constante \(a\) : \(E[a] = a\) et \(E[a\,h(x)] = a\,E[h(x)]\) ;</li>
+        <li>\(E[h(x) + g(x)] = E[h(x)] + E[g(x)]\) ;</li>
+        <li>\(E[h(X)\,g(Y)] = E[h(X)] \times E[g(Y)]\), si \(X\) et \(Y\) sont indépendantes.</li>
+      </ul>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo 41 écrit \(h(x) \cdot g(x)\) dans la dernière ligne : avec une seule variable, cela n'a pas de sens de parler d'indépendance de \(X\) et \(Y\).</p>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Lien entre variance et espérance</span> <span class="ref">diapo 41</span></p>
+      <p>Montrer que \(E[(x - \mu)^2] = E[x^2] - \mu^2\) avec \(\mu = E[x]\). Conclure sur le lien entre variance et espérance.</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>On développe, puis on utilise la linéarité, \(\mu\) étant une constante :</p>
+        \[ E[(x - \mu)^2] = E[x^2] - 2\mu E[x] + \mu^2 = E[x^2] - 2\mu^2 + \mu^2 = E[x^2] - \mu^2. \]
+        <p>La variance est donc l'espérance de \(x^2\) moins le carré de l'espérance : la moyenne des carrés moins le carré de la moyenne.</p>
+      </details>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Espérance d'un produit</span> <span class="ref">diapo 42</span></p>
+      <p>Soit un couple de VA \((X, Y)\) dont la loi de probabilité est donnée par \(f(x, y) = e^{-x}\) sur le domaine \(D = \{(x, y) \in \R^2 \mid 0 \le y \le x\}\). Prendre \(h(x, y) = xy\) pour déterminer l'espérance du produit, \(E[XY] = E[h(x, y)]\).</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>On intègre d'abord en \(y\), entre 0 et \(x\) :</p>
+        \[ E[XY] = \int_0^{+\infty} \int_0^{x} xy\,e^{-x}\,dy\,dx = \int_0^{+\infty} x\,e^{-x}\,\frac{x^2}{2}\,dx = \frac{1}{2}\int_0^{+\infty} x^3 e^{-x}\,dx = \frac{3!}{2} = 3. \]
+        <p>On vérifie que \(f\) est une densité : \(\int_0^{+\infty}\int_0^x e^{-x}\,dy\,dx = \int_0^{+\infty} x e^{-x}\,dx = 1\). L'intégrale \(\int_0^{+\infty} x^n e^{-x}\,dx = n!\) s'obtient par intégrations par parties.</p>
+      </details>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Tirages avec remise</span> <span class="ref">diapo 43</span></p>
+      <p>Un sac contient des boules blanches et des boules rouges, en proportion \(p\) de rouges. On tire avec remise, jusqu'à obtenir deux boules rouges. On appelle \(X\) le numéro de la première boule rouge et \(Y\) le numéro de la deuxième.</p>
+      <ol>
+        <li>Donner la loi du couple \((X, Y)\).</li>
+        <li>Donner les lois marginales de \(X\) et de \(Y\).</li>
+        <li>Les variables \(X\) et \(Y\) sont-elles indépendantes ?</li>
+        <li>Que représente la variable \(Y - X\) ? Quelle est sa loi ? Que dire de \(X\) et de \(Y - X\) ? Calculer \(E[Y]\).</li>
+        <li>Calculer \(E[X^2]\), puis \(E[X(Y - X)]\), et en déduire \(\operatorname{Cov}(X, Y)\).</li>
+      </ol>
+      <p>On montre par récurrence que, pour \(0 \lt x \lt 1\) : \(\sum_{n=1}^{+\infty} n^2 x^{n-1} = \frac{1 + x}{(1 - x)^3}\).</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>On note \(q = 1 - p\).</p>
+        <p>1. Pour \(1 \le x \lt y\) : \(x - 1\) blanches, une rouge, \(y - x - 1\) blanches, une rouge, soit \(P(x, y) = p^2 q^{y-2}\).</p>
+        <p>2. \(P(X = x) = \sum_{y \gt x} p^2 q^{y-2} = p\,q^{x-1}\) : une loi géométrique de paramètre \(p\). \(P(Y = y) = \sum_{x=1}^{y-1} p^2 q^{y-2} = (y - 1)\,p^2 q^{y-2}\), pour \(y \ge 2\).</p>
+        <p>3. Non : \(P(X = 3, Y = 2) = 0\), car la deuxième rouge vient après la première, alors que \(P(X = 3)\,P(Y = 2) = p\,q^2 \times p^2 \ne 0\).</p>
+        <p>4. \(Y - X\) est le nombre de tirages entre les deux rouges : \(P(X = x, Y - X = k) = p^2 q^{x + k - 2} = p\,q^{x-1} \times p\,q^{k-1}\). Elle suit donc la même loi géométrique, et elle est indépendante de \(X\). Comme \(E[X] = \frac{1}{p}\), on a \(E[Y] = E[X] + E[Y - X] = \frac{2}{p}\).</p>
+        <p>5. Avec la formule donnée, \(E[X^2] = p \sum n^2 q^{n-1} = p\,\frac{1 + q}{(1 - q)^3} = \frac{2 - p}{p^2}\). Par indépendance, \(E[X(Y - X)] = E[X]\,E[Y - X] = \frac{1}{p^2}\). Donc \(E[XY] = E[X^2] + E[X(Y - X)] = \frac{3 - p}{p^2}\), et :</p>
+        \[ \operatorname{Cov}(X, Y) = \frac{3 - p}{p^2} - \frac{1}{p} \cdot \frac{2}{p} = \frac{1 - p}{p^2}. \]
+        <p>Ces résultats ont été vérifiés numériquement sur les séries, pour \(p = 0{,}3\).</p>
+      </details>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo 43 écrit \(\sum_{i=1}^{n} n^2 x^{n-1}\) : l'indice de la somme est \(n\), et elle va jusqu'à l'infini.</p>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Discret : \(\sum P(X = x) = 1\). Continu : \(\int f = 1\), \(f = F'\), et \(f\) n'est pas une probabilité.</li>
+        <li>Probabilité jointe : \(P(x, y)\), la probabilité du couple. Sa somme ou son intégrale totale vaut 1.</li>
+        <li>Marginale : on somme ou on intègre sur l'autre variable, \(P(x) = \sum_y P(x, y)\).</li>
+        <li>Conditionnelle : \(P(x \mid y) = \frac{P(x, y)}{P(y)}\), une vue en coupe normalisée.</li>
+        <li>Règle du produit : \(P(x, y) = P(x \mid y)\,P(y)\).</li>
+        <li>Bayes : a posteriori = vraisemblance × a priori / évidence.</li>
+        <li>Indépendance : \(P(x, y) = P(x)\,P(y)\) ; un seul couple qui échoue suffit à la réfuter.</li>
+        <li>Espérance généralisée : \(E[h(X)]\), qui donne moyenne, variance, moments et covariance.</li>
+        <li>\(V[X] = E[X^2] - E[X]^2\), \(\operatorname{Cov}(X, Y) = E(XY) - E(X)\,E(Y)\).</li>
+        <li>Indépendantes ⇒ covariance nulle, mais pas l'inverse.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Une densité peut-elle valoir 3 en un point ?</summary>
+        <div><p>Oui : une densité n'est pas une probabilité. Seule son intégrale totale doit valoir 1 ; sur un intervalle étroit, elle peut être grande.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Comment passe-t-on de la loi jointe à une loi marginale ?</summary>
+        <div><p>On somme sur toutes les valeurs de l'autre variable (discret), ou on intègre par rapport à elle (continu).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi une conditionnelle est-elle une vue en coupe normalisée ?</summary>
+        <div><p>Fixer \(y\) revient à couper la distribution jointe à cet endroit. Pour que l'aire vaille 1, on divise par \(P(y)\), l'aire de la coupe.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Dans la formule de Bayes, que sont \(P(y)\), \(P(x \mid y)\), \(P(y \mid x)\) et \(P(x)\) ?</summary>
+        <div><p>La probabilité a priori, la vraisemblance, la probabilité a posteriori et l'évidence.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Comment montrer que deux variables ne sont pas indépendantes ?</summary>
+        <div><p>Il suffit de trouver un couple où \(P(x, y) \ne P(x)\,P(y)\). Un couple impossible dont les deux valeurs sont possibles séparément suffit.</p></div>
+      </details>
+      <details class="carte">
+        <summary>\(\operatorname{Cov}(X, Y) = 0\) : \(X\) et \(Y\) sont-elles indépendantes ?</summary>
+        <div><p>Pas forcément : la covariance ne mesure qu'un lien linéaire. Avec \(Y = X^2\) et \(X\) symétrique, elle est nulle, alors que \(Y\) dépend de \(X\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Sur le disque des fléchettes, pourquoi \(X\) et \(Y\) ne sont-elles pas indépendantes, alors que \(R\) et \(\theta\) le sont ?</summary>
+        <div><p>Connaître \(x\) limite les valeurs possibles de \(y\) à une corde. Au contraire, la densité polaire se factorise en un terme en \(r\) et une constante en \(\theta\).</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-02-fonctions-multidimensionnelles.html"><small>← Cours 2</small>Fonctions multi-dimensionnelles</a>
+    <a class="suivant" href="cours-04-lois-multivariees.html"><small>Cours 4 →</small>Lois multivariées</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Mathématiques et IA · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

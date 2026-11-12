@@ -2,7 +2,7 @@
 /* Extension de l'atelier pour le serveur local (_outils/quiz/serveur) : routes
    /api/atelier/… (chargée par _outils/quiz/serveur/lib/extensions.js).
 
-     GET  travail?page=/L3/BDD/generated_courses/td-01-x.html
+     GET  travail?page=/explore/informatique/bases-de-donnees-3/generated_courses/td-01-x.html
                                   travail enregistré pour la page
      POST travail { page, id, etat }
                                   enregistre l'état d'un atelier de la page
@@ -11,10 +11,11 @@
      POST corriger { page, editeur, contexte, cibles }
                                   correction structurée : note, commentaire, remarques
 
-   Le travail d'une page est gardé dans un seul fichier :
-     <Niveau>/<Matière>/td_results/<nom de la page>.json
-   (ou, pour une page hors d'un dossier generated_courses, dans td_results/
-   à côté de la page). Format décrit dans _outils/atelier/README.md. */
+   Le travail d'une page est gardé dans un seul fichier, dans l'espace du profil
+   actif (jamais dans explore/) :
+     <profil>/<cursus>/<cours>/td_results/<nom de la page>.json
+   (ou, pour une page hors du catalogue et hors d'un dossier generated_courses,
+   dans td_results/ à côté de la page). Format décrit dans _outils/atelier/README.md. */
 
 const fs = require("fs");
 const path = require("path");
@@ -29,12 +30,15 @@ function ligne(etiquette, valeur) { return valeur === undefined || valeur === nu
 
 /* Fichiers de travail ------------------------------------------------------- */
 
-function fichierTravail(chemins, page) {
+function fichierTravail(chemins, page, creer) {
   const abs = chemins.depuisUrl(page);
   if (!abs || path.extname(abs) !== ".html" || !fs.existsSync(abs)) throw new Error("Page invalide : " + page);
-  const dossier = path.dirname(abs);
-  const matiere = path.basename(dossier) === "generated_courses" ? path.dirname(dossier) : dossier;
-  return { abs, fichier: path.join(matiere, "td_results", path.basename(abs, ".html") + ".json") };
+  const t = chemins.espace.travailDePage(chemins.RACINE, abs, { creer });
+  if (!t.dossier) {
+    if (creer) throw new Error(t.raison || "Aucun profil choisi.");
+    return { abs, fichier: null };
+  }
+  return { abs, fichier: path.join(t.dossier, "td_results", path.basename(abs, ".html") + ".json") };
 }
 
 function lireTravail(f) {
@@ -52,7 +56,7 @@ function titrePage(abs) {
 function enregistrer(chemins, b) {
   if (!b || !MOTIF_ID.test(String(b.id || ""))) throw new Error("Identifiant d'atelier invalide.");
   if (!b.etat || typeof b.etat !== "object") throw new Error("État manquant.");
-  const { abs, fichier } = fichierTravail(chemins, b.page);
+  const { abs, fichier } = fichierTravail(chemins, b.page, true);
   const t = lireTravail(fichier) || { format: "studies-atelier/travail-1", ateliers: {} };
   t.page = chemins.relatif(abs);
   t.titre = titrePage(abs);
@@ -122,8 +126,8 @@ async function api(route, req, res, o) {
 
   if (route === "travail" && m === "GET") {
     const { fichier } = fichierTravail(o.chemins, url.searchParams.get("page"));
-    const t = lireTravail(fichier);
-    return o.envoyerJson(res, 200, { ateliers: (t && t.ateliers) || {}, fichier: o.chemins.relatif(fichier) });
+    const t = fichier ? lireTravail(fichier) : null;
+    return o.envoyerJson(res, 200, { ateliers: (t && t.ateliers) || {}, fichier: fichier ? o.chemins.relatif(fichier) : null });
   }
 
   if (route === "travail" && m === "POST") {
@@ -142,7 +146,7 @@ async function api(route, req, res, o) {
       session,
       reprendre,
       outils: "Read,Grep,Glob",
-      dossiers: [o.chemins.RACINE],
+      dossiers: [o.chemins.RACINE, o.chemins.OUTILS],
       cwd: o.chemins.dossierLocal("conversations"),
       delai: 4 * 60 * 1000,
       surEvenement: (e) => relais && relais.surEvenement(e)
@@ -178,8 +182,9 @@ async function api(route, req, res, o) {
   return false;
 }
 
-// Pour le portail : les TD d'une matière et l'état du travail enregistré
-function travauxMatiere(dossierMatiere, relatif) {
+// Pour le portail : les TD d'un cours et l'état du travail enregistré (dans le
+// dossier du cours de l'espace du profil, `travail`)
+function travauxMatiere(dossierMatiere, relatif, travail) {
   const res = [];
   const cours = path.join(dossierMatiere, "generated_courses");
   let pages = [];
@@ -190,7 +195,7 @@ function travauxMatiere(dossierMatiere, relatif) {
     try { source = fs.readFileSync(abs, "utf8"); } catch (e) { continue; }
     const total = (source.match(/<div class="atelier"/g) || []).length;
     if (!total) continue;
-    const t = lireTravail(path.join(dossierMatiere, "td_results", n.replace(/\.html$/, ".json")));
+    const t = travail ? lireTravail(path.join(travail, "td_results", n.replace(/\.html$/, ".json"))) : null;
     const ateliers = t ? Object.values(t.ateliers || {}) : [];
     res.push({
       page: relatif(abs), titre: titrePage(abs), ateliers: total,

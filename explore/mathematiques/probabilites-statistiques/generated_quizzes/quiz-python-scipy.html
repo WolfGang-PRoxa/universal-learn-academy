@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Python, numpy et scipy.stats · Probabilités et statistiques L2</title>
+<meta name="description" content="Quiz interactif de Python pour les probabilités et statistiques (L2) : bases du langage, numpy, scipy.stats, matplotlib, code exécuté.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Mathématiques</a>
+    <a href="../generated_courses/index.html">Probabilités et statistiques</a>
+    <span aria-current="page">Quiz · Python, numpy et scipy.stats</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Probabilités et statistiques</span> Quiz · L2</p>
+    <h1>Python, numpy et scipy.stats</h1>
+    <p class="chapeau">Bases de Python, numpy, scipy.stats et matplotlib au service des statistiques : 15 questions, dont 4 où l'on écrit du code exécuté et testé (serveur local nécessaire pour l'exécution).</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-00-python.html">Cours 0 · Python</a> · <a href="../generated_courses/cours-02-variables-aleatoires-discretes.html">Cours 2 · Variables aléatoires discrètes</a> · <a href="../generated_courses/cours-03-variables-aleatoires-continues.html">Cours 3 · Variables aléatoires continues</a> · <a href="../generated_courses/cours-04-estimateurs-intervalles-confiance.html">Cours 4 · Estimateurs et intervalles de confiance</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 novembre 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Probabilités et statistiques · L2 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+ "id": "probas-python-scipy",
+ "melanger": true,
+ "cours": [
+  {
+   "titre": "Cours 0 · Python",
+   "lien": "../generated_courses/cours-00-python.html"
+  },
+  {
+   "titre": "Cours 2 · Variables aléatoires discrètes",
+   "lien": "../generated_courses/cours-02-variables-aleatoires-discretes.html"
+  },
+  {
+   "titre": "Cours 3 · Variables aléatoires continues",
+   "lien": "../generated_courses/cours-03-variables-aleatoires-continues.html"
+  },
+  {
+   "titre": "Cours 4 · Estimateurs et intervalles de confiance",
+   "lien": "../generated_courses/cours-04-estimateurs-intervalles-confiance.html"
+  }
+ ],
+ "questions": [
+  {
+   "type": "qcm",
+   "theme": "Bases de Python",
+   "difficulte": 1,
+   "enonce": "<p>Qu'affiche <code>print(4.5 // 2)</code> ?</p>",
+   "choix": [
+    "2.0",
+    "2",
+    "2.25",
+    "2.5"
+   ],
+   "reponse": 0,
+   "explication": "<p><code>//</code> est la division entière ; comme le dividende est un <code>float</code>, le résultat l'est aussi (le <code>float</code> est « contaminant ») : <code>2.0</code>. <code>2</code> serait le résultat de <code>4 // 2</code>, et <code>2.25</code> celui de <code>4.5 / 2</code>.</p>",
+   "revoir": {
+    "texte": "Cours 0 · Types et conversions",
+    "lien": "../generated_courses/cours-00-python.html#types-et-conversions"
+   },
+   "id": "q01"
+  },
+  {
+   "type": "qcm",
+   "theme": "Bases de Python",
+   "difficulte": 1,
+   "enonce": "<p>Quelles valeurs prend <code>k</code> dans <code>for k in range(1, 5):</code> ?</p>",
+   "choix": [
+    "1, 2, 3, 4",
+    "1, 2, 3, 4, 5",
+    "0, 1, 2, 3, 4",
+    "2, 3, 4, 5"
+   ],
+   "reponse": 0,
+   "explication": "<p>La borne inférieure est incluse et la borne supérieure exclue : 1, 2, 3, 4. Pour parcourir le support \\(\\{0, \\dots, n\\}\\) d'une loi binomiale, on écrit donc <code>range(n + 1)</code>.</p>",
+   "revoir": {
+    "texte": "Cours 0 · La boucle for",
+    "lien": "../generated_courses/cours-00-python.html#la-boucle-for"
+   },
+   "id": "q02"
+  },
+  {
+   "type": "code",
+   "langage": "python",
+   "theme": "Bases de Python",
+   "difficulte": 1,
+   "enonce": "<p>Une ligne d'un fichier CSV contient des entiers séparés par des points-virgules, et se termine par un saut de ligne, par exemple <code>\"12;7;3\\n\"</code>. Écrire <code>somme_ligne(ligne)</code>, qui renvoie la somme des entiers de la ligne.</p>",
+   "depart": "def somme_ligne(ligne):\n    ",
+   "solution": "def somme_ligne(ligne):\n    tab = ligne.strip().split(';')\n    return sum(int(v) for v in tab)",
+   "harnais": "import sys\nfor l in sys.stdin:\n    print(somme_ligne(l))",
+   "tests": [
+    {
+     "nom": "exemple",
+     "entree": "12;7;3\n",
+     "sortie": "22\n"
+    },
+    {
+     "nom": "une seule valeur",
+     "entree": "95\n",
+     "sortie": "95\n"
+    },
+    {
+     "nom": "valeurs négatives",
+     "entree": "-4;10;-6;0\n",
+     "sortie": "0\n"
+    },
+    {
+     "nom": "plusieurs lignes",
+     "entree": "1;2\n3;4;5\n",
+     "sortie": "3\n12\n"
+    }
+   ],
+   "explication": "<p><code>strip()</code> retire le saut de ligne, <code>split(';')</code> découpe la chaîne en une liste de chaînes, et <code>int()</code> convertit chacune : c'est la formule qui lit <code>data2.csv</code> au TP 4. Sans <code>strip()</code>, le dernier morceau <code>\"3\\n\"</code> passerait quand même dans <code>int()</code>, qui tolère les espaces, mais pas une ligne vide.</p>",
+   "revoir": {
+    "texte": "Cours 0 · Chaînes de caractères",
+    "lien": "../generated_courses/cours-00-python.html#chaines-de-caracteres"
+   },
+   "indices": [
+    "<p>Les méthodes <code>strip()</code> et <code>split(';')</code> des chaînes.</p>",
+    "<p>Chaque morceau est une chaîne : le convertir avec <code>int()</code> avant d'additionner.</p>"
+   ],
+   "id": "q03"
+  },
+  {
+   "type": "qcm",
+   "theme": "numpy",
+   "difficulte": 1,
+   "enonce": "<p><code>x = np.array([2, 4, 6, 8])</code>. Que donne <code>np.std(x)</code> ?</p>",
+   "choix": [
+    "L'écart-type calculé en divisant par \\(n\\) : environ 2,236.",
+    "L'écart-type empirique \\(S_{n-1}\\) : environ 2,582.",
+    "La variance : 5.",
+    "Une erreur : il faut préciser <code>ddof</code>."
+   ],
+   "reponse": 0,
+   "explication": "<p>Par défaut, <code>ddof=0</code> : numpy divise par \\(n\\), \\(\\sqrt{20/4} = \\sqrt5 \\approx 2{,}236\\). L'écart-type empirique du cours 4, dont le carré estime la variance sans biais, s'obtient avec <code>np.std(x, ddof=1)</code> : \\(\\sqrt{20/3} \\approx 2{,}582\\).</p>",
+   "revoir": {
+    "texte": "Cours 4 · Estimateur de la variance",
+    "lien": "../generated_courses/cours-04-estimateurs-intervalles-confiance.html#estimateur-de-la-variance"
+   },
+   "id": "q04"
+  },
+  {
+   "type": "qcm",
+   "theme": "numpy",
+   "difficulte": 1,
+   "enonce": "<p><code>x = np.array([3, 8, 1, 9, 4])</code>. Que vaut <code>x[x &gt; 3]</code> ?</p>",
+   "choix": [
+    "<code>array([8, 9, 4])</code>",
+    "<code>array([False, True, False, True, True])</code>",
+    "<code>array([1, 3, 4])</code>",
+    "<code>3</code>"
+   ],
+   "reponse": 0,
+   "explication": "<p><code>x &gt; 3</code> est un masque booléen ; indexer <code>x</code> par ce masque garde les éléments où il vaut <code>True</code>, dans l'ordre : 8, 9, 4. Le masque lui-même est le deuxième choix ; <code>np.sum(x &gt; 3)</code> compterait 3 éléments.</p>",
+   "revoir": {
+    "texte": "Cours 0 · Vers les TP : numpy, matplotlib, scipy.stats",
+    "lien": "../generated_courses/cours-00-python.html#vers-les-tp-numpy-matplotlib-scipy-stats"
+   },
+   "id": "q05"
+  },
+  {
+   "type": "numerique",
+   "theme": "numpy",
+   "difficulte": 2,
+   "enonce": "<p>Que vaut <code>np.mean(np.array([1, 0, 1, 1, 0, 1, 1, 0]))</code> ? Donner la valeur décimale.</p>",
+   "reponse": 0.625,
+   "tolerance": 0.0001,
+   "explication": "<p>La moyenne d'une liste de 0 et de 1 est la fréquence des 1 : \\(\\frac58 = 0{,}625\\). C'est la moyenne empirique \\(F_n\\) d'un échantillon de Bernoulli, l'estimateur de \\(p\\) du cours 4.</p>",
+   "revoir": {
+    "texte": "Cours 4 · Estimateur non biaisé",
+    "lien": "../generated_courses/cours-04-estimateurs-intervalles-confiance.html#estimateur-non-biaise"
+   },
+   "id": "q06"
+  },
+  {
+   "type": "trous",
+   "theme": "scipy.stats",
+   "difficulte": 1,
+   "enonce": "<p>Compléter avec la bonne méthode de <code>scipy.stats</code>.</p>",
+   "texte": "P(X = 3) pour X ~ B(10 ; 0,2) : binom.{{0}}(3, 10, 0.2)\nP(X ≤ 3) pour la même loi : binom.{{1}}(3, 10, 0.2)\nDensité de N(0, 1) en 0 : norm.{{2}}(0)\nz tel que P(Z ≤ z) = 0,975 : norm.{{3}}(0.975)",
+   "code": true,
+   "trous": [
+    {
+     "choix": [
+      "pmf",
+      "pdf",
+      "cdf",
+      "ppf"
+     ],
+     "reponse": 0
+    },
+    {
+     "choix": [
+      "cdf",
+      "pmf",
+      "sf",
+      "ppf"
+     ],
+     "reponse": 0
+    },
+    {
+     "choix": [
+      "pdf",
+      "pmf",
+      "cdf",
+      "ppf"
+     ],
+     "reponse": 0
+    },
+    {
+     "choix": [
+      "ppf",
+      "cdf",
+      "sf",
+      "pdf"
+     ],
+     "reponse": 0
+    }
+   ],
+   "explication": "<p><code>pmf</code> (<span lang='en'>probability mass function</span>) donne \\(P(X = k)\\) pour une loi discrète, <code>pdf</code> la densité d'une loi continue, <code>cdf</code> la fonction de répartition \\(P(X \\le x)\\), et <code>ppf</code> sa réciproque : <code>norm.ppf(0.975)</code> renvoie 1,96, le \\(z_\\alpha\\) du cours 4.</p>",
+   "revoir": {
+    "texte": "Cours 0 · Vers les TP : numpy, matplotlib, scipy.stats",
+    "lien": "../generated_courses/cours-00-python.html#vers-les-tp-numpy-matplotlib-scipy-stats"
+   },
+   "id": "q07"
+  },
+  {
+   "type": "numerique",
+   "theme": "scipy.stats",
+   "difficulte": 2,
+   "enonce": "<p>Que renvoie <code>norm.cdf(1) - norm.cdf(-1)</code> ? Arrondir au millième.</p><pre data-executer='python'><code class='language-python'>from scipy.stats import norm\nprint(norm.cdf(1) - norm.cdf(-1))</code></pre>",
+   "reponse": 0.683,
+   "tolerance": 0.001,
+   "explication": "<p>C'est \\(P(-1 \\le Z \\le 1)\\) pour \\(Z \\leadsto \\mathcal{N}(0, 1)\\) : environ 0,683, le « 68 » de la règle 68-95-99,7 du cours 3. Avec la table : \\(2\\Phi(1) - 1 = 2 \\times 0{,}8413 - 1 = 0{,}6826\\).</p>",
+   "revoir": {
+    "texte": "Cours 3 · Ordres de grandeur autour de la moyenne",
+    "lien": "../generated_courses/cours-03-variables-aleatoires-continues.html#ordres-de-grandeur-autour-de-la-moyenne"
+   },
+   "id": "q08"
+  },
+  {
+   "type": "qcm",
+   "theme": "scipy.stats",
+   "difficulte": 2,
+   "enonce": "<p>\\(X\\) suit une loi exponentielle de paramètre \\(\\lambda = 2\\). Quelle instruction calcule \\(P(X \\le 1)\\) ?</p>",
+   "choix": [
+    "<code>expon(scale=1/2).cdf(1)</code>",
+    "<code>expon(2).cdf(1)</code>",
+    "<code>expon(scale=2).cdf(1)</code>",
+    "<code>expon.pdf(1, 2)</code>"
+   ],
+   "reponse": 0,
+   "explication": "<p>scipy paramètre la loi exponentielle par son échelle <code>scale</code> \\(= \\frac1\\lambda\\) (l'espérance) ; le premier argument positionnel est <code>loc</code>, un décalage. <code>expon(scale=1/2).cdf(1)</code> vaut \\(1 - e^{-2} \\approx 0{,}865\\). <code>scale=2</code> correspondrait à \\(\\lambda = \\frac12\\).</p>",
+   "revoir": {
+    "texte": "Cours 3 · Loi exponentielle",
+    "lien": "../generated_courses/cours-03-variables-aleatoires-continues.html#loi-exponentielle"
+   },
+   "indices": [
+    "<p>Dans scipy, les lois continues ont deux paramètres génériques : <code>loc</code> (position) et <code>scale</code> (échelle).</p>"
+   ],
+   "id": "q09"
+  },
+  {
+   "type": "numerique",
+   "theme": "scipy.stats",
+   "difficulte": 2,
+   "enonce": "<p>\\(X \\leadsto \\mathcal{N}(10, 2)\\) (moyenne 10, écart-type 2). Que renvoie <code>norm(10, 2).sf(13)</code> ? Arrondir au millième.</p>",
+   "reponse": 0.067,
+   "tolerance": 0.001,
+   "explication": "<p><code>sf</code> est la fonction de survie, \\(P(X \\gt 13) = 1 - F(13)\\). En centrant et réduisant : \\(P\\left(Z \\gt \\frac{13 - 10}{2}\\right) = 1 - \\Phi(1{,}5) = 1 - 0{,}9332 \\approx 0{,}067\\). Attention : le deuxième paramètre de <code>norm</code> est l'écart-type, pas la variance.</p>",
+   "revoir": {
+    "texte": "Cours 3 · Se ramener à la loi centrée réduite",
+    "lien": "../generated_courses/cours-03-variables-aleatoires-continues.html#se-ramener-a-la-loi-centree-reduite"
+   },
+   "indices": [
+    "<p><code>sf(x)</code> = <code>1 - cdf(x)</code>.</p>"
+   ],
+   "id": "q10"
+  },
+  {
+   "type": "vrai-faux",
+   "theme": "scipy.stats",
+   "difficulte": 1,
+   "enonce": "<p><code>poisson.pmf(2, 3)</code> calcule \\(P(X = 2)\\) pour \\(X \\leadsto \\mathcal{P}(3)\\), soit \\(e^{-3}\\frac{3^2}{2!} \\approx 0{,}224\\).</p>",
+   "reponse": true,
+   "explication": "<p>Vrai : pour une loi discrète, <code>pmf(k, paramètres)</code> donne \\(P(X = k)\\), et la loi de Poisson de paramètre \\(\\lambda\\) donne \\(e^{-\\lambda}\\frac{\\lambda^k}{k!}\\).</p>",
+   "revoir": {
+    "texte": "Cours 2 · Loi de Poisson",
+    "lien": "../generated_courses/cours-02-variables-aleatoires-discretes.html#loi-de-poisson"
+   },
+   "id": "q11"
+  },
+  {
+   "type": "code",
+   "langage": "python",
+   "theme": "scipy.stats",
+   "difficulte": 2,
+   "enonce": "<p>Le programme lit \\(n\\), \\(p\\) et \\(k\\) sur une ligne. Écrire <code>proba_au_plus(n, p, k)</code>, qui renvoie \\(P(X \\le k)\\) pour \\(X \\leadsto \\mathcal{B}(n\\,; p)\\), en utilisant <code>scipy.stats</code>. Le harnais l'affiche avec quatre décimales.</p>",
+   "depart": "from scipy.stats import binom\n\ndef proba_au_plus(n, p, k):\n    ",
+   "solution": "from scipy.stats import binom\n\ndef proba_au_plus(n, p, k):\n    return binom.cdf(k, n, p)",
+   "harnais": "n, p, k = input().split()\nprint(f'{proba_au_plus(int(n), float(p), int(k)):.4f}')",
+   "tests": [
+    {
+     "nom": "B(10 ; 0,2), k = 3",
+     "entree": "10 0.2 3\n",
+     "sortie": "0.8791\n"
+    },
+    {
+     "nom": "k = n",
+     "entree": "15 0.3 15\n",
+     "sortie": "1.0000\n"
+    },
+    {
+     "nom": "k = 0",
+     "entree": "5 0.5 0\n",
+     "sortie": "0.0312\n"
+    },
+    {
+     "nom": "B(100 ; 0,5), k = 60",
+     "entree": "100 0.5 60\n",
+     "sortie": "0.9824\n"
+    }
+   ],
+   "explication": "<p><code>binom.cdf(k, n, p)</code> est la fonction de répartition : \\(P(X \\le k) = \\sum_{i=0}^{k} C_n^i p^i (1-p)^{n-i}\\). Les tests vérifient les cas limites : \\(k = n\\) donne 1, \\(k = 0\\) donne \\((1-p)^n = 0{,}5^5 = 0{,}03125\\). L'ordre des arguments est celui de scipy : la valeur d'abord, les paramètres ensuite.</p>",
+   "revoir": {
+    "texte": "Cours 2 · Autres lois et calcul en Python",
+    "lien": "../generated_courses/cours-02-variables-aleatoires-discretes.html#autres-lois-et-calcul-en-python"
+   },
+   "indices": [
+    "<p>« \\(P(X \\le k)\\) » est la fonction de répartition : quelle méthode ?</p>"
+   ],
+   "id": "q12"
+  },
+  {
+   "type": "code",
+   "langage": "python",
+   "theme": "Intervalles de confiance",
+   "difficulte": 3,
+   "enonce": "<p>Le programme lit sur une ligne des mesures séparées par des espaces. Écrire <code>ic95(x)</code>, qui renvoie le couple <code>(bas, haut)</code> de l'intervalle de confiance à 95 % de l'espérance, \\(\\sigma\\) inconnu : \\(F_n \\pm 1{,}96\\,\\frac{S_{n-1}}{\\sqrt n}\\). Le harnais affiche les bornes avec deux décimales.</p>",
+   "depart": "import numpy as np\n\ndef ic95(x):\n    ",
+   "solution": "import numpy as np\n\ndef ic95(x):\n    x = np.array(x, dtype=float)\n    n = len(x)\n    m = np.mean(x)\n    s = np.std(x, ddof=1)\n    marge = 1.96 * s / np.sqrt(n)\n    return m - marge, m + marge",
+   "harnais": "x = [float(v) for v in input().split()]\nbas, haut = ic95(x)\nprint(f'{bas:.2f} {haut:.2f}')",
+   "tests": [
+    {
+     "nom": "10 pots de confiture",
+     "entree": "249 248 256 252 242 251 247 253 254 242\n",
+     "sortie": "246.45 252.35\n"
+    },
+    {
+     "nom": "mesures identiques",
+     "entree": "5 5 5 5\n",
+     "sortie": "5.00 5.00\n"
+    },
+    {
+     "nom": "deux valeurs",
+     "entree": "0 2\n",
+     "sortie": "-0.96 2.96\n"
+    }
+   ],
+   "explication": "<p>\\(F_n\\) est <code>np.mean(x)</code> et \\(S_{n-1}\\) est <code>np.std(x, ddof=1)</code>. Le test « 10 pots » échoue si l'on oublie <code>ddof=1</code> (on trouverait 246,60 et 252,20) : la division par \\(n\\) sous-estime l'écart-type. Avec \\(n = 10\\), la formule asymptotique est d'ailleurs optimiste (cours 4, remarque 1 de la diapo 38).</p>",
+   "revoir": {
+    "texte": "Cours 4 · Variance inconnue",
+    "lien": "../generated_courses/cours-04-estimateurs-intervalles-confiance.html#variance-inconnue"
+   },
+   "indices": [
+    "<p>Il faut l'écart-type <em>empirique</em> \\(S_{n-1}\\), qui divise par \\(n - 1\\).</p>",
+    "<p><code>np.std(x, ddof=1)</code>.</p>"
+   ],
+   "id": "q13"
+  },
+  {
+   "type": "code",
+   "langage": "python",
+   "theme": "Intervalles de confiance",
+   "difficulte": 2,
+   "enonce": "<p>Le programme lit \\(k\\) et \\(n\\) : \\(k\\) succès observés sur \\(n\\) essais. Écrire <code>ic_proportion(k, n)</code>, qui renvoie <code>(bas, haut)</code>, l'intervalle de confiance à 95 % de \\(p\\) par la méthode approchée : \\(F_n \\pm 1{,}96\\sqrt{\\frac{F_n(1 - F_n)}{n}}\\), avec \\(F_n = \\frac kn\\). Le harnais affiche trois décimales.</p>",
+   "depart": "from math import sqrt\n\ndef ic_proportion(k, n):\n    ",
+   "solution": "from math import sqrt\n\ndef ic_proportion(k, n):\n    f = k / n\n    marge = 1.96 * sqrt(f * (1 - f) / n)\n    return f - marge, f + marge",
+   "harnais": "k, n = map(int, input().split())\nbas, haut = ic_proportion(k, n)\nprint(f'{bas:.3f} {haut:.3f}')",
+   "tests": [
+    {
+     "nom": "participation, 76 % de 2 632",
+     "entree": "2000 2632\n",
+     "sortie": "0.744 0.776\n"
+    },
+    {
+     "nom": "100 grippés sur 400",
+     "entree": "100 400\n",
+     "sortie": "0.208 0.292\n"
+    },
+    {
+     "nom": "aucun succès",
+     "entree": "0 50\n",
+     "sortie": "0.000 0.000\n"
+    }
+   ],
+   "explication": "<p>Formule de la méthode approchée du cours 4 (diapo 33). Le dernier test montre sa limite : avec \\(F_n = 0\\), la marge est nulle et l'intervalle se réduit à un point, ce qui est absurde ; la méthode exacte (diapo 34) ne présente pas ce défaut.</p>",
+   "revoir": {
+    "texte": "Cours 4 · L'encadrement de p",
+    "lien": "../generated_courses/cours-04-estimateurs-intervalles-confiance.html#l-encadrement-de-p"
+   },
+   "indices": [
+    "<p>Attention à la division : en Python 3, <code>k / n</code> est déjà une division décimale.</p>"
+   ],
+   "id": "q14"
+  },
+  {
+   "type": "trous",
+   "theme": "matplotlib",
+   "difficulte": 2,
+   "enonce": "<p>On veut comparer 1 000 tirages de \\(\\mathcal{N}(0, 1)\\) à la densité théorique, sur le même graphique. Compléter.</p>",
+   "texte": "x = rdm.normal(0, 1, 1000)\nplt.hist(x, bins=20, {{0}}=True)\nt = np.linspace(-4, 4, 200)\nplt.plot(t, norm.{{1}}(t))\nplt.show()",
+   "code": true,
+   "trous": [
+    {
+     "choix": [
+      "density",
+      "normed",
+      "cumulative",
+      "log"
+     ],
+     "reponse": 0
+    },
+    {
+     "choix": [
+      "pdf",
+      "cdf",
+      "pmf",
+      "ppf"
+     ],
+     "reponse": 0
+    }
+   ],
+   "explication": "<p><code>density=True</code> normalise l'histogramme pour que son aire vaille 1, comme celle d'une densité ; sans lui, les hauteurs seraient des effectifs, sans commune mesure avec la courbe. On trace la densité <code>pdf</code>, pas la fonction de répartition <code>cdf</code>, qui monte de 0 à 1.</p>",
+   "revoir": {
+    "texte": "Cours 0 · Vers les TP : numpy, matplotlib, scipy.stats",
+    "lien": "../generated_courses/cours-00-python.html#vers-les-tp-numpy-matplotlib-scipy-stats"
+   },
+   "id": "q15"
+  }
+ ]
+}
+</script>
+
+</body>
+</html>

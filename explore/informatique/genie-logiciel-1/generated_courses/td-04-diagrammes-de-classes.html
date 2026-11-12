@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="gl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TD 4 · Diagrammes de classes · Génie logiciel L3</title>
+<meta name="description" content="TD 4 interactif de génie logiciel : relations statiques (généralisation, composition, agrégation, association), diagrammes de classes d'après des modèles entité-association et des phrases, patron composite, réservation de vols, diagrammes d'objets, classe d'association, représentation d'une classe Java, à faire dans la page.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Génie logiciel</a>
+    <span aria-current="page">TD 4 · Diagrammes de classes</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Génie logiciel</span> TD 4 · L3 S5 · interactif</p>
+    <h1>TD 4 : diagrammes de classes</h1>
+    <p class="chapeau">Six exercices pour choisir la bonne relation statique et construire un diagramme de classes : à partir de modèles entité-association, de phrases, d'une étude de cas, de diagrammes d'objets et d'une classe Java. Ils mettent en œuvre le cours 4, et chaque réponse se construit dans la page.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TD/TD4/L3-175UD15-TD4-2025_26.pdf">L3-175UD15-TD4-2025_26.pdf</a> · 5 pages</dd></div>
+      <div><dt>Enseignante</dt><dd>C. Piau-Toffolon</dd></div>
+      <div><dt>Cours</dt><dd><a href="cours-04-modeles-uml.html">Cours 4 · Modèles et UML</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-01">1<sup>er</sup> nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Choisir entre généralisation, composition, agrégation et association.</li>
+        <li>Passer d'un modèle entité-association, d'un texte ou d'un diagramme d'objets à un diagramme de classes.</li>
+        <li>Utiliser une classe d'association, et savoir quand elle ne convient pas.</li>
+        <li>Lire un diagramme de classes pour décider si un diagramme d'objets lui est conforme.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Notions utilisées</p>
+      <ul>
+        <li><a href="cours-04-modeles-uml.html">Cours 4</a> : diagrammes de classes, multiplicités, agrégation, composition, héritage, correspondance avec le modèle entité-association.</li>
+        <li><a href="../../bases-de-donnees-3/generated_courses/cours-01-uml-vers-relationnel.html">Cours 1 de bases de données</a> : classes d'association.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Mode d'emploi</p>
+    <ul>
+      <li>La réponse se construit sur le dessin ou dans la vue texte (« Les deux ») ; les deux restent synchronisés.</li>
+      <li>« Vérifier » contrôle la forme sans rien dévoiler, « Comparer » mesure l'écart avec une solution proposée, « Claude » répond aux questions et corrige.</li>
+      <li>Les solutions restent cachées et, sauf le bouton « Correction » de la phrase 12, repris du test de 2025-26, elles ne viennent pas de l'enseignante : un écart n'est pas forcément une erreur. Le sujet invite lui-même à proposer plusieurs solutions.</li>
+      <li>Le travail s'enregistre tout seul. Avec le serveur local (<code>studies/lancer.bat</code>), il va dans <code>td_results/</code> et Claude est disponible.</li>
+    </ul>
+  </div>
+
+  <p><span class="badge a-verifier">À vérifier</span> Coquilles du sujet corrigées ici : « Cette étude cas » à l'exercice 4, « Le chat et les chiens » et « sont employés » à l'exercice 1 ; à l'exercice 3, <code>calculerValeur(</code>, coupé sur la figure, est écrit <code>calculerValeur()</code>. Le sujet est daté de 2022-23, bien que le fichier porte 2025-26.</p>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les relations statiques <span class="ref">TD, p. 1–2</span></h2>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Consigne</span></p>
+      <p><strong>Déterminez la relation statique appropriée (généralisation, composition, agrégation ou association) dans les phrases suivantes et dessinez le diagramme de classes correspondant (et le diagramme E/A pour comparer… et ne pas oublier ce que vous avez appris l'an dernier !).</strong></p>
+      <p>NB : n'hésitez pas à proposer différentes solutions pour chaque phrase.</p>
+    </div>
+    <p>L'atelier n'a pas d'éditeur entité-association : le diagramme E/A se fait sur papier, et l'explication de chaque solution en donne les cardinalités.</p>
+
+    <h3>Depuis un modèle entité-association</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Phrase 1, modèle A</span></p>
+      <p>Proposez le diagramme de classes correspondant au modèle E/A proposé.</p>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 630 170" width="630" role="img" aria-labelledby="fig-ea-a-titre">
+        <title id="fig-ea-a-titre">Modèle entité-association A : COMPAGNIE (code_cie, nom_cie, budget, effectifs) et AEROPORT (OACI, nom_aero, date_ouverture, nb_pistes) sont reliées par l'association Comp_Aero, de cardinalités 0,n des deux côtés, qui porte date_arr et nb_comptoirs.</title>
+        <rect class="boite" x="10" y="10" width="150" height="110" rx="3"/>
+        <line class="trait" x1="10" y1="36" x2="160" y2="36"/>
+        <text x="85" y="28" text-anchor="middle" class="gras">COMPAGNIE</text>
+        <text x="20" y="54">code_cie</text>
+        <text x="20" y="71">nom_cie</text>
+        <text x="20" y="88">budget</text>
+        <text x="20" y="105">effectifs</text>
+        <rect class="boite" x="470" y="10" width="150" height="110" rx="3"/>
+        <line class="trait" x1="470" y1="36" x2="620" y2="36"/>
+        <text x="545" y="28" text-anchor="middle" class="gras">AEROPORT</text>
+        <text x="480" y="54">OACI</text>
+        <text x="480" y="71">nom_aero</text>
+        <text x="480" y="88">date_ouverture</text>
+        <text x="480" y="105">nb_pistes</text>
+        <ellipse class="boite-accent" cx="315" cy="65" rx="78" ry="34"/>
+        <text x="315" y="70" text-anchor="middle">Comp_Aero</text>
+        <line class="trait" x1="160" y1="65" x2="237" y2="65"/>
+        <line class="trait" x1="393" y1="65" x2="470" y2="65"/>
+        <text x="198" y="56" text-anchor="middle">0,n</text>
+        <text x="432" y="56" text-anchor="middle">0,n</text>
+        <path class="trait" d="M270 93 V137 H282"/>
+        <text x="288" y="128">date_arr</text>
+        <text x="288" y="146">nb_comptoirs</text>
+      </svg>
+      <figcaption>Modèle A.</figcaption>
+    </figure>
+    <p>Dans cet exemple, Comp_Aero modélise tous les couples sans doublons (compagnie, aéroport) qui sont considérés comme valides (à savoir la localisation des compagnies dans chaque aéroport). À chaque couple des attributs peuvent être associés : ici, la date d'arrivée d'une compagnie dans un aéroport et le nombre de comptoirs dont elle dispose.</p>
+    <p>On peut noter que les deux attributs de cette classe ne peuvent pas être disposés ailleurs. La date d'arrivée ne dépend pas de la compagnie seule (Air France peut résider à Orly depuis 1967 alors qu'elle est arrivée à Blagnac au cours de l'année 1969, par exemple). Cette date d'arrivée ne dépend pas non plus de l'aéroport seul, car Orly qui a accueilli Air France en 1967 a vu débarquer Air Liberté en 1990.</p>
+    <div class="atelier" id="td4-ex1-a" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Modèle A",
+  "hauteur": 380,
+  "solution": [
+    "classe Compagnie",
+    "  code_cie {PK}",
+    "  nom_cie",
+    "  budget",
+    "  effectifs",
+    "classe Aeroport",
+    "  OACI {PK}",
+    "  nom_aero",
+    "  date_ouverture",
+    "  nb_pistes",
+    "classe Comp_Aero",
+    "  date_arr",
+    "  nb_comptoirs",
+    "Compagnie \"*\" -- \"*\" Aeroport [Comp_Aero]"
+  ],
+  "explication": "<p>Les deux <code>0,n</code> donnent <code>*</code> de chaque côté. <code>date_arr</code> et <code>nb_comptoirs</code> dépendent du couple (compagnie, aéroport) et de lui seul, d'où une classe d'association : elle existe une fois par couple, ce qui correspond aux couples « sans doublons » de l'énoncé.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Phrase 1, modèle B</span></p>
+      <p>Proposez le diagramme de classes correspondant au modèle E/A proposé.</p>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 280" width="640" role="img" aria-labelledby="fig-ea-b-titre">
+        <title id="fig-ea-b-titre">Modèle entité-association B (WinDesign) : l'entité VIREMENT_CPTE_CPTE est reliée à COMPTE (id_compte, credit, debit, date_ouv) par les associations source et cible, 1,1 identifiantes du côté du virement et 0,n du côté du compte. Elle est reliée à OPERATIONS (id_operation, montant_euros, date_op) par l'association operation, 0,n du côté du virement et 1,1 du côté de l'opération.</title>
+        <defs>
+          <marker id="fleche-ea-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="10" y="105" width="130" height="105" rx="3"/>
+        <line class="trait" x1="10" y1="131" x2="140" y2="131"/>
+        <text x="75" y="123" text-anchor="middle" class="gras">COMPTE</text>
+        <text x="20" y="149" text-decoration="underline" class="gras">id_compte</text>
+        <text x="20" y="166">credit</text>
+        <text x="20" y="183">debit</text>
+        <text x="20" y="200">date_ouv</text>
+        <rect class="boite" x="270" y="100" width="190" height="80" rx="3"/>
+        <line class="trait" x1="270" y1="126" x2="460" y2="126"/>
+        <text x="365" y="118" text-anchor="middle" class="gras">VIREMENT_CPTE_CPTE</text>
+        <rect class="boite" x="490" y="10" width="140" height="90" rx="3"/>
+        <line class="trait" x1="490" y1="36" x2="630" y2="36"/>
+        <text x="560" y="28" text-anchor="middle" class="gras">OPERATIONS</text>
+        <text x="500" y="54" text-decoration="underline" class="gras">id_operation</text>
+        <text x="500" y="71">montant_euros</text>
+        <text x="500" y="88">date_op</text>
+        <ellipse class="boite-accent" cx="205" cy="50" rx="42" ry="18"/>
+        <text x="205" y="55" text-anchor="middle">source</text>
+        <ellipse class="boite-accent" cx="205" cy="245" rx="42" ry="18"/>
+        <text x="205" y="250" text-anchor="middle">cible</text>
+        <ellipse class="boite-accent" cx="560" cy="170" rx="50" ry="18"/>
+        <text x="560" y="175" text-anchor="middle">operation</text>
+        <line class="trait" x1="170" y1="62" x2="90" y2="104" marker-end="url(#fleche-ea-b)"/>
+        <line class="trait" x1="170" y1="235" x2="90" y2="211" marker-end="url(#fleche-ea-b)"/>
+        <line class="trait" x1="510" y1="165" x2="461" y2="155" marker-end="url(#fleche-ea-b)"/>
+        <line class="trait" x1="245" y1="57" x2="320" y2="100"/>
+        <line class="trait" x1="245" y1="235" x2="320" y2="181"/>
+        <line class="trait" x1="560" y1="152" x2="560" y2="100"/>
+        <text x="118" y="72" text-anchor="middle">0,n</text>
+        <text x="118" y="246" text-anchor="middle">0,n</text>
+        <text x="312" y="76" text-anchor="middle">1,1 (R)</text>
+        <text x="312" y="218" text-anchor="middle">1,1 (R)</text>
+        <text x="486" y="150" text-anchor="middle">0,n</text>
+        <text x="580" y="130" text-anchor="middle">1,1</text>
+      </svg>
+      <figcaption>Modèle B, exporté de WinDesign.</figcaption>
+    </figure>
+    <div class="atelier" id="td4-ex1-b" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Modèle B",
+  "hauteur": 460,
+  "solution": [
+    "classe Compte",
+    "  id_compte {PK}",
+    "  credit",
+    "  debit",
+    "  date_ouv",
+    "classe Virement_cpte_cpte",
+    "classe Operations",
+    "  id_operation {PK}",
+    "  montant_euros",
+    "  date_op",
+    "Compte \"* source\" -- \"* cible\" Compte [Virement_cpte_cpte]",
+    "Virement_cpte_cpte \"1\" -- \"*\" Operations"
+  ],
+  "explication": "<p>VIREMENT_CPTE_CPTE est identifiée par ses deux comptes (les <code>(R)</code> de WinDesign, identification relative) : c'est le couple (source, cible), donc une classe d'association sur une association réflexive de Compte. Une opération porte sur un seul couple (<code>1,1</code>), un couple a plusieurs opérations (<code>0,n</code>).</p><p>Une traduction littérale est aussi juste : une classe Virement_cpte_cpte reliée deux fois à Compte, avec les rôles source et cible et les multiplicités <code>1</code> du côté de Compte et <code>*</code> du côté du virement.</p>"
+}
+      </script>
+    </div>
+
+    <h3>Depuis une phrase</h3>
+    <p>Les noms de classes s'écrivent sans espace. Les phrases en italique le sont dans le sujet.</p>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Phrase 2</span></p>
+      <p>Tout écrivain a écrit au moins une œuvre.</p>
+    </div>
+    <div class="atelier" id="td4-ex1-p2" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Phrase 2",
+  "hauteur": 240,
+  "solution": [
+    "classe Ecrivain",
+    "classe Oeuvre",
+    "Ecrivain \"1..*\" -- \"1..*\" Oeuvre : a écrit >"
+  ],
+  "explication": "<p>Une association : une œuvre n'est pas une partie de l'écrivain. « Au moins une œuvre » s'écrit <code>1..*</code> près d'Oeuvre ; côté Ecrivain, <code>1..*</code> pour une œuvre qui a au moins un auteur, <code>*</code> si l'on admet les œuvres anonymes.</p><p>E/A : ÉCRIVAIN <code>1,n</code> — écrire — <code>1,n</code> ŒUVRE. La cardinalité <code>1,n</code> de l'écrivain se place près d'ÉCRIVAIN : c'est l'emplacement inverse de celui d'UML.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Phrase 3</span></p>
+      <p>Des personnes logent à l'hôtel. Un hôtel héberge des personnes.</p>
+    </div>
+    <div class="atelier" id="td4-ex1-p3" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Phrase 3",
+  "hauteur": 240,
+  "solution": [
+    "classe Personne",
+    "classe Hotel",
+    "Personne \"*\" -- \"*\" Hotel : loge à >"
+  ],
+  "explication": "<p>« Loger » et « héberger » sont les deux sens de lecture d'une seule association. Sur la durée, une personne loge dans plusieurs hôtels ; à un instant donné, on écrirait <code>0..1</code> du côté d'Hotel. Une classe Séjour, avec ses dates, est une autre solution.</p><p>E/A : PERSONNE <code>0,n</code> — loger — <code>0,n</code> HÔTEL.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Phrase 4</span></p>
+      <p>Des personnes sont employées ou clientes dans un hôtel. Le responsable de l'hôtel fait nécessairement partie du personnel.</p>
+    </div>
+    <div class="atelier" id="td4-ex1-p4" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Phrase 4",
+  "hauteur": 420,
+  "solution": [
+    "classe Personne",
+    "classe Employe",
+    "classe Client",
+    "classe Responsable",
+    "classe Hotel",
+    "Employe --|> Personne",
+    "Client --|> Personne",
+    "Responsable --|> Employe",
+    "Employe \"*\" -- \"1\" Hotel : travaille dans >",
+    "Client \"*\" -- \"*\" Hotel : séjourne dans >",
+    "Responsable \"1\" -- \"1\" Hotel : dirige >"
+  ],
+  "explication": "<p>« Fait nécessairement partie du personnel » se lit « est une sorte d'employé » : l'héritage garantit la contrainte. Mais un objet ne change pas de classe, et une même personne ne peut pas alors être à la fois cliente et employée.</p><p>Autre solution, qui lève cette limite : une seule classe Personne reliée à Hotel par trois associations aux rôles employé, client et responsable, avec la contrainte <code>{subset}</code> de responsable vers employé.</p><p>E/A : les trois associations employer, loger et diriger entre PERSONNE et HÔTEL.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Phrase 5</span></p>
+      <p>Dans une université il y a des étudiants et des enseignants.</p>
+    </div>
+    <div class="atelier" id="td4-ex1-p5" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Phrase 5",
+  "hauteur": 300,
+  "solution": [
+    "classe Universite",
+    "classe Etudiant",
+    "classe Enseignant",
+    "Universite \"1..*\" o-- \"*\" Etudiant",
+    "Universite \"1..*\" o-- \"*\" Enseignant"
+  ],
+  "explication": "<p>Une relation tout-partie, avec des parties partageables : un enseignant peut intervenir dans deux universités et continue d'exister sans elles. C'est donc une agrégation et non une composition. Une classe Personne, mère d'Etudiant et d'Enseignant, peut en plus factoriser leurs attributs.</p><p>E/A : deux associations, sans notion de tout-partie.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Phrase 6</span></p>
+      <p>Les étudiants suivent des modules de cours qui sont assurés par des enseignants. Par exemple Pierre suit le cours d'UML donné par Iza, Sophia suit aussi le cours d'UML mais donné par Karim.</p>
+    </div>
+    <div class="atelier" id="td4-ex1-p6" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Phrase 6",
+  "hauteur": 360,
+  "solution": [
+    "classe Etudiant",
+    "classe Enseignant",
+    "classe Module",
+    "classe Cours",
+    "Etudiant \"*\" -- \"*\" Cours : suit >",
+    "Enseignant \"1\" -- \"*\" Cours : assure >",
+    "Module \"1\" -- \"*\" Cours"
+  ],
+  "explication": "<p>L'exemple est là pour éviter le piège : avec seulement « Etudiant suit Module » et « Enseignant assure Module », on saurait que Pierre suit UML et qu'Iza assure UML, mais plus <em>qui</em> a Pierre. Il faut un objet par couple (module, enseignant), ici Cours : le cours d'UML d'Iza et celui de Karim sont deux objets du même Module.</p><p>E/A : une association ternaire SUIVRE entre ÉTUDIANT, MODULE et ENSEIGNANT, que l'atelier ne dessine pas.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Phrase 7</span></p>
+      <p><em>Un cours possède une heure de début et une durée. Il se déroule dans une salle réunissant des étudiants et un enseignant.</em></p>
+    </div>
+    <div class="atelier" id="td4-ex1-p7" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Phrase 7",
+  "hauteur": 360,
+  "solution": [
+    "classe Cours",
+    "  heure_debut",
+    "  duree",
+    "classe Salle",
+    "classe Etudiant",
+    "classe Enseignant",
+    "Cours \"*\" -- \"1\" Salle : se déroule dans >",
+    "Cours \"*\" -- \"1..*\" Etudiant : réunit >",
+    "Cours \"*\" -- \"1\" Enseignant : réunit >"
+  ],
+  "explication": "<p>Heure et durée sont des attributs : elles appartiennent au cours. « Réunir » relie le cours aux personnes ; la salle n'est pas un tout dont les étudiants seraient les parties.</p><p>E/A : COURS <code>1,1</code> — se dérouler — <code>0,n</code> SALLE ; COURS <code>1,n</code> — réunir — <code>0,n</code> ÉTUDIANT ; COURS <code>1,1</code> — réunir — <code>0,n</code> ENSEIGNANT.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Phrase 8</span></p>
+      <p><em>Une pièce contient des murs.</em></p>
+    </div>
+    <div class="atelier" id="td4-ex1-p8" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Phrase 8",
+  "hauteur": 240,
+  "solution": [
+    "classe Piece",
+    "classe Mur",
+    "Piece \"1..2\" o-- \"1..*\" Mur : contient >"
+  ],
+  "explication": "<p>Tout-partie, mais avec partage : un mur sépare deux pièces. C'est une agrégation, avec <code>1..2</code> du côté de Piece. Si l'on considère qu'un mur n'existe que dans sa pièce (les faces de mur), c'est une composition : l'énoncé laisse les deux lectures possibles, d'où le NB.</p><p>E/A : PIÈCE <code>1,n</code> — contenir — <code>1,2</code> MUR.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Phrase 9</span></p>
+      <p>Un répertoire contient des fichiers qui peuvent être des documents, des images ou des vidéos.</p>
+    </div>
+    <div class="atelier" id="td4-ex1-p9" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Phrase 9",
+  "hauteur": 340,
+  "solution": [
+    "classe Repertoire",
+    "classe abstraite Fichier",
+    "classe Document",
+    "classe Image",
+    "classe Video",
+    "Repertoire \"1\" *-- \"*\" Fichier : contient >",
+    "Document --|> Fichier",
+    "Image --|> Fichier",
+    "Video --|> Fichier"
+  ],
+  "explication": "<p>Deux relations dans une phrase. « Contient » : composition, un fichier est dans un seul répertoire et disparaît avec lui. « Peuvent être » : héritage, un document est une sorte de fichier. Fichier est abstraite si tout fichier est de l'un des trois types.</p><p>E/A : RÉPERTOIRE <code>0,n</code> — contenir — <code>1,1</code> FICHIER.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Phrase 10</span></p>
+      <p><em>Les chats et les chiens sont des animaux. Les animaux possèdent tous un nom. Il existe d'autres animaux que les chats et les chiens {incomplet} et un animal ne peut être à la fois chat et chien {disjoint}.</em></p>
+    </div>
+    <div class="atelier" id="td4-ex1-p10" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Phrase 10",
+  "hauteur": 300,
+  "consigne": "<p>Une contrainte sur un lien s'écrit comme son nom : <code>Chat --|&gt; Animal : {incomplet, disjoint}</code>.</p>",
+  "solution": [
+    "classe Animal",
+    "  nom",
+    "classe Chat",
+    "classe Chien",
+    "Chat --|> Animal : {incomplet, disjoint}",
+    "Chien --|> Animal : {incomplet, disjoint}"
+  ],
+  "explication": "<p><code>nom</code> va dans Animal, et s'hérite. <code>{incomplet}</code> : il existe d'autres sortes d'animaux, Animal reste donc concrète ou d'autres sous-classes viendront. <code>{disjoint}</code> : pas d'objet à la fois Chat et Chien. En UML, ces contraintes se notent une seule fois, sur l'ensemble des généralisations ; l'atelier les porte sur chaque lien et ne les compare pas.</p><p>E/A : pas d'équivalent direct dans le modèle de base.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Phrase 11</span></p>
+      <p>Deux personnes peuvent être mariées. Une personne a deux parents et peut avoir plusieurs enfants.</p>
+    </div>
+    <div class="atelier" id="td4-ex1-p11" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Phrase 11",
+  "hauteur": 280,
+  "solution": [
+    "classe Personne",
+    "Personne \"0..1 conjoint\" -- \"0..1 conjoint\" Personne : est marié à",
+    "Personne \"2 parent\" -- \"* enfant\" Personne : a pour parent"
+  ],
+  "explication": "<p>Deux associations réflexives, sur la même classe : les rôles disent qui est qui. Mariage : <code>0..1</code> de chaque côté. Filiation : <code>2</code> du côté des parents, <code>*</code> du côté des enfants. Une classe Homme et une classe Femme n'apportent rien ici.</p><p>E/A : PERSONNE reliée à elle-même, <code>0,1</code> et <code>0,1</code> pour le mariage, <code>0,n</code> et <code>2,2</code> pour la filiation.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Phrase 12</span></p>
+      <p><em>Les cinémas sont composés de plusieurs salles. Les films sont projetés dans des salles. Les projections correspondantes ont lieu chacune à une heure déterminée.</em></p>
+    </div>
+    <div class="atelier" id="td4-ex1-p12" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Phrase 12",
+  "hauteur": 340,
+  "solution_source": "enseignant",
+  "solution": [
+    "classe Cinema",
+    "classe Salle",
+    "classe Film",
+    "classe Projection",
+    "  heure",
+    "Cinema \"1\" *-- \"*\" Salle",
+    "Salle \"*\" -- \"*\" Film [Projection]"
+  ],
+  "explication": "<p>Correction de l'enseignante (test de 2025-26, exercice 3) : une composition pour les salles, et Projection en classe d'association entre Salle et Film, qui porte l'heure.</p><p>Une réserve de modélisation, ajoutée ici : une classe d'association n'existe qu'une fois par couple. Pour garder plusieurs séances d'un même film dans la même salle, il faudrait une classe ordinaire Projection, reliée à Film et à Salle par deux associations <code>1</code>–<code>*</code>. Elle reste une variante à justifier, pas la réponse attendue.</p><p>E/A : SALLE <code>0,n</code> — projeter (heure) — <code>0,n</code> FILM.</p>"
+}
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Un système de gestion de fichiers <span class="ref">TD, p. 2</span></h2>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Solution « élégante »</span></p>
+      <p><strong>Proposez une solution « élégante » qui permette de modéliser le système de gestion de fichiers suivant :</strong></p>
+      <ul>
+        <li>les fichiers, les raccourcis et les répertoires sont contenus dans des répertoires et possèdent un nom ;</li>
+        <li>un raccourci peut concerner un fichier ou un répertoire ;</li>
+        <li>au sein d'un répertoire donné, un nom ne peut identifier qu'un seul élément (fichier, sous-répertoire ou raccourci).</li>
+      </ul>
+    </div>
+    <div class="atelier" id="td4-ex2" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Système de gestion de fichiers",
+  "hauteur": 480,
+  "solution": [
+    "classe abstraite Element",
+    "  nom : string",
+    "classe abstraite Cible",
+    "classe Fichier",
+    "classe Repertoire",
+    "classe Raccourci",
+    "Raccourci --|> Element",
+    "Cible --|> Element",
+    "Fichier --|> Cible",
+    "Repertoire --|> Cible",
+    "Repertoire \"0..1\" *-- \"*\" Element : contient {nom unique} >",
+    "Raccourci \"*\" --> \"1\" Cible : concerne >"
+  ],
+  "explication": "<p>La solution « élégante » est le patron composite : tout élément a un nom et se trouve dans un répertoire, et un répertoire contient des éléments, y compris d'autres répertoires. <code>0..1</code> du côté de Repertoire laisse une racine sans parent.</p><p>La classe abstraite Cible traduit « un raccourci peut concerner un fichier ou un répertoire » : ni un raccourci vers un raccourci, ni deux associations. Plus simple, mais moins précis : relier Raccourci directement à Element.</p><p>L'unicité du nom dans un répertoire se note en UML par un qualificatif <code>nom</code> sur Repertoire, avec <code>0..1</code> du côté d'Element. L'atelier ne dessine pas les qualificatifs : la contrainte est écrite sur le lien.</p>"
+}
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Des expressions arithmétiques <span class="ref">TD, p. 2</span></h2>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Opérateurs unaires</span></p>
+      <p>Le diagramme de classes suivant permet de modéliser des expressions arithmétiques avec des opérateurs binaires comme <code>1+x</code>, <code>2-4</code> ou encore <code>2-(y*4)</code>. <strong>Modifiez ce diagramme pour prendre en compte des opérateurs binaires (comme ici) mais aussi unaires (comme <code>-x</code> ou <code>5 !</code> par exemple). Les expressions unaires ne doivent compter qu'un seul opérande.</strong></p>
+    </div>
+    <p>Le sujet n'écrit pas la multiplicité du côté de Terme : une expression a un seul premier opérande et un seul deuxième, d'où le <code>1</code> repris ici.</p>
+    <div class="atelier" id="td4-ex3" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Expressions arithmétiques",
+  "hauteur": 500,
+  "consigne": "<p>Le diagramme du sujet sert de départ : à modifier.</p>",
+  "options": {
+    "methodes": true
+  },
+  "depart": [
+    "classe abstraite Terme",
+    "  calculerValeur()",
+    "classe Expression",
+    "  opérateurBinaire : char",
+    "classe Variable",
+    "  nom : string",
+    "  valeur : integer",
+    "classe Constante",
+    "  valeur : integer",
+    "Expression \"*\" o-- \"1 premier opérande\" Terme",
+    "Expression \"*\" o-- \"1 deuxième opérande\" Terme",
+    "Expression --|> Terme",
+    "Variable --|> Terme",
+    "Constante --|> Terme"
+  ],
+  "disposition": {
+    "Expression": [
+      20,
+      120
+    ],
+    "Terme": [
+      440,
+      100
+    ],
+    "Variable": [
+      300,
+      340
+    ],
+    "Constante": [
+      540,
+      340
+    ]
+  },
+  "solution": [
+    "classe abstraite Terme",
+    "  calculerValeur()",
+    "classe abstraite Expression",
+    "classe ExpressionBinaire",
+    "  opérateurBinaire : char",
+    "classe ExpressionUnaire",
+    "  opérateurUnaire : char",
+    "classe Variable",
+    "  nom : string",
+    "  valeur : integer",
+    "classe Constante",
+    "  valeur : integer",
+    "Expression --|> Terme",
+    "Variable --|> Terme",
+    "Constante --|> Terme",
+    "ExpressionBinaire --|> Expression",
+    "ExpressionUnaire --|> Expression",
+    "ExpressionBinaire \"*\" o-- \"1 premier opérande\" Terme",
+    "ExpressionBinaire \"*\" o-- \"1 deuxième opérande\" Terme",
+    "ExpressionUnaire \"*\" o-- \"1 opérande\" Terme"
+  ],
+  "explication": "<p>Expression devient abstraite, avec deux sous-classes. Les opérandes descendent dans chacune : c'est ce qui garantit qu'une expression unaire n'a qu'un opérande. Ajouter simplement <code>0..1</code> sur le deuxième opérande laisserait construire une expression binaire incomplète.</p><p>Le récursif est conservé, car les opérandes restent des Terme : <code>2-(y*4)</code> a pour deuxième opérande une ExpressionBinaire. <code>-(x+1)</code> est une unaire sur une binaire.</p>"
+}
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Réservation de vols <span class="ref">TD, p. 2–3</span></h2>
+    <p>Cette étude de cas concerne un système simplifié de réservation de vols pour une agence de voyages. Les interviews des experts métier auxquelles on a procédé ont permis de résumer leur connaissance du domaine sous la forme des phrases suivantes :</p>
+    <ol>
+      <li>Des compagnies aériennes proposent différents vols.</li>
+      <li>Un vol est ouvert à la réservation et refermé sur ordre de la compagnie.</li>
+      <li>Un client peut réserver un ou plusieurs vols, pour des passagers différents.</li>
+      <li>Une réservation concerne un seul vol et un seul passager.</li>
+      <li>Une réservation peut être annulée ou confirmée.</li>
+      <li>Un vol a un aéroport de départ et un aéroport d'arrivée.</li>
+      <li>Un vol a un jour et une heure de départ et un jour et une heure d'arrivée.</li>
+      <li>Un vol peut comporter des escales dans des aéroports.</li>
+      <li>Une escale a une heure d'arrivée et une heure de départ.</li>
+      <li>Chaque aéroport dessert une ou plusieurs villes.</li>
+    </ol>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 4 <span>Modélisation</span></p>
+      <p><strong>Modélisez par un diagramme de classes l'énoncé ci-dessus.</strong></p>
+    </div>
+    <div class="atelier" id="td4-ex4" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Réservation de vols",
+  "hauteur": 680,
+  "options": {
+    "methodes": true
+  },
+  "solution": [
+    "classe Compagnie",
+    "  nom",
+    "classe Vol",
+    "  numero",
+    "  jour_depart",
+    "  heure_depart",
+    "  jour_arrivee",
+    "  heure_arrivee",
+    "  + ouvrirReservation()",
+    "  + fermerReservation()",
+    "classe Reservation",
+    "  numero",
+    "  date",
+    "  + annuler()",
+    "  + confirmer()",
+    "classe Client",
+    "  nom",
+    "classe Passager",
+    "  nom",
+    "classe Aeroport",
+    "  nom",
+    "classe Ville",
+    "  nom",
+    "classe Escale",
+    "  heure_arrivee",
+    "  heure_depart",
+    "Compagnie \"1\" -- \"*\" Vol : propose >",
+    "Client \"1\" -- \"*\" Reservation : effectue >",
+    "Reservation \"*\" -- \"1\" Vol : concerne >",
+    "Reservation \"*\" -- \"1\" Passager : concerne >",
+    "Vol \"*\" -- \"1 depart\" Aeroport",
+    "Vol \"*\" -- \"1 arrivee\" Aeroport",
+    "Vol \"*\" -- \"* escale\" Aeroport [Escale]",
+    "Aeroport \"*\" -- \"1..*\" Ville : dessert >"
+  ],
+  "explication": "<p>Phrase par phrase : 1, Compagnie–Vol ; 2, deux opérations de Vol, appelées par la compagnie ; 3 et 4, une Reservation entre Client, Vol et Passager, car client et passager sont distincts ; 5, deux opérations de Reservation (ou un état) ; 6, deux associations vers Aeroport, distinguées par leurs rôles ; 7, attributs de Vol ; 8 et 9, Escale, classe d'association entre Vol et Aeroport, qui porte les deux heures ; 10, Aeroport–Ville.</p><p>Les escales d'un vol sont ordonnées : <code>{ordered}</code> peut s'ajouter du côté d'Aeroport. Un vol ne fait escale qu'une fois dans un aéroport donné, sinon Escale doit devenir une classe ordinaire.</p>"
+}
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Objets et classes d'association <span class="ref">TD, p. 3–4</span></h2>
+
+    <h3>Du diagramme d'objets au diagramme de classes</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 5 <span>Question 1</span></p>
+      <p>Donnez les diagrammes de classes correspondants aux 2 diagrammes objets suivants.</p>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 432 320" width="432" role="img" aria-labelledby="fig-obj-g-titre">
+        <title id="fig-obj-g-titre">Premier diagramme d'objets : deux objets Polygone, chacun relié à trois objets Point qui lui sont propres. Le premier à (0, 1), (−1, 0) et (1, 0) ; le second à (−1, 0), (1, 0) et (0, −1).</title>
+        <line class="trait" x1="218" y1="72" x2="218" y2="100"/>
+        <line class="trait" x1="106" y1="122" x2="153" y2="122"/>
+        <line class="trait" x1="283" y1="122" x2="326" y2="122"/>
+        <line class="trait" x1="106" y1="202" x2="153" y2="202"/>
+        <line class="trait" x1="283" y1="202" x2="326" y2="202"/>
+        <line class="trait" x1="218" y1="224" x2="218" y2="252"/>
+        <rect class="boite" x="170" y="10" width="96" height="62"/>
+        <line class="trait" x1="170" y1="34" x2="266" y2="34"/>
+        <text x="218" y="27" text-anchor="middle" text-decoration="underline">:Point</text>
+        <text x="178" y="49" class="mono">xCoord=0</text>
+        <text x="178" y="67" class="mono">yCoord=1</text>
+        <rect class="boite" x="10" y="92" width="96" height="62"/>
+        <line class="trait" x1="10" y1="116" x2="106" y2="116"/>
+        <text x="58" y="109" text-anchor="middle" text-decoration="underline">:Point</text>
+        <text x="18" y="131" class="mono">xCoord=-1</text>
+        <text x="18" y="149" class="mono">yCoord=0</text>
+        <rect class="boite" x="326" y="92" width="96" height="62"/>
+        <line class="trait" x1="326" y1="116" x2="422" y2="116"/>
+        <text x="374" y="109" text-anchor="middle" text-decoration="underline">:Point</text>
+        <text x="334" y="131" class="mono">xCoord=1</text>
+        <text x="334" y="149" class="mono">yCoord=0</text>
+        <rect class="boite" x="153" y="100" width="130" height="44"/><text x="218" y="127" text-anchor="middle" text-decoration="underline">:Polygone</text>
+        <rect class="boite" x="153" y="180" width="130" height="44"/><text x="218" y="207" text-anchor="middle" text-decoration="underline">:Polygone</text>
+        <rect class="boite" x="10" y="172" width="96" height="62"/>
+        <line class="trait" x1="10" y1="196" x2="106" y2="196"/>
+        <text x="58" y="189" text-anchor="middle" text-decoration="underline">:Point</text>
+        <text x="18" y="211" class="mono">xCoord=-1</text>
+        <text x="18" y="229" class="mono">yCoord=0</text>
+        <rect class="boite" x="326" y="172" width="96" height="62"/>
+        <line class="trait" x1="326" y1="196" x2="422" y2="196"/>
+        <text x="374" y="189" text-anchor="middle" text-decoration="underline">:Point</text>
+        <text x="334" y="211" class="mono">xCoord=1</text>
+        <text x="334" y="229" class="mono">yCoord=0</text>
+        <rect class="boite" x="170" y="252" width="96" height="62"/>
+        <line class="trait" x1="170" y1="276" x2="266" y2="276"/>
+        <text x="218" y="269" text-anchor="middle" text-decoration="underline">:Point</text>
+        <text x="178" y="291" class="mono">xCoord=0</text>
+        <text x="178" y="309" class="mono">yCoord=-1</text>
+      </svg>
+      <figcaption>Diagramme d'objets de gauche, dans le sujet.</figcaption>
+    </figure>
+    <div class="atelier" id="td4-ex5-q1-gauche" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Diagramme d'objets de gauche",
+  "hauteur": 240,
+  "solution": [
+    "classe Polygone",
+    "classe Point",
+    "  xCoord",
+    "  yCoord",
+    "Polygone \"1\" *-- \"3..*\" Point"
+  ],
+  "explication": "<p>Chaque polygone a ses propres objets Point, même quand leurs coordonnées sont égales : ici 6 objets Point. Un point appartient à un seul polygone, d'où la composition. Le diagramme d'objets montre 3 points par polygone ; <code>3..*</code> généralise à tout polygone.</p>"
+}
+      </script>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 432 300" width="432" role="img" aria-labelledby="fig-obj-d-titre">
+        <title id="fig-obj-d-titre">Second diagramme d'objets : deux objets Polygone, reliés chacun aux deux mêmes objets Point (−1, 0) et (1, 0). Le premier a aussi le point (0, 1), le second le point (0, −1).</title>
+        <line class="trait" x1="218" y1="72" x2="218" y2="90"/>
+        <line class="trait" x1="106" y1="128" x2="153" y2="112"/>
+        <line class="trait" x1="106" y1="150" x2="153" y2="182"/>
+        <line class="trait" x1="283" y1="112" x2="326" y2="128"/>
+        <line class="trait" x1="283" y1="182" x2="326" y2="150"/>
+        <line class="trait" x1="218" y1="204" x2="218" y2="232"/>
+        <rect class="boite" x="170" y="10" width="96" height="62"/>
+        <line class="trait" x1="170" y1="34" x2="266" y2="34"/>
+        <text x="218" y="27" text-anchor="middle" text-decoration="underline">:Point</text>
+        <text x="178" y="49" class="mono">xCoord=0</text>
+        <text x="178" y="67" class="mono">yCoord=1</text>
+        <rect class="boite" x="153" y="90" width="130" height="44"/><text x="218" y="117" text-anchor="middle" text-decoration="underline">:Polygone</text>
+        <rect class="boite" x="153" y="160" width="130" height="44"/><text x="218" y="187" text-anchor="middle" text-decoration="underline">:Polygone</text>
+        <rect class="boite" x="10" y="110" width="96" height="62"/>
+        <line class="trait" x1="10" y1="134" x2="106" y2="134"/>
+        <text x="58" y="127" text-anchor="middle" text-decoration="underline">:Point</text>
+        <text x="18" y="149" class="mono">xCoord=-1</text>
+        <text x="18" y="167" class="mono">yCoord=0</text>
+        <rect class="boite" x="326" y="110" width="96" height="62"/>
+        <line class="trait" x1="326" y1="134" x2="422" y2="134"/>
+        <text x="374" y="127" text-anchor="middle" text-decoration="underline">:Point</text>
+        <text x="334" y="149" class="mono">xCoord=1</text>
+        <text x="334" y="167" class="mono">yCoord=0</text>
+        <rect class="boite" x="170" y="232" width="96" height="62"/>
+        <line class="trait" x1="170" y1="256" x2="266" y2="256"/>
+        <text x="218" y="249" text-anchor="middle" text-decoration="underline">:Point</text>
+        <text x="178" y="271" class="mono">xCoord=0</text>
+        <text x="178" y="289" class="mono">yCoord=-1</text>
+      </svg>
+      <figcaption>Diagramme d'objets de droite, dans le sujet.</figcaption>
+    </figure>
+    <div class="atelier" id="td4-ex5-q1-droite" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Diagramme d'objets de droite",
+  "hauteur": 240,
+  "solution": [
+    "classe Polygone",
+    "classe Point",
+    "  xCoord",
+    "  yCoord",
+    "Polygone \"1..*\" o-- \"3..*\" Point"
+  ],
+  "explication": "<p>Les points (−1, 0) et (1, 0) sont reliés aux deux polygones : ce sont les mêmes objets, partagés. Il n'y a que 4 objets Point. Le partage exclut la composition : c'est une agrégation, avec <code>1..*</code> du côté de Polygone.</p>"
+}
+      </script>
+    </div>
+
+    <h3>Classe d'association</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 5 <span>Question 2</span></p>
+      <p>Proposez une autre version du diagramme de classes suivant en utilisant la classe-association.</p>
+    </div>
+    <div class="atelier" id="td4-ex5-q2" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Abonnements",
+  "hauteur": 460,
+  "consigne": "<p>Le diagramme du sujet sert de départ : à modifier.</p>",
+  "depart": [
+    "classe Personne",
+    "  nom : undefined",
+    "  adresse : undefined",
+    "  telephone : undefined",
+    "classe Abonnement",
+    "  dateExpiration : undefined",
+    "classe Magazine",
+    "  nom : undefined",
+    "classe Règlement",
+    "  date : undefined",
+    "  montant : undefined",
+    "Personne \"1 Abonné\" -- \"*\" Abonnement",
+    "Magazine \"1\" -- \"*\" Abonnement",
+    "Abonnement \"1\" -- \"*\" Règlement"
+  ],
+  "disposition": {
+    "Personne": [
+      30,
+      20
+    ],
+    "Abonnement": [
+      410,
+      30
+    ],
+    "Magazine": [
+      130,
+      280
+    ],
+    "Règlement": [
+      430,
+      280
+    ]
+  },
+  "solution": [
+    "classe Personne",
+    "  nom : undefined",
+    "  adresse : undefined",
+    "  telephone : undefined",
+    "classe Abonnement",
+    "  dateExpiration : undefined",
+    "classe Magazine",
+    "  nom : undefined",
+    "classe Règlement",
+    "  date : undefined",
+    "  montant : undefined",
+    "Personne \"* Abonné\" -- \"*\" Magazine [Abonnement]",
+    "Abonnement \"1\" -- \"*\" Règlement"
+  ],
+  "explication": "<p>Les deux <code>1</code>–<code>*</code> vers Abonnement deviennent une association <code>*</code>–<code>*</code> entre Personne et Magazine, qui porte Abonnement. Les multiplicités s'échangent : une personne a plusieurs abonnements, donc plusieurs magazines. Une classe d'association peut elle-même avoir des associations : Règlement ne bouge pas.</p><p>Différence de sens : une personne ne peut plus avoir deux abonnements au même magazine. Un réabonnement prolonge <code>dateExpiration</code> et ajoute un Règlement.</p>"
+}
+      </script>
+    </div>
+
+    <h3>Conformité d'un agencement de figures</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 5 <span>Question 3</span></p>
+      <p>Considérez le diagramme de classes ci-dessous (le XOR est une contrainte indiquant que l'on peut avoir un segment lié à une figure, mais pas à plusieurs en même temps).</p>
+    </div>
+    <div class="atelier" id="td4-ex5-q3-figure" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Diagramme de classes des figures",
+  "mode": "lecture",
+  "vue": "dessin",
+  "hauteur": 560,
+  "consigne": "<p>Le sujet relie les trois compositions de Segment à une seule contrainte <code>{XOR}</code> par des pointillés : elle est notée ici sur chacune.</p>",
+  "depart": [
+    "classe Figure",
+    "  + pleine : boolean = false",
+    "  + note : string",
+    "  dessiner()",
+    "classe Polygone",
+    "classe Cercle",
+    "classe Carré",
+    "classe Triangle",
+    "classe Segment",
+    "Cercle --|> Figure",
+    "Polygone --|> Figure",
+    "Carré --|> Polygone",
+    "Triangle --|> Polygone",
+    "Polygone \"0..1\" o-- \"*\" Figure",
+    "Cercle \"0..1\" *-- \"1\" Segment : {XOR}",
+    "Carré \"0..1\" *-- \"4\" Segment : {XOR}",
+    "Triangle \"0..1\" *-- \"3\" Segment : {XOR}"
+  ],
+  "disposition": {
+    "Figure": [
+      260,
+      10
+    ],
+    "Cercle": [
+      30,
+      190
+    ],
+    "Polygone": [
+      510,
+      190
+    ],
+    "Carré": [
+      270,
+      280
+    ],
+    "Triangle": [
+      510,
+      400
+    ],
+    "Segment": [
+      60,
+      430
+    ]
+  }
+}
+      </script>
+    </div>
+    <p>Les schémas ci-dessous illustrent des cas particuliers d'imbrication de certaines figures dans d'autres. Si une figure est représentée directement à l'intérieur d'une autre, c'est qu'elle est nécessairement imbriquée dans cette dernière. Le nom des figures est parfois indiqué directement à l'intérieur. Les figures en noir sont considérées comme pleines, les autres non.</p>
+    <p>Sur cette page, les figures noires du sujet sont dessinées en aplat : elles sortent claires en thème sombre.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 360 360" width="360" role="img" aria-labelledby="fig-s1-titre">
+        <title id="fig-s1-titre">Schéma 1. Dans le grand carré blanc c1 : un cercle blanc r2 ; un carré noir contenant un cercle blanc r1 ; un triangle noir t1. Dans t1 : un triangle blanc contenant un carré noir c2, un cercle blanc et un carré blanc.</title>
+        <rect class="boite" x="20" y="20" width="320" height="320"/>
+        <text x="190" y="46" text-anchor="middle">c1</text>
+        <circle class="boite" cx="100" cy="95" r="55"/>
+        <text x="100" y="86" text-anchor="middle">r2</text>
+        <rect class="plein" x="225" y="45" width="90" height="90"/>
+        <circle class="boite" cx="270" cy="90" r="30"/>
+        <text x="270" y="95" text-anchor="middle">r1</text>
+        <polygon class="plein" points="170,120 40,305 300,305"/>
+        <polygon class="boite" points="170,165 110,240 230,240"/>
+        <rect class="plein" x="151" y="197" width="38" height="36"/>
+        <rect class="boite" x="159" y="208" width="22" height="16" rx="3"/><text x="170" y="220" text-anchor="middle">c2</text>
+        <circle class="boite" cx="130" cy="272" r="25"/>
+        <rect class="boite" x="190" y="250" width="46" height="46"/>
+        <rect class="boite" x="63" y="284" width="22" height="16" rx="3"/><text x="74" y="296" text-anchor="middle">t1</text>
+      </svg>
+      <figcaption>Schéma 1.</figcaption>
+    </figure>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 360 320" width="360" role="img" aria-labelledby="fig-s2-titre">
+        <title id="fig-s2-titre">Schéma 2. Dans un grand triangle blanc : un cercle noir r1, un triangle noir t1, un carré blanc c1 et un segment isolé. Dans t1 : un cercle blanc qui contient une petite maison faite d'un triangle noir posé sur un carré blanc c2, avec lequel il partage un côté.</title>
+        <polygon class="boite" points="180,10 20,305 340,305"/>
+        <circle class="plein" cx="190" cy="125" r="42"/>
+        <rect class="boite" x="179" y="118" width="22" height="16" rx="3"/><text x="190" y="130" text-anchor="middle">r1</text>
+        <polygon class="plein" points="130,140 45,290 225,290"/>
+        <rect class="boite" x="121" y="168" width="22" height="16" rx="3"/><text x="132" y="180" text-anchor="middle">t1</text>
+        <circle class="boite" cx="130" cy="240" r="42"/>
+        <polygon class="plein" points="130,208 108,238 152,238"/>
+        <rect class="boite" x="108" y="238" width="44" height="34"/>
+        <text x="130" y="260" text-anchor="middle">c2</text>
+        <line class="trait" x1="195" y1="195" x2="265" y2="195"/>
+        <rect class="boite" x="228" y="220" width="60" height="65"/>
+        <text x="258" y="245" text-anchor="middle">c1</text>
+      </svg>
+      <figcaption>Schéma 2.</figcaption>
+    </figure>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 5 <span>Question 3, schéma 1</span></p>
+      <p>Indiquez si l'agencement des objets représentés est conforme au diagramme de classes ET, si OUI, représentez le diagramme des objets correspondant au schéma (sans représenter les segments).</p>
+    </div>
+    <div class="atelier" id="td4-ex5-q3-s1" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Schéma 1 : conforme ?",
+  "options": {
+    "lignes": 5
+  },
+  "solution": "Oui, il est conforme. Toutes les figures qui en contiennent d'autres sont des polygones (le carré c1, le carré noir, le triangle t1 et le triangle blanc) ; aucun cercle ne contient de figure. Chaque figure est directement dans une seule autre (0..1), et aucun segment n'est partagé entre deux figures."
+}
+      </script>
+    </div>
+    <div class="atelier" id="td4-ex5-q3-objets" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Schéma 1 : diagramme d'objets",
+  "hauteur": 620,
+  "consigne": "<p>Noms à donner aux figures qui n'en ont pas : <code>carreNoir</code>, <code>triangleBlanc</code>, <code>rondBlanc</code>, <code>carreBlanc</code>. Indiquer <code>pleine</code> pour chaque objet, et <code>note</code> pour ceux qui portent un nom sur le schéma. Relier un polygone à chaque figure qu'il contient directement par une agrégation, losange du côté du polygone.</p>",
+  "options": {
+    "objets": true
+  },
+  "solution": [
+    "objet c1 : Carré",
+    "  pleine = false",
+    "  note = \"c1\"",
+    "objet r2 : Cercle",
+    "  pleine = false",
+    "  note = \"r2\"",
+    "objet carreNoir : Carré",
+    "  pleine = true",
+    "objet r1 : Cercle",
+    "  pleine = false",
+    "  note = \"r1\"",
+    "objet t1 : Triangle",
+    "  pleine = true",
+    "  note = \"t1\"",
+    "objet triangleBlanc : Triangle",
+    "  pleine = false",
+    "objet c2 : Carré",
+    "  pleine = true",
+    "  note = \"c2\"",
+    "objet rondBlanc : Cercle",
+    "  pleine = false",
+    "objet carreBlanc : Carré",
+    "  pleine = false",
+    "c1 o-- r2",
+    "c1 o-- carreNoir",
+    "c1 o-- t1",
+    "carreNoir o-- r1",
+    "t1 o-- triangleBlanc",
+    "t1 o-- rondBlanc",
+    "t1 o-- carreBlanc",
+    "triangleBlanc o-- c2"
+  ],
+  "explication": "<p>Le lien suit l'imbrication <em>directe</em> : c2 est dans triangleBlanc, pas dans t1 ni dans c1. Les objets qui n'ont pas de nom sur le schéma n'ont pas de <code>note</code>. r1 est blanc : il n'est pas plein, même s'il est posé sur un carré noir.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 5 <span>Question 3, schéma 2</span></p>
+      <p>Même question pour le schéma 2 : le diagramme d'objets n'est à faire que si l'agencement est conforme.</p>
+    </div>
+    <div class="atelier" id="td4-ex5-q3-s2" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Schéma 2 : conforme ?",
+  "options": {
+    "lignes": 6
+  },
+  "solution": "Non, il n'est pas conforme, donc pas de diagramme d'objets à faire :\n- le cercle blanc contient des figures (le petit triangle noir et c2), or seul un Polygone peut en contenir ;\n- le petit triangle noir et c2 ont un côté en commun : ce segment appartiendrait à deux figures, ce que le XOR interdit ;\n- le segment isolé dans le grand triangle n'est pas une Figure : il ne peut pas y être imbriqué."
+}
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>D'une classe Java à sa représentation <span class="ref">TD, p. 4–5</span></h2>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 6 <span>Représentation graphique d'une classe Java</span></p>
+      <p>Donner une représentation graphique de la classe PointPlan suivante.</p>
+<pre><code class="language-java">public class PointPlan {
+
+    private float abscisse;
+    private float ordonnee;
+
+    public PointPlan() {
+        this.abscisse = 0 ;
+        this.ordonnee = 0 ;
+    }
+    public PointPlan(float x, float y) {
+        this.abscisse = x ;
+        this.ordonnee = y ;
+    }
+    public PointPlan(PointPlan p) {
+        this.abscisse = p.getAbscisse() ;
+        this.ordonnee = p.getOrdonnee() ;
+    }
+    private float getOrdonnee() {
+        return this.ordonnee ;
+    }
+    private float getAbscisse() {
+        return this.abscisse ;
+    }
+    public boolean egaleA (PointPlan p) {
+        return (this.getAbscisse() == p.getAbscisse()
+                &amp;&amp; this.getOrdonnee() ==  p.getOrdonnee()) ;
+    }
+    public void init() {
+        Scanner input = new Scanner(System.in);
+        System.out.print("Abscisse ? ") ;
+        this.abscisse = input.nextInt();
+        System.out.print("Ordonnée ? ") ;
+        this.ordonnee = input.nextInt();
+    }
+    public void translate(float dx, float dy) {
+        this.abscisse = this.abscisse + dx ;
+        this.ordonnee = this.ordonnee + dy ;
+    }
+    public double distance() {
+        return Math.sqrt(this.abscisse * this.abscisse +
+                         this.ordonnee * this.ordonnee) ;
+    }
+    public String toString() {
+        return "(" + this.getAbscisse() + "," + this.getOrdonnee() + ")";
+    }
+    public void affiche() {
+        System.out.println(this.toString()) ;
+    }
+}</code></pre>
+    </div>
+    <div class="atelier" id="td4-ex6" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Classe PointPlan",
+  "hauteur": 420,
+  "options": {
+    "methodes": true
+  },
+  "consigne": "<p>Une méthode s'écrit dans le formulaire de la classe ou dans la vue texte, sa visibilité en tête : <code>+ translate(dx : float, dy : float) : void</code>.</p>",
+  "solution": [
+    "classe PointPlan",
+    "  - abscisse : float",
+    "  - ordonnee : float",
+    "  + PointPlan()",
+    "  + PointPlan(x : float, y : float)",
+    "  + PointPlan(p : PointPlan)",
+    "  - getOrdonnee() : float",
+    "  - getAbscisse() : float",
+    "  + egaleA(p : PointPlan) : boolean",
+    "  + init() : void",
+    "  + translate(dx : float, dy : float) : void",
+    "  + distance() : double",
+    "  + toString() : String",
+    "  + affiche() : void"
+  ],
+  "explication": "<p><code>private</code> donne <code>-</code>, <code>public</code> donne <code>+</code>. Les trois constructeurs sont trois méthodes de même nom : la surcharge se voit aux paramètres. Le diagramme montre les attributs puis les méthodes, sans leur corps. « Comparer » ne regarde que les noms des membres, pas les visibilités ni les paramètres.</p><p>Le paramètre <code>p</code> de <code>egaleA</code> et du constructeur de copie, et le <code>Scanner</code> de <code>init</code>, sont de simples dépendances ; elles ne sont en général pas dessinées.</p>"
+}
+      </script>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>« Est une sorte de » : généralisation. « Est composé de », avec des parties propres : composition ; avec des parties partageables : agrégation. Sinon : association.</li>
+        <li>Un même mot peut cacher deux relations : « un répertoire contient des fichiers qui peuvent être des documents » donne une composition et un héritage.</li>
+        <li>Un attribut qui dépend d'un couple d'objets va dans une classe d'association. Elle n'existe qu'une fois par couple : s'il faut plusieurs objets pour un même couple, on prend une classe ordinaire.</li>
+        <li>Deux associations binaires ne remplacent pas une relation entre trois classes : il faut un objet qui les relie (phrase 6).</li>
+        <li>Le patron composite modélise une structure récursive : la classe mère commune permet au conteneur de contenir aussi des conteneurs.</li>
+        <li>Pour rendre une contrainte impossible à violer, on la met dans la structure (les opérandes de l'exercice 3) plutôt que dans une multiplicité <code>0..1</code>.</li>
+        <li>Conforme signifie que chaque objet et chaque lien existent dans le diagramme de classes : seule une classe qui porte l'association peut l'utiliser.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Agrégation ou composition : une pièce et ses murs ? un répertoire et ses fichiers ?</summary>
+        <div><p>Pièce et murs : agrégation, car un mur peut séparer deux pièces. Répertoire et fichiers : composition, car un fichier est dans un seul répertoire et disparaît avec lui.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quand une classe d'association ne convient-elle pas ?</summary>
+        <div><p>Quand il faut plusieurs objets pour un même couple : elle n'existe qu'une fois par couple. On prend alors une classe ordinaire, reliée aux deux autres. La correction du cinéma garde la classe d'association, car l'énoncé ne demande pas plusieurs séances : voir la phrase 12.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Où se place la multiplicité en UML, par rapport à la cardinalité d'un modèle E/A ?</summary>
+        <div><p>Du côté opposé : la multiplicité UML est près de la classe dont on compte les objets, la cardinalité E/A près de l'entité qui participe.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Comment voir sur un diagramme d'objets qu'il y a composition ou partage ?</summary>
+        <div><p>Si deux tout sont reliés au même objet, il y a partage : agrégation. Deux objets de mêmes valeurs mais distincts ne sont pas partagés.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="td-03-cas-utilisation.html"><small>← TD 3</small>Cas d'utilisation et séquences</a>
+    <a class="suivant" href="td-05-gestion-de-projet.html"><small>TD 5 →</small>Gestion de projet</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Génie logiciel · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

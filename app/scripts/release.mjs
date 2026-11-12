@@ -1,11 +1,11 @@
-// Publie une version de Studies : `npm run release` (depuis app/, sur le PC Windows).
+// Publie une version d’Universal Learn Academy : `npm run release` (depuis app/, sur le PC Windows).
 //
 // Sur le modèle de CV Studio :
 // 1. Vérifie le dépôt : branche main, aucune modification, à jour avec GitHub, GitHub
 //    CLI connectée, version pas encore publiée (sinon : augmenter `version` dans
 //    app/package.json). Si la release existe mais qu'il lui manque des fichiers, elle
 //    est réparée.
-// 2. Construit (construire.mjs) : cours préparés sans les données personnelles,
+// 2. Construit (construire.mjs) : outils préparés sans les données personnelles,
 //    installeur Windows et AppImage Linux (dans WSL), chacun avec sa carte de blocs
 //    et son latest*.yml. Le contrôle du paquet fait échouer la construction si une
 //    donnée personnelle s'y trouve.
@@ -46,7 +46,7 @@ function lancer(commande, args, { capture = false, toleree = false, cwd = app } 
   return { ok: r.status === 0, sortie: (r.stdout || '').trim() };
 }
 
-console.log(`Studies ${version} → ${depot} (${tag})`);
+console.log(`Universal Learn Academy ${version} → ${depot} (${tag})`);
 
 /* 1. Vérifications ---------------------------------------------------------- */
 console.log('\n▸ Vérification du dépôt');
@@ -55,7 +55,7 @@ if (!lancer('gh', ['auth', 'status'], { capture: true, toleree: true }).ok) eche
 const branche = lancer('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { capture: true, cwd: racine }).sortie;
 if (branche !== 'main') echec(`Branche actuelle : ${branche}. Publier depuis main.`);
 const modifs = lancer('git', ['status', '--porcelain'], { capture: true, cwd: racine }).sortie;
-if (modifs) echec(`Modifications non enregistrées :\n${modifs}\nLes committer (ou les annuler) avant de publier : les cours livrés sont ceux du dernier commit.`);
+if (modifs) echec(`Modifications non enregistrées :\n${modifs}\nLes committer (ou les annuler) avant de publier : les outils livrés sont ceux du dernier commit.`);
 lancer('git', ['fetch', 'origin', 'main', '--quiet'], { cwd: racine });
 const tete = lancer('git', ['rev-parse', 'HEAD'], { capture: true, cwd: racine }).sortie;
 const distante = lancer('git', ['rev-parse', 'origin/main'], { capture: true, cwd: racine }).sortie;
@@ -86,10 +86,10 @@ try {
 
 /* 3. Publication ------------------------------------------------------------ */
 const notes = [
-  `Studies ${version} : cours, quiz et TD interactifs de licence informatique.`,
+  `Universal Learn Academy ${version} : cours, quiz et TD interactifs ; les cours se téléchargent depuis le catalogue, à l’accueil de l’application.`,
   '',
-  `- **Windows** : \`Studies-Setup-${version}.exe\`. Installation pour l’utilisateur courant, sans droits administrateur. L’application n’est pas signée : SmartScreen demande « Informations complémentaires », puis « Exécuter quand même ».`,
-  `- **Linux** : \`Studies-${version}.AppImage\`. Le rendre exécutable (\`chmod +x\`), puis le lancer.`,
+  `- **Windows** : \`Universal-Learn-Academy-Setup-${version}.exe\`. Installation pour l’utilisateur courant, sans droits administrateur. L’application n’est pas signée : SmartScreen demande « Informations complémentaires », puis « Exécuter quand même ».`,
+  `- **Linux** : \`Universal-Learn-Academy-${version}.AppImage\`. Le rendre exécutable (\`chmod +x\`), puis le lancer.`,
   '',
   'Les versions suivantes s’installent automatiquement au démarrage (désactivable dans les paramètres). Les fichiers `.blockmap` et `latest*.yml` servent à ces mises à jour.',
 ].join('\n');
@@ -99,7 +99,7 @@ if (reparation) {
   lancer('gh', ['release', 'upload', tag, ...chemins, '--repo', depot, '--clobber']);
 } else {
   console.log(`\n▸ Création de la release ${tag} (brouillon le temps de l’envoi)`);
-  lancer('gh', ['release', 'create', tag, '--repo', depot, '--target', 'main', '--title', `Studies ${version}`, '--notes', notes, '--draft']);
+  lancer('gh', ['release', 'create', tag, '--repo', depot, '--target', 'main', '--title', `Universal Learn Academy ${version}`, '--notes', notes, '--draft']);
   lancer('gh', ['release', 'upload', tag, ...chemins, '--repo', depot, '--clobber']);
 }
 if (!brouillon) lancer('gh', ['release', 'edit', tag, '--repo', depot, '--draft=false', '--latest']);
@@ -117,4 +117,4 @@ for (const [i, n] of fichiers.entries()) {
   else console.log(`  ✓ ${n}`);
 }
 if (problemes.length) echec(`Release incomplète : ${problemes.join(', ')}.\nRelancer \`npm run release\` : elle sera réparée.`);
-console.log(`\n✓ Studies ${version} publiée : ${publiee.url}`);
+console.log(`\n✓ Universal Learn Academy ${version} publiée : ${publiee.url}`);

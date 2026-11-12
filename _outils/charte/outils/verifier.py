@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Vérifie qu'une page HTML respecte la charte des cours (studies/_outils/charte).
+"""Vérifie qu'une page HTML respecte la charte des cours (_outils/charte).
 
 Usage :
     python _outils/charte/outils/verifier.py CHEMIN [CHEMIN ...]
@@ -16,6 +16,7 @@ classe absente de la feuille de style est une erreur (on n'invente pas de
 classe dans une page, on l'ajoute d'abord à la charte).
 """
 
+import os
 import re
 import sys
 from html.parser import HTMLParser
@@ -38,7 +39,10 @@ COULEURS_PERMISES = {"none", "currentcolor", "transparent"}
 DOSSIERS_IGNORES = {"vendor", "Documentation", ".git", "node_modules"}
 # Dossiers d'outils de studies/ dont les scripts peuvent être chargés
 DOSSIERS_OUTILS = ("_outils/",)
-RACINE = CHARTE.parent.parent
+OUTILS = CHARTE.parent
+# Racine des données : le dossier qui contient _outils (dépôt), ou ULA_RACINE
+# (application installée : les outils sont livrés à part)
+RACINE = Path(os.environ["ULA_RACINE"]).resolve() if os.environ.get("ULA_RACINE") else OUTILS.parent
 
 
 def classes_css(fichier, vus=None):
@@ -138,6 +142,33 @@ class Analyseur(HTMLParser):
             self.scripts_en_ligne.append(c.ligne)
 
 
+_LIENS = None
+
+
+def dans_un_espace(cible):
+    """Un fichier absent d'un cours du catalogue peut être dans le dossier de ce cours de
+    l'espace d'un profil (son TP, son devoir) : le serveur l'y trouve (superposition)."""
+    global _LIENS
+    try:
+        rel = cible.resolve().relative_to(RACINE).parts
+    except ValueError:
+        return False
+    if len(rel) < 4 or rel[0] != "explore":
+        return False
+    if _LIENS is None:
+        _LIENS = {}
+        for profil in RACINE.iterdir():
+            if not (profil / "ula-profil.json").is_file():
+                continue
+            for lien in profil.rglob("ula-lien.json"):
+                try:
+                    import json
+                    _LIENS.setdefault(json.loads(lien.read_text(encoding="utf-8")).get("cours"), []).append(lien.parent)
+                except (OSError, ValueError):
+                    pass
+    return any(d.joinpath(*rel[3:]).exists() for d in _LIENS.get(rel[2], []))
+
+
 def verifier(chemin, classes_css_page, matieres, explicite):
     """Renvoie (erreurs, avertissements) ou None si la page n'utilise pas la charte."""
     try:
@@ -156,7 +187,15 @@ def verifier(chemin, classes_css_page, matieres, explicite):
         morceaux = urlsplit(url)
         if morceaux.scheme or morceaux.netloc or not morceaux.path:
             return None
-        return (chemin.parent / unquote(morceaux.path)).resolve()
+        p = unquote(morceaux.path)
+        if p.startswith("/"):
+            # Lien depuis la racine du serveur (pages de l'espace d'un profil, qui peuvent
+            # être déplacées) : /_outils/… pour les outils, /… pour la racine des données
+            p = p.lstrip("/")
+            if p.startswith("_outils/"):
+                return (OUTILS / p[len("_outils/"):]).resolve()
+            return (RACINE / p).resolve()
+        return (chemin.parent / p).resolve()
 
     def trouver(tag=None, classe=None):
         return [e for e in a.elements
@@ -253,18 +292,18 @@ def verifier(chemin, classes_css_page, matieres, explicite):
     index = chemin.name == "index.html" or (cours and "sans-numeros" in cours[0].classes) or bool(portail)
     if not trouver(classe="barre"):
         err(1, "barre du haut (header.barre) manquante")
-    # Fil d'Ariane : « studies » d'abord, lien vers l'accueil général (sauf sur celui-ci)
+    # Fil d'Ariane : « ULA » d'abord, lien vers l'accueil général (sauf sur celui-ci)
     fils = trouver(classe="fil")
-    if fils and relatif is not None and relatif != Path("index.html"):
+    if fils and relatif is not None and relatif not in (Path("index.html"), Path("_outils/ula/accueil.html")):
         crans = [e for e in fils[0].enfants if "pastille" not in e.classes]
         premier = crans[0] if crans else None
-        if premier is None or premier.tag != "a" or premier.texte.strip() != "studies":
-            err(fils[0].ligne, "fil d'Ariane : il doit commencer par « studies », lien vers l'accueil général "
-                               "(index.html à la racine de studies/, ../../../index.html depuis generated_courses/)")
+        if premier is None or premier.tag != "a" or premier.texte.strip() != "ULA":
+            err(fils[0].ligne, "fil d'Ariane : il doit commencer par « ULA », lien vers l'accueil général "
+                               "(index.html à la racine, ../../../../index.html depuis explore/<domaine>/<cours>/generated_courses/)")
         elif not dans_charte:
             cible = resoudre(premier.attrs.get("href", ""))
             if cible != (RACINE / "index.html").resolve():
-                err(premier.ligne, f"fil d'Ariane : « studies » doit mener à l'accueil général, "
+                err(premier.ligne, f"fil d'Ariane : « ULA » doit mener à l'accueil général, "
                                    f"pas à « {premier.attrs.get('href', '')} »")
     principal = cours or quiz or portail
     if not principal:
@@ -362,7 +401,7 @@ def verifier(chemin, classes_css_page, matieres, explicite):
             if not url or url.startswith(("#", "mailto:", "data:")):
                 continue
             cible = resoudre(url)
-            if cible is not None and not cible.exists():
+            if cible is not None and not cible.exists() and not dans_un_espace(cible):
                 message = f"fichier introuvable : « {url} »"
                 (avert if e.tag == "a" else err)(e.ligne, message)
 

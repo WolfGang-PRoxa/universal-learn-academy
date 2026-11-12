@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TD 4 · Réseau social SocialCat · Bases de données L2</title>
+<meta name="description" content="TD 4 interactif de bases de données (L2) : modéliser le réseau social SocialCat (utilisateurs qui se suivent, groupes, posts et commentaires, médias, publicités ciblées par centres d'intérêt), le traduire en relations et vérifier que le modèle permet les exploitations demandées, à faire dans la page.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Bases de données</a>
+    <span aria-current="page">TD 4 · SocialCat</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> TD 4 · L2 S3 · interactif</p>
+    <h1>TD 4 : le réseau social SocialCat</h1>
+    <p class="chapeau">Un cahier des charges complet, à modéliser de bout en bout : deux associations réflexives, une contrainte sur le type d'un média, des publicités ciblées. Le TD met en œuvre le cours 1, et les possibilités d'exploitation servent à vérifier le modèle obtenu.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TD/TD4_A_SocialCat.pdf">TD4_A_SocialCat.pdf</a> · 2 pages</dd></div>
+      <div><dt>Auteurs du sujet</dt><dd>Julien Rouaux, Camille Remoue, Guillaume Richard</dd></div>
+      <div><dt>Cours</dt><dd><a href="cours-01-modele-entite-association.html">Cours 1 · Modèle entité-association</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Tirer d'un cahier des charges les entités, les associations et leurs multiplicités.</li>
+        <li>Modéliser deux associations réflexives : suivre un utilisateur, commenter un post.</li>
+        <li>Distinguer ce que le modèle exprime de ce qui relève d'une contrainte (âge minimal, type de média).</li>
+        <li>Vérifier un modèle en déroulant les requêtes qu'il doit permettre.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Notions utilisées</p>
+      <ul>
+        <li><a href="cours-01-modele-entite-association.html">Cours 1</a> : associations, réflexives et plurielles, vérification d'un diagramme, règles de passage au relationnel.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Mode d'emploi</p>
+    <ul>
+      <li>La réponse se construit sur le dessin ou dans la vue texte (« Les deux ») ; les deux restent synchronisés.</li>
+      <li>« Vérifier » contrôle la forme sans rien dévoiler, « Comparer » mesure l'écart avec une solution proposée, « Claude » répond aux questions et corrige. Les solutions restent cachées ; aucune ne vient des enseignants : sur un sujet aussi ouvert, un écart n'est pas forcément une erreur.</li>
+      <li>Une association réflexive s'écrit avec ses rôles : <code>Utilisateur "0..* suiveur" -- "0..* suivi" Utilisateur : suivre</code>.</li>
+      <li>Le travail s'enregistre tout seul. Avec le serveur local (<code>studies/lancer.bat</code>), il va dans <code>td_results/</code> et Claude est disponible.</li>
+    </ul>
+  </div>
+
+  <p><span class="badge a-verifier">À vérifier</span> Le sujet porte l'en-tête « L3 Informatique, Bases de données 2, 2022-23 » : c'est un sujet de projet de L3 repris en TD. Il ne pose aucune question ; les trois questions ci-dessous (<span class="badge ajout">Ajout</span>) sont celles des séances précédentes : modèle conceptuel, modèle relationnel, puis vérification par les exploitations prévues.</p>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le cahier des charges <span class="ref">TD, p. 1–2</span></h2>
+    <p>Le sujet se présente comme une commande de client : une présentation générale, une présentation détaillée, puis les requêtes que la base devra permettre.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Présentation générale</p>
+      <p>La troisième guerre mondiale a éclaté : elle opposait l'Empire des chats et les humains. Malheureusement, l'humanité est sous contrôle et l'ère des chats commence. Votre client Garfield, directeur du nouveau réseau social en vogue SocialCat, décide de créer une base de données.</p>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Présentation détaillée</p>
+      <p>Les utilisateurs sont des chats qui ont un pseudonyme, un nom, un prénom, une date de naissance et une photo de profil. On vérifiera que nos chats dépassent l'âge de 1 an pour créer leur profil. Malgré la vie solitaire que mènent les chats, certains voudront former des liens d'amitié. Autrement dit, un utilisateur peut en suivre d'autres et être suivi.</p>
+      <p>Les chats ont la possibilité de créer et participer à des groupes. Chacun des groupes a un nom et une brève description. Son créateur est connu des utilisateurs. Les échanges inter-utilisateurs se font au travers de post qui doivent obligatoirement être publiés dans un groupe.</p>
+      <p>Un post est publié par un auteur et contient du texte. Il est daté (à la seconde), et peut être liké par des utilisateurs (on se contente de stocker un entier qui est incrémenté manuellement). Toutefois, les chats aiment bien associer des memes à leur post. Nous devons donc stocker des médias : un média est défini par un emplacement (un lien), et un type (le type ne peut qu'être une « image » ou « vidéo »). Une image peut être utilisée en photo de profil.</p>
+      <p>Comme les utilisateurs d'un réseau social ne sont souvent pas d'accord, nous avons mis en place la possibilité de rédiger plusieurs commentaires sous chaque post. Puisqu'un commentaire est un post, il peut également être commenté.</p>
+      <p>Afin de se faire un max de thunes, des publicités sont affichées sur SocialCat. Une publicité est définie par le nom de l'annonceur et l'url fournie par ce dernier : la base de données ne stocke pas l'image ou la vidéo affichée. Enfin, une publicité est associée à un ou plusieurs centres d'intérêts. Autrement dit, les utilisateurs qui sont associés à des centres d'intérêts se verront ciblés par les publicités ciblant ces centres d'intérêts. Par exemple, la chaîne de restaurants gastronomiques ChaChéBon propose des menus de croquettes de haute qualité. L'entreprise choisit de cibler les chats qui aiment la gastronomie et la cuisine.</p>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Possibilités d'exploitation offertes</p>
+      <ul>
+        <li>On peut donner la moyenne d'âge des chats ayant un centre d'intérêt commun.</li>
+        <li>On peut compter le nombre de posts d'un utilisateur.</li>
+        <li>On peut compter le nombre total de likes reçus par un utilisateur.</li>
+        <li>On peut compter le nombre d'utilisateurs ayant un centre d'intérêt dans un groupe.</li>
+        <li>On peut ajouter un trigger pour vérifier que chaque nouvelle insertion d'un utilisateur ait un âge supérieur à 1 an.</li>
+        <li>On peut donner la publicité qui cible le plus de personnes.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le modèle conceptuel</h2>
+    <p>Huit entités environ, et autant de questions à se poser sur chaque phrase du texte : est-ce une chose (une entité), une propriété (un attribut), un lien (une association), ou une règle (une contrainte) ?</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 1 <span>Diagramme de classes</span></p>
+      <p><span class="badge ajout">Ajout</span> Donnez le modèle conceptuel de SocialCat en utilisant le formalisme UML.</p>
+    </div>
+    <div class="atelier" id="td4-q1-classes" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "Question 1 · Diagramme de classes de SocialCat",
+        "options": {
+          "bdd": true
+        },
+        "hauteur": 560,
+        "disposition": {
+          "Centre_interet": [
+            20,
+            60
+          ],
+          "Utilisateur": [
+            330,
+            40
+          ],
+          "Media": [
+            740,
+            60
+          ],
+          "Publicite": [
+            20,
+            380
+          ],
+          "Groupe": [
+            330,
+            400
+          ],
+          "Post": [
+            680,
+            380
+          ]
+        },
+        "solution": [
+          "classe Utilisateur",
+          "  id_utilisateur {PK}",
+          "  pseudo",
+          "  nom",
+          "  prenom",
+          "  date_naiss",
+          "classe Media",
+          "  id_media {PK}",
+          "  lien",
+          "  type_media",
+          "classe Groupe",
+          "  id_groupe {PK}",
+          "  nom_groupe",
+          "  description",
+          "classe Post",
+          "  id_post {PK}",
+          "  texte",
+          "  date_post",
+          "  nb_likes",
+          "classe Centre_interet",
+          "  id_centre {PK}",
+          "  libelle",
+          "classe Publicite",
+          "  id_pub {PK}",
+          "  nom_annonceur",
+          "  url",
+          "Utilisateur \"0..* suiveur\" -- \"0..* suivi\" Utilisateur : suivre",
+          "Utilisateur \"0..*\" -- \"0..1\" Media : a pour photo de profil",
+          "Groupe \"0..*\" -- \"1..1\" Utilisateur : créer",
+          "Utilisateur \"0..*\" -- \"0..*\" Groupe : participer",
+          "Post \"0..*\" -- \"1..1\" Utilisateur : publier",
+          "Post \"0..*\" -- \"1..1\" Groupe : être publié dans",
+          "Post \"0..1 commenté\" -- \"0..* commentaire\" Post : commenter",
+          "Post \"0..*\" -- \"0..*\" Media : illustrer",
+          "Utilisateur \"0..*\" -- \"0..*\" Centre_interet : s'intéresser à",
+          "Publicite \"0..*\" -- \"1..*\" Centre_interet : cibler"
+        ],
+        "explication": "<p>Solution proposée ; d'autres choix se défendent.</p><ul><li><b>Utilisateur</b> : un identifiant numérique (le pseudonyme peut changer). La photo de profil est un média : association <code>0..1</code> vers Media plutôt qu'un attribut, puisque « une image peut être utilisée en photo de profil ».</li><li><b>Suivre</b> : réflexive <code>* — *</code>, avec deux rôles (suiveur, suivi) : elle n'est pas symétrique.</li><li><b>Groupe</b> : deux associations avec Utilisateur (association plurielle) : son créateur (<code>1..1</code>) et ses membres (<code>* — *</code>).</li><li><b>Post</b> : un auteur et un groupe, obligatoires (<code>1..1</code>). Les likes ne sont qu'un compteur : un attribut, et non une association avec les utilisateurs. Un commentaire est un post : réflexive « commenter », <code>0..1</code> post commenté, <code>0..*</code> commentaires ; un post qui n'a pas de post commenté est un post « racine ».</li><li><b>Media</b> : le type (« image » ou « vidéo ») est un attribut à valeurs contrôlées, pas une entité.</li><li><b>Publicité</b> : ciblée sur <code>1..*</code> centres d'intérêt ; les utilisateurs sont reliés aux centres d'intérêt, et la cible d'une publicité se déduit par ces deux associations : la relier directement aux utilisateurs stockerait une information calculable.</li></ul><p>Restent deux contraintes, que le diagramme n'exprime pas : l'âge d'au moins un an (un <code>CHECK</code> ou un trigger) et le type de média (un <code>CHECK</code>).</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Repérer les verbes du texte : suivre, créer, participer, publier, associer, commenter, cibler. Chacun est une association : entre quelles entités, avec quelles multiplicités ? Une phrase comme « on se contente de stocker un entier » indique un attribut.</p></div>
+    </details>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le modèle relationnel</h2>
+    <p>La traduction applique les quatre règles du cours ; les deux réflexives demandent de bien nommer les clés étrangères.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 2 <span>Les relations</span></p>
+      <p><span class="badge ajout">Ajout</span> Décrivez l'ensemble des relations issues de cette modélisation.</p>
+    </div>
+    <div class="atelier" id="td4-q2-relationnel" data-editeur="relationnel">
+      <script type="application/json">
+      {
+        "titre": "Question 2 · Modèle relationnel de SocialCat",
+        "consigne": "<p>Deux clés étrangères vers la même relation se nomment d'après leur rôle : <code>#id_suiveur(Utilisateur.id_utilisateur)</code>, <code>#id_suivi(Utilisateur.id_utilisateur)</code>. Écrire d'abord les relations référencées.</p>",
+        "vue": "les-deux",
+        "solution": [
+          "Media(_id_media_, lien, type_media)",
+          "Utilisateur(_id_utilisateur_, pseudo, nom, prenom, date_naiss, #id_photo(Media.id_media))",
+          "Suivre(_#id_suiveur_(Utilisateur.id_utilisateur), _#id_suivi_(Utilisateur.id_utilisateur))",
+          "Groupe(_id_groupe_, nom_groupe, description, #id_createur(Utilisateur.id_utilisateur))",
+          "Participer(_#id_utilisateur_(Utilisateur), _#id_groupe_(Groupe))",
+          "Post(_id_post_, texte, date_post, nb_likes, #id_auteur(Utilisateur.id_utilisateur), #id_groupe(Groupe), #id_post_commente(Post.id_post))",
+          "Illustrer(_#id_post_(Post), _#id_media_(Media))",
+          "Centre_interet(_id_centre_, libelle)",
+          "Interesser(_#id_utilisateur_(Utilisateur), _#id_centre_(Centre_interet))",
+          "Publicite(_id_pub_, nom_annonceur, url)",
+          "Cibler(_#id_pub_(Publicite), _#id_centre_(Centre_interet))"
+        ],
+        "explication": "<p>Règle 1 : six entités, six relations. Règle 2 : les cinq associations <code>* — *</code> (suivre, participer, illustrer, s'intéresser, cibler) deviennent des relations, de clé le couple des clés étrangères. Règle 3 pour les autres : la photo de profil dans Utilisateur (peut être vide), le créateur dans Groupe, l'auteur, le groupe et le post commenté dans Post (ce dernier vide pour un post racine).</p><p>Contraintes à ajouter à la création des tables : <code>CHECK (type_media IN ('image', 'vidéo'))</code>, <code>nb_likes</code> positif ou nul et <code>DEFAULT 0</code>, <code>date_post</code> de type <code>timestamp</code> (« à la seconde »), un pseudonyme <code>UNIQUE</code>, et l'âge d'au moins un an : <code>CHECK (date_naiss &lt;= CURRENT_DATE - INTERVAL '1 year')</code> à l'insertion, ou le trigger demandé dans les exploitations.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Vérifier le modèle par ses exploitations</h2>
+    <p>Un modèle se vérifie en déroulant, sur le papier, les requêtes qu'il doit permettre : pour chacune, quelles relations faut-il joindre, et quelles colonnes agréger ?</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3 <span>Les six exploitations</span></p>
+      <p><span class="badge ajout">Ajout</span> Pour chacune des six possibilités d'exploitation du sujet, indiquez les relations et les colonnes de votre modèle qui permettent de la réaliser, et l'opération à faire (jointure, comptage, moyenne, regroupement). Si l'une est impossible, corrigez le modèle.</p>
+    </div>
+    <div class="atelier" id="td4-q3-texte" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Question 3 · Le modèle permet-il les exploitations ?",
+        "options": {
+          "lignes": 12,
+          "placeholder": "1. Moyenne d'âge par centre d'intérêt : …"
+        },
+        "solution": "1. Moyenne d'âge par centre d'intérêt : Interesser joint à Utilisateur ; âge calculé à partir de date_naiss (age(date_naiss)), moyenne (avg) regroupée par id_centre (GROUP BY).\n2. Nombre de posts d'un utilisateur : Post, count(*) WHERE id_auteur = … (ou GROUP BY id_auteur pour tous). Faut-il compter les commentaires ? Ce sont des posts : oui, sauf à filtrer id_post_commente IS NULL.\n3. Total des likes reçus : sum(nb_likes) des posts de Post dont il est l'auteur.\n4. Utilisateurs d'un groupe ayant un centre d'intérêt : Participer joint à Interesser sur id_utilisateur, count(DISTINCT id_utilisateur) pour un groupe et un centre (ou GROUP BY id_groupe, id_centre).\n5. Âge d'au moins un an à l'insertion : trigger BEFORE INSERT sur Utilisateur, qui refuse la ligne si date_naiss > CURRENT_DATE - INTERVAL '1 year' (un CHECK suffit aussi).\n6. Publicité qui cible le plus de personnes : Cibler joint à Interesser sur id_centre ; count(DISTINCT id_utilisateur) par publicité, puis la plus grande (ORDER BY … DESC LIMIT 1).",
+        "explication": "<p>Chaque exploitation se déroule sur le modèle : si l'information n'est pas atteignable par des jointures, le modèle est incomplet. Deux pièges : compter un utilisateur deux fois quand il partage plusieurs centres d'intérêt avec une publicité (d'où <code>DISTINCT</code>), et oublier qu'un commentaire est aussi un post. Les triggers sont au programme de L3 (Bases de données 2) ; en L2, un <code>CHECK</code> sur la date de naissance donne le même contrôle à l'insertion.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Pour « la publicité qui cible le plus de personnes » : une publicité cible des centres d'intérêt, et des utilisateurs ont ces centres d'intérêt. Combien de jointures, et que compter exactement ?</p></div>
+    </details>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>Lire le cahier des charges phrase par phrase : une chose identifiable est une entité, une propriété un attribut, un verbe une association, une règle une contrainte.</li>
+        <li>Un compteur (les likes) est un attribut ; on n'en fait une association que si l'on doit savoir qui a liké.</li>
+        <li>Une association réflexive non symétrique (suivre, commenter) a deux rôles, qui nomment ses deux clés étrangères.</li>
+        <li>Deux associations entre les mêmes entités (créer et participer) ne se confondent pas : elles n'ont ni le même sens ni les mêmes multiplicités.</li>
+        <li>Une information qui se déduit par jointure (les utilisateurs ciblés par une publicité) ne se stocke pas.</li>
+        <li>Un modèle se vérifie en déroulant les requêtes qu'il doit permettre.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi les likes sont-ils un attribut et non une association ?</summary>
+        <div><p>Le sujet ne demande qu'un entier, incrémenté à la main : on ne sait pas qui a liké. Une association Utilisateur — Post serait nécessaire pour empêcher un double like.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Comment représenter « un commentaire est un post » ?</summary>
+        <div><p>Par une association réflexive sur Post : un post commente <code>0..1</code> post, et reçoit <code>0..*</code> commentaires. Au relationnel, une clé étrangère <code>#id_post_commente</code> dans Post.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi ne pas relier Publicite à Utilisateur ?</summary>
+        <div><p>Les utilisateurs ciblés se déduisent des centres d'intérêt : les stocker ferait double emploi, avec un risque d'incohérence.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Le type d'un média, « image » ou « vidéo » : entité ou attribut ?</summary>
+        <div><p>Un attribut, dont les valeurs sont contrôlées par un <code>CHECK</code>.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="td-03-universite-cd-jazz.html"><small>← TD 3</small>Université et CD de jazz</a>
+    <a class="suivant" href="td-05-zoo.html"><small>TD 5 →</small>Gestion d'un zoo</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

@@ -3,7 +3,7 @@ rem Ouvre Jupyter dans l'environnement Python commun des notebooks (cours, devoi
 rem La premiere fois, cree l'environnement dans %LOCALAPPDATA%\studies-python, hors de
 rem Google Drive (quelques minutes), puis le remet a jour quand
 rem _outils\environnements\python\requirements.txt change.
-rem   lancer-jupyter.bat                      Jupyter a la racine de studies
+rem   lancer-jupyter.bat                      Jupyter a la racine d ula
 rem   lancer-jupyter.bat <dossier|notebook>   Jupyter sur ce dossier ou ce notebook
 rem                                           (on peut aussi glisser un notebook sur ce fichier)
 rem   lancer-jupyter.bat --installer          cree ou met a jour l'environnement, sans lancer Jupyter
@@ -49,7 +49,7 @@ if /i "%~1"=="--installer" (
   "%PY%" --version
   exit /b 0
 )
-rem Sans argument, Jupyter s'ouvre sur la racine de studies ; avec un dossier, sur ce dossier ;
+rem Sans argument, Jupyter s'ouvre sur la racine d ula ; avec un dossier, sur ce dossier ;
 rem avec un notebook, sur la racine, notebook ouvert.
 if "%~1"=="" (
   "%PY%" -m jupyter notebook --ServerApp.root_dir="%RACINE%"

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TP 4 · La CD-thèque de jazz · Bases de données L2</title>
+<meta name="description" content="TP 4 de bases de données (L2) : la CD-thèque de jazz, création de la table des compositeurs, contrainte sur les conditions d'enregistrement, requêtes avec jointures, regroupements et fonctions, puis ajout d'une table Musique sans perte de données ; sujet complet et console SQL pour travailler chez soi.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+<script type="application/json" id="atelier-jeux">
+{
+  "fac": {
+    "titre": "Base neuve (comme cd_… au début du TP)",
+    "description": "<p>Base PostgreSQL neuve et vide : le script fourni crée les tables, puis les remplit. Seul réglage : les dates s'écrivent jour-mois-année (<code>DateStyle</code>), comme sur le serveur de la fac.</p>",
+    "script": "SET datestyle TO 'ISO, DMY';"
+  }
+}
+</script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Bases de données</a>
+    <span aria-current="page">TP 4 · La CD-thèque de jazz</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> TP 4 · L2 S3</p>
+    <h1>TP 4 : la CD-thèque de jazz</h1>
+    <p class="chapeau">La CD-thèque de l'exercice 2 du TD 3 : on complète le script fourni par la table des compositeurs, on interroge la base, puis on la restructure autour d'une table Musique sans perdre de données. Pour travailler chez soi, une console SQL rejoue le compte rendu sur une base PostgreSQL neuve.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TP/TP4/TP4-CDJazz_2025.pdf">TP4-CDJazz_2025.pdf</a> · 5 pages · script fourni <a href="../TP/TP4/Script_CDJazz.sql">Script_CDJazz.sql</a></dd></div>
+      <div><dt>Module</dt><dd>17UD04</dd></div>
+      <div><dt>TD</dt><dd><a href="td-03-universite-cd-jazz.html">TD 3 · Université et CD de jazz</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Créer une table dont la clé étrangère est composée, et l'insérer dans un script existant.</li>
+        <li>Interroger une base à plusieurs associations avec jointures, regroupements et fonctions.</li>
+        <li>Restructurer une base remplie (nouvelle table, clés déplacées) sans perte de données.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">À rendre</p>
+      <ul>
+        <li>Un compte rendu <code>TP4_NOM_PRENOM.txt</code>, avec les réponses à toutes les questions numérotées, déposé sur UMTICE dans la semaine qui suit la séance.</li>
+        <li>Cours à revoir : <a href="cours-03-cles-sous-requetes-jointures.html">cours 3</a> et <a href="cours-04-fonctions-regroupements.html">cours 4</a>, et la documentation PostgreSQL (<a href="https://docs.postgresql.fr/14/">docs.postgresql.fr/14</a>).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Consignes <span class="ref">p. 1</span></h2>
+    <p>Tout au long de la séance, vous devez rédiger un <strong>compte rendu</strong> contenant toutes les réponses aux questions numérotées. Ce compte rendu sera nommé : <code>TP4_NOM_PRENOM.txt</code> et sera déposé sur la plateforme <strong>UMTICE</strong> dans le dossier correspondant à votre groupe.</p>
+    <p>Vous avez une semaine pour finir votre TP après la séance et le déposer sur UMTICE.</p>
+    <p>Pour travailler efficacement, vous avez ouvert : un terminal, un éditeur de texte, un navigateur (UMTICE + doc postgre <a href="https://docs.postgresql.fr/14/">https://docs.postgresql.fr/14/</a>).</p>
+    <p>Connectez-vous sur votre base de données : <code>cd_XXXXX</code>, avec XXXX votre numéro étudiant (voir sujet premier TP). Par exemple, l'étudiant s2024007 se connectera ainsi :</p>
+    <pre class="terminal"><code>$ psql -U etu_s2024007 -h erebor -d cd_s2024007</code></pre>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Base de données CD <span class="ref">p. 1</span></h2>
+    <h3>Rappel du modèle entité-association (version sans classe Musique)</h3>
+    <div class="atelier" id="tp4-mea" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "Modèle entité-association de la CD-thèque (rappel)",
+        "mode": "lecture",
+        "vue": "dessin",
+        "hauteur": 520,
+        "disposition": {
+          "CD": [
+            10,
+            10
+          ],
+          "Edition": [
+            480,
+            20
+          ],
+          "Enr": [
+            10,
+            330
+          ],
+          "Personne": [
+            470,
+            320
+          ]
+        },
+        "depart": [
+          "classe CD",
+          "  id_cd {PK}",
+          "  num_cd",
+          "  titre_cd",
+          "  note_art",
+          "  note_tech",
+          "  nom_distrib",
+          "classe Edition",
+          "  id_edit {PK}",
+          "  nom_edit",
+          "  pays",
+          "classe Enr",
+          "  id_enr {PK}",
+          "  titre_enr",
+          "  duree_enr",
+          "  annee_enr",
+          "  lieu_enr",
+          "  cond_enr",
+          "classe Personne",
+          "  id_pers {PK}",
+          "  nom_pers",
+          "  prenom_pers",
+          "  date_naiss",
+          "  date_deces",
+          "  nationalite",
+          "classe Interpretation",
+          "  instrument",
+          "CD \"0..*\" -- \"1..1\" Edition : est édité par",
+          "CD \"0..*\" -- \"1..*\" Personne : est leader de",
+          "CD \"1..1\" -- \"1..*\" Enr : appartient",
+          "Enr \"0..*\" -- \"1..*\" Personne : est interprété par [Interpretation]",
+          "Enr \"0..*\" -- \"1..*\" Personne : est composé par"
+        ]
+      }
+      </script>
+    </div>
+    <p>Sur la figure du sujet, les multiplicités de « appartient » sont entre parenthèses, <code>(1..1)</code> près de CD et <code>(1..*)</code> près de Enr : un enregistrement est identifié relativement à son CD. La multiplicité « 1..n » de « est composé par » est notée <code>1..*</code> ici.</p>
+    <h3>Rappel du modèle relationnel associé</h3>
+    <div class="relations">
+      <p><b>PERSONNE</b> (<u>id_pers</u>, nom_pers, prenom_pers, date_nais, date_deces, pays_nationalite)</p>
+      <p><b>EDIT</b> (<u>id_edit</u>, nom_edit, pays)</p>
+      <p><b>CD</b> (<u>id_cd</u>, titre_cd, #id_edit, note_art, note_tech, nom_distrib)</p>
+      <p><b>ENREG</b> (<u>#id_cd, id_enr</u>, titre_enr, duree_enr, annee_enr, lieu_enr, cond_enr)</p>
+      <p><b>INTERP</b> (<u>#id_cd, #id_enr, #id_interprete</u>(id_pers), <u>instrument</u>)</p>
+      <p><b>LEADER</b> (<u>#id_cd, #id_leader</u>(id_pers))</p>
+      <p><b>COMPO</b> (<u>#id_cd, #id_enr, #id_compo</u>(id_pers))</p>
+    </div>
+    <p>Les clés primaires, en gras dans le sujet, sont soulignées ici. Le script fourni nomme la table des éditeurs <code>edition</code>, et non <code>edit</code>.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Implémentation et insertion des données <span class="ref">p. 2</span></h2>
+    <p>Téléchargez le <em>Script_CDJazz.sql</em> (<a href="../TP/TP4/Script_CDJazz.sql">Script_CDJazz.sql</a>).</p>
+    <ol>
+      <li>Créer la table Compo (<b>#id_cd, #id_enr, #id_compo(id_pers)</b>). Insérez le code dans votre compte rendu ET dans le script téléchargé, à l'emplacement prévu.
+        <p><u>Attention</u> :</p>
+        <ul>
+          <li><code>id_cd</code> ne doit pas faire référence à la table CD mais <code>(id_cd, id_enr)</code> doit faire référence à la table ENREG.</li>
+          <li>L'ordre des attributs doit être suivi afin que les insert du script fonctionnent.</li>
+        </ul>
+      </li>
+      <li>Exécutez le script <code>Script_CDJazz.sql</code> pour créer l'ensemble des tables et insérer les enregistrements dans votre base de données (avec la commande postgres (antislashée) : <code>\i</code>).</li>
+      <li>Modifiez la table ENREG, une fois créée, afin que les valeurs acceptées par <code>cond_enr</code> soient « <em>public</em> », « <em>studio</em> », ou « <em>acoustic</em> ».</li>
+    </ol>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exploitation <span class="ref">p. 2–3</span></h2>
+    <ol start="4">
+      <li>Histoire de comprendre « un peu » ce qu'il y a dans la table des compositeurs, affichez uniquement les 4 premières lignes de cette table.</li>
+      <li>Affichez la liste des enregistrements ordonnée par date d'enregistrement.</li>
+      <li>Quels enregistrements (<code>titre_enr</code>) ont été faits (<em>en public à Chicago</em>) ou (<em>en acoustic à Saint-Louis</em>) ?</li>
+      <li>Le fait que les noms de ville et les titres dans la table enregistrement ne commencent pas par une majuscule est vraiment gênant. Remédiez à cela.</li>
+      <li>Quelles personnes sont décédées depuis moins de 20 ans ? L'affichage devra être le suivant (attention à la casse et nom de la colonne) :
+        <pre class="terminal"><code>   Contemporain
+-------------------
+ John COLTRANE
+ Thelonious MONK
+(2 lignes)</code></pre>
+      </li>
+      <li>Considérant uniquement les enregistrements enregistrés en public, quel est le titre de l'enregistrement le plus long ainsi que le titre du CD correspondant ?</li>
+      <li>Combien y a-t-il d'instruments différents ?</li>
+      <li>Quels sont tous les instruments utilisés entre 1980 et 1990 ?</li>
+      <li>Sans jointure, listez l'ensemble des personnes (nom et prénom) qui sont leader d'un cd.</li>
+      <li>Avec jointure et sans sous-requête, lister les interprètes de chacun des enregistrements. Le résultat attendu est le suivant :
+        <pre class="terminal"><code>    titre_enr    | nom_pers | prenom_pers | instrument
+-----------------+----------+-------------+------------
+ Blues Campagn   | coltrane | john        | guitar
+ Blues Is My God | coltrane | john        | vocal
+ Blues Is My God | monk     | thelonious  | bass
+ Blues Is My God | white    | bary        | bandoneon
+ Crying Sky      | jorris   | achille     | trumpet
+ Crying Sky      | mingus   | charly      | vocal
+(6 lignes)</code></pre>
+        <p>Vous remarquerez que seulement six lignes s'affichent. Pour cela, la liste a été ordonnée par titre puis nom, ensuite seulement 6 lignes sont affichées en omettant la 1<sup>re</sup>.</p>
+      </li>
+      <li>Combien y a-t-il d'instruments différents utilisés par enregistrement ? (!! la clé de enregistrement = id_cd + id_enr !!)</li>
+      <li>Quels sont les enregistrements où un seul instrument est utilisé ?</li>
+      <li>Le nom d'attribut <code>id_interprete</code> est vraiment trop long. Modifiez-le en <code>id_interp</code>. Idem pour la table personne qu'il faudrait renommer en <code>pers</code>.</li>
+      <li>Vous venez de vous rendre compte de deux erreurs impardonnables : Bary White n'a jamais été le compositeur de l'enregistrement Blue River qui d'ailleurs ne dure pas 159 secondes mais 179 ! Corrigez ces deux erreurs.</li>
+    </ol>
+    <p><span class="badge a-verifier">À vérifier</span> L'affichage attendu de la question 8 date de 2025 : John Coltrane, mort le 8 mai 2006 selon le script, est décédé depuis plus de 20 ans à partir du 8 mai 2026. La réponse dépend du jour où l'on exécute la requête.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Partie avancée <span class="ref">p. 3–4</span></h2>
+    <ol start="18">
+      <li>Quelle est l'année de la première apparition du bandonéon dans la musique de jazz et quel est l'interprète qui a introduit cet instrument ?</li>
+      <li>Affichez en une seule requête tous les attributs suivants : <code>id_cd</code>, <code>id_enr</code>, <code>titre_enr</code>, interprète (nom et prénom), instrument, compositeur (nom et prénom) et leader (nom et prénom). Les 38 lignes attendues suivent ce format (début) :
+        <pre class="terminal"><code> id_cd | id_enr |    titre_enr    |   Interprete     | instrument |   Compositeur   |    Leader
+-------+--------+-----------------+------------------+------------+-----------------+---------------
+     1 |      1 | Evidence        | jorris achille   | bandoneon  | mikta boris     | mikta boris
+     1 |      1 | Evidence        | mikta boris      | vocal      | mikta boris     | mikta boris
+     1 |      1 | Evidence        | monk thelonious  | bass       | mikta boris     | mikta boris
+     1 |      2 | On The Moon     | mikta boris      | vocal      | jorris achille  | mikta boris
+     1 |      2 | On The Moon     | mikta boris      | guitar     | jorris achille  | mikta boris
+     1 |      3 | Blue River      | mikta boris      | drum       | mikta boris     | mikta boris
+     1 |      3 | Blue River      | mikta boris      | drum       | jorris achille  | mikta boris
+     2 |      1 | Blues Is My God | coltrane john    | vocal      | mingus charly   | coltrane john
+     2 |      1 | Blues Is My God | monk thelonious  | bass       | mingus charly   | coltrane john
+     2 |      1 | Blues Is My God | white bary       | bandoneon  | mingus charly   | coltrane john
+     2 |      2 | Blues Campagn   | coltrane john    | guitar     | mingus charly   | coltrane john
+…</code></pre>
+      </li>
+    </ol>
+    <p>Avec la modélisation précédente, on se rend compte que le fait qu'un ensemble de personnes ait composé une musique va être saisi autant de fois que le morceau va être joué sur un enregistrement.</p>
+    <p>On souhaite donc créer une table MUSIQUE, dans laquelle on insérera le titre de morceau. La table COMPO doit donc maintenant faire le lien entre PERS et MUSIQUE et la table ENREG doit également être modifiée.</p>
+    <ol start="20">
+      <li>Effectuez l'ensemble des modifications nécessaires. Attention à ne perdre aucune donnée ! Après toutes les modifications, vous devez pouvoir obtenir cela :
+        <pre class="terminal"><code>cd_jazz=# select * from musique;
+ id_mus |    titre_mus
+--------+-----------------
+      1 | Mississipi
+      2 | Evidence
+      3 | Pain
+      4 | Move The Gov
+      5 | Slave And Glave
+      6 | Rainbow
+      7 | Blue River
+      8 | At Last
+      9 | Jump
+     10 | Blues Campagn
+     11 | Crying Sky
+     12 | Summertime
+     13 | On The Moon
+     14 | Blues Is My God
+     15 | Love And Peace
+     16 | My Old Flame
+     17 | Peace
+(17 lignes)
+
+cd_jazz=# \d musique
+                                    Table « public.musique »
+  Colonne  |         Type          | Collationnement | NULL-able |              Par défaut
+-----------+-----------------------+-----------------+-----------+---------------------------------------
+ id_mus    | integer               |                 | not null  | nextval('musique_id_mus_seq'::regclass)
+ titre_mus | character varying(50) |                 |           |
+Index :
+    "musique_pkey" PRIMARY KEY, btree (id_mus)
+Référencé par :
+    TABLE "compo" CONSTRAINT "compo_id_mus_fkey" FOREIGN KEY (id_mus) REFERENCES musique(id_mus)
+    TABLE "enreg" CONSTRAINT "enreg_id_mus_fkey" FOREIGN KEY (id_mus) REFERENCES musique(id_mus)
+
+cd_jazz=# select * from enreg limit 5;
+ id_cd | id_enr | duree_enr | annee_enr | lieu_enr | cond_enr | id_mus
+-------+--------+-----------+-----------+----------+----------+--------
+     1 |      1 |       200 |      1983 | Chicago  | public   |      2
+     1 |      2 |       256 |      1984 | Chicago  | public   |     13
+     2 |      1 |       540 |      1972 | New-York | studio   |     14
+     2 |      2 |       189 |      1972 | New-York | studio   |     10
+     2 |      3 |       280 |      1972 | New-York | acoustic |      3
+(5 lignes)</code></pre>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Partie bonus <span class="ref">p. 5</span></h2>
+    <ol start="21">
+      <li>Quel est l'instrument le plus fréquemment pratiqué en solo ?</li>
+      <li>Quels sont les noms des personnes qui jouent sur un morceau contenant de la basse dans un cd dont le leader est coltrane ?</li>
+      <li>Quels sont les cds sur lesquels interviennent le plus d'interprètes différents ?</li>
+      <li>Quel est le leader qui a participé à la direction de plus de 5 disques et qui a obtenu en moyenne la meilleure note artistique pour l'ensemble de son œuvre ?</li>
+      <li>Quel est le musicien qui a joué pendant le plus grand nombre d'années et quelle est la durée de cette période ?</li>
+      <li>Quels sont les interprètes qui interviennent dans le plus d'enregistrements différents ?</li>
+      <li>Quel compositeur a composé des enregistrements dans le plus de cds différents ?</li>
+      <li>Quel compositeur a composé des enregistrements dans le plus de cds différents ?</li>
+    </ol>
+    <p><span class="badge a-verifier">À vérifier</span> Les questions 27 et 28 sont identiques dans le sujet.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Chez soi : la console SQL du TP</h2>
+    <p>La console ci-dessous exécute le compte rendu entier sur une base PostgreSQL neuve (PGlite), par le serveur local : <code>studies/lancer.bat</code>, puis cette page ouverte depuis le portail. Sans le serveur, on peut écrire, mais pas exécuter.</p>
+    <ol class="etapes">
+      <li>Le script fourni est déjà en place, comme s'il avait été exécuté par <code>\i</code> (question 2) : la table <code>compo</code> de la question 1 s'écrit à l'emplacement qu'il prévoit, repéré par <code>-- 1.</code>. Les autres réponses s'écrivent à la suite, dans l'ordre des questions.</li>
+      <li><b>Exécuter</b> (ou <kbd>Ctrl</kbd> + <kbd>Entrée</kbd>) rejoue tout, depuis le début, sur une base neuve, et affiche le résultat de la <strong>dernière</strong> requête qui renvoie des lignes, ou la première erreur. Pour voir le résultat d'une question, on la met en dernier, ou on met en commentaire (<code>--</code>) les requêtes qui suivent.</li>
+      <li>Le travail s'enregistre tout seul : dans le navigateur, et, avec le serveur, dans le dossier <code>td_results/</code> de ce cours, dans ton espace. Le menu ⋯ copie le texte, à coller dans <code>TP4_NOM_PRENOM.txt</code>.</li>
+    </ol>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Ce qui change par rapport à la fac</span></p>
+      <ul>
+        <li>Tant que la table <code>compo</code> n'est pas écrite, l'exécution s'arrête sur la première insertion dans <code>compo</code>.</li>
+        <li><code>\i</code>, <code>\d</code> et les autres commandes de <code>psql</code> ne sont pas du SQL : la console les refuse.</li>
+        <li>Tout est rejoué à chaque exécution : les modifications (questions 3, 7, 16, 17, 20) valent pour toutes les requêtes qui les suivent, comme à la fac.</li>
+      </ul>
+    </div>
+    <div class="atelier" id="tp4-compte-rendu" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Compte rendu du TP 4",
+        "consigne": "<p>Le script fourni d'abord, avec la table <code>compo</code> à l'emplacement prévu, puis les réponses à la suite, dans l'ordre des questions. <b>Exécuter</b> rejoue tout, depuis le début, sur une base neuve, et affiche le résultat de la dernière requête qui renvoie des lignes, ou la première erreur.</p>",
+        "options": {
+          "jeu": "fac",
+          "lignes": 28
+        },
+        "depart": "-- 1. et 2. Script_CDJazz.sql (fourni, TP/TP4/Script_CDJazz.sql), exécuté par \\i à la fac ;\n--    la table compo (question 1) s'écrit à l'emplacement prévu, sous « -- 1. »\nDROP TABLE IF EXISTS interp;\nDROP TABLE IF EXISTS leader;\nDROP TABLE IF EXISTS compo;\nDROP TABLE IF EXISTS enreg;\nDROP TABLE IF EXISTS cd;\nDROP TABLE IF EXISTS edition;\nDROP TABLE IF EXISTS personne;\n\n-- create tables\nCREATE TABLE personne (\n id_pers serial primary key,\n nom_pers character varying(20) NOT NULL,\n prenom_pers character varying(20),\n date_nais date,\n date_deces date,\n pays_nationalite character varying(30)\n);\n\nCREATE TABLE edition (\n id_edit  serial primary key,\n nom_edit  character varying(20) NOT NULL,\n pays   character varying(30)\n);\n\nCREATE TABLE cd (\n id_cd serial primary key,\n titre_cd character varying(60),\n id_edit integer REFERENCES edition,\n note_art numeric(2),\n note_tech  numeric(2),\n nom_distrib varchar(50)\n);\n\nCREATE TABLE enreg(\n id_cd integer references cd,\n id_enr  integer,\n titre_enr character varying(30),\n duree_enr numeric(6,0),\n annee_enr numeric(6,0),\n lieu_enr character varying(30),\n cond_enr  character varying(60),\n CONSTRAINT enreg_key PRIMARY KEY(id_cd,id_enr)\n);\n\nCREATE TABLE interp (\n id_cd integer references cd,\n id_enr  integer,\n id_interprete integer REFERENCES personne,\n instrument  character varying(30) not null,\n CONSTRAINT interp_key PRIMARY KEY(id_cd, id_enr, id_interprete, instrument),\n CONSTRAINT id_enr_exists FOREIGN KEY(id_cd,id_enr) REFERENCES enreg\n);\n\nCREATE TABLE leader (\n id_cd integer references cd,\n id_leader integer REFERENCES personne,\n CONSTRAINT leader_key PRIMARY KEY(id_cd, id_leader)\n);\n\n-- Table Compositeur —\n-- INSEREZ VOTRE CODE POUR TABLE COMPO !!! ICI !!!\n-- 1.\n\n\n-- fill in data\n\n-- personne\nINSERT INTO personne VALUES (1,'mikta','boris','10-APR-1961','30-AUG-1999','usa');\nINSERT INTO personne VALUES (2,'jorris','achille','10-JAN-1955',NULL,'france');\nINSERT INTO personne VALUES (3,'coltrane','john','21-OCT-1957','08-MAY-2006','usa');\nINSERT INTO personne VALUES (4,'monk','thelonious','25-DEC-1968','29-MAR-2009','usa');\nINSERT INTO personne VALUES (5,'white','bary','21-FEB-1962',NULL,'usa');\nINSERT INTO personne VALUES (6,'mingus','charly','10-JAN-1963',NULL,'usa');\nINSERT INTO personne VALUES (7,'smith','ted','28-AUG-1948',NULL,'usa');\nINSERT INTO personne VALUES (8,'spark','tom','26-MAR-1963',NULL,'usa');\nINSERT INTO personne VALUES (9,'rozzi','ricky','10-JAN-1958',NULL,'usa');\nINSERT INTO personne VALUES (10,'dupond','william','01-MAY-1956',NULL,'usa');\n\n-- edition\nINSERT INTO edition VALUES (1,'virgin','usa');\nINSERT INTO edition VALUES (2,'blues_label','usa');\nINSERT INTO edition VALUES (3,'monk','france');\nINSERT INTO edition VALUES (4,'tictac','france');\n\n-- cd\nINSERT INTO cd VALUES (1,'blues chicago',1,8,7,null);\nINSERT INTO cd VALUES (2,'evidence',1,9,6,null);\nINSERT INTO cd VALUES (3,'ballad in paris',2,8,9,null);\nINSERT INTO cd VALUES (4,'mississipi notes',4,6,7,null);\n\nINSERT INTO cd VALUES (5, 'at last', 2, 3, 3);\n\n-- enreg\nINSERT INTO enreg VALUES (1,1,'evidence',200,1983,'chicago','public');\nINSERT INTO enreg VALUES (1,2,'on the moon',256,1984,'chicago','public');\nINSERT INTO enreg VALUES (1,3,'blue river',159,1984,'chicago','public');\nINSERT INTO enreg VALUES (2,1,'blues is my god',540,1972,'new-york','studio');\nINSERT INTO enreg VALUES (2,2,'blues campagn',189,1972,'new-york','studio');\nINSERT INTO enreg VALUES (2,3,'pain',280,1972,'new-york','acoustic');\nINSERT INTO enreg VALUES (3,1,'crying sky',156,1995,'paris','public');\nINSERT INTO enreg VALUES (3,2,'love and peace',205,1995,'paris','public');\nINSERT INTO enreg VALUES (3,3,'jump',164,1995,'paris','public');\nINSERT INTO enreg VALUES (3,4,'peace',180,1995,'philadelphie','public');\nINSERT INTO enreg VALUES (4,1,'slave and glave',199,1978,'saint-louis','public');\nINSERT INTO enreg VALUES (4,2,'move the gov',245,1978,'saint-louis','acoustic');\nINSERT INTO enreg VALUES (4,3,'rainbow',180,1978,'saint-louis','public');\nINSERT INTO enreg VALUES (4,4,'mississipi',200,1978,'londres','studio');\n\nINSERT INTO enreg VALUES (5, 1,  'at last', 259, 1961, 'chicago','studio');\nINSERT INTO enreg VALUES (5, 2,  'my old flame', 620, 1961, 'chicago', 'studio');\nINSERT INTO enreg VALUES (5, 3, 'summertime', 527, 1969, 'new-york','public');\n\n-- compo\nINSERT INTO compo VALUES (1,1,1);\nINSERT INTO compo VALUES (1,2,2);\nINSERT INTO compo VALUES (1,3,1);\nINSERT INTO compo VALUES (1,3,2);\nINSERT INTO compo VALUES (1,3,5);\nINSERT INTO compo VALUES (2,1,6);\nINSERT INTO compo VALUES (2,2,6);\nINSERT INTO compo VALUES (2,3,3);\nINSERT INTO compo VALUES (2,3,1);\nINSERT INTO compo VALUES (3,1,4);\nINSERT INTO compo VALUES (3,2,4);\nINSERT INTO compo VALUES (3,2,5);\nINSERT INTO compo VALUES (3,3,5);\nINSERT INTO compo VALUES (4,1,1);\nINSERT INTO compo VALUES (4,1,5);\nINSERT INTO compo VALUES (4,2,1);\nINSERT INTO compo VALUES (4,2,2);\nINSERT INTO compo VALUES (4,3,1);\nINSERT INTO compo VALUES (4,3,3);\nINSERT INTO compo VALUES (4,4,2);\nINSERT INTO compo VALUES (4,4,6);\n\nINSERT INTO compo VALUES (5,1,1);\nINSERT INTO compo VALUES (5,2,2);\nINSERT INTO compo VALUES (5,3,1);\nINSERT INTO compo VALUES (5,3,2);\nINSERT INTO compo VALUES (5,3,5);\n\n-- interp\nINSERT INTO interp VALUES (1,1,1,'vocal');\nINSERT INTO interp VALUES (1,1,2,'bandoneon');\nINSERT INTO interp VALUES (1,1,4,'bass');\nINSERT INTO interp VALUES (1,2,1,'vocal');\nINSERT INTO interp VALUES (1,2,1,'guitar');\nINSERT INTO interp VALUES (1,3,1,'drum');\nINSERT INTO interp VALUES (2,1,3,'vocal');\nINSERT INTO interp VALUES (2,1,4,'bass');\nINSERT INTO interp VALUES (2,1,5,'bandoneon');\nINSERT INTO interp VALUES (2,2,3,'guitar');\nINSERT INTO interp VALUES (2,3,3,'vocal');\nINSERT INTO interp VALUES (2,3,3,'guitar');\nINSERT INTO interp VALUES (3,1,6,'vocal');\nINSERT INTO interp VALUES (3,1,4,'bass');\nINSERT INTO interp VALUES (3,1,2,'trumpet');\nINSERT INTO interp VALUES (3,2,6,'bandoneon');\nINSERT INTO interp VALUES (3,2,5,'guitar');\nINSERT INTO interp VALUES (3,2,2,'vocal');\nINSERT INTO interp VALUES (3,3,6,'vocal');\nINSERT INTO interp VALUES (3,3,2,'vocal');\nINSERT INTO interp VALUES (4,1,2,'trumpet');\nINSERT INTO interp VALUES (4,2,2,'vocal');\nINSERT INTO interp VALUES (4,2,5,'guitar');\nINSERT INTO interp VALUES (4,2,3,'vocal');\nINSERT INTO interp VALUES (4,3,2,'bandoneon');\nINSERT INTO interp VALUES (4,4,3,'guitar');\nINSERT INTO interp VALUES (3,4,3,'guitar');\n\n-- leader\nINSERT INTO leader VALUES (4,2);\nINSERT INTO leader VALUES (3,6);\nINSERT INTO leader VALUES (2,3);\nINSERT INTO leader VALUES (1,1);\n\n-- ===== Implémentation =====\n-- 3.\n\n-- ===== Exploitation =====\n-- 4.\n\n-- 5.\n\n-- 6.\n\n-- 7.\n\n-- 8.\n\n-- 9.\n\n-- 10.\n\n-- 11.\n\n-- 12.\n\n-- 13.\n\n-- 14.\n\n-- 15.\n\n-- 16.\n\n-- 17.\n\n-- ===== Partie avancée =====\n-- 18.\n\n-- 19.\n\n-- 20.\n\n-- ===== Partie bonus =====\n-- 21.\n\n-- 22.\n\n-- 23.\n\n-- 24.\n\n-- 25.\n\n-- 26.\n\n-- 27.\n\n-- 28.\n"
+      }
+      </script>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>Un enregistrement est identifié relativement à son CD : toute table qui le référence le fait par le couple <code>(id_cd, id_enr)</code>, jamais par <code>id_cd</code> seul.</li>
+        <li>Le script fourni crée les tables dans l'ordre des références et insère sans nommer les colonnes : la table ajoutée doit respecter cet ordre et cet emplacement.</li>
+        <li>Une contrainte ajoutée après coup ne passe que si les données déjà présentes la respectent.</li>
+        <li>Restructurer sans perte : créer la nouvelle table, la remplir à partir des données existantes, raccrocher les anciennes tables par de nouvelles clés étrangères, vérifier, et seulement alors supprimer les colonnes devenues inutiles.</li>
+        <li>Une requête qui dépend de la date du jour (« depuis moins de 20 ans ») ne donne pas le même résultat d'une année à l'autre.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi <code>id_cd</code> seul ne doit-il pas référencer CD dans <code>compo</code> ?</summary>
+        <div><p>Un compositeur compose un enregistrement, pas un CD : la référence doit désigner une plage précise, donc le couple <code>(id_cd, id_enr)</code> d'ENREG.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Où placer la création de <code>compo</code> dans le script, et pourquoi ?</summary>
+        <div><p>À l'emplacement prévu, après ENREG et PERSONNE qu'elle référence, et avant les insertions dans <code>compo</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quel défaut la table MUSIQUE corrige-t-elle ?</summary>
+        <div><p>Les compositeurs d'un morceau étaient saisis à chaque enregistrement de ce morceau : une redondance, source d'incohérences.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que faut-il compter pour « le nombre d'instruments différents par enregistrement » ?</summary>
+        <div><p>Les instruments distincts par couple <code>(id_cd, id_enr)</code> : un enregistrement n'est identifié que par les deux.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="tp-03-cursus-universitaire.html"><small>← TP 3</small>Le cursus universitaire</a>
+    <a class="suivant" href="tp-05-tp-note-sw7.html"><small>TP 5 →</small>TP noté : Star Wars</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

@@ -9,10 +9,10 @@
    - laisser l'utilisateur se connecter lui-même à Claude Code, non modifié, avec
      son propre abonnement, par le parcours de connexion d'Anthropic.
 
-   Studies propose donc deux modes, au choix dans les paramètres :
+   Universal Learn Academy propose donc deux modes, au choix dans les paramètres :
    - « compte » : Claude Code installé sur le poste, connecté par l'utilisateur.
      Le bouton « Se connecter » ouvre un terminal sur `claude auth login` : la
-     connexion se fait chez Anthropic, Studies ne voit jamais les identifiants ;
+     connexion se fait chez Anthropic, l'application ne voit jamais les identifiants ;
    - « cle » : clé d'API Anthropic, chiffrée par le système (safeStorage : DPAPI
      sous Windows, trousseau sous Linux), jamais renvoyée à l'interface. Elle est
      transmise à Claude Code par la variable ANTHROPIC_API_KEY du serveur local.
@@ -41,7 +41,7 @@ function comparerVersions(a, b) {
 
 // Chemin choisi dans les réglages de l'outil de quiz (portail), s'il y en a un
 function cheminConfigure(racine) {
-  try { return JSON.parse(fs.readFileSync(path.join(racine, "_outils", "quiz", "reglages.json"), "utf8")).claude.executable || ""; }
+  try { return JSON.parse(fs.readFileSync(path.join(racine, "quiz", "reglages.json"), "utf8")).claude.executable || ""; }
   catch (e) { return ""; }
 }
 
@@ -160,7 +160,7 @@ function connecter(racine) {
   delete env.ELECTRON_RUN_AS_NODE;
   if (WINDOWS) {
     // Ligne de commande écrite telle quelle : cmd /k retire la paire de guillemets extérieure
-    spawn("cmd.exe", ['/d /c start "Studies - connexion à Claude" cmd.exe /k ""' + code.executable + '" auth login"'],
+    spawn("cmd.exe", ['/d /c start "ULA - connexion à Claude" cmd.exe /k ""' + code.executable + '" auth login"'],
       { env, detached: true, stdio: "ignore", windowsVerbatimArguments: true, windowsHide: false }).unref();
     return { ok: true };
   }

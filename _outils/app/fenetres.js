@@ -15,7 +15,8 @@ const serveur = require("./serveur");
 
 const ICONE = path.join(__dirname, "assets", "icone.png");
 const ETAT = path.join(app.getPath("userData"), "fenetre.json");
-const PORTAIL = "_outils/quiz/portail.html";
+// Page de départ : l'accueil (profils, cursus, catalogue), servi à la place de index.html
+const PORTAIL = "index.html";
 const TAILLE = { width: 1280, height: 860 };
 const RECHERCHE = { largeur: 360, hauteur: 48, marge: 16, haut: 60 };
 const PERMISSIONS = new Set(["clipboard-read", "clipboard-sanitized-write", "fullscreen"]);
@@ -99,7 +100,7 @@ function brancherPage(f) {
   // Page avec un enregistrement en cours (suivi) : Electron bloquerait la fermeture sans rien dire
   page.on("will-prevent-unload", (e) => {
     const choix = dialog.showMessageBoxSync(f, {
-      type: "warning", title: "Studies", message: "Des modifications ne sont pas encore enregistrées.",
+      type: "warning", title: "Universal Learn Academy", message: "Des modifications ne sont pas encore enregistrées.",
       buttons: ["Quitter la page quand même", "Rester"], defaultId: 1, cancelId: 1
     });
     if (choix === 0) e.preventDefault();
@@ -197,7 +198,7 @@ ipcMain.on("recherche:fermer", (e) => {
 
 function imprimer(f) {
   f.webContents.print({}, (ok, raison) => {
-    if (!ok && raison !== "Print job canceled") dialog.showErrorBox("Studies", "Impression impossible : " + raison);
+    if (!ok && raison !== "Print job canceled") dialog.showErrorBox("Universal Learn Academy", "Impression impossible : " + raison);
   });
 }
 
@@ -212,7 +213,7 @@ async function enregistrerPdf(f) {
     fs.writeFileSync(r.filePath, await f.webContents.printToPDF({ printBackground: true, preferCSSPageSize: true }));
     shell.openPath(r.filePath);
   } catch (e) {
-    dialog.showErrorBox("Studies", "Enregistrement impossible : " + e.message);
+    dialog.showErrorBox("Universal Learn Academy", "Enregistrement impossible : " + e.message);
   }
 }
 
@@ -221,7 +222,7 @@ async function enregistrerPdf(f) {
 function creer(bornes) {
   const f = new BrowserWindow({
     ...bornes,
-    title: "Studies", icon: ICONE, minWidth: 480, minHeight: 360, autoHideMenuBar: true,
+    title: "Universal Learn Academy", icon: ICONE, minWidth: 480, minHeight: 360, autoHideMenuBar: true,
     backgroundColor: nativeTheme.shouldUseDarkColors ? "#131417" : "#fafaf8",
     webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, plugins: true }
   });
@@ -242,8 +243,8 @@ function creer(bornes) {
     e.preventDefault();
     serveur.tachesMenacees().then((n) => {
       const quitter = !n || dialog.showMessageBoxSync(f, {
-        type: "warning", title: "Studies", message: "Une génération de quiz est en cours.",
-        detail: "Fermer Studies l'arrête, et le quiz ne sera pas créé.",
+        type: "warning", title: "Universal Learn Academy", message: "Une génération de quiz est en cours.",
+        detail: "Fermer l’application l’arrête, et le quiz ne sera pas créé.",
         buttons: ["Fermer quand même", "Continuer"], defaultId: 1, cancelId: 1
       }) === 0;
       if (!quitter) return;
@@ -280,7 +281,7 @@ function noter(f, ligne) {
 
 function relier(adresse) { origine = new URL(adresse).origin; }
 
-// Rouvre la dernière page, si elle existe encore ; sinon le portail
+// Rouvre la dernière page, si elle existe encore ; sinon l'accueil
 async function afficherPageDeDepart(f) {
   const etat = lireEtat();
   let url = origine + "/" + PORTAIL;

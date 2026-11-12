@@ -23,7 +23,7 @@ _outils/numerisation/
 │   ├── carlier.typ    sujets de TD de codage (F. Carlier)
 │   └── poo.typ        TD de POO (P. Jacoboni, E. Delozanne) : livret A4 paysage, figure de la file circulaire
 ├── sources/           une source Typst par document, au chemin du PDF qu'elle produit
-│   └── L3/Codage/TD/TD1/TD1.typ  →  L3/Codage/TD/TD1/TD1.pdf
+│   └── explore/informatique/codage/TD/TD1/TD1.typ  →  explore/informatique/codage/TD/TD1/TD1.pdf
 └── scans/             les scans d'origine, archivés au même chemin que le PDF recomposé
 ```
 
@@ -31,7 +31,7 @@ Les sources sont écrites en [Typst](https://typst.app/docs/), un langage de com
 
 ## Commandes
 
-Depuis `studies/` :
+Depuis la racine (`ula/`) :
 
 | Commande | Effet |
 |---|---|
@@ -40,7 +40,7 @@ Depuis `studies/` :
 | `uvx --with typst python _outils/numerisation/compiler.py --verifier` | n'écrit rien : signale les PDF absents ou différents de leur source |
 | `uvx --with typst --with pymupdf python _outils/numerisation/compiler.py --apercu DOSSIER SOURCE.typ` | écrit dans DOSSIER le PDF, une image par page et une planche « scan \| PDF » par page, sans toucher au dossier du cours |
 
-Le compilateur refuse d'écraser un PDF qui ne vient pas de Typst : c'est sans doute le scan, à archiver d'abord dans `scans/`. Les PDF sont déterministes (pas de date dans les métadonnées) : `--verifier` compare les octets. Leurs métadonnées portent le titre, l'auteur et les mots-clés « recomposé d'après un scan, studies/_outils/numerisation ».
+Le compilateur refuse d'écraser un PDF qui ne vient pas de Typst : c'est sans doute le scan, à archiver d'abord dans `scans/`. Les PDF sont déterministes (pas de date dans les métadonnées) : `--verifier` compare les octets. Leurs métadonnées portent le titre, l'auteur et les mots-clés « recomposé d'après un scan, _outils/numerisation ».
 
 ## Numériser un nouveau scan : marche à suivre
 
@@ -56,12 +56,12 @@ Le compilateur refuse d'écraser un PDF qui ne vient pas de Typst : c'est sans d
 
 | PDF | Source | Remarque |
 |---|---|---|
-| `L3/Codage/TD/TD1/TD1.pdf` | `sources/L3/Codage/TD/TD1/TD1.typ` | énoncé (11 pt) et feuille des chronogrammes vierge, en paysage |
-| `L3/Codage/TD/TD2/TD2.pdf` | `sources/L3/Codage/TD/TD2/TD2.typ` | 10 pt ; la copie papier était une impression réduite |
-| `L3/Codage/TD/TD3/TD3_codes_cycliques.pdf` | `sources/L3/Codage/TD/TD3/TD3_codes_cycliques.typ` | sujet de 2018, matrice G redessinée |
-| `L3/Codage/TD/TD4/TD4_real_time.pdf` | `sources/L3/Codage/TD/TD4/TD4_real_time.typ` | 12 pt, figure des tâches redessinée, feuille des graphes d'activités vierge |
-| `L3/POO/TD/TD1/TD1.pdf` | `sources/L3/POO/TD/TD1/TD1.typ` | livret : deux feuilles A4 paysage, deux pages réduites par face (sujets 1 à 4 ; rappels de syntaxe et extraits de `ri`) |
-| `L3/POO/TD/TD2/TD2.pdf` | `sources/L3/POO/TD/TD2/TD2.typ` | 2 pages A4 ; la première ligne d'en-tête, coupée sur la photo, est restituée |
+| `explore/informatique/codage/TD/TD1/TD1.pdf` | `sources/L3/Codage/TD/TD1/TD1.typ` | énoncé (11 pt) et feuille des chronogrammes vierge, en paysage |
+| `explore/informatique/codage/TD/TD2/TD2.pdf` | `sources/L3/Codage/TD/TD2/TD2.typ` | 10 pt ; la copie papier était une impression réduite |
+| `explore/informatique/codage/TD/TD3/TD3_codes_cycliques.pdf` | `sources/L3/Codage/TD/TD3/TD3_codes_cycliques.typ` | sujet de 2018, matrice G redessinée |
+| `explore/informatique/codage/TD/TD4/TD4_real_time.pdf` | `sources/L3/Codage/TD/TD4/TD4_real_time.typ` | 12 pt, figure des tâches redessinée, feuille des graphes d'activités vierge |
+| `explore/informatique/programmation-objet/TD/TD1/TD1.pdf` | `sources/L3/POO/TD/TD1/TD1.typ` | livret : deux feuilles A4 paysage, deux pages réduites par face (sujets 1 à 4 ; rappels de syntaxe et extraits de `ri`) |
+| `explore/informatique/programmation-objet/TD/TD2/TD2.pdf` | `sources/L3/POO/TD/TD2/TD2.typ` | 2 pages A4 ; la première ligne d'en-tête, coupée sur la photo, est restituée |
 
 Les réponses manuscrites des TD 1 et 2 de codage et des TD 1 et 2 de POO sont saisies dans leurs TD interactifs (`generated_courses/td-0N-….html`, enregistrées dans `td_results/`).
 
@@ -70,3 +70,4 @@ Les réponses manuscrites des TD 1 et 2 de codage et des TD 1 et 2 de POO sont s
 - **1.0**, 2 octobre 2026 : création, pour les scans du 1er octobre. Compilation Typst par `uvx`, gabarit des sujets de codage, quatre sujets recomposés.
 - **1.1**, 9 octobre 2026 : ce README ; les réponses manuscrites passent par le champ `papier` de l'atelier (version 1.5) et `_outils/atelier/outils/saisir.js`. Gabarit des TD de POO ; les TD 1 et 2 de POO et le polycopié de programmation système recomposés : tous les scans du 1er octobre sont numérisés.
 - **1.2**, 31 octobre 2026 : l'original du polycopié de programmation système, récupéré sur UMTICE (`L3/SE_PS/cours/cours_processus.pdf`), remplace sa recomposition, retirée avec sa source. Le scan reste archivé.
+- **1.3**, 12 novembre 2026 : réorganisation ula. Les sources et les scans suivent les nouveaux chemins des cours (`sources/explore/<domaine>/<cours>/…` produit `explore/<domaine>/<cours>/…`).

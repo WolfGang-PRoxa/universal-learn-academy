@@ -23,7 +23,7 @@
   function notifier() { auditeurs.forEach(function (f) { try { f(C); } catch (e) { console.error(e); } }); }
   C.surChangement = function (f) { auditeurs.push(f); };
 
-  // Chemin de la page relatif à studies/ (« L3/BDD/generated_quizzes/quiz-x.html »)
+  // Chemin de la page relatif à la racine (« explore/informatique/codage/generated_quizzes/quiz-x.html »)
   C.cheminRelatif = function () {
     if (/^https?:$/.test(location.protocol)) return decodeURIComponent(location.pathname.replace(/^\//, ""));
     var href = decodeURIComponent(location.href.split("#")[0].split("?")[0]);

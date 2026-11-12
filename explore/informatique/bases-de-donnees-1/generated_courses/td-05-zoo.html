@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TD 5 · Gestion d'un zoo · Bases de données L2</title>
+<meta name="description" content="TD 5 interactif de bases de données (L2), en route vers l'examen : modéliser la gestion d'un zoo (employés et salaires, gardiens et chefs de secteur, secteurs et parcelles, emploi du temps, espèces, individus, groupes, mesures et parenté), le traduire en relations et relever les contraintes que le modèle n'exprime pas, à faire dans la page.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Bases de données</a>
+    <span aria-current="page">TD 5 · Gestion d'un zoo</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> TD 5 · L2 S3 · interactif</p>
+    <h1>TD 5 : en route vers l'examen, la gestion d'un zoo</h1>
+    <p class="chapeau">Un sujet de modélisation complet, dans les conditions de l'écrit : un informaticien interroge trois services et doit en tirer le modèle de la base. On y retrouve toutes les situations du cours 1 : spécialisations, identifiants relatifs, associations réflexives, entité à la place d'une association, et des contraintes qui échappent au diagramme.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TD/TD_zoo.pdf">TD_zoo.pdf</a> · 2 pages</dd></div>
+      <div><dt>Cours</dt><dd><a href="cours-01-modele-entite-association.html">Cours 1 · Modèle entité-association</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Modéliser un domaine décrit par plusieurs interlocuteurs, sans rien oublier ni rien inventer.</li>
+        <li>Choisir entre attribut, entité et spécialisation pour les catégories d'employés et de pensionnaires.</li>
+        <li>Modéliser un historique (salaires, mesures) et un emploi du temps.</li>
+        <li>Relever les règles de gestion que le diagramme ne peut pas exprimer.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Notions utilisées</p>
+      <ul>
+        <li><a href="cours-01-modele-entite-association.html">Cours 1</a> : toutes les associations du cours (spécialisation, réflexive, plurielle, identifiant relatif, n-aire), vérification d'un diagramme, règles de passage au relationnel.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Mode d'emploi</p>
+    <ul>
+      <li>La réponse se construit sur le dessin ou dans la vue texte (« Les deux ») ; les deux restent synchronisés.</li>
+      <li>« Vérifier » contrôle la forme sans rien dévoiler, « Comparer » mesure l'écart avec une solution proposée, « Claude » répond aux questions et corrige. Les solutions restent cachées ; aucune ne vient de l'enseignant, et ce sujet admet plusieurs bons modèles : un écart n'est pas forcément une erreur.</li>
+      <li>La spécialisation « est un » se dessine avec le lien d'héritage (<code>Gardien --|&gt; Employe</code>) ; une association réflexive, avec ses rôles (<code>Individu "0..1 mère" -- "0..* enfant" Individu : avoir pour mère</code>).</li>
+      <li>Pour s'entraîner à l'écrit, faire d'abord le diagramme sur papier, en temps limité, puis le reporter ici pour le comparer.</li>
+      <li>Le travail s'enregistre tout seul. Avec le serveur local (<code>studies/lancer.bat</code>), il va dans <code>td_results/</code> et Claude est disponible.</li>
+    </ul>
+  </div>
+
+  <p><span class="badge ajout">Ajout</span> Le sujet ne pose pas de question : comme aux séances précédentes, on en tire le modèle conceptuel puis le modèle relationnel ; la troisième question, sur les contraintes, prépare l'écrit. Le PDF a perdu les ligatures « ti » (« Ges$on », « informa>ser ») : elles sont rétablies ici.</p>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le sujet <span class="ref">TD, p. 1–2</span></h2>
+    <p>Trois interlocuteurs, trois paragraphes : chacun décrit une partie du modèle, et les trois se rejoignent sur les parcelles.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Gestion d'un zoo</p>
+      <p>Le directeur d'un zoo, qui désire informatiser la gestion de son établissement, charge un informaticien de concevoir une base de données. Celui-ci décide d'interroger les différents services du zoo pour analyser les informations à modéliser dans la future base de données.</p>
+      <p>Par le chef du personnel, il apprend les faits suivants :</p>
+      <ul>
+        <li>Pour chacun des 61 employés du zoo, le service administratif conserve son nom, son prénom, ses date et lieu de naissance, ses douze derniers salaires (caractérisés par le mois et le montant), son numéro de sécurité sociale, son adresse et son numéro de téléphone.</li>
+        <li>Chaque employé appartient à un service (administratif, surveillance ou médical).</li>
+        <li>Les 18 employés du service médical sont soit des vétérinaires soit des infirmières.</li>
+        <li>Le service de surveillance est composé de 30 gardiens et de 8 chefs de secteur. Pour les gardiens du zoo, on conserve leur taux de temps de travail (ce sont les seuls employés qui peuvent travailler à temps partiel) et leur grade.</li>
+        <li>Le service administratif est composé de deux secrétaires, d'un comptable, du chef du personnel et du directeur.</li>
+        <li>Tous les employés sont référencés par un code mnémotechnique de 3 caractères et le chef du personnel ne tient pas à ce que l'informatisation du zoo bouleverse ses habitudes.</li>
+      </ul>
+      <p>L'informaticien interroge ensuite les gardiens. Il apprend :</p>
+      <ul>
+        <li>Le zoo est divisé en huit secteurs qui ont chacun une fonction bien précise (oiseaux, reptiles, aquarium, singes…) et sont placés sous la responsabilité d'un chef de secteur.</li>
+        <li>Chaque secteur est divisé en un certain nombre de parcelles, qui sont surveillées par des gardiens pendant les heures d'ouverture au public.</li>
+        <li>L'emploi du temps des gardiens est très précis et est toujours défini pour une semaine à l'avance. Chaque gardien ne surveille qu'un seul secteur par jour, mais change de parcelle toutes les heures.</li>
+        <li>Chaque chef de secteur doit surveiller son secteur entier et vérifier que les gardiens sont bien à leur place.</li>
+        <li>L'emploi du temps des gardiens est actuellement écrit manuellement sur un tableau blanc, mais après l'informatisation il sera édité automatiquement avec deux types d'états (listings) différents : un exemplaire commun avec l'emploi du temps complet pour l'affichage (état 1), et des exemplaires individuels avec l'emploi du temps personnel pour chaque gardien (état 2).</li>
+      </ul>
+      <p>L'informaticien se renseigne enfin auprès du service vétérinaire qui s'occupe des pensionnaires (animaux) du zoo.</p>
+      <ul>
+        <li>Les pensionnaires sont classés en deux catégories : les individus et les groupes.</li>
+        <li>Les individus sont les animaux qui possèdent un nom et pour lesquels on conserve une fiche signalétique précise : l'espèce, la date de naissance, ses mesures (poids et taille) prises à dates périodiques (pour vérifier sa croissance) et enfin son groupe sanguin. De plus, si l'individu est né en captivité (dans le zoo) on conserve sa parenté (sa mère et son père supposé s'il est connu).</li>
+        <li>Le service conserve donc les fiches de tous les individus du zoo, même ceux décédés (dans ce cas on conserve la date de décès).</li>
+        <li>Les groupes sont des ensembles d'individus qui appartiennent à la même espèce et qui ne peuvent être appréhendés isolément (termites, souris blanches, poissons clown…).</li>
+        <li>Pour chaque groupe on conserve le nombre approximatif d'animaux qui le compose.</li>
+        <li>Chaque espèce est donc représentée soit sous la forme d'un groupe soit sous la forme d'un ou de plusieurs individus. Chaque espèce n'est présente que dans une seule parcelle, mais, dans certains secteurs, une même parcelle peut accueillir plusieurs espèces différentes.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le modèle conceptuel</h2>
+    <p>Une quinzaine de classes. Avant de dessiner, faire la liste des entités de chaque paragraphe, puis chercher ce qui les relie.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 1 <span>Diagramme de classes</span></p>
+      <p><span class="badge ajout">Ajout</span> Donnez le modèle conceptuel de la base du zoo en utilisant le formalisme UML.</p>
+    </div>
+    <div class="atelier" id="td5-q1-classes" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "Question 1 · Diagramme de classes du zoo",
+        "options": {
+          "bdd": true
+        },
+        "hauteur": 760,
+        "disposition": {
+          "Service": [
+            10,
+            10
+          ],
+          "Employe": [
+            250,
+            10
+          ],
+          "Salaire": [
+            560,
+            10
+          ],
+          "Gardien": [
+            100,
+            300
+          ],
+          "Chef_secteur": [
+            380,
+            300
+          ],
+          "Surveillance": [
+            10,
+            470
+          ],
+          "Secteur": [
+            420,
+            470
+          ],
+          "Parcelle": [
+            200,
+            640
+          ],
+          "Espece": [
+            470,
+            690
+          ],
+          "Pensionnaire": [
+            720,
+            690
+          ],
+          "Groupe": [
+            960,
+            560
+          ],
+          "Individu": [
+            880,
+            820
+          ],
+          "Mesure": [
+            600,
+            950
+          ]
+        },
+        "solution": [
+          "classe Service",
+          "  id_service {PK}",
+          "  nom_service",
+          "classe Employe",
+          "  code_emp {PK}",
+          "  nom",
+          "  prenom",
+          "  date_naiss",
+          "  lieu_naiss",
+          "  num_secu",
+          "  adresse",
+          "  telephone",
+          "  fonction",
+          "classe Salaire",
+          "  mois {PK}",
+          "  montant",
+          "classe Gardien",
+          "  taux_temps",
+          "  grade",
+          "classe Chef_secteur",
+          "classe Secteur",
+          "  id_secteur {PK}",
+          "  fonction",
+          "classe Parcelle",
+          "  id_parcelle {PK}",
+          "classe Surveillance",
+          "  id_surveillance {PK}",
+          "  date_surv",
+          "  heure",
+          "classe Espece",
+          "  id_espece {PK}",
+          "  nom_espece",
+          "classe Pensionnaire",
+          "  id_pensionnaire {PK}",
+          "classe Individu",
+          "  nom",
+          "  date_naiss",
+          "  groupe_sanguin",
+          "  date_deces",
+          "classe Groupe",
+          "  nb_approx",
+          "classe Mesure",
+          "  date_mesure {PK}",
+          "  poids",
+          "  taille",
+          "Employe \"0..*\" -- \"1..1\" Service : appartenir",
+          "Employe \"1..1\" -- \"0..12\" Salaire : percevoir",
+          "Gardien --|> Employe",
+          "Chef_secteur --|> Employe",
+          "Secteur \"1..1\" -- \"1..1\" Chef_secteur : être responsable de",
+          "Parcelle \"1..*\" -- \"1..1\" Secteur : diviser",
+          "Surveillance \"0..*\" -- \"1..1\" Gardien : effectuer",
+          "Surveillance \"0..*\" -- \"1..1\" Parcelle : porter sur",
+          "Espece \"0..*\" -- \"1..1\" Parcelle : être présente dans",
+          "Pensionnaire \"1..*\" -- \"1..1\" Espece : appartenir à",
+          "Individu --|> Pensionnaire",
+          "Groupe --|> Pensionnaire",
+          "Individu \"1..1\" -- \"0..*\" Mesure : mesurer",
+          "Individu \"0..1 mère\" -- \"0..* enfant\" Individu : avoir pour mère",
+          "Individu \"0..1 père\" -- \"0..* enfant\" Individu : avoir pour père"
+        ],
+        "explication": "<p>Solution proposée ; plusieurs points admettent d'autres choix, signalés ici.</p><ul><li><b>Employés</b> : l'identifiant est le code de 3 caractères (« ne pas bouleverser ses habitudes »). Les salaires sont multivalués : une entité Salaire, identifiée relativement à l'employé par le mois (<code>(1..1)</code> près d'Employe), au plus <code>12</code>. Le service est une entité (une liste fermée de trois valeurs pourrait aussi être un attribut contrôlé).</li><li><b>Spécialisations</b> : seuls les gardiens ont des attributs propres (taux, grade), et seuls gardiens et chefs de secteur ont des associations propres : ce sont les deux spécialisations utiles. Vétérinaire, infirmière, secrétaire… ne se distinguent que par leur fonction : un attribut suffit. Les effectifs (61, 18, 30, 8) décrivent la situation actuelle, ce ne sont pas des multiplicités.</li><li><b>Emploi du temps</b> : un gardien surveille une parcelle à une date et une heure. Une classe d'association Gardien — Parcelle n'existerait qu'une fois par couple, alors qu'un gardien revient sur la même parcelle : il faut une entité, Surveillance. Les deux états ne sont que des listings de cette entité (tri par heure et par parcelle, ou filtre sur un gardien) : rien à modéliser de plus.</li><li><b>Secteurs</b> : un chef par secteur et un secteur par chef (<code>1..1</code> des deux côtés, puisqu'il y a autant de chefs que de secteurs). La parcelle peut aussi être identifiée relativement au secteur.</li><li><b>Pensionnaires</b> : deux catégories, d'où une entité générique, reliée à l'espèce, et deux spécialisations. L'espèce est une entité (elle a sa parcelle, et plusieurs individus la partagent). Les mesures sont datées : entité Mesure, relative à l'individu. La parenté : deux associations réflexives, <code>0..1</code> car elle n'est connue que pour les individus nés au zoo.</li></ul>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Pour chaque mot au pluriel ou chaque « ses … » du texte (ses douze derniers salaires, ses mesures), se demander si c'est un attribut multivalué : il devient alors une entité. Pour l'emploi du temps : qui surveille quoi, et quand ?</p></div>
+    </details>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le modèle relationnel</h2>
+    <p>Règle par règle : trois spécialisations, trois identifiants relatifs, deux réflexives et une entité qui remplace une association.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 2 <span>Les relations</span></p>
+      <p><span class="badge ajout">Ajout</span> Décrivez l'ensemble des relations issues de cette modélisation.</p>
+    </div>
+    <div class="atelier" id="td5-q2-relationnel" data-editeur="relationnel">
+      <script type="application/json">
+      {
+        "titre": "Question 2 · Modèle relationnel du zoo",
+        "consigne": "<p>Clé primaire composée : souligner chacun de ses attributs. Une clé étrangère vers une relation spécialisée s'écrit avec sa cible : <code>#code_gardien(Gardien.code_emp)</code>. Écrire d'abord les relations référencées.</p>",
+        "vue": "les-deux",
+        "solution": [
+          "Service(_id_service_, nom_service)",
+          "Employe(_code_emp_, nom, prenom, date_naiss, lieu_naiss, num_secu, adresse, telephone, fonction, #id_service(Service))",
+          "Salaire(_#code_emp_(Employe), _mois_, montant)",
+          "Gardien(_#code_emp_(Employe), taux_temps, grade)",
+          "Chef_secteur(_#code_emp_(Employe))",
+          "Secteur(_id_secteur_, fonction, #code_chef(Chef_secteur.code_emp))",
+          "Parcelle(_id_parcelle_, #id_secteur(Secteur))",
+          "Surveillance(_#code_gardien_(Gardien.code_emp), _date_surv_, _heure_, #id_parcelle(Parcelle))",
+          "Espece(_id_espece_, nom_espece, #id_parcelle(Parcelle))",
+          "Pensionnaire(_id_pensionnaire_, #id_espece(Espece))",
+          "Individu(_#id_pensionnaire_(Pensionnaire), nom, date_naiss, groupe_sanguin, date_deces, #id_mere(Individu.id_pensionnaire), #id_pere(Individu.id_pensionnaire))",
+          "Groupe(_#id_pensionnaire_(Pensionnaire), nb_approx)",
+          "Mesure(_#id_individu_(Individu.id_pensionnaire), _date_mesure_, poids, taille)"
+        ],
+        "explication": "<ul><li>Spécialisations (Gardien, Chef_secteur, Individu, Groupe) : la clé de la générique devient leur clé primaire et étrangère.</li><li>Identifiants relatifs (Salaire, Mesure) : la clé de l'entité forte entre dans la clé primaire, avec le mois ou la date.</li><li>Surveillance : l'identifiant du diagramme est remplacé par la clé <code>(code_gardien, date_surv, heure)</code>, qui interdit à un gardien d'être à deux endroits à la même heure. Garder <code>id_surveillance</code> avec une contrainte <code>UNIQUE</code> sur ces trois colonnes est équivalent.</li><li>Secteur — Chef_secteur, <code>1..1 — 1..1</code> (règle 4) : la clé étrangère va dans Secteur, <code>NOT NULL</code> et <code>UNIQUE</code> (un chef n'a qu'un secteur).</li><li>Réflexives : deux clés étrangères dans Individu, nommées d'après leur rôle, vides si la parenté est inconnue.</li><li>Toutes les autres associations sont <code>x..1 — x..*</code> (règle 3) : clé étrangère côté <code>*</code>. Aucune association <code>* — *</code> : pas de relation de liaison.</li></ul>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Ce que le modèle n'exprime pas</h2>
+    <p>Un diagramme ne porte que des multiplicités. Plusieurs règles du sujet lui échappent : il faut les relever, pour les faire vérifier par le SGBD (contraintes, triggers) ou par l'application.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3 <span>Les contraintes d'intégrité</span></p>
+      <p><span class="badge ajout">Ajout</span> Relevez les règles de gestion du sujet que votre diagramme ne garantit pas. Pour chacune, dites comment la faire respecter (contrainte de table, contrainte entre tables, ou traitement).</p>
+    </div>
+    <div class="atelier" id="td5-q3-texte" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Question 3 · Contraintes non exprimées",
+        "options": {
+          "lignes": 12,
+          "placeholder": "- Un gardien ne surveille qu'un seul secteur par jour : …"
+        },
+        "solution": "- Un gardien ne surveille qu'un seul secteur par jour : toutes ses surveillances d'une même date portent sur des parcelles du même secteur (contrainte entre Surveillance et Parcelle : trigger).\n- Il change de parcelle toutes les heures, pendant les heures d'ouverture : heure comprise entre l'ouverture et la fermeture (CHECK sur heure).\n- Le chef de secteur surveille son secteur : rien à stocker, c'est une consigne de travail.\n- Au plus douze salaires par employé : supprimer le plus ancien à chaque nouveau mois (traitement ou trigger).\n- Seuls les gardiens travaillent à temps partiel : taux_temps n'existe que dans Gardien (déjà garanti par la spécialisation), compris entre 0 et 100 % (CHECK).\n- Le service d'un employé est cohérent avec sa fonction (un gardien est au service de surveillance) : contrainte entre tables.\n- Un pensionnaire est un individu ou un groupe, jamais les deux (spécialisation exclusive : contrainte entre Individu et Groupe).\n- Une espèce est représentée soit par un groupe, soit par des individus, pas les deux (trigger).\n- Les parents d'un individu sont de la même espèce que lui, et ne sont pas lui-même ; la date de décès suit la date de naissance (CHECK).\n- Les effectifs (61 employés, 18 au service médical, 30 gardiens, 8 chefs et 8 secteurs) sont des constats, pas des contraintes à imposer.",
+        "explication": "<p>Une contrainte qui ne porte que sur une ligne s'écrit <code>CHECK</code> à la création de la table (dates dans le bon ordre, heures d'ouverture). Une contrainte qui porte sur plusieurs lignes ou plusieurs tables (un seul secteur par jour, exclusivité individu-groupe) demande un trigger ou un contrôle dans l'application. À l'écrit, il est utile de lister ces règles sous le diagramme : elles montrent qu'on a lu tout le sujet.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Relire chaque phrase du sujet qui contient « seul », « soit … soit », « toutes les heures », « douze » ou un nombre : le diagramme en a-t-il gardé la trace ?</p></div>
+    </details>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>Un attribut multivalué ou historisé (les salaires, les mesures) devient une entité, identifiée relativement à son propriétaire par une date ou un mois.</li>
+        <li>On ne crée une spécialisation que pour des attributs ou des associations propres ; sinon un attribut (la fonction) suffit.</li>
+        <li>Un fait daté qui relie deux entités et peut se répéter (un gardien sur une parcelle, à une heure) est une entité, pas une classe d'association.</li>
+        <li>Les effectifs cités dans un sujet décrivent la situation : ils ne deviennent pas des multiplicités.</li>
+        <li>Les états et listings sont des requêtes sur les données : ils ne demandent rien de plus dans le modèle.</li>
+        <li>Sous le diagramme, lister les règles qu'il n'exprime pas, et dire comment le SGBD les vérifiera.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Les douze derniers salaires : attribut ou entité ?</summary>
+        <div><p>Une entité Salaire (mois, montant), identifiée relativement à l'employé : un attribut ne peut contenir qu'une valeur.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Faut-il une classe Vétérinaire ?</summary>
+        <div><p>Non, si elle n'a ni attribut ni association propre : la fonction de l'employé suffit. Gardien en a (taux, grade, surveillances), Chef_secteur aussi (son secteur).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi Surveillance n'est-elle pas une classe d'association entre Gardien et Parcelle ?</summary>
+        <div><p>Une classe d'association n'existe qu'une fois par couple ; un gardien surveille la même parcelle à plusieurs dates et heures.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Comment le modèle traduit-il « sa mère et son père supposé, s'il est connu » ?</summary>
+        <div><p>Deux associations réflexives sur Individu, de multiplicité <code>0..1</code> du côté du parent ; au relationnel, deux clés étrangères qui peuvent être vides.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="td-04-socialcat.html"><small>← TD 4</small>Réseau social SocialCat</a>
+    <a class="suivant" href="index.html"><small>Accueil →</small>Bases de données</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

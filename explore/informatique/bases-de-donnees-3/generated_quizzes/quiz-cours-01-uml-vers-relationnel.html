@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Du diagramme de classes au modèle relationnel · Bases de données L3</title>
+<meta name="description" content="Quiz interactif sur le cours 1 de bases de données (L3) : classes, attributs et identifiants, associations et multiplicités, spécialisation, composition, formes normales, et traduction en modèle relationnel, avec un diagramme de classes à dessiner et un modèle relationnel à écrire.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/quiz/assets/quiz.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/quiz/assets/quiz.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="../generated_courses/index.html">Bases de données</a>
+    <span aria-current="page">Quiz · Du diagramme de classes au MR</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> Quiz · L3 S5</p>
+    <h1>Du diagramme de classes au modèle relationnel</h1>
+    <p class="chapeau">Vingt-deux questions sur le cours 1 : classes, attributs et identifiants, associations et leurs multiplicités, spécialisation, composition, formes normales, puis les règles de traduction en modèle relationnel. Un diagramme de classes à dessiner et un modèle relationnel à écrire, comparés à une solution, et une question à rédiger.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-01-uml-vers-relationnel.html">Cours 1 · Du diagramme de classes au modèle relationnel</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-01">1<sup>er</sup> oct. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "bd-cours-01-uml-vers-relationnel",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 1 · Du diagramme de classes au modèle relationnel",
+      "lien": "../generated_courses/cours-01-uml-vers-relationnel.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "association",
+      "theme": "Classes et attributs",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque notion du diagramme de classes à son équivalent dans le modèle relationnel :</p>",
+      "paires": [
+        [
+          "Classe",
+          "Relation"
+        ],
+        [
+          "Instance",
+          "Tuple"
+        ],
+        [
+          "Identifiant <code>{PK}</code>",
+          "Clé primaire, soulignée"
+        ],
+        [
+          "Association <code>1 — *</code>",
+          "Clé étrangère, précédée de <code>#</code>"
+        ]
+      ],
+      "intrus": [
+        "Index",
+        "Vue"
+      ],
+      "explication": "<p>Une classe devient une relation (une table en SQL), chacune de ses instances un tuple (une ligne), son identifiant la clé primaire. Une association devient une clé étrangère ou une relation, selon ses multiplicités : pour <code>1 — *</code>, une clé étrangère du côté <code>*</code>. Index et vues sont des objets du SGBD, sans équivalent dans le diagramme.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Classe et instance",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#classe-et-instance"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "qcm-multi",
+      "theme": "Classes et attributs",
+      "difficulte": 1,
+      "enonce": "<p>Quelles multiplicités d'attribut sont admises d'office, sans justification ni transformation ?</p>",
+      "choix": [
+        "<code>[1]</code>",
+        "<code>[0..1]</code>",
+        "<code>[1..*]</code>",
+        "<code>[0..*]</code>",
+        "<code>[2..10]</code>"
+      ],
+      "reponses": [
+        0,
+        1
+      ],
+      "explication": "<p><code>[1]</code> (une valeur, obligatoire) et <code>[0..1]</code> (une valeur, facultative) gardent l'attribut monovalué. Toutes les autres le rendent multivalué : il faut les justifier, ou créer une nouvelle classe, sans quoi la classe n'est pas en première forme normale.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Notation des multiplicités",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#notation-des-multiplicites"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "qcm",
+      "theme": "Classes et attributs",
+      "difficulte": 2,
+      "enonce": "<p>Pourquoi le couple (nom, prénom) fait-il un mauvais identifiant pour une classe <code>Personne</code> ?</p>",
+      "choix": [
+        "Il n'est garanti ni unique (deux homonymes) ni invariant (un nom peut changer)",
+        "Un identifiant ne peut compter qu'un seul attribut",
+        "Un identifiant ne peut pas être une chaîne de caractères",
+        "Il n'est pas minimal : le nom seul suffirait"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Un identifiant est minimal, discriminant et invariant dans le temps. Lequel de ces critères le couple peut-il violer ?</p>"
+      ],
+      "explication": "<p>Rien n'empêche une future instance d'avoir les mêmes nom et prénom qu'une autre, et un nom change par exemple au mariage : le couple n'est ni discriminant ni invariant. On crée donc un identifiant artificiel, un numéro. Un identifiant peut compter plusieurs attributs, et être une chaîne : un numéro de sécurité sociale en est une.</p>",
+      "revoir": {
+        "texte": "Cours 1 · L'identifiant",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#l-identifiant"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "vrai-faux",
+      "theme": "Classes et attributs",
+      "difficulte": 2,
+      "enonce": "<p>Le numéro de sécurité sociale distingue les personnes. Le couple (no sécu, nom) est donc lui aussi un identifiant de <code>Personne</code>.</p>",
+      "reponse": false,
+      "explication": "<p>Faux : le couple est bien unique, mais il n'est pas <strong>minimal</strong>, puisqu'on peut en retirer le nom sans perdre l'unicité. Un identifiant est un ensemble minimal d'attributs. Le no sécu seul est une clé candidate : il peut devenir le <code>{PK}</code>, ou garder <code>{unique}</code> si l'on choisit un autre identifiant.</p>",
+      "revoir": {
+        "texte": "Cours 1 · L'identifiant",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#l-identifiant"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "qcm",
+      "theme": "Associations",
+      "difficulte": 1,
+      "enonce": "<p>L'association « possède » relie <code>Voiture</code> et <code>Personne</code>, avec <code>*</code> écrit côté <code>Voiture</code> et <code>1</code> côté <code>Personne</code>. Que signifie le <code>1</code> ?</p>",
+      "choix": [
+        "Une voiture appartient à exactement une personne",
+        "Une personne possède exactement une voiture",
+        "Une personne possède au moins une voiture",
+        "Une personne possède au plus une voiture"
+      ],
+      "reponse": 0,
+      "explication": "<p>Une multiplicité se lit depuis l'autre classe : le <code>1</code> écrit à côté de <code>Personne</code> compte des personnes, celles qui sont liées à <em>une</em> voiture. Une voiture a donc exactement un propriétaire ; le <code>*</code> côté <code>Voiture</code> dit qu'une personne possède de 0 à plusieurs voitures.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les multiplicités admises",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#les-multiplicites-admises"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "qcm",
+      "theme": "Associations",
+      "difficulte": 2,
+      "enonce": "<p>« Gustav compose la symphonie n° 4 en août 1900. » Où le diagramme range-t-il la date de composition ?</p>",
+      "choix": [
+        "Dans une classe d'association de « compose »",
+        "Dans la classe <code>Compositeur</code>",
+        "Dans la classe <code>Oeuvre</code>",
+        "Dans une nouvelle classe <code>Date</code>, reliée aux deux autres"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Un attribut va là où il dépend de tous les éléments qui le déterminent. La date dépend-elle du compositeur seul ? De l'œuvre seule ?</p>"
+      ],
+      "explication": "<p>Une association ne porte un attribut que s'il dépend de tous ses participants : la date ne dépend ni du compositeur seul ni de l'œuvre seule, mais du couple. Elle se modélise par une classe d'association, reliée en pointillés à « compose ». Une classe <code>Date</code> ferait d'une simple valeur un objet à part entière, sans rien régler.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Participants, attributs et multiplicités",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#participants-attributs-et-multiplicites"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "association",
+      "theme": "Associations",
+      "difficulte": 2,
+      "enonce": "<p>Associer chaque construction du diagramme de classes à ce qui la caractérise :</p>",
+      "paires": [
+        [
+          "Spécialisation",
+          "Une flèche vers la classe générique, qui remplace les multiplicités <code>0..1 — 1</code> et le nom « est un »"
+        ],
+        [
+          "Composition",
+          "Un losange plein du côté du « tout » ; la partie disparaît avec lui"
+        ],
+        [
+          "Association réflexive",
+          "Une association qui relie une classe à elle-même, avec des rôles aux deux extrémités"
+        ],
+        [
+          "Classe d'association",
+          "Une classe qui porte les attributs dépendant de tous les participants d'une association"
+        ]
+      ],
+      "intrus": [
+        "Plusieurs associations différentes entre les deux mêmes classes"
+      ],
+      "explication": "<p>La spécialisation (« est un ») a toujours les mêmes multiplicités, d'où la flèche qui la simplifie. La composition est une propriété exclusive : supprimer le tout supprime ses parties. L'association réflexive relie deux instances d'une même classe (chef et subordonné). La description restante est celle des associations plurielles : une même personne peut écrire un livre et en critiquer un autre.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Associations de spécialisation",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#associations-de-specialisation"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "vrai-faux",
+      "theme": "Associations",
+      "difficulte": 2,
+      "enonce": "<p>Entre une <code>Commande</code> et les <em>produits du catalogue</em> qu'elle contient, il y a une composition, avec le losange côté <code>Commande</code>.</p>",
+      "reponse": false,
+      "explication": "<p>Faux : un produit du catalogue existe indépendamment des commandes, et figure dans plusieurs d'entre elles. Supprimer une commande ne doit pas le supprimer : c'est une association ordinaire <code>* — *</code>. La composition convient en revanche à la <em>ligne de commande</em> (tel article, en telle quantité, dans cette commande), qui n'existe pas sans sa commande.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Composition",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#composition"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "qcm",
+      "theme": "Associations",
+      "difficulte": 3,
+      "enonce": "<p>Deux associations relient <code>Personne</code> et <code>Livre</code> : « écrit », avec <code>1..*</code> côté <code>Personne</code>, et « critique », avec <code>*</code> côté <code>Personne</code>. Pourquoi faut-il, côté <code>Livre</code>, un minimum de 0 pour « écrit » ?</p>",
+      "choix": [
+        "Parce que <code>Personne</code> regroupe auteurs et critiques : une personne peut n'avoir écrit aucun livre",
+        "Parce qu'un livre peut n'avoir aucun auteur",
+        "Parce qu'une association plurielle impose des minimums à 0 des deux côtés",
+        "Parce qu'un minimum de 1 côté <code>Livre</code> interdirait d'écrire plusieurs livres"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Le minimum écrit côté <code>Livre</code> compte des livres : combien de livres une personne a-t-elle écrits, au moins ?</p>"
+      ],
+      "explication": "<p>Le minimum côté <code>Livre</code> compte les livres écrits par <em>une</em> personne. Comme la même classe <code>Personne</code> sert aux auteurs et aux critiques, un critique peut n'avoir rien écrit : avec <code>1..*</code> de ce côté, tout critique devrait aussi être auteur. Le <code>1..*</code> côté <code>Personne</code>, lui, dit que tout livre a au moins un auteur.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Associations plurielles",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#associations-plurielles"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "qcm-multi",
+      "theme": "Vérification et formes normales",
+      "difficulte": 2,
+      "enonce": "<p>La classe <code>Personne</code> contient les attributs ci-dessous. Lesquels faut-il corriger avant la traduction ?</p>",
+      "choix": [
+        "<code>prénoms : string [1..*]</code>",
+        "<code>adresse : Adresse [1]</code>, de type structuré",
+        "<code>âge : integer [1]</code>, alors que la date de naissance est déjà là",
+        "<code>salaire : float [0..1]</code>",
+        "<code>no sécu : string [1] {unique}</code>"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "indices": [
+        "<p>Trois défauts à repérer : un attribut multivalué, un attribut composite, un attribut calculable.</p>"
+      ],
+      "explication": "<p><code>prénoms [1..*]</code> est multivalué, et <code>adresse</code> composite : ils se transforment, en attributs monovalués ou en nouvelle classe. L'âge se calcule à partir de la date de naissance : stocké, il devient faux chaque année, on le retire. Le salaire facultatif et le no sécu unique sont corrects.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Vérifications syntaxiques",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#verifications-syntaxiques"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "association",
+      "theme": "Vérification et formes normales",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque forme normale à sa condition, en plus des conditions des formes précédentes :</p>",
+      "paires": [
+        [
+          "1NF",
+          "Tout attribut est atomique : ni multivalué, ni composite"
+        ],
+        [
+          "2NF",
+          "Tout attribut non-clé dépend de toute la clé, pas d'une partie"
+        ],
+        [
+          "3NF",
+          "Aucun attribut non-clé ne dépend d'un autre attribut non-clé"
+        ]
+      ],
+      "intrus": [
+        "Toute relation contient au moins une clé étrangère"
+      ],
+      "explication": "<p>Moyen mnémotechnique : un attribut non-clé dépend de la clé (1NF), de toute la clé (2NF) et de rien d'autre que la clé (3NF). Les formes sont successives : une relation en 3NF est déjà en 2NF et en 1NF.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les formes normales",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#les-formes-normales"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "qcm",
+      "theme": "Vérification et formes normales",
+      "difficulte": 2,
+      "enonce": "<p>Une agence enregistre ses locations dans la relation <code>Location(<u>num_voiture, date_debut</u>, marque, km_depart)</code>. La marque ne dépend que de la voiture. Quelle est la forme normale la plus haute que respecte cette relation ?</p>",
+      "choix": [
+        "1NF",
+        "2NF",
+        "3NF",
+        "Aucune"
+      ],
+      "reponse": 0,
+      "melanger": false,
+      "indices": [
+        "<p><code>marque</code> dépend de <code>num_voiture</code>, qui n'est qu'une partie de la clé (<code>num_voiture</code>, <code>date_debut</code>).</p>"
+      ],
+      "explication": "<p>Les attributs sont atomiques : la relation est en 1NF. Mais <code>marque</code> ne dépend que de <code>num_voiture</code>, une partie de la clé : la 2NF est violée, donc la 3NF aussi. On sort <code>Voiture(<u>num_voiture</u>, marque)</code>, et <code>Location</code> garde <code>#num_voiture</code> dans sa clé. <code>km_depart</code>, lui, dépend bien de toute la clé : il change à chaque location.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les formes normales",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#les-formes-normales"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "qcm",
+      "theme": "Vérification et formes normales",
+      "difficulte": 3,
+      "enonce": "<p>Dans <code>Employe(<u>id_emp</u>, nom, id_service, nom_service)</code>, le nom du service se déduit de <code>id_service</code>. Quelle correction le cours applique-t-il ?</p>",
+      "choix": [
+        "Créer <code>Service(<u>id_service</u>, nom_service)</code>, et ne garder que <code>#id_service</code> dans <code>Employe</code>",
+        "Ajouter <code>id_service</code> à la clé : <code>Employe(<u>id_emp, id_service</u>, nom, nom_service)</code>",
+        "Supprimer <code>nom_service</code>, qui est un attribut calculable",
+        "Rien : la relation est en 2NF, et cela suffit"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>La dépendance <code>id_service → nom_service</code> relie deux attributs non-clés : quelle forme normale l'interdit ?</p>"
+      ],
+      "explication": "<p>La clé n'a qu'un attribut, donc la 2NF est respectée ; mais <code>nom_service</code> dépend de <code>id_service</code>, qui n'est pas une clé : la 3NF est violée, et le nom d'un service est répété pour chacun de ses employés. Comme pour le fournisseur du cours, la dépendance devient une classe, <code>Service</code>, dont <code>id_service</code> est l'identifiant ; <code>Employe</code> n'en garde que la clé étrangère. Agrandir la clé détruirait la 2NF : le nom de l'employé ne dépend pas de son service.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les formes normales",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#les-formes-normales"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "qcm",
+      "theme": "Vérification et formes normales",
+      "difficulte": 1,
+      "enonce": "<p>Une table répète l'adresse d'un fournisseur sur chaque ligne de ses produits. On supprime le seul produit du fournisseur Visio SA, et son adresse disparaît avec lui. Comment s'appelle ce défaut ?</p>",
+      "choix": [
+        "Une anomalie de suppression",
+        "Une anomalie d'insertion",
+        "Une anomalie de mise à jour",
+        "Une violation de clé étrangère"
+      ],
+      "reponse": 0,
+      "explication": "<p>Supprimer une information (le produit) en fait perdre une autre (l'adresse du fournisseur) : c'est une anomalie de suppression. L'anomalie d'insertion empêche d'enregistrer un fournisseur sans produit, l'anomalie de mise à jour oblige à modifier l'adresse sur plusieurs lignes. Les trois disparaissent quand le fournisseur devient une classe à part (3NF).</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les formes normales",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#les-formes-normales"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "association",
+      "theme": "Traduction en relationnel",
+      "difficulte": 2,
+      "enonce": "<p>Associer chaque cas du diagramme à sa traduction dans le modèle relationnel :</p>",
+      "paires": [
+        [
+          "Association <code>* — *</code>",
+          "Une table d'association, dont la clé réunit les clés étrangères des deux classes"
+        ],
+        [
+          "Association <code>1 — *</code> ou <code>0..1 — *</code>",
+          "Une clé étrangère dans la relation du côté <code>*</code>"
+        ],
+        [
+          "Spécialisation",
+          "La clé de la classe générique, à la fois clé primaire et clé étrangère de la classe spécialisée"
+        ],
+        [
+          "Composition",
+          "La clé du « tout », clé étrangère qui entre dans la clé primaire de la partie"
+        ],
+        [
+          "Association <code>1 — 0..1</code>",
+          "Une clé étrangère, unique, dans la relation dont la participation est obligatoire"
+        ]
+      ],
+      "intrus": [
+        "Une clé étrangère de chaque côté de l'association"
+      ],
+      "explication": "<p>Ce sont les règles 2 à 5 du cours, avec le cas de la composition. Ce sont les multiplicités qui décident : un côté <code>*</code> reçoit la clé étrangère, deux côtés <code>*</code> demandent une table, et le lien « est un » donne une clé à la fois primaire et étrangère. Une clé étrangère de chaque côté stockerait deux fois le même lien, au risque qu'ils divergent.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Règle 2 : les associations * — *",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#regle-2-les-associations"
+      }
+    },
+    {
+      "id": "q16",
+      "type": "qcm",
+      "theme": "Traduction en relationnel",
+      "difficulte": 1,
+      "enonce": "<p>Un club compte plusieurs joueurs ; un joueur appartient à un seul club, depuis une date d'adhésion. Comment se traduit l'association, date comprise ?</p>",
+      "choix": [
+        "<code>Joueur(<u>id_joueur</u>, nom, date_adhesion, #id_club)</code>",
+        "<code>Club(<u>id_club</u>, nom, date_adhesion, #id_joueur)</code>",
+        "<code>Adhesion(<u>#id_club, #id_joueur</u>, date_adhesion)</code>",
+        "<code>Joueur(<u>id_joueur, #id_club</u>, nom, date_adhesion)</code>"
+      ],
+      "reponse": 0,
+      "explication": "<p>L'association est <code>1 — *</code> : la clé du côté <code>1</code> (le club) devient une clé étrangère du côté <code>*</code> (le joueur), et l'attribut de l'association, qui ne concerne qu'un joueur, le rejoint. Une table d'association est réservée aux <code>* — *</code> ; mettre <code>#id_club</code> dans la clé serait le cas d'une composition, alors qu'un joueur existe sans son club.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Règle 3 : les associations 0..1 — *",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#regle-3-les-associations-0-1"
+      }
+    },
+    {
+      "id": "q17",
+      "type": "qcm",
+      "theme": "Traduction en relationnel",
+      "difficulte": 2,
+      "enonce": "<p>Un employé est dirigé par au plus un chef, lui-même employé, et peut diriger plusieurs subordonnés. Comment se traduit l'association réflexive « dirige » ?</p>",
+      "choix": [
+        "<code>Employe(<u>id_employe</u>, nom, prenom, #id_chef)</code>",
+        "<code>Dirige(<u>#id_chef, #id_subordonne</u>)</code>, à côté de <code>Employe</code>",
+        "<code>Employe(<u>id_employe</u>, nom, prenom, #id_employe)</code>",
+        "<code>Chef(<u>#id_employe</u>)</code> et <code>Subordonne(<u>#id_employe</u>)</code>"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Les multiplicités sont <code>0..1</code> (chef) et <code>*</code> (subordonné) : c'est le cas de la règle 3, appliqué à une seule relation.</p>"
+      ],
+      "explication": "<p>C'est la règle 3 dans la même relation : la clé primaire revient comme clé étrangère, renommée (<code>id_chef</code>), car une relation ne peut pas avoir deux attributs du même nom. Elle vaut <code>NULL</code> pour le plus haut placé, qui n'a pas de chef. Une table <code>Dirige</code> conviendrait à une association <code>* — *</code>, où un employé aurait plusieurs chefs.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Règle 3 : les associations 0..1 — *",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#regle-3-les-associations-0-1"
+      }
+    },
+    {
+      "id": "q18",
+      "type": "qcm",
+      "theme": "Traduction en relationnel",
+      "difficulte": 3,
+      "enonce": "<p>Une personne a au plus un passeport (<code>0..1</code>), et un passeport appartient à exactement une personne (<code>1</code>). Quelle traduction le cours préconise-t-il ?</p>",
+      "choix": [
+        "<code>#id_pers</code> dans <code>Passport</code>, avec une contrainte d'unicité",
+        "<code>#id_pers</code> dans <code>Passport</code>, sans autre contrainte",
+        "<code>#numero</code> dans <code>Personne</code>, obligatoire",
+        "Une table <code>Detient(<u>#id_pers, #numero</u>)</code>"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>On place la clé étrangère dans la relation dont la participation est obligatoire : celle qui voit un <code>1</code> de l'autre côté.</p>",
+        "<p>Sans contrainte de plus, qu'est-ce qui empêcherait deux passeports d'avoir le même <code>id_pers</code> ?</p>"
+      ],
+      "explication": "<p>Tout passeport a un titulaire : dans <code>Passport</code>, <code>id_pers</code> est toujours rempli, alors que <code>#numero</code> dans <code>Personne</code> serait souvent vide. Mais il faut aussi <code>UNIQUE</code> sur <code>id_pers</code> : sans elle, rien n'interdit deux passeports pour la même personne, et l'on retombe sur une association <code>1 — *</code>.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Règle 5 : les associations sans *",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#regle-5-les-associations-sans"
+      }
+    },
+    {
+      "id": "q19",
+      "type": "vrai-faux",
+      "theme": "Traduction en relationnel",
+      "difficulte": 1,
+      "enonce": "<p><code>Critique</code> est une spécialisation de <code>Personne(<u>id_pers</u>, nom, prenom)</code>. Dans <code>Critique(<u>#id_pers</u>, adresse)</code>, <code>id_pers</code> est à la fois clé primaire et clé étrangère.</p>",
+      "reponse": true,
+      "explication": "<p>Vrai, c'est la règle 4. Clé primaire, parce qu'un critique est identifié comme la personne qu'il est ; clé étrangère, parce qu'il doit exister dans <code>Personne</code>, où se trouvent son nom et son prénom. La classe spécialisée ne reçoit donc pas d'identifiant propre.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Règle 4 : l'héritage",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#regle-4-l-heritage"
+      }
+    },
+    {
+      "id": "q20",
+      "type": "atelier",
+      "editeur": "classes",
+      "theme": "Associations",
+      "difficulte": 2,
+      "titre": "Clinique vétérinaire",
+      "enonce": "<p>Une clinique enregistre ses vétérinaires (numéro, nom) et les animaux qu'elle soigne (numéro, nom, espèce). Chaque animal a un vétérinaire référent, et un seul ; un vétérinaire est le référent de zéro, un ou plusieurs animaux. Un vétérinaire a de zéro à plusieurs spécialités (identifiées par leur libellé), et une spécialité est partagée par de zéro à plusieurs vétérinaires. Dessiner le diagramme de classes.</p>",
+      "options": {
+        "bdd": true
+      },
+      "solution": [
+        "classe Veterinaire",
+        "  numero : int {PK}",
+        "  nom : varchar",
+        "classe Animal",
+        "  numero : int {PK}",
+        "  nom : varchar",
+        "  espece : varchar",
+        "classe Specialite",
+        "  libelle : varchar {PK}",
+        "Veterinaire \"1\" -- \"*\" Animal : suit >",
+        "Veterinaire \"*\" -- \"*\" Specialite : possede >"
+      ],
+      "seuil": 0.9,
+      "indices": [
+        "<p>Trois classes, deux associations. Pour chacune, écrire les deux phrases « un X est lié à … Y » et en déduire les multiplicités.</p>"
+      ],
+      "explication": "<p>Chaque classe a son identifiant <code>{PK}</code> ; la spécialité est identifiée par son libellé. Un animal a exactement un référent : <code>1</code> côté <code>Veterinaire</code> ; un vétérinaire suit de 0 à plusieurs animaux : <code>*</code> côté <code>Animal</code>. Les spécialités donnent une association <code>* — *</code>, qui deviendra une table d'association à la traduction.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Les multiplicités admises",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#les-multiplicites-admises"
+      }
+    },
+    {
+      "id": "q21",
+      "type": "atelier",
+      "editeur": "relationnel",
+      "theme": "Traduction en relationnel",
+      "difficulte": 2,
+      "titre": "Groupes et festivals",
+      "enonce": "<p>Traduire en modèle relationnel ce diagramme de classes : <code>Groupe(id_groupe {PK}, nom, style)</code>, <code>Festival(id_festival {PK}, nom, ville)</code>, <code>Membre(id_membre {PK}, nom, instrument)</code> ; un membre appartient à exactement un groupe, un groupe compte un ou plusieurs membres (<code>Groupe 1 — 1..* Membre</code>) ; un groupe participe à plusieurs festivals, un festival accueille plusieurs groupes, et chaque participation a un cachet (<code>Groupe * — * Festival</code>, classe d'association <code>Participation(cachet)</code>).</p>",
+      "options": {
+        "ordre": false
+      },
+      "solution": [
+        "Groupe(_id_groupe_, nom, style)",
+        "Festival(_id_festival_, nom, ville)",
+        "Membre(_id_membre_, nom, instrument, #id_groupe)",
+        "Participation(_#id_groupe_, _#id_festival_, cachet)"
+      ],
+      "seuil": 0.9,
+      "indices": [
+        "<p>Chaque classe devient une relation (règle 1). Restent deux associations, dont les multiplicités décident de la règle.</p>",
+        "<p><code>1 — 1..*</code> : une clé étrangère du côté plusieurs. <code>* — *</code> : une table d'association, avec l'attribut de la classe d'association.</p>"
+      ],
+      "explication": "<p>Les trois classes donnent trois relations (règle 1). L'appartenance est <code>1 — 1..*</code> : <code>#id_groupe</code> va dans <code>Membre</code> (règle 3). La participation est <code>* — *</code> : la table <code>Participation</code> réunit les deux clés étrangères dans sa clé primaire et reçoit le cachet (règle 2). Vérification finale : trois classes et une association sont devenues des relations, l'autre association une clé étrangère.</p>",
+      "revoir": {
+        "texte": "Cours 1 · Règle 2 : les associations * — *",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#regle-2-les-associations"
+      }
+    },
+    {
+      "id": "q22",
+      "type": "ouverte",
+      "theme": "Traduction en relationnel",
+      "difficulte": 2,
+      "enonce": "<p>Expliquer pourquoi une association <code>* — *</code> se traduit par une table d'association plutôt que par une clé étrangère, et donner la clé primaire de cette table.</p>",
+      "reponse_modele": "<p>Dans une association <code>* — *</code>, une instance de chaque classe est liée à plusieurs instances de l'autre. Une clé étrangère placée d'un côté devrait contenir plusieurs valeurs dans une même ligne, ce qu'interdit la première forme normale (attributs atomiques), et il en irait de même de l'autre côté. On crée donc une table d'association, dont chaque ligne représente un lien : elle contient les clés primaires des deux classes, comme clés étrangères, et les attributs de l'association. Sa clé primaire est le couple de ces deux clés étrangères, ce qui autorise une seule ligne par couple.</p>",
+      "criteres": [
+        "une instance est liée à plusieurs instances de l'autre classe, des deux côtés",
+        "une clé étrangère devrait alors contenir plusieurs valeurs : contraire à la 1NF",
+        "la table d'association contient une ligne par lien, avec les attributs de l'association",
+        "sa clé primaire est formée des deux clés étrangères"
+      ],
+      "revoir": {
+        "texte": "Cours 1 · Règle 2 : les associations * — *",
+        "lien": "../generated_courses/cours-01-uml-vers-relationnel.html#regle-2-les-associations"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

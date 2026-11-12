@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="c">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Les arbres de jeux · Algorithmique 3 L2</title>
+<meta name="description" content="Quiz interactif sur les arbres de jeux : jeu de Grundy, stratégie gagnante, MinMax, fonction d'évaluation, NegaMax, élagage alpha-bêta, approfondissement itératif (Algorithmique 3, L2).">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="../generated_courses/index.html">Algorithmique 3</a>
+    <span aria-current="page">Quiz · Les arbres de jeux</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Algorithmique 3</span> Quiz · L2</p>
+    <h1>Arbres de jeux : MinMax et élagage αβ</h1>
+    <p class="chapeau">Propager des valeurs dans un arbre MinMax, passer à NegaMax, repérer les coupures de l'élagage αβ, et programmer en C la valeur d'une position.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-04-arbres-de-jeux-minmax.html">Cours 4 · Arbres de jeux : MinMax et élagage αβ</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 novembre 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Algorithmique 3 · L2 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "algo3-cours-04-arbres-de-jeux",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 4 · Arbres de jeux : MinMax et élagage αβ",
+      "lien": "../generated_courses/cours-04-arbres-de-jeux-minmax.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "qcm-multi",
+      "theme": "Jeux et stratégies",
+      "difficulte": 1,
+      "enonce": "<p>Quels jeux entrent dans le cadre de MinMax tel que le cours le présente ?</p>",
+      "choix": [
+        "les échecs",
+        "Othello",
+        "le backgammon (avec dés)",
+        "le poker (cartes cachées)",
+        "le puissance 4"
+      ],
+      "reponses": [
+        0,
+        1,
+        4
+      ],
+      "explication": "<p>Il faut deux joueurs, pas de hasard et une information complète. Les dés du backgammon introduisent du hasard ; au poker, les cartes de l'adversaire sont cachées.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Les jeux concernés",
+        "lien": "../generated_courses/cours-04-arbres-de-jeux-minmax.html#les-jeux-concernes"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "vrai-faux",
+      "theme": "Jeux et stratégies",
+      "difficulte": 1,
+      "enonce": "<p>S'il existe une stratégie gagnante pour un joueur, il peut aussi en exister une pour son adversaire.</p>",
+      "reponse": false,
+      "explication": "<p>Faux : une stratégie gagnante assure la victoire quelles que soient les répliques ; l'adversaire ne peut donc pas en avoir une lui aussi. Dans un jeu avec partie nulle, il peut n'en exister pour personne (tic-tac-toe).</p>",
+      "revoir": {
+        "texte": "Cours 4 · Stratégie gagnante",
+        "lien": "../generated_courses/cours-04-arbres-de-jeux-minmax.html#strategie-gagnante"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "qcm",
+      "theme": "Jeux et stratégies",
+      "difficulte": 1,
+      "enonce": "<p>Au jeu de Grundy, depuis la position 6, 1, quelles positions peut-on atteindre en un coup ?</p>",
+      "choix": [
+        "5, 1, 1 et 4, 2, 1",
+        "5, 1, 1, 4, 2, 1 et 3, 3, 1",
+        "5, 2 et 4, 3",
+        "4, 2, 1 seulement"
+      ],
+      "reponse": 0,
+      "explication": "<p>On partage une pile en deux piles <em>inégales</em> : 6 donne 5 + 1 ou 4 + 2 (3 + 3 est interdit), et la pile de 1 ne se partage pas.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Le jeu de Grundy",
+        "lien": "../generated_courses/cours-04-arbres-de-jeux-minmax.html#le-jeu-de-grundy"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "qcm",
+      "theme": "Jeux et stratégies",
+      "difficulte": 2,
+      "enonce": "<p>Au jeu de Grundy à 7 jetons, que répond B quand A commence par 5, 2 ?</p>",
+      "choix": [
+        "Il joue 4, 2, 1",
+        "Il joue 3, 2, 2",
+        "Peu importe : les deux coups gagnent",
+        "Il ne peut pas gagner"
+      ],
+      "reponse": 0,
+      "explication": "<p>Depuis 4, 2, 1, A est forcé de jouer 3, 2, 1, 1, puis B joue 2, 2, 1, 1, 1 et A ne peut plus jouer. Depuis 3, 2, 2, A joue 2, 2, 2, 1 et c'est B qui est bloqué.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Stratégie gagnante",
+        "lien": "../generated_courses/cours-04-arbres-de-jeux-minmax.html#strategie-gagnante"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "numerique",
+      "theme": "MinMax",
+      "difficulte": 1,
+      "enonce": "<p>Arbre à trois niveaux : la racine est un nœud Max, ses fils des nœuds Min, dont les fils sont des feuilles.</p>\n<ul>\n<li>premier fils Min : feuilles 3, 12, 8 ;</li>\n<li>deuxième fils Min : feuilles 2, 4, 6 ;</li>\n<li>troisième fils Min : feuilles 14, 5, 2.</li>\n</ul><p>Quelle est la valeur MinMax de la racine ?</p>",
+      "reponse": 3,
+      "explication": "<p>Les nœuds Min valent min(3, 12, 8) = 3, min(2, 4, 6) = 2 et min(14, 5, 2) = 2 ; la racine prend le maximum : 3. Le joueur choisit donc le premier coup.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Un exemple de MinMax avec heuristique",
+        "lien": "../generated_courses/cours-04-arbres-de-jeux-minmax.html#un-exemple-de-minmax-avec-heuristique"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "qcm",
+      "theme": "MinMax",
+      "difficulte": 1,
+      "enonce": "<p>Dans un arbre MinMax, que retient-on sur un nœud où c'est à l'adversaire de jouer ?</p>",
+      "choix": [
+        "Le minimum des valeurs de ses fils",
+        "Le maximum des valeurs de ses fils",
+        "La moyenne des valeurs de ses fils",
+        "La valeur du premier fils"
+      ],
+      "reponse": 0,
+      "explication": "<p>On suppose que l'adversaire joue de manière optimale : il choisit le coup le plus mauvais pour nous, celui de valeur minimale.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Stratégie gagnante",
+        "lien": "../generated_courses/cours-04-arbres-de-jeux-minmax.html#strategie-gagnante"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "qcm",
+      "theme": "MinMax",
+      "difficulte": 2,
+      "enonce": "<p>Pourquoi a-t-on besoin d'une fonction d'évaluation \\(h\\) ?</p>",
+      "choix": [
+        "On arrête l'arbre à une profondeur donnée : ses feuilles ne sont plus des fins de partie et il faut les estimer",
+        "Pour trier les coups avant de les jouer",
+        "Pour savoir à qui c'est le tour de jouer",
+        "Pour remplacer le minimum par un maximum dans NegaMax"
+      ],
+      "reponse": 0,
+      "explication": "<p>L'arbre complet est trop grand (complexité exponentielle) : on n'explore que quelques coups d'avance, et \\(h\\) estime si chaque position atteinte est favorable, entre \\(-\\infty\\) (défaite) et \\(+\\infty\\) (victoire).</p>",
+      "revoir": {
+        "texte": "Cours 4 · MinMax idéal et MinMax réel",
+        "lien": "../generated_courses/cours-04-arbres-de-jeux-minmax.html#minmax-ideal-et-minmax-reel"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "trous",
+      "theme": "NegaMax",
+      "difficulte": 2,
+      "enonce": "<p>Compléter l'algorithme NegaMax :</p>",
+      "code": true,
+      "texte": "fonction NegaMax(A)\n    si feuille(A) alors\n        retourner h(A)\n    max ← {{0}}\n    pour chaque fils F de A\n        v ← {{1}}\n        si v &gt; max alors\n            max ← v\n    retourner max",
+      "trous": [
+        {
+          "choix": [
+            "−∞",
+            "+∞",
+            "0",
+            "h(A)"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "−NegaMax(F)",
+            "NegaMax(F)",
+            "−h(F)",
+            "min(F)"
+          ],
+          "reponse": 0
+        }
+      ],
+      "explication": "<p>Chaque nœud est évalué pour le joueur qui y joue ; la valeur d'un fils pour lui est l'opposé de sa valeur pour l'adversaire : \\(\\min(h_i) = -\\max(-h_i)\\).</p>",
+      "revoir": {
+        "texte": "Cours 4 · NegaMax",
+        "lien": "../generated_courses/cours-04-arbres-de-jeux-minmax.html#negamax"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "numerique",
+      "theme": "NegaMax",
+      "difficulte": 2,
+      "enonce": "<p>En NegaMax, un nœud a trois fils, qui valent 4, −2 et 7 du point de vue de l'adversaire. Que vaut ce nœud ?</p>",
+      "reponse": 2,
+      "explication": "<p>Le nœud vaut le maximum des opposés : max(−4, 2, −7) = 2. C'est le coup qui laisse l'adversaire dans sa plus mauvaise position (−2 pour lui).</p>",
+      "revoir": {
+        "texte": "Cours 4 · NegaMax",
+        "lien": "../generated_courses/cours-04-arbres-de-jeux-minmax.html#negamax"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "qcm",
+      "theme": "Élagage αβ",
+      "difficulte": 2,
+      "enonce": "<p>Arbre à trois niveaux : la racine est un nœud Max, ses fils des nœuds Min, dont les fils sont des feuilles.</p>\n<ul>\n<li>premier fils Min : feuilles 3, 12, 8 ;</li>\n<li>deuxième fils Min : feuilles 2, 4, 6 ;</li>\n<li>troisième fils Min : feuilles 14, 5, 2.</li>\n</ul><p>On applique l'élagage αβ en explorant de gauche à droite. Quelles feuilles ne sont <strong>pas</strong> évaluées ?</p>",
+      "choix": [
+        "4 et 6 seulement",
+        "4, 6, 5 et 2",
+        "Aucune",
+        "12 et 8"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Après le premier fils, la racine est assurée d'avoir au moins 3.</p>"
+      ],
+      "explication": "<p>Le premier fils Min vaut 3 : la racine vaudra au moins 3. Dans le deuxième, la feuille 2 montre qu'il vaudra au plus 2, moins que 3 : on coupe 4 et 6. Dans le troisième, après 14 puis 5, il vaut au plus 5, ce qui pourrait encore battre 3 : il faut lire la feuille 2. Il n'y a de coupure que dans le deuxième fils. Avec les feuilles du troisième fils dans l'ordre 2, 5, 14, on aurait coupé aussi 5 et 14 : l'ordre des coups compte.</p>",
+      "revoir": {
+        "texte": "Cours 4 · L'élagage αβ complet",
+        "lien": "../generated_courses/cours-04-arbres-de-jeux-minmax.html#l-elagage-complet"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "vrai-faux",
+      "theme": "Élagage αβ",
+      "difficulte": 1,
+      "enonce": "<p>L'élagage αβ peut faire choisir un autre coup que MinMax, en échange d'un calcul plus rapide.</p>",
+      "reponse": false,
+      "explication": "<p>Faux : il ne laisse de côté que des branches qui ne pouvaient pas changer la valeur de la racine. Le coup choisi est le même ; seul le nombre de nœuds explorés baisse.</p>",
+      "revoir": {
+        "texte": "Cours 4 · L'élagage αβ complet",
+        "lien": "../generated_courses/cours-04-arbres-de-jeux-minmax.html#l-elagage-complet"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "qcm",
+      "theme": "Élagage αβ",
+      "difficulte": 3,
+      "enonce": "<p>En NegaMax, un nœud a un maximum provisoire \\(mp = 4\\). On évalue son fils suivant, dont la valeur provisoire atteint \\(-3\\) après sa première feuille. Que fait l'élagage ?</p>",
+      "choix": [
+        "Il coupe : le fils vaudra au moins −3, hors de l'intervalle d'utilité ]−∞, −4[",
+        "Il continue : −3 &lt; 4",
+        "Il coupe tout le père",
+        "Il continue, car on ne coupe qu'aux nœuds Min"
+      ],
+      "reponse": 0,
+      "explication": "<p>Le fils est un nœud Max : sa valeur ne fait que croître. Il ne peut faire monter le père que s'il finit sous \\(-mp = -4\\) ; il vaut déjà au moins −3, c'est perdu d'avance.</p>",
+      "revoir": {
+        "texte": "Cours 4 · L'intervalle d'utilité",
+        "lien": "../generated_courses/cours-04-arbres-de-jeux-minmax.html#l-intervalle-d-utilite"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "trous",
+      "theme": "Élagage αβ",
+      "difficulte": 3,
+      "enonce": "<p>Compléter l'appel récursif de l'algorithme AlphaBeta des notes :</p>",
+      "code": true,
+      "texte": "fonction AlphaBeta(A, α, β)\n    si feuille(A) alors\n        retourner h(A)\n    max ← {{0}}\n    tant que il reste des fils et max &lt; β\n        v ← −AlphaBeta(fils suivant, {{1}}, {{2}})\n        si v &gt; max alors\n            max ← v\n    retourner max",
+      "trous": [
+        {
+          "choix": [
+            "α",
+            "−∞",
+            "β",
+            "0"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "−β",
+            "β",
+            "−α",
+            "α"
+          ],
+          "reponse": 0
+        },
+        {
+          "choix": [
+            "−max",
+            "max",
+            "−α",
+            "β"
+          ],
+          "reponse": 0
+        }
+      ],
+      "explication": "<p>Un fils n'est utile que si sa valeur est dans \\(]-\\beta, -mp[\\) : sa valeur doit pouvoir remonter jusqu'au père (\\(-x &gt; mp\\)) et au-dessus (\\(-x &lt; \\beta\\)). Le maximum part de α, la meilleure valeur déjà garantie.</p>",
+      "revoir": {
+        "texte": "Cours 4 · L'élagage αβ complet",
+        "lien": "../generated_courses/cours-04-arbres-de-jeux-minmax.html#l-elagage-complet"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "ordre",
+      "theme": "Élagage αβ",
+      "difficulte": 2,
+      "enonce": "<p>Remettre dans l'ordre l'approfondissement itératif :</p>",
+      "elements": [
+        "construire l'arbre jusqu'à un niveau minimal (3)",
+        "l'évaluer avec NegaMax et l'élagage αβ",
+        "trier les coups d'après les valeurs obtenues",
+        "relancer la recherche un niveau plus bas, tant qu'il reste du temps",
+        "jouer le coup de la dernière recherche terminée"
+      ],
+      "explication": "<p>Chaque recherche termine vite et fournit un coup jouable ; le tri place les meilleurs coups en premier, ce qui rend l'élagage de la recherche suivante plus efficace.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Le contrôle du temps",
+        "lien": "../generated_courses/cours-04-arbres-de-jeux-minmax.html#le-controle-du-temps"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "code",
+      "langage": "c",
+      "theme": "Code",
+      "difficulte": 2,
+      "enonce": "<p>Jeu des allumettes : il reste <code>n</code> allumettes ; chacun à son tour en retire 1, 2 ou 3 ; celui qui prend la <strong>dernière</strong> a gagné. Écrire <code>int valeur( int n )</code> qui renvoie +1 si le joueur qui doit jouer a une stratégie gagnante, −1 sinon, par la méthode du cours (NegaMax, sans mémorisation).</p>",
+      "depart": "int valeur( int n )\n{\n  \n}\n",
+      "solution": "int valeur( int n )\n{\n  if( n == 0 )\n    return -1 ;            /* l'adversaire vient de prendre la dernière */\n  int meilleur = -1 ;\n  for( int k = 1 ; k <= 3 && k <= n ; k++ ) {\n    int v = -valeur( n - k ) ;\n    if( v > meilleur )\n      meilleur = v ;\n  }\n  return meilleur ;\n}\n",
+      "harnais": "\n#include <stdio.h>\nint main( void )\n{\n  int n ;\n  while( scanf( \"%d\" , &n ) == 1 )\n    printf( \"%d\\n\" , valeur( n ) ) ;\n  return 0 ;\n}\n",
+      "tests": [
+        {
+          "nom": "1 à 4",
+          "entree": "1 2 3 4\n",
+          "sortie": "1\n1\n1\n-1\n"
+        },
+        {
+          "nom": "5 à 8",
+          "entree": "5 6 7 8\n",
+          "sortie": "1\n1\n1\n-1\n"
+        },
+        {
+          "nom": "12 et 15",
+          "entree": "12 15\n",
+          "sortie": "-1\n1\n"
+        }
+      ],
+      "indices": [
+        "<p>Avec 0 allumette, c'est l'adversaire qui vient de prendre la dernière : le joueur a perdu.</p>",
+        "<p>Pour chaque retrait possible \\(k\\), la valeur du coup est <code>-valeur( n - k )</code>.</p>"
+      ],
+      "explication": "<p>Les positions perdantes sont les multiples de 4 : quoi qu'on retire, l'adversaire complète à 4. La fonction le retrouve en explorant tout l'arbre, d'une taille exponentielle en \\(n\\) : au-delà de 25 allumettes environ, il faudrait mémoriser les valeurs déjà calculées.</p>",
+      "revoir": {
+        "texte": "Cours 4 · L'algorithme MinMax",
+        "lien": "../generated_courses/cours-04-arbres-de-jeux-minmax.html#l-algorithme-minmax"
+      }
+    },
+    {
+      "id": "q16",
+      "type": "ouverte",
+      "theme": "MinMax",
+      "difficulte": 2,
+      "enonce": "<p>Expliquer l'idée de NegaMax, et l'erreur de signe qu'il faut éviter quand on écrit la fonction d'évaluation.</p>",
+      "reponse_modele": "<p>NegaMax s'appuie sur \\(\\min(h_1, h_2, \\dots) = -\\max(-h_1, -h_2, \\dots)\\) : chaque nœud est évalué du point de vue du joueur qui doit y jouer, et la valeur d'un fils, évaluée pour l'adversaire, est changée de signe avant d'en prendre le maximum. Il n'y a plus qu'une fonction et que des nœuds Max. En contrepartie, \\(h\\) doit évaluer chaque feuille pour le joueur qui doit y jouer : si l'on dispose d'une évaluation du point de vue d'un seul camp, il faut l'opposer quand c'est à l'autre camp de jouer, sinon le programme choisit le pire coup.</p>",
+      "criteres": [
+        "l'égalité min = −max des opposés",
+        "chaque nœud évalué pour le joueur qui y joue, valeur des fils changée de signe",
+        "h doit être donnée du point de vue du joueur qui joue à la feuille"
+      ],
+      "revoir": {
+        "texte": "Cours 4 · NegaMax",
+        "lien": "../generated_courses/cours-04-arbres-de-jeux-minmax.html#negamax"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

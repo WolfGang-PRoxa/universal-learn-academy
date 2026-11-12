@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="reseau">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VLAN et STP · Réseaux L2</title>
+<meta name="description" content="Cours 7 de réseaux (L2) : commutation, domaines de collision et de diffusion, segmentation par routeur et router-on-a-stick, VLAN (principe, configuration statique et dynamique, types, avantages), trunk et trame 802.1Q, routage inter-VLAN, liens redondants et boucles, Spanning Tree Protocol (pont racine, ports racine, désignés et bloqués, coûts, états des ports, normes).">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-07-vlan-stp.html" title="Quiz · Cours 7 · VLAN et STP">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Réseaux</a>
+    <span aria-current="page">Cours 7 · VLAN et STP</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Réseaux</span> Cours 7 · L2 S3</p>
+    <h1>VLAN et STP</h1>
+    <p class="chapeau">Deux outils pour les réseaux commutés. Les VLAN découpent un même réseau physique en plusieurs domaines de diffusion, sans racheter de commutateurs ; les trunks 802.1Q les transportent d'un commutateur à l'autre. Le Spanning Tree Protocol, lui, permet de câbler des liens de secours sans créer de boucle, en bloquant les ports en trop.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/07%20-%20VLAN_STP.pdf">07 - VLAN_STP.pdf</a> · 46 diapos ; livre Cisco « Commutation, routage et Wi-Fi », chapitres « L'environnement commuté », « Les VLAN » et « Spanning Tree »</dd></div>
+      <div><dt>Enseignant</dt><dd>Sylvain Meignier</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Compter les domaines de collision et de diffusion d'un réseau de concentrateurs, de commutateurs et de routeurs.</li>
+        <li>Expliquer ce qu'est un VLAN, ce qu'il apporte, et pourquoi il faut un routeur entre deux VLAN.</li>
+        <li>Distinguer port d'accès et port trunk ; décrire l'étiquette 802.1Q.</li>
+        <li>Expliquer pourquoi une boucle est grave en Ethernet et pas en IP.</li>
+        <li>Dérouler l'algorithme STP : pont racine, ports racine, ports désignés, ports bloqués.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-04-liaison-de-donnees.html">Cours 4</a> : trame Ethernet, adresse MAC, commutateur et table MAC, ARP, domaine de broadcast.</li>
+        <li><a href="cours-05-couche-reseau.html">Cours 5</a> : sous-réseaux, routeur, TTL.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Commutation et domaines <span class="ref">diapos 2–9</span></h2>
+    <p>Un commutateur travaille à la couche liaison (Ethernet dans le modèle ARPA : MAC, LLC, CSMA/CD). Il fait suivre chaque trame vers un ou plusieurs ports de sortie à partir de deux informations : le <strong>port d'entrée</strong> et l'<strong>adresse MAC de destination</strong>.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Domaine de collision</span></p>
+      <p>Zone du réseau où des trames peuvent entrer en collision. Ce peut être un seul câble, un seul concentrateur, ou tout le réseau.</p>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Domaine de diffusion</span></p>
+      <p>Zone du réseau où un hôte peut joindre tous les autres directement, sans passer par un routeur : c'est l'ensemble des hôtes qui reçoivent une trame envoyée à l'adresse de diffusion Ethernet <code>FF:FF:FF:FF:FF:FF</code>. Des concentrateurs et commutateurs reliés entre eux forment un seul domaine de diffusion ; les routeurs le découpent.</p>
+    </div>
+
+    <div class="tableau">
+      <table>
+        <thead><tr><th>Équipement</th><th>Domaines de collision</th><th>Domaines de diffusion</th></tr></thead>
+        <tbody>
+          <tr><td>Concentrateur (hub), ou plusieurs reliés</td><td>Un seul pour tout l'ensemble</td><td>Un seul</td></tr>
+          <tr><td>Commutateur (switch), ou plusieurs reliés</td><td>Un par port</td><td>Un seul</td></tr>
+          <tr><td>Routeur</td><td>Un par port</td><td>Un par interface</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Plusieurs sous-réseaux sur les mêmes commutateurs</h3>
+    <p>Les diapos 4 à 9 placent sur les mêmes commutateurs des machines de deux sous-réseaux IP, 172.30.1.0/24 et 172.30.2.0/24. Pour passer de l'un à l'autre, il faut un routeur, puisque ce sont deux réseaux IP. Mais au niveau Ethernet, tout ce monde reste dans <strong>un seul domaine de diffusion</strong> : la requête ARP de 172.30.1.21 (une diffusion) arrive aussi aux machines de 172.30.2.0/24, qui l'ignorent mais doivent la traiter.</p>
+
+    <div class="bloc retenir">
+      <p class="bloc-titre">À retenir <span>Deux domaines de diffusion différents</span></p>
+      <p>Découper en sous-réseaux sépare les diffusions <em>IP</em> ; cela ne sépare pas les diffusions <em>Ethernet</em>. Le commutateur ne lit que les trames : il ignore tout des adresses IP.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Segmenter avec un routeur <span class="ref">diapos 10–13</span></h2>
+    <p><strong>Solution 1</strong> (diapo 10) : un routeur entre deux commutateurs, une interface par sous-réseau (172.30.1.1 et 172.30.2.1). Chaque côté est alors un domaine de diffusion séparé ; mais il faut un commutateur par sous-réseau, et une interface du routeur par sous-réseau.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Router-on-a-stick</span></p>
+      <p>Un seul lien physique entre le routeur et le commutateur, sur lequel le routeur crée des <strong>interfaces virtuelles</strong> (sous-interfaces), une par sous-réseau : <code>Fa0.1</code> avec 172.30.1.1/24, <code>Fa0.2</code> avec 172.30.2.1/24.</p>
+    </div>
+    <div class="colonnes">
+      <div class="colonne">
+        <p><strong>Avantage</strong></p>
+        <ul><li>Une seule interface physique du routeur pour plusieurs sous-réseaux.</li></ul>
+      </div>
+      <div class="colonne">
+        <p><strong>Inconvénients</strong></p>
+        <ul>
+          <li>Un seul lien entre les sous-réseaux : sa bande passante est partagée.</li>
+          <li>Sans VLAN, on n'a que deux domaines de diffusion IP : le commutateur, qui n'analyse que les trames, laisse toujours passer l'ARP de 172.30.1.21 vers tous les ports (diapos 12 et 13).</li>
+        </ul>
+      </div>
+    </div>
+    <p>Il manque donc un moyen de séparer les diffusions au niveau du commutateur lui-même : ce sont les VLAN.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les VLAN <span class="ref">diapos 14–23</span></h2>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>VLAN (réseau local virtuel)</span></p>
+      <p>Un VLAN est un regroupement logique de périphériques d'un même réseau physique, fait à la couche liaison et identifié par un numéro. Les machines d'un même VLAN communiquent comme si elles étaient sur le même câble ; des machines de VLAN différents, même branchées sur le même commutateur, se comportent comme si elles étaient sur des réseaux indépendants. Chaque VLAN est un <strong>domaine de diffusion séparé</strong>.</p>
+    </div>
+
+    <ul>
+      <li>Les trames restent à l'intérieur de leur VLAN ; pour passer d'un VLAN à un autre, il faut un <strong>routeur</strong> (diapo 15).</li>
+      <li>Un VLAN n'est pas forcément un sous-réseau IP : la séparation se fait au niveau MAC. Mais on fait presque toujours correspondre un VLAN à un sous-réseau, ce qui simplifie le routage entre VLAN.</li>
+      <li>Un VLAN est indépendant de l'emplacement physique : on regroupe les machines par fonction, pas par bureau.</li>
+    </ul>
+
+    <h3>Configuration statique ou dynamique</h3>
+    <p>En <strong>configuration statique</strong> (diapo 16), l'administrateur affecte chaque port à un VLAN. <code>show vlan brief</code> donne la liste des VLAN et de leurs ports :</p>
+<pre class="terminal"><code>Switch# show vlan brief
+VLAN Name                 Status    Ports
+---- -------------------- --------- -------------------------------
+1    default              active    Fa0/1, Fa0/2, Fa0/3, Gig0/1
+9    Gestion_IT           active    Fa0/4, Fa0/5, Fa0/6, Fa0/7
+                                    Fa0/8, Fa0/9, Fa0/10, Fa0/11
+                                    ...
+1002 fddi-default         active
+1003 token-ring-default   active
+1004 fddinet-default      active
+1005 trnet-default        active</code></pre>
+    <p>Par défaut, tous les ports sont dans le VLAN 1 (diapo 22). Les VLAN 1002 à 1005 existent toujours sur un commutateur Cisco, pour des technologies anciennes (FDDI, Token Ring).</p>
+    <p>En <strong>configuration dynamique</strong> (diapo 17), le commutateur choisit le VLAN d'un port d'après l'adresse MAC de la machine branchée, à l'aide d'une base de données. Moins de passages dans le local technique quand un utilisateur arrive ou déménage, et une alerte centrale quand une machine inconnue se branche ; mais il faut tenir cette base d'adresses MAC à jour.</p>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Historique</span></p>
+      <p>Les VLAN viennent d'ISL, protocole propre à Cisco (base des VLAN, étiquetage, routage inter-VLAN). La norme IEEE 802.1Q (1998) en reprend l'essentiel ; sa révision de 2003 ajoute l'enregistrement dynamique des VLAN (GVRP) et la compatibilité avec le Spanning Tree (diapos 18–19).</p>
+    </div>
+
+    <h3>Avantages</h3>
+    <div class="tableau compact">
+      <table>
+        <thead><tr><th>Avantage</th><th>Pourquoi</th></tr></thead>
+        <tbody>
+          <tr><td>Sécurité</td><td>Les trames ne vont qu'aux machines du même VLAN.</td></tr>
+          <tr><td>Coûts réduits</td><td>Un même réseau physique, dit convergé, porte informatique, téléphonie et vidéo.</td></tr>
+          <tr><td>Performances</td><td>Moins de diffusions par domaine ; une tempête de diffusion (<i>broadcast storm</i>) reste confinée à un VLAN.</td></tr>
+          <tr><td>Gestion</td><td>Les machines sont regroupées par fonction, pas par emplacement.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Types de VLAN</h3>
+    <ul>
+      <li><strong>VLAN de données</strong> : le trafic des utilisateurs.</li>
+      <li><strong>VLAN voix</strong> : la téléphonie sur IP, qui demande un délai faible et un trafic prioritaire. La diapo 23 indique « VLAN par défaut : 150 » <span class="badge a-verifier">À vérifier</span> : 150 est le numéro pris en exemple dans le livre Cisco, pas une valeur par défaut des commutateurs ; le VLAN voix se choisit à la configuration.</li>
+      <li><strong>VLAN de gestion</strong> : pour administrer les équipements réseau (accès SSH aux commutateurs, par exemple).</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Trunk et étiquette 802.1Q <span class="ref">diapos 24–31</span></h2>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Trunk (agrégation de VLAN)</span></p>
+      <p>Un trunk est une liaison point à point entre deux équipements (commutateur, routeur ou PC) qui transporte <strong>plusieurs VLAN</strong>. Quand une trame y entre, on ajoute à son en-tête une étiquette (<i>tag</i>) donnant son numéro de VLAN, sauf pour le <strong>VLAN natif</strong>, dont les trames passent sans étiquette. Il faut alors recalculer la somme de contrôle (FCS) de la trame ; de l'autre côté, le commutateur retire l'étiquette et recalcule la FCS.</p>
+    </div>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Port d'accès</span> <span class="badge ajout">Ajout</span></p>
+      <p>À l'inverse, un port d'accès appartient à un seul VLAN (son PVID) et y relie une machine ordinaire. Les trames y circulent sans étiquette : la machine ne sait même pas qu'elle est dans un VLAN.</p>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 660 170" width="660" role="img" aria-labelledby="fig-8021q-titre">
+        <title id="fig-8021q-titre">Trame Ethernet 802.1Q : préambule 7 octets, SFD 1, adresse destination 6, adresse source 6, TPID 2, TCI 2, type 2, données 42 à 1500, FCS 4. Le TCI se décompose en priorité 3 bits, CFI 1 bit et identifiant de VLAN 12 bits.</title>
+        <text x="50" y="16" text-anchor="middle" class="t2">7 oct.</text>
+        <text x="110" y="16" text-anchor="middle" class="t2">1</text>
+        <text x="165" y="16" text-anchor="middle" class="t2">6</text>
+        <text x="235" y="16" text-anchor="middle" class="t2">6</text>
+        <text x="300" y="16" text-anchor="middle" class="t2">2</text>
+        <text x="360" y="16" text-anchor="middle" class="t2">2</text>
+        <text x="420" y="16" text-anchor="middle" class="t2">2</text>
+        <text x="520" y="16" text-anchor="middle" class="t2">42 à 1500</text>
+        <text x="615" y="16" text-anchor="middle" class="t2">4</text>
+        <rect class="boite" x="10" y="24" width="80" height="32"/><text x="50" y="45" text-anchor="middle" class="t2">Préambule</text>
+        <rect class="boite" x="90" y="24" width="40" height="32"/><text x="110" y="45" text-anchor="middle" class="t2">SFD</text>
+        <rect class="boite" x="130" y="24" width="70" height="32"/><text x="165" y="45" text-anchor="middle">@ dest.</text>
+        <rect class="boite" x="200" y="24" width="70" height="32"/><text x="235" y="45" text-anchor="middle">@ src</text>
+        <rect class="boite-accent" x="270" y="24" width="60" height="32"/><text x="300" y="45" text-anchor="middle" class="gras">TPID</text>
+        <rect class="boite-accent" x="330" y="24" width="60" height="32"/><text x="360" y="45" text-anchor="middle" class="gras">TCI</text>
+        <rect class="boite" x="390" y="24" width="60" height="32"/><text x="420" y="45" text-anchor="middle">Type</text>
+        <rect class="boite" x="450" y="24" width="140" height="32"/><text x="520" y="45" text-anchor="middle">Données</text>
+        <rect class="boite" x="590" y="24" width="50" height="32"/><text x="615" y="45" text-anchor="middle">FCS</text>
+        <path class="pointille" d="M330 56 L230 104"/>
+        <path class="pointille" d="M390 56 L550 104"/>
+        <text x="270" y="156" text-anchor="middle" class="t2">3 bits</text>
+        <text x="330" y="156" text-anchor="middle" class="t2">1</text>
+        <text x="450" y="156" text-anchor="middle" class="t2">12 bits</text>
+        <rect class="boite-accent" x="230" y="104" width="80" height="32"/><text x="270" y="125" text-anchor="middle">Priorité</text>
+        <rect class="boite-accent" x="310" y="104" width="40" height="32"/><text x="330" y="125" text-anchor="middle" class="t2">CFI</text>
+        <rect class="boite-accent" x="350" y="104" width="200" height="32"/><text x="450" y="125" text-anchor="middle" class="gras">VLAN ID (VID)</text>
+      </svg>
+      <figcaption>Trame Ethernet avec étiquette 802.1Q (diapo 25) : 4 octets insérés entre l'adresse source et le champ type.</figcaption>
+    </figure>
+
+    <ul>
+      <li><strong>TPID</strong> (2 octets) : type de l'étiquette, 0x8100 pour 802.1Q. Placé là où l'on attend le champ type, il signale qu'une étiquette suit.</li>
+      <li><strong>TCI</strong> (2 octets), qui contient :
+        <ul>
+          <li><strong>Priorité</strong> (3 bits) : niveaux de priorité de l'IEEE 802.1p (utile pour la voix) ;</li>
+          <li><strong>CFI</strong> (1 bit) : Ethernet ou Token Ring (ce bit est aujourd'hui renommé DEI et marque les trames à jeter en premier en cas de congestion) ;</li>
+          <li><strong>VID</strong> (12 bits) : le numéro du VLAN.</li>
+        </ul>
+      </li>
+    </ul>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Deux détails de la diapo 25</span></p>
+      <ul>
+        <li>Le schéma donne 5 octets à l'adresse de destination : une adresse MAC en fait 6.</li>
+        <li>« Jusqu'à 4096 VLAN » : 12 bits donnent bien \(2^{12} = 4096\) valeurs, mais 0 et 4095 sont réservés ; il reste 4094 VLAN utilisables (1 à 4094).</li>
+      </ul>
+    </div>
+
+    <h3>Où mettre un trunk</h3>
+    <ul>
+      <li>Entre deux commutateurs : c'est le cas le plus courant (diapo 27, trunk 802.1Q portant les VLAN 1, 10 et 20).</li>
+      <li>Entre un commutateur et un hôte : si l'hôte gère les trunks, il peut analyser le trafic de tous les VLAN.</li>
+      <li>Entre un commutateur et un routeur : pour le routage entre VLAN.</li>
+    </ul>
+
+    <h3>Le trajet d'une trame</h3>
+    <p>Les diapos 30 et 31 suivent une trame du VLAN 20 :</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 660 170" width="660" role="img" aria-labelledby="fig-trajet-titre">
+        <title id="fig-trajet-titre">PC A, dans le VLAN 20, envoie une trame sans étiquette au commutateur 1 par un port d'accès de PVID 20. Sur le trunk entre le commutateur 1 et le commutateur 2, la trame porte l'étiquette VID 20. Le commutateur 2 retire l'étiquette et remet la trame sans étiquette à PC B par un port d'accès du VLAN 20.</title>
+        <rect class="boite" x="10" y="40" width="80" height="40" rx="6"/><text x="50" y="58" text-anchor="middle">PC A</text><text x="50" y="73" text-anchor="middle" class="t2">VLAN 20</text>
+        <rect class="boite" x="170" y="36" width="100" height="48" rx="6"/><text x="220" y="64" text-anchor="middle" class="gras">Switch 1</text>
+        <rect class="boite" x="400" y="36" width="100" height="48" rx="6"/><text x="450" y="64" text-anchor="middle" class="gras">Switch 2</text>
+        <rect class="boite" x="570" y="40" width="80" height="40" rx="6"/><text x="610" y="58" text-anchor="middle">PC B</text><text x="610" y="73" text-anchor="middle" class="t2">VLAN 20</text>
+        <path class="trait" d="M90 60 H170"/>
+        <path class="accent" d="M270 60 H400"/>
+        <path class="trait" d="M500 60 H570"/>
+        <text x="130" y="28" text-anchor="middle" class="t2">accès, PVID 20</text>
+        <text x="335" y="28" text-anchor="middle" class="t2 accent">trunk 802.1Q</text>
+        <text x="535" y="28" text-anchor="middle" class="t2">accès, PVID 20</text>
+        <rect class="boite" x="100" y="110" width="60" height="28"/><text x="130" y="129" text-anchor="middle" class="t2">trame</text>
+        <rect class="boite-accent" x="285" y="110" width="50" height="28"/><text x="310" y="129" text-anchor="middle" class="t2 gras">VID 20</text>
+        <rect class="boite" x="335" y="110" width="60" height="28"/><text x="365" y="129" text-anchor="middle" class="t2">trame</text>
+        <rect class="boite" x="505" y="110" width="60" height="28"/><text x="535" y="129" text-anchor="middle" class="t2">trame</text>
+        <text x="130" y="158" text-anchor="middle" class="t2">sans étiquette</text>
+        <text x="340" y="158" text-anchor="middle" class="t2">étiquette ajoutée</text>
+        <text x="535" y="158" text-anchor="middle" class="t2">étiquette retirée</text>
+      </svg>
+      <figcaption>Port d'accès et trunk : l'étiquette n'existe que sur le trunk (d'après les diapos 30 et 31).</figcaption>
+    </figure>
+
+    <h3>Communication entre VLAN</h3>
+    <p>Pour que le VLAN 10 (172.30.1.0/24) et le VLAN 20 (172.30.2.0/24) se parlent, il faut un routeur. Deux montages :</p>
+    <ul>
+      <li>diapo 28 : une interface physique du routeur par VLAN (Eth1 172.30.1.1 dans le VLAN 10, Eth2 172.30.2.1 dans le VLAN 20), chacune reliée à un port d'accès du commutateur ;</li>
+      <li>diapo 29 : un seul lien en trunk entre le routeur et le commutateur, et une sous-interface par VLAN (Eth0.1 172.30.1.1 pour le VLAN 10, Eth0.2 172.30.2.1 pour le VLAN 20) : c'est le router-on-a-stick, cette fois avec de vrais domaines de diffusion séparés.</li>
+    </ul>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La configuration sous IOS</span> <span class="badge ajout">Ajout</span></p>
+      <p>Les commandes qui servent en TP, sur un commutateur puis sur un routeur (voir le <a href="cours-a1-introduction-ios.html">cours A1</a> pour les modes de l'IOS) :</p>
+<pre class="terminal"><code>S1(config)# vlan 10
+S1(config-vlan)# name Etudiants
+S1(config-vlan)# exit
+S1(config)# interface fa0/1
+S1(config-if)# switchport mode access
+S1(config-if)# switchport access vlan 10
+S1(config-if)# exit
+S1(config)# interface gi0/1
+S1(config-if)# switchport mode trunk
+S1(config-if)# switchport trunk allowed vlan 1,10,20
+
+R1(config)# interface g0/0.10
+R1(config-subif)# encapsulation dot1Q 10
+R1(config-subif)# ip address 172.30.1.1 255.255.255.0
+R1(config-subif)# exit
+R1(config)# interface g0/0.20
+R1(config-subif)# encapsulation dot1Q 20
+R1(config-subif)# ip address 172.30.2.1 255.255.255.0
+R1(config-subif)# exit
+R1(config)# interface g0/0
+R1(config-if)# no shutdown</code></pre>
+      <p>Chaque machine du VLAN 10 prend 172.30.1.1 comme passerelle, celles du VLAN 20, 172.30.2.1.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Liens redondants et boucles <span class="ref">diapos 33–36</span></h2>
+    <p>Une topologie en arbre a un défaut : si un commutateur ou un lien tombe, toute la branche est coupée. La solution est la <strong>redondance</strong> : doubler les commutateurs et les liens importants, pour créer des chemins de secours. <span class="badge examen">Examen</span></p>
+    <p>Mais un chemin de secours crée une boucle. Les deux couches ne réagissent pas de la même façon :</p>
+
+    <div class="colonnes">
+      <div class="colonne">
+        <p><strong>En IP (diapo 34)</strong> <span class="badge examen">Examen</span></p>
+        <p>Le champ TTL est décrémenté à chaque routeur. Si un paquet tourne dans une boucle, à TTL = 0 il n'est plus routé et disparaît. Exemple de la diapo : trois routeurs en triangle dont chacun envoie sa route par défaut au suivant ; un paquet vers une destination inconnue fait le tour jusqu'à épuisement du TTL.</p>
+      </div>
+      <div class="colonne">
+        <p><strong>En Ethernet (diapos 35–36)</strong> <span class="badge examen">Examen</span></p>
+        <p>La trame n'a pas de TTL, et Ethernet ne gère pas les chemins redondants. Une trame de diffusion (une requête ARP) est renvoyée sur tous les ports, revient, repart… à l'infini : c'est une <strong>tempête de diffusion</strong>. En plus, les tables MAC deviennent incohérentes.</p>
+      </div>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Table MAC incohérente (diapo 36)</span></p>
+      <p>S1 et S2 sont reliés par deux liens (FA1–FA1 et FA2–FA2) ; la machine MACA est sur FA3 de S1, MACB sur FA3 de S2. Quand MACB émet, sa trame arrive à S1 par FA1 <em>et</em> par FA2. S1 apprend donc MACB sur FA1, puis sur FA2, puis de nouveau sur FA1 au gré des copies qui tournent : il ne sait plus où se trouve MACB.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le Spanning Tree Protocol <span class="ref">diapos 37–38</span></h2>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>STP</span></p>
+      <p>Le Spanning Tree Protocol crée une topologie <strong>sans boucle</strong> : il choisit un <strong>pont racine</strong> (<i>root bridge</i>), puis pour chaque autre commutateur le meilleur chemin vers cette racine, et bloque les ports en trop. Le résultat est un arbre couvrant (arbre de recouvrement). Si le chemin principal tombe, le chemin de secours bloqué est réactivé.</p>
+    </div>
+    <p>STP désigne en fait une famille de normes (STP, RSTP, MSTP, variantes Cisco…). Il faut vérifier qu'un commutateur le gère avant de l'acheter.</p>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Pont ou commutateur</span></p>
+      <p>Dans les années 1980, on appelait les commutateurs des ponts (<i>bridges</i>). C'est pourquoi STP et son algorithme STA parlent de « bridges ».</p>
+    </div>
+
+    <h3>Coût des liens et BPDU</h3>
+    <p>Chaque lien a un coût, d'autant plus faible que le lien est rapide :</p>
+    <div class="tableau compact centre">
+      <table>
+        <thead><tr><th>Vitesse</th><th>Coût STP (IEEE 802.1D)</th></tr></thead>
+        <tbody>
+          <tr><td>10 Mb/s</td><td>100</td></tr>
+          <tr><td>100 Mb/s</td><td>19</td></tr>
+          <tr><td>1 Gb/s</td><td>4</td></tr>
+          <tr><td>10 Gb/s</td><td>2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Les commutateurs échangent des trames <strong>BPDU</strong> (<i>Bridge Protocol Data Unit</i>), envoyées en multidiffusion à l'adresse MAC <code>01:80:C2:00:00:00</code>.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>L'algorithme en quatre étapes <span class="ref">diapos 39–42</span></h2>
+
+    <h3>Étape 1 : élire le pont racine</h3>
+    <p>Le pont racine est le commutateur qui a le plus petit <strong>BID</strong> (<i>Bridge Identifier</i>) : BID = priorité + numéro de VLAN + adresse MAC. La priorité vaut 32 768 par défaut ; à priorité égale, c'est donc la plus petite adresse MAC qui gagne. L'administrateur peut forcer le choix :</p>
+<pre class="terminal"><code>S1(config)# spanning-tree vlan 1 priority 24576
+S1(config)# spanning-tree vlan 1 root primary
+S2(config)# spanning-tree vlan 1 root secondary</code></pre>
+    <p>La première commande fixe la priorité ; les deux suivantes désignent directement un pont racine principal et un secondaire.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le BID en détail</span> <span class="badge ajout">Ajout</span></p>
+      <p>Le BID fait 8 octets : 4 bits de priorité, 12 bits de numéro de VLAN (l'<i>extended system ID</i>, qui permet un arbre par VLAN) et 48 bits d'adresse MAC (diapo 38). Comme la priorité n'occupe que les 4 bits de poids fort des 16, elle se règle par pas de 4096 : 0, 4096, …, 24 576, 28 672, 32 768… Dans le VLAN 1, un commutateur à la priorité par défaut affiche donc 32 768 + 1 = 32 769.</p>
+    </div>
+
+    <h3>Étape 2 : choisir les ports racine</h3>
+    <p>Chaque commutateur autre que la racine choisit un <strong>port racine</strong> (R) : celui qui offre le meilleur chemin, c'est-à-dire le coût le plus faible, vers le pont racine. Le <strong>coût du chemin racine</strong> est la somme des coûts des liens jusqu'à la racine. Sur la diapo 40, le commutateur de gauche atteint la racine en 2 par son lien direct à 10 Gb/s, contre 4 + 2 = 6 en passant par le lien à 1 Gb/s puis l'autre commutateur.</p>
+
+    <h3>Étape 3 : choisir les ports désignés</h3>
+    <p>Sur chaque lien entre deux commutateurs qui n'est pas déjà rattaché par un port racine, on choisit un <strong>port désigné</strong> (D) : celui du commutateur qui a le meilleur chemin vers la racine. Si les deux sont à égalité, la diapo 41 retient le port de plus petit <strong>Port ID</strong> (priorité, 128 par défaut, + numéro de port). Tous les ports du pont racine sont désignés.</p>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Départager deux commutateurs à égalité</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>Dans la norme 802.1D, quand deux commutateurs ont le même coût vers la racine, c'est d'abord le plus petit <strong>BID</strong> qui l'emporte ; le Port ID ne sert qu'à départager deux ports d'un même commutateur (deux liens parallèles). Sur la diapo 41, FA10 et FA20 appartiennent à deux commutateurs différents : la règle du Port ID donne le même résultat si le commutateur de FA10 a aussi le plus petit BID, ce que la diapo ne précise pas. Demander à l'enseignant la règle attendue à l'examen.</p>
+    </div>
+
+    <h3>Étape 4 : bloquer les autres ports</h3>
+    <p>Tout port qui n'est ni racine ni désigné est <strong>bloqué</strong> (B) : on l'appelle port alternatif ou port bloquant. Il ne fait plus passer de trafic, ce qui casse la boucle.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 520 250" width="520" role="img" aria-labelledby="fig-stp-titre">
+        <title id="fig-stp-titre">Trois commutateurs en triangle. S1, pont racine, est relié à S2 et à S3 par des liens à 10 gigabits par seconde, de coût 2 ; S2 et S3 sont reliés par un lien à 1 gigabit par seconde, de coût 4. Les deux ports de S1 sont désignés. Le port de S2 vers S1 et celui de S3 vers S1 sont racine. Sur le lien S2-S3, le port de S2 est désigné et celui de S3 est bloqué.</title>
+        <rect class="boite-accent" x="200" y="14" width="120" height="40" rx="6"/><text x="260" y="32" text-anchor="middle" class="gras">S1</text><text x="260" y="47" text-anchor="middle" class="t2">pont racine</text>
+        <rect class="boite" x="40" y="180" width="110" height="40" rx="6"/><text x="95" y="198" text-anchor="middle" class="gras">S2</text><text x="95" y="213" text-anchor="middle" class="t2">BID plus petit</text>
+        <rect class="boite" x="370" y="180" width="110" height="40" rx="6"/><text x="425" y="205" text-anchor="middle" class="gras">S3</text>
+        <path class="trait" d="M220 54 L110 180"/>
+        <path class="trait" d="M300 54 L410 180"/>
+        <path class="pointille" d="M150 200 H370"/>
+        <text x="130" y="112" text-anchor="end" class="t2">10 Gb/s · coût 2</text>
+        <text x="390" y="112" class="t2">10 Gb/s · coût 2</text>
+        <text x="260" y="192" text-anchor="middle" class="t2">1 Gb/s · coût 4</text>
+        <text x="198" y="74" class="gras accent">D</text>
+        <text x="312" y="74" class="gras accent">D</text>
+        <text x="104" y="166" class="gras accent">R</text>
+        <text x="406" y="166" class="gras accent">R</text>
+        <text x="158" y="222" class="gras accent">D</text>
+        <text x="350" y="222" class="gras accent">B</text>
+      </svg>
+      <figcaption>Résultat de l'algorithme sur la topologie des diapos 40 à 42 : R port racine, D port désigné, B port bloqué ; le lien en pointillé ne transporte plus de trames.</figcaption>
+    </figure>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Dérouler STP sur un schéma</span></p>
+      <ol class="etapes">
+        <li>Pont racine : plus petite priorité, puis plus petite adresse MAC. Marquer tous ses ports D.</li>
+        <li>Pour chaque autre commutateur, calculer le coût de chaque chemin vers la racine ; le port du chemin le moins cher est R.</li>
+        <li>Pour chaque lien restant, le port du commutateur le plus proche de la racine est D (à égalité, plus petit BID).</li>
+        <li>Les ports qui restent sont B. Vérifier : chaque lien a exactement un port D, et il ne reste aucune boucle.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Fonctionnement et états des ports <span class="ref">diapos 43–46</span></h2>
+    <p>Chaque commutateur envoie un BPDU à ses voisins toutes les <strong>2 s</strong> (<i>Hello timer</i>) pour signaler sa présence. Une information reçue reste valable <strong>20 s</strong> (<i>Max Age timer</i>). Un port passe par cinq états possibles :</p>
+
+    <div class="tableau compact">
+      <table>
+        <thead><tr><th>État</th><th>BPDU</th><th>Table MAC</th><th>Trames de données</th><th>Remarque</th></tr></thead>
+        <tbody>
+          <tr><td>Désactivé (<i>disabled</i>)</td><td>non</td><td>non</td><td>non</td><td>Port arrêté par l'administrateur.</td></tr>
+          <tr><td>Blocage (<i>blocking</i>)</td><td>reçoit seulement</td><td>non</td><td>non</td><td>État initial. Sans BPDU reçu pendant Max Age (20 s), le commutateur se considère comme pont racine.</td></tr>
+          <tr><td>Écoute (<i>listening</i>)</td><td>reçoit et émet</td><td>non</td><td>non</td><td>Calcul des chemins vers la racine ; dure le Forward Delay (15 s par défaut).</td></tr>
+          <tr><td>Apprentissage (<i>learning</i>)</td><td>reçoit, émet, traite</td><td>oui</td><td>non</td><td>Remplit sa table MAC ; dure aussi le Forward Delay.</td></tr>
+          <tr><td>Acheminement (<i>forwarding</i>)</td><td>reçoit, émet, traite</td><td>oui</td><td>oui</td><td>Fonctionnement normal.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi STP est lent</span> <span class="badge ajout">Ajout</span></p>
+      <p>Quand un lien tombe, un port bloqué attend jusqu'à Max Age (20 s) avant de réagir, puis passe 15 s en écoute et 15 s en apprentissage : jusqu'à \(20 + 15 + 15 = 50\) s sans trafic. C'est ce qui a motivé RSTP, qui converge en quelques secondes.</p>
+    </div>
+
+    <h3>Les normes</h3>
+    <ul>
+      <li><strong>STP</strong> (IEEE 802.1D) : un seul arbre couvrant ; ne tient pas compte des VLAN.</li>
+      <li><strong>RSTP</strong> (<i>Rapid STP</i>, IEEE 802.1w) : évolution de STP, qui converge plus vite.</li>
+      <li><strong>MSTP</strong> (<i>Multiple STP</i>, IEEE 802.1s) : un arbre couvrant par groupe de VLAN.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exercices</h2>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Compter les domaines</span></p>
+      <p>Un routeur à deux interfaces relie deux commutateurs. Sur le premier commutateur sont branchés 3 PC et un concentrateur portant lui-même 4 PC ; sur le second, 5 PC. Combien de domaines de collision ? de domaines de diffusion ?</p>
+      <details class="indice"><summary>Indice</summary><p>Un domaine de collision par port de commutateur ou de routeur utilisé ; le concentrateur et ses 4 PC n'en font qu'un. Un domaine de diffusion par interface du routeur.</p></details>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>Domaines de collision : premier commutateur, 3 (les PC) + 1 (le concentrateur et ses 4 PC) + 1 (le lien vers le routeur) = 5 ; second commutateur, 5 + 1 = 6. Total : 11. Domaines de diffusion : 2, un de chaque côté du routeur.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Qui reçoit la diffusion ?</span></p>
+      <p>Un commutateur a ses ports 1 à 4 dans le VLAN 10 et ses ports 5 à 8 dans le VLAN 20 ; le port 24 est un trunk vers un routeur. Le PC du port 2 envoie une requête ARP. Quels ports la font sortir ? Le PC du port 6 peut-il répondre directement ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>La diffusion sort par les ports 1, 3 et 4 (VLAN 10, sauf le port d'arrivée) et par le trunk 24, étiquetée VID 10. Les ports 5 à 8 ne la reçoivent pas. Le PC du port 6, dans un autre domaine de diffusion, ne voit même pas la requête ; pour joindre le PC du port 2, il doit passer par le routeur.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Lire une étiquette</span></p>
+      <p>Une trame capturée sur un trunk porte, après l'adresse source, les octets <code>81 00 60 14</code>. Que signifient-ils ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p><code>81 00</code> : TPID 0x8100, c'est une étiquette 802.1Q. <code>60 14</code> = 0110 0000 0001 0100 : priorité 011 = 3, CFI 0, VID = 0000 0001 0100 = 20. La trame appartient au VLAN 20, avec une priorité 3.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 4 <span>Élection du pont racine</span></p>
+      <p>Quatre commutateurs ont pour priorité et adresse MAC : A (32768, 00:1A:…:05), B (32768, 00:1A:…:02), C (28672, 00:1A:…:09), D (32768, 00:1A:…:01). Lequel est le pont racine ? Et si l'on tape <code>spanning-tree vlan 1 priority 24576</code> sur D ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>On compare d'abord la priorité : C (28 672) est le seul en dessous de 32 768, il est racine, malgré la plus grande adresse MAC. Si D passe à 24 576, il devient la plus petite priorité et donc le nouveau pont racine.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 5 <span>Dérouler STP</span></p>
+      <p>Quatre commutateurs en carré : S1–S2 à 1 Gb/s, S2–S3 à 1 Gb/s, S3–S4 à 1 Gb/s, S4–S1 à 100 Mb/s. S1 est racine ; les BID croissent de S1 à S4. Donner les ports racine, désignés et bloqués.</p>
+      <details class="indice"><summary>Indice</summary><p>Coûts : 4 pour 1 Gb/s, 19 pour 100 Mb/s. Pour S4, comparer 19 (direct) et 4 + 4 + 4 = 12.</p></details>
+      <details class="solution"><summary>Solution proposée</summary>
+        <ul>
+          <li>Coûts vers la racine : S2 = 4 (par S1) ; S3 = 8 (par S2) ; S4 = min(19 direct, 8 + 4 = 12 par S3) = 12.</li>
+          <li>Ports racine : S2 vers S1, S3 vers S2, S4 vers S3.</li>
+          <li>Ports désignés : les deux ports de S1 ; S2 vers S3 ; S3 vers S4.</li>
+          <li>Lien S4–S1 restant : le port de S1 est désigné (racine), celui de S4 est <strong>bloqué</strong>. Le lien lent sert de secours.</li>
+        </ul>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Hub : un domaine de collision pour tous. Switch : un domaine de collision par port, un seul domaine de diffusion. Routeur : un domaine de diffusion par interface.</li>
+        <li>Des sous-réseaux IP différents sur un même commutateur partagent encore le domaine de diffusion Ethernet.</li>
+        <li>VLAN : regroupement logique à la couche 2, identifié par un numéro ; un VLAN = un domaine de diffusion ; il faut un routeur entre VLAN.</li>
+        <li>Avantages : sécurité, coûts, performances (moins de diffusions), gestion. Types : données, voix, gestion. Par défaut, tout est dans le VLAN 1.</li>
+        <li>Port d'accès : un VLAN, trames sans étiquette. Trunk : plusieurs VLAN, étiquette 802.1Q (sauf VLAN natif).</li>
+        <li>802.1Q : 4 octets, TPID 0x8100 + TCI (priorité 3 bits, CFI 1 bit, VID 12 bits) ; FCS recalculée.</li>
+        <li>Routage inter-VLAN : une interface par VLAN, ou router-on-a-stick (trunk + sous-interfaces).</li>
+        <li>Boucle IP : le TTL tue le paquet. Boucle Ethernet : pas de TTL, tempête de diffusion et tables MAC incohérentes.</li>
+        <li>STP : pont racine = plus petit BID (priorité 32 768 par défaut, puis MAC) ; port racine = chemin le moins cher ; un port désigné par lien ; les autres bloqués.</li>
+        <li>Coûts : 10 Mb/s 100, 100 Mb/s 19, 1 Gb/s 4, 10 Gb/s 2. BPDU toutes les 2 s, Max Age 20 s, Forward Delay 15 s. États : désactivé, blocage, écoute, apprentissage, acheminement.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Combien de domaines de diffusion compte un commutateur de 24 ports sans VLAN ? avec 3 VLAN ?</summary>
+        <div><p>Un seul sans VLAN ; trois avec trois VLAN.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Deux PC sur le même commutateur mais dans deux VLAN différents peuvent-ils se joindre sans routeur ?</summary>
+        <div><p>Non : chaque VLAN est un domaine de diffusion séparé ; il faut un routeur (ou un commutateur de niveau 3).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Combien d'octets ajoute l'étiquette 802.1Q, et sur combien de bits est le VID ?</summary>
+        <div><p>4 octets (TPID + TCI) ; VID sur 12 bits.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle est la valeur du TPID pour 802.1Q ?</summary>
+        <div><p>0x8100.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi une boucle est-elle plus grave en Ethernet qu'en IP ?</summary>
+        <div><p>Le paquet IP a un TTL qui le détruit après un nombre de sauts ; la trame Ethernet n'en a pas, une diffusion tourne indéfiniment.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Comment est élu le pont racine ?</summary>
+        <div><p>Plus petit BID : plus petite priorité (32 768 par défaut), puis plus petite adresse MAC.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quel est le coût STP d'un lien à 1 Gb/s ? à 100 Mb/s ?</summary>
+        <div><p>4 ; 19.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Dans quel état un port remplit-il sa table MAC sans encore transmettre les données ?</summary>
+        <div><p>L'apprentissage (<i>learning</i>).</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-06-couche-transport.html"><small>← Précédent</small>TCP et UDP : la couche transport</a>
+    <a class="suivant" href="cours-08-nat.html"><small>Suivant →</small>La traduction d'adresses (NAT)</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Réseaux · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

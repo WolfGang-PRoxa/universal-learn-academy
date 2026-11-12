@@ -19,7 +19,17 @@ contextBridge.exposeInMainWorld("studies", {
   ecrans: () => appeler("fenetre:ecrans"),
   bornesActuelles: () => appeler("fenetre:bornes"),
 
-  choisirCours: () => appeler("cours:choisir"),
+  donnees: {
+    choisir: () => appeler("donnees:choisir"),
+    defaut: () => appeler("donnees:defaut")
+  },
+
+  profils: {
+    etat: () => appeler("profils:etat"),
+    choisir: (nom) => appeler("profils:choisir", nom),
+    creer: (nom) => appeler("profils:creer", nom),
+    renommer: (ancien, nouveau) => appeler("profils:renommer", ancien, nouveau)
+  },
 
   raccourcis: {
     statut: () => appeler("raccourcis:statut"),

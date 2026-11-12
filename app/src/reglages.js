@@ -1,6 +1,7 @@
 "use strict";
 /* Paramètres de l'application installée, dans <userData>/parametres.json
-   (%APPDATA%\Studies sous Windows, ~/.config/Studies sous Linux).
+   (%APPDATA%\Universal Learn Academy sous Windows, ~/.config/Universal Learn
+   Academy sous Linux ; repris de %APPDATA%\Studies à la première ouverture).
 
    Les clés manquantes reprennent leur valeur par défaut. La clé d'API Anthropic
    y est rangée chiffrée par le système (safeStorage, voir claude.js) et n'est
@@ -15,8 +16,10 @@ const DEFAUT = {
   miseAJourAuto: true,
   // Fenêtre au lancement : « agrandie » (par défaut) ou « personnalisee » (bornes)
   fenetre: { mode: "agrandie", bornes: { x: 120, y: 80, width: 1400, height: 900 } },
-  // Cours affichés : « integre » (copie des cours livrés avec l'application) ou
-  // « dossier » (un dossier studies existant, par exemple un clone git)
+  // Dossier des données (catalogue explore/ et espaces des profils) : vide pour
+  // Documents/ULA ; un dépôt git d'ula (mode de l'auteur du catalogue) est reconnu
+  donnees: { dossier: "" },
+  // Ancien réglage (versions 1.x, « Studies ») : repris s'il désignait un dossier
   cours: { mode: "integre", dossier: "" },
   // Connexion à Claude : « compte » (Claude Code, connecté par l'utilisateur) ou
   // « cle » (clé d'API personnelle, chiffrée : « enc:… »)

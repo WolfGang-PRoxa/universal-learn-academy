@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Compile les sources de _outils/numerisation/sources/ en PDF (studies/_outils/numerisation).
+"""Compile les sources de _outils/numerisation/sources/ en PDF (_outils/numerisation).
 
-Usage, depuis studies/ :
+Usage, depuis la racine (ula/) :
     uvx --with typst python _outils/numerisation/compiler.py [--verifier] [SOURCE.typ | DOSSIER ...]
     uvx --with typst --with pymupdf python _outils/numerisation/compiler.py --apercu DOSSIER [SOURCE.typ ...]
 
-Chaque source `sources/<chemin>.typ` produit `<chemin>.pdf` à la racine de studies/ :
-`_outils/numerisation/sources/L3/Codage/TD/TD1/TD1.typ` donne `L3/Codage/TD/TD1/TD1.pdf`.
+Chaque source `sources/<chemin>.typ` produit `<chemin>.pdf` sous la racine (ula/) :
+`_outils/numerisation/sources/explore/informatique/codage/TD/TD1/TD1.typ` donne `explore/informatique/codage/TD/TD1/TD1.pdf`.
 Sans argument, toutes les sources sont compilées.
 
 --verifier        ne rien écrire : signaler les PDF absents ou différents de ce que donne

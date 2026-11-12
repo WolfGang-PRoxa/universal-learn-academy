@@ -173,7 +173,7 @@
   function messageHorsLigne() {
     return A.connexion.enLigne
       ? "Ce langage n'est pas disponible sur le serveur local."
-      : "Pour exécuter le code, ouvrir ce quiz depuis le serveur local (lancer studies/lancer.bat).";
+      : "Pour exécuter le code, ouvrir ce quiz depuis le serveur local (lancer lancer.bat).";
   }
 
   function scriptJeu(nom) {

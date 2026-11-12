@@ -3,7 +3,7 @@
    sous Linux) et dossiers choisis par l'utilisateur. Repris de CV Studio 0.3.0,
    avec les dossiers au choix et les fichiers .desktop de Linux.
 
-   Le nom (« Studies.lnk ») et les emplacements du Bureau et du menu Démarrer sont
+   Le nom (« Universal Learn Academy.lnk ») et les emplacements du Bureau et du menu Démarrer sont
    ceux de l'installeur : la désinstallation les retire aussi. Avant chaque
    opération, l'emplacement est relu (raccourcis-regles.js) : l'interface ne
    transmet qu'un identifiant d'emplacement, jamais un chemin de fichier. */
@@ -53,7 +53,7 @@ const io = WINDOWS
   : {
     lire: async (f) => regles.lireDesktop(await fs.readFile(f, "utf8")),
     ecrire: async (f, options) => {
-      const icone = path.join(process.env.XDG_DATA_HOME || path.join(app.getPath("home"), ".local", "share"), "icons", "studies.png");
+      const icone = path.join(process.env.XDG_DATA_HOME || path.join(app.getPath("home"), ".local", "share"), "icons", "universal-learn-academy.png");
       await fs.mkdir(path.dirname(icone), { recursive: true });
       await fs.copyFile(ICONE, icone);
       await fs.writeFile(f, regles.ecrireDesktop(Object.assign({}, options, { icon: icone })), "utf8");
@@ -204,7 +204,7 @@ async function afficher(id) {
 async function choisirDossier(fenetre) {
   verifierPriseEnCharge();
   const r = await dialog.showOpenDialog(fenetre, {
-    title: "Dossier où créer le raccourci Studies",
+    title: "Dossier où créer le raccourci Universal Learn Academy",
     defaultPath: app.getPath("home"),
     properties: ["openDirectory", "createDirectory", "promptToCreate"]
   });

@@ -1,0 +1,1706 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TD 2 · Parcours, connexité et Tarjan · Théorie des graphes L3</title>
+<meta name="description" content="TD 2 interactif de théorie des graphes (L3) : parcours en largeur et en profondeur, composantes connexes, groupes ego-centrés et méta-graphes sur un barbell, circuits et composantes fortement connexes, algorithme de Tarjan.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Mathématiques</a>
+    <a href="index.html">Théorie des graphes</a>
+    <span aria-current="page">TD 2 · Parcours, connexité et Tarjan</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Théorie des graphes</span> TD 2 · L3 S5 · interactif</p>
+    <h1>Parcours, connexité et Tarjan</h1>
+    <p class="chapeau">On parcourt des graphes en largeur et en profondeur pour tester leur connexité, puis on se sert des plus courts chemins pour faire apparaître des groupes de sommets. Les deux derniers exercices passent aux graphes orientés : circuits, composantes fortement connexes et algorithme de Tarjan. Le TD met en œuvre le cours 2.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TD/Graphes__TD2___Parcours__connexité_et_Tarjan-4.pdf">TD n° 2 · Parcours, connexité et Tarjan</a> · Nicolas Dugué, 2026-2027</dd></div>
+      <div><dt>Cours</dt><dd><a href="cours-02-connexite-erdos-renyi.html">Cours 2 · Connexité et Erdős–Rényi</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Savoir parcourir un graphe, en largeur et en profondeur.</li>
+        <li>Savoir définir ce que sont les composantes connexes d'un graphe, mais aussi les détecter.</li>
+        <li>Savoir concevoir des groupes de sommets en utilisant des algorithmes basés sur la recherche de chemins.</li>
+        <li>Savoir définir une composante fortement connexe, et utiliser une telle définition pour établir des démonstrations.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Notions utilisées</p>
+      <ul>
+        <li><a href="cours-02-connexite-erdos-renyi.html#parcourir-un-graphe">Parcourir un graphe</a> : DFS et BFS ; <a href="cours-02-connexite-erdos-renyi.html#sous-graphe-induit-et-composante-connexe">composante connexe</a></li>
+        <li><a href="cours-02-connexite-erdos-renyi.html#faible-et-forte-connexite">Faible et forte connexité</a>, <a href="cours-02-connexite-erdos-renyi.html#circuits-et-composantes-fortement-connexes">circuits et CFC</a></li>
+        <li><a href="cours-02-connexite-erdos-renyi.html#arbre-de-tremaux-et-algorithme-de-tarjan">Arbre de Trémaux et algorithme de Tarjan</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Mode d'emploi</p>
+    <ul>
+      <li>La réponse se construit sur le dessin ou dans la vue texte (« Les deux ») ; les deux restent synchronisés.</li>
+      <li>« Vérifier » contrôle la forme sans rien dévoiler, « Comparer » mesure l'écart avec la solution proposée, « Claude » répond aux questions et corrige.</li>
+      <li>Le travail s'enregistre tout seul. Avec le serveur local (<code>studies/lancer.bat</code>), il va dans <code>td_results/</code> et Claude est disponible.</li>
+    </ul>
+  </div>
+
+  <div class="bloc complement">
+    <p class="bloc-titre">Conventions <span class="badge ajout">Ajout</span></p>
+    <p>L'énoncé ne fixe pas l'ordre dans lequel on examine les voisins d'un sommet ; or il change l'ordre des parcours. Comme dans le cours, on les prend ici <strong>dans l'ordre alphabétique</strong> (ou croissant), ce qui donne une seule réponse attendue. Un autre ordre donne d'autres arbres, tout aussi justes : « Comparer » les compterait faux, Claude non.</p>
+    <p>Dans un tableau, les sommets d'une liste s'écrivent dans l'ordre alphabétique (ou croissant), séparés par des virgules, et un nombre décimal avec deux chiffres après la virgule.</p>
+  </div>
+
+  <section>
+    <h2>Exercice 1 · Parcours de graphes <span class="ref">TD, p. 1</span></h2>
+    <p>Un parcours part d'un sommet et atteint tous ceux de sa composante connexe : c'est le premier outil pour savoir si un graphe est connexe.</p>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Figure 1 · Deux graphes à parcourir</span></p>
+      <p>Les deux graphes G1 et G2 de la figure 1, redessinés ci-dessous (on peut déplacer les sommets, rien n'est enregistré).</p>
+    </div>
+    <div class="atelier" id="td2-fig1-g1" data-editeur="graphe">
+      <script type="application/json">
+{
+  "mode": "lecture",
+  "titre": "Figure 1 (a) · G1",
+  "vue": "dessin",
+  "hauteur": 360,
+  "depart": [
+    "non oriente",
+    "A -- B",
+    "A -- C",
+    "A -- D",
+    "A -- E",
+    "A -- F",
+    "B -- G",
+    "G -- H",
+    "G -- I",
+    "G -- J"
+  ],
+  "disposition": {
+    "A": [
+      240,
+      40
+    ],
+    "B": [
+      40,
+      130
+    ],
+    "C": [
+      140,
+      130
+    ],
+    "D": [
+      240,
+      130
+    ],
+    "E": [
+      340,
+      130
+    ],
+    "F": [
+      440,
+      130
+    ],
+    "G": [
+      40,
+      220
+    ],
+    "H": [
+      140,
+      220
+    ],
+    "J": [
+      40,
+      310
+    ],
+    "I": [
+      140,
+      310
+    ]
+  }
+}
+      </script>
+    </div>
+    <div class="atelier" id="td2-fig1-g2" data-editeur="graphe">
+      <script type="application/json">
+{
+  "mode": "lecture",
+  "titre": "Figure 1 (b) · G2",
+  "vue": "dessin",
+  "hauteur": 360,
+  "depart": [
+    "non oriente",
+    "A -- B",
+    "A -- C",
+    "A -- D",
+    "A -- E",
+    "B -- C",
+    "D -- E",
+    "D -- F",
+    "F -- G",
+    "F -- H",
+    "F -- I",
+    "G -- H",
+    "H -- I",
+    "J -- K",
+    "J -- L",
+    "K -- L"
+  ],
+  "disposition": {
+    "B": [
+      40,
+      40
+    ],
+    "E": [
+      240,
+      40
+    ],
+    "A": [
+      140,
+      130
+    ],
+    "C": [
+      40,
+      220
+    ],
+    "D": [
+      240,
+      220
+    ],
+    "K": [
+      440,
+      40
+    ],
+    "J": [
+      350,
+      130
+    ],
+    "L": [
+      440,
+      130
+    ],
+    "F": [
+      350,
+      220
+    ],
+    "H": [
+      440,
+      220
+    ],
+    "G": [
+      350,
+      310
+    ],
+    "I": [
+      440,
+      310
+    ]
+  }
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Question 1</span></p>
+      <p>Parcourir en largeur, et en profondeur, les graphes G1 et G2 de la figure 1, en débutant de A, puis de G. Vous pouvez représenter ces parcours sous forme d'arbres, en numérotant l'ordre des sommets. Dans le cas du parcours en profondeur, l'arbre ainsi représenté est un arbre de Trémaux.</p>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Saisie des arbres</p>
+      <p>Un sommet par ligne, ses enfants en retrait (deux espaces) sous lui, dans l'ordre où ils sont découverts ; après les deux-points, son rang dans le parcours : <code>A : 1</code>. La racine est déjà placée.</p>
+    </div>
+    <div class="atelier" id="td2-ex1-g1-largeur-a" data-editeur="processus">
+      <script type="application/json">
+{
+  "titre": "G1 · parcours en largeur (BFS) depuis A",
+  "options": {
+    "etiquettes": true,
+    "ordre": true
+  },
+  "depart": [
+    "A : 1"
+  ],
+  "solution": [
+    "A : 1",
+    "  B : 2",
+    "    G : 7",
+    "      H : 8",
+    "      I : 9",
+    "      J : 10",
+    "  C : 3",
+    "  D : 4",
+    "  E : 5",
+    "  F : 6"
+  ],
+  "explication": "<p>Ordre de visite : A, B, C, D, E, F, G, H, I, J.</p><p>Le parcours en largeur visite d'abord tous les voisins de la racine, puis les voisins de ceux-ci, dans l'ordre où ils sont entrés dans la file : un sommet a pour parent le premier sommet défilé qui l'a découvert, et sa hauteur dans l'arbre est sa distance à la racine.</p>"
+}
+      </script>
+    </div>
+    <div class="atelier" id="td2-ex1-g1-profondeur-a" data-editeur="processus">
+      <script type="application/json">
+{
+  "titre": "G1 · parcours en profondeur (DFS) depuis A",
+  "options": {
+    "etiquettes": true,
+    "ordre": true
+  },
+  "depart": [
+    "A : 1"
+  ],
+  "solution": [
+    "A : 1",
+    "  B : 2",
+    "    G : 3",
+    "      H : 4",
+    "      I : 5",
+    "      J : 6",
+    "  C : 7",
+    "  D : 8",
+    "  E : 9",
+    "  F : 10"
+  ],
+  "explication": "<p>Ordre de visite : A, B, G, H, I, J, C, D, E, F.</p><p>Le parcours en profondeur suit le premier voisin non visité aussi loin que possible, puis revient en arrière : c'est l'arbre de Trémaux, et le rang est la numérotation de Trémaux.</p>"
+}
+      </script>
+    </div>
+    <div class="atelier" id="td2-ex1-g1-largeur-g" data-editeur="processus">
+      <script type="application/json">
+{
+  "titre": "G1 · parcours en largeur (BFS) depuis G",
+  "options": {
+    "etiquettes": true,
+    "ordre": true
+  },
+  "depart": [
+    "G : 1"
+  ],
+  "solution": [
+    "G : 1",
+    "  B : 2",
+    "    A : 6",
+    "      C : 7",
+    "      D : 8",
+    "      E : 9",
+    "      F : 10",
+    "  H : 3",
+    "  I : 4",
+    "  J : 5"
+  ],
+  "explication": "<p>Ordre de visite : G, B, H, I, J, A, C, D, E, F.</p><p>Le parcours en largeur visite d'abord tous les voisins de la racine, puis les voisins de ceux-ci, dans l'ordre où ils sont entrés dans la file : un sommet a pour parent le premier sommet défilé qui l'a découvert, et sa hauteur dans l'arbre est sa distance à la racine.</p>"
+}
+      </script>
+    </div>
+    <div class="atelier" id="td2-ex1-g1-profondeur-g" data-editeur="processus">
+      <script type="application/json">
+{
+  "titre": "G1 · parcours en profondeur (DFS) depuis G",
+  "options": {
+    "etiquettes": true,
+    "ordre": true
+  },
+  "depart": [
+    "G : 1"
+  ],
+  "solution": [
+    "G : 1",
+    "  B : 2",
+    "    A : 3",
+    "      C : 4",
+    "      D : 5",
+    "      E : 6",
+    "      F : 7",
+    "  H : 8",
+    "  I : 9",
+    "  J : 10"
+  ],
+  "explication": "<p>Ordre de visite : G, B, A, C, D, E, F, H, I, J.</p><p>Le parcours en profondeur suit le premier voisin non visité aussi loin que possible, puis revient en arrière : c'est l'arbre de Trémaux, et le rang est la numérotation de Trémaux.</p>"
+}
+      </script>
+    </div>
+    <div class="atelier" id="td2-ex1-g2-largeur-a" data-editeur="processus">
+      <script type="application/json">
+{
+  "titre": "G2 · parcours en largeur (BFS) depuis A",
+  "options": {
+    "etiquettes": true,
+    "ordre": true
+  },
+  "depart": [
+    "A : 1"
+  ],
+  "solution": [
+    "A : 1",
+    "  B : 2",
+    "  C : 3",
+    "  D : 4",
+    "    F : 6",
+    "      G : 7",
+    "      H : 8",
+    "      I : 9",
+    "  E : 5"
+  ],
+  "explication": "<p>Ordre de visite : A, B, C, D, E, F, G, H, I.</p><p>Le parcours en largeur visite d'abord tous les voisins de la racine, puis les voisins de ceux-ci, dans l'ordre où ils sont entrés dans la file : un sommet a pour parent le premier sommet défilé qui l'a découvert, et sa hauteur dans l'arbre est sa distance à la racine.</p><p>J, K, L ne sont jamais atteints : ils ne sont pas dans la composante connexe de A.</p>"
+}
+      </script>
+    </div>
+    <div class="atelier" id="td2-ex1-g2-profondeur-a" data-editeur="processus">
+      <script type="application/json">
+{
+  "titre": "G2 · parcours en profondeur (DFS) depuis A",
+  "options": {
+    "etiquettes": true,
+    "ordre": true
+  },
+  "depart": [
+    "A : 1"
+  ],
+  "solution": [
+    "A : 1",
+    "  B : 2",
+    "    C : 3",
+    "  D : 4",
+    "    E : 5",
+    "    F : 6",
+    "      G : 7",
+    "        H : 8",
+    "          I : 9"
+  ],
+  "explication": "<p>Ordre de visite : A, B, C, D, E, F, G, H, I.</p><p>Le parcours en profondeur suit le premier voisin non visité aussi loin que possible, puis revient en arrière : c'est l'arbre de Trémaux, et le rang est la numérotation de Trémaux.</p><p>J, K, L ne sont jamais atteints : ils ne sont pas dans la composante connexe de A.</p>"
+}
+      </script>
+    </div>
+    <div class="atelier" id="td2-ex1-g2-largeur-g" data-editeur="processus">
+      <script type="application/json">
+{
+  "titre": "G2 · parcours en largeur (BFS) depuis G",
+  "options": {
+    "etiquettes": true,
+    "ordre": true
+  },
+  "depart": [
+    "G : 1"
+  ],
+  "solution": [
+    "G : 1",
+    "  F : 2",
+    "    D : 4",
+    "      A : 6",
+    "        B : 8",
+    "        C : 9",
+    "      E : 7",
+    "    I : 5",
+    "  H : 3"
+  ],
+  "explication": "<p>Ordre de visite : G, F, H, D, I, A, E, B, C.</p><p>Le parcours en largeur visite d'abord tous les voisins de la racine, puis les voisins de ceux-ci, dans l'ordre où ils sont entrés dans la file : un sommet a pour parent le premier sommet défilé qui l'a découvert, et sa hauteur dans l'arbre est sa distance à la racine.</p><p>J, K, L ne sont jamais atteints : ils ne sont pas dans la composante connexe de G.</p>"
+}
+      </script>
+    </div>
+    <div class="atelier" id="td2-ex1-g2-profondeur-g" data-editeur="processus">
+      <script type="application/json">
+{
+  "titre": "G2 · parcours en profondeur (DFS) depuis G",
+  "options": {
+    "etiquettes": true,
+    "ordre": true
+  },
+  "depart": [
+    "G : 1"
+  ],
+  "solution": [
+    "G : 1",
+    "  F : 2",
+    "    D : 3",
+    "      A : 4",
+    "        B : 5",
+    "          C : 6",
+    "        E : 7",
+    "    H : 8",
+    "      I : 9"
+  ],
+  "explication": "<p>Ordre de visite : G, F, D, A, B, C, E, H, I.</p><p>Le parcours en profondeur suit le premier voisin non visité aussi loin que possible, puis revient en arrière : c'est l'arbre de Trémaux, et le rang est la numérotation de Trémaux.</p><p>J, K, L ne sont jamais atteints : ils ne sont pas dans la composante connexe de G.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Question 2</span></p>
+      <p>D'après vos parcours, les deux graphes sont-ils connexes ? Si non, définir ce qu'est une composante connexe et comment toutes les détecter : écrire l'algorithme.</p>
+    </div>
+    <div class="atelier" id="td2-ex1-q2" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Connexité et composantes connexes",
+  "options": {
+    "lignes": 10
+  },
+  "solution": "G1 est connexe : chaque parcours, depuis A comme depuis G, atteint ses 10 sommets.\nG2 ne l'est pas : depuis A (ou G), on n'atteint que A, B, C, D, E, F, G, H, I ; J, K et L ne sont jamais visités.\n\nComposante connexe : un ensemble de sommets C ⊆ V tel que le sous-graphe induit par C est connexe, et maximal pour cette propriété (on ne peut pas lui ajouter de sommet sans perdre la connexité). Les composantes connexes partitionnent V. G2 en a deux : {A, B, C, D, E, F, G, H, I} et {J, K, L}.\n\nAlgorithme : tant qu'il reste un sommet non visité, lancer un parcours (DFS ou BFS) depuis ce sommet ; l'ensemble des sommets qu'il atteint est une nouvelle composante.\n\nprocedure Composantes(Graphe G)\n  Visites ← {} ; L ← liste vide\n  for s ∈ V do\n    if s ∉ Visites then\n      C ← DFS(G, s, {})\n      Visites ← Visites ∪ C\n      L.ajouter(C)\n  return L\n\nChaque sommet et chaque arête sont examinés un nombre borné de fois : de l'ordre de n + m opérations.",
+  "explication": "<p>Un seul parcours suffit à tester la connexité (il atteint les n sommets ou non) ; il en faut un par composante pour toutes les trouver.</p>"
+}
+      </script>
+    </div>
+  </section>
+
+  <section>
+    <h2>Exercice 2 · Plus court chemin pour constituer des groupes <span class="ref">TD, p. 1–3</span></h2>
+    <p>Comment faire apparaître des groupes de sommets ? Deux algorithmes simples s'appuient sur les chemins et leur longueur : des sommets reliés par beaucoup de chemins courts ont leur place dans le même groupe. On les essaie sur un graphe dont on connaît les groupes, le barbell.</p>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Énoncé</span></p>
+      <p>Un graphe <i>barbell</i> de taille 10 est formé de deux groupes de 5 sommets complètement connectés (toutes les arêtes possibles entre ces sommets existent), eux-mêmes reliés par une arête.</p>
+      <p><strong>Objectif.</strong> On souhaite réussir à détecter des groupes au sein d'un graphe, comme par exemple les deux groupes présents au sein du barbell. Pour cela, on va se servir des chemins entre les sommets, et de leur taille. Par exemple, plus deux sommets sont loin (par exemple 2 et 9), moins il semble pertinent de les mettre ensemble dans un même groupe. Au contraire, plus il existe de chemins courts entre deux sommets (par exemple 1 et 3), plus il semble pertinent de les regrouper.</p>
+    </div>
+    <div class="atelier" id="td2-fig2-barbell" data-editeur="graphe">
+      <script type="application/json">
+{
+  "mode": "lecture",
+  "titre": "Figure 2 · Barbell de taille 10, et l'arête (5, 6) qui relie ses deux groupes",
+  "vue": "dessin",
+  "hauteur": 260,
+  "depart": [
+    "non oriente",
+    "1 -- 2",
+    "1 -- 3",
+    "1 -- 4",
+    "1 -- 5",
+    "2 -- 3",
+    "2 -- 4",
+    "2 -- 5",
+    "3 -- 4",
+    "3 -- 5",
+    "4 -- 5",
+    "5 -- 6",
+    "6 -- 7",
+    "6 -- 8",
+    "6 -- 9",
+    "6 -- 10",
+    "7 -- 8",
+    "7 -- 9",
+    "7 -- 10",
+    "8 -- 9",
+    "8 -- 10",
+    "9 -- 10"
+  ],
+  "disposition": {
+    "1": [
+      150,
+      30
+    ],
+    "2": [
+      70,
+      75
+    ],
+    "3": [
+      70,
+      175
+    ],
+    "4": [
+      150,
+      215
+    ],
+    "5": [
+      230,
+      125
+    ],
+    "6": [
+      330,
+      125
+    ],
+    "10": [
+      410,
+      30
+    ],
+    "9": [
+      490,
+      75
+    ],
+    "8": [
+      490,
+      175
+    ],
+    "7": [
+      410,
+      215
+    ]
+  }
+}
+      </script>
+    </div>
+
+    <h3>Algorithme 1 : groupes ego-centrés et méta-graphe</h3>
+    <div class="bloc methode">
+      <p class="bloc-titre">Algorithme 1 <span>Intuition et formalisation</span></p>
+      <p><strong>Intuition.</strong> Dans cet algorithme, on constitue pour chaque sommet son groupe personnel, dit groupe ego-centré, formé des sommets accessibles par un court chemin (de taille inférieure ou égale à r) depuis ce sommet. Pour constituer les groupes du graphe (ceux qui ne sont pas ego-centrés), on place ensuite dans un même groupe deux sommets si leurs groupes ego-centrés respectifs ont suffisamment de sommets en commun. L'hypothèse : s'ils ont accès aux mêmes sommets de façon proche, ils font partie d'un même groupe.</p>
+      <p><strong>Formalisation.</strong> Soit \(G = (V, E)\) un graphe non orienté. Pour deux sommets \(u, v \in V\), on note \(d(u, v)\) la distance du plus court chemin dans \(G\) entre \(u\) et \(v\). Soit \(r \in \N^*\) ; le groupe ego-centré du sommet \(v\) de rayon \(r\) est</p>
+      \[ \mathrm{Gr}_r(v) = \{\, u \in V \mid d(u, v) \le r \,\}. \]
+      <p>On définit un nouveau graphe, le <dfn>méta-graphe</dfn>, sur les mêmes sommets \(V\), avec une arête entre deux sommets si leurs groupes ego-centrés ont suffisamment en commun ; \(z \in [0, 1]\) contrôle l'existence des arêtes : \(M_{r,z} = (V, F_{r,z})\) avec</p>
+      \[ F_{r,z} = \{\, (u, v) \in V \times V,\ u \ne v \mid J\big(\mathrm{Gr}_r(u), \mathrm{Gr}_r(v)\big) \gt z \,\}, \qquad J(A, B) = \frac{|A \cap B|}{|A \cup B|} \in [0, 1] \]
+      <p>où \(J\) est l'indice de Jaccard. Plus \(z\) est petit, plus on crée de grands groupes (on rassemble facilement les paires de sommets). Les groupes du graphe sont alors les composantes connexes du méta-graphe \(M_{r,z}\) : on fusionne les sommets dont les groupes ont suffisamment en commun (un Jaccard supérieur à \(z\)).</p>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Algorithme 1, question 1</span></p>
+      <p>Calculer les groupes ego-centrés pour r = 1 : \(\mathrm{Gr}_1\). Les sommets d'une même classe (A = {1, 2, 3, 4}, B = {5}, C = {6}, D = {7, 8, 9, 10}) ont le même.</p>
+    </div>
+    <div class="atelier" id="td2-ex2-a1-q1" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "Groupes ego-centrés de rayon 1",
+  "options": {
+    "verrou": "depart",
+    "lignes": false,
+    "complet": true
+  },
+  "depart": [
+    "| Sommet | Gr1(v) |",
+    "|---|---|",
+    "| A = {1, 2, 3, 4} |  |",
+    "| B = {5} |  |",
+    "| C = {6} |  |",
+    "| D = {7, 8, 9, 10} |  |"
+  ],
+  "solution": [
+    "| Sommet | Gr1(v) |",
+    "|---|---|",
+    "| A = {1, 2, 3, 4} | 1, 2, 3, 4, 5 |",
+    "| B = {5} | 1, 2, 3, 4, 5, 6 |",
+    "| C = {6} | 5, 6, 7, 8, 9, 10 |",
+    "| D = {7, 8, 9, 10} | 6, 7, 8, 9, 10 |"
+  ],
+  "explication": "<p>Avec r = 1, \\(\\mathrm{Gr}_1(v)\\) est le voisinage fermé de v : v et ses voisins. Les sommets 1 à 4 voient tout leur groupe ; 5 et 6, les extrémités du pont, voient en plus l'autre extrémité.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Algorithme 1, question 2</span></p>
+      <p>Calculer le Jaccard entre les groupes des paires de sommets pour préparer l'établissement du méta-graphe. Si on choisit z = 1/2, existe-t-il un lien entre les sommets dans le méta-graphe \(M_{r,z}\) ?</p>
+    </div>
+    <div class="atelier" id="td2-ex2-a1-q2" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "Jaccard des paires, r = 1 et z = 1/2",
+  "options": {
+    "verrou": "depart",
+    "lignes": false,
+    "complet": true,
+    "tolerance": 0.01
+  },
+  "consigne": "<p>Intersection et Union : les cardinaux. Jaccard en décimal (deux chiffres après la virgule). Lien : oui ou non.</p>",
+  "depart": [
+    "| Paire | Intersection | Union | Jaccard | Lien |",
+    "|---|---|---|---|---|",
+    "| Toute paire (u, v) ∈ A × A |  |  |  |  |",
+    "| Toute paire (u, v) ∈ A × B |  |  |  |  |",
+    "| Toute paire (u, v) ∈ A × C |  |  |  |  |",
+    "| Toute paire (u, v) ∈ A × D |  |  |  |  |",
+    "| Le sommet de B et celui de C |  |  |  |  |",
+    "| Toute paire (u, v) ∈ D × B |  |  |  |  |",
+    "| Toute paire (u, v) ∈ D × C |  |  |  |  |",
+    "| Toute paire (u, v) ∈ D × D |  |  |  |  |"
+  ],
+  "solution": [
+    "| Paire | Intersection | Union | Jaccard | Lien |",
+    "|---|---|---|---|---|",
+    "| Toute paire (u, v) ∈ A × A | 5 | 5 | 1,00 | oui |",
+    "| Toute paire (u, v) ∈ A × B | 5 | 6 | 0,83 | oui |",
+    "| Toute paire (u, v) ∈ A × C | 1 | 10 | 0,10 | non |",
+    "| Toute paire (u, v) ∈ A × D | 0 | 10 | 0,00 | non |",
+    "| Le sommet de B et celui de C | 2 | 10 | 0,20 | non |",
+    "| Toute paire (u, v) ∈ D × B | 1 | 10 | 0,10 | non |",
+    "| Toute paire (u, v) ∈ D × C | 5 | 6 | 0,83 | oui |",
+    "| Toute paire (u, v) ∈ D × D | 5 | 5 | 1,00 | oui |"
+  ],
+  "explication": "<p>Exemple, A × B : \\(\\mathrm{Gr}_1(1) = \\{1, …, 5\\}\\) et \\(\\mathrm{Gr}_1(5) = \\{1, …, 6\\}\\) ont 5 sommets communs sur 6, d'où J = 5/6 ≈ 0,83 &gt; 1/2. Les groupes de 5 et de 6 ne partagent que {5, 6} sur 10 sommets (J = 0,2) : le pont ne crée pas de lien dans le méta-graphe.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Algorithme 1, question 3</span></p>
+      <p>Dessiner le méta-graphe, et découvrir les composantes connexes pour obtenir les groupes obtenus sur le barbell.</p>
+    </div>
+    <div class="atelier" id="td2-ex2-a1-q3" data-editeur="graphe">
+      <script type="application/json">
+{
+  "titre": "Méta-graphe M(1, 1/2)",
+  "depart": [
+    "non oriente",
+    "noeuds 1 2 3 4 5 6 7 8 9 10"
+  ],
+  "disposition": {
+    "1": [
+      150,
+      30
+    ],
+    "2": [
+      70,
+      75
+    ],
+    "3": [
+      70,
+      175
+    ],
+    "4": [
+      150,
+      215
+    ],
+    "5": [
+      230,
+      125
+    ],
+    "6": [
+      330,
+      125
+    ],
+    "10": [
+      410,
+      30
+    ],
+    "9": [
+      490,
+      75
+    ],
+    "8": [
+      490,
+      175
+    ],
+    "7": [
+      410,
+      215
+    ]
+  },
+  "hauteur": 260,
+  "solution": [
+    "non oriente",
+    "1 -- 2",
+    "1 -- 3",
+    "1 -- 4",
+    "1 -- 5",
+    "2 -- 3",
+    "2 -- 4",
+    "2 -- 5",
+    "3 -- 4",
+    "3 -- 5",
+    "4 -- 5",
+    "6 -- 7",
+    "6 -- 8",
+    "6 -- 9",
+    "6 -- 10",
+    "7 -- 8",
+    "7 -- 9",
+    "7 -- 10",
+    "8 -- 9",
+    "8 -- 10",
+    "9 -- 10"
+  ],
+  "explication": "<p>Toutes les paires internes à {1, …, 5} sont reliées (Jaccard 1 ou 5/6), de même pour {6, …, 10} ; aucune paire ne traverse le pont. Le méta-graphe est formé de deux cliques de 5 sommets.</p>"
+}
+      </script>
+    </div>
+    <div class="atelier" id="td2-ex2-a1-q3-groupes" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "Composantes connexes du méta-graphe",
+  "options": {
+    "complet": true
+  },
+  "consigne": "<p>Une composante par ligne, ses sommets dans l'ordre croissant. L'ordre des lignes est libre.</p>",
+  "depart": [
+    "| Composante |",
+    "|---|",
+    "|  |"
+  ],
+  "solution": [
+    "| Composante |",
+    "|---|",
+    "| 1, 2, 3, 4, 5 |",
+    "| 6, 7, 8, 9, 10 |"
+  ],
+  "explication": "<p>On retrouve exactement les deux groupes du barbell.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Algorithme 1, question 4</span></p>
+      <p>Si r = 2, que se passe-t-il ? Comment ajuster z ?</p>
+    </div>
+    <div class="atelier" id="td2-ex2-a1-q4" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Rayon 2",
+  "options": {
+    "lignes": 8
+  },
+  "solution": "Avec r = 2, les groupes grossissent : Gr2(1) = … = Gr2(4) = {1, …, 6}, Gr2(5) = Gr2(6) = {1, …, 10}, Gr2(7) = … = Gr2(10) = {5, …, 10}.\nJaccards : A × A et D × D : 1 ; A × B, A × C, D × B, D × C : 6/10 = 0,6 ; B × C : 1 ; A × D : 2/10 = 0,2.\nAvec z = 1/2, toutes les paires sauf A × D sont reliées, et le méta-graphe est connexe : un seul groupe, les deux groupes du barbell ont fusionné.\nIl faut augmenter z : avec 0,6 ≤ z < 1, il ne reste que les liens de Jaccard 1, et l'on obtient trois groupes, {1, 2, 3, 4}, {5, 6} et {7, 8, 9, 10}. Aucune valeur de z ne redonne les deux groupes : 5 et 6 voient désormais tout le graphe. Le rayon doit rester petit devant le diamètre du graphe (ici 3).",
+  "explication": "<p>Valeurs vérifiées par le calcul. Le choix des paramètres r et z est le point faible de ce type d'algorithme : il dépend du graphe.</p>"
+}
+      </script>
+    </div>
+
+    <h3>Algorithme 2 : méta-graphe pondéré par le nombre de chemins</h3>
+    <div class="bloc methode">
+      <p class="bloc-titre">Algorithme 2 <span>Intuition et formalisation</span></p>
+      <p><strong>Intuition.</strong> On constitue un méta-graphe sur les mêmes sommets que le graphe initial, dont les arêtes pondérées indiquent le nombre de chemins de taille inférieure ou égale à r qui existent entre les deux extrémités de l'arête. En supprimant ensuite de ce méta-graphe les arêtes de poids inférieur ou égal à z, on obtient des composantes connexes qui constituent les groupes du graphe.</p>
+      <p><strong>Formalisation.</strong> Soit \(G = (V, E)\) ; on note \(p_r(u, v)\) le nombre de chemins distincts de longueur inférieure ou égale à \(r\) entre \(u\) et \(v\). On définit le méta-graphe pondéré \(M_r = (V, P, W)\), tel qu'il existe une arête \((u, v) \in P\) si \(p_r(u, v) \ge 1\), de poids \(W(u, v) = p_r(u, v)\). On choisit \(z \in \N^*\), on supprime les arêtes \((u, v) \in P\) de poids \(W(u, v) \le z\) et on obtient \(M_{r,z}\). Les groupes du graphe initial sont les composantes connexes de \(M_{r,z}\).</p>
+      <p><span class="badge ajout">Ajout</span> Un chemin ne passe pas deux fois par le même sommet : entre 1 et 2, les chemins de longueur au plus 2 sont 1–2, 1–3–2, 1–4–2 et 1–5–2.</p>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Algorithme 2, question 1</span></p>
+      <p>Soit r = 2. Calculer le méta-graphe \(M_2\).</p>
+    </div>
+    <div class="atelier" id="td2-ex2-a2-q1" data-editeur="graphe">
+      <script type="application/json">
+{
+  "titre": "Méta-graphe pondéré M2",
+  "options": {
+    "pondere": true
+  },
+  "depart": [
+    "non oriente",
+    "noeuds 1 2 3 4 5 6 7 8 9 10"
+  ],
+  "disposition": {
+    "1": [
+      150,
+      30
+    ],
+    "2": [
+      70,
+      75
+    ],
+    "3": [
+      70,
+      175
+    ],
+    "4": [
+      150,
+      215
+    ],
+    "5": [
+      230,
+      125
+    ],
+    "6": [
+      330,
+      125
+    ],
+    "10": [
+      410,
+      30
+    ],
+    "9": [
+      490,
+      75
+    ],
+    "8": [
+      490,
+      175
+    ],
+    "7": [
+      410,
+      215
+    ]
+  },
+  "hauteur": 260,
+  "solution": [
+    "non oriente",
+    "1 -- 2 : 4",
+    "1 -- 3 : 4",
+    "1 -- 4 : 4",
+    "1 -- 5 : 4",
+    "1 -- 6 : 1",
+    "2 -- 3 : 4",
+    "2 -- 4 : 4",
+    "2 -- 5 : 4",
+    "2 -- 6 : 1",
+    "3 -- 4 : 4",
+    "3 -- 5 : 4",
+    "3 -- 6 : 1",
+    "4 -- 5 : 4",
+    "4 -- 6 : 1",
+    "5 -- 6 : 1",
+    "5 -- 7 : 1",
+    "5 -- 8 : 1",
+    "5 -- 9 : 1",
+    "5 -- 10 : 1",
+    "6 -- 7 : 4",
+    "6 -- 8 : 4",
+    "6 -- 9 : 4",
+    "6 -- 10 : 4",
+    "7 -- 8 : 4",
+    "7 -- 9 : 4",
+    "7 -- 10 : 4",
+    "8 -- 9 : 4",
+    "8 -- 10 : 4",
+    "9 -- 10 : 4"
+  ],
+  "explication": "<p>Deux sommets d'un même groupe : le chemin direct, plus un chemin de longueur 2 par voisin commun, soit 1 + 3 = 4 (pour 1 et 5 aussi : 2, 3 et 4 sont leurs voisins communs). 5 et 6 : seulement l'arête directe, poids 1. Un sommet de {1, 2, 3, 4} et 6, ou 5 et un sommet de {7, 8, 9, 10} : un seul chemin de longueur 2, par le pont, poids 1. Les sommets plus éloignés (1 et 7, distance 3) ne sont pas reliés. En tout 29 arêtes : 20 de poids 4, 9 de poids 1.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Algorithme 2, question 2</span></p>
+      <p>Soit z = 1. Calculer le méta-graphe \(M_{2,1}\).</p>
+    </div>
+    <div class="atelier" id="td2-ex2-a2-q2" data-editeur="graphe">
+      <script type="application/json">
+{
+  "titre": "Méta-graphe M(2, 1)",
+  "options": {
+    "pondere": true
+  },
+  "depart": [
+    "non oriente",
+    "noeuds 1 2 3 4 5 6 7 8 9 10"
+  ],
+  "disposition": {
+    "1": [
+      150,
+      30
+    ],
+    "2": [
+      70,
+      75
+    ],
+    "3": [
+      70,
+      175
+    ],
+    "4": [
+      150,
+      215
+    ],
+    "5": [
+      230,
+      125
+    ],
+    "6": [
+      330,
+      125
+    ],
+    "10": [
+      410,
+      30
+    ],
+    "9": [
+      490,
+      75
+    ],
+    "8": [
+      490,
+      175
+    ],
+    "7": [
+      410,
+      215
+    ]
+  },
+  "hauteur": 260,
+  "solution": [
+    "non oriente",
+    "1 -- 2 : 4",
+    "1 -- 3 : 4",
+    "1 -- 4 : 4",
+    "1 -- 5 : 4",
+    "2 -- 3 : 4",
+    "2 -- 4 : 4",
+    "2 -- 5 : 4",
+    "3 -- 4 : 4",
+    "3 -- 5 : 4",
+    "4 -- 5 : 4",
+    "6 -- 7 : 4",
+    "6 -- 8 : 4",
+    "6 -- 9 : 4",
+    "6 -- 10 : 4",
+    "7 -- 8 : 4",
+    "7 -- 9 : 4",
+    "7 -- 10 : 4",
+    "8 -- 9 : 4",
+    "8 -- 10 : 4",
+    "9 -- 10 : 4"
+  ],
+  "explication": "<p>On supprime les 9 arêtes de poids 1 (≤ z) : il reste les 20 arêtes de poids 4, internes aux deux groupes.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Algorithme 2, question 3</span></p>
+      <p>Détecter les composantes connexes de \(M_{2,1}\).</p>
+    </div>
+    <div class="atelier" id="td2-ex2-a2-q3" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "Composantes connexes de M(2, 1)",
+  "options": {
+    "complet": true
+  },
+  "consigne": "<p>Une composante par ligne, ses sommets dans l'ordre croissant.</p>",
+  "depart": [
+    "| Composante |",
+    "|---|",
+    "|  |"
+  ],
+  "solution": [
+    "| Composante |",
+    "|---|",
+    "| 1, 2, 3, 4, 5 |",
+    "| 6, 7, 8, 9, 10 |"
+  ],
+  "explication": "<p>De nouveau les deux groupes du barbell. Avec z = 0, rien n'est supprimé et le méta-graphe est connexe ; avec z ≥ 4, tout est supprimé.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Algorithme 2, question 4</span></p>
+      <p>Que se passe-t-il pour r = 3 ?</p>
+    </div>
+    <div class="atelier" id="td2-ex2-a2-q4" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Rayon 3",
+  "options": {
+    "lignes": 7
+  },
+  "solution": "Les poids augmentent et de nouvelles arêtes apparaissent. Dans un groupe : 1 chemin direct, 3 de longueur 2 et 6 de longueur 3, soit 10. Entre {1, 2, 3, 4} et 6, ou entre 5 et {7, 8, 9, 10} : 4 chemins (par 5, directement ou après un détour par un autre sommet du groupe). Entre 5 et 6 : toujours 1. Entre {1, …, 4} et {7, …, 10} (distance 3) : 1 chemin.\nAvec z = 1, les arêtes de poids 4 qui traversent le pont restent : M(3, 1) est connexe, un seul groupe.\nIl faut relever z : pour 4 ≤ z ≤ 9, il ne reste que les arêtes internes (poids 10), et l'on retrouve les deux groupes. Plus r grandit, plus z doit grandir avec lui.",
+  "explication": "<p>Comptes vérifiés par le calcul (énumération des chemins sans répétition de sommet).</p>"
+}
+      </script>
+    </div>
+  </section>
+
+  <section>
+    <h2>Exercice 3 · Circuits et composantes fortement connexes <span class="ref">TD, p. 3</span></h2>
+    <p>Dans un graphe orienté, être fortement connectés, c'est pouvoir aller de l'un à l'autre et revenir : autrement dit, être sur un même circuit. On le démontre dans les deux sens. Le cours énonce ces deux propositions et les laisse au TD (<a href="cours-02-connexite-erdos-renyi.html#circuits-et-composantes-fortement-connexes">cours 2, circuits et CFC</a>).</p>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Question 1</span></p>
+      <p>Rappeler la définition de deux sommets fortement connectés dans un graphe orienté.</p>
+    </div>
+    <div class="atelier" id="td2-ex3-q1" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Question 1",
+  "options": {
+    "lignes": 3
+  },
+  "solution": "Deux sommets u et v d'un graphe orienté G = (V, A) sont fortement connectés s'il existe un chemin (qui suit le sens des arcs) de u à v, et un chemin de v à u."
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Question 2</span></p>
+      <p>Démontrer que si les nœuds u et v font partie d'une composante fortement connexe, alors ils font partie d'un même circuit.</p>
+    </div>
+    <div class="atelier" id="td2-ex3-q2" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Question 2",
+  "options": {
+    "lignes": 6
+  },
+  "solution": "Soient u ≠ v dans une même CFC. Le sous-graphe induit par la CFC est fortement connexe, donc u et v sont fortement connectés : il existe un chemin u L₁ v et un chemin v L₂ u (L₁, L₂ listes de sommets, éventuellement vides).\nEn les mettant bout à bout, u L₁ v L₂ u est un chemin qui part de u et revient en u : c'est un circuit, et il passe par v.\nCe circuit n'est pas forcément élémentaire : L₁ et L₂ peuvent avoir des sommets en commun."
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Question 3</span></p>
+      <p>Démontrer la réciproque : si u et v appartiennent à un même circuit, alors ils font partie de la même composante fortement connexe.</p>
+    </div>
+    <div class="atelier" id="td2-ex3-q3" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Question 3",
+  "options": {
+    "lignes": 7
+  },
+  "solution": "Soit un circuit u L₁ v L₂ u qui passe par u et v. Sa partie u L₁ v est un chemin de u à v, et sa partie v L₂ u un chemin de v à u : u et v sont fortement connectés.\nLa CFC de u est la classe de u pour la relation « être fortement connecté » (relation d'équivalence : réflexive, symétrique, et transitive, comme le montre l'exercice 4) ; v y est donc. Plus directement : tous les sommets du circuit sont fortement connectés entre eux, ils forment un ensemble fortement connexe, contenu dans une seule CFC (maximale)."
+}
+      </script>
+    </div>
+  </section>
+
+  <section>
+    <h2>Exercice 4 · Algorithme de Tarjan pour la détection des CFC <span class="ref">TD, p. 3</span></h2>
+    <p>On repère d'abord les composantes fortement connexes à l'œil, en cherchant les circuits, puis on les retrouve mécaniquement avec l'algorithme de Tarjan, tel que le cours le présente (<a href="cours-02-connexite-erdos-renyi.html#l-idee-de-l-algorithme-de-tarjan">cours 2, l'idée de l'algorithme de Tarjan</a>).</p>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 4 <span>Question 1</span></p>
+      <p>Démontrer la transitivité de la relation <i>fortement connexe</i> : si u et v sont fortement connectés, et que v et w le sont aussi, alors u et w sont également fortement connectés.</p>
+    </div>
+    <div class="atelier" id="td2-ex4-q1" data-editeur="texte">
+      <script type="application/json">
+{
+  "titre": "Transitivité",
+  "options": {
+    "lignes": 6
+  },
+  "solution": "u et v fortement connectés : il existe des chemins u L₁ v et v L₂ u. v et w fortement connectés : il existe des chemins v L₃ w et w L₄ v.\nAlors u L₁ v L₃ w est un chemin de u à w, et w L₄ v L₂ u un chemin de w à u : u et w sont fortement connectés.\n(Avec la réflexivité, par le chemin vide, et la symétrie, évidente sur la définition, c'est une relation d'équivalence : ses classes sont les CFC.)"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 4 <span>Question 2</span></p>
+      <p>Retrouver visuellement les composantes fortement connexes (CFC) sur les quatre graphes de la figure 3.</p>
+    </div>
+    <div class="atelier" id="td2-fig3-g1" data-editeur="graphe">
+      <script type="application/json">
+{
+  "mode": "lecture",
+  "titre": "Figure 3 · Graphe G1",
+  "vue": "dessin",
+  "hauteur": 300,
+  "depart": [
+    "oriente",
+    "A -> B",
+    "C -> B",
+    "D -> C",
+    "B -> E",
+    "C -> F",
+    "F -> B",
+    "G -> C",
+    "D <-> H",
+    "E -> F",
+    "F -> G",
+    "G -> H",
+    "E <-> I",
+    "E -> J",
+    "F -> J",
+    "H -> L",
+    "K <-> L"
+  ],
+  "disposition": {
+    "A": [
+      40,
+      40
+    ],
+    "B": [
+      150,
+      40
+    ],
+    "C": [
+      260,
+      40
+    ],
+    "D": [
+      370,
+      40
+    ],
+    "E": [
+      40,
+      140
+    ],
+    "F": [
+      150,
+      140
+    ],
+    "G": [
+      260,
+      140
+    ],
+    "H": [
+      370,
+      140
+    ],
+    "I": [
+      40,
+      240
+    ],
+    "J": [
+      150,
+      240
+    ],
+    "K": [
+      260,
+      240
+    ],
+    "L": [
+      370,
+      240
+    ]
+  }
+}
+      </script>
+    </div>
+    <div class="atelier" id="td2-ex4-q2-g1" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "CFC de G1",
+  "options": {
+    "complet": true
+  },
+  "consigne": "<p>Une CFC par ligne, sommets dans l'ordre alphabétique ; un sommet seul forme aussi une CFC. L'ordre des lignes est libre.</p>",
+  "depart": [
+    "| CFC |",
+    "|---|",
+    "|  |"
+  ],
+  "solution": [
+    "| CFC |",
+    "|---|",
+    "| A |",
+    "| B, C, D, E, F, G, H, I |",
+    "| J |",
+    "| K, L |"
+  ],
+  "explication": "<p>B → E → F → B est un circuit ; F → G → C → F aussi, et G → H → D → C, D ↔ H, E ↔ I s'y raccrochent : {B, C, D, E, F, G, H, I} est une seule CFC. A n'a aucun arc entrant, J aucun arc sortant : chacun forme une CFC à lui seul. K ↔ L forme une CFC : H → L permet d'y entrer, mais rien n'en ressort.</p>"
+}
+      </script>
+    </div>
+    <div class="atelier" id="td2-fig3-g2" data-editeur="graphe">
+      <script type="application/json">
+{
+  "mode": "lecture",
+  "titre": "Figure 3 · Graphe G2",
+  "vue": "dessin",
+  "hauteur": 300,
+  "depart": [
+    "oriente",
+    "A -> B",
+    "B -> C",
+    "C -> D",
+    "A -> E",
+    "B -> F",
+    "C -> G",
+    "G -> D",
+    "D -> H",
+    "F -> E",
+    "G -> H",
+    "F -> I",
+    "E -> J",
+    "I -> J",
+    "G -> K",
+    "L -> G",
+    "L -> H"
+  ],
+  "disposition": {
+    "A": [
+      40,
+      40
+    ],
+    "B": [
+      150,
+      40
+    ],
+    "C": [
+      260,
+      40
+    ],
+    "D": [
+      370,
+      40
+    ],
+    "E": [
+      40,
+      140
+    ],
+    "F": [
+      150,
+      140
+    ],
+    "G": [
+      260,
+      140
+    ],
+    "H": [
+      370,
+      140
+    ],
+    "I": [
+      40,
+      240
+    ],
+    "J": [
+      150,
+      240
+    ],
+    "K": [
+      260,
+      240
+    ],
+    "L": [
+      370,
+      240
+    ]
+  }
+}
+      </script>
+    </div>
+    <div class="atelier" id="td2-ex4-q2-g2" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "CFC de G2",
+  "options": {
+    "complet": true
+  },
+  "consigne": "<p>Une CFC par ligne, sommets dans l'ordre alphabétique ; un sommet seul forme aussi une CFC. L'ordre des lignes est libre.</p>",
+  "depart": [
+    "| CFC |",
+    "|---|",
+    "|  |"
+  ],
+  "solution": [
+    "| CFC |",
+    "|---|",
+    "| A |",
+    "| B |",
+    "| C |",
+    "| D |",
+    "| E |",
+    "| F |",
+    "| G |",
+    "| H |",
+    "| I |",
+    "| J |",
+    "| K |",
+    "| L |"
+  ],
+  "explication": "<p>Aucun circuit : les arcs vont tous de gauche à droite ou de haut en bas, sauf F → E et L → G, L → H, qui ne referment rien. Sans circuit, chaque sommet est sa propre CFC : 12 CFC.</p>"
+}
+      </script>
+    </div>
+    <div class="atelier" id="td2-fig3-g3" data-editeur="graphe">
+      <script type="application/json">
+{
+  "mode": "lecture",
+  "titre": "Figure 3 · Graphe G3",
+  "vue": "dessin",
+  "hauteur": 300,
+  "depart": [
+    "oriente",
+    "A -> B",
+    "C -> B",
+    "B -> F",
+    "E -> A",
+    "F -> E",
+    "F -> G",
+    "G -> C",
+    "G <-> H",
+    "H -> D",
+    "D -> L",
+    "L -> H",
+    "E <-> I",
+    "I <-> J",
+    "G <-> K"
+  ],
+  "disposition": {
+    "A": [
+      40,
+      40
+    ],
+    "B": [
+      150,
+      40
+    ],
+    "C": [
+      260,
+      40
+    ],
+    "D": [
+      370,
+      40
+    ],
+    "E": [
+      40,
+      140
+    ],
+    "F": [
+      150,
+      140
+    ],
+    "G": [
+      260,
+      140
+    ],
+    "H": [
+      370,
+      140
+    ],
+    "I": [
+      40,
+      240
+    ],
+    "J": [
+      150,
+      240
+    ],
+    "K": [
+      260,
+      240
+    ],
+    "L": [
+      370,
+      240
+    ]
+  }
+}
+      </script>
+    </div>
+    <div class="atelier" id="td2-ex4-q2-g3" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "CFC de G3",
+  "options": {
+    "complet": true
+  },
+  "consigne": "<p>Une CFC par ligne, sommets dans l'ordre alphabétique ; un sommet seul forme aussi une CFC. L'ordre des lignes est libre.</p>",
+  "depart": [
+    "| CFC |",
+    "|---|",
+    "|  |"
+  ],
+  "solution": [
+    "| CFC |",
+    "|---|",
+    "| A, B, C, D, E, F, G, H, I, J, K, L |"
+  ],
+  "explication": "<p>Tout le graphe est fortement connexe : A → B → F → E → A est un circuit, F → G → C → B → F aussi ; G ↔ H, G ↔ K, E ↔ I, I ↔ J, et le circuit H → D → L → H rattachent tous les autres sommets.</p>"
+}
+      </script>
+    </div>
+    <div class="atelier" id="td2-fig3-g4" data-editeur="graphe">
+      <script type="application/json">
+{
+  "mode": "lecture",
+  "titre": "Figure 3 · Graphe G4",
+  "vue": "dessin",
+  "hauteur": 300,
+  "depart": [
+    "oriente",
+    "A -> B",
+    "B -> C",
+    "C -> D",
+    "E -> B",
+    "B -> F",
+    "F -> E",
+    "D -> G",
+    "D -> H",
+    "G -> C",
+    "H -> G",
+    "F -> I",
+    "I -> J",
+    "J -> F",
+    "K -> H",
+    "H -> L",
+    "L -> K"
+  ],
+  "disposition": {
+    "A": [
+      40,
+      40
+    ],
+    "B": [
+      150,
+      40
+    ],
+    "C": [
+      260,
+      40
+    ],
+    "D": [
+      370,
+      40
+    ],
+    "E": [
+      40,
+      140
+    ],
+    "F": [
+      150,
+      140
+    ],
+    "G": [
+      260,
+      140
+    ],
+    "H": [
+      370,
+      140
+    ],
+    "I": [
+      40,
+      240
+    ],
+    "J": [
+      150,
+      240
+    ],
+    "K": [
+      260,
+      240
+    ],
+    "L": [
+      370,
+      240
+    ]
+  }
+}
+      </script>
+    </div>
+    <div class="atelier" id="td2-ex4-q2-g4" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "CFC de G4",
+  "options": {
+    "complet": true
+  },
+  "consigne": "<p>Une CFC par ligne, sommets dans l'ordre alphabétique ; un sommet seul forme aussi une CFC. L'ordre des lignes est libre.</p>",
+  "depart": [
+    "| CFC |",
+    "|---|",
+    "|  |"
+  ],
+  "solution": [
+    "| CFC |",
+    "|---|",
+    "| A |",
+    "| B, E, F, I, J |",
+    "| C, D, G, H, K, L |"
+  ],
+  "explication": "<p>Trois CFC : le circuit B → F → E → B et le circuit F → I → J → F forment {B, E, F, I, J} ; les circuits C → D → G → C, D → H → G → C → D et H → L → K → H forment {C, D, G, H, K, L} ; A, sans arc entrant, est seul. B → C relie les deux grandes CFC dans un seul sens.</p>"
+}
+      </script>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 4 <span>Question 3</span></p>
+      <p>Exécuter l'algorithme de Tarjan pour trouver les CFC sur les graphes de la figure 4 (en prenant A pour sommet initial).</p>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Saisie</p>
+      <p>Pour chaque sommet, son numéro de Trémaux (ordre de visite du parcours en profondeur, <strong>à partir de 0</strong> comme dans le cours) et son attribut <code>min_no_acces</code> à la fin de l'algorithme. Voisins sortants examinés dans l'ordre alphabétique. Les sommets de même attribut forment une CFC, dont la racine est le sommet dont l'attribut égale le numéro. Le cours signale une faiblesse de la version du poly (<a href="cours-02-connexite-erdos-renyi.html#l-idee-de-l-algorithme-de-tarjan">voir le badge « À vérifier »</a>) ; sur ces deux graphes, elle donne le même résultat que la version complète.</p>
+    </div>
+    <div class="atelier" id="td2-fig4-g1" data-editeur="graphe">
+      <script type="application/json">
+{
+  "mode": "lecture",
+  "titre": "Figure 4 · Graphe G1",
+  "vue": "dessin",
+  "hauteur": 280,
+  "depart": [
+    "oriente",
+    "A -> B",
+    "B -> C",
+    "C -> A",
+    "A -> D",
+    "D -> E",
+    "E -> F",
+    "F -> D"
+  ],
+  "disposition": {
+    "C": [
+      100,
+      40
+    ],
+    "B": [
+      220,
+      40
+    ],
+    "D": [
+      40,
+      140
+    ],
+    "A": [
+      280,
+      140
+    ],
+    "E": [
+      100,
+      240
+    ],
+    "F": [
+      220,
+      240
+    ]
+  }
+}
+      </script>
+    </div>
+    <div class="atelier" id="td2-ex4-q3-g1" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "Tarjan sur G1, depuis A",
+  "options": {
+    "verrou": "depart",
+    "lignes": false,
+    "complet": true,
+    "types": {
+      "Numéro": "entier",
+      "min_no_acces": "entier"
+    }
+  },
+  "depart": [
+    "| Sommet | Numéro | min_no_acces |",
+    "|---|---|---|",
+    "| A |  |  |",
+    "| B |  |  |",
+    "| C |  |  |",
+    "| D |  |  |",
+    "| E |  |  |",
+    "| F |  |  |"
+  ],
+  "solution": [
+    "| Sommet | Numéro | min_no_acces |",
+    "|---|---|---|",
+    "| A | 0 | 0 |",
+    "| B | 1 | 0 |",
+    "| C | 2 | 0 |",
+    "| D | 3 | 3 |",
+    "| E | 4 | 3 |",
+    "| F | 5 | 3 |"
+  ],
+  "explication": "<p>DFS depuis A : A (0) → B (1) → C (2) ; C a un arc vers A, déjà visité et encore en cours : C prend 0, puis B prend 0 en remontant. A continue vers D (3) → E (4) → F (5) ; F a un arc vers D : F prend 3, puis E prend 3. D a son attribut égal à son numéro : c'est la racine de la CFC {D, E, F}. A aussi : racine de {A, B, C}.</p><p>CFC trouvées : {A, B, C} ; {D, E, F}.</p>"
+}
+      </script>
+    </div>
+    <div class="atelier" id="td2-fig4-g2" data-editeur="graphe">
+      <script type="application/json">
+{
+  "mode": "lecture",
+  "titre": "Figure 4 · Graphe G2",
+  "vue": "dessin",
+  "hauteur": 280,
+  "depart": [
+    "oriente",
+    "A <-> B",
+    "B -> C",
+    "A <-> D",
+    "D -> E",
+    "E -> F"
+  ],
+  "disposition": {
+    "C": [
+      100,
+      40
+    ],
+    "B": [
+      220,
+      40
+    ],
+    "D": [
+      40,
+      140
+    ],
+    "A": [
+      280,
+      140
+    ],
+    "E": [
+      100,
+      240
+    ],
+    "F": [
+      220,
+      240
+    ]
+  }
+}
+      </script>
+    </div>
+    <div class="atelier" id="td2-ex4-q3-g2" data-editeur="table">
+      <script type="application/json">
+{
+  "titre": "Tarjan sur G2, depuis A",
+  "options": {
+    "verrou": "depart",
+    "lignes": false,
+    "complet": true,
+    "types": {
+      "Numéro": "entier",
+      "min_no_acces": "entier"
+    }
+  },
+  "depart": [
+    "| Sommet | Numéro | min_no_acces |",
+    "|---|---|---|",
+    "| A |  |  |",
+    "| B |  |  |",
+    "| C |  |  |",
+    "| D |  |  |",
+    "| E |  |  |",
+    "| F |  |  |"
+  ],
+  "solution": [
+    "| Sommet | Numéro | min_no_acces |",
+    "|---|---|---|",
+    "| A | 0 | 0 |",
+    "| B | 1 | 0 |",
+    "| C | 2 | 2 |",
+    "| D | 3 | 0 |",
+    "| E | 4 | 4 |",
+    "| F | 5 | 5 |"
+  ],
+  "explication": "<p>DFS depuis A : A (0) → B (1) ; B revient vers A (attribut 0), puis va vers C (2), qui n'a aucun arc sortant : C garde 2 et forme une CFC à lui seul. A continue vers D (3), qui revient vers A (attribut 0) puis va vers E (4) → F (5) ; F et E n'ont pas d'arc de retour : ce sont deux CFC à un sommet. CFC : {A, B, D}, {C}, {E}, {F}.</p><p>CFC trouvées : {A, B, D} ; {C} ; {E} ; {F}.</p>"
+}
+      </script>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>Parcours en largeur : une file ; les sommets sont visités par distance croissante à la racine. Parcours en profondeur : on suit le premier voisin non visité, puis on revient en arrière ; il dessine l'arbre de Trémaux.</li>
+        <li>Un parcours depuis un sommet atteint exactement sa composante connexe : un graphe est connexe si un seul parcours atteint ses n sommets ; il faut un parcours par composante pour toutes les trouver.</li>
+        <li>Des groupes peuvent naître des chemins : voisinages qui se recouvrent (Jaccard) ou nombre de chemins courts ; les paramètres (r, z) se règlent sur le graphe.</li>
+        <li>Deux sommets sont fortement connectés si et seulement s'ils sont sur un même circuit ; c'est une relation d'équivalence, dont les classes sont les CFC.</li>
+        <li>Pour trouver les CFC à l'œil, chercher les circuits et les recoller ; un sommet sans arc entrant (ou sans arc sortant) est seul dans sa CFC.</li>
+        <li>Tarjan : numéroter les sommets dans l'ordre du DFS, propager le plus petit numéro accessible ; une racine de CFC garde son propre numéro.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Dans un arbre de parcours en largeur, que représente la hauteur d'un sommet ?</summary>
+        <div><p>Sa distance à la racine dans le graphe : le BFS découvre les sommets par distance croissante. Ce n'est pas vrai pour un arbre de Trémaux.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Combien de parcours faut-il pour trouver les composantes connexes de G2 ?</summary>
+        <div><p>Deux, un par composante : un parcours depuis A atteint {A, …, I}, puis un parcours depuis J, premier sommet non visité, atteint {J, K, L}.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi le pont (5, 6) du barbell ne crée-t-il pas de lien dans M(1, 1/2) ?</summary>
+        <div><p>Les groupes ego-centrés de 5 et de 6 ne partagent que {5, 6}, sur 10 sommets en tout : leur Jaccard vaut 0,2, sous le seuil 1/2.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un graphe orienté sans circuit a 12 sommets. Combien a-t-il de CFC ?</summary>
+        <div><p>12 : sans circuit, deux sommets distincts ne sont jamais fortement connectés, et chaque sommet forme sa propre CFC (le graphe G2 de la figure 3).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Dans Tarjan, comment reconnaît-on la racine d'une CFC ?</summary>
+        <div><p>C'est le sommet dont l'attribut <code>min_no_acces</code> est égal à son propre numéro : aucun de ses descendants ne donne accès à un sommet visité avant lui.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="td-01-graphes-et-representations.html"><small>← Précédent</small>TD 1 · Vocabulaire et représentations</a>
+    <a class="suivant" href="td-03-erdos-renyi.html"><small>Suivant →</small>TD 3 · Erdős–Rényi</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Théorie des graphes · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

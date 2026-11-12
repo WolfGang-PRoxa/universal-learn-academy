@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TP 2 · Les avions · Bases de données L2</title>
+<meta name="description" content="TP 2 de bases de données (L2) : la base Avions, création et requêtes (jointures, sous-requêtes, opérateurs ensemblistes), puis passage pas à pas à la version 2 (types, licences, aéroports) sans perdre de données ; sujet complet et console SQL pour travailler chez soi.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+<script type="application/json" id="atelier-jeux">
+{
+  "fac": {
+    "titre": "Base neuve (comme avions_… au début du TP)",
+    "description": "<p>Base PostgreSQL neuve et vide : le compte rendu crée les tables, puis les remplit. Seul réglage : les dates s'écrivent jour-mois-année (<code>DateStyle</code>), comme sur le serveur de la fac.</p>",
+    "script": "SET datestyle TO 'ISO, DMY';"
+  }
+}
+</script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Bases de données</a>
+    <span aria-current="page">TP 2 · Les avions</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> TP 2 · L2 S3</p>
+    <h1>TP 2 : les avions</h1>
+    <p class="chapeau">La base Avions du TD 2 : on l'implémente, on l'interroge avec des jointures, des sous-requêtes et des opérateurs ensemblistes, puis on la fait évoluer pas à pas vers la version 2 sans perdre un seul enregistrement. Pour travailler chez soi, une console SQL rejoue le compte rendu sur une base PostgreSQL neuve.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TP/TP2/TP2_Avions-2025.pdf">TP2_Avions-2025.pdf</a> · 6 pages · scripts fournis <a href="../TP/TP2/script_1.txt">script_1.txt</a> (Script_Insert_Avions.txt) et <a href="../TP/TP2/script_2.txt">script_2.txt</a> (Script_Insert_Avions2.txt)</dd></div>
+      <div><dt>TD</dt><dd><a href="td-02-avions.html">TD 2 · Les avions</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Implémenter un modèle relationnel donné, dans le bon ordre de création.</li>
+        <li>Écrire une même requête de plusieurs façons : jointures (naturelle, <code>USING</code>, <code>ON</code>, croisée), sous-requêtes, opérateurs ensemblistes.</li>
+        <li>Modifier la structure d'une base remplie sans perdre de données.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">À rendre</p>
+      <ul>
+        <li>Un compte rendu <code>TP2_NOM_PRENOM.txt</code>, avec les réponses à toutes les questions numérotées, déposé sur UMTICE au plus tard 30 minutes après la fin de la séance.</li>
+        <li>Cours à revoir : <a href="cours-03-cles-sous-requetes-jointures.html">cours 3</a> et la documentation PostgreSQL (<a href="https://docs.postgresql.fr/14/">docs.postgresql.fr/14</a>).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Consignes <span class="ref">p. 1</span></h2>
+    <p>Tout au long de la séance, vous devez rédiger un compte rendu contenant toutes les réponses aux questions numérotées. Ce compte rendu sera nommé : <code>TP2_NOM_PRENOM.txt</code> et sera déposé sur la plateforme UMTICE dans le dossier correspondant à votre groupe. Attention, le dépôt est horodaté. Aucun TP ne sera accepté s'il est déposé plus de 30 minutes après la fin du cours.</p>
+    <p>Pour travailler efficacement, vous avez ouvert : un terminal, un éditeur de texte, un navigateur (UMTICE + doc postgre <a href="https://docs.postgresql.fr/14/">https://docs.postgresql.fr/14/</a>).</p>
+    <p>Connectez-vous sur votre base de données : <code>avions_XXXXX</code>, avec XXXX votre numéro étudiant (voir au premier TP).</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Base de données Avions : première version <span class="ref">p. 1–2</span></h2>
+    <h3>Rappel du modèle entité-association</h3>
+    <div class="atelier" id="tp2-mea-v1" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "Modèle entité-association, version 1 (rappel)",
+        "mode": "lecture",
+        "vue": "dessin",
+        "hauteur": 330,
+        "disposition": {
+          "Vol": [
+            260,
+            10
+          ],
+          "Pilote": [
+            20,
+            170
+          ],
+          "Avion": [
+            520,
+            170
+          ]
+        },
+        "depart": [
+          "classe Vol",
+          "  id_vol {PK}",
+          "  nom_aero_dep",
+          "  nom_aero_arr",
+          "  heure_dep",
+          "  heure_arr",
+          "classe Pilote",
+          "  id_pilote {PK}",
+          "  nom_pilote",
+          "  nom_aero",
+          "classe Avion",
+          "  id_avion {PK}",
+          "  nom_type",
+          "  nb_place",
+          "  nom_aero_ratt",
+          "Vol \"0..*\" -- \"1..1\" Pilote",
+          "Vol \"0..*\" -- \"1..1\" Avion"
+        ]
+      }
+      </script>
+    </div>
+    <p>Modèle relationnel correspondant :</p>
+    <div class="relations">
+      <p><b>VOL</b> (<u>id_vol</u>, #id_pilote, #id_avion, nom_aero_dep, nom_aero_arr, heure_dep, heure_arr)</p>
+      <p><b>AVION</b> (<u>id_avion</u>, nom_type, nb_place, nom_aero_ratt)</p>
+      <p><b>PILOTE</b> (<u>id_pilote</u>, nom_pilote, nom_aero)</p>
+    </div>
+
+    <h3>Commandes DDL : première version</h3>
+    <ol>
+      <li>Implémentez la base de données avions. N'oubliez pas les contraintes de clés primaires et étrangères.
+        <ol type="a">
+          <li>Les heures doivent être de type <code>TIME</code>.</li>
+          <li>L'id du pilote doit être de type <code>SERIAL</code>.</li>
+        </ol>
+      </li>
+    </ol>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention</p>
+      <p>L'ordre des attributs n'a normalement pas d'importance MAIS un script pour insérer des enregistrements dans la base de données vous a été fourni… Même remarque pour les types d'attribut.</p>
+      <p><b>Note</b> : l'ordre de création des tables est lui important…</p>
+    </div>
+    <ol start="2">
+      <li>Exécutez le script <code>Script_Insert_Avions.txt</code> (ici <a href="../TP/TP2/script_1.txt">script_1.txt</a>) pour insérer les enregistrements dans votre base de données.</li>
+    </ol>
+
+    <h3>Commandes DML : première version</h3>
+    <p>La numérotation repart de 1. Les questions 3, 8 et 10 modifient les données : les questions suivantes en tiennent compte.</p>
+    <ol>
+      <li>Quels sont les numéros et aéroports d'attache des avions qui ont une capacité supérieure à 200 places et ne sont pas rattachés à un des aéroports de Paris ? Vous afficherez les informations : <code>id_avion</code> et <code>nom_aero_ratt</code>.</li>
+      <li>Quels sont les noms des pilotes qui assurent au moins un vol au départ de Paris Orly ? Proposez 2 solutions, l'une avec jointure et sans sous-requête et l'autre sans jointure mais avec une sous-requête. Les 2 requêtes doivent donner le même ensemble de données (pas forcément dans le même ordre).</li>
+      <li>Un nouveau pilote nommé « Maverick » est embauché en tant que pilote de ligne. Il sera basé à « Paris Roissy », ajoutez-le.</li>
+      <li>Quel est le numéro d'identifiant de Maverick ? Que se passerait-il si 9 de ses collègues étaient embauchés par la compagnie ?</li>
+      <li>Quels sont les noms des pilotes qui volent sur un Airbus de type A3<em>qqchose</em> ? Proposez 2 solutions (avec uniquement des sous-requêtes ou avec des jointures naturelles).</li>
+      <li>Proposez une 3<sup>e</sup> solution à la question précédente en utilisant des jointures internes avec <code>USING</code>.</li>
+      <li>Proposez une dernière solution à la question en utilisant des jointures internes avec <code>ON</code>.</li>
+      <li>L'aéroport d'<em>Avignon</em> est fermé, reflétez les changements suivants :
+        <ol type="a">
+          <li>les vols à l'arrivée de cet aéroport sont détournés pour aujourd'hui sur <em>Marseille Marignane</em> ;</li>
+          <li>les vols au départ de cet aéroport sont supprimés.</li>
+        </ol>
+      </li>
+      <li>Quels sont les différents aéroports desservis par des avions partant de Paris dont la capacité est plus grande que celle d'un A300 ?</li>
+      <li>Suite à son arrivée, le pilote <em>Maverick</em> prend en charge le vol d'identifiant <em>1012</em>. Mettez à jour les informations sur le vol.</li>
+      <li>Quels pilotes n'ont aucun vol prévu ? Affichez seulement l'<code>id_pilote</code>. Proposez 3 solutions : 1 avec les opérateurs ensemblistes, une avec sous-requête et l'autre avec jointure.</li>
+      <li>Donnez toutes les paires de noms de pilotes étant rattachés au même aéroport. Proposez 2 solutions, l'une avec une jointure croisée et l'autre avec une jointure interne.
+        <p><b>Note</b> : la paire « nom1 - nom2 » est équivalente à la paire « nom2 - nom1 ». Résultat attendu :</p>
+        <pre class="terminal"><code>        paire
+---------------------
+ Paul - Pierre
+ Jacques - Maverick
+ Fernande - Philippe
+(3 lignes)</code></pre>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Deuxième version <span class="ref">p. 2–4</span></h2>
+    <p>Après réflexion et utilisation de la base, l'aéroport souhaite revoir la première version de la base de données et obtient le MEA suivant :</p>
+    <div class="atelier" id="tp2-mea-v2" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "Modèle entité-association, version 2",
+        "mode": "lecture",
+        "vue": "dessin",
+        "hauteur": 560,
+        "disposition": {
+          "Vol": [
+            430,
+            20
+          ],
+          "Pilote": [
+            100,
+            170
+          ],
+          "Aeroport": [
+            860,
+            170
+          ],
+          "Avion": [
+            470,
+            300
+          ],
+          "Licence": [
+            20,
+            430
+          ],
+          "Type": [
+            440,
+            460
+          ]
+        },
+        "depart": [
+          "classe Vol",
+          "  id_vol {PK}",
+          "  heure_dep",
+          "  heure_arr",
+          "classe Pilote",
+          "  id_pilote {PK}",
+          "  nom_pilote",
+          "classe Avion",
+          "  id_avion {PK}",
+          "classe Type",
+          "  id_type {PK}",
+          "  nom_type",
+          "  nb_place",
+          "classe Licence",
+          "  id_licence {PK}",
+          "  nom_licence",
+          "classe Aeroport",
+          "  id_aero {PK}",
+          "  nom_aero",
+          "  nom_ville",
+          "Vol \"0..*\" -- \"1..1\" Pilote : commander",
+          "Vol \"0..*\" -- \"1..1\" Avion : utiliser",
+          "Vol \"0..*\" -- \"1..1\" Aeroport : arriver",
+          "Vol \"0..*\" -- \"1..1\" Aeroport : être au départ de",
+          "Pilote \"0..*\" -- \"1..1\" Aeroport : attacher",
+          "Avion \"0..*\" -- \"1..1\" Aeroport : attacher",
+          "Avion \"0..*\" -- \"1..1\" Type : est",
+          "Pilote \"0..*\" -- \"0..*\" Licence : obtenir",
+          "Licence \"0..*\" -- \"0..*\" Type : autoriser"
+        ]
+      }
+      </script>
+    </div>
+    <p>La modification de la base de données entraîne le nouveau MR suivant :</p>
+    <div class="relations">
+      <p><b>TYPE</b> (<u>id_type</u>, nom_type, nb_place)</p>
+      <p><b>LICENCE</b> (<u>id_licence</u>, nom_licence)</p>
+      <p><b>LICENCE_TYPE</b> (<u>#id_licence, #id_type</u>)</p>
+      <p><b>LICENCE_PILOTE</b> (<u>#id_licence, #id_pilote</u>)</p>
+      <p><b>AEROPORT</b> (<u>id_aero</u>, nom_aero, nom_ville)</p>
+      <p><b>AVION</b> (<u>id_avion</u>, #id_type, #id_aero)</p>
+      <p><b>PILOTE</b> (<u>id_pilote</u>, nom_pilote, #id_aero)</p>
+      <p><b>VOL</b> (<u>id_vol</u>, #id_avion, #id_aero_dep, #id_aero_arr, #id_pilote, heure_dep, heure_arr)</p>
+    </div>
+
+    <h3>Modification de la base pas à pas</h3>
+    <p><b>Objectif</b> : MODIFIER la base de données Avions afin d'obtenir la modélisation actualisée.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention</p>
+      <p>Les enregistrements déjà saisis ne devront pas être perdus !</p>
+    </div>
+    <ol start="13">
+      <li>Créer les nouvelles tables Type, Licence, Licence_Type, Licence_Pilote et Aéroport.
+        <p><b>Note</b> :</p>
+        <ul>
+          <li>Visualisez d'abord le script <code>Script_Insert_Avions2.txt</code> (ici <a href="../TP/TP2/script_2.txt">script_2.txt</a>).</li>
+          <li>Ne pas oublier de mettre les clés primaires et les clés étrangères.</li>
+          <li>Ne pas oublier de mettre les identifiants des tables en <code>SERIAL</code> pour Type, Licence et Aéroport.</li>
+        </ul>
+      </li>
+      <li>Insertion des enregistrements dans la table Type.
+        <ol type="a">
+          <li>Ajouter dans votre base l'avion de type ATR42 ayant 48 places.</li>
+          <li>Écrire la requête <code>SELECT</code> qui liste à partir de la table avion tous les types d'avion et leur capacité.</li>
+          <li>Grâce à cette requête, procédez aux insertions dans la table Type.</li>
+        </ol>
+      </li>
+      <li>Insérer les données dans les tables <em>Licence</em>, <em>Licence_Type</em> et <em>Licence_Pilote</em> à l'aide du script fourni sur l'UMTICE.</li>
+      <li>Modifiez la table Avion, <u>en suivant les étapes ci-dessous</u>, pour passer de :
+        <div class="relations">
+          <p><em>Version 1</em> : <b>AVION</b> (<u>id_avion</u>, nom_type, nb_place, nom_aero_ratt)</p>
+          <p><em>Version 1.1</em> : <b>AVION</b> (<u>id_avion</u>, #id_type, nom_aero_ratt)</p>
+        </div>
+        <p>Pour cela, vous devez suivre les étapes suivantes :</p>
+        <ol type="a">
+          <li>Ajouter un attribut <em>id_type</em> clé étrangère sur <em>type(id_type)</em>.</li>
+          <li>Mettre dans cet <em>id_type</em> les *bonnes* valeurs. Par exemple, l'avion <em>123</em> doit avoir l'id_type <em>6</em> qui correspond bien à un <em>A300</em>. (Note : une commande suffit pour tout mettre à jour.)</li>
+          <li>Supprimer les attributs <code>nom_type</code> et <code>nb_place</code> qui sont maintenant superflus.</li>
+        </ol>
+      </li>
+      <li>Insertion des enregistrements de la table Aéroport.
+        <p><b>Pour votre information</b>, voici ce que l'on veut obtenir <b>au final</b> :</p>
+        <pre class="terminal"><code>nath=# select * from aeroport;
+ id_aero |  nom_aero  | nom_ville
+---------+------------+------------
+       5 | Orly       | Paris
+       7 | Marignane  | Marseille
+       9 | Roissy     | Paris
+       1 | Nancy      | Nancy
+       2 | Lyon       | Lyon
+       3 | Toulouse   | Toulouse
+       4 | Bordeaux   | Bordeaux
+       6 | Avignon    | Avignon
+       8 | Strasbourg | Strasbourg
+(9 lignes)</code></pre>
+        <ol type="a">
+          <li>Écrire la requête qui permet de lister TOUS les noms d'aéroport qui se trouvent dans la base (prendre en compte les tables : vol, avion et pilote).</li>
+          <li>Insérez tous ces noms d'aéroport dans le champ <code>nom_aero</code>.
+            <p><b>Note</b> : si vous avez précisé une contrainte <code>NOT NULL</code> pour la ville, il faut alors modifier votre table pour supprimer cette contrainte. Vous devez obtenir ceci :</p>
+            <pre class="terminal"><code> id_aero |      nom_aero       | nom_ville
+---------+---------------------+-----------
+       1 | Nancy               |
+       2 | Lyon                |
+       3 | Toulouse            |
+       4 | Bordeaux            |
+       5 | Paris Orly          |
+       6 | Avignon             |
+       7 | Marseille Marignane |
+       8 | Strasbourg          |
+       9 | Paris Roissy        |
+(9 lignes)</code></pre>
+          </li>
+          <li>N'ayant pas vu les fonctions, appliquer simplement les 3 commandes suivantes :
+            <pre><code class="language-sql">update aeroport set nom_ville=split_part(nom_aero,' ',1);
+update aeroport set nom_aero=split_part(nom_aero,' ',2);
+update aeroport set nom_aero=nom_ville where nom_aero='';</code></pre>
+          </li>
+        </ol>
+      </li>
+    </ol>
+    <p>Pour terminer la mise à jour de votre base, vous devez maintenant remplacer tous les noms d'aéroport par un <code>id_aeroport</code>… ceci est fastidieux, il est conseillé de le faire pour s'entraîner. Les instructions sont dans la partie « Bonus ».</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Partie avancée : commandes SELECT, deuxième version <span class="ref">p. 5</span></h2>
+    <ol start="18">
+      <li>Quels sont les noms des pilotes qui opèrent des vols au départ d'un aéroport auquel ils ne sont pas rattachés ?</li>
+      <li>Quels sont les identifiants, aéroports de départ et d'arrivée des vols, dont les avions sont capables d'accueillir plus de 250 personnes ? Vous proposerez DEUX VERSIONS : une version (avec jointures et sans sous-requête) et une autre version (sans jointure et avec sous-requêtes).</li>
+      <li>Quel(s) pilote(s) (nom) peu(ven)t conduire un <em>Foker100</em> ?</li>
+      <li>Quels sont les noms des pilotes et le type d'avion qui sont affectés sur un vol pour Marseille ?</li>
+      <li>Lister tous les trajets de TOUS les pilotes, de manière à avoir l'affichage suivant :
+        <pre class="terminal"><code>  pilote  |              trajets
+----------+-----------------------------------
+ Pierre   | Paris Orly--&gt;Toulouse
+ Pierre   | Toulouse--&gt;Paris Orly
+ Paul     | Paris Orly--&gt;Marseille Marignane
+ Paul     | Marseille Marignane--&gt;Strasbourg
+ Philippe | Paris Orly--&gt;Toulouse
+ Fernande | Toulouse--&gt;Nancy
+ Marie    | Paris Roissy--&gt;Nancy
+ Marie    | Lyon--&gt;Paris Orly
+ Fernande | Lyon--&gt;Marseille Marignane
+ Jacques  | Lyon--&gt;Marseille Marignane
+ Frederic | Paris Orly--&gt;Lyon
+ Maverick | Paris Roissy--&gt;Lyon
+ Jean     |
+ Cecile   |
+(14 lignes)</code></pre>
+      </li>
+      <li>Quels sont les pilotes qui auraient effectué des vols pour lesquels ils n'avaient pas la licence ?</li>
+      <li>Jacques doit absolument piloter un avion pour Toulouse aujourd'hui, sinon il perdra sa connaissance de ligne ! Quels sont les avions que peut piloter Jacques et qui ont un vol prévu aujourd'hui pour Toulouse ?</li>
+      <li>Quels avions de plus de 300 places peuvent conduire les pilotes dont le nom est alphabétiquement compris entre H et R ?</li>
+      <li>Quels sont les types d'avion (<code>nom_type</code>) pilotés par quels pilotes (<code>nom_pilote</code>) au départ de la ville de 'Toulouse' et d'une capacité de plus de 150 places ?</li>
+      <li>Pourquoi la requête précédente exige a priori au moins une jointure et ne peut pas être réalisée sans aucune jointure ? Et pourquoi en fait on ne peut se passer d'aucune jointure ?</li>
+    </ol>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Partie bonus : terminer la construction de la deuxième version <span class="ref">p. 5–6</span></h2>
+    <p>Cette partie sera corrigée en cours (ou a minima expliquée en détails…).</p>
+    <ol start="28">
+      <li>Modifier les tables <em>Avion</em>, <em>Vol</em> et <em>Pilote</em> afin de rajouter des attributs <code>id_aero(_XX)</code> en tant que clés étrangères sur la table <em>Aéroport</em>.</li>
+    </ol>
+    <div class="bloc note">
+      <p class="bloc-titre">NB1</p>
+      <p><u>Appliquer toujours le même protocole</u> : pour chaque attribut aéroport qu'il faut « modifier » : on ajoute un nouvel attribut de type int qui fait référence à la table aéroport PUIS on met à jour les valeurs de ce nouvel attribut PUIS on regarde que tout va bien avec un petit select PUIS finalement on supprime l'attribut <code>nom_aero</code>.</p>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">NB2</p>
+      <p>La mise à jour des valeurs devra se faire en deux fois : modifier l'ensemble des enregistrements qui ont un nom d'aéroport composé d'une part et ceux avec un nom simple d'autre part, pour cela utiliser la fonction <code>split_part</code>.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Chez soi : la console SQL du TP</h2>
+    <p>Le serveur de la fac n'est pas accessible de chez soi. La console ci-dessous exécute le compte rendu entier sur une base PostgreSQL neuve (PGlite), par le serveur local : <code>studies/lancer.bat</code>, puis cette page ouverte depuis le portail. Sans le serveur, on peut écrire, mais pas exécuter.</p>
+    <ol class="etapes">
+      <li>Les réponses s'écrivent dans l'ordre des questions. Les deux scripts fournis sont déjà en place : <code>Script_Insert_Avions.txt</code> à la question DDL 2, <code>Script_Insert_Avions2.txt</code> à la question 15.</li>
+      <li><b>Exécuter</b> (ou <kbd>Ctrl</kbd> + <kbd>Entrée</kbd>) rejoue tout, depuis le début, sur une base neuve, et affiche le résultat de la <strong>dernière</strong> requête qui renvoie des lignes, ou la première erreur. Pour voir le résultat d'une question, on la met en dernier, ou on met en commentaire (<code>--</code>) les requêtes qui suivent.</li>
+      <li>Le travail s'enregistre tout seul : dans le navigateur, et, avec le serveur, dans le dossier <code>td_results/</code> de ce cours, dans ton espace. Le menu ⋯ copie le texte, à coller dans <code>TP2_NOM_PRENOM.txt</code>.</li>
+    </ol>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Ce qui change par rapport à la fac</span></p>
+      <ul>
+        <li>Chaque script fourni ne passe qu'une fois les tables qu'il remplit créées : tant que la question DDL 1 (puis les questions 13 et 14) sont vides, l'exécution s'arrête sur lui.</li>
+        <li>Tout est rejoué à chaque exécution : une modification (questions 3, 8, 10, 14 à 17, 28) vaut pour toutes les requêtes qui la suivent, comme à la fac, mais une requête placée avant elle ne la voit pas.</li>
+        <li>Si une question se termine par une erreur voulue, la mettre en commentaire : la première erreur arrête l'exécution.</li>
+      </ul>
+    </div>
+    <div class="atelier" id="tp2-compte-rendu" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Compte rendu du TP 2",
+        "consigne": "<p>Les réponses à la suite, dans l'ordre des questions, les scripts fournis aux questions DDL 2 et 15. <b>Exécuter</b> rejoue tout, depuis le début, sur une base neuve, et affiche le résultat de la dernière requête qui renvoie des lignes, ou la première erreur.</p>",
+        "options": {
+          "jeu": "fac",
+          "lignes": 28
+        },
+        "depart": "-- ===== Commandes DDL, version 1 =====\n-- DDL 1.\n\n-- DDL 2. Script_Insert_Avions.txt (fourni, TP/TP2/script_1.txt)\nINSERT INTO avion VALUES (123,'A300',300,'Paris Orly');\nINSERT INTO avion VALUES (102,'A320',320,'Paris Orly');\nINSERT INTO avion VALUES (103,'A300',300,'Marseille Marignane');\nINSERT INTO avion VALUES (104,'A320',320,'Paris Roissy');\nINSERT INTO avion VALUES (105,'A300',300,'Toulouse');\nINSERT INTO avion VALUES (106,'B747',248,'Paris Orly');\nINSERT INTO avion VALUES (107,'B747',248,'Bordeaux');\nINSERT INTO avion VALUES (108,'ATR44',144,'Avignon');\nINSERT INTO avion VALUES (109,'ATR44',144,'Nancy');\nINSERT INTO avion VALUES (110,'Foker100',100,'Paris Orly');\nINSERT INTO avion VALUES (111,'Foker100',100,'Avignon');\nINSERT INTO avion VALUES (112,'B747',248,'Avignon');\nINSERT INTO avion VALUES (100,'A300',300,'Marseille Marignane');\nINSERT INTO avion VALUES (101,'A310',310,'Strasbourg');\n\n\nINSERT INTO pilote VALUES (default,'Pierre','Paris Orly');\nINSERT INTO pilote VALUES (default,'Paul','Paris Orly');\nINSERT INTO pilote VALUES (default,'Jacques','Paris Roissy');\nINSERT INTO pilote VALUES (default,'Fernande','Avignon');\nINSERT INTO pilote VALUES (default,'Marie','Toulouse');\nINSERT INTO pilote VALUES (default,'Philippe','Avignon');\nINSERT INTO pilote VALUES (default,'Frederic','Nancy');\nINSERT INTO pilote VALUES (default,'Cecile','Strasbourg');\nINSERT INTO pilote VALUES (default,'Jean','Lyon');\n\n\nINSERT INTO vol VALUES (1000,(select id_pilote from pilote where nom_pilote like 'Pierre'),101,'Paris Orly','Toulouse','10:05','12:53');\nINSERT INTO vol VALUES (1001,(select id_pilote from pilote where nom_pilote like 'Pierre'),101,'Toulouse','Paris Orly','14:25','17:07');\nINSERT INTO vol VALUES (1002,(select id_pilote from pilote where nom_pilote like 'Paul'),102,'Paris Orly','Marseille Marignane','08:35','09:30');\nINSERT INTO vol VALUES (1003,(select id_pilote from pilote where nom_pilote like 'Paul'),103,'Marseille Marignane','Strasbourg','13:15','14:48');\nINSERT INTO vol VALUES (1004,(select id_pilote from pilote where nom_pilote like 'Philippe'),104,'Paris Orly','Toulouse','18:24','20:06');\nINSERT INTO vol VALUES (1005,(select id_pilote from pilote where nom_pilote like 'Fernande'),105,'Toulouse','Nancy','11:05','13:53');\nINSERT INTO vol VALUES (1006,(select id_pilote from pilote where nom_pilote like 'Cecile'),110,'Avignon','Paris Orly','07:35','08:22');\nINSERT INTO vol VALUES (1007,(select id_pilote from pilote where nom_pilote like 'Marie'),108,'Paris Roissy','Nancy','07:05','07:55');\nINSERT INTO vol VALUES (1008,(select id_pilote from pilote where nom_pilote like 'Fernande'),123,'Lyon','Avignon','06:55','07:35');\nINSERT INTO vol VALUES (1009,(select id_pilote from pilote where nom_pilote like 'Frederic'),100,'Paris Orly','Lyon','10:05','10:43');\nINSERT INTO vol VALUES (1010,(select id_pilote from pilote where nom_pilote like 'Marie'),100,'Lyon','Paris Orly','15:18','16:03');\nINSERT INTO vol VALUES (1011,(select id_pilote from pilote where nom_pilote like 'Jacques'),112,'Lyon','Avignon','19:20','20:05');\nINSERT INTO vol VALUES (1012,(select id_pilote from pilote where nom_pilote like 'Fernande'),112,'Paris Roissy','Lyon','17:15','18:02');\nINSERT INTO vol VALUES (1013,(select id_pilote from pilote where nom_pilote like 'Jacques'),112,'Avignon','Paris Roissy','21:45','22:38');\n\n-- ===== Commandes DML, version 1 =====\n-- 1.\n\n-- 2.\n\n-- 3.\n\n-- 4.\n\n-- 5.\n\n-- 6.\n\n-- 7.\n\n-- 8.\n\n-- 9.\n\n-- 10.\n\n-- 11.\n\n-- 12.\n\n-- ===== Deuxième version =====\n-- 13.\n\n-- 14.\n\n-- 15. Script_Insert_Avions2.txt (fourni, TP/TP2/script_2.txt)\nINSERT INTO licence (nom_licence) VALUES ('BO');\nINSERT INTO licence (nom_licence) VALUES ('AA');\nINSERT INTO licence (nom_licence) VALUES ('AB');\nINSERT INTO licence (nom_licence) VALUES ('AT');\nINSERT INTO licence (nom_licence) VALUES ('BT');\n\n\nINSERT INTO licence_pilote VALUES ((select id_licence from licence where nom_licence='BO'),(select id_pilote from pilote where nom_pilote='Pierre'));\nINSERT INTO licence_pilote VALUES ((select id_licence from licence where nom_licence='AA'),(select id_pilote from pilote where nom_pilote='Paul'));\nINSERT INTO licence_pilote VALUES ((select id_licence from licence where nom_licence='BO'),(select id_pilote from pilote where nom_pilote='Jacques'));\nINSERT INTO licence_pilote VALUES ((select id_licence from licence where nom_licence='AB'),(select id_pilote from pilote where nom_pilote='Fernande'));\nINSERT INTO licence_pilote VALUES ((select id_licence from licence where nom_licence='AT'),(select id_pilote from pilote where nom_pilote='Fernande'));\nINSERT INTO licence_pilote VALUES ((select id_licence from licence where nom_licence='AT'),(select id_pilote from pilote where nom_pilote='Marie'));\nINSERT INTO licence_pilote VALUES ((select id_licence from licence where nom_licence='AA'),(select id_pilote from pilote where nom_pilote='Marie'));\nINSERT INTO licence_pilote VALUES ((select id_licence from licence where nom_licence='BO'),(select id_pilote from pilote where nom_pilote='Marie'));\nINSERT INTO licence_pilote VALUES ((select id_licence from licence where nom_licence='AA'),(select id_pilote from pilote where nom_pilote='Philippe'));\nINSERT INTO licence_pilote VALUES ((select id_licence from licence where nom_licence='BT'),(select id_pilote from pilote where nom_pilote='Philippe'));\nINSERT INTO licence_pilote VALUES ((select id_licence from licence where nom_licence='AA'),(select id_pilote from pilote where nom_pilote='Frederic'));\nINSERT INTO licence_pilote VALUES ((select id_licence from licence where nom_licence='BO'),(select id_pilote from pilote where nom_pilote='Jean'));\n\n\nINSERT INTO licence_type VALUES ((select id_licence from licence where nom_licence='AA'), (select id_type from type where nom_type='Foker100'));\nINSERT INTO licence_type VALUES ((select id_licence from licence where nom_licence='AA'), (select id_type from type where nom_type='A300'));\nINSERT INTO licence_type VALUES ((select id_licence from licence where nom_licence='AA'), (select id_type from type where nom_type='B747'));\nINSERT INTO licence_type VALUES ((select id_licence from licence where nom_licence='AA'), (select id_type from type where nom_type='ATR44'));\nINSERT INTO licence_type VALUES ((select id_licence from licence where nom_licence='BO'), (select id_type from type where nom_type='A320'));\nINSERT INTO licence_type VALUES ((select id_licence from licence where nom_licence='AT'), (select id_type from type where nom_type='A310'));\nINSERT INTO licence_type VALUES ((select id_licence from licence where nom_licence='AT'), (select id_type from type where nom_type='ATR42'));\nINSERT INTO licence_type VALUES ((select id_licence from licence where nom_licence='AB'), (select id_type from type where nom_type='Foker100'));\nINSERT INTO licence_type VALUES ((select id_licence from licence where nom_licence='AB'), (select id_type from type where nom_type='A300'));\nINSERT INTO licence_type VALUES ((select id_licence from licence where nom_licence='AB'), (select id_type from type where nom_type='B747'));\nINSERT INTO licence_type VALUES ((select id_licence from licence where nom_licence='AB'), (select id_type from type where nom_type='ATR44'));\nINSERT INTO licence_type VALUES ((select id_licence from licence where nom_licence='AB'), (select id_type from type where nom_type='A320'));\n\n-- 16.\n\n-- 17.\n\n-- ===== Partie avancée =====\n-- 18.\n\n-- 19.\n\n-- 20.\n\n-- 21.\n\n-- 22.\n\n-- 23.\n\n-- 24.\n\n-- 25.\n\n-- 26.\n\n-- 27.\n\n-- ===== Partie bonus =====\n-- 28.\n"
+      }
+      </script>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>Une table référencée se crée avant celle qui la référence : avion et pilote avant vol, type et licence avant licence_type.</li>
+        <li>Le script fourni impose l'ordre et le type des colonnes ; <code>SERIAL</code> rend possible <code>VALUES (default, …)</code>.</li>
+        <li>Une même question a plusieurs écritures : jointure naturelle, <code>USING</code>, <code>ON</code>, jointure croisée filtrée, sous-requête, opérateur ensembliste. Elles doivent rendre le même ensemble.</li>
+        <li>Faire évoluer une base remplie : ajouter la nouvelle colonne, la remplir, vérifier, et seulement alors supprimer l'ancienne (protocole NB1 du sujet).</li>
+        <li>Les identifiants <code>SERIAL</code> ne se connaissent pas d'avance : le script fourni les retrouve par des sous-requêtes sur les noms.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi l'ordre de création des tables compte-t-il, et pas celui des attributs ?</summary>
+        <div><p>Une clé étrangère ne peut référencer qu'une table qui existe déjà. L'ordre des attributs ne compte que parce que le script fourni insère avec <code>VALUES</code> sans nommer les colonnes.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi une paire de pilotes risque-t-elle d'apparaître deux fois, ou avec elle-même ?</summary>
+        <div><p>Une auto-jointure associe chaque pilote à tous ceux du même aéroport, lui compris, et chaque paire dans les deux ordres : le résultat attendu n'en garde qu'un.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi ne pas supprimer <code>nom_type</code> avant de remplir <code>id_type</code> ?</summary>
+        <div><p>C'est par lui que l'on retrouve le bon type de chaque avion : le supprimer d'abord perdrait l'information.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi un vol détourné ou supprimé à la question 8 change-t-il les réponses suivantes ?</summary>
+        <div><p>Les questions s'enchaînent sur la même base : chaque modification vaut pour toutes les requêtes qui la suivent, d'où les affichages attendus des questions 12 et 22.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="tp-01-entreprise.html"><small>← TP 1</small>L'entreprise et ses employés</a>
+    <a class="suivant" href="tp-03-cursus-universitaire.html"><small>TP 3 →</small>Le cursus universitaire</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

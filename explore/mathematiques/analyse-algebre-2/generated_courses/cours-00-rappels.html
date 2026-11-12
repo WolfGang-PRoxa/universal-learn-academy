@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fiche de rappels · Analyse et algèbre 2 L2</title>
+<meta name="description" content="Les définitions, propriétés et méthodes qu'emploient le TD, le CC 1 et les TP d'Analyse et algèbre 2 : produit scalaire, espaces vectoriels, bases et matrices de passage, suites, intégrales, méthodes numériques.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-vecteurs-espaces-vectoriels.html" title="Quiz · Vecteurs et espaces vectoriels">
+<link rel="quiz" href="../generated_quizzes/quiz-suites.html" title="Quiz · Suites de réels">
+<link rel="quiz" href="../generated_quizzes/quiz-integration.html" title="Quiz · Intégration">
+<link rel="quiz" href="../generated_quizzes/quiz-python-numerique.html" title="Quiz · Python numérique">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-cc1.html" title="Quiz · Révision du CC 1">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Mathématiques</a>
+    <a href="index.html">Analyse et algèbre 2</a>
+    <span aria-current="page">Fiche de rappels</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Analyse et algèbre 2</span> <span class="badge ajout">Rédigé par Claude</span> Fiche de rappels · L2 S3</p>
+    <h1>Fiche de rappels : vecteurs, espaces vectoriels, suites, intégrales</h1>
+    <p class="chapeau">Cette fiche est rédigée par Claude, et non tirée du cours de l'enseignant, qui n'est plus accessible. Elle rassemble les définitions, propriétés et méthodes dont se servent le TD, le contrôle continu 1 et les TP. Elle sert de référence aux quiz de la matière.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd>Claude, pour l'essentiel : le cours de l'enseignant n'est plus accessible. Seuls le choix des notions et les notations viennent du <a href="../TD/TD.pdf">TD</a>, du <a href="../Annales/CC1%2023-24.pdf">CC 1 2023-2024</a> et des énoncés des TP</dd></div>
+      <div><dt>Part de Claude</dt><dd>tout le texte, les exemples et les démonstrations</dd></div>
+      <div><dt>Enseignant</dt><dd>Baptiste Cablé</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Calculer normes, produits scalaires et angles ; reconnaître des vecteurs orthogonaux.</li>
+        <li>Dire si un ensemble est un espace vectoriel, si une famille est libre, génératrice, une base ; changer de base.</li>
+        <li>Étudier une suite : sens de variation, limite, suites récurrentes.</li>
+        <li>Calculer une intégrale : primitives, intégration par parties, changement de variable.</li>
+        <li>Comprendre les méthodes numériques des TP : pivot de Gauss, déterminant, rectangles, trapèzes, Monte-Carlo, dichotomie, Newton.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Calcul matriciel de L1 : produit de matrices, matrice identité, inverse.</li>
+        <li>Dérivées et limites des fonctions usuelles.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc attention">
+    <p class="bloc-titre">Attention <span>Une fiche rédigée par Claude</span></p>
+    <p>Rien sur cette page ne vient du cours de l'enseignant, que l'on n'a plus : tout est un ajout, écrit avec les notations du TD et du CC 1. Les résultats sont les résultats classiques du programme ; les exemples sont choisis pour ne pas résoudre d'avance les exercices du TD. En cas de doute sur une notation, le TD et le CC 1 font foi.</p>
+  </div>
+
+  <section>
+    <h2>Vecteurs et produit scalaire <span class="ref">TD, partie I</span></h2>
+    <p>Dans le plan \(\R^2\) ou l'espace \(\R^3\) muni d'un repère orthonormé, un vecteur se donne par ses coordonnées. Le produit scalaire relie ces coordonnées à la géométrie : longueurs, angles, perpendicularité.</p>
+
+    <h3>Norme d'un vecteur</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Norme</span></p>
+      <p>La <dfn>norme</dfn> (<span class="en" lang="en">norm</span>) de \(\vec u \begin{pmatrix} x \\ y \\ z \end{pmatrix}\) est sa longueur : \(\lVert \vec u \rVert = \sqrt{x^2 + y^2 + z^2}\). Dans le plan, on retire le terme en \(z\). Seul le vecteur nul a une norme nulle.</p>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple</p>
+      <p>\(\vec w \begin{pmatrix} 1 \\ -2 \\ 2 \end{pmatrix}\) a pour norme \(\sqrt{1 + 4 + 4} = \sqrt 9 = 3\). Le vecteur \(\frac{1}{3}\vec w\) a pour norme 1 : diviser un vecteur non nul par sa norme le <dfn>normalise</dfn>.</p>
+    </div>
+
+    <h3>Produit scalaire</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Produit scalaire</span></p>
+      <p>Le <dfn>produit scalaire</dfn> (<span class="en" lang="en">dot product</span>) de \(\vec u (x_u, y_u, z_u)\) et \(\vec v (x_v, y_v, z_v)\) est le réel</p>
+      <div class="encadre">\[ \vec u \cdot \vec v = x_u x_v + y_u y_v + z_u z_v = \lVert \vec u \rVert \, \lVert \vec v \rVert \cos(\vec u, \vec v). \]</div>
+      <p>En particulier, \(\vec u \cdot \vec u = \lVert \vec u \rVert^2\).</p>
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Règles de calcul</span></p>
+      <ul>
+        <li>Symétrie : \(\vec u \cdot \vec v = \vec v \cdot \vec u\).</li>
+        <li>Distributivité : \(\vec u \cdot (\vec v + \vec w) = \vec u \cdot \vec v + \vec u \cdot \vec w\), et \((\lambda \vec u) \cdot \vec v = \lambda (\vec u \cdot \vec v)\).</li>
+        <li>Projection : si \(H\) est le projeté orthogonal de \(C\) sur la droite \((AB)\), alors \(\overrightarrow{AB} \cdot \overrightarrow{AC} = \overrightarrow{AB} \cdot \overrightarrow{AH}\), qui vaut \(AB \times AH\) si \(\overrightarrow{AB}\) et \(\overrightarrow{AH}\) sont de même sens, \(-AB \times AH\) sinon.</li>
+      </ul>
+    </div>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Calculer sans repère</span></p>
+      <p>Pour un produit scalaire dans une figure sans coordonnées, on découpe les vecteurs avec la relation de Chasles (\(\overrightarrow{AC} = \overrightarrow{AB} + \overrightarrow{BC}\)), on développe par distributivité, puis on utilise les angles droits de la figure : chaque produit de deux vecteurs orthogonaux vaut 0, et un produit de deux vecteurs colinéaires de même sens vaut le produit des longueurs.</p>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Dans un rectangle</span></p>
+      <p>\(ABCD\) est un rectangle avec \(AB = 4\) et \(BC = 3\). Alors \(\overrightarrow{AB} \cdot \overrightarrow{AC} = \overrightarrow{AB} \cdot (\overrightarrow{AB} + \overrightarrow{BC}) = AB^2 + \overrightarrow{AB} \cdot \overrightarrow{BC} = 16 + 0 = 16\), car \((AB) \perp (BC)\).</p>
+    </div>
+
+    <h3>Orthogonalité et angle</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Vecteurs orthogonaux</span></p>
+      <p>Deux vecteurs sont <dfn>orthogonaux</dfn> quand leur produit scalaire est nul. Le vecteur nul est orthogonal à tout vecteur.</p>
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Angle non orienté</span></p>
+      <p>Pour deux vecteurs non nuls, l'angle non orienté \(\theta \in [0, \pi]\) entre eux vérifie</p>
+      <div class="encadre">\[ \cos \theta = \frac{\vec u \cdot \vec v}{\lVert \vec u \rVert \, \lVert \vec v \rVert}, \qquad \theta = \arccos\left( \frac{\vec u \cdot \vec v}{\lVert \vec u \rVert \, \lVert \vec v \rVert} \right). \]</div>
+      <p>Le signe du produit scalaire donne la nature de l'angle : positif, angle aigu ; nul, angle droit ; négatif, angle obtus. Si \(\cos\theta = \pm 1\), les vecteurs sont colinéaires.</p>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple</p>
+      <p>\(\vec u (1, 0, 1)\) et \(\vec v (0, 1, 1)\) : \(\vec u \cdot \vec v = 1\), \(\lVert \vec u \rVert = \lVert \vec v \rVert = \sqrt 2\), donc \(\cos \theta = \frac{1}{2}\) et \(\theta = \frac{\pi}{3}\), soit 60°.</p>
+      <p>Pour l'angle \(\widehat{BAC}\) d'un triangle donné par ses sommets, on applique la formule à \(\overrightarrow{AB}\) et \(\overrightarrow{AC}\), dont les coordonnées sont des différences de coordonnées : \(\overrightarrow{AB} = (x_B - x_A, y_B - y_A, z_B - z_A)\).</p>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention</p>
+      <p>Une calculatrice ou <code>numpy.arccos</code> rendent l'angle en radians. Pour des degrés, multiplier par \(\frac{180}{\pi}\) (ou <code>numpy.degrees</code>).</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Espaces vectoriels <span class="ref">TD, partie II ; CC 1</span></h2>
+    <p>Un espace vectoriel est un ensemble où l'on sait additionner les éléments et les multiplier par un réel, en restant dans l'ensemble. Les vecteurs de \(\R^n\), mais aussi les polynômes, les matrices ou les fonctions en sont des exemples : les mêmes outils (combinaisons linéaires, bases, coordonnées) s'y appliquent.</p>
+
+    <h3>Espace vectoriel et sous-espace vectoriel</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>\(\R\)-espace vectoriel</span></p>
+      <p>Un <dfn>\(\R\)-espace vectoriel</dfn> (<span class="en" lang="en">vector space</span>) est un ensemble \(E\) muni d'une addition \(u + v\) et d'une multiplication par un réel \(\lambda u\), qui donnent toujours un élément de \(E\), et qui vérifient les règles de calcul habituelles : l'addition est associative et commutative, elle a un élément neutre, le <dfn>vecteur nul</dfn> \(0_E\), tout \(u\) a un opposé \(-u\), et \(\lambda(u + v) = \lambda u + \lambda v\), \((\lambda + \mu) u = \lambda u + \mu u\), \(\lambda(\mu u) = (\lambda\mu) u\), \(1 \cdot u = u\).</p>
+    </div>
+    <p>En pratique, on ne vérifie presque jamais les huit règles : on montre que l'ensemble étudié est un sous-espace vectoriel d'un espace connu (\(\R^n\), les polynômes, les matrices, les fonctions de \(\R\) dans \(\R\)).</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Caractérisation d'un sous-espace vectoriel</span></p>
+      <p>Une partie \(F\) d'un espace vectoriel \(E\) est un <dfn>sous-espace vectoriel</dfn> de \(E\) (et donc un espace vectoriel) si et seulement si :</p>
+      <ol>
+        <li>\(F\) contient le vecteur nul \(0_E\) ;</li>
+        <li>\(F\) est stable par combinaison linéaire : pour tous \(u, v \in F\) et tous réels \(\lambda, \mu\), \(\lambda u + \mu v \in F\).</li>
+      </ol>
+    </div>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Montrer qu'un ensemble n'est pas un espace vectoriel</span></p>
+      <p>Il suffit d'un contre-exemple, à chercher dans cet ordre :</p>
+      <ul>
+        <li>le vecteur nul n'appartient pas à l'ensemble (une équation avec un second membre non nul, comme \(x + y = 1\)) ;</li>
+        <li>un multiple par un réel en sort (un réel négatif renverse un signe ; un réel non entier sort des entiers) ;</li>
+        <li>une somme en sort (un ensemble défini par un produit nul, comme \(xy = 0\)).</li>
+      </ul>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemples</p>
+      <ul>
+        <li>\(F = \{(x, y, z) \in \R^3 \mid x - 2y + z = 0\}\) contient \((0, 0, 0)\), et si \(u, v \in F\), les coordonnées de \(\lambda u + \mu v\) vérifient encore l'équation, qui est linéaire et sans second membre : c'est un sous-espace vectoriel (un plan).</li>
+        <li>\(G = \{(x, y) \in \R^2 \mid y = x + 1\}\) ne contient pas \((0, 0)\) : ce n'est pas un espace vectoriel.</li>
+        <li>\(H = \{(x, y) \in \R^2 \mid xy = 0\}\) (les deux axes) contient \((1, 0)\) et \((0, 1)\), mais pas leur somme \((1, 1)\) : ce n'est pas un espace vectoriel.</li>
+      </ul>
+    </div>
+
+    <h3>Combinaisons linéaires et familles</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Combinaison linéaire</span></p>
+      <p>Une <dfn>combinaison linéaire</dfn> (<span class="en" lang="en">linear combination</span>) des vecteurs \(u_1, \dots, u_p\) est un vecteur de la forme \(\lambda_1 u_1 + \lambda_2 u_2 + \dots + \lambda_p u_p\), où les \(\lambda_i\) sont des réels, les <dfn>coefficients</dfn>.</p>
+      <p>On n'y trouve ni produit de deux vecteurs, ni puissance d'un vecteur, ni division par un vecteur, ni réel ajouté seul : seulement des vecteurs multipliés par des réels, puis additionnés.</p>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Famille génératrice, famille libre</span></p>
+      <ul>
+        <li>Le <dfn>sous-espace engendré</dfn> par \((u_1, \dots, u_p)\), noté \(\mathrm{Vect}(u_1, \dots, u_p)\), est l'ensemble de toutes leurs combinaisons linéaires.</li>
+        <li>La famille est <dfn>génératrice</dfn> de \(E\) (<span class="en" lang="en">spanning set</span>) si tout vecteur de \(E\) est une combinaison linéaire des \(u_i\) : \(\mathrm{Vect}(u_1, \dots, u_p) = E\).</li>
+        <li>La famille est <dfn>libre</dfn> (<span class="en" lang="en">linearly independent</span>) si la seule combinaison linéaire nulle est celle dont tous les coefficients sont nuls : \(\lambda_1 u_1 + \dots + \lambda_p u_p = 0 \Rightarrow \lambda_1 = \dots = \lambda_p = 0\). Sinon, elle est <dfn>liée</dfn> : l'un des vecteurs est combinaison linéaire des autres.</li>
+      </ul>
+    </div>
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>Repérer une famille liée d'un coup d'œil</span></p>
+      <p>Une famille qui contient le vecteur nul, ou deux vecteurs colinéaires (\(v = k u\)), est liée. Deux vecteurs non nuls forment une famille libre si et seulement s'ils ne sont pas colinéaires.</p>
+    </div>
+
+    <h3>Bases et dimension</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Base, coordonnées, dimension</span></p>
+      <p>Une <dfn>base</dfn> (<span class="en" lang="en">basis</span>) de \(E\) est une famille libre et génératrice. Tout vecteur de \(E\) s'écrit alors de façon unique comme combinaison linéaire des vecteurs de la base : ses coefficients sont ses <dfn>coordonnées</dfn> dans cette base. Toutes les bases de \(E\) ont le même nombre de vecteurs, la <dfn>dimension</dfn> de \(E\). L'espace réduit au vecteur nul, \(\{0\}\), est de dimension 0.</p>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemples <span>Bases canoniques</span></p>
+      <ul>
+        <li>La <dfn>base canonique</dfn> de \(\R^n\) est \((e_1, \dots, e_n)\), où \(e_i\) a un 1 en position \(i\) et des 0 ailleurs. Dans \(\R^3\) : \(e_1 = (1, 0, 0)\), \(e_2 = (0, 1, 0)\), \(e_3 = (0, 0, 1)\). Donc \(\dim \R^n = n\).</li>
+        <li>Les polynômes de degré au plus 2 ont pour base canonique \((1, X, X^2)\) (rappel du CC 1) : ils forment un espace de dimension 3, et \(aX^2 + bX + c\) a pour coordonnées \((c, b, a)\) dans cette base, dans l'ordre \(1, X, X^2\).</li>
+      </ul>
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Compter les vecteurs, dans un espace de dimension \(n\)</span></p>
+      <ul>
+        <li>Une famille de plus de \(n\) vecteurs est liée ; une famille de moins de \(n\) vecteurs n'est pas génératrice.</li>
+        <li>Une famille d'exactement \(n\) vecteurs est une base dès qu'elle est libre, ou dès qu'elle est génératrice : une seule des deux vérifications suffit.</li>
+        <li>Un sous-espace vectoriel de \(E\) a une dimension comprise entre 0 et \(n\) : \(\R^3\) n'a aucun sous-espace de dimension 4.</li>
+      </ul>
+    </div>
+
+    <h3>Déterminant</h3>
+    <p>Le déterminant d'une matrice carrée est un réel qui dit, d'un seul calcul, si ses colonnes forment une base.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Déterminant d'ordre 2 et 3</span></p>
+      <p>\[ \begin{vmatrix} a &amp; b \\ c &amp; d \end{vmatrix} = ad - bc, \qquad \begin{vmatrix} a_{11} &amp; a_{12} &amp; a_{13} \\ a_{21} &amp; a_{22} &amp; a_{23} \\ a_{31} &amp; a_{32} &amp; a_{33} \end{vmatrix} = a_{11} \begin{vmatrix} a_{22} &amp; a_{23} \\ a_{32} &amp; a_{33} \end{vmatrix} - a_{12} \begin{vmatrix} a_{21} &amp; a_{23} \\ a_{31} &amp; a_{33} \end{vmatrix} + a_{13} \begin{vmatrix} a_{21} &amp; a_{22} \\ a_{31} &amp; a_{32} \end{vmatrix}. \]</p>
+      <p>Plus généralement, le <dfn>développement selon la ligne</dfn> \(i\) s'écrit \(\det A = \sum_{j} (-1)^{i+j} a_{ij} \det A_{ij}\), où \(A_{ij}\) est la matrice \(A\) privée de sa ligne \(i\) et de sa colonne \(j\) (c'est le calcul du TP 2).</p>
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Déterminant et bases</span></p>
+      <p>\(n\) vecteurs de \(\R^n\) forment une base si et seulement si le déterminant de la matrice qui les a pour colonnes est non nul. De même, une matrice carrée \(A\) est inversible si et seulement si \(\det A \ne 0\). Enfin, \(\det(AB) = \det A \times \det B\), et échanger deux lignes change le signe du déterminant.</p>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple</p>
+      <p>Les vecteurs \((1, 1, 0)\), \((0, 1, 1)\), \((1, 0, 1)\) forment-ils une base de \(\R^3\) ? En développant selon la première ligne :</p>
+      <p>\[ \begin{vmatrix} 1 &amp; 0 &amp; 1 \\ 1 &amp; 1 &amp; 0 \\ 0 &amp; 1 &amp; 1 \end{vmatrix} = 1 \times (1 - 0) - 0 + 1 \times (1 - 0) = 2 \ne 0 : \text{ oui.} \]</p>
+    </div>
+
+    <h3>Matrices de passage</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Matrice de passage</span></p>
+      <p>Soient deux bases \(B\) et \(B'\) de \(E\). La <dfn>matrice de passage</dfn> de \(B\) à \(B'\), notée \(\mathrm{Pass}(B, B')\), a pour colonne \(j\) les coordonnées du \(j\)-ième vecteur de la nouvelle base \(B'\) exprimées dans l'ancienne base \(B\).</p>
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Changement de coordonnées</span></p>
+      <p>Si \(X\) est la colonne des coordonnées d'un vecteur dans \(B\) et \(X'\) celle de ses coordonnées dans \(B'\), et \(P = \mathrm{Pass}(B, B')\) :</p>
+      <div class="encadre">\[ X = P X', \qquad X' = P^{-1} X, \qquad \mathrm{Pass}(B', B) = \mathrm{Pass}(B, B')^{-1}. \]</div>
+      <p>Pour trois bases, les passages se composent : \(\mathrm{Pass}(B, B'') = \mathrm{Pass}(B, B') \times \mathrm{Pass}(B', B'')\).</p>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Le sens de la formule</span></p>
+      <p>La matrice \(\mathrm{Pass}(B, B')\) s'écrit avec les vecteurs de la <em>nouvelle</em> base, mais elle transforme les coordonnées <em>nouvelles</em> en coordonnées <em>anciennes</em> : \(X = PX'\). Pour obtenir les nouvelles coordonnées, il faut l'inverser (ou résoudre le système \(PX' = X\) par le pivot de Gauss).</p>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Dans \(\R^2\)</span></p>
+      <p>Dans \(\R^2\), soit \(B'\) = (\(f_1 = (1, 1)\), \(f_2 = (1, -1)\)). Depuis la base canonique, \(P = \mathrm{Pass}(B_c, B') = \begin{pmatrix} 1 &amp; 1 \\ 1 &amp; -1 \end{pmatrix}\). Le vecteur de coordonnées \(X' = \begin{pmatrix} 2 \\ 3 \end{pmatrix}\) dans \(B'\) est \(X = PX' = \begin{pmatrix} 5 \\ -1 \end{pmatrix}\) dans la base canonique : en effet \(2 f_1 + 3 f_2 = (2 + 3, 2 - 3) = (5, -1)\).</p>
+    </div>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Décomposer beaucoup de vecteurs dans une même base</span></p>
+      <p>Pour exprimer de nombreux vecteurs (ou polynômes) dans une base \(B\), on calcule une seule fois \(P^{-1}\), où \(P = \mathrm{Pass}(B_c, B)\) ; les coordonnées de chaque vecteur dans \(B\) s'obtiennent ensuite par un simple produit \(X' = P^{-1} X\), sans résoudre un nouveau système à chaque fois.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Suites de réels <span class="ref">TD, partie III</span></h2>
+    <p>Étudier une suite, c'est savoir comment elle varie et vers quoi elle tend. Les outils changent selon qu'elle est donnée par une formule explicite \(u_n = f(n)\) ou par une relation de récurrence \(u_{n+1} = f(u_n)\).</p>
+
+    <h3>Sens de variation</h3>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Trois façons d'étudier la monotonie</span></p>
+      <ul>
+        <li>Étudier le signe de \(u_{n+1} - u_n\) : positif pour tout \(n\), la suite est <dfn>croissante</dfn> ; négatif, <dfn>décroissante</dfn>.</li>
+        <li>Pour une suite à termes strictement positifs, comparer \(\frac{u_{n+1}}{u_n}\) à 1.</li>
+        <li>Si \(u_n = f(n)\) avec \(f\) monotone sur \([0, +\infty[\), la suite a le même sens de variation que \(f\).</li>
+      </ul>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple</p>
+      <p>\(u_n = \frac{2n + 3}{n + 1} = 2 + \frac{1}{n + 1}\) : comme \(\frac{1}{n+1}\) décroît, \((u_n)\) est décroissante, et elle tend vers 2.</p>
+    </div>
+
+    <h3>Limites</h3>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Outils de calcul</span></p>
+      <ul>
+        <li><b>Quotient de polynômes en \(n\)</b> : on factorise numérateur et dénominateur par leur terme de plus haut degré ; la limite est celle du quotient de ces termes. Ainsi \(\frac{5n^2 - n}{2n^2 + 7} \to \frac{5}{2}\), \(\frac{n + 4}{n^3 + 1} \to 0\).</li>
+        <li><b>Théorème des gendarmes</b> : si \(v_n \le u_n \le w_n\) et si \(v_n\) et \(w_n\) tendent vers la même limite \(\ell\), alors \(u_n \to \ell\).</li>
+        <li><b>Bornée fois nulle</b> : si \((a_n)\) est bornée (par exemple \(\cos n\), \(\sin n\), \((-1)^n\)) et \(b_n \to 0\), alors \(a_n b_n \to 0\).</li>
+        <li><b>Comparaison</b> : si \(u_n \ge v_n\) et \(v_n \to +\infty\), alors \(u_n \to +\infty\).</li>
+        <li><b>Pas de limite</b> : \((-1)^n\) prend alternativement les valeurs 1 et −1, elle n'a pas de limite. Une suite dont deux sous-suites (termes pairs, termes impairs) ont des limites différentes diverge.</li>
+      </ul>
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Théorème <span>Convergence monotone</span></p>
+      <p>Une suite croissante et majorée converge ; une suite décroissante et minorée converge. Une suite croissante non majorée tend vers \(+\infty\).</p>
+    </div>
+
+    <h3>Suites arithmétiques et géométriques</h3>
+    <div class="tableau">
+      <table>
+        <caption>Les deux suites de référence</caption>
+        <thead><tr><th></th><th>Arithmétique de raison \(r\)</th><th>Géométrique de raison \(q\)</th></tr></thead>
+        <tbody>
+          <tr><td>Récurrence</td><td>\(u_{n+1} = u_n + r\)</td><td>\(u_{n+1} = q \, u_n\)</td></tr>
+          <tr><td>Terme général</td><td>\(u_n = u_0 + n r = u_p + (n - p) r\)</td><td>\(u_n = u_0 \, q^n = u_p \, q^{n-p}\)</td></tr>
+          <tr><td>Somme de termes consécutifs</td><td>\(\text{nombre de termes} \times \frac{\text{premier} + \text{dernier}}{2}\)</td><td>\(\text{premier} \times \frac{1 - q^{\text{nombre de termes}}}{1 - q}\) (si \(q \ne 1\))</td></tr>
+          <tr><td>Limite</td><td>\(\pm\infty\) selon le signe de \(r\) (si \(r \ne 0\))</td><td>0 si \(|q| \lt 1\) ; \(\pm\infty\) si \(q \gt 1\) (signe de \(u_0\)) ; pas de limite si \(q \le -1\)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Compter les termes</span></p>
+      <p>De \(u_3\) à \(u_n\), il y a \(n - 3 + 1 = n - 2\) termes. Pour la suite géométrique \(v_n = 2 \times \left(\frac{1}{2}\right)^n\), on a \(\sum_{k=1}^{n} v_k = v_1 \times \frac{1 - (1/2)^n}{1 - 1/2} = 2\left(1 - \frac{1}{2^n}\right)\), qui tend vers 2.</p>
+    </div>
+
+    <h3>Suites définies par récurrence</h3>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Limite et point fixe</span></p>
+      <p>Si \(u_{n+1} = f(u_n)\), si \((u_n)\) converge vers \(\ell\) et si \(f\) est continue en \(\ell\), alors \(\ell = f(\ell)\) : la limite est un <dfn>point fixe</dfn> de \(f\). On cherche donc les limites possibles parmi les solutions de \(f(x) = x\), ou de \(g(x) = f(x) - x = 0\).</p>
+    </div>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Étudier \(u_{n+1} = f(u_n)\)</span></p>
+      <ol>
+        <li>Trouver un intervalle \(I\) stable par \(f\) (\(f(I) \subset I\)) qui contient \(u_0\), et montrer par récurrence que \(u_n \in I\) pour tout \(n\) : cela donne un majorant et un minorant.</li>
+        <li>Si \(f\) est croissante sur \(I\), la suite est monotone : croissante si \(u_1 \ge u_0\), décroissante sinon (récurrence : si \(u_{n+1} \ge u_n\), alors \(f(u_{n+1}) \ge f(u_n)\)). Le signe de \(g(x) = f(x) - x\) sur \(I\) donne directement celui de \(u_{n+1} - u_n = g(u_n)\).</li>
+        <li>Conclure avec le théorème de convergence monotone, puis identifier la limite parmi les points fixes de \(I\).</li>
+      </ol>
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Suite arithmético-géométrique</span></p>
+      <p>Pour \(u_{n+1} = a u_n + b\) avec \(a \ne 1\), le point fixe est \(\ell = \frac{b}{1 - a}\). La suite \(v_n = u_n - \ell\) est géométrique de raison \(a\) : \(v_{n+1} = a u_n + b - \ell = a(u_n - \ell) = a v_n\), car \(b - \ell = -a\ell\). D'où \(u_n = \ell + (u_0 - \ell)\, a^n\), qui tend vers \(\ell\) si \(|a| \lt 1\).</p>
+    </div>
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>Une suite auxiliaire</span></p>
+      <p>Quand l'énoncé propose une suite auxiliaire \(v_n\) (par exemple \(v_n = u_n^2 - c\)), on calcule \(v_{n+1}\) en remplaçant \(u_{n+1}\) par son expression, et l'on fait apparaître \(v_n\) : \(v_{n+1} - v_n\) constant donne une suite arithmétique, \(\frac{v_{n+1}}{v_n}\) constant une suite géométrique.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Intégration <span class="ref">TD, partie IV</span></h2>
+    <p>L'intégrale d'une fonction continue sur \([a, b]\) se calcule avec une primitive : \(\int_a^b f(x)\,dx = F(b) - F(a) = \big[F(x)\big]_a^b\), où \(F' = f\). Pour une fonction positive, c'est l'aire sous la courbe.</p>
+
+    <h3>Primitives usuelles</h3>
+    <div class="tableau">
+      <table>
+        <caption>Primitives usuelles (\(u\) désigne une fonction dérivable, \(a \ne 0\))</caption>
+        <thead><tr><th>Fonction</th><th>Primitive</th><th>Fonction</th><th>Primitive</th></tr></thead>
+        <tbody>
+          <tr><td>\(x^n\) (\(n \ne -1\))</td><td>\(\frac{x^{n+1}}{n+1}\)</td><td>\(u' u^n\) (\(n \ne -1\))</td><td>\(\frac{u^{n+1}}{n+1}\)</td></tr>
+          <tr><td>\(\frac{1}{x}\)</td><td>\(\ln |x|\)</td><td>\(\frac{u'}{u}\)</td><td>\(\ln |u|\)</td></tr>
+          <tr><td>\(\frac{1}{\sqrt x}\)</td><td>\(2\sqrt x\)</td><td>\(\frac{u'}{\sqrt u}\)</td><td>\(2\sqrt u\)</td></tr>
+          <tr><td>\(e^{ax + b}\)</td><td>\(\frac{1}{a} e^{ax + b}\)</td><td>\(u' e^u\)</td><td>\(e^u\)</td></tr>
+          <tr><td>\(\cos(ax)\)</td><td>\(\frac{1}{a}\sin(ax)\)</td><td>\(\sin(ax)\)</td><td>\(-\frac{1}{a}\cos(ax)\)</td></tr>
+          <tr><td>\(c^x = e^{x \ln c}\) (\(c \gt 0\), \(c \ne 1\))</td><td>\(\frac{c^x}{\ln c}\)</td><td>\(\frac{1}{1 + x^2}\)</td><td>\(\arctan x\)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>Racines et puissances</span></p>
+      <p>Avant de chercher une primitive, réécrire racines et inverses comme des puissances : \(\sqrt[3]{x} = x^{1/3}\), \(\frac{1}{x\sqrt x} = x^{-3/2}\). La formule \(\frac{x^{n+1}}{n+1}\) vaut pour tout exposant réel \(n \ne -1\).</p>
+    </div>
+
+    <h3>Propriétés de l'intégrale</h3>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Règles de calcul</span></p>
+      <ul>
+        <li>Linéarité : \(\int_a^b (\lambda f + \mu g) = \lambda \int_a^b f + \mu \int_a^b g\).</li>
+        <li>Relation de Chasles : \(\int_a^c f = \int_a^b f + \int_b^c f\) ; et \(\int_b^a f = -\int_a^b f\). Elle sert à découper une valeur absolue là où elle change de signe.</li>
+        <li>Positivité : si \(a \le b\) et \(f \ge 0\) sur \([a, b]\), alors \(\int_a^b f \ge 0\). Croissance : si \(f \le g\), alors \(\int_a^b f \le \int_a^b g\).</li>
+        <li>Encadrement : si \(m \le f \le M\) sur \([a, b]\), alors \(m(b - a) \le \int_a^b f \le M(b - a)\).</li>
+        <li>Aire entre deux courbes : l'aire comprise entre les courbes de \(f\) et \(g\) et les droites \(x = a\), \(x = b\) vaut \(\int_a^b |f(x) - g(x)|\,dx\), en unités d'aire.</li>
+      </ul>
+    </div>
+
+    <h3>Intégration par parties</h3>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Théorème <span>Intégration par parties (IPP)</span></p>
+      <p>Pour \(u\) et \(v\) dérivables à dérivées continues sur \([a, b]\) :</p>
+      <div class="encadre">\[ \int_a^b u(x)\, v'(x)\,dx = \big[u(x)\, v(x)\big]_a^b - \int_a^b u'(x)\, v(x)\,dx. \]</div>
+    </div>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Choisir \(u\) et \(v'\)</span></p>
+      <p>On dérive (\(u\)) le facteur qui se simplifie en le dérivant : un polynôme, ou un logarithme (\(\ln x\) devient \(\frac{1}{x}\)). On intègre (\(v'\)) celui dont on connaît une primitive : exponentielle, sinus, cosinus, puissance. Avec un \(\ln\), c'est presque toujours lui que l'on dérive.</p>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple</p>
+      <p>\(\int_0^\pi x \sin x\,dx\) : \(u = x\), \(v' = \sin x\), donc \(u' = 1\), \(v = -\cos x\). Il vient \(\big[-x\cos x\big]_0^\pi + \int_0^\pi \cos x\,dx = \pi + \big[\sin x\big]_0^\pi = \pi\).</p>
+    </div>
+
+    <h3>Changement de variable</h3>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Théorème <span>Changement de variable</span></p>
+      <p>Si \(\varphi\) est dérivable à dérivée continue sur \([a, b]\) et \(f\) continue :</p>
+      <div class="encadre">\[ \int_a^b f(\varphi(t))\, \varphi'(t)\,dt = \int_{\varphi(a)}^{\varphi(b)} f(x)\,dx. \]</div>
+    </div>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Les trois remplacements</span></p>
+      <p>Avec \(x = \varphi(t)\) (ou \(y = \) une expression de \(x\)) : on remplace la variable, on remplace \(dx\) par \(\varphi'(t)\,dt\), et l'on <em>change les bornes</em>. Oublier les bornes est l'erreur la plus fréquente.</p>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple</p>
+      <p>\(\int_0^1 \frac{2x}{1 + x^2}\,dx\) : avec \(y = 1 + x^2\), \(dy = 2x\,dx\), et les bornes 0 et 1 deviennent 1 et 2. L'intégrale vaut \(\int_1^2 \frac{dy}{y} = \ln 2\). On pouvait aussi reconnaître la forme \(\frac{u'}{u}\).</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Méthodes numériques des TP <span class="ref">TP 1 à 4</span></h2>
+    <p>Les TP programment en Python, avec numpy, les calculs que l'on fait à la main en TD. Cette partie rappelle le principe et le coût de chaque méthode ; le code reste à écrire dans les notebooks.</p>
+
+    <h3>Pivot de Gauss</h3>
+    <div class="bloc methode">
+      <p class="bloc-titre">Algorithme <span>Pivot de Gauss-Jordan</span></p>
+      <p>Trois opérations sur les lignes, qui ne changent pas les solutions d'un système : échanger deux lignes (<dfn>permutation</dfn>), diviser une ligne par un réel non nul (<dfn>normalisation</dfn>), retrancher à une ligne un multiple d'une autre, \(L_i \leftarrow L_i - a L_r\) (<dfn>transvection</dfn>). Colonne après colonne, on choisit un pivot non nul (au TP, le plus grand en valeur absolue, pour limiter les erreurs d'arrondi), on le ramène à 1, puis on annule le reste de sa colonne. Appliquées en même temps à l'identité, les mêmes opérations donnent \(A^{-1}\) ; à un second membre \(b\), la solution de \(AX = b\).</p>
+      <p>La matrice est inversible si et seulement si chaque colonne fournit un pivot non nul. Le coût est de l'ordre de \(n^3\) opérations.</p>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Comparer un flottant à zéro</span></p>
+      <p>Après des calculs en virgule flottante, un coefficient qui devrait être nul vaut souvent \(10^{-16}\) : on le compare à 0 avec une tolérance, \(|a| \lt \varepsilon\), et non avec <code>a == 0</code>.</p>
+    </div>
+
+    <h3>Déterminant et comatrice</h3>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Inverse par la comatrice</span></p>
+      <p>La <dfn>comatrice</dfn> \(\mathrm{com}(A)\) a pour coefficient \((i, j)\) le cofacteur \((-1)^{i+j} \det A_{ij}\). Si \(\det A \ne 0\) :</p>
+      <div class="encadre">\[ A^{-1} = \frac{1}{\det A}\, {}^t\mathrm{com}(A). \]</div>
+      <p>Pour \(A = \begin{pmatrix} a &amp; b \\ c &amp; d \end{pmatrix}\), cela donne \(A^{-1} = \frac{1}{ad - bc} \begin{pmatrix} d &amp; -b \\ -c &amp; a \end{pmatrix}\).</p>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Le coût du développement récursif</span></p>
+      <p>Développer un déterminant d'ordre \(n\) demande \(n\) déterminants d'ordre \(n - 1\) : environ \(n!\) opérations, contre \(n^3\) pour le pivot. Pour \(n = 10\), \(10! \approx 3{,}6\) millions, contre \(10^3 = 1\,000\). C'est ce que mesurent les tests de rapidité des TP 1 et 2.</p>
+    </div>
+
+    <h3>Rectangles, trapèzes et Monte-Carlo</h3>
+    <p>On découpe \([a, b]\) en \(n\) intervalles de largeur \(h = \frac{b - a}{n}\), de bornes \(x_k = a + kh\).</p>
+    <div class="tableau">
+      <table>
+        <caption>Trois approximations de \(\int_a^b f\)</caption>
+        <thead><tr><th>Méthode</th><th>Formule</th><th>Erreur</th></tr></thead>
+        <tbody>
+          <tr><td>Rectangles (hauteur prise à droite)</td><td>\(h \sum_{k=1}^{n} f(x_k)\)</td><td>de l'ordre de \(\frac{1}{n}\)</td></tr>
+          <tr><td>Trapèzes</td><td>\(h \left( \frac{f(x_0) + f(x_n)}{2} + \sum_{k=1}^{n-1} f(x_k) \right)\)</td><td>de l'ordre de \(\frac{1}{n^2}\)</td></tr>
+          <tr><td>Monte-Carlo</td><td>\(R \times \frac{\text{points sous la courbe}}{N}\), \(N\) points tirés dans un rectangle d'aire \(R\)</td><td>aléatoire, de l'ordre de \(\frac{1}{\sqrt N}\)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Doubler \(n\) divise donc environ par 2 l'erreur des rectangles, par 4 celle des trapèzes. Pour gagner un chiffre exact avec Monte-Carlo, il faut 100 fois plus de points.</p>
+
+    <h3>Dichotomie et méthode de Newton</h3>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Théorème <span>Valeurs intermédiaires</span></p>
+      <p>Si \(f\) est continue sur \([a, b]\) et si \(f(a)\) et \(f(b)\) sont de signes contraires (\(f(a) f(b) \lt 0\)), alors \(f\) s'annule au moins une fois entre \(a\) et \(b\).</p>
+    </div>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Dichotomie</span></p>
+      <p>À chaque étape, on calcule le milieu \(c = \frac{a + b}{2}\) et l'on garde la moitié où \(f\) change de signe : si \(f(a) f(c) \le 0\), \(b \leftarrow c\), sinon \(a \leftarrow c\). Après \(n\) étapes, l'intervalle mesure \(\frac{b - a}{2^n}\) : on gagne un chiffre décimal toutes les 3 ou 4 itérations (\(2^{10} \approx 10^3\)). La méthode converge toujours, mais lentement.</p>
+    </div>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Newton</span></p>
+      <p>On remplace la courbe par sa tangente au point \(x_k\), et l'on prend pour \(x_{k+1}\) l'abscisse où cette tangente coupe l'axe :</p>
+      <div class="encadre">\[ x_{k+1} = x_k - \frac{f(x_k)}{f'(x_k)}. \]</div>
+      <p>Près d'un zéro simple, le nombre de chiffres exacts double à peu près à chaque itération. Mais la méthode peut échouer : dérivée nulle ou presque (tangente horizontale), point de départ trop éloigné, suite qui oscille entre deux valeurs. Pour chercher un extremum, on l'applique à \(f'\), dont les zéros sont les candidats.</p>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Dérivée approchée</span></p>
+      <p>Sans formule pour \(f'\), on approche la pente sur un petit intervalle : \(\frac{f(x + h) - f(x)}{h}\), ou mieux, de façon centrée, \(\frac{f(x + h) - f(x - h)}{2h}\). Un \(h\) trop petit (moins de \(10^{-8}\) environ) fait perdre de la précision, à cause des arrondis des flottants.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>\(\vec u \cdot \vec v = x_u x_v + y_u y_v + z_u z_v = \lVert \vec u \rVert \lVert \vec v \rVert \cos\theta\) ; orthogonaux si et seulement si le produit scalaire est nul.</li>
+        <li>Un sous-espace vectoriel contient le vecteur nul et est stable par combinaison linéaire ; un seul contre-exemple suffit pour conclure que non.</li>
+        <li>Base = famille libre et génératrice ; en dimension \(n\), \(n\) vecteurs forment une base si et seulement si leur déterminant est non nul.</li>
+        <li>\(\mathrm{Pass}(B, B')\) a pour colonnes les vecteurs de \(B'\) écrits dans \(B\), et \(X = PX'\).</li>
+        <li>Limites de suites : plus haut degré, gendarmes, bornée fois nulle ; une suite monotone et bornée converge.</li>
+        <li>Pour \(u_{n+1} = f(u_n)\) avec \(f\) continue, une limite finie est un point fixe de \(f\).</li>
+        <li>IPP : \(\int u v' = [uv] - \int u' v\) ; changement de variable : remplacer la variable, \(dx\), et les bornes.</li>
+        <li>Coûts : pivot en \(n^3\), déterminant récursif en \(n!\) ; erreurs en \(\frac{1}{n}\) (rectangles), \(\frac{1}{n^2}\) (trapèzes), \(\frac{1}{\sqrt N}\) (Monte-Carlo), \(\frac{1}{2^n}\) (dichotomie).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Les vecteurs \((2, -1, 3)\) et \((1, 5, 1)\) sont-ils orthogonaux ?</summary>
+        <div><p>Oui : \(2 \times 1 + (-1) \times 5 + 3 \times 1 = 0\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>L'ensemble des \((x, y, z)\) de \(\R^3\) tels que \(x + y + z = 2\) est-il un espace vectoriel ?</summary>
+        <div><p>Non : il ne contient pas \((0, 0, 0)\), puisque \(0 + 0 + 0 \ne 2\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quatre vecteurs de \(\R^3\) peuvent-ils former une famille libre ?</summary>
+        <div><p>Non : dans un espace de dimension 3, toute famille de plus de 3 vecteurs est liée. Elle peut en revanche être génératrice.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que contient la colonne \(j\) de \(\mathrm{Pass}(B, B')\) ?</summary>
+        <div><p>Les coordonnées du \(j\)-ième vecteur de la nouvelle base \(B'\), exprimées dans l'ancienne base \(B\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle est la limite de \(\frac{\sin n}{n^2}\) ?</summary>
+        <div><p>0 : \(\sin n\) est bornée par 1 en valeur absolue et \(\frac{1}{n^2} \to 0\) (ou les gendarmes : \(-\frac{1}{n^2} \le \frac{\sin n}{n^2} \le \frac{1}{n^2}\)).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pour \(\int x \ln x\,dx\) par parties, quel facteur dérive-t-on ?</summary>
+        <div><p>\(\ln x\) : \(u = \ln x\), \(u' = \frac{1}{x}\), et \(v' = x\), \(v = \frac{x^2}{2}\). Le produit \(u'v = \frac{x}{2}\) s'intègre sans peine.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi la méthode des trapèzes est-elle meilleure que celle des rectangles ?</summary>
+        <div><p>Le segment oblique suit la courbe bien mieux qu'un palier horizontal : l'erreur décroît en \(\frac{1}{n^2}\) au lieu de \(\frac{1}{n}\). Doubler \(n\) la divise par 4 au lieu de 2.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Citer une situation où la méthode de Newton échoue.</summary>
+        <div><p>Un point où la dérivée s'annule (la tangente horizontale ne coupe pas l'axe), ou une fonction comme \(x \mapsto \sqrt[3]{x}\), pour laquelle chaque itération double la distance au zéro et l'éloigne en changeant de côté.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="index.html"><small>← Accueil</small>Analyse et algèbre 2</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Analyse et algèbre 2 · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

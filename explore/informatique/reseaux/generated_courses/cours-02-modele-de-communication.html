@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="reseau">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modèles de communication · Réseaux L2</title>
+<meta name="description" content="Cours 2 de réseaux (L2) : commutation de circuits et de paquets, routage, règles de la communication (protocole, encapsulation, taille, temporisation), unicast, broadcast, multicast et anycast, modèle OSI en sept couches, modèle TCP/IP (ARPA) en quatre couches, encapsulation et décapsulation.">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-02-modele-de-communication.html" title="Quiz · Cours 2 · Modèles de communication">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Réseaux</a>
+    <span aria-current="page">Cours 2 · Modèles de communication</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Réseaux</span> Cours 2 · L2 S3</p>
+    <h1>Modèles de communication</h1>
+    <p class="chapeau">Comment faire passer un message d'une machine à une autre à travers un réseau partagé ? Ce chapitre oppose la commutation de circuits à la commutation de paquets, fixe les règles de toute communication, puis présente les deux modèles en couches qui structurent le module : le modèle OSI, en sept couches, et le modèle TCP/IP (ou ARPA), en quatre. L'encapsulation, qui fait passer les données d'une couche à l'autre, est la notion centrale.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/02%20-%20mod%C3%A8le%20de%20communication.pdf">02 - modèle de communication.pdf</a> · 30 diapos ; livre Cisco, chapitre « Les modèles de la communication »</dd></div>
+      <div><dt>Enseignant</dt><dd>Sylvain Meignier</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Expliquer la différence entre commutation de circuits et commutation de paquets, et pourquoi Internet utilise la seconde.</li>
+        <li>Citer les règles d'une communication : encodage, encapsulation, taille, temporisation.</li>
+        <li>Distinguer unicast, broadcast, multicast et anycast.</li>
+        <li>Nommer les sept couches OSI et les quatre couches TCP/IP, et les faire correspondre.</li>
+        <li>Décrire l'encapsulation et la décapsulation, et dire ce qui change ou non d'un réseau à l'autre.</li>
+        <li>Comparer TCP et UDP, et placer les protocoles usuels dans leur couche.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-01-introduction.html">Cours 1</a> : équipements finaux et intermédiaires, client-serveur, « le réseau en une diapo ».</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Commutation de circuits et commutation de paquets <span class="ref">diapos 2–7</span></h2>
+    <p>Pour relier deux interlocuteurs à travers un réseau d'équipements partagés, deux solutions existent : réserver un chemin pour toute la durée de l'échange, ou découper l'information en morceaux qui voyagent chacun de leur côté.</p>
+
+    <h3>La commutation de circuits</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Commutation de circuits</span></p>
+      <p>En <dfn>commutation de circuits</dfn>, un circuit est établi entre deux interlocuteurs, à leur demande. Le circuit est la mise bout à bout de segments ; il est désassemblé à la fin de la transmission.</p>
+    </div>
+    <p>C'est le principe du téléphone classique : la photo de la diapo 2 montre une opératrice qui branche des fiches sur un standard pour relier deux lignes. Il faut mettre en place le circuit, puis assurer son ouverture, sa fermeture et son maintien.</p>
+
+    <h3>La commutation de paquets</h3>
+    <p>L'autre solution suit le principe de la poste : c'est la <dfn>commutation de paquets</dfn>, qui optimise le taux d'utilisation du réseau.</p>
+    <ol class="etapes">
+      <li>L'émetteur A <strong>découpe</strong> l'information, en fait des paquets et <strong>identifie</strong> chaque paquet (« A vers B, 1 », « A vers B, 2 »…).</li>
+      <li>Les paquets traversent le réseau de nœud en nœud, éventuellement par des chemins différents.</li>
+      <li>Le destinataire B <strong>réceptionne</strong> les paquets, qui peuvent arriver dans le désordre, les <strong>ordonne</strong> et <strong>reconstruit</strong> l'information.</li>
+    </ol>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Paquet</span></p>
+      <p>Un <dfn>paquet</dfn> est l'entité de base acheminée. Il contient un nombre variable ou fixe d'informations. Le transfert de paquets consiste à transporter des blocs d'information de l'émetteur vers le récepteur en passant par des nœuds qui assurent le routage.</p>
+    </div>
+
+    <h3>Le routage des paquets</h3>
+    <p>Chaque paquet porte l'adresse de l'émetteur et celle du destinataire. Chaque nœud possède une <dfn>table de routage</dfn> : il choisit le segment de sortie en fonction de l'adresse de destination. Deux paquets successifs (paquet <i>i</i> et <i>i</i> + 1) peuvent ainsi emprunter des routes différentes.</p>
+
+    <h3>Circuits ou paquets ?</h3>
+    <p>La diapo 7 compare les deux : avec trois communications simultanées, la commutation de circuits réserve trois circuits, même quand ils sont inoccupés ; la commutation de paquets fait passer sur un même lien les paquets entrelacés des trois communications. La commutation de paquets est <strong>plus efficace</strong>.</p>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="colonne-titre">Commutation de circuits</p>
+        <ul>
+          <li>Débit garanti et délai constant une fois le circuit établi.</li>
+          <li>Ressources réservées même pendant les silences.</li>
+          <li>Temps d'établissement du circuit ; une panne coupe la communication.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p class="colonne-titre">Commutation de paquets</p>
+        <ul>
+          <li>Liens partagés : bien meilleur taux d'utilisation.</li>
+          <li>Un nœud en panne est contourné par une autre route.</li>
+          <li>Délais variables, paquets qui peuvent arriver dans le désordre ou se perdre : il faut les remettre en ordre.</li>
+        </ul>
+      </div>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Les deux colonnes résument les avantages et limites usuels ; la diapo ne retient que l'efficacité.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Règles de la communication <span class="ref">diapos 8–10</span></h2>
+    <p>Qu'il s'agisse de deux personnes ou de deux ordinateurs, une communication ne réussit que si les deux parties suivent les mêmes règles.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Communication, protocole</span></p>
+      <p>Une <dfn>communication</dfn> est la transmission d'un message depuis un émetteur vers un ou plusieurs récepteurs. Son objectif est de réussir à transmettre le message. Elle obéit à des règles, un langage commun : le <dfn>protocole</dfn>.</p>
+    </div>
+
+    <h3>Les règles de la communication numérique</h3>
+    <ul>
+      <li><strong>L'encodage et le décodage du message</strong> : la « langue » du message doit être comprise par les deux parties.</li>
+      <li><strong>L'encapsulation du message</strong> <span class="badge examen">Examen</span> : on ajoute au message les informations qui permettent son acheminement, par exemple les adresses de l'émetteur et du destinataire. Le message est ainsi « mis dans une enveloppe » qui porte les adresses.</li>
+      <li><strong>La taille du message</strong> : un équipement ne peut pas traiter des messages de taille infinie ; si besoin, le message est découpé en plusieurs paquets.</li>
+      <li><strong>La temporisation du message</strong> : connaître l'ordre des paquets, s'assurer que le média est libre (éviter les collisions), définir un temps de réponse maximal avant de réémettre.</li>
+    </ul>
+
+    <h3>Les types de communication</h3>
+    <div class="tableau">
+      <table>
+        <caption>Types de communication (diapo 10)</caption>
+        <thead><tr><th>Type</th><th>Principe</th><th>Exemple</th></tr></thead>
+        <tbody>
+          <tr><th>Unicast <span class="badge examen">Examen</span></th><td>1 émetteur et 1 récepteur</td><td>une page web demandée à un serveur</td></tr>
+          <tr><th>Broadcast <span class="badge examen">Examen</span></th><td>1 émetteur et tous les récepteurs (du réseau local)</td><td>requête ARP, découverte DHCP (chapitres 4 et 5)</td></tr>
+          <tr><th>Multicast</th><td>des émetteurs vers un groupe de récepteurs</td><td>diffusion vidéo à des abonnés, protocoles de routage</td></tr>
+          <tr><th>Anycast</th><td>communication avec le service le plus proche</td><td>DNS : plusieurs serveurs partagent une adresse, on joint le plus proche</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo définit le multicast comme « N émetteurs vers m récepteurs ». La définition usuelle est un émetteur (ou plusieurs) vers un <strong>groupe</strong> de récepteurs abonnés, et non vers tous : c'est ce qui le distingue du broadcast. Les exemples de la dernière colonne sont ajoutés, sauf le DNS.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le modèle OSI <span class="ref">diapos 11–15, 29</span></h2>
+    <p>Pour que des matériels et des logiciels de constructeurs différents puissent communiquer, il fallait une référence commune qui découpe le problème en sous-problèmes. C'est le rôle d'un modèle en couches.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Modèle OSI</span></p>
+      <p>Le modèle <dfn>OSI</dfn> (<span class="en" lang="en">Open Systems Interconnection</span>) a été proposé en 1984 par l'<dfn>ISO</dfn> (<span class="en" lang="en">International Organization for Standardization</span>), après un travail commencé dans les années 1970. C'est un modèle de référence (une norme) en <strong>7 couches</strong>, qui définit les fonctionnalités de chaque couche sans se préoccuper de leur implémentation : c'est un cadre conceptuel.</p>
+    </div>
+
+    <div class="tableau compact">
+      <table>
+        <caption>Les sept couches du modèle OSI</caption>
+        <thead><tr><th>N°</th><th>Couche</th><th>Rôle</th><th>Famille</th></tr></thead>
+        <tbody>
+          <tr><td>7</td><td>Application</td><td>point d'accès aux services réseau</td><td rowspan="3">traitement des données</td></tr>
+          <tr><td>6</td><td>Présentation</td><td>représentation des informations : compression, chiffrement</td></tr>
+          <tr><td>5</td><td>Session</td><td>synchronisation des échanges, reprise sur erreur</td></tr>
+          <tr><td>4</td><td>Transport</td><td>multiplexage des applications, contrôle de bout en bout</td><td rowspan="4">transport des données</td></tr>
+          <tr><td>3</td><td>Réseau</td><td>adressage logique, routage entre réseaux</td></tr>
+          <tr><td>2</td><td>Liaison</td><td>transmission sans erreur sur un même support, accès au média</td></tr>
+          <tr><td>1</td><td>Physique</td><td>interface avec le support, transmission du flux binaire</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>Retenir l'ordre des couches</span></p>
+      <p><span class="badge ajout">Ajout</span> De la couche 1 à la couche 7 : « <strong>P</strong>our <strong>L</strong>e <strong>R</strong>éseau, <strong>T</strong>out <strong>S</strong>e <strong>P</strong>asse <strong>A</strong>utomatiquement » (Physique, Liaison, Réseau, Transport, Session, Présentation, Application).</p>
+    </div>
+
+    <h3>Couche 1 : physique</h3>
+    <p>La couche physique assure l'interface avec le support physique (électrique, optique, ondes radio ; la connectique) et la transmission du flux binaire (type de codage, type de modulation). Elle fait l'objet du <a href="cours-03-couche-physique.html">chapitre 3</a>.</p>
+
+    <h3>Couche 2 : liaison de données</h3>
+    <p>La couche liaison assure, avec la couche physique, la <strong>transmission sans erreur</strong> entre des systèmes qui partagent le même support physique : c'est le <strong>transport de l'information dans le réseau local</strong>. <span class="badge examen">Examen</span></p>
+    <ul>
+      <li>Le flux binaire est segmenté en <dfn>trames</dfn>, composées d'éléments de la couche liaison (pour le contrôle de flux, la détection et la reprise d'erreur, l'identification des équipements du réseau) et d'éléments venus de la couche réseau : c'est l'encapsulation.</li>
+      <li>Les équipements finaux partagent un média commun. Problème : comment contrôler l'accès au média, c'est-à-dire « qui parle quand » ? Le rôle de la couche liaison est d'assurer l'<strong>équité de l'accès au média</strong>.</li>
+    </ul>
+
+    <h3>Couche 3 : réseau</h3>
+    <p>La couche réseau fournit deux grands services <span class="badge examen">Examen</span> :</p>
+    <ul>
+      <li>l'<strong>adressage logique</strong> des équipements ;</li>
+      <li>le <strong>routage</strong> des informations à travers différents réseaux, pour faire communiquer des équipements finaux qui ne sont pas forcément connectés à un même média physique.</li>
+    </ul>
+    <p>En couche liaison, il n'y a pas de problème de route : l'information circule sur un seul média. En couche réseau, il y a plusieurs médias et plusieurs chemins : il faut un mécanisme pour atteindre la destination, qui détermine son adresse et « le meilleur chemin ». Deux grands protocoles sont utilisés : IPv4 et IPv6 (<a href="cours-05-couche-reseau.html">chapitre 5</a>).</p>
+
+    <h3>Couche 4 : transport</h3>
+    <p>La couche transport fournit plusieurs services :</p>
+    <ul>
+      <li>le <strong>multiplexage</strong> : héberger plusieurs applications sur un même hôte ;</li>
+      <li>le <strong>contrôle de bout en bout</strong> (<span lang="en">end to end</span>) : la remise du paquet, l'intégrité (sans erreur) et le séquencement (arrivée dans l'ordre).</li>
+    </ul>
+
+    <h3>Couches 5 à 7 : session, présentation, application</h3>
+    <ul>
+      <li>La couche <strong>application</strong> est le point d'accès aux services réseau.</li>
+      <li>La couche <strong>présentation</strong> gère la représentation des informations échangées par les applications, comme la compression ou le chiffrement (« cryptage » sur la diapo).</li>
+      <li>La couche <strong>session</strong> gère la synchronisation des communications, pour que n'importe quel intervenant puisse émettre à tout moment, et un mécanisme de correction des erreurs de traitement par restauration d'un état antérieur connu.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Encapsulation et décapsulation <span class="ref">diapos 16–22</span></h2>
+    <p>Chaque couche ajoute ses propres informations aux données qu'elle reçoit de la couche du dessus, avant de les passer à la couche du dessous. À l'arrivée, chaque couche retire ce que sa jumelle a ajouté.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Encapsulation, décapsulation</span> <span class="badge examen">Examen</span></p>
+      <p>À l'émission, chaque couche ajoute un <dfn>en-tête</dfn> (et parfois une fin) aux données reçues de la couche supérieure : c'est l'<dfn>encapsulation</dfn>. À la réception, chaque couche lit et retire l'en-tête de sa couche, puis passe le reste à la couche supérieure : c'est la <dfn>décapsulation</dfn>.</p>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 600 200" width="600" role="img" aria-labelledby="fig-encap-titre">
+        <title id="fig-encap-titre">Encapsulation : les données de l'application reçoivent un en-tête T (transport) et forment un datagramme, puis un en-tête R (réseau) et forment un paquet, puis un en-tête L (liaison) et forment une trame. La décapsulation se fait dans l'ordre inverse.</title>
+        <defs>
+          <marker id="fleche-encap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <path class="trait" d="M30 20 V180" marker-end="url(#fleche-encap)"/>
+        <text x="20" y="100" text-anchor="middle" class="t2" transform="rotate(-90 20 100)">encapsulation</text>
+        <path class="trait" d="M570 180 V20" marker-end="url(#fleche-encap)"/>
+        <text x="583" y="100" text-anchor="middle" class="t2" transform="rotate(90 583 100)">décapsulation</text>
+
+        <rect class="boite-accent" x="250" y="20" width="200" height="28" rx="3"/><text x="350" y="39" text-anchor="middle">Données</text>
+        <text x="470" y="39" class="gras">données</text>
+
+        <rect class="boite" x="210" y="62" width="40" height="28"/><text x="230" y="81" text-anchor="middle" class="mono">T</text>
+        <rect class="boite-accent" x="250" y="62" width="200" height="28"/><text x="350" y="81" text-anchor="middle">Données</text>
+        <text x="470" y="81" class="gras">datagramme</text>
+
+        <rect class="boite" x="170" y="104" width="40" height="28"/><text x="190" y="123" text-anchor="middle" class="mono">R</text>
+        <rect class="boite" x="210" y="104" width="40" height="28"/><text x="230" y="123" text-anchor="middle" class="mono">T</text>
+        <rect class="boite-accent" x="250" y="104" width="200" height="28"/><text x="350" y="123" text-anchor="middle">Données</text>
+        <text x="470" y="123" class="gras">paquet</text>
+
+        <rect class="boite" x="130" y="146" width="40" height="28"/><text x="150" y="165" text-anchor="middle" class="mono">L</text>
+        <rect class="boite" x="170" y="146" width="40" height="28"/><text x="190" y="165" text-anchor="middle" class="mono">R</text>
+        <rect class="boite" x="210" y="146" width="40" height="28"/><text x="230" y="165" text-anchor="middle" class="mono">T</text>
+        <rect class="boite-accent" x="250" y="146" width="200" height="28"/><text x="350" y="165" text-anchor="middle">Données</text>
+        <text x="470" y="165" class="gras">trame</text>
+
+        <text x="90" y="39" class="t2">Application</text>
+        <text x="90" y="81" class="t2">Transport</text>
+        <text x="60" y="123" class="t2">Réseau</text>
+        <text x="50" y="165" class="t2">Liaison</text>
+      </svg>
+      <figcaption>Encapsulation (diapo 16) : T = en-tête de transport, R = en-tête réseau, L = en-tête de liaison. Les données de l'application deviennent un datagramme, puis un paquet, puis une trame, qui part en signal sur le support physique.</figcaption>
+    </figure>
+
+    <h3>L'analogie de la lettre</h3>
+    <p>Les diapos 17 à 20 (empruntées à Lionel Médini) comparent l'envoi d'un message à une candidature spontanée par courrier :</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Une candidature spontanée, couche par couche</caption>
+        <thead><tr><th>Émetteur</th><th>Action</th><th>Échange entre pairs</th><th>Action</th><th>Récepteur</th></tr></thead>
+        <tbody>
+          <tr><td>Personne</td><td>—</td><td>candidature spontanée</td><td>—</td><td>Employeur</td></tr>
+          <tr><td>Lettre de motivation</td><td>écrire ↓</td><td>format de ce type de lettre</td><td>lire ↑</td><td>Lettre de motivation</td></tr>
+          <tr><td>Enveloppe</td><td>cacheter ↓</td><td>envoi et réception du courrier</td><td>ouvrir ↑</td><td>Enveloppe</td></tr>
+          <tr><td>Centre de tri</td><td>poster ↓</td><td>codification interne de La Poste</td><td>délivrer ↑</td><td>Centre de distribution</td></tr>
+          <tr><td colspan="5">acheminer → route (camion) → récupérer</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Chaque niveau ne parle qu'à son homologue, avec ses propres règles (le format d'une lettre, les règles d'adressage d'une enveloppe, la codification interne de La Poste), et s'appuie sur le niveau du dessous sans savoir comment il fonctionne. C'est exactement l'organisation en couches.</p>
+
+    <h3>Ce qui change, ce qui ne change pas</h3>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Le trajet d'un message à travers plusieurs réseaux</span> <span class="badge examen">Examen</span></p>
+      <ul>
+        <li>Le <strong>datagramme</strong> et le <strong>paquet</strong> sont les entités qui restent identiques tout au long du trajet.</li>
+        <li>La <strong>trame</strong> change lors des transits entre les réseaux locaux : chaque routeur décapsule la trame reçue jusqu'au paquet, puis réencapsule le paquet dans une nouvelle trame pour le réseau suivant.</li>
+      </ul>
+    </div>
+    <p>C'est le schéma « Points clés » du <a href="cours-01-introduction.html#le-reseau-en-une-diapo">cours 1</a> : entre les deux équipements finaux, les données et les datagrammes vont de bout en bout, les paquets passent par le routeur, et les trames ne vont que d'un équipement au suivant (poste → commutateur → routeur, puis routeur → serveur), sous forme de signal sur le support.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le nom des données à chaque couche</span></p>
+      <p>Les données d'une couche s'appellent une <dfn>PDU</dfn> (<span class="en" lang="en">Protocol Data Unit</span>, unité de données de protocole). Le cours emploie : données (application), datagramme (transport ; on dit « segment » pour TCP), paquet (réseau), trame (liaison), bits ou signal (physique). Le nom suffit à situer une couche : un « paquet » se traite au niveau 3, une « trame » au niveau 2.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le coût de l'encapsulation</span></p>
+      <p>Chaque en-tête prend de la place. Pour une trame Ethernet pleine, on transporte au plus 1 460 octets de données applicatives dans 20 octets d'en-tête TCP, 20 octets d'en-tête IP et 18 octets d'en-tête et de fin Ethernet (chiffres des chapitres 4 à 6) : \(1\,460 / 1\,518 ≈ 96\) % du débit sert aux données. Avec de petits messages, la part des en-têtes grimpe vite.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le modèle TCP/IP (ARPA) <span class="ref">diapos 23–30</span></h2>
+    <p>Le modèle OSI est une référence théorique. Internet, lui, s'est construit sur un modèle plus simple, en quatre couches, issu des travaux d'ARPANET : le modèle <dfn>TCP/IP</dfn>, ou <dfn>pile ARPA</dfn>.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 440 280" width="440" role="img" aria-labelledby="fig-osi-tcp-titre">
+        <title id="fig-osi-tcp-titre">Correspondance entre les sept couches OSI et les quatre couches TCP/IP : application, présentation et session forment la couche application ; transport correspond à transport (TCP/UDP) ; réseau correspond à Internet ; liaison et physique forment l'accès au réseau (LLC/MAC).</title>
+        <text x="90" y="16" text-anchor="middle" class="gras">OSI</text>
+        <text x="320" y="16" text-anchor="middle" class="gras">TCP/IP (ARPA)</text>
+        <rect class="boite" x="20" y="26" width="140" height="30" rx="4"/><text x="90" y="46" text-anchor="middle">7 Application</text>
+        <rect class="boite" x="20" y="62" width="140" height="30" rx="4"/><text x="90" y="82" text-anchor="middle">6 Présentation</text>
+        <rect class="boite" x="20" y="98" width="140" height="30" rx="4"/><text x="90" y="118" text-anchor="middle">5 Session</text>
+        <rect class="boite" x="20" y="134" width="140" height="30" rx="4"/><text x="90" y="154" text-anchor="middle">4 Transport</text>
+        <rect class="boite" x="20" y="170" width="140" height="30" rx="4"/><text x="90" y="190" text-anchor="middle">3 Réseau</text>
+        <rect class="boite" x="20" y="206" width="140" height="30" rx="4"/><text x="90" y="226" text-anchor="middle">2 Liaison</text>
+        <rect class="boite" x="20" y="242" width="140" height="30" rx="4"/><text x="90" y="262" text-anchor="middle">1 Physique</text>
+
+        <rect class="boite-accent" x="240" y="26" width="160" height="102" rx="4"/><text x="320" y="82" text-anchor="middle">Application</text>
+        <rect class="boite-accent" x="240" y="134" width="160" height="30" rx="4"/><text x="320" y="154" text-anchor="middle">Transport (TCP/UDP)</text>
+        <rect class="boite-accent" x="240" y="170" width="160" height="30" rx="4"/><text x="320" y="190" text-anchor="middle">Internet (IP)</text>
+        <rect class="boite-accent" x="240" y="206" width="160" height="66" rx="4"/><text x="320" y="236" text-anchor="middle">Accès au réseau</text><text x="320" y="254" text-anchor="middle" class="t2 mono">LLC/MAC</text>
+
+        <path class="pointille" d="M160 41 H240"/><path class="pointille" d="M160 113 H240"/>
+        <path class="pointille" d="M160 149 H240"/><path class="pointille" d="M160 185 H240"/>
+        <path class="pointille" d="M160 221 H240"/><path class="pointille" d="M160 257 H240"/>
+      </svg>
+      <figcaption>OSI et TCP/IP (diapos 23 et 24). Le livre Cisco présente aussi une variante en cinq couches, où l'accès au réseau reste coupé en liaison et physique.</figcaption>
+    </figure>
+
+    <h3>Accès au réseau</h3>
+    <p>La couche d'<strong>accès au réseau</strong> regroupe les couches physique et liaison de données du modèle OSI. Les technologies <strong>Ethernet</strong> s'y sont imposées. Ethernet est normalisé par l'<dfn>IEEE</dfn> (<span class="en" lang="en">Institute of Electrical and Electronics Engineers</span>), une organisation professionnelle à but non lucratif très active dans la normalisation des réseaux locaux. Cette couche comprend deux protocoles (ou sous-couches) : <strong>LLC</strong> et <strong>MAC</strong> (<a href="cours-04-liaison-de-donnees.html">chapitre 4</a>). <span class="badge examen">Examen</span></p>
+
+    <h3>Internet</h3>
+    <p>La couche <strong>Internet</strong> correspond à la couche réseau du modèle OSI. Son protocole est <dfn>IP</dfn> (<span class="en" lang="en">Internet Protocol</span>), qui assure l'acheminement des paquets sur Internet, c'est-à-dire sur une interconnexion de réseaux locaux. IP fournit <span class="badge examen">Examen</span> :</p>
+    <ul>
+      <li>un mécanisme d'<strong>adressage universel</strong> ;</li>
+      <li>la recherche du <strong>meilleur chemin</strong> ;</li>
+      <li>mais il est <strong>non fiable</strong> : il ne garantit pas l'acheminement d'un paquet.</li>
+    </ul>
+
+    <h3>Transport : TCP et UDP</h3>
+    <p>La couche transport correspond à celle du modèle OSI. Elle compte deux protocoles, TCP et UDP (<a href="cours-06-couche-transport.html">chapitre 6</a>).</p>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="colonne-titre">TCP : fiable, orienté connexion</p>
+        <ul>
+          <li>Création d'un <strong>circuit virtuel</strong> entre les correspondants.</li>
+          <li>Garantie de <strong>remise</strong> : les données transmises sont bien remises au destinataire.</li>
+          <li>Garantie d'<strong>intégrité</strong> : elles sont remises sans altération.</li>
+          <li>Garantie de <strong>séquencement</strong> : l'ordre d'arrivée est identique à l'ordre de départ.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p class="colonne-titre">UDP : non fiable, non connecté</p>
+        <ul>
+          <li>Pas de connexion préalable.</li>
+          <li><s>Garantie de remise</s> : aucune.</li>
+          <li>Garantie d'intégrité : les données remises le sont sans altération.</li>
+          <li><s>Garantie de séquencement</s> : aucune.</li>
+        </ul>
+      </div>
+    </div>
+    <p>Sur la diapo 27, les garanties de remise et de séquencement sont barrées pour UDP : seule l'intégrité reste (par une somme de contrôle).</p>
+
+    <h3>Application</h3>
+    <p>La couche application du modèle TCP/IP regroupe les couches session, présentation et application du modèle OSI. Ses protocoles applicatifs :</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Protocoles applicatifs (diapo 28)</caption>
+        <thead><tr><th>Service</th><th>Protocoles</th></tr></thead>
+        <tbody>
+          <tr><td>annuaire</td><td>DNS</td></tr>
+          <tr><td>transfert de données</td><td>FTP, TFTP, SFTP, scp</td></tr>
+          <tr><td>accès distant</td><td>telnet, ssh</td></tr>
+          <tr><td>courrier</td><td>SMTP, POP, IMAP</td></tr>
+          <tr><td>web</td><td>HTTP, HTTPS</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Plan du cours</h3>
+    <p>Le module suit le modèle ARPA <strong>de bas en haut</strong> (diapo 30) : accès au réseau (chapitres 3 et 4), Internet (chapitre 5), transport (chapitre 6), application (chapitre A2) ; les chapitres 7 et 8 (VLAN, STP, NAT) et A1 (IOS) complètent la pratique des TP.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exercices</h2>
+    <p>Exercices d'entraînement, ajoutés pour fixer le vocabulaire du chapitre.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Quelle couche ?</span></p>
+      <p>Pour chaque élément, donner la couche OSI (numéro et nom) et la couche TCP/IP : adresse MAC, adresse IP, numéro de port, HTTP, câble à paires torsadées, routeur, commutateur, chiffrement des données selon OSI.</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <ul>
+          <li>adresse MAC : 2, liaison / accès au réseau ;</li>
+          <li>adresse IP : 3, réseau / Internet ;</li>
+          <li>numéro de port : 4, transport / transport (c'est le multiplexage des applications) ;</li>
+          <li>HTTP : 7, application / application ;</li>
+          <li>câble à paires torsadées : 1, physique / accès au réseau ;</li>
+          <li>routeur : équipement de couche 3 ; commutateur : couche 2 ;</li>
+          <li>chiffrement : 6, présentation / application.</li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Un message qui traverse deux routeurs</span></p>
+      <p>Un poste envoie une page à un serveur situé deux réseaux plus loin (poste → routeur R1 → routeur R2 → serveur). Combien de trames différentes portent le message ? Combien de paquets différents ?</p>
+      <details class="indice"><summary>Indice</summary><p>Une trame ne vit que dans un réseau local ; le paquet va de bout en bout.</p></details>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>Trois réseaux sont traversés (poste–R1, R1–R2, R2–serveur) : trois trames différentes, chacune construite par l'équipement qui émet sur ce réseau. Un seul paquet, identique de bout en bout (seuls quelques champs de son en-tête, comme la durée de vie, sont mis à jour par chaque routeur : chapitre 5).</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>TCP ou UDP ?</span></p>
+      <p>Pour un transfert de fichier, une visioconférence et une requête DNS, quel protocole de transport choisir, et pourquoi ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>Transfert de fichier : TCP, il faut toutes les données, dans l'ordre. Visioconférence : UDP, une image perdue ne doit pas bloquer les suivantes, et un retard coûte plus qu'une perte. Requête DNS : UDP, une seule question et une seule réponse courtes ; si la réponse ne vient pas, on redemande.</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Commutation de circuits : un chemin réservé pour toute la communication. Commutation de paquets : l'information est découpée en paquets routés indépendamment ; c'est plus efficace, et c'est le choix d'Internet.</li>
+        <li>Chaque nœud choisit la sortie d'un paquet dans sa table de routage, d'après l'adresse de destination.</li>
+        <li>Un protocole est un langage commun : encodage, encapsulation, taille des messages, temporisation.</li>
+        <li>Unicast : 1 vers 1 ; broadcast : 1 vers tous ; multicast : vers un groupe ; anycast : vers le plus proche (DNS).</li>
+        <li>OSI, 7 couches : physique, liaison, réseau, transport, session, présentation, application.</li>
+        <li>TCP/IP (ARPA), 4 couches : accès au réseau (LLC/MAC, Ethernet), Internet (IP), transport (TCP/UDP), application.</li>
+        <li>Encapsulation : chaque couche ajoute son en-tête ; données → datagramme → paquet → trame → signal. Décapsulation à l'arrivée.</li>
+        <li>Le datagramme et le paquet restent les mêmes de bout en bout ; la trame change à chaque réseau local traversé.</li>
+        <li>IP est non fiable. TCP garantit remise, intégrité et ordre ; UDP ne garantit que l'intégrité.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi la commutation de paquets utilise-t-elle mieux le réseau que la commutation de circuits ?</summary>
+        <div><p>Un circuit reste réservé même quand personne ne parle ; avec des paquets, les communications se partagent les liens et les silences ne coûtent rien.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quels sont les deux services de la couche réseau ?</summary>
+        <div><p>L'adressage logique des équipements et le routage à travers différents réseaux.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quel est le rôle de la couche liaison quand plusieurs équipements partagent un média ?</summary>
+        <div><p>Contrôler l'accès au média (« qui parle quand ») et en assurer l'équité ; détecter les erreurs et identifier les équipements du réseau local.</p></div>
+      </details>
+      <details class="carte">
+        <summary>À quelles couches OSI correspond la couche application de TCP/IP ? et l'accès au réseau ?</summary>
+        <div><p>Application = session + présentation + application. Accès au réseau = liaison + physique.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Qu'est-ce qui change quand un paquet traverse un routeur ?</summary>
+        <div><p>La trame : le routeur retire la trame du réseau d'arrivée et place le paquet dans une nouvelle trame pour le réseau de départ. Le paquet et le datagramme restent les mêmes.</p></div>
+      </details>
+      <details class="carte">
+        <summary>IP garantit-il l'arrivée d'un paquet ?</summary>
+        <div><p>Non : IP est non fiable. C'est TCP, au-dessus, qui garantit la remise.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle garantie UDP offre-t-il ?</summary>
+        <div><p>Seulement l'intégrité des données remises ; ni la remise, ni l'ordre.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-01-introduction.html"><small>← Précédent</small>Introduction aux réseaux</a>
+    <a class="suivant" href="cours-03-couche-physique.html"><small>Suivant →</small>Accès au réseau : la couche physique</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Réseaux · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

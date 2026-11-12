@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="codage">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Codes correcteurs d'erreurs : codes en bloc linéaires · Codage L3</title>
+<meta name="description" content="Cours 3A de codage de l'information (L3) : erreurs de transmission, codes en bloc et convolutionnels, redondance et rendement, distance minimale, détection, correction et effacements, codes parfaits, matrice génératrice, matrice de contrôle, syndrome et table de décodage.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-03A-codes-correcteurs.html" title="Quiz · Codes correcteurs d'erreurs">
+<link rel="quiz" href="../generated_quizzes/quiz-exercices-types.html" title="Quiz · Exercices types (tous les cours)">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale (tous les cours)">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Codage</a>
+    <span aria-current="page">Cours 3A · Codes correcteurs d'erreurs</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Codage</span> Cours 3A · L3 S5</p>
+    <h1>Codes correcteurs d'erreurs : codes en bloc linéaires</h1>
+    <p class="chapeau">Un canal de transmission commet des erreurs, et l'on ne peut presque jamais l'améliorer lui-même. Ce cours montre comment les combattre par le codage de canal : on ajoute à chaque bloc du message des bits de contrôle, calculés par des combinaisons linéaires, et l'on décrit le code par deux matrices. La matrice génératrice sert à coder ; la matrice de contrôle calcule le syndrome, qui détecte et corrige les erreurs à la réception.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/L3_INFO_C3A.pdf">L3_INFO_C3A.pdf</a> · 28 diapos (numérotées ici comme les pages du PDF ; le pied de page des diapos en compte 23)</dd></div>
+      <div><dt>Enseignant</dt><dd>Florent Carlier</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-30">30 sept. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Distinguer erreurs aléatoires et erreurs par paquets, codes en bloc et codes convolutionnels.</li>
+        <li>Calculer la redondance et le rendement d'un code \((n, m)\).</li>
+        <li>Calculer la distance minimale d'un code linéaire, et en déduire combien d'erreurs il détecte ou corrige et combien d'effacements il remplit.</li>
+        <li>Reconnaître un code parfait.</li>
+        <li>Écrire la matrice génératrice \(G\) et la matrice de contrôle \(H\) d'un code systématique, et coder un message.</li>
+        <li>Calculer un syndrome, construire la table de décodage et corriger un mot reçu.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>La place du codeur de canal dans le paradigme de Shannon (<a href="cours-01-codage-physique-entropie.html">cours 1</a>).</li>
+        <li>Calcul matriciel : produit d'une matrice par un vecteur colonne, transposée.</li>
+        <li>Dénombrement : \(C_n^j = \binom{n}{j}\), nombre de façons de choisir \(j\) positions parmi \(n\).</li>
+        <li>Probabilités : événements indépendants, loi binomiale.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les erreurs de transmission <span class="ref">diapos 2–4</span></h2>
+    <p>Un canal de transmission n'est jamais parfait : le signal reçu diffère parfois du signal émis, et un bit émis à 0 peut être lu à 1. Avant de chercher à corriger ces erreurs, on en recense les causes et les formes.</p>
+
+    <h3>Causes d'erreurs <span class="ref">diapo 2</span></h3>
+    <p>Les erreurs d'une transmission numérique ont deux origines. D'abord les <strong>bruits</strong> : bruit thermique, bruit d'intermodulation, bruit impulsif, etc. Ensuite les <strong>déformations</strong> du signal : distorsions, échos, et évanouissements sur un canal hertzien, c'est-à-dire une liaison radio.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les bruits et les déformations en bref</span></p>
+      <ul>
+        <li>Le <dfn>bruit thermique</dfn> (<span class="en" lang="en">thermal noise</span>) vient de l'agitation des électrons dans les conducteurs. Faible et permanent, il a la même puissance à toutes les fréquences : c'est un <dfn>bruit blanc</dfn> (<span class="en" lang="en">white noise</span>).</li>
+        <li>Le <dfn>bruit d'intermodulation</dfn> apparaît quand plusieurs signaux traversent un composant non linéaire : il crée des fréquences parasites (sommes et différences des fréquences d'origine) qui se superposent aux autres signaux.</li>
+        <li>Le <dfn>bruit impulsif</dfn> (<span class="en" lang="en">impulse noise</span>) est fait de pics brefs et intenses : foudre, démarrage d'un moteur, commutation d'un relais. Il détruit plusieurs bits d'affilée.</li>
+        <li>Un <dfn>évanouissement</dfn> (<span class="en" lang="en">fading</span>) se produit quand le signal radio arrive par plusieurs chemins (réflexions sur les bâtiments) qui s'annulent en partie : la puissance reçue chute pendant un moment.</li>
+      </ul>
+    </div>
+
+    <p>En général, on ne peut pas agir sur le canal pour modifier ses caractéristiques, à cause des contraintes économiques ou technologiques : on ne remplace pas un câble sous-marin, et encore moins l'atmosphère. On agit donc aux deux extrémités du canal.</p>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Objectif <span class="ref">diapo 2</span></p>
+      <p>Minimiser les effets des erreurs en utilisant les ressources du codage.</p>
+      <p><span class="badge ajout">Ajout</span> C'est le rôle du <strong>codeur de canal</strong> du paradigme de Shannon (<a href="cours-01-codage-physique-entropie.html">cours 1</a>) : il ajoute au message une redondance contrôlée, que le décodeur exploite pour repérer et réparer les erreurs.</p>
+    </div>
+
+    <h3>Deux types d'erreurs <span class="ref">diapos 3–4</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Erreurs aléatoires, erreurs par paquets</span></p>
+      <ul>
+        <li>Les <dfn>erreurs aléatoires</dfn> (<span class="en" lang="en">random errors</span>) sont dues aux bruits blancs. <span class="badge ajout">Ajout</span> Elles touchent des bits isolés, indépendamment les uns des autres.</li>
+        <li>Les <dfn>erreurs par paquets</dfn> (<span class="en" lang="en">burst errors</span>) sont dues aux bruits impulsifs ou aux parasites. <span class="badge ajout">Ajout</span> Elles touchent plusieurs bits consécutifs.</li>
+      </ul>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 125" width="640" role="img" aria-labelledby="fig-erreurs-titre">
+        <title id="fig-erreurs-titre">Vingt-deux bits transmis : trois erreurs isolées dans le premier cas, cinq erreurs consécutives dans le second</title>
+        <text x="0" y="33">Erreurs aléatoires</text>
+        <text x="0" y="83">Erreurs par paquets</text>
+        <rect class="boite" x="170" y="20" width="16" height="16" rx="2"/><rect class="boite" x="190" y="20" width="16" height="16" rx="2"/><rect class="boite" x="210" y="20" width="16" height="16" rx="2"/><rect class="plein-accent" x="230" y="20" width="16" height="16" rx="2"/><rect class="boite" x="250" y="20" width="16" height="16" rx="2"/><rect class="boite" x="270" y="20" width="16" height="16" rx="2"/>
+        <rect class="boite" x="290" y="20" width="16" height="16" rx="2"/><rect class="boite" x="310" y="20" width="16" height="16" rx="2"/><rect class="boite" x="330" y="20" width="16" height="16" rx="2"/><rect class="boite" x="350" y="20" width="16" height="16" rx="2"/><rect class="boite" x="370" y="20" width="16" height="16" rx="2"/><rect class="plein-accent" x="390" y="20" width="16" height="16" rx="2"/>
+        <rect class="boite" x="410" y="20" width="16" height="16" rx="2"/><rect class="boite" x="430" y="20" width="16" height="16" rx="2"/><rect class="boite" x="450" y="20" width="16" height="16" rx="2"/><rect class="boite" x="470" y="20" width="16" height="16" rx="2"/><rect class="boite" x="490" y="20" width="16" height="16" rx="2"/><rect class="boite" x="510" y="20" width="16" height="16" rx="2"/>
+        <rect class="plein-accent" x="530" y="20" width="16" height="16" rx="2"/><rect class="boite" x="550" y="20" width="16" height="16" rx="2"/><rect class="boite" x="570" y="20" width="16" height="16" rx="2"/><rect class="boite" x="590" y="20" width="16" height="16" rx="2"/>
+        <rect class="boite" x="170" y="70" width="16" height="16" rx="2"/><rect class="boite" x="190" y="70" width="16" height="16" rx="2"/><rect class="boite" x="210" y="70" width="16" height="16" rx="2"/><rect class="boite" x="230" y="70" width="16" height="16" rx="2"/><rect class="boite" x="250" y="70" width="16" height="16" rx="2"/><rect class="boite" x="270" y="70" width="16" height="16" rx="2"/>
+        <rect class="boite" x="290" y="70" width="16" height="16" rx="2"/><rect class="boite" x="310" y="70" width="16" height="16" rx="2"/><rect class="boite" x="330" y="70" width="16" height="16" rx="2"/><rect class="plein-accent" x="350" y="70" width="16" height="16" rx="2"/><rect class="plein-accent" x="370" y="70" width="16" height="16" rx="2"/><rect class="plein-accent" x="390" y="70" width="16" height="16" rx="2"/>
+        <rect class="plein-accent" x="410" y="70" width="16" height="16" rx="2"/><rect class="plein-accent" x="430" y="70" width="16" height="16" rx="2"/><rect class="boite" x="450" y="70" width="16" height="16" rx="2"/><rect class="boite" x="470" y="70" width="16" height="16" rx="2"/><rect class="boite" x="490" y="70" width="16" height="16" rx="2"/><rect class="boite" x="510" y="70" width="16" height="16" rx="2"/>
+        <rect class="boite" x="530" y="70" width="16" height="16" rx="2"/><rect class="boite" x="550" y="70" width="16" height="16" rx="2"/><rect class="boite" x="570" y="70" width="16" height="16" rx="2"/><rect class="boite" x="590" y="70" width="16" height="16" rx="2"/>
+        <rect class="plein-accent" x="170" y="102" width="12" height="12" rx="2"/>
+        <text x="190" y="113" class="t2">bit erroné</text>
+        <rect class="boite" x="290" y="102" width="12" height="12" rx="2"/>
+        <text x="310" y="113" class="t2">bit correct</text>
+      </svg>
+      <figcaption><span class="badge ajout">Ajout</span> Le même nombre de bits transmis, deux répartitions des erreurs. Un bruit blanc dissémine les erreurs ; un bruit impulsif les regroupe.</figcaption>
+    </figure>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Quel code pour quelles erreurs ?</span></p>
+      <p>Les codes en bloc de ce cours corrigent un petit nombre \(t\) d'erreurs dans chaque bloc de \(n\) bits : ils sont conçus pour les erreurs aléatoires. Un paquet de plus de \(t\) erreurs dans un même bloc les met en échec.</p>
+      <p><span class="badge hors-programme">Hors programme</span> Contre les paquets, on pratique l'<dfn>entrelacement</dfn> (<span class="en" lang="en">interleaving</span>) : on mélange les bits de plusieurs blocs avant l'émission. Un paquet d'erreurs se répartit alors sur plusieurs blocs, à raison d'une ou deux erreurs par bloc, que le code sait corriger. C'est ce que font les CD audio.</p>
+    </div>
+
+    <h3>Deux familles de codes <span class="ref">diapo 4</span></h3>
+    <p>Pour lutter contre ces erreurs, on dispose de deux types de codes : les <strong>codes en bloc</strong> et les <strong>codes convolutionnels</strong>. La partie suivante les présente ; le reste du cours ne traite que des codes en bloc.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Codes en bloc et codes convolutionnels <span class="ref">diapos 5–7</span></h2>
+    <p>Tous les codes correcteurs reposent sur la même idée : ajouter au message des bits de contrôle, calculés à partir des bits utiles. Les familles se distinguent par la façon de les calculer, et par les bits dont ils dépendent.</p>
+
+    <h3>Codes en bloc <span class="ref">diapo 5</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Code en bloc</span></p>
+      <p>Dans un <dfn>code en bloc</dfn> (<span class="en" lang="en">block code</span>), le message est découpé en « blocs » de \(m\) <dfn>éléments binaires</dfn> (éb), de longueur fixe (\(m\) constant). <span class="badge ajout">Ajout</span> Chaque bloc est codé indépendamment des autres.</p>
+    </div>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Code séparable, ou systématique</span></p>
+      <p>À chaque bloc de \(m\) éb, le codeur ajoute \(k\) éb de contrôle. Le mot de code a donc pour longueur \(n = m + k\). Un tel code est dit <dfn>séparable</dfn>, ou <dfn>systématique</dfn> (<span class="en" lang="en">systematic code</span>).</p>
+      <p><span class="badge ajout">Ajout</span> Les \(m\) éb d'information se retrouvent tels quels dans le mot de code : on peut les « séparer » des éb de contrôle et lire le message sans calcul.</p>
+      <p>La diapo écrit « n = m + k, n : m + k » : la seconde expression répète la première au lieu de dire ce qu'est \(n\), la longueur du mot de code.</p>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 130" width="640" role="img" aria-labelledby="fig-mot-titre">
+        <title id="fig-mot-titre">Mot de code systématique : m éléments binaires d'information suivis de k éléments binaires de contrôle, soit n = m + k éléments</title>
+        <defs>
+          <marker id="fleche-mot" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="220" y="24" text-anchor="middle" class="gras">information : m éb</text>
+        <text x="500" y="24" text-anchor="middle" class="gras accent">contrôle : k éb</text>
+        <rect class="boite" x="40" y="38" width="360" height="42" rx="4"/>
+        <rect class="boite-accent" x="400" y="38" width="200" height="42" rx="4"/>
+        <text x="220" y="64" text-anchor="middle" class="mono">d1 d2 … dm</text>
+        <text x="500" y="64" text-anchor="middle" class="t2">calculés à partir de D</text>
+        <path class="trait" d="M42 100 H598" marker-start="url(#fleche-mot)" marker-end="url(#fleche-mot)"/>
+        <text x="320" y="122" text-anchor="middle">n = m + k éléments binaires</text>
+      </svg>
+      <figcaption><span class="badge ajout">Ajout</span> Structure d'un mot de code systématique : le bloc \(D = d_1 d_2 \ldots d_m\) recopié, puis les \(k\) éb de contrôle.</figcaption>
+    </figure>
+
+    <h3>Codes convolutionnels <span class="ref">diapo 6</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Code convolutionnel, code récurrent</span></p>
+      <p>Dans un <dfn>code convolutionnel</dfn> (<span class="en" lang="en">convolutional code</span>), les éb de contrôle sont introduits de manière continue dans le message utile. On parle aussi de <dfn>codes récurrents</dfn> : les éb produits ne dépendent pas seulement des éb d'un « bloc » du message, mais également des « blocs » antérieurs.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Un codeur convolutionnel élémentaire</span></p>
+      <p><span class="badge ajout">Ajout</span> Pour chaque bit \(u_i\) du message, on émet deux bits : \(u_i\) lui-même, puis \(u_i \xor u_{i-1}\), qui dépend aussi du bit précédent (avec \(u_0 = 0\)). Le message 1011 donne les couples 11, 01, 11, 10, soit 11011110. Changer le premier bit du message modifie les deux premiers couples : chaque bit influe sur la suite.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Où les rencontre-t-on ?</span></p>
+      <p><span class="badge hors-programme">Hors programme</span> Les codes convolutionnels, décodés par l'algorithme de Viterbi, protègent la téléphonie mobile, le Wi-Fi ou les liaisons avec les sondes spatiales. Le cours ne les développe pas.</p>
+    </div>
+
+    <h3>Paramètres d'un code <span class="ref">diapo 6</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Redondance, rendement</span></p>
+      <p>Le code est appelé Code\((n, m)\), et noté \(C(n, m)\). La <dfn>redondance</dfn> est définie par le rapport \(k/n\), le <dfn>rendement</dfn> (<span class="en" lang="en">code rate</span>) par le rapport \(m/n = 1 - k/n\).</p>
+    </div>
+    <div class="encadre">
+      \[ \text{redondance} = \frac{k}{n} \qquad\qquad \text{rendement} = \frac{m}{n} = 1 - \frac{k}{n} \]
+    </div>
+    <p>La diapo donne ces définitions à la suite des codes convolutionnels ; elles valent aussi pour les codes en bloc, et c'est à eux que le reste du cours les applique. <span class="badge ajout">Ajout</span> Le rendement est la part utile de ce qui est transmis : plus il est bas, plus le code protège, mais plus il consomme de débit.</p>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>La notation change d'un livre à l'autre</span></p>
+      <p><span class="badge ajout">Ajout</span> Dans ce cours, \(m\) est le nombre d'éb d'information et \(k\) le nombre d'éb de contrôle. Beaucoup de livres et de sites notent au contraire un code \((n, k)\), avec \(k\) le nombre de bits d'<em>information</em>. Avant d'appliquer une formule trouvée ailleurs, il faut vérifier la convention.</p>
+    </div>
+
+    <h3>Codes en bloc linéaires <span class="ref">diapo 7</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Code linéaire</span></p>
+      <p>Un code en bloc \(C(n, m)\) est <dfn>linéaire</dfn> (<span class="en" lang="en">linear code</span>) quand les \(k\) éléments binaires de contrôle (\(k = n - m\)) sont des combinaisons linéaires des \(m\) éléments du message. Cette propriété permet de représenter l'opération de codage sous forme matricielle : le bloc \(D = d_1, d_2, \ldots, d_m\) devient le vecteur \(D = [d_1 \; d_2 \; \ldots \; d_m]\).</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Ce que « linéaire » veut dire en binaire</span></p>
+      <p>En binaire, les coefficients valent 0 ou 1 : une combinaison linéaire se contente de <em>choisir</em> des éb du message et de les additionner modulo 2. Par exemple \(a_4 = u_2 + u_3\), dans le grand exemple de la fin du cours.</p>
+      <p>Conséquence : la somme de deux mots de code est encore un mot de code, et le mot nul (codage du message nul) appartient au code. Le code est un sous-espace vectoriel de \(\{0,1\}^n\), de dimension \(m\) : il contient \(2^m\) mots. Cette propriété simplifie tout le reste du cours.</p>
+    </div>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Vecteurs lignes ou colonnes</span></p>
+      <p><span class="badge ajout">Ajout</span> La diapo 7 écrit le bloc en ligne, mais les exemples des diapos 13 à 27 calculent avec des vecteurs <strong>colonnes</strong> : \(u = G \cdot (x, y)^T\), où la matrice génératrice \(G\) a \(n\) lignes et \(m\) colonnes. On suit cette convention. D'autres ouvrages écrivent les mots en ligne, \(c = d \, G'\), avec \(G' = G^T\) de taille \(m \times n\) : les matrices y sont les transposées de celles du cours.</p>
+    </div>
+
+    <h3>Arithmétique modulo 2 <span class="ref">diapo 7</span></h3>
+    <p>Tous les calculs se font en arithmétique modulo 2 : l'addition est l'opérateur <dfn>XOR</dfn> (ou exclusif), noté \(+\) ou \(\xor\).</p>
+    <div class="colonnes">
+      <div class="tableau mono compact centre">
+        <table>
+          <caption>Addition modulo 2 (XOR)</caption>
+          <thead><tr><th>a</th><th>b</th><th>a + b</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>0</td><td>0</td></tr>
+            <tr><td>0</td><td>1</td><td>1</td></tr>
+            <tr><td>1</td><td>0</td><td>1</td></tr>
+            <tr><td>1</td><td>1</td><td>0</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tableau mono compact centre">
+        <table>
+          <caption>Multiplication modulo 2 (ET) <span class="badge ajout">Ajout</span></caption>
+          <thead><tr><th>a</th><th>b</th><th>a × b</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>0</td><td>0</td></tr>
+            <tr><td>0</td><td>1</td><td>0</td></tr>
+            <tr><td>1</td><td>0</td><td>0</td></tr>
+            <tr><td>1</td><td>1</td><td>1</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>Soustraire, c'est additionner</span></p>
+      <p><span class="badge ajout">Ajout</span> Comme \(1 + 1 = 0\), chaque élément est son propre opposé : \(-x = x\), et soustraire revient à additionner. En particulier \(x + x = 0\) : ajouter deux fois la même erreur l'efface. Deux mots s'additionnent bit à bit, sans retenue : \(1011 + 0110 = 1101\).</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-1">
+      <p class="bloc-titre">Exercice 1 <span>Paramètres et calculs modulo 2</span></p>
+      <p><span class="badge ajout">Ajout</span> a) Donner \(k\), la redondance et le rendement des codes suivants : le code \((6, 3)\) de la fin du cours ; un code \((7, 4)\) ; le code de parité \((8, 7)\), qui ajoute un bit à chaque bloc de 7 bits ; le code de répétition \((3, 1)\), qui émet trois fois chaque bit.</p>
+      <p>b) Calculer modulo 2 : \(1011 + 0110\), \(110010 + 110010\) et \(0111 - 1010\).</p>
+      <details class="indice"><summary>Indice</summary><p>\(k = n - m\). Pour la soustraction, se souvenir que \(-x = x\).</p></details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <div class="tableau compact centre">
+          <table>
+            <caption>Paramètres des quatre codes</caption>
+            <thead><tr><th>Code</th><th>k</th><th>Redondance k/n</th><th>Rendement m/n</th></tr></thead>
+            <tbody>
+              <tr><th>(6, 3)</th><td>3</td><td>1/2</td><td>1/2</td></tr>
+              <tr><th>(7, 4)</th><td>3</td><td>3/7 ≈ 0,43</td><td>4/7 ≈ 0,57</td></tr>
+              <tr><th>(8, 7)</th><td>1</td><td>1/8 = 0,125</td><td>7/8 = 0,875</td></tr>
+              <tr><th>(3, 1)</th><td>2</td><td>2/3 ≈ 0,67</td><td>1/3 ≈ 0,33</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>b) \(1011 + 0110 = 1101\) ; \(110010 + 110010 = 000000\) (un mot plus lui-même donne le mot nul) ; \(0111 - 1010 = 0111 + 1010 = 1101\).</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Canal, distance minimale et pouvoir de correction <span class="ref">diapos 8–12</span></h2>
+    <p>Combien d'erreurs un code peut-il détecter ou corriger ? La réponse tient en un seul nombre, la distance minimale du code, et dépend du canal : un canal qui signale ses doutes par un symbole d'effacement est plus facile à combattre qu'un canal qui se trompe sans prévenir.</p>
+
+    <h3>Trois modèles de canal <span class="ref">diapo 8</span></h3>
+    <p>La diapo compare trois comportements d'un canal binaire. Chaque flèche relie un symbole émis (à gauche) à un symbole reçu (à droite), avec la probabilité de ce passage.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 200" width="640" role="img" aria-labelledby="fig-canaux-titre">
+        <title id="fig-canaux-titre">Trois canaux binaires : normal, où chaque symbole passe avec la probabilité 1 ; avec erreur, où il est inversé avec la probabilité p ; avec effacement, où il devient epsilon avec la probabilité q</title>
+        <defs>
+          <marker id="fleche-canaux" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <!-- Normal -->
+        <text x="100" y="18" text-anchor="middle" class="gras">Normal</text>
+        <text x="22" y="65" text-anchor="middle" class="mono">0</text>
+        <text x="22" y="175" text-anchor="middle" class="mono">1</text>
+        <text x="178" y="65" text-anchor="middle" class="mono">0</text>
+        <text x="178" y="175" text-anchor="middle" class="mono">1</text>
+        <path class="trait" d="M32 60 H166" marker-end="url(#fleche-canaux)"/>
+        <path class="trait" d="M32 170 H166" marker-end="url(#fleche-canaux)"/>
+        <text x="100" y="52" text-anchor="middle" class="t2">1</text>
+        <text x="100" y="190" text-anchor="middle" class="t2">1</text>
+        <!-- Avec erreur -->
+        <text x="320" y="18" text-anchor="middle" class="gras">Avec erreur</text>
+        <text x="242" y="65" text-anchor="middle" class="mono">0</text>
+        <text x="242" y="175" text-anchor="middle" class="mono">1</text>
+        <text x="398" y="65" text-anchor="middle" class="mono">0</text>
+        <text x="398" y="175" text-anchor="middle" class="mono">1</text>
+        <path class="trait" d="M252 60 H386" marker-end="url(#fleche-canaux)"/>
+        <path class="trait" d="M252 170 H386" marker-end="url(#fleche-canaux)"/>
+        <path class="accent" d="M252 60 L386 170" marker-end="url(#fleche-canaux)"/>
+        <path class="accent" d="M252 170 L386 60" marker-end="url(#fleche-canaux)"/>
+        <text x="320" y="52" text-anchor="middle" class="t2">1 − p</text>
+        <text x="320" y="190" text-anchor="middle" class="t2">1 − p</text>
+        <text x="306" y="88" text-anchor="middle" class="accent">p</text>
+        <text x="306" y="150" text-anchor="middle" class="accent">p</text>
+        <!-- Avec effacement -->
+        <text x="540" y="18" text-anchor="middle" class="gras">Avec effacement</text>
+        <text x="462" y="65" text-anchor="middle" class="mono">0</text>
+        <text x="462" y="175" text-anchor="middle" class="mono">1</text>
+        <text x="618" y="65" text-anchor="middle" class="mono">0</text>
+        <text x="618" y="120" text-anchor="middle" class="accent">ε</text>
+        <text x="618" y="175" text-anchor="middle" class="mono">1</text>
+        <path class="trait" d="M472 60 H606" marker-end="url(#fleche-canaux)"/>
+        <path class="trait" d="M472 170 H606" marker-end="url(#fleche-canaux)"/>
+        <path class="accent" d="M472 60 L606 115" marker-end="url(#fleche-canaux)"/>
+        <path class="accent" d="M472 170 L606 115" marker-end="url(#fleche-canaux)"/>
+        <text x="540" y="52" text-anchor="middle" class="t2">1 − q</text>
+        <text x="540" y="190" text-anchor="middle" class="t2">1 − q</text>
+        <text x="520" y="100" text-anchor="middle" class="accent">q</text>
+        <text x="520" y="140" text-anchor="middle" class="accent">q</text>
+      </svg>
+      <figcaption>Les trois canaux de la diapo 8, redessinés. Un canal avec erreur peut inverser un symbole ; un canal avec effacement ne l'inverse jamais, mais peut le remplacer par ε.</figcaption>
+    </figure>
+
+    <ul>
+      <li><strong>Canal normal</strong> : chaque symbole arrive intact, avec la probabilité 1.</li>
+      <li><strong>Canal avec erreur</strong> : un symbole est inversé avec la probabilité \(p\), transmis correctement avec la probabilité \(1 - p\). <span class="badge ajout">Ajout</span> Comme 0 et 1 sont touchés de la même façon, on l'appelle <dfn>canal binaire symétrique</dfn> (<span class="en" lang="en">binary symmetric channel</span>) ; c'est lui que l'exemple final emploie.</li>
+      <li><strong>Canal avec effacement</strong> : un symbole est remplacé par le <dfn>symbole d'effacement</dfn> ε avec la probabilité \(q\), transmis correctement avec la probabilité \(1 - q\).</li>
+    </ul>
+    <p>Sur la diapo, les trois schémas sont réunis sous le titre « Cas d'un canal sans symbole d'effacement », alors que le troisième en comporte un : les deux premiers canaux sont sans effacement, le troisième avec.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Effacement ou erreur ?</span></p>
+      <p>Un <dfn>effacement</dfn> (<span class="en" lang="en">erasure</span>) est une erreur dont on connaît la position : le récepteur sait qu'il ne sait pas. Cela arrive quand le niveau reçu tombe entre les deux seuils de décision, ni clairement 0 ni clairement 1, ou quand un paquet entier est perdu.</p>
+      <p>Connaître la position facilite la réparation : on verra qu'un code remplit environ deux fois plus d'effacements qu'il ne corrige d'erreurs.</p>
+    </div>
+
+    <h3>Poids et distance de Hamming</h3>
+    <p>Les diapos 9 à 16 emploient la « distance minimum » d'un code et le « poids » d'un mot sans les définir. Voici ces définitions.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Poids, distance, distance minimale</span></p>
+      <ul>
+        <li><span class="badge ajout">Ajout</span> Le <dfn>poids de Hamming</dfn> \(w(x)\) d'un mot \(x\) est le nombre de ses éléments non nuls, c'est-à-dire de ses 1 en binaire : \(w(0110) = 2\).</li>
+        <li><span class="badge ajout">Ajout</span> La <dfn>distance de Hamming</dfn> \(d(x, y)\) entre deux mots de même longueur est le nombre de positions où ils diffèrent : \(d(0110, 1100) = 2\). En binaire, \(d(x, y) = w(x + y)\), car \(x + y\) vaut 1 exactement là où \(x\) et \(y\) diffèrent.</li>
+        <li><span class="badge ajout">Ajout</span> La <dfn>distance minimale</dfn> \(d_m\) d'un code \(C\) est la plus petite distance entre deux mots de code distincts.</li>
+      </ul>
+    </div>
+
+    <p><span class="badge ajout">Ajout</span> Si le mot de code \(c\) est émis et le mot \(y\) reçu, le <dfn>vecteur d'erreur</dfn> \(e = y + c\) vaut 1 aux positions touchées. Le nombre d'erreurs est donc \(w(e) = d(c, y)\) : compter les erreurs, c'est mesurer une distance.</p>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Distance minimale d'un code linéaire</span></p>
+      <p><span class="badge ajout">Ajout</span> Pour un code linéaire, la distance minimale est le plus petit poids d'un mot de code non nul :</p>
+      \[ d_m = \min_{c \in C,\; c \ne 0} w(c). \]
+      <details class="preuve">
+        <summary>Preuve</summary>
+        <p>Pour deux mots de code distincts \(c\) et \(c'\), \(d(c, c') = w(c + c')\), et \(c + c'\) est un mot de code non nul (linéarité) : toute distance est un poids. Inversement, le poids d'un mot de code \(c\) est sa distance au mot nul, \(w(c) = d(c, 0)\), et le mot nul appartient au code : tout poids est une distance. Les deux minimums sont donc égaux.</p>
+      </details>
+    </div>
+    <p>Il suffit ainsi de calculer \(2^m - 1\) poids, au lieu de comparer les mots deux à deux. C'est pourquoi les tables des diapos 14 et 16 donnent le poids de chaque mot de code.</p>
+
+    <h3>Détecter et corriger <span class="ref">diapo 9</span></h3>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Proposition <span>Canal sans symbole d'effacement</span> <span class="ref">diapo 9</span></p>
+      <p>Un code linéaire \(C\) de distance minimale \(d_m\) permet de :</p>
+      <ol>
+        <li>détecter au plus \(d_m - 1\) erreurs ;</li>
+        <li>corriger au plus \(t = \operatorname{ent}\!\left(\dfrac{d_m - 1}{2}\right)\) erreurs, où ent désigne la partie entière.</li>
+      </ol>
+      <details class="preuve">
+        <summary>Preuve</summary>
+        <p><span class="badge ajout">Ajout</span> (1) Soit \(c\) le mot émis. S'il se produit entre 1 et \(d_m - 1\) erreurs, le mot reçu \(y\) vérifie \(1 \le d(c, y) \le d_m - 1\). Il n'est pas \(c\), et ce n'est pas non plus un autre mot de code, qui serait à distance au moins \(d_m\) de \(c\). Donc \(y\) n'est pas un mot de code : l'erreur est détectée.</p>
+        <p>(2) S'il se produit au plus \(t\) erreurs, \(d(c, y) \le t\). Pour tout autre mot de code \(c'\), l'inégalité triangulaire donne \(d(y, c') \ge d(c, c') - d(c, y) \ge d_m - t\). Comme \(d_m \ge 2t + 1\), \(d(y, c') \ge t + 1\) : \(c\) est le seul mot de code le plus proche de \(y\), et le décodage « au plus proche » le retrouve.</p>
+      </details>
+    </div>
+    <div class="encadre">
+      \[ \text{détection : } d_m - 1 \text{ erreurs} \qquad\qquad \text{correction : } t = \left\lfloor \frac{d_m - 1}{2} \right\rfloor \text{ erreurs} \]
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 200" width="640" role="img" aria-labelledby="fig-boules-titre">
+        <title id="fig-boules-titre">Deux mots de code c et c prime séparés par des mots intermédiaires ; avec une distance minimale 3, chaque mot intermédiaire est dans la boule de rayon 1 d'un mot de code ; avec une distance minimale 4, le mot du milieu n'appartient à aucune boule</title>
+        <text x="0" y="60">d<tspan dy="4" font-size="10">m</tspan><tspan dy="-4"> = 3</tspan></text>
+        <rect class="pointille" x="120" y="33" width="180" height="44" rx="22"/>
+        <rect class="pointille" x="360" y="33" width="180" height="44" rx="22"/>
+        <path class="trait" d="M150 55 H510"/>
+        <circle class="plein-accent" cx="150" cy="55" r="7"/>
+        <circle class="boite" cx="270" cy="55" r="5"/>
+        <circle class="boite" cx="390" cy="55" r="5"/>
+        <circle class="plein-accent" cx="510" cy="55" r="7"/>
+        <text x="150" y="98" text-anchor="middle" class="gras accent">c</text>
+        <text x="270" y="98" text-anchor="middle" class="t2">→ c</text>
+        <text x="390" y="98" text-anchor="middle" class="t2">→ c′</text>
+        <text x="510" y="98" text-anchor="middle" class="gras accent">c′</text>
+        <text x="0" y="155">d<tspan dy="4" font-size="10">m</tspan><tspan dy="-4"> = 4</tspan></text>
+        <rect class="pointille" x="125" y="128" width="140" height="44" rx="22"/>
+        <rect class="pointille" x="395" y="128" width="140" height="44" rx="22"/>
+        <path class="trait" d="M150 150 H510"/>
+        <circle class="plein-accent" cx="150" cy="150" r="7"/>
+        <circle class="boite" cx="240" cy="150" r="5"/>
+        <circle class="boite" cx="330" cy="150" r="5"/>
+        <circle class="boite" cx="420" cy="150" r="5"/>
+        <circle class="plein-accent" cx="510" cy="150" r="7"/>
+        <text x="150" y="193" text-anchor="middle" class="gras accent">c</text>
+        <text x="240" y="193" text-anchor="middle" class="t2">→ c</text>
+        <text x="330" y="193" text-anchor="middle" class="t2">détectée</text>
+        <text x="420" y="193" text-anchor="middle" class="t2">→ c′</text>
+        <text x="510" y="193" text-anchor="middle" class="gras accent">c′</text>
+      </svg>
+      <figcaption><span class="badge ajout">Ajout</span> Chaque pas change un bit. Les contours pointillés sont les boules de rayon \(t = 1\) : un mot reçu dans une boule est corrigé vers son centre. Pour \(d_m = 4\), le mot du milieu est à distance 2 de \(c\) et de \(c'\) : l'erreur double est détectée, mais on ne sait pas vers quel mot corriger.</figcaption>
+    </figure>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Détecter ou corriger, pas les deux à la fois</span></p>
+      <p><span class="badge ajout">Ajout</span> Les deux nombres ne se cumulent pas. Avec \(d_m = 3\), un code détecte 2 erreurs s'il se contente de signaler les mots reçus invalides, ou en corrige 1 s'il remplace chaque mot reçu par le mot de code le plus proche. Dans ce second mode, deux erreurs rapprochent \(y\) d'un autre mot de code : le décodeur « corrige » vers un mauvais mot, sans rien signaler.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Codes de répétition et de parité</span></p>
+      <ul>
+        <li><span class="badge ajout">Ajout</span> Le code de répétition \((3, 1) = \{000, 111\}\) a \(d_m = 3\) : il détecte 2 erreurs ou en corrige 1, par vote majoritaire (010 est décodé en 000).</li>
+        <li>Le code de répétition \((5, 1) = \{00000, 11111\}\) a \(d_m = 5\) : il détecte 4 erreurs ou en corrige 2.</li>
+        <li>Un code de parité, qui ajoute un bit pour rendre pair le nombre de 1, a \(d_m = 2\) : il détecte une erreur mais n'en corrige aucune.</li>
+      </ul>
+    </div>
+
+    <div class="bloc exercice" id="ex-2">
+      <p class="bloc-titre">Exercice 2 <span>Distance minimale et pouvoir de correction</span></p>
+      <p><span class="badge ajout">Ajout</span> Pour chacun des codes linéaires suivants, donner la distance minimale, le nombre d'erreurs détectées et le nombre d'erreurs corrigées.</p>
+      <ul>
+        <li>A = {000, 111} ;</li>
+        <li>B = {00000, 11111} ;</li>
+        <li>C = {000, 011, 101, 110} ;</li>
+        <li>D = {0000, 0111, 1110, 1001} ;</li>
+        <li>E = {000000, 001110, 010101, 011011, 100011, 101101, 110110, 111000}.</li>
+      </ul>
+      <details class="indice"><summary>Indice</summary><p>Les codes sont linéaires : \(d_m\) est le plus petit poids d'un mot non nul. Puis \(d_m - 1\) et \(\lfloor (d_m - 1)/2 \rfloor\).</p></details>
+    </div>
+    <div class="atelier" id="c3-ex2-distances" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "Distance minimale de cinq codes",
+        "consigne": "<p>Remplir les trois dernières colonnes par des entiers.</p>",
+        "options": { "verrou": "depart", "lignes": false, "ordre": true },
+        "depart": ["| Code | dm | Erreurs détectées | Erreurs corrigées |", "|---|---|---|---|", "| A |  |  |  |", "| B |  |  |  |", "| C |  |  |  |", "| D |  |  |  |", "| E |  |  |  |"],
+        "solution": ["| Code | dm | Erreurs détectées | Erreurs corrigées |", "|---|---|---|---|", "| A | 3 | 2 | 1 |", "| B | 5 | 4 | 2 |", "| C | 2 | 1 | 0 |", "| D | 2 | 1 | 0 |", "| E | 3 | 2 | 1 |"],
+        "explication": "<p><b>A</b> et <b>B</b> sont les codes de répétition (3, 1) et (5, 1) : leur seul mot non nul a le poids 3, puis 5. <b>C</b> est le code de parité sur 2 bits : tous ses mots non nuls ont le poids 2. <b>D</b> est le code de l'exemple 2 (diapo 16) : poids 3, 3 et 2, donc d<sub>m</sub> = 2. <b>E</b> est le code (6, 3) de l'exemple final : quatre mots de poids 3 (001110, 010101, 100011, 111000) et trois de poids 4. On applique ensuite d<sub>m</sub> − 1 pour la détection et la partie entière de (d<sub>m</sub> − 1)/2 pour la correction. Erreur fréquente : compter le mot nul, de poids 0.</p>"
+      }
+      </script>
+    </div>
+
+    <h3>Canal avec symbole d'effacement <span class="ref">diapos 10–11</span></h3>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Proposition <span>Remplir des effacements</span> <span class="ref">diapo 10</span></p>
+      <p>Un code linéaire \(C\) de distance minimale \(d_m\) peut « remplir » \(\rho\) effacements, c'est-à-dire remplacer dans un mot reçu les \(\rho\) symboles d'effacement par les \(\rho\) éléments q-aires effectivement émis, si \(\rho \le d_m - 1\).</p>
+      <details class="preuve">
+        <summary>Preuve</summary>
+        <p><span class="badge ajout">Ajout</span> Deux mots de code distincts diffèrent en au moins \(d_m\) positions. Si \(\rho \le d_m - 1\) positions sont effacées, au moins une de ces positions reste lisible : deux mots de code distincts ne coïncident jamais sur toutes les positions lues. Un seul mot de code est donc compatible avec le mot reçu, et on le retrouve.</p>
+      </details>
+    </div>
+    <p><span class="badge ajout">Ajout</span> « q-aire » renvoie à la taille \(q\) de l'alphabet : les symboles émis sont pris parmi \(q\) valeurs. En binaire, \(q = 2\) et les éléments sont des éb.</p>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Proposition <span>Effacements et erreurs</span> <span class="ref">diapo 11</span></p>
+      <p>Un code linéaire \(C\) de distance minimale \(d_m\) peut remplir \(\rho\) effacements <strong>et</strong> corriger \(t\) erreurs si \(t\) et \(\rho\) vérifient à la fois :</p>
+      \[ \rho + 1 \le d_m \qquad \text{et} \qquad 2t + \rho + 1 \le d_m. \]
+      <details class="preuve">
+        <summary>Preuve</summary>
+        <p><span class="badge ajout">Ajout</span> Sur les \(n - \rho\) positions lisibles, deux mots de code distincts diffèrent encore en au moins \(d_m - \rho \ge 2t + 1\) positions. Restreint à ces positions, le code a donc une distance minimale d'au moins \(2t + 1\), et il corrige \(t\) erreurs d'après la diapo 9. Une fois le mot de code retrouvé, les effacements sont remplis.</p>
+      </details>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Un effacement coûte 1, une erreur coûte 2</span></p>
+      <p>La seconde condition entraîne la première, puisque \(2t \ge 0\). Avec \(t = 0\), on retrouve \(\rho \le d_m - 1\) ; avec \(\rho = 0\), on retrouve \(2t + 1 \le d_m\), la correction sans effacement.</p>
+      <p>Dans le « budget » \(d_m - 1\), chaque effacement consomme 1 et chaque erreur 2 : c'est le prix de l'ignorance de la position.</p>
+      <p>Exemple avec le code de répétition \((5, 1)\), où \(d_m = 5\) : on reçoit <code>1 0 ε 1 ε</code>. Sur les trois positions lues (1, 0, 1), le mot 11111 est à distance 1, le mot 00000 à distance 2 : on décode 11111. Deux effacements sont remplis et une erreur corrigée, car \(2 \times 1 + 2 + 1 = 5 \le 5\).</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-3">
+      <p class="bloc-titre">Exercice 3 <span>Effacements dans le code (6, 3)</span></p>
+      <p><span class="badge ajout">Ajout</span> On reprend le code E de l'exercice 2, de distance minimale 3.</p>
+      <p>a) Quels couples \((t, \rho)\) la proposition de la diapo 11 autorise-t-elle ?</p>
+      <p>b) Remplir les effacements du mot reçu <code>1 ε 0 ε 1 0</code>.</p>
+      <p>c) Montrer que le mot reçu <code>ε ε ε 0 0 0</code>, qui compte trois effacements, ne peut pas être rempli.</p>
+      <details class="indice"><summary>Indice</summary><p>Pour b) et c), chercher dans la liste des mots de code ceux qui coïncident avec le mot reçu sur toutes les positions lisibles.</p></details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>a) \(2t + \rho + 1 \le 3\) donne \((t, \rho) \in \{(0, 0), (0, 1), (0, 2), (1, 0)\}\) : le code remplit jusqu'à 2 effacements, ou corrige 1 erreur, mais pas les deux à la fois.</p>
+        <p>b) Les mots de code qui commencent par 1 et ont un 0 en position 3 sont 100011 et 110110. Seul 110110 finit par 10 : on décode 110110, message 110. Il y a deux effacements, et \(\rho = 2 \le d_m - 1\) garantit ce résultat unique.</p>
+        <p>c) Les mots de code qui finissent par 000 sont 000000 et 111000 : deux candidats, on ne peut pas trancher. C'est cohérent avec la proposition, puisque \(\rho = 3 \gt d_m - 1\).</p>
+      </details>
+    </div>
+
+    <h3>Codes parfaits <span class="ref">diapo 12</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Code parfait</span></p>
+      <p><span class="badge ajout">Ajout</span> Un code \(t\)-correcteur est <dfn>parfait</dfn> (<span class="en" lang="en">perfect code</span>) quand tout mot de longueur \(n\) est à distance au plus \(t\) d'exactement un mot de code. Autrement dit, les boules de rayon \(t\) centrées sur les mots de code recouvrent tout l'espace sans se chevaucher : aucun mot reçu n'est « entre deux », et aucune place n'est perdue.</p>
+    </div>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Condition pour être parfait</span> <span class="ref">diapo 12</span></p>
+      <p>Une condition nécessaire et suffisante pour qu'un code linéaire \(C\) \(t\)-correcteur et de distance minimale \(d_m\) soit parfait est que ses paramètres vérifient la relation :</p>
+      \[ \sum_{j=0}^{t} C_n^j \,(q-1)^j = q^k. \]
+      <p><span class="badge ajout">Ajout</span> \(q\) est la taille de l'alphabet et \(k = n - m\) le nombre de symboles de contrôle.</p>
+      <details class="preuve">
+        <summary>Preuve</summary>
+        <p><span class="badge ajout">Ajout</span> La boule de rayon \(t\) autour d'un mot de code contient les mots à distance \(j = 0, 1, \ldots, t\). Pour en former un, on choisit les \(j\) positions modifiées (\(C_n^j\) façons) et, pour chacune, l'une des \(q - 1\) autres valeurs. La boule contient donc \(V = \sum_{j=0}^{t} C_n^j (q-1)^j\) mots.</p>
+        <p>Les \(q^m\) boules sont disjointes, puisque \(d_m \ge 2t + 1\), et l'espace compte \(q^n\) mots. Elles le recouvrent exactement si et seulement si \(q^m V = q^n\), soit \(V = q^{n-m} = q^k\).</p>
+      </details>
+    </div>
+
+    <p><span class="badge ajout">Ajout</span> En binaire, la condition devient \(\sum_{j=0}^{t} C_n^j = 2^k\). Pour un code 1-correcteur : \(1 + n = 2^k\). On peut aussi la lire avec les syndromes de la partie 5 : il y a \(2^k\) syndromes, et un code parfait les emploie tous pour les erreurs de poids au plus \(t\).</p>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Parfait ou non ?</span></p>
+      <ul>
+        <li><span class="badge ajout">Ajout</span> Le code \((6, 3)\) de la fin du cours corrige \(t = 1\) erreur : \(1 + 6 = 7 \ne 2^3 = 8\). Il n'est pas parfait, et il lui reste un syndrome pour une erreur double.</li>
+        <li>Un code \((7, 4)\) 1-correcteur : \(1 + 7 = 8 = 2^3\). C'est le <dfn>code de Hamming</dfn> (<span class="en" lang="en">Hamming code</span>), traité dans les exercices 6 et 7 ; il est parfait.</li>
+      </ul>
+    </div>
+
+    <div class="bloc exercice" id="ex-4">
+      <p class="bloc-titre">Exercice 4 <span>Codes parfaits</span></p>
+      <p><span class="badge ajout">Ajout</span> Les codes binaires suivants sont-ils parfaits ? Le code de répétition \((3, 1)\) ; le code de répétition \((4, 1)\) ; le code de répétition \((5, 1)\) ; un code \((15, 11)\) 1-correcteur.</p>
+      <details class="indice"><summary>Indice</summary><p>Un code de répétition \((n, 1)\) a \(d_m = n\). En déduire \(t\), puis comparer \(\sum_{j=0}^{t} C_n^j\) à \(2^{n-m}\).</p></details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <div class="tableau compact centre">
+          <table>
+            <caption>Test de la relation de la diapo 12</caption>
+            <thead><tr><th>Code</th><th>t</th><th>\(\sum_{j \le t} C_n^j\)</th><th>\(2^k\)</th><th>Parfait</th></tr></thead>
+            <tbody>
+              <tr><th>(3, 1)</th><td>1</td><td>1 + 3 = 4</td><td>4</td><td class="oui">oui</td></tr>
+              <tr><th>(4, 1)</th><td>1</td><td>1 + 4 = 5</td><td>8</td><td class="non">non</td></tr>
+              <tr><th>(5, 1)</th><td>2</td><td>1 + 5 + 10 = 16</td><td>16</td><td class="oui">oui</td></tr>
+              <tr><th>(15, 11)</th><td>1</td><td>1 + 15 = 16</td><td>16</td><td class="oui">oui</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Pour \((4, 1)\), \(d_m = 4\) donne \(t = 1\) : le mot 0011 est à distance 2 de 0000 et de 1111, il n'est dans aucune boule. Plus généralement, les codes de répétition de longueur impaire sont parfaits, et le code \((15, 11)\) est un code de Hamming.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>La matrice génératrice <span class="ref">diapos 13–17</span></h2>
+    <p>Un code linéaire de \(2^m\) mots se décrit entièrement par \(m\) mots bien choisis, qui forment une base. On les range en colonnes dans une matrice \(G\), et coder un message revient à multiplier \(G\) par ce message.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Matrice génératrice</span></p>
+      <p><span class="badge ajout">Ajout</span> La <dfn>matrice génératrice</dfn> (<span class="en" lang="en">generator matrix</span>) \(G\) d'un code linéaire \(C(n, m)\) est la matrice \(n \times m\) dont les colonnes sont \(m\) mots de code \(g_1, \ldots, g_m\) formant une base de \(C\). Le mot de code du message \(a = (a_1, \ldots, a_m)^T\) est :</p>
+      \[ u = G\,a = a_1 g_1 + a_2 g_2 + \cdots + a_m g_m. \]
+    </div>
+
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>Coder sans poser le produit</span></p>
+      <p><span class="badge ajout">Ajout</span> \(G\,a\) est la somme des colonnes de \(G\) qui correspondent aux 1 du message. Pour le message 101, on additionne les colonnes 1 et 3.</p>
+    </div>
+
+    <h3>Exemple 1 <span class="ref">diapos 13–14</span></h3>
+    <p>On prend \(n = 4\) et \(m = 2\). Si on choisit pour base de \(C\)</p>
+    \[ g_1 = \begin{pmatrix} 1 \\ 0 \\ 0 \\ 0 \end{pmatrix}, \qquad g_2 = \begin{pmatrix} 0 \\ 1 \\ 0 \\ 0 \end{pmatrix}, \]
+    <p>les mots code \(u\) sont obtenus à partir des quatre vecteurs \(a\) tels que :</p>
+    \[ u = \begin{pmatrix} 1 & 0 \\ 0 & 1 \\ 0 & 0 \\ 0 & 0 \end{pmatrix} \begin{pmatrix} x \\ y \end{pmatrix} \quad \text{avec } (x, y) \in \{0, 1\}^2. \]
+
+    <div class="tableau mono compact centre">
+      <table>
+        <caption>Code de l'exemple 1 (diapo 14)</caption>
+        <thead><tr><th>Mot à coder</th><th>Mot code</th><th>Poids</th></tr></thead>
+        <tbody>
+          <tr><td>00</td><td>0000</td><td>0</td></tr>
+          <tr><td>01</td><td>0100</td><td>1</td></tr>
+          <tr><td>10</td><td>1000</td><td>1</td></tr>
+          <tr><td>11</td><td>1100</td><td>2</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Un mauvais code</span></p>
+      <p>Le plus petit poids non nul vaut 1 : \(d_m = 1\). Ce code ne garantit la détection d'aucune erreur : une erreur sur le premier bit de 0000 donne 1000, un autre mot de code. Ses deux derniers éb valent toujours 0 et ne dépendent pas du message : ils ne protègent rien.</p>
+    </div>
+
+    <h3>Exemple 2 <span class="ref">diapos 15–16</span></h3>
+    <p>Si on prend pour base de \(C\)</p>
+    \[ g_1 = \begin{pmatrix} 1 \\ 1 \\ 1 \\ 0 \end{pmatrix}, \qquad g_2 = \begin{pmatrix} 0 \\ 1 \\ 1 \\ 1 \end{pmatrix}, \]
+    <p>la matrice \(G\) devient</p>
+    \[ G = \begin{pmatrix} 1 & 0 \\ 1 & 1 \\ 1 & 1 \\ 0 & 1 \end{pmatrix} \quad \text{d'où} \quad u = \begin{pmatrix} 1 & 0 \\ 1 & 1 \\ 1 & 1 \\ 0 & 1 \end{pmatrix} \begin{pmatrix} x \\ y \end{pmatrix}, \]
+    <p>et on obtient alors le code :</p>
+
+    <div class="tableau mono compact centre">
+      <table>
+        <caption>Code de l'exemple 2 (diapo 16)</caption>
+        <thead><tr><th>Mot à coder</th><th>Mot code</th><th>Poids</th></tr></thead>
+        <tbody>
+          <tr><td>00</td><td>0000</td><td>0</td></tr>
+          <tr><td>01</td><td>0111</td><td>3</td></tr>
+          <tr><td>10</td><td>1110</td><td>3</td></tr>
+          <tr><td>11</td><td>1001</td><td>2</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Ce que montrent les deux exemples</span></p>
+      <p>Mêmes \(n\) et \(m\), mais une autre base : cette fois \(d_m = 2\), et le code détecte toute erreur simple (il n'en corrige toujours aucune). Le choix des colonnes de \(G\) fait la qualité du code.</p>
+      <p>Ce code n'est pas systématique au sens de la diapo 17 : le message 10 devient 1110, qui ne commence pas par 10. L'exercice 5 montre qu'une autre base du même code le rend systématique.</p>
+    </div>
+
+    <h3>Forme systématique <span class="ref">diapo 17</span></h3>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Matrice génératrice d'un code systématique</span></p>
+      <p>Si le code \(C\) est systématique, les éléments binaires d'information figurant au début du mot (à gauche), alors la matrice génératrice \(G\) de \(C\) a la forme :</p>
+      \[ G = \begin{pmatrix} I_m \\ P \end{pmatrix} \quad \text{avec} \quad \begin{cases} I_m = \text{matrice identité de dimension } m \times m \\ P = \text{matrice de dimension } (n - m) \times m \end{cases} \]
+    </div>
+    <p>La diapo note l'identité \(I_{dm}\) : « \(I_d\) de dimension \(m\) ». <span class="badge ajout">Ajout</span> Les \(m\) premières lignes de \(G\) recopient le message ; chacune des \(k = n - m\) lignes de \(P\) calcule un éb de contrôle, en désignant par ses 1 les éb d'information à additionner.</p>
+
+    <div class="bloc exercice" id="ex-5">
+      <p class="bloc-titre">Exercice 5 <span>Rendre systématique le code de l'exemple 2</span></p>
+      <p><span class="badge ajout">Ajout</span> Le code de l'exemple 2 est \(\{0000, 0111, 1110, 1001\}\). Trouver une matrice génératrice \(G' = \begin{pmatrix} I_2 \\ P \end{pmatrix}\) du <em>même</em> ensemble de mots, puis donner les mots de code qu'elle associe aux messages 00, 01, 10 et 11.</p>
+      <details class="indice"><summary>Indice</summary><p>Les colonnes de \(G'\) doivent être des mots du code qui commencent respectivement par 10 et par 01.</p></details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Le mot du code qui commence par 10 est 1001, celui qui commence par 01 est 0111. D'où</p>
+        \[ G' = \begin{pmatrix} 1 & 0 \\ 0 & 1 \\ 0 & 1 \\ 1 & 1 \end{pmatrix}, \qquad P = \begin{pmatrix} 0 & 1 \\ 1 & 1 \end{pmatrix}. \]
+        <p>Les messages 00, 01, 10 et 11 donnent 0000, 0111, 1001 et 1110 : c'est bien le même ensemble de mots, donc le même code, de même distance minimale 2. Seule l'association entre messages et mots change (10 donnait 1110, il donne maintenant 1001). Les éb de contrôle se lisent sur \(P\) : \(a_3 = u_2\) et \(a_4 = u_1 + u_2\).</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice" id="ex-6">
+      <p class="bloc-titre">Exercice 6 <span>Coder avec un code de Hamming (7, 4)</span></p>
+      <p><span class="badge ajout">Ajout</span> On considère le code systématique \((7, 4)\) dont les éb de contrôle sont \(a_5 = u_1 + u_2 + u_4\), \(a_6 = u_1 + u_3 + u_4\) et \(a_7 = u_2 + u_3 + u_4\).</p>
+      <p>a) Écrire \(P\) et \(G\). b) Coder les messages 1000, 0110, 1011 et 1111. c) Quelle est la distance minimale du code ?</p>
+      <details class="indice"><summary>Indice</summary><p>Pour c), regarder le poids des colonnes de \(P\) : un message de poids 1 donne un mot de poids \(1 + w(\text{colonne de } P)\).</p></details>
+      <details class="solution">
+        <summary>Solution proposée (questions a et c)</summary>
+        <p>a) Chaque ligne de \(P\) désigne les éb additionnés :</p>
+        \[ P = \begin{pmatrix} 1 & 1 & 0 & 1 \\ 1 & 0 & 1 & 1 \\ 0 & 1 & 1 & 1 \end{pmatrix}, \qquad G = \begin{pmatrix} I_4 \\ P \end{pmatrix} = \begin{pmatrix} 1&0&0&0 \\ 0&1&0&0 \\ 0&0&1&0 \\ 0&0&0&1 \\ 1&1&0&1 \\ 1&0&1&1 \\ 0&1&1&1 \end{pmatrix}. \]
+        <p>c) Les colonnes de \(P\) ont pour poids 2, 2, 2 et 3. Un message de poids 1 donne donc un mot de poids au moins 3. Un message de poids 2 donne un mot de poids 2 + le poids de la somme de deux colonnes distinctes de \(P\), qui n'est pas nulle : au moins 3. Un message de poids 3 ou 4 donne au moins 3. Et 1000110 a le poids 3 : \(d_m = 3\), le code corrige une erreur.</p>
+      </details>
+    </div>
+    <div class="atelier" id="c3-ex6-hamming-codage" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "Codage de quatre messages",
+        "consigne": "<p>Écrire chaque mot de code sur 7 éléments binaires, sans espaces (a<sub>1</sub> … a<sub>7</sub>).</p>",
+        "options": { "verrou": "depart", "lignes": false, "ordre": true, "mono": true },
+        "depart": ["| Message | Mot de code |", "|---|---|", "| 1000 |  |", "| 0110 |  |", "| 1011 |  |", "| 1111 |  |"],
+        "solution": ["| Message | Mot de code |", "|---|---|", "| 1000 | 1000110 |", "| 0110 | 0110110 |", "| 1011 | 1011010 |", "| 1111 | 1111111 |"],
+        "explication": "<p>Les quatre premiers éb recopient le message. Pour 1011 : a<sub>5</sub> = 1 + 0 + 1 = 0, a<sub>6</sub> = 1 + 1 + 1 = 1, a<sub>7</sub> = 0 + 1 + 1 = 0, d'où 1011010. Autre méthode : additionner les colonnes de G désignées par les 1 du message ; pour 0110, colonnes 2 et 3 : 0100101 + 0010011 = 0110110. Erreur fréquente : oublier que 1 + 1 + 1 = 1 modulo 2.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Matrice de contrôle et syndrome <span class="ref">diapos 18–20</span></h2>
+    <p>À la réception, il faut savoir si le mot reçu est un mot de code et, sinon, quelle erreur l'a déformé. Le comparer aux \(2^m\) mots de code serait long. La matrice de contrôle ramène ce test à un seul produit matriciel, dont le résultat désigne directement l'erreur.</p>
+
+    <h3>Matrice de contrôle <span class="ref">diapo 18</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Matrice de contrôle</span></p>
+      <p>Pour un code systématique de matrice génératrice \(G = \begin{pmatrix} I_m \\ P \end{pmatrix}\), la <dfn>matrice de contrôle</dfn> (<span class="en" lang="en">parity-check matrix</span>) est :</p>
+      \[ H = \begin{pmatrix} -P^T \\ I_{n-m} \end{pmatrix}. \]
+      <p><span class="badge ajout">Ajout</span> \(P^T\) est de taille \(m \times (n - m)\) : \(H\) a \(n\) lignes et \(k = n - m\) colonnes, et sa transposée \(H^T = \begin{pmatrix} -P & I_{k} \end{pmatrix}\) a \(k\) lignes et \(n\) colonnes.</p>
+    </div>
+    <p>La diapo note l'identité \(I_{d(n-m)}\), de dimension \(n - m\). <span class="badge ajout">Ajout</span> Modulo 2, \(-P^T = P^T\) : le signe moins ne sert que pour les codes q-aires avec \(q \gt 2\). En binaire, \(H^T = \begin{pmatrix} P & I_k \end{pmatrix}\).</p>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Reconnaître un mot de code</span></p>
+      <p>Un mot \(c\) de longueur \(n\) est un mot de code si et seulement si \(H^T c = 0\).</p>
+      <details class="preuve">
+        <summary>Preuve</summary>
+        <p><span class="badge ajout">Ajout</span> La diapo 19 rappelle ce résultat (« on a vu que… ») sans que les diapos précédentes le démontrent. Par blocs, \(H^T G = \begin{pmatrix} -P & I_k \end{pmatrix} \begin{pmatrix} I_m \\ P \end{pmatrix} = -P + P = 0\). Tout mot de code \(c = G a\) vérifie donc \(H^T c = H^T G a = 0\).</p>
+        <p>Réciproquement, on découpe \(c\) en ses \(m\) premiers éb \(a\) et ses \(k\) derniers \(b\). \(H^T c = -P a + b = 0\) donne \(b = P a\), donc \(c = \begin{pmatrix} a \\ P a \end{pmatrix} = G a\) est un mot de code.</p>
+      </details>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Chaque ligne de \(H^T\) est une équation de contrôle</span></p>
+      <p>Dans le code \((6, 3)\) de la partie suivante, la première ligne de \(H^T\) est \((0\;1\;1\;1\;0\;0)\). Elle impose \(a_2 + a_3 + a_4 = 0\), soit \(a_4 = a_2 + a_3\) : c'est exactement la règle de calcul du quatrième éb. Le récepteur vérifie ainsi chaque éb de contrôle.</p>
+    </div>
+
+    <h3>Syndrome <span class="ref">diapo 19</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Syndrome</span></p>
+      <p>Si \(y\) est un mot reçu, c'est-à-dire un élément de \(\{0, 1\}^n\), on définit le <dfn>syndrome</dfn> (<span class="en" lang="en">syndrome</span>) de \(y\) par la quantité \(s(y) = H^T y\).</p>
+    </div>
+    <p>Si un mot code \(c\) est transformé en le mot reçu \(y\) tel que \(y = c + e\), le vecteur \(e\) comporte des 1 là où une erreur a été commise. Le syndrome de \(y\) s'écrit alors :</p>
+    <div class="encadre">
+      \[ s(y) = s(c + e) = H^T (c + e) = H^T c + H^T e = H^T e. \]
+    </div>
+    <p>On constate donc que le syndrome ne dépend que de l'erreur (la maladie), et pas du mot de code émis (le patient). Cette propriété va permettre de diminuer la complexité du décodage à distance minimum.</p>
+    <p>La diapo écrit « pas du mot reçu (le patient) ». Or le syndrome se calcule justement à partir du mot reçu \(y\) ; ce dont il ne dépend pas, c'est le mot de code émis \(c\). On a corrigé en ce sens.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Décodage à distance minimale</span></p>
+      <p>Décoder « à distance minimale », c'est remplacer \(y\) par le mot de code le plus proche. Sur un canal binaire symétrique avec \(p \lt 1/2\), c'est le choix le plus probable : une erreur de poids \(w\) a la probabilité \(p^w (1-p)^{n-w}\), qui diminue quand \(w\) augmente.</p>
+      <p>Sans syndrome, il faudrait calculer la distance de \(y\) aux \(2^m\) mots de code : plus de quatre milliards pour \(m = 32\). Avec le syndrome, une table de \(2^k\) lignes, indexée par le syndrome, suffit.</p>
+    </div>
+
+    <h3>Décoder par le syndrome <span class="ref">diapo 20</span></h3>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Décodage par syndrome</span></p>
+      <p>On calcule le syndrome de \(y\) : \(s(y) = H^T y\).</p>
+      <ul>
+        <li>Si \(s(y) = 0\), \(y\) est un mot code, et on interprète \(y\) comme ce mot code.</li>
+        <li>Sinon, on recherche la séquence \(z\) de longueur \(n\) de poids minimal telle que \(H^T z = s(y)\), et on décode \(y\) en \(c = y + z\).</li>
+      </ul>
+      <p><span class="badge ajout">Ajout</span> Pour un code systématique, le message est formé des \(m\) premiers éb de \(c\).</p>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 104" width="640" role="img" aria-labelledby="fig-syndrome-titre">
+        <title id="fig-syndrome-titre">Chaîne de décodage : mot reçu 110111, syndrome 001, séquence z 000001 lue dans la table, mot corrigé 110110, message 110</title>
+        <defs>
+          <marker id="fleche-syndrome" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="1" y="12" width="107" height="80" rx="8"/>
+        <text x="54" y="36" text-anchor="middle" class="gras">Mot reçu</text>
+        <text x="54" y="58" text-anchor="middle" class="mono">y</text>
+        <text x="54" y="80" text-anchor="middle" class="mono t2">110111</text>
+        <path class="trait" d="M108 52 H131" marker-end="url(#fleche-syndrome)"/>
+        <rect class="boite" x="133" y="12" width="108" height="80" rx="8"/>
+        <text x="187" y="36" text-anchor="middle" class="gras">Syndrome</text>
+        <text x="187" y="58" text-anchor="middle" class="mono">s = H<tspan dy="-6" font-size="10">T</tspan><tspan dy="6">y</tspan></text>
+        <text x="187" y="80" text-anchor="middle" class="mono t2">001</text>
+        <path class="trait" d="M241 52 H264" marker-end="url(#fleche-syndrome)"/>
+        <rect class="boite" x="266" y="12" width="108" height="80" rx="8"/>
+        <text x="320" y="36" text-anchor="middle" class="gras">Table</text>
+        <text x="320" y="58" text-anchor="middle" class="mono">z</text>
+        <text x="320" y="80" text-anchor="middle" class="mono t2">000001</text>
+        <path class="trait" d="M374 52 H397" marker-end="url(#fleche-syndrome)"/>
+        <rect class="boite" x="399" y="12" width="108" height="80" rx="8"/>
+        <text x="453" y="36" text-anchor="middle" class="gras">Correction</text>
+        <text x="453" y="58" text-anchor="middle" class="mono">c = y + z</text>
+        <text x="453" y="80" text-anchor="middle" class="mono t2">110110</text>
+        <path class="trait" d="M507 52 H530" marker-end="url(#fleche-syndrome)"/>
+        <rect class="boite-accent" x="532" y="12" width="107" height="80" rx="8"/>
+        <text x="585" y="36" text-anchor="middle" class="gras accent">Message</text>
+        <text x="585" y="58" text-anchor="middle">3 premiers éb</text>
+        <text x="585" y="80" text-anchor="middle" class="mono t2">110</text>
+      </svg>
+      <figcaption><span class="badge ajout">Ajout</span> Les étapes du décodage, avec les valeurs de l'exemple de la diapo 26. Quand le syndrome est nul, \(z = 0\) et le mot reçu est gardé tel quel.</figcaption>
+    </figure>
+
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>Le syndrome d'une erreur simple est une colonne de \(H^T\)</span></p>
+      <p><span class="badge ajout">Ajout</span> Si \(z\) n'a qu'un 1, en position \(i\), alors \(H^T z\) est la \(i\)-ème colonne de \(H^T\). Une erreur simple se repère donc en cherchant le syndrome parmi les colonnes de \(H^T\). Pour corriger toutes les erreurs simples, il faut et il suffit que ces colonnes soient non nulles et deux à deux distinctes.</p>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Le décodeur peut se tromper sans le savoir</span></p>
+      <p><span class="badge ajout">Ajout</span> Le décodage renvoie le mot de code le plus probable, pas forcément celui qui a été émis. Si le canal a commis plus d'erreurs que le code n'en corrige, le décodeur « corrige » vers un autre mot de code. Et si l'erreur \(e\) est elle-même un mot de code non nul, \(s(y) = 0\) : l'erreur passe inaperçue.</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-7">
+      <p class="bloc-titre">Exercice 7 <span>Syndromes du code de Hamming (7, 4)</span></p>
+      <p><span class="badge ajout">Ajout</span> On reprend le code de l'exercice 6.</p>
+      <p>a) Écrire \(H^T\). b) Calculer le syndrome de chacune des sept erreurs simples. c) En déduire que le code corrige toute erreur simple, et qu'il est parfait. d) Décoder le mot reçu 0110011.</p>
+      <details class="indice"><summary>Indice</summary><p>En binaire, \(H^T = (P \mid I_3)\). Le syndrome d'une erreur en position \(i\) est la \(i\)-ème colonne de \(H^T\).</p></details>
+      <details class="solution">
+        <summary>Solution proposée (questions a, c et d)</summary>
+        <p>a) Avec le \(P\) de l'exercice 6 :</p>
+        \[ H^T = \begin{pmatrix} 1&1&0&1&1&0&0 \\ 1&0&1&1&0&1&0 \\ 0&1&1&1&0&0&1 \end{pmatrix}. \]
+        <p>c) Les sept colonnes de \(H^T\) sont non nulles et toutes différentes : chaque erreur simple a son propre syndrome, et le code la corrige. Les sept syndromes non nuls et le syndrome nul épuisent les \(2^3 = 8\) syndromes : \(1 + 7 = 2^3\), le code est parfait.</p>
+        <p>d) \(H^T y\) est la somme des colonnes 2, 3, 6 et 7 : \(101 + 011 + 010 + 001 = 101\). C'est la colonne 2 : l'erreur porte sur le deuxième éb. On décode \(c = 0010011\), message 0010.</p>
+      </details>
+    </div>
+    <div class="atelier" id="c3-ex7-hamming-syndromes" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "Syndromes des erreurs simples",
+        "consigne": "<p>Écrire chaque syndrome sur 3 éléments binaires, de haut en bas, sans espaces.</p>",
+        "options": { "verrou": "depart", "lignes": false, "ordre": true, "mono": true },
+        "depart": ["| Position de l'erreur | z | Syndrome |", "|---|---|---|", "| 1 | 1000000 |  |", "| 2 | 0100000 |  |", "| 3 | 0010000 |  |", "| 4 | 0001000 |  |", "| 5 | 0000100 |  |", "| 6 | 0000010 |  |", "| 7 | 0000001 |  |"],
+        "solution": ["| Position de l'erreur | z | Syndrome |", "|---|---|---|", "| 1 | 1000000 | 110 |", "| 2 | 0100000 | 101 |", "| 3 | 0010000 | 011 |", "| 4 | 0001000 | 111 |", "| 5 | 0000100 | 100 |", "| 6 | 0000010 | 010 |", "| 7 | 0000001 | 001 |"],
+        "explication": "<p>Le syndrome d'une erreur en position i est la i-ème colonne de H<sup>T</sup> = (P | I<sub>3</sub>). Les quatre premières colonnes sont celles de P : 110, 101, 011, 111 ; les trois dernières celles de l'identité : 100, 010, 001. Les sept syndromes sont non nuls et distincts : chaque erreur simple est reconnue et corrigée.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Un exemple complet : le code (6, 3) <span class="ref">diapos 21–27</span></h2>
+    <p>On reprend toutes les étapes sur un même code : la table des mots de code, les matrices \(G\) et \(H\), la table de décodage, la correction d'un mot reçu, et enfin la probabilité de mal décoder.</p>
+
+    <h3>Le code et sa matrice génératrice <span class="ref">diapos 21–22</span></h3>
+    <p>On considère le code suivant.</p>
+    <div class="tableau mono compact centre">
+      <table>
+        <caption>Le code (6, 3) de la diapo 21</caption>
+        <thead><tr><th>Mots d'information</th><th>Mots code</th></tr></thead>
+        <tbody>
+          <tr><td>000</td><td>000000</td></tr>
+          <tr><td>001</td><td>001110</td></tr>
+          <tr><td>010</td><td>010101</td></tr>
+          <tr><td>011</td><td>011011</td></tr>
+          <tr><td>100</td><td>100011</td></tr>
+          <tr><td>101</td><td>101101</td></tr>
+          <tr><td>110</td><td>110110</td></tr>
+          <tr><td>111</td><td>111000</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>On note \(u_1 u_2 u_3\) les mots d'information et \(a_1 a_2 \ldots a_6\) les mots code. On a \(a_1 = u_1\), \(a_2 = u_2\), \(a_3 = u_3\) : le code est systématique. D'autre part, les éléments binaires de contrôle s'expriment comme combinaisons linéaires des éléments binaires d'information :</p>
+    \[ a_4 = u_2 + u_3 \qquad a_5 = u_1 + u_3 \qquad a_6 = u_1 + u_2. \]
+    <p>Ceci permet d'écrire la matrice génératrice du code :</p>
+    \[ G = \begin{pmatrix} I_3 \\ P \end{pmatrix} = \begin{pmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \\ 0 & 0 & 1 \\ 0 & 1 & 1 \\ 1 & 0 & 1 \\ 1 & 1 & 0 \end{pmatrix}. \]
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les paramètres du code</span></p>
+      <p>Redondance et rendement valent \(3/6 = 1/2\) : on transmet deux fois plus de bits que le message n'en contient. Le plus petit poids non nul vaut 3 (001110, 010101, 100011 et 111000), donc \(d_m = 3\) : le code détecte 2 erreurs ou en corrige 1.</p>
+      <p>Vérification du codage de 101 avec l'astuce des colonnes : colonne 1 + colonne 3 = \(100011 + 001110 = 101101\), comme dans la table.</p>
+    </div>
+
+    <h3>La matrice de contrôle <span class="ref">diapo 23</span></h3>
+    <p>On déduit alors la matrice \(H\) :</p>
+    \[ H = \begin{pmatrix} -P^T \\ I_{d(6-3)} \end{pmatrix} = \begin{pmatrix} 0 & -1 & -1 \\ -1 & 0 & -1 \\ -1 & -1 & 0 \\ 1 & 0 & 0 \\ 0 & 1 & 0 \\ 0 & 0 & 1 \end{pmatrix} = \begin{pmatrix} 0 & 1 & 1 \\ 1 & 0 & 1 \\ 1 & 1 & 0 \\ 1 & 0 & 0 \\ 0 & 1 & 0 \\ 0 & 0 & 1 \end{pmatrix} \;\Rightarrow\; H^T = \begin{pmatrix} 0 & 1 & 1 & 1 & 0 & 0 \\ 1 & 0 & 1 & 0 & 1 & 0 \\ 1 & 1 & 0 & 0 & 0 & 1 \end{pmatrix}. \]
+    <p><span class="badge ajout">Ajout</span> Le passage de la deuxième à la troisième matrice applique \(-1 = 1\) modulo 2. Ici \(P\) est symétrique, donc \(P^T = P\). Contrôle sur le mot 101101 : colonnes 1, 3, 4 et 6 de \(H^T\), \(011 + 110 + 100 + 001 = 000\), c'est bien un mot de code.</p>
+
+    <h3>La table de décodage <span class="ref">diapos 24–25</span></h3>
+    <p>Pour construire la table de décodage, on doit recenser les valeurs possibles des syndromes. La matrice \(H^T\) étant de dimension \(3 \times 6\) et les séquences \(z\) de dimension \(6 \times 1\), les produits \(H^T z\) sont de dimension \(3 \times 1\). Il y a donc \(2^3\) valeurs possibles des syndromes.</p>
+    <p>La séquence \(z = (000000)^T\) a pour syndrome \((000)^T\), la séquence \(z = (000001)^T\) a pour syndrome \((001)^T\), la séquence \(z = (000010)^T\) a pour syndrome \((010)^T\), etc. Finalement, on obtient :</p>
+
+    <div class="tableau mono compact centre">
+      <table>
+        <caption>Table de décodage du code (6, 3) (diapo 25)</caption>
+        <thead><tr><th>Syndromes (transposés)</th><th>Séquences z (transposées)</th></tr></thead>
+        <tbody>
+          <tr><td>000</td><td>000000</td></tr>
+          <tr><td>001</td><td>000001</td></tr>
+          <tr><td>010</td><td>000010</td></tr>
+          <tr><td>011</td><td>100000</td></tr>
+          <tr><td>100</td><td>000100</td></tr>
+          <tr><td>101</td><td>010000</td></tr>
+          <tr><td>110</td><td>001000</td></tr>
+          <tr><td>111</td><td>100100</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Comment la table se remplit</span></p>
+      <p>Le syndrome nul correspond à \(z = 0\). Les six erreurs simples ont pour syndromes les six colonnes de \(H^T\) : 011 (position 1), 101 (position 2), 110 (position 3), 100 (position 4), 010 (position 5) et 001 (position 6). Elles sont toutes distinctes : chaque erreur simple est corrigée.</p>
+      <p>Reste le syndrome 111, qui n'est aucune colonne : il faut une séquence de poids 2. Trois conviennent, 100100, 010010 et 001001, également probables. La table retient la première ; ce choix est arbitraire.</p>
+    </div>
+
+    <h3>Corriger un mot reçu <span class="ref">diapo 26</span></h3>
+    <p>D'après cette table de décodage, on constate que le code permet de corriger toutes les configurations d'une erreur, et une configuration de deux erreurs.</p>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Décodage de 110111</span> <span class="ref">diapo 26</span></p>
+      <p>Supposons que l'on reçoive le mot \(y = 110111\). Le calcul du syndrome de \(y\) conduit à la valeur \((001)^T\). La table de décodage permet de déterminer \(z = (000001)^T\). Le décodage de \(y\) est \(c = y + z = 110110\).</p>
+      <p><span class="badge ajout">Ajout</span> Le détail du syndrome : \(y\) a des 1 en positions 1, 2, 4, 5 et 6, d'où \(011 + 101 + 100 + 010 + 001 = 001\). L'erreur portait sur le dernier éb, et le message émis était 110.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le lien avec les codes parfaits</span></p>
+      <p>Sept des huit syndromes servent aux erreurs de poids au plus 1 : \(1 + 6 = 7 \lt 2^3\). Le huitième permet de corriger une seule des quinze erreurs doubles possibles. Un code parfait, comme le code de Hamming \((7, 4)\), n'a pas ce reste : ses \(2^3\) syndromes correspondent exactement aux \(1 + 7\) erreurs de poids au plus 1.</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-8">
+      <p class="bloc-titre">Exercice 8 <span>Décoder avec la table</span></p>
+      <p><span class="badge ajout">Ajout</span> Avec le code \((6, 3)\) et sa table de décodage, décoder les mots reçus 101110, 011111, 000111, 101101 et 010011 : syndrome, séquence \(z\), mot décodé et message.</p>
+      <details class="indice"><summary>Indice</summary><p>Le syndrome est la somme des colonnes de \(H^T\) désignées par les 1 de \(y\) ; la colonne \(i\) de \(H^T\) se lit aussi sur la ligne \(i\) de \(H\).</p></details>
+    </div>
+    <div class="atelier" id="c3-ex8-decodage" data-editeur="table">
+      <script type="application/json">
+      {
+        "titre": "Décodage de cinq mots reçus",
+        "consigne": "<p>Écrire des suites d'éléments binaires sans espaces : syndrome sur 3, z et mot décodé sur 6, message sur 3.</p>",
+        "options": { "verrou": "depart", "lignes": false, "ordre": true, "mono": true },
+        "depart": ["| Mot reçu y | Syndrome | z | Mot décodé c | Message |", "|---|---|---|---|---|", "| 101110 |  |  |  |  |", "| 011111 |  |  |  |  |", "| 000111 |  |  |  |  |", "| 101101 |  |  |  |  |", "| 010011 |  |  |  |  |"],
+        "solution": ["| Mot reçu y | Syndrome | z | Mot décodé c | Message |", "|---|---|---|---|---|", "| 101110 | 011 | 100000 | 001110 | 001 |", "| 011111 | 100 | 000100 | 011011 | 011 |", "| 000111 | 111 | 100100 | 100011 | 100 |", "| 101101 | 000 | 000000 | 101101 | 101 |", "| 010011 | 110 | 001000 | 011011 | 011 |"],
+        "explication": "<p>Avec H<sup>T</sup> = (011 101 110 100 010 001) en colonnes. <b>101110</b> : colonnes 1, 3, 4, 5, soit 011 + 110 + 100 + 010 = 011, erreur en position 1. <b>011111</b> : colonnes 2 à 6, soit 100, erreur en position 4. <b>000111</b> : 100 + 010 + 001 = 111, la table suppose l'erreur double 100100 ; le décodage donne 100011, mais 010101 et 001110 sont aussi à distance 2 : c'est un pari. <b>101101</b> : syndrome nul, c'est un mot de code. <b>010011</b> : 101 + 010 + 001 = 110, erreur en position 3.</p>"
+      }
+      </script>
+    </div>
+
+    <h3>Probabilité de mal décoder <span class="ref">diapo 27</span></h3>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Probabilité de mauvaise interprétation</span></p>
+      <p>Si \(p\) est la probabilité d'erreur du canal binaire symétrique utilisé pour transmettre ces mots code, alors la probabilité de mauvaise interprétation d'un mot reçu est :</p>
+      \[ 1 - \left\{ (1-p)^6 + 6p(1-p)^5 + p^2(1-p)^4 \right\}. \]
+      <details class="preuve">
+        <summary>Preuve</summary>
+        <p><span class="badge ajout">Ajout</span> Le mot est bien interprété exactement quand l'erreur \(e\) est l'une des huit séquences \(z\) de la table. Les erreurs touchent les six éb indépendamment. Aucune erreur a la probabilité \((1-p)^6\) ; chacune des six erreurs simples, \(p(1-p)^5\) ; la seule erreur double corrigée, 100100, \(p^2(1-p)^4\). La probabilité de mal interpréter est le complément de leur somme.</p>
+      </details>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Le gain du codage</span></p>
+      <p><span class="badge ajout">Ajout</span> Pour \(p = 0{,}01\), la formule donne \(1 - (0{,}941480 + 0{,}057059 + 0{,}000096) \approx 0{,}00136\). Sans codage, un message de 3 bits est faux avec la probabilité \(1 - 0{,}99^3 \approx 0{,}0297\). Le code divise le risque par 22 environ, au prix d'un débit doublé.</p>
+    </div>
+
+    <div class="bloc exercice" id="ex-9">
+      <p class="bloc-titre">Exercice 9 <span>Un canal plus bruité</span></p>
+      <p><span class="badge ajout">Ajout</span> Reprendre l'exemple précédent avec \(p = 0{,}1\). Le code reste-t-il intéressant ?</p>
+      <details class="indice"><summary>Indice</summary><p>\(0{,}9^4 = 0{,}6561\), \(0{,}9^5 = 0{,}59049\), \(0{,}9^6 = 0{,}531441\).</p></details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>\((1-p)^6 = 0{,}531441\), \(6p(1-p)^5 = 0{,}6 \times 0{,}59049 = 0{,}354294\), \(p^2(1-p)^4 = 0{,}01 \times 0{,}6561 = 0{,}006561\). Leur somme vaut \(0{,}892296\), d'où une probabilité de mauvaise interprétation de \(0{,}107704 \approx 0{,}108\).</p>
+        <p>Sans codage : \(1 - 0{,}9^3 = 0{,}271\). Le code divise encore le risque par 2,5 environ, mais le gain est bien plus faible qu'avec \(p = 0{,}01\) : sur un canal très bruité, deux erreurs dans un même mot deviennent fréquentes, et le code, qui n'en corrige qu'une, est vite débordé.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Erreurs aléatoires (bruit blanc, bits isolés) ou par paquets (bruit impulsif, bits consécutifs). On ne peut pas modifier le canal : on agit par le codage.</li>
+        <li>Code en bloc \((n, m)\) : \(m\) éb d'information, \(k = n - m\) éb de contrôle ; redondance \(k/n\), rendement \(m/n\). Dans un code convolutionnel, les éb de contrôle dépendent aussi des blocs antérieurs. Attention : ailleurs, \((n, k)\) désigne souvent \(k\) bits d'information.</li>
+        <li>Code linéaire : les éb de contrôle sont des sommes modulo 2 (XOR) d'éb d'information ; la somme de deux mots de code est un mot de code.</li>
+        <li>Distance minimale \(d_m\) : plus petite distance de Hamming entre deux mots de code ; pour un code linéaire, plus petit poids d'un mot non nul.</li>
+        <li>Un code détecte \(d_m - 1\) erreurs ou en corrige \(t = \lfloor (d_m - 1)/2 \rfloor\). Il remplit \(\rho \le d_m - 1\) effacements, et remplit \(\rho\) effacements tout en corrigeant \(t\) erreurs si \(2t + \rho + 1 \le d_m\).</li>
+        <li>Code parfait : \(\sum_{j=0}^{t} C_n^j (q-1)^j = q^k\) ; en binaire, pour \(t = 1\) : \(1 + n = 2^k\) (code de Hamming \((7, 4)\)).</li>
+        <li>Code systématique : \(G = \begin{pmatrix} I_m \\ P \end{pmatrix}\), \(u = G\,a\) ; \(H = \begin{pmatrix} -P^T \\ I_{n-m} \end{pmatrix}\), soit \(H^T = (P \mid I_k)\) en binaire. \(c\) est un mot de code si et seulement si \(H^T c = 0\).</li>
+        <li>Syndrome \(s(y) = H^T y = H^T e\) : il ne dépend que de l'erreur. Une erreur simple en position \(i\) a pour syndrome la colonne \(i\) de \(H^T\).</li>
+        <li>Décodage : si \(s(y) = 0\), \(y\) est un mot de code ; sinon on lit dans la table la séquence \(z\) de poids minimal de syndrome \(s(y)\), et \(c = y + z\).</li>
+        <li>Code \((6, 3)\) : \(d_m = 3\), il corrige toutes les erreurs simples et une erreur double ; probabilité de mal décoder \(1 - \{(1-p)^6 + 6p(1-p)^5 + p^2(1-p)^4\}\).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Un code \((15, 11)\) : combien d'éb de contrôle, quel rendement ?</summary>
+        <div><p>\(k = 15 - 11 = 4\) éb de contrôle ; rendement \(11/15 \approx 0{,}73\), redondance \(4/15 \approx 0{,}27\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Le plus petit poids d'un mot non nul d'un code linéaire vaut 4. Combien d'erreurs détecte-t-il ? En corrige-t-il ?</summary>
+        <div><p>\(d_m = 4\) : il détecte 3 erreurs, ou en corrige \(\lfloor 3/2 \rfloor = 1\). Une erreur double est détectée mais pas corrigée.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi suffit-il de regarder les poids pour trouver la distance minimale d'un code linéaire ?</summary>
+        <div><p>Parce que \(d(c, c') = w(c + c')\) et que \(c + c'\) est encore un mot de code, non nul si \(c \ne c'\). Toute distance entre mots de code est le poids d'un mot de code.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi un code remplit-il plus d'effacements qu'il ne corrige d'erreurs ?</summary>
+        <div><p>Un effacement est une erreur dont on connaît la position : il suffit que les mots de code restent distincts sur les positions lues (\(\rho \le d_m - 1\)). Pour une erreur, il faut en plus deviner la position, ce qui coûte deux fois plus de distance (\(2t + 1 \le d_m\)).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que vaut \(H^T c\) pour un mot de code \(c\) ? Et \(H^T y\) pour \(y = c + e\) ?</summary>
+        <div><p>\(H^T c = 0\), car \(H^T G = -P + P = 0\). Et \(H^T y = H^T e\) : le syndrome ne dépend que de l'erreur, pas du mot émis.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Avec le code de Hamming des exercices 6 et 7, décoder 1011110.</summary>
+        <div><p>Syndrome : colonnes 1, 3, 4, 5 et 6 de \(H^T\), soit \(110 + 011 + 111 + 100 + 010 = 100\). C'est la colonne 5 : on corrige le cinquième éb, \(c = 1011010\), message 1011.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi le code \((6, 3)\) n'est-il pas parfait, alors que le code de Hamming \((7, 4)\) l'est ?</summary>
+        <div><p>Pour \(t = 1\), il faut \(1 + n = 2^k\). Code \((6, 3)\) : \(1 + 6 = 7 \ne 8\), un syndrome reste disponible (111). Code \((7, 4)\) : \(1 + 7 = 8 = 2^3\), tous les syndromes servent aux erreurs simples.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un décodeur par syndrome peut-il renvoyer un mauvais mot sans rien signaler ?</summary>
+        <div><p>Oui : quand l'erreur n'est pas celle que la table prévoit pour son syndrome (par exemple deux erreurs dans le code \((6, 3)\), hors 100100), il « corrige » vers un autre mot de code. Et si l'erreur est un mot de code non nul, le syndrome est nul et rien n'est détecté.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-02-codage-source.html"><small>← Précédent</small>Codage de source</a>
+    <a class="suivant" href="cours-03B-cdma.html"><small>Suivant →</small>Codes d'étalement et CDMA</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Codage · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

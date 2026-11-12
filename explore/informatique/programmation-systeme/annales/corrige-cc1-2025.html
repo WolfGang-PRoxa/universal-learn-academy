@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="se">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corrigé du CC1 2025 · Programmation système L3</title>
+<meta name="description" content="Corrigé du contrôle continu 1 de 2025 de programmation système (L3) : rôle d'un catalogue, table des blocs, défauts d'un verrou externe, interblocage, fonctions modif et ordinaire avec stat, verrou externe bloquant, verrous fcntl bloquant et non bloquant, avec les erreurs de la proposition de corrigé.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-cc1.html" title="Quiz · Annale CC1 2025">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="../generated_courses/index.html">Programmation système</a>
+    <span aria-current="page">Annale · Corrigé du CC1 2025</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Programmation système</span> Annale · CC1 2025 · L3 S5</p>
+    <h1>Corrigé du CC1 2025</h1>
+    <p class="chapeau">Le premier contrôle continu de 2025 porte sur les deux premiers cours : fichiers et catalogues, puis verrous. Cette page en propose un corrigé question par question, avec le code C attendu, et relève les erreurs de la « proposition de corrigé » qui accompagne le sujet dans le Drive.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="CC1.pdf">CC1.pdf</a> · 2 pages · proposition de corrigé, sans l'énoncé officiel</dd></div>
+      <div><dt>Cours</dt><dd><a href="../generated_courses/cours-01-fichiers-catalogues.html">cours 1, fichiers et catalogues</a> · <a href="../generated_courses/cours-02-verrous.html">cours 2, les verrous</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-29">29 sept. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Répondre en quelques lignes aux questions de cours : catalogue, organisation des blocs, verrou externe, interblocage.</li>
+        <li>Écrire une fonction qui interroge un fichier avec <code>stat</code> : son type, sa date de modification.</li>
+        <li>Écrire un programme complet qui protège un accès par un verrou externe, ou par un verrou <code>fcntl</code> bloquant ou non bloquant.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Notions utilisées</p>
+      <ul>
+        <li><a href="../generated_courses/cours-01-fichiers-catalogues.html">Cours 1</a> : SGF, catalogue, organisation des blocs, i-nœud, et la structure <code>stat</code> (rappelée aussi par le <a href="../TD/TD1.pdf">TD 1</a>).</li>
+        <li><a href="../generated_courses/cours-02-verrous.html">Cours 2</a> : verrous externes, interblocage, <code>fcntl</code> et <code>struct flock</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Remarque <span>Le sujet de cette annale</span></p>
+    <ul>
+      <li><a href="CC1.pdf">CC1.pdf</a> n'est pas l'énoncé officiel : c'est une « proposition » de corrigé, qui reprend les questions en abrégé et contient des erreurs.</li>
+      <li>Les questions 1 à 4 y sont écrites en entier. Pour les questions 5 à 7, seul le titre est donné : l'énoncé est reconstitué d'après la proposition et porte le badge <span class="badge a-verifier">À vérifier</span>.</li>
+      <li>Barème : 1 point pour chacune des questions 1 à 4, 3 points pour les questions 5 et 6 ; celui de la question 7 n'est pas indiqué.</li>
+      <li>Les solutions de cette page sont rédigées d'après le cours (« Solution proposée »), à essayer avant de les déplier. Après chaque question, un bloc « Attention » dit ce qu'il ne faut pas reprendre de la proposition.</li>
+    </ul>
+  </div>
+
+  <section>
+    <h2>Fichiers et catalogues <span class="ref">Q1–Q2 · 2 pts</span></h2>
+    <p>Les deux premières questions portent sur le CM 1 : comment le système de gestion de fichiers (SGF) retrouve un fichier à partir de son nom, puis comment il range les blocs de son contenu sur le disque.</p>
+
+    <div class="bloc exercice" id="q1">
+      <p class="bloc-titre">Question 1 <span>Rôle d'un catalogue · 1 pt</span></p>
+      <p>Quel est le rôle d'un catalogue ?</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Un <dfn>catalogue</dfn> (un répertoire, sous Unix) permet de désigner un fichier par un <strong>nom symbolique</strong> plutôt que par son emplacement. C'est une table qui associe à chaque nom l'<strong>adresse du fichier sur le support</strong>, c'est-à-dire en mémoire secondaire.</p>
+        <p>Sous Unix, une entrée de catalogue est un couple (nom, numéro d'<dfn>i-nœud</dfn>) ; l'i-nœud contient à son tour les caractéristiques du fichier et les adresses de ses blocs. Le SGF consulte le catalogue, par exemple à l'ouverture, pour retrouver le fichier à partir de son nom.</p>
+        <p>Les catalogues sont eux-mêmes des fichiers, organisés en arborescence : chacun contient <code>.</code> (lui-même) et <code>..</code> (son père).</p>
+      </details>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>« Une adresse mémoire »</span></p>
+      <p>La proposition répond : « associer un nom symbolique à une adresse mémoire ». L'idée est juste, mais le mot « mémoire » prête à confusion. Le fichier est sur le disque, et le catalogue donne son adresse sur ce support, pas une adresse en mémoire centrale. À l'examen, écrire « sur le disque » ou citer le numéro d'i-nœud.</p>
+    </div>
+
+    <div class="bloc exercice" id="q2">
+      <p class="bloc-titre">Question 2 <span>Table des blocs · 1 pt</span></p>
+      <p>Donnez un inconvénient de l'organisation des blocs d'un fichier par table des blocs.</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Avec une <dfn>table des blocs</dfn>, le numéro du bloc suivant n'est plus écrit dans chaque bloc : il est rangé dans une table, qui a une entrée par bloc du disque et qui est gardée <strong>en mémoire centrale</strong>. La FAT de MS-DOS en est un exemple.</p>
+        <p><strong>Inconvénient</strong> : pour un grand disque, la table est grande. Si elle ne tient pas en mémoire centrale, une partie reste en mémoire secondaire et le système doit échanger les deux parties (<span class="en" lang="en">swap</span>). Quand les blocs d'un fichier sont dispersés dans la table, les échanges se multiplient et le gain de rapidité disparaît.</p>
+        <p>On peut aussi citer un second défaut : la table ne règle pas le gaspillage du dernier bloc, qu'un fichier remplit rarement en entier.</p>
+        <table>
+          <caption>Inconvénients des trois organisations des blocs vues au CM 1</caption>
+          <thead><tr><th>Organisation</th><th>Principe</th><th>Inconvénients</th></tr></thead>
+          <tbody>
+            <tr><th>Blocs chaînés</th><td>chaque bloc contient l'adresse du suivant</td><td>il faut lire tous les blocs pour atteindre la fin du fichier (accès séquentiel seulement) ; place perdue dans chaque bloc et dans le dernier</td></tr>
+            <tr><th>Table des blocs</th><td>une table en mémoire centrale donne le bloc suivant</td><td>table trop grande pour la mémoire centrale : swap ; dernier bloc gaspillé</td></tr>
+            <tr><th>Bloc d'index</th><td>un bloc propre au fichier liste les adresses de ses blocs</td><td>dernier bloc gaspillé ; gestion plus complexe si l'on insère un bloc</td></tr>
+          </tbody>
+        </table>
+      </details>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Question laissée sans réponse</span></p>
+      <p>La proposition écrit seulement « TODO ». Ne pas répondre par le défaut d'une autre organisation : « il faut lire tous les blocs pour atteindre la fin » est celui des blocs chaînés, que la table des blocs corrige justement, puisqu'on suit la chaîne dans la table sans lire les données.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Verrous externes et interblocage <span class="ref">Q3–Q4 · 2 pts</span></h2>
+    <p>Les questions 3 et 4 portent sur le cours 2 : les limites de la façon la plus simple de verrouiller un fichier, puis le risque que fait courir toute attente de verrou.</p>
+
+    <div class="bloc exercice" id="q3">
+      <p class="bloc-titre">Question 3 <span>Défauts d'un verrou externe · 1 pt</span></p>
+      <p>Citez 3 défauts principaux d'un verrou externe.</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Un <dfn>verrou externe</dfn> est un fichier annexe, créé avec <code>open(…, O_CREAT|O_EXCL, 0)</code> et supprimé avec <code>unlink</code> : tant qu'il existe, le fichier qu'il protège est réservé. Les trois défauts que cite le cours :</p>
+        <ol>
+          <li><strong>Attente active</strong> : le processus qui attend boucle sur <code>open</code> et consomme du temps processeur pendant toute l'attente.</li>
+          <li><strong>Pas de notion de portée</strong> : le verrou porte toujours sur la totalité du fichier.</li>
+          <li><strong>Discipline</strong> : rien n'empêche un processus d'ouvrir le fichier sans passer par le verrou ; la protection repose sur le respect de la convention par tous les programmes.</li>
+        </ol>
+        <p>On peut aussi citer : il est toujours exclusif, donc deux lecteurs ne peuvent pas lire en même temps ; il reste orphelin si le processus meurt avant son <code>unlink</code> ; le système ne détecte pas les interblocages entre verrous externes.</p>
+      </details>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Le premier défaut oublié</span></p>
+      <p>La proposition cite l'interblocage non détecté, l'absence de verrou partagé et l'absence de portée. Les trois sont justes, mais elle oublie l'attente active, que le cours cite en premier. Mieux vaut donner les trois défauts du cours, et ajouter les autres s'il reste du temps.</p>
+    </div>
+
+    <div class="bloc exercice" id="q4">
+      <p class="bloc-titre">Question 4 <span>Verrous bloquants · 1 pt</span></p>
+      <p>Quel problème peut-il advenir avec des verrous bloquants ? Est-il détectable par le SGF ?</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Des verrous bloquants peuvent provoquer un <dfn>interblocage</dfn> (<span class="en" lang="en">deadlock</span>) : un cycle d'attentes où chaque processus attend un verrou détenu par un autre. Par exemple, P1 tient l'enregistrement 0 et attend le 1, pendant que P2 tient le 1 et attend le 0. Endormis tous les deux, ni l'un ni l'autre ne lèvera son verrou.</p>
+        <p><strong>Oui, pour les verrous posés avec <code>fcntl</code></strong> : le système détecte le cycle. La demande <code>F_SETLKW</code> qui le fermerait échoue aussitôt, <code>fcntl</code> renvoie −1 avec <code>errno</code> égal à <code>EDEADLK</code>, au lieu d'endormir le processus. Celui-ci peut alors lever ses verrous et réessayer plus tard.</p>
+        <p>Avec des verrous externes, en revanche, le système ne voit que des fichiers : il ne détecte rien, et les deux processus bouclent sans fin.</p>
+      </details>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>« Pas détectable par le SGF »</span></p>
+      <p>La proposition répond que l'interblocage n'est pas détectable : c'est faux pour les verrous internes, que <code>fcntl</code> contrôle avec l'erreur <code>EDEADLK</code>. Sa formulation, « les verrous peuvent se bloquer entre eux », est aussi imprécise : ce sont les processus qui s'attendent mutuellement.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Interroger un fichier avec stat <span class="ref">Q5–Q6 · 6 pts</span></h2>
+    <p>Les questions 5 et 6 demandent chacune une fonction C. Toutes deux reposent sur <code>stat</code>, qui lit les caractéristiques d'une référence, c'est-à-dire son i-nœud, sans ouvrir le fichier.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les champs de struct stat utiles au CC1</span></p>
+      <p><code>stat(nom, &amp;info)</code> remplit la structure <code>info</code> et renvoie 0, ou −1 si la référence n'existe pas ; <code>lstat</code> fait de même sans suivre les liens symboliques.</p>
+      <table>
+        <caption>Quelques champs de struct stat</caption>
+        <thead><tr><th>Champ</th><th>Contenu</th></tr></thead>
+        <tbody>
+          <tr><th><code>st_mode</code></th><td>type de la référence (4 bits de poids fort, isolés par <code>&amp; S_IFMT</code>) et droits</td></tr>
+          <tr><th><code>st_mtime</code></th><td>date de la dernière modification du contenu</td></tr>
+          <tr><th><code>st_atime</code></th><td>date du dernier accès</td></tr>
+          <tr><th><code>st_ctime</code></th><td>date du dernier changement de l'i-nœud (droits, liens…)</td></tr>
+          <tr><th><code>st_size</code></th><td>taille en octets</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc exercice" id="q5">
+      <p class="bloc-titre">Question 5 <span>Fonction modif · 3 pts</span></p>
+      <p><span class="badge a-verifier">À vérifier</span> Écrire une fonction <code>int modif(char *nom)</code> qui renvoie 1 si le fichier <code>nom</code> est modifié pendant les 10 secondes qui suivent l'appel, 0 sinon, et −1 si le fichier n'existe pas.</p>
+      <p>Énoncé reconstitué : le PDF donne seulement « écrivez une fonction modif », et sa réponse relève la date de modification, attend 10 secondes avec <code>sleep(10)</code> et la relève de nouveau.</p>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>La structure <code>stat</code> contient la date de la dernière modification du contenu. Il suffit de la relever avant et après l'attente.</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+<pre data-fichier="modif.c"><code class="language-c">#include &lt;sys/stat.h&gt;
+#include &lt;time.h&gt;
+#include &lt;unistd.h&gt;
+
+int modif(char *nom)
+{
+    struct stat info;
+    time_t avant;
+
+    if (stat(nom, &amp;info) == -1)     /* référence absente */
+        return -1;
+    avant = info.st_mtime;          /* date de dernière modification */
+    sleep(10);
+    if (stat(nom, &amp;info) == -1)     /* supprimé pendant l'attente */
+        return -1;
+    return info.st_mtime != avant;
+}</code></pre>
+        <ul>
+          <li>Pas besoin d'ouvrir le fichier : <code>stat</code> travaille sur le nom et renvoie −1 si la référence n'existe pas.</li>
+          <li><code>st_mtime</code> est le bon champ. Comparer <code>st_size</code> ne suffit pas, car un fichier peut être réécrit sans changer de taille ; <code>st_atime</code> et <code>st_ctime</code> datent d'autres événements.</li>
+          <li><code>info.st_mtime != avant</code> vaut 1 ou 0, exactement la valeur à renvoyer. <code>difftime(apres, avant) != 0</code> convient aussi.</li>
+          <li><code>st_mtime</code> est précis à la seconde : une modification faite dans la même seconde que la précédente passerait inaperçue.</li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Ce qui ne compile pas dans la proposition</span></p>
+      <p>L'idée de la proposition est la bonne, mais son code ne compile pas :</p>
+      <ul>
+        <li><code>0_READ</code>, écrit avec un zéro, n'existe pas : c'est <code>O_RDONLY</code>. L'<code>open</code> est d'ailleurs inutile, et le descripteur n'est jamais fermé.</li>
+        <li><code>stat.l_mtime</code> confond la fonction <code>stat</code> avec la variable <code>info</code>, et les préfixes : le champ s'appelle <code>info.st_mtime</code> ; <code>l_</code> est le préfixe des champs de <code>struct flock</code>.</li>
+        <li><code>close(fd)</code> quand <code>fd</code> vaut −1 ne sert à rien.</li>
+      </ul>
+    </div>
+
+    <div class="bloc exercice" id="q6">
+      <p class="bloc-titre">Question 6 <span>Fonction ordinaire · 3 pts</span></p>
+      <p><span class="badge a-verifier">À vérifier</span> Écrire une fonction <code>int ordinaire(char *nom)</code> qui renvoie 1 si la référence <code>nom</code> désigne un fichier ordinaire, 0 si elle désigne autre chose (un catalogue, un lien…), et −1 si elle n'existe pas.</p>
+      <p>Énoncé reconstitué d'après la réponse du PDF, qui compare le type de la référence à <code>S_IFREG</code>.</p>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Le type est dans <code>st_mode</code>. <code>&lt;sys/stat.h&gt;</code> définit le masque <code>S_IFMT</code>, qui l'isole, et la valeur <code>S_IFREG</code> du fichier ordinaire.</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+<pre data-fichier="ordinaire.c"><code class="language-c">#include &lt;sys/stat.h&gt;
+
+int ordinaire(char *nom)
+{
+    struct stat info;
+
+    if (stat(nom, &amp;info) == -1)     /* référence absente */
+        return -1;
+    return (info.st_mode &amp; S_IFMT) == S_IFREG;
+}</code></pre>
+        <ul>
+          <li>Les parenthèses sont indispensables : <code>==</code> est prioritaire sur <code>&amp;</code>, et <code>info.st_mode &amp; S_IFMT == S_IFREG</code> vaudrait toujours 0.</li>
+          <li>Le type est un code sur 4 bits, pas un ensemble de bits indépendants : on l'isole avec <code>&amp; S_IFMT</code>, puis on le compare. Tester seulement <code>info.st_mode &amp; S_IFREG</code> ne suffit pas. La macro <code>S_ISREG(info.st_mode)</code> fait la même comparaison.</li>
+          <li><code>stat</code> suit les liens symboliques : pour un lien vers un fichier ordinaire, la fonction renvoie 1. Pour savoir si la référence est elle-même un lien, il faut <code>lstat</code>.</li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Les mêmes fautes qu'à la question 5</span></p>
+      <p>La proposition ouvre le fichier pour rien, avec <code>0_READ</code>, puis lit <code>stat.l_mode</code> au lieu de <code>info.st_mode</code>. Il lui manque aussi l'en-tête de la fonction, <code>int ordinaire(char *nom)</code>.</p>
+    </div>
+
+    <details class="depliant">
+      <summary>Essayer modif et ordinaire</summary>
+      <p>Ce programme regroupe les deux fonctions et appelle celle que l'on nomme sur la ligne de commande.</p>
+<pre data-fichier="test_stat.c"><code class="language-c">/* Essai des fonctions modif (question 5) et ordinaire (question 6) */
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;time.h&gt;
+#include &lt;unistd.h&gt;
+
+int modif(char *nom)
+{
+    struct stat info;
+    time_t avant;
+
+    if (stat(nom, &amp;info) == -1)     /* référence absente */
+        return -1;
+    avant = info.st_mtime;          /* date de dernière modification */
+    sleep(10);
+    if (stat(nom, &amp;info) == -1)     /* supprimé pendant l'attente */
+        return -1;
+    return info.st_mtime != avant;
+}
+
+int ordinaire(char *nom)
+{
+    struct stat info;
+
+    if (stat(nom, &amp;info) == -1)     /* référence absente */
+        return -1;
+    return (info.st_mode &amp; S_IFMT) == S_IFREG;
+}
+
+int main(int nb_arg, char *tab_arg[])
+{
+    if (nb_arg != 3) {
+        fprintf(stderr, "Usage : %s ordinaire|modif &lt;reference&gt;\n",
+                tab_arg[0]);
+        return 1;
+    }
+    if (strcmp(tab_arg[1], "ordinaire") == 0)
+        printf("ordinaire(%s) = %d\n", tab_arg[2],
+               ordinaire(tab_arg[2]));
+    else
+        printf("modif(%s) = %d\n", tab_arg[2], modif(tab_arg[2]));
+    return 0;
+}</code></pre>
+<pre class="terminal"><code>$ gcc -Wall -o test_stat test_stat.c
+$ echo CC1 &gt; notes.txt
+$ mkdir annales
+$ ./test_stat ordinaire notes.txt
+ordinaire(notes.txt) = 1
+$ ./test_stat ordinaire annales
+ordinaire(annales) = 0
+$ ./test_stat ordinaire absent.txt
+ordinaire(absent.txt) = -1
+$ ./test_stat modif absent.txt
+modif(absent.txt) = -1
+$ ./test_stat modif notes.txt
+modif(notes.txt) = 0</code></pre>
+      <p>Pour voir <code>modif</code> renvoyer 1, relancer <code>./test_stat modif notes.txt</code> et, pendant les 10 secondes d'attente, modifier le fichier depuis un second terminal :</p>
+<pre class="terminal"><code>$ echo ajout &gt;&gt; notes.txt</code></pre>
+      <p>Le premier terminal affiche alors <code>modif(notes.txt) = 1</code>. Ces sorties ont été obtenues en compilant le programme avec gcc.</p>
+    </details>
+  </section>
+
+  <section>
+    <h2>Verrous en C <span class="ref">Q7 a–c</span></h2>
+    <p>La question 7 fait écrire trois programmes qui accèdent au même fichier sous la protection d'un verrou : un verrou externe pour tout le fichier, puis deux verrous <code>fcntl</code> sur une partie seulement, l'un bloquant, l'autre non.</p>
+    <p><span class="badge a-verifier">À vérifier</span> Le PDF ne donne que le titre de chaque partie. Les noms <code>Fichier_CC1</code> et <code>Fichier_CC1.lck</code> sont repris de la proposition ; les octets sont numérotés à partir de 0 et les bornes comptées comme incluses.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 600 150" width="600" role="img" aria-labelledby="fig-zones-titre">
+        <title id="fig-zones-titre">Les octets 0 à 29 du fichier : la question 7 b verrouille les octets 10 à 18, la question 7 c les octets 20 à 28</title>
+        <rect class="boite" x="30" y="52" width="18" height="26"/>
+        <rect class="boite" x="48" y="52" width="18" height="26"/>
+        <rect class="boite" x="66" y="52" width="18" height="26"/>
+        <rect class="boite" x="84" y="52" width="18" height="26"/>
+        <rect class="boite" x="102" y="52" width="18" height="26"/>
+        <rect class="boite" x="120" y="52" width="18" height="26"/>
+        <rect class="boite" x="138" y="52" width="18" height="26"/>
+        <rect class="boite" x="156" y="52" width="18" height="26"/>
+        <rect class="boite" x="174" y="52" width="18" height="26"/>
+        <rect class="boite" x="192" y="52" width="18" height="26"/>
+        <rect class="boite-accent" x="210" y="52" width="18" height="26"/>
+        <rect class="boite-accent" x="228" y="52" width="18" height="26"/>
+        <rect class="boite-accent" x="246" y="52" width="18" height="26"/>
+        <rect class="boite-accent" x="264" y="52" width="18" height="26"/>
+        <rect class="boite-accent" x="282" y="52" width="18" height="26"/>
+        <rect class="boite-accent" x="300" y="52" width="18" height="26"/>
+        <rect class="boite-accent" x="318" y="52" width="18" height="26"/>
+        <rect class="boite-accent" x="336" y="52" width="18" height="26"/>
+        <rect class="boite-accent" x="354" y="52" width="18" height="26"/>
+        <rect class="boite" x="372" y="52" width="18" height="26"/>
+        <rect class="boite-accent" x="390" y="52" width="18" height="26"/>
+        <rect class="boite-accent" x="408" y="52" width="18" height="26"/>
+        <rect class="boite-accent" x="426" y="52" width="18" height="26"/>
+        <rect class="boite-accent" x="444" y="52" width="18" height="26"/>
+        <rect class="boite-accent" x="462" y="52" width="18" height="26"/>
+        <rect class="boite-accent" x="480" y="52" width="18" height="26"/>
+        <rect class="boite-accent" x="498" y="52" width="18" height="26"/>
+        <rect class="boite-accent" x="516" y="52" width="18" height="26"/>
+        <rect class="boite-accent" x="534" y="52" width="18" height="26"/>
+        <rect class="boite" x="552" y="52" width="18" height="26"/>
+        <text x="39" y="94" text-anchor="middle" class="t2 mono">0</text>
+        <text x="219" y="94" text-anchor="middle" class="t2 mono">10</text>
+        <text x="363" y="94" text-anchor="middle" class="t2 mono">18</text>
+        <text x="399" y="94" text-anchor="middle" class="t2 mono">20</text>
+        <text x="543" y="94" text-anchor="middle" class="t2 mono">28</text>
+        <path class="trait" d="M210 50 V44 H372 V50"/>
+        <path class="trait" d="M390 100 V106 H552 V100"/>
+        <text x="291" y="18" text-anchor="middle" class="gras">7 b · écriture · F_WRLCK · F_SETLKW</text>
+        <text x="291" y="36" text-anchor="middle" class="t2 mono">l_start = 10, l_len = 9</text>
+        <text x="471" y="124" text-anchor="middle" class="gras">7 c · lecture · F_RDLCK · F_SETLK</text>
+        <text x="471" y="142" text-anchor="middle" class="t2 mono">l_start = 20, l_len = 9</text>
+      </svg>
+      <figcaption>Les deux zones de la question 7. De l'octet 10 à l'octet 18 inclus, il y a 18 − 10 + 1 = 9 octets : <code>l_len</code> vaut 9, et non 8.</figcaption>
+    </figure>
+
+    <table>
+      <caption>Les choix à faire pour un verrou fcntl</caption>
+      <thead><tr><th>Champ ou argument</th><th>Valeurs</th><th>Règle</th></tr></thead>
+      <tbody>
+        <tr><th><code>l_type</code></th><td><code>F_RDLCK</code>, <code>F_WRLCK</code>, <code>F_UNLCK</code></td><td>partagé pour lire, exclusif pour écrire, <code>F_UNLCK</code> pour lever ; le fichier doit être ouvert en lecture pour <code>F_RDLCK</code>, en écriture pour <code>F_WRLCK</code>, sinon <code>EBADF</code></td></tr>
+        <tr><th><code>l_whence</code>, <code>l_start</code>, <code>l_len</code></th><td><code>SEEK_SET</code>, premier octet, nombre d'octets</td><td>la zone va de <code>l_start</code> à <code>l_start + l_len − 1</code> ; <code>l_len = 0</code> va jusqu'à la fin du fichier</td></tr>
+        <tr><th>Opération</th><td><code>F_SETLKW</code>, <code>F_SETLK</code>, <code>F_GETLK</code></td><td><code>F_SETLKW</code> attend que la zone soit libre ; <code>F_SETLK</code> échoue aussitôt avec <code>EAGAIN</code> ou <code>EACCES</code> ; <code>F_GETLK</code> ne fait que tester</td></tr>
+      </tbody>
+    </table>
+
+    <div class="bloc exercice" id="q7a">
+      <p class="bloc-titre">Question 7 a <span>Verrou externe bloquant</span></p>
+      <p>Écrire dans tout le fichier avec un verrou externe bloquant.</p>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Il faut un <code>open</code> qui échoue si le fichier verrou existe déjà, de façon à tester et à créer en un seul appel. Tant que l'échec est dû à <code>EEXIST</code>, on recommence.</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+<pre data-fichier="ecrire_externe.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(void)
+{
+    char *ref_fichier = "Fichier_CC1";
+    char *ref_verrou  = "Fichier_CC1.lck";
+    char *texte = "Ecriture protegee par un verrou externe\n";
+    int d_verrou, d_fich;
+
+    /* 1. Poser le verrou : attendre que la création réussisse */
+    while ((d_verrou = open(ref_verrou, O_CREAT | O_EXCL, 0)) == -1
+           &amp;&amp; errno == EEXIST)
+        ;
+    if (d_verrou == -1) {           /* échec autre que EEXIST */
+        perror(ref_verrou);
+        return 1;
+    }
+    close(d_verrou);                /* seule son existence compte */
+
+    /* 2. Écrire dans le fichier protégé */
+    if ((d_fich = open(ref_fichier, O_WRONLY)) == -1) {
+        perror(ref_fichier);
+        unlink(ref_verrou);         /* pas de verrou orphelin */
+        return 1;
+    }
+    write(d_fich, texte, strlen(texte));
+    close(d_fich);
+
+    /* 3. Lever le verrou */
+    unlink(ref_verrou);
+    return 0;
+}</code></pre>
+        <ul>
+          <li>Tout repose sur <code>O_CREAT | O_EXCL</code> : <code>open</code> échoue avec <code>EEXIST</code> si le fichier verrou existe déjà. Le test et la création se font en un seul appel système, et un seul processus peut réussir.</li>
+          <li>Le fichier verrou n'est jamais écrit : on ferme aussitôt son descripteur. Le verrou se lève en supprimant ce fichier avec <code>unlink</code>.</li>
+          <li>Le test qui suit la boucle arrête le programme si <code>open</code> a échoué pour une autre raison, par exemple <code>EACCES</code>, au lieu de continuer sans verrou.</li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Une boucle qui ne protège rien</span></p>
+      <ul>
+        <li>Sans <code>O_EXCL</code>, <code>open(…, O_CREAT | …)</code> ouvre un fichier existant sans échouer : tous les processus passent, et la boucle de la proposition ne protège rien.</li>
+        <li><code>0_EEXIT</code> s'écrit <code>EEXIST</code>, et <code>0_WRITE</code> n'existe pas (<code>O_WRONLY</code>).</li>
+        <li>Les parenthèses sont mal placées : <code>fd</code> reçoit le résultat de la comparaison <code>open(…) == -1</code>, et <code>int fd</code> ne peut pas être déclaré dans la condition d'un <code>while</code>.</li>
+        <li>La proposition n'écrit rien dans le fichier et ne lève jamais le verrou.</li>
+      </ul>
+    </div>
+
+    <div class="bloc exercice" id="q7b">
+      <p class="bloc-titre">Question 7 b <span>Verrou interne bloquant</span></p>
+      <p>Écrire de l'octet 10 à l'octet 18 avec un verrou interne bloquant.</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+<pre data-fichier="ecrire_interne.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(void)
+{
+    char *ref_fichier = "Fichier_CC1";
+    char texte[9] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I' };
+    struct flock verrou;
+    int fd;
+
+    if ((fd = open(ref_fichier, O_WRONLY)) == -1) {
+        perror(ref_fichier);
+        return 1;
+    }
+
+    /* Poser un verrou exclusif sur les octets 10 à 18 inclus */
+    verrou.l_type   = F_WRLCK;      /* on écrit : verrou exclusif */
+    verrou.l_whence = SEEK_SET;     /* depuis le début du fichier */
+    verrou.l_start  = 10;
+    verrou.l_len    = 9;            /* 18 - 10 + 1 octets */
+    /* bloquant : attend que la zone soit libre */
+    if (fcntl(fd, F_SETLKW, &amp;verrou) == -1) {
+        perror("fcntl");            /* EDEADLK ou EINTR */
+        close(fd);
+        return 1;
+    }
+
+    /* Section critique : écrire les octets 10 à 18 */
+    lseek(fd, 10, SEEK_SET);
+    write(fd, texte, 9);
+
+    /* Lever le verrou */
+    verrou.l_type = F_UNLCK;
+    fcntl(fd, F_SETLK, &amp;verrou);
+    close(fd);
+    return 0;
+}</code></pre>
+        <ul>
+          <li>Pour écrire, il faut un verrou exclusif (<code>F_WRLCK</code>) sur un fichier ouvert en écriture.</li>
+          <li><code>F_SETLKW</code> endort le processus tant qu'un autre tient un verrou incompatible sur une partie de la zone. Il peut quand même échouer : <code>EDEADLK</code> si l'attente créerait un interblocage, <code>EINTR</code> si un signal l'interrompt.</li>
+          <li>Le verrou ne fixe pas la position d'écriture : il faut encore <code>lseek</code> jusqu'à l'octet 10.</li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Une levée qui ne lève rien</span></p>
+      <ul>
+        <li><code>l_len = 8</code> s'arrête à l'octet 17 : de 10 à 18 inclus, il y a 9 octets.</li>
+        <li><code>l_whence</code> et <code>l_type</code> sont laissés vides, et rien n'est écrit dans la zone verrouillée.</li>
+        <li><code>F_GETLK</code> ne lève pas le verrou : il indique seulement si un verrou pourrait être posé. Pour lever, on passe <code>l_type</code> à <code>F_UNLCK</code> et on appelle <code>fcntl</code> avec <code>F_SETLK</code>. Dans la proposition, le verrou ne disparaît qu'au <code>close</code>.</li>
+      </ul>
+    </div>
+
+    <div class="bloc exercice" id="q7c">
+      <p class="bloc-titre">Question 7 c <span>Verrou interne non bloquant</span></p>
+      <p>Lire de l'octet 20 à l'octet 28 avec un verrou interne non bloquant.</p>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Pour lire, un verrou partagé suffit. Non bloquant veut dire que <code>fcntl</code> renvoie −1 au lieu d'attendre : il faut donc tester son résultat avant de lire.</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+<pre data-fichier="lire_interne.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(void)
+{
+    char *ref_fichier = "Fichier_CC1";
+    char tampon[9];
+    struct flock verrou;
+    int fd, n;
+
+    if ((fd = open(ref_fichier, O_RDONLY)) == -1) {
+        perror(ref_fichier);
+        return 1;
+    }
+
+    /* Verrou partagé sur les octets 20 à 28 inclus, sans attendre */
+    verrou.l_type   = F_RDLCK;      /* on lit : verrou partagé */
+    verrou.l_whence = SEEK_SET;
+    verrou.l_start  = 20;
+    verrou.l_len    = 9;            /* 28 - 20 + 1 octets */
+    /* non bloquant : échoue aussitôt si la zone est prise */
+    if (fcntl(fd, F_SETLK, &amp;verrou) == -1) {
+        if (errno == EAGAIN || errno == EACCES)
+            fprintf(stderr, "Zone occupee : lecture abandonnee\n");
+        else
+            perror("fcntl");
+        close(fd);
+        return 1;
+    }
+
+    /* Section critique : lire les octets 20 à 28 */
+    lseek(fd, 20, SEEK_SET);
+    n = read(fd, tampon, 9);
+    if (n &gt; 0)
+        printf("%.*s\n", n, tampon);
+
+    /* Lever le verrou */
+    verrou.l_type = F_UNLCK;
+    fcntl(fd, F_SETLK, &amp;verrou);
+    close(fd);
+    return 0;
+}</code></pre>
+        <ul>
+          <li>Un verrou partagé (<code>F_RDLCK</code>) demande un fichier ouvert en lecture : <code>O_RDONLY</code> suffit. Avec <code>O_WRONLY</code>, <code>fcntl</code> échouerait avec <code>EBADF</code>.</li>
+          <li>Si un autre processus tient un verrou exclusif sur une partie de la zone, <code>F_SETLK</code> renvoie aussitôt −1 avec <code>EAGAIN</code> ou <code>EACCES</code> : la norme autorise les deux, Linux renvoie <code>EAGAIN</code>.</li>
+          <li>Le programme abandonne ici. Il pourrait aussi réessayer plus tard, par exemple après un <code>sleep(1)</code>, ce qui revient à une attente active.</li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Non bloquant sans test</span></p>
+      <ul>
+        <li>La proposition recopie <code>l_start = 10</code> et <code>l_len = 8</code> de la question b : la zone doit commencer à l'octet 20 et compter 9 octets.</li>
+        <li>Elle ne teste pas le résultat de <code>fcntl(fd, F_SETLK, …)</code> : si la zone est prise, le programme continuerait sans verrou.</li>
+        <li>Elle ne lit rien, et lève le verrou avec <code>F_GETLK</code>, comme à la question b.</li>
+      </ul>
+    </div>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Essais des programmes de la question 7</span></p>
+      <p><code>ecrire_externe.c</code> a été compilé et exécuté sous Windows. Un second écrivain, lancé pendant qu'un fichier verrou existait, a attendu sa suppression avant d'écrire. Pour cet essai, le fichier verrou était créé avec le mode <code>0644</code> au lieu de 0, car Windows refuse de supprimer un fichier en lecture seule ; sous Linux, le mode 0 du cours convient.</p>
+      <p>Sous Windows, <code>open</code> a parfois échoué avec <code>EACCES</code> au lieu de <code>EEXIST</code> pendant la suppression du fichier verrou : le test qui suit la boucle a alors arrêté le programme sans écrire, comme prévu. Sous Linux, <code>unlink</code> retire le nom d'un seul coup, et ce cas ne se produit pas.</p>
+      <p><code>ecrire_interne.c</code> et <code>lire_interne.c</code> ont seulement été compilés, <code>fcntl</code> n'existant pas sous Windows. Ils sont à essayer sous Linux, par exemple en lançant <code>lire_interne</code> pendant qu'un autre processus tient les octets 20 à 28.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Un catalogue associe un nom symbolique à l'adresse du fichier sur le disque ; sous Unix, une entrée est un couple (nom, numéro d'i-nœud).</li>
+        <li>La table des blocs est gardée en mémoire centrale : trop grande, elle part en swap. Les blocs chaînés imposent de tout lire pour atteindre la fin du fichier.</li>
+        <li>Verrou externe : <code>open(verrou, O_CREAT|O_EXCL, 0)</code> en boucle tant que <code>errno == EEXIST</code>, puis <code>unlink</code> pour lever. Défauts : attente active, pas de portée, discipline.</li>
+        <li>Les verrous bloquants exposent à l'interblocage. <code>fcntl</code> le détecte et renvoie <code>EDEADLK</code> ; avec des verrous externes, rien ne le détecte.</li>
+        <li><code>stat</code> lit l'i-nœud sans ouvrir le fichier : le type s'obtient par <code>(st_mode &amp; S_IFMT) == S_IFREG</code>, entre parenthèses, et la date de modification par <code>st_mtime</code>.</li>
+        <li><code>F_RDLCK</code> pour lire, sur un fichier ouvert en lecture ; <code>F_WRLCK</code> pour écrire, sur un fichier ouvert en écriture. La zone compte <code>l_len</code> = dernier octet − premier octet + 1.</li>
+        <li><code>F_SETLKW</code> attend ; <code>F_SETLK</code> échoue aussitôt, et son résultat doit être testé. On lève avec <code>F_UNLCK</code> et <code>F_SETLK</code>, jamais avec <code>F_GETLK</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi un verrou externe doit-il être créé avec <code>O_EXCL</code> ?</summary>
+        <div><p>Sans <code>O_EXCL</code>, <code>open</code> ouvre un fichier existant sans échouer : tous les processus croiraient avoir le verrou. Avec <code>O_CREAT|O_EXCL</code>, le test d'existence et la création se font en un seul appel, et un seul processus peut réussir.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quels <code>l_start</code> et <code>l_len</code> pour verrouiller les octets 100 à 199 inclus ?</summary>
+        <div><p><code>l_start = 100</code> et <code>l_len = 100</code>, avec <code>l_whence = SEEK_SET</code> : de 100 à 199, il y a 199 − 100 + 1 = 100 octets.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que fait <code>fcntl(fd, F_GETLK, &amp;verrou)</code> ?</summary>
+        <div><p>Il teste si le verrou décrit pourrait être posé, sans le poser ni en lever aucun. Si un verrou incompatible existe, il le décrit dans la structure ; sinon, il met <code>l_type</code> à <code>F_UNLCK</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi comparer <code>st_mtime</code> plutôt que <code>st_size</code> pour savoir si un fichier a été modifié ?</summary>
+        <div><p>Un fichier peut être réécrit sans changer de taille. <code>st_mtime</code> change à chaque modification du contenu, à la seconde près.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un processus ouvre un fichier avec <code>O_WRONLY</code> et demande un verrou <code>F_RDLCK</code>. Que se passe-t-il ?</summary>
+        <div><p><code>fcntl</code> échoue avec <code>EBADF</code> : un verrou partagé demande un fichier ouvert en lecture (<code>O_RDONLY</code> ou <code>O_RDWR</code>).</p></div>
+      </details>
+      <details class="carte">
+        <summary>P1 tient l'octet 0 et attend l'octet 1 avec <code>F_SETLKW</code> ; P2 tient l'octet 1 et demande l'octet 0 avec <code>F_SETLKW</code>. Que renvoie la demande de P2 ?</summary>
+        <div><p>−1, avec <code>errno</code> égal à <code>EDEADLK</code> : elle fermerait un cycle d'attentes. P1 reste endormi jusqu'à ce que P2 lève son verrou sur l'octet 1.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="../generated_courses/cours-02-verrous.html"><small>← Précédent</small>Cours 2 · Les verrous sur les fichiers</a>
+    <a class="suivant" href="../generated_quizzes/quiz-annale-cc1.html"><small>Suivant →</small>Quiz · Annale du CC1 2025</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Programmation système · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

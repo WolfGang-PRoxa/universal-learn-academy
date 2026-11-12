@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · PL/pgSQL et triggers · Bases de données L3</title>
+<meta name="description" content="Quiz interactif de bases de données (L3) : fonctions PL/pgSQL, boucles, types de retour, exceptions et triggers, avec du code exécuté sur la base Dingo Fringo.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/quiz/assets/quiz.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/langues/pgsql.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/quiz/assets/quiz.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="../generated_courses/index.html">Bases de données</a>
+    <span aria-current="page">Quiz · PL/pgSQL et triggers</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> Quiz · L3 S5</p>
+    <h1>PL/pgSQL et triggers : écrire du code</h1>
+    <p class="chapeau">Treize questions, dont dix écritures de code exécutées sur la base Dingo Fringo : conditions et boucles, <code>RETURN QUERY</code> et <code>RETURN NEXT</code>, exceptions dans une boucle, triggers de contrôle, de journal et de suppression.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-03-sql-avance-plpgsql.html#le-langage-pl-pgsql">Cours 3 · Le langage PL/pgSQL</a>, <a href="../generated_courses/cours-03-sql-avance-plpgsql.html#les-triggers">Les triggers</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-01">1<sup>er</sup> nov. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "bd-plpgsql-triggers",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 3 · SQL avancé et PL/pgSQL",
+      "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html"
+    }
+  ],
+  "jeux": {
+    "dingo": {
+      "titre": "Dingo Fringo (base du cours 3)",
+      "description": "<p>La base d'exemple du cours 3 : <code>vendeurs(<u>id</u>, nom, #id_parrain)</code>, six vendeurs reliés par le parrainage, Julie au sommet, et <code>articles(<u>id</u>, nom, categorie, prix, #id_vendeur, date_vente)</code>, douze articles vendus de janvier à mars 2024 dans trois catégories (Vêtements, Chaussures, Accessoires).</p>",
+      "script": "CREATE TABLE vendeurs (\n    id          INT PRIMARY KEY,\n    nom         VARCHAR(50),\n    id_parrain  INT REFERENCES vendeurs (id)\n);\n\nCREATE TABLE articles (\n    id          INT PRIMARY KEY,\n    nom         VARCHAR(100),\n    categorie   VARCHAR(30),\n    prix        NUMERIC(6,2),\n    id_vendeur  INT REFERENCES vendeurs (id),\n    date_vente  DATE\n);\n\nINSERT INTO vendeurs VALUES\n    (1, 'Julie', NULL),\n    (2, 'Marc', 1),\n    (3, 'Sophie', 1),\n    (4, 'Karim', 2),\n    (5, 'Lea', 2),\n    (6, 'Nadia', 3);\n\nINSERT INTO articles VALUES\n    (1,  'Jean Levis',         'Vêtements',   25.00, 1, '2024-01-10'),\n    (2,  'Robe fleurie',       'Vêtements',   18.00, 2, '2024-01-15'),\n    (3,  'Manteau laine',      'Vêtements',   45.00, 3, '2024-02-05'),\n    (4,  'T-shirt Nike',       'Vêtements',   12.00, 4, '2024-02-20'),\n    (5,  'Pull col roulé',     'Vêtements',   18.00, 5, '2024-03-01'),\n    (6,  'Baskets Adidas',     'Chaussures',  30.00, 1, '2024-01-12'),\n    (7,  'Bottines cuir',      'Chaussures',  40.00, 2, '2024-02-08'),\n    (8,  'Sandales été',       'Chaussures',  15.00, 3, '2024-03-10'),\n    (9,  'Sac à main vintage', 'Accessoires', 22.00, 4, '2024-01-25'),\n    (10, 'Écharpe laine',      'Accessoires',  9.00, 5, '2024-02-14'),\n    (11, 'Ceinture cuir',      'Accessoires',  9.00, 6, '2024-03-05'),\n    (12, 'Chapeau feutre',     'Accessoires', 14.00, 1, '2024-03-20');\n"
+    }
+  },
+  "questions": [
+    {
+      "id": "q01",
+      "type": "code",
+      "theme": "Fonctions et boucles",
+      "difficulte": 1,
+      "enonce": "<p>Écrire la fonction <code>f_commission(p_prix numeric)</code> : la commission vaut 5 % du prix en dessous de 15 €, 10 % de 15 € inclus à 30 € exclu, et 15 % à partir de 30 €. Elle est arrondie à deux décimales.</p>",
+      "langage": "sql",
+      "jeu": "dingo",
+      "ordre": true,
+      "depart": "CREATE FUNCTION f_commission (p_prix numeric) RETURNS numeric AS $$\nBEGIN\n\nEND;\n$$ LANGUAGE plpgsql;\n\nSELECT id, prix, f_commission(prix) AS commission FROM articles ORDER BY id;",
+      "solution": "CREATE FUNCTION f_commission (p_prix numeric) RETURNS numeric AS $$\nBEGIN\n    IF p_prix < 15 THEN\n        RETURN ROUND(p_prix * 0.05, 2);\n    ELSIF p_prix < 30 THEN\n        RETURN ROUND(p_prix * 0.10, 2);\n    ELSE\n        RETURN ROUND(p_prix * 0.15, 2);\n    END IF;\nEND;\n$$ LANGUAGE plpgsql;\n\nSELECT id, prix, f_commission(prix) AS commission FROM articles ORDER BY id;",
+      "explication": "<p><code>IF … ELSIF … ELSE</code> s'arrête à la première condition vraie : il suffit de tester les seuils dans l'ordre. Les bornes sont le piège : un article à 15 € relève de 10 %, un article à 30 € de 15 %, d'où les comparaisons strictes.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Conditions et boucles",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#conditions-et-boucles"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "code",
+      "theme": "Fonctions et boucles",
+      "difficulte": 1,
+      "enonce": "<p>Écrire la fonction <code>f_ca_entre(p_id integer, p_debut date, p_fin date)</code>, qui renvoie la somme des prix des articles vendus par le vendeur <code>p_id</code> entre deux dates incluses, et <strong>0</strong> s'il n'a rien vendu sur la période.</p>",
+      "langage": "sql",
+      "jeu": "dingo",
+      "ordre": true,
+      "depart": "CREATE FUNCTION f_ca_entre (p_id integer, p_debut date, p_fin date) RETURNS numeric AS $$\nDECLARE\n\nBEGIN\n\nEND;\n$$ LANGUAGE plpgsql;\n\nSELECT id, f_ca_entre(id, '2024-01-12', '2024-02-08') AS ca FROM vendeurs ORDER BY id;",
+      "solution": "CREATE FUNCTION f_ca_entre (p_id integer, p_debut date, p_fin date) RETURNS numeric AS $$\nDECLARE\n    v_total numeric;\nBEGIN\n    SELECT COALESCE(SUM(prix), 0) INTO v_total\n    FROM articles\n    WHERE id_vendeur = p_id AND date_vente BETWEEN p_debut AND p_fin;\n    RETURN v_total;\nEND;\n$$ LANGUAGE plpgsql;\n\nSELECT id, f_ca_entre(id, '2024-01-12', '2024-02-08') AS ca FROM vendeurs ORDER BY id;",
+      "indices": [
+        "<p>Que renvoie <code>SUM</code> quand aucune ligne ne vérifie le <code>WHERE</code> ?</p>"
+      ],
+      "explication": "<p><code>SELECT … INTO</code> range le résultat dans une variable. Sans ligne, <code>SUM</code> renvoie <code>NULL</code>, d'où le <code>COALESCE</code>. Tester <code>NOT FOUND</code> ne servirait à rien : une agrégation sans <code>GROUP BY</code> renvoie toujours une ligne, donc <code>FOUND</code> vaut <code>TRUE</code>.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Écrire une fonction PL/pgSQL",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#ecrire-une-fonction-pl-pgsql"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "association",
+      "theme": "Types de retour",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque déclaration de fonction à ce que son corps ou son appel demande :</p>",
+      "paires": [
+        [
+          "<code>RETURNS integer</code>",
+          "<code>RETURN expression;</code> dans le corps"
+        ],
+        [
+          "Paramètres <code>OUT</code>",
+          "On leur affecte des valeurs, sans <code>RETURN expression</code>"
+        ],
+        [
+          "<code>RETURNS TABLE (…)</code>",
+          "<code>RETURN QUERY</code> ou <code>RETURN NEXT</code> dans le corps"
+        ],
+        [
+          "<code>RETURNS record</code>",
+          "<code>SELECT * FROM f() AS (col type, …);</code> à l'appel"
+        ]
+      ],
+      "intrus": [
+        "<code>PERFORM f();</code> dans <code>psql</code>"
+      ],
+      "explication": "<p>Une valeur simple se renvoie par <code>RETURN expression</code>. Avec des paramètres <code>OUT</code>, on leur affecte des valeurs, sans <code>RETURN expression</code>. <code>RETURNS TABLE</code> et <code>RETURNS SETOF</code> construisent un ensemble de lignes. <code>RETURNS record</code> ne fixe pas la structure : il faut la décrire à l'appel. <code>PERFORM</code> n'existe que dans un bloc, jamais dans <code>psql</code>.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Les types de retour",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#les-types-de-retour"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "code",
+      "theme": "Fonctions et boucles",
+      "difficulte": 2,
+      "enonce": "<p>Dans la base Dingo Fringo, chaque vendeur a un parrain (<code>id_parrain</code>), sauf Julie, au sommet. Écrire la fonction <code>f_profondeur(p_id integer)</code>, qui renvoie le nombre de parrains au-dessus d'un vendeur : 0 pour Julie, 1 pour Marc, 2 pour Karim. Utiliser une boucle <code>WHILE</code>.</p>",
+      "langage": "sql",
+      "jeu": "dingo",
+      "ordre": true,
+      "depart": "CREATE FUNCTION f_profondeur (p_id integer) RETURNS integer AS $$\nDECLARE\n\nBEGIN\n\nEND;\n$$ LANGUAGE plpgsql;\n\nSELECT nom, f_profondeur(id) AS profondeur FROM vendeurs ORDER BY id;",
+      "solution": "CREATE FUNCTION f_profondeur (p_id integer) RETURNS integer AS $$\nDECLARE\n    v_parrain integer;\n    v_nb integer := 0;\nBEGIN\n    SELECT id_parrain INTO v_parrain FROM vendeurs WHERE id = p_id;\n    WHILE v_parrain IS NOT NULL LOOP\n        v_nb := v_nb + 1;\n        SELECT id_parrain INTO v_parrain FROM vendeurs WHERE id = v_parrain;\n    END LOOP;\n    RETURN v_nb;\nEND;\n$$ LANGUAGE plpgsql;\n\nSELECT nom, f_profondeur(id) AS profondeur FROM vendeurs ORDER BY id;",
+      "indices": [
+        "<p>Deux variables : le parrain courant et le compteur. Le corps de la boucle fait monter le parrain d'un cran.</p>"
+      ],
+      "explication": "<p>La variable <code>v_parrain</code> remonte la chaîne : tant qu'elle n'est pas <code>NULL</code>, on compte un niveau et l'on passe au parrain du parrain. Il faut écrire <code>IS NOT NULL</code> : <code>v_parrain &lt;&gt; NULL</code> vaut « inconnu », et la boucle ne tournerait jamais.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Conditions et boucles",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#conditions-et-boucles"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "code",
+      "theme": "Fonctions et boucles",
+      "difficulte": 2,
+      "enonce": "<p>Écrire la fonction <code>f_date_palier(p_id integer, p_seuil numeric)</code> : elle parcourt les ventes du vendeur <code>p_id</code> par date croissante et renvoie la date à laquelle la somme cumulée de ses ventes atteint <code>p_seuil</code> (égal ou supérieur), ou <code>NULL</code> si elle ne l'atteint jamais. Utiliser une boucle <code>FOR</code> sur une requête.</p>",
+      "langage": "sql",
+      "jeu": "dingo",
+      "ordre": true,
+      "depart": "CREATE FUNCTION f_date_palier (p_id integer, p_seuil numeric) RETURNS date AS $$\nDECLARE\n\nBEGIN\n\nEND;\n$$ LANGUAGE plpgsql;\n\nSELECT id, f_date_palier(id, 50) AS palier_50, f_date_palier(id, 45) AS palier_45\nFROM vendeurs ORDER BY id;",
+      "solution": "CREATE FUNCTION f_date_palier (p_id integer, p_seuil numeric) RETURNS date AS $$\nDECLARE\n    v_cumul numeric := 0;\n    r record;\nBEGIN\n    FOR r IN SELECT prix, date_vente FROM articles\n             WHERE id_vendeur = p_id ORDER BY date_vente LOOP\n        v_cumul := v_cumul + r.prix;\n        IF v_cumul >= p_seuil THEN\n            RETURN r.date_vente;\n        END IF;\n    END LOOP;\n    RETURN NULL;\nEND;\n$$ LANGUAGE plpgsql;\n\nSELECT id, f_date_palier(id, 50) AS palier_50, f_date_palier(id, 45) AS palier_45\nFROM vendeurs ORDER BY id;",
+      "indices": [
+        "<p>Déclarer une variable <code>r record</code> et un cumul initialisé à 0.</p>"
+      ],
+      "explication": "<p><code>FOR r IN SELECT … LOOP</code> parcourt les lignes dans une variable <code>record</code>. Le cumul se fait à la main, et <code>RETURN</code> quitte la fonction dès que le seuil est atteint : la boucle s'arrête d'elle-même. Le <code>ORDER BY</code> est indispensable, sinon le cumul ne suit pas les dates. Sophie vend 45 € le 5 février : le seuil de 45 est atteint ce jour-là, d'où <code>&gt;=</code>.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Conditions et boucles",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#conditions-et-boucles"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "code",
+      "theme": "Types de retour",
+      "difficulte": 2,
+      "enonce": "<p>Écrire la fonction <code>f_equipe(p_id integer)</code>, qui renvoie une ligne pour le vendeur <code>p_id</code> et une ligne pour chacun de ses filleuls directs : le nom (<code>vendeur</code>), le nombre d'articles vendus (<code>nb_ventes</code>) et leur somme (<code>ca</code>). Un vendeur sans vente apparaît avec 0 et 0, comme Tom, ajouté avant l'appel. Utiliser <code>RETURN QUERY</code>.</p>",
+      "langage": "sql",
+      "jeu": "dingo",
+      "ordre": true,
+      "depart": "CREATE FUNCTION f_equipe (p_id integer)\nRETURNS TABLE (vendeur varchar, nb_ventes bigint, ca numeric) AS $$\nBEGIN\n\nEND;\n$$ LANGUAGE plpgsql;\n\nINSERT INTO vendeurs VALUES (7, 'Tom', 2);\nSELECT * FROM f_equipe(2) ORDER BY ca DESC;",
+      "solution": "CREATE FUNCTION f_equipe (p_id integer)\nRETURNS TABLE (vendeur varchar, nb_ventes bigint, ca numeric) AS $$\nBEGIN\n    RETURN QUERY\n        SELECT v.nom, count(a.id), COALESCE(SUM(a.prix), 0)\n        FROM vendeurs v LEFT JOIN articles a ON a.id_vendeur = v.id\n        WHERE v.id = p_id OR v.id_parrain = p_id\n        GROUP BY v.id, v.nom;\nEND;\n$$ LANGUAGE plpgsql;\n\nINSERT INTO vendeurs VALUES (7, 'Tom', 2);\nSELECT * FROM f_equipe(2) ORDER BY ca DESC;",
+      "indices": [
+        "<p>Un vendeur sans article doit rester dans le résultat : quelle jointure ?</p>",
+        "<p><code>count(*)</code> compte aussi la ligne remplie de <code>NULL</code> de la jointure externe.</p>"
+      ],
+      "explication": "<p><code>RETURN QUERY</code> envoie le résultat d'une requête ; les types doivent correspondre aux colonnes déclarées, d'où <code>bigint</code> pour <code>count</code>. La jointure externe garde Tom : <code>count(a.id)</code> ne compte pas ses <code>NULL</code>, alors que <code>count(*)</code> donnerait 1. <code>COALESCE</code> remplace la somme <code>NULL</code> par 0. Les colonnes de sortie <code>vendeur</code>, <code>nb_ventes</code> et <code>ca</code> ne portent le nom d'aucune colonne de table : il n'y a pas d'ambiguïté.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Les types de retour",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#les-types-de-retour"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "code",
+      "theme": "Types de retour",
+      "difficulte": 3,
+      "enonce": "<p>Écrire la fonction <code>f_classement()</code>, qui renvoie les vendeurs du plus gros au plus petit chiffre d'affaires : <code>rang</code> (1, 2, 3…), <code>vendeur</code>, <code>ca</code>, et <code>ecart</code>, ce qui le sépare du vendeur classé juste avant (<code>NULL</code> pour le premier). Utiliser une boucle <code>FOR</code> et <code>RETURN NEXT</code>.</p>",
+      "langage": "sql",
+      "jeu": "dingo",
+      "ordre": true,
+      "depart": "CREATE FUNCTION f_classement ()\nRETURNS TABLE (rang integer, vendeur varchar, ca numeric, ecart numeric) AS $$\nDECLARE\n\nBEGIN\n\nEND;\n$$ LANGUAGE plpgsql;\n\nSELECT * FROM f_classement();",
+      "solution": "CREATE FUNCTION f_classement ()\nRETURNS TABLE (rang integer, vendeur varchar, ca numeric, ecart numeric) AS $$\nDECLARE\n    r record;\n    v_precedent numeric := NULL;\nBEGIN\n    rang := 0;\n    FOR r IN SELECT v.nom, SUM(a.prix) AS total\n             FROM vendeurs v JOIN articles a ON a.id_vendeur = v.id\n             GROUP BY v.id, v.nom ORDER BY total DESC LOOP\n        rang := rang + 1;\n        vendeur := r.nom;\n        ca := r.total;\n        ecart := v_precedent - r.total;\n        v_precedent := r.total;\n        RETURN NEXT;\n    END LOOP;\nEND;\n$$ LANGUAGE plpgsql;\n\nSELECT * FROM f_classement();",
+      "indices": [
+        "<p>Garder le chiffre d'affaires du tour précédent dans une variable.</p>",
+        "<p>Soustraire un <code>NULL</code> donne <code>NULL</code> : le premier écart se calcule tout seul.</p>"
+      ],
+      "explication": "<p>Les colonnes de <code>RETURNS TABLE</code> sont des variables : on les remplit, puis <code>RETURN NEXT</code> ajoute la ligne et la fonction continue. <code>v_precedent</code> vaut <code>NULL</code> au premier tour, si bien que <code>ecart</code> est <code>NULL</code> pour le premier ; il faut le mettre à jour <strong>après</strong> le calcul de l'écart. Le même résultat s'obtient en SQL avec <code>ROW_NUMBER</code> et <code>LAG</code>.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Les types de retour",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#les-types-de-retour"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "qcm-multi",
+      "theme": "Fonctions et boucles",
+      "difficulte": 2,
+      "enonce": "<p>Le corps d'une fonction <code>RETURNS integer</code> déclare <code>v_nb integer</code>, et <code>f_solde</code> est une fonction <code>RETURNS void</code> qui met des prix à jour. Quelles instructions sont correctes dans ce corps ?</p>",
+      "choix": [
+        "<code>SELECT count(*) INTO v_nb FROM articles;</code>",
+        "<code>PERFORM f_solde('Bijoux', 0.1);</code>",
+        "<code>SELECT count(*) FROM articles;</code>",
+        "<code>SELECT f_solde('Bijoux', 0.1);</code>",
+        "<code>RETURN QUERY SELECT count(*) FROM articles;</code>"
+      ],
+      "reponses": [
+        0,
+        1
+      ],
+      "indices": [
+        "<p>Dans un bloc, que devient le résultat d'un <code>SELECT</code> sans <code>INTO</code> ?</p>"
+      ],
+      "explication": "<p>Un <code>SELECT</code> doit ranger son résultat quelque part : <code>INTO</code>, ou <code>PERFORM</code> si le résultat n'intéresse pas. Sans cela, l'erreur « query has no destination for result data » n'arrive qu'à l'appel. <code>RETURN QUERY</code> est réservé aux fonctions qui renvoient un ensemble de lignes (<code>SETOF</code>, <code>TABLE</code>).</p>",
+      "revoir": {
+        "texte": "Cours 3 · PERFORM et la variable FOUND",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#perform-et-la-variable-found"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "code",
+      "theme": "Exceptions",
+      "difficulte": 3,
+      "enonce": "<p>Une contrainte interdit désormais un prix inférieur à 5 €. Écrire la fonction <code>f_remise(p_taux numeric)</code>, qui baisse le prix de chaque article de <code>p_taux</code> (0,5 pour 50 %), <strong>article par article</strong> : un article que la contrainte refuse garde son prix, sans empêcher les autres d'être soldés. Elle renvoie le nombre d'articles modifiés. Utiliser une boucle et un bloc <code>EXCEPTION</code>.</p>",
+      "langage": "sql",
+      "jeu": "dingo",
+      "ordre": true,
+      "depart": "ALTER TABLE articles ADD CONSTRAINT prix_min CHECK (prix >= 5);\n\nCREATE FUNCTION f_remise (p_taux numeric) RETURNS integer AS $$\nDECLARE\n\nBEGIN\n\nEND;\n$$ LANGUAGE plpgsql;\n\nCREATE TEMP TABLE bilan AS SELECT f_remise(0.5) AS modifies;\nSELECT b.modifies, a.id, a.prix FROM bilan b, articles a ORDER BY a.id;",
+      "solution": "ALTER TABLE articles ADD CONSTRAINT prix_min CHECK (prix >= 5);\n\nCREATE FUNCTION f_remise (p_taux numeric) RETURNS integer AS $$\nDECLARE\n    r record;\n    v_nb integer := 0;\nBEGIN\n    FOR r IN SELECT id FROM articles ORDER BY id LOOP\n        BEGIN\n            UPDATE articles SET prix = prix * (1 - p_taux) WHERE id = r.id;\n            v_nb := v_nb + 1;\n        EXCEPTION\n            WHEN others THEN\n                RAISE NOTICE 'Article % inchangé', r.id;\n        END;\n    END LOOP;\n    RETURN v_nb;\nEND;\n$$ LANGUAGE plpgsql;\n\nCREATE TEMP TABLE bilan AS SELECT f_remise(0.5) AS modifies;\nSELECT b.modifies, a.id, a.prix FROM bilan b, articles a ORDER BY a.id;",
+      "indices": [
+        "<p>Une erreur annule le bloc où elle est capturée. Quel bloc faut-il pour n'annuler qu'un article ?</p>",
+        "<p>Un sous-bloc <code>BEGIN … EXCEPTION … END;</code> s'écrit à l'intérieur de <code>LOOP</code>.</p>"
+      ],
+      "explication": "<p>Le bloc <code>BEGIN … EXCEPTION … END;</code> est placé <strong>dans</strong> la boucle : une erreur annule seulement le tour en cours, et la boucle continue. Le compteur s'incrémente après l'<code>UPDATE</code>, donc pas pour un article refusé. Avec un seul <code>EXCEPTION</code> au niveau de la fonction, la première erreur annulerait tout le bloc principal et tous les prix reviendraient à leur valeur de départ. La contrainte violée est de type <code>check_violation</code> ; <code>others</code> la capte aussi.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Gérer les erreurs : EXCEPTION",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#gerer-les-erreurs-exception"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "trous",
+      "theme": "Triggers",
+      "difficulte": 1,
+      "enonce": "<p>Compléter ce trigger, qui arrondit le prix d'un article à une décimale avant de l'enregistrer :</p>",
+      "code": true,
+      "texte": "CREATE FUNCTION f_arrondi() RETURNS {{0}} AS $$\nBEGIN\n    NEW.prix := ROUND(NEW.prix, 1);\n    RETURN {{1}};\nEND;\n$$ LANGUAGE plpgsql;\n\nCREATE TRIGGER tr_arrondi {{2}} INSERT ON articles\n    FOR EACH {{3}} EXECUTE FUNCTION f_arrondi();",
+      "trous": [
+        {
+          "reponses": [
+            "trigger"
+          ]
+        },
+        {
+          "reponses": [
+            "NEW"
+          ]
+        },
+        {
+          "choix": [
+            "BEFORE",
+            "AFTER"
+          ],
+          "reponse": 0
+        },
+        {
+          "reponses": [
+            "ROW"
+          ]
+        }
+      ],
+      "explication": "<p>Une fonction trigger renvoie le type <code>trigger</code> et n'a aucun argument. Modifier <code>NEW</code> n'a d'effet que dans un trigger <code>BEFORE</code> : dans un trigger <code>AFTER</code>, la ligne est déjà écrite. Il faut alors renvoyer <code>NEW</code>, faute de quoi l'insertion est annulée. <code>FOR EACH ROW</code> appelle la fonction pour chaque ligne insérée.</p>",
+      "revoir": {
+        "texte": "Cours 3 · La fonction trigger",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#la-fonction-trigger"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "atelier",
+      "theme": "Triggers",
+      "difficulte": 2,
+      "enonce": "<p>Écrire un trigger qui refuse, avant l'écriture, toute hausse de prix de plus de 50 % par rapport à l'ancien prix, par une exception. Une hausse d'exactement 50 %, une baisse ou une modification d'une autre colonne doivent passer et être enregistrées. Des mises à jour éprouvent ensuite le trigger.</p>",
+      "editeur": "sql",
+      "titre": "Refuser une forte hausse",
+      "options": {
+        "jeu": "dingo",
+        "mode": "script"
+      },
+      "depart": "CREATE FUNCTION f_controle_hausse() RETURNS trigger AS $$\nBEGIN\n\nEND;\n$$ LANGUAGE plpgsql;\n\nCREATE TRIGGER tr_controle_hausse\n",
+      "solution": "CREATE FUNCTION f_controle_hausse() RETURNS trigger AS $$\nBEGIN\n    IF NEW.prix > OLD.prix * 1.5 THEN\n        RAISE EXCEPTION 'Hausse trop forte pour %', OLD.nom;\n    END IF;\n    RETURN NEW;\nEND;\n$$ LANGUAGE plpgsql;\n\nCREATE TRIGGER tr_controle_hausse BEFORE UPDATE OF prix ON articles\n    FOR EACH ROW EXECUTE FUNCTION f_controle_hausse();",
+      "tests": [
+        {
+          "nom": "une hausse de 50 % est enregistrée",
+          "requete": "UPDATE articles SET prix = 37.50 WHERE id = 1;\nSELECT prix FROM articles WHERE id = 1;",
+          "resultat": true
+        },
+        {
+          "nom": "une hausse de 60 % est refusée",
+          "requete": "UPDATE articles SET prix = 40 WHERE id = 1;",
+          "doit": "echouer"
+        },
+        {
+          "nom": "une baisse est enregistrée",
+          "requete": "UPDATE articles SET prix = 10 WHERE id = 1;\nSELECT prix FROM articles WHERE id = 1;",
+          "resultat": true
+        },
+        {
+          "nom": "le changement d'un nom est enregistré",
+          "requete": "UPDATE articles SET nom = 'Jean brut' WHERE id = 1;\nSELECT nom FROM articles WHERE id = 1;",
+          "resultat": true
+        },
+        {
+          "nom": "un doublement de plusieurs lignes est refusé",
+          "requete": "UPDATE articles SET prix = prix * 2 WHERE categorie = 'Chaussures';",
+          "doit": "echouer"
+        }
+      ],
+      "indices": [
+        "<p>Une condition sur <code>NEW.prix</code> et <code>OLD.prix</code>, un <code>RAISE EXCEPTION</code>, puis la bonne valeur de retour.</p>"
+      ],
+      "explication": "<p><code>OLD.prix</code> et <code>NEW.prix</code> donnent les deux valeurs. <code>RAISE EXCEPTION</code> annule toute l'instruction, y compris les lignes déjà traitées : les trois chaussures restent inchangées. Le <code>RETURN NEW</code> final est obligatoire dans un trigger <code>BEFORE</code> : avec <code>RETURN NULL</code>, aucune mise à jour ne serait écrite, et sans erreur. <code>UPDATE OF prix</code> évite d'appeler la fonction quand le prix n'est pas dans le <code>SET</code>.</p>",
+      "revoir": {
+        "texte": "Cours 3 · Exemple : contrôler les employés",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#exemple-controler-les-employes"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "code",
+      "theme": "Triggers",
+      "difficulte": 2,
+      "enonce": "<p>Écrire une fonction trigger et un trigger qui ajoutent une ligne à <code>journal</code> pour chaque article inséré, modifié ou supprimé : le nom de l'opération (<code>INSERT</code>, <code>UPDATE</code> ou <code>DELETE</code>), l'identifiant de l'article et son prix, le prix nouveau pour une insertion ou une modification, l'ancien pour une suppression.</p>",
+      "langage": "sql",
+      "jeu": "dingo",
+      "ordre": true,
+      "depart": "CREATE TABLE journal (\n    num        serial PRIMARY KEY,\n    operation  text,\n    id_article integer,\n    prix       numeric(6,2)\n);\n\n-- fonction trigger\n\n\n-- trigger\n\n\nINSERT INTO articles (id, nom, categorie, prix, id_vendeur) VALUES (13, 'Gants', 'Accessoires', 11, 2);\nUPDATE articles SET prix = 20 WHERE id = 13;\nDELETE FROM articles WHERE id = 13;\nSELECT operation, id_article, prix FROM journal ORDER BY num;",
+      "solution": "CREATE TABLE journal (\n    num        serial PRIMARY KEY,\n    operation  text,\n    id_article integer,\n    prix       numeric(6,2)\n);\n\nCREATE FUNCTION f_journal() RETURNS trigger AS $$\nBEGIN\n    IF TG_OP = 'DELETE' THEN\n        INSERT INTO journal (operation, id_article, prix) VALUES (TG_OP, OLD.id, OLD.prix);\n    ELSE\n        INSERT INTO journal (operation, id_article, prix) VALUES (TG_OP, NEW.id, NEW.prix);\n    END IF;\n    RETURN NULL;\nEND;\n$$ LANGUAGE plpgsql;\n\nCREATE TRIGGER tr_journal AFTER INSERT OR UPDATE OR DELETE ON articles\n    FOR EACH ROW EXECUTE FUNCTION f_journal();\n\nINSERT INTO articles (id, nom, categorie, prix, id_vendeur) VALUES (13, 'Gants', 'Accessoires', 11, 2);\nUPDATE articles SET prix = 20 WHERE id = 13;\nDELETE FROM articles WHERE id = 13;\nSELECT operation, id_article, prix FROM journal ORDER BY num;",
+      "indices": [
+        "<p>Quelle variable spéciale donne l'opération ? Quelle ligne existe encore pour un <code>DELETE</code> ?</p>"
+      ],
+      "explication": "<p>Un seul trigger couvre les trois opérations, et <code>TG_OP</code> dit laquelle a lieu. Pour un <code>DELETE</code>, <code>NEW</code> vaut <code>NULL</code> : il faut lire <code>OLD</code>, sinon le journal reçoit une ligne vide. Un trigger <code>AFTER</code> convient, l'opération ayant eu lieu au moment d'écrire dans le journal ; sa valeur de retour est ignorée. Le trigger doit être par ligne : au niveau de l'instruction, <code>NEW</code> et <code>OLD</code> valent <code>NULL</code>.</p>",
+      "revoir": {
+        "texte": "Cours 3 · La fonction trigger",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#la-fonction-trigger"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "atelier",
+      "theme": "Triggers",
+      "difficulte": 3,
+      "enonce": "<p>Quand un vendeur quitte Dingo Fringo, ses filleuls et ses articles passent à son parrain. Écrire un trigger sur <code>vendeurs</code> qui, à la suppression d'un vendeur, reporte ses filleuls et ses articles sur son parrain, puis laisse la suppression se faire. La suppression d'un vendeur sans parrain est refusée par une exception. Des suppressions éprouvent ensuite le trigger.</p>",
+      "editeur": "sql",
+      "titre": "Départ d'un vendeur",
+      "options": {
+        "jeu": "dingo",
+        "mode": "script"
+      },
+      "depart": "CREATE FUNCTION f_depart_vendeur() RETURNS trigger AS $$\nBEGIN\n\nEND;\n$$ LANGUAGE plpgsql;\n\nCREATE TRIGGER tr_depart_vendeur\n",
+      "solution": "CREATE FUNCTION f_depart_vendeur() RETURNS trigger AS $$\nBEGIN\n    IF OLD.id_parrain IS NULL THEN\n        RAISE EXCEPTION '% n''a pas de parrain', OLD.nom;\n    END IF;\n    UPDATE vendeurs SET id_parrain = OLD.id_parrain WHERE id_parrain = OLD.id;\n    UPDATE articles SET id_vendeur = OLD.id_parrain WHERE id_vendeur = OLD.id;\n    RETURN OLD;\nEND;\n$$ LANGUAGE plpgsql;\n\nCREATE TRIGGER tr_depart_vendeur BEFORE DELETE ON vendeurs\n    FOR EACH ROW EXECUTE FUNCTION f_depart_vendeur();",
+      "tests": [
+        {
+          "nom": "le départ de Marc reporte ses filleuls sur Julie",
+          "requete": "DELETE FROM vendeurs WHERE id = 2;\nSELECT id, id_parrain FROM vendeurs ORDER BY id;",
+          "resultat": true
+        },
+        {
+          "nom": "le départ de Marc reporte ses articles sur Julie",
+          "requete": "DELETE FROM vendeurs WHERE id = 2;\nSELECT id, id_vendeur FROM articles ORDER BY id;",
+          "resultat": true
+        },
+        {
+          "nom": "le départ de Nadia, sans filleul, a bien lieu",
+          "requete": "DELETE FROM vendeurs WHERE id = 6;\nSELECT count(*) FROM vendeurs;",
+          "resultat": true
+        },
+        {
+          "nom": "Julie, sans parrain, ne peut pas partir",
+          "requete": "DELETE FROM vendeurs WHERE id = 1;",
+          "doit": "echouer"
+        }
+      ],
+      "indices": [
+        "<p>Le trigger doit agir avant la suppression, sinon les clés étrangères la bloquent.</p>",
+        "<p>Pour un <code>DELETE</code>, quelle est la seule ligne qui existe, et que faut-il renvoyer ?</p>"
+      ],
+      "explication": "<p>Le trigger doit être <code>BEFORE</code> : les clés étrangères refuseraient la suppression tant que des filleuls ou des articles visent ce vendeur. Il faut renvoyer <code>OLD</code>. Pour un <code>DELETE</code>, <code>NEW</code> vaut <code>NULL</code> : <code>RETURN NEW</code> annulerait la suppression sans aucun message, comme <code>RETURN NULL</code>, et le vendeur resterait dans la table avec ses filleuls déjà reportés.</p>",
+      "revoir": {
+        "texte": "Cours 3 · La fonction trigger",
+        "lien": "../generated_courses/cours-03-sql-avance-plpgsql.html#la-fonction-trigger"
+      }
+    }
+  ]
+}
+</script>
+</body>
+</html>

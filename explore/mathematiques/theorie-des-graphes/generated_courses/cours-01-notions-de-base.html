@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modéliser le réel avec des graphes · Théorie des graphes L3</title>
+<meta name="description" content="Cours 1 de théorie des graphes (L3) : modéliser un système réel par un graphe, graphes orientés et pondérés, voisinage et degré, liste d'arêtes, matrice et liste d'adjacence, notion de modèle, cycles eulériens.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-01-notions-de-base.html" title="Quiz · Cours 1">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-ci-2025-2026.html" title="Quiz · Annale CI 2025-2026">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-ci-2024-2025.html" title="Quiz · Annale CI 2024-2025">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-ct-2024-2025.html" title="Quiz · Annale CT 2024-2025">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-ci-2022-2023.html" title="Quiz · Annale CI 2022-2023">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-ct-2022-2023.html" title="Quiz · Annale CT 2022-2023">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Mathématiques</a>
+    <a href="index.html">Théorie des graphes</a>
+    <span aria-current="page">Cours 1 · Modéliser le réel</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Théorie des graphes</span> Cours 1 · L3 S5</p>
+    <h1>Modéliser le réel avec des graphes</h1>
+    <p class="chapeau">Routeurs, villes, mots, joueurs : beaucoup de systèmes réels se résument à des entités et à leurs interactions, qu'un graphe représente. Ce premier chapitre définit les graphes, orientés ou pondérés, le voisinage et le degré d'un sommet, les trois façons de stocker un graphe en mémoire, puis la notion de modèle ; il se termine par les cycles eulériens, vus en séance.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/_Graphes__Cours_de_graphes_A4__1_-4.pdf">Graphes et applications</a> (poly de 82 pages), chapitre 1, p. 2–15 · notes de séance « Cours Graphes » (CM 1)</dd></div>
+      <div><dt>Enseignant</dt><dd>Nicolas Dugué</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-01">1<sup>er</sup> oct. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Modéliser un système réel par un graphe : choisir les sommets, les arêtes, l'orientation et les poids.</li>
+        <li>Écrire un graphe \(G = (V, E)\), et calculer le nombre de sommets \(n\), le nombre d'arêtes \(m\), le voisinage \(N(u)\) et le degré \(d(u)\) d'un sommet.</li>
+        <li>Calculer voisinages et degrés entrants et sortants dans un graphe orienté, et le degré pondéré.</li>
+        <li>Représenter un graphe par une liste d'arêtes, une matrice d'adjacence ou une liste d'adjacence, et comparer leurs coûts.</li>
+        <li>Dire si un graphe admet un cycle eulérien.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Ensembles : appartenance, inclusion, produit cartésien \(V \times V\), cardinal \(|V|\).</li>
+        <li>Python : listes, dictionnaires (pour les représentations en mémoire et NetworkX).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc complement">
+    <p class="bloc-titre">Complément <span>À propos des sources</span></p>
+    <p>Le cours s'appuie sur un poly rédigé par l'enseignant, <cite>Graphes et applications</cite>, dont ce chapitre reprend le chapitre 1, et sur les notes prises au CM 1. Les références « p. N » sont les numéros imprimés en bas des pages du poly ; dans un lecteur de PDF, la page imprimée N est la page N + 2. Les cycles eulériens, abordés en séance mais absents du chapitre 1 du poly, viennent des notes.</p>
+    <p>Les calculs de la page (degrés, matrices, listes d'adjacence, cycles eulériens) ont été vérifiés avec la bibliothèque Python NetworkX, celle de l'aide-mémoire <a href="../cours/Networkx_CheatSheet.pdf">Networkx_CheatSheet.pdf</a> fourni avec le cours.</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Modéliser le réel <span class="ref">p. 2–3</span></h2>
+    <p>Quelle est la conséquence de déconnecter un routeur sur le réseau ? Quel est le plus court chemin pour aller d'un endroit à un autre ? Quel·les sont les influenceur·ses d'un réseau social ? Comment se structure un mouvement sur Internet ? Quel film recommander ?</p>
+    <p>Le cours pose les bases pour répondre à ces questions, en s'appuyant sur la théorie des graphes et sur la théorie des réseaux complexes. On modélise d'abord la question et le système où elle se pose, puis on met en œuvre les algorithmes qui y répondent. Pour la première question, le système à modéliser est Internet, avec en son sein des entités, les routeurs, dont les interactions (par exemple le protocole de routage RIP) font fonctionner le réseau.</p>
+    <p>Un grand nombre de systèmes du monde réel impliquent ainsi des interactions entre des entités, et la modélisation sous forme de graphe y est particulièrement adaptée. Ce chapitre introduit les graphes, les systèmes qu'il est pertinent de modéliser ainsi, et la notion de modèle ; il pose aussi des questions qui servent de fil rouge au cours.</p>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Le graphe comme modèle</span> <span class="ref">p. 3</span></p>
+      <p>« <span lang="en">Systems as diverse as genetic networks or the world wide web are best described as networks with complex topology.</span> » Des systèmes aussi variés que les réseaux génétiques ou le Web sont décrits au mieux par des réseaux à la topologie complexe. (Albert-László Barabási et Réka Albert, <cite>Emergence of Scaling in Random Networks</cite>, 1999)</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Graphes : définition et exemples <span class="ref">p. 4–7</span></h2>
+    <p>Un graphe se décrit par deux ensembles, et se dessine par des ronds reliés par des traits. Trois exemples montrent comment on passe d'un système réel à un graphe.</p>
+
+    <h3>Définition <span class="ref">p. 4</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 1 <span>Graphe</span></p>
+      <p>Soit \(G = (V, E)\) un <dfn>graphe</dfn> (<span class="en" lang="en">graph</span>), tel que \(V\) représente l'ensemble des <dfn>sommets</dfn> (<span class="en" lang="en">vertices</span>) et \(E \subset V \times V\) l'ensemble des <dfn>arêtes</dfn> (<span class="en" lang="en">edges</span>) qui connectent ces sommets.</p>
+    </div>
+    <p>Concrètement, \(G\) est un petit dessin, avec les éléments de \(V\) dessinés comme des ronds, reliés par les traits décrits dans \(E\). La figure décrit le graphe de sommets \(V = \{A, B, C, D\}\) et d'arêtes \(E = \{(A, B), (B, D), (D, C), (C, A)\}\).</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 260 160" width="260" role="img" aria-labelledby="fig-carre-titre">
+        <title id="fig-carre-titre">Le graphe de sommets A, B, C, D et d'arêtes (A, B), (B, D), (D, C), (C, A) : un carré, avec C en haut à gauche, D en haut à droite, A en bas à gauche et B en bas à droite.</title>
+        <path class="trait" d="M60 30 H200 V130 H60 Z"/>
+        <g font-size="14">
+          <circle class="boite-accent" cx="60" cy="30" r="18"/>
+          <circle class="boite-accent" cx="200" cy="30" r="18"/>
+          <circle class="boite-accent" cx="60" cy="130" r="18"/>
+          <circle class="boite-accent" cx="200" cy="130" r="18"/>
+          <text x="60" y="35" text-anchor="middle" class="gras accent">C</text>
+          <text x="200" y="35" text-anchor="middle" class="gras accent">D</text>
+          <text x="60" y="135" text-anchor="middle" class="gras accent">A</text>
+          <text x="200" y="135" text-anchor="middle" class="gras accent">B</text>
+        </g>
+      </svg>
+      <figcaption>\(G = (\{A, B, C, D\}, \{(A, B), (B, D), (D, C), (C, A)\})\).</figcaption>
+    </figure>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Pas d'ordre dans une arête</span></p>
+      <p>Il n'y a pas d'ordre à respecter dans l'écriture des arêtes : \((A, B) = (B, A)\) indique qu'il existe une connexion entre A et B, sans notion de direction. Pour plus de lisibilité, on écrit souvent les sommets dans l'ordre alphabétique, \((A, B)\) plutôt que \((B, A)\), ou dans l'ordre croissant s'ils sont numérotés, \((1, 2)\) plutôt que \((2, 1)\).</p>
+    </div>
+    <p>Ce vocabulaire est celui de la théorie des graphes. La théorie des réseaux complexes parle de <dfn>réseau</dfn> pour un graphe, de <dfn>nœuds</dfn> pour les sommets et de <dfn>liens</dfn> pour les arêtes ; la différence s'arrête là, et le cours emploie indifféremment les deux vocabulaires.</p>
+    <p><span class="badge ajout">Ajout</span> Les notes du CM 1 rappellent l'origine anglaise des lettres : \(V\) pour <span class="en" lang="en">vertex</span> (sommet), \(E\) pour <span class="en" lang="en">edge</span> (arête), \(G\) pour <span class="en" lang="en">graph</span>, et, plus loin, \(N\) pour <span class="en" lang="en">neighbours</span> (voisins).</p>
+
+    <h3>Exemple 1 : un réseau routier <span class="ref">p. 4–5</span></h3>
+    <p>On veut étudier informatiquement le réseau autoroutier du sud des États-Unis. Pour en créer un modèle, on choisit de désigner les villes par des sommets, et les routes qui connectent <em>directement</em> deux villes par des arêtes : s'il existe un trajet entre deux villes qui ne passe pas par une autre ville, on crée une arête entre elles.</p>
+    <figure class="figure">
+      <img src="img/cours-01-notions-de-base-1.png" width="776" height="353" alt="Carte des autoroutes inter-États du sud des États-Unis : Fort Worth et Dallas au nord du Texas, Austin, San Antonio et Houston au sud, Baton Rouge et New Orleans en Louisiane, Jackson dans le Mississippi, reliées par des autoroutes dessinées en bleu.">
+      <figcaption>Les autoroutes inter-États du sud des États-Unis (carte issue de Wikipédia, reprise du poly).</figcaption>
+    </figure>
+    <p>On obtient \(V = \{\)Fort Worth, Dallas, Jackson, Austin, San Antonio, Houston, Baton Rouge, New Orleans\(\}\), et onze arêtes : (Austin, Fort Worth), (Austin, Dallas), (Austin, San Antonio), (Baton Rouge, New Orleans), (Baton Rouge, Jackson), (Baton Rouge, Houston), (Dallas, Fort Worth), (Dallas, Houston), (Dallas, Jackson), (Jackson, New Orleans), (Houston, San Antonio).</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 620 285" width="620" role="img" aria-labelledby="fig-routes-titre">
+        <title id="fig-routes-titre">Le graphe du réseau routier : huit villes et onze arêtes. Austin est reliée à Fort Worth, Dallas et San Antonio ; Dallas à Fort Worth, Houston et Jackson ; Houston à San Antonio et Baton Rouge ; Baton Rouge à Jackson et New Orleans ; Jackson à New Orleans.</title>
+        <path class="trait" d="M110 170 L70 40 M110 170 L170 40 M110 170 L60 250 M440 200 L550 220 M440 200 L520 40 M440 200 L250 240 M170 40 L70 40 M170 40 L250 240 M170 40 L520 40 M520 40 L550 220 M250 240 L60 250"/>
+        <g font-size="13">
+          <circle class="plein-accent" cx="70" cy="40" r="7"/>
+          <circle class="plein-accent" cx="170" cy="40" r="7"/>
+          <circle class="plein-accent" cx="520" cy="40" r="7"/>
+          <circle class="plein-accent" cx="110" cy="170" r="7"/>
+          <circle class="plein-accent" cx="60" cy="250" r="7"/>
+          <circle class="plein-accent" cx="250" cy="240" r="7"/>
+          <circle class="plein-accent" cx="440" cy="200" r="7"/>
+          <circle class="plein-accent" cx="550" cy="220" r="7"/>
+          <text x="70" y="24" text-anchor="middle">Fort Worth</text>
+          <text x="170" y="24" text-anchor="middle">Dallas</text>
+          <text x="520" y="24" text-anchor="middle">Jackson</text>
+          <text x="96" y="175" text-anchor="end">Austin</text>
+          <text x="60" y="275" text-anchor="middle">San Antonio</text>
+          <text x="250" y="265" text-anchor="middle">Houston</text>
+          <text x="440" y="226" text-anchor="middle">Baton Rouge</text>
+          <text x="550" y="246" text-anchor="middle">New Orleans</text>
+        </g>
+      </svg>
+      <figcaption>Un graphe pour représenter le réseau routier du sud des États-Unis.</figcaption>
+    </figure>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Un choix de modélisation</span></p>
+      <p>La route qui mène de Fort Worth à Jackson peut sembler directe, mais on fait l'hypothèse qu'elle longe en fait la ville de Dallas, qui est immense : on ne crée donc pas d'arête entre Fort Worth et Jackson. Placer une arête ou non découle de la définition choisie pour le modèle.</p>
+    </div>
+
+    <h3>Exemple 2 : un réseau de co-occurrences de mots <span class="ref">p. 6</span></h3>
+    <p>En linguistique ou en traitement automatique des langues, on étudie les relations entre les mots par leurs <dfn>co-occurrences</dfn> : deux mots co-occurrent dans un ensemble de documents s'ils apparaissent au moins une fois ensemble dans une même phrase. On parcourt les documents, on relève ces co-occurrences, puis on les représente par un <dfn>graphe de co-occurrences</dfn>, où les mots sont les sommets et la relation de co-occurrence entre deux mots une arête.</p>
+    <figure class="figure">
+      <img src="img/cours-01-notions-de-base-2.png" width="493" height="474" alt="Extrait d'un graphe de co-occurrences : des mots comme union, état, travail, action, être, communautaire, initiative, programme, monsieur, reliés par de nombreux liens colorés ; la taille d'un mot croît avec son nombre de liens.">
+      <figcaption>Extrait d'un graphe de co-occurrences construit par Matthias Tauveron sur Europarl, la base des discours du Parlement européen.</figcaption>
+    </figure>
+
+    <h3>Exemple 3 : un réseau de matches <span class="ref">p. 7</span></h3>
+    <p>Au Grand Prix 2022 de la Fédération internationale des échecs (FIDE), en poule A, chaque joueur rencontre les trois autres ; chaque rencontre compte deux parties, l'une avec les blancs, l'autre avec les noirs. On crée un graphe dont les sommets sont les joueurs, avec une arête entre deux joueurs si et seulement si l'un des deux a marqué plus de points que l'autre lors de leur rencontre.</p>
+    <table>
+      <caption>Les résultats de la poule A du Grand Prix FIDE 2022 (points marqués avec les blancs / avec les noirs)</caption>
+      <thead><tr><th>Rang</th><th>Joueur</th><th>Elo (déc. 2021)</th><th>GRI</th><th>AND</th><th>SHA</th><th>BAC</th><th>Points</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Dmitri Andreïkine (AND)</td><td>2724</td><td>½ / 1</td><td>—</td><td>½ / ½</td><td>1 / ½</td><td>4</td></tr>
+        <tr><td>2</td><td>Sam Shankland (SHA)</td><td>2708</td><td>1 / ½</td><td>½ / ½</td><td>—</td><td>½ / ½</td><td>3½</td></tr>
+        <tr><td>3</td><td>Étienne Bacrot (BAC)</td><td>2642</td><td>½ / ½</td><td>½ / 0</td><td>½ / ½</td><td>—</td><td>2½</td></tr>
+        <tr><td>4</td><td>Alexandre Grichtchouk (GRI)</td><td>2763</td><td>—</td><td>0 / ½</td><td>½ / 0</td><td>½ / ½</td><td>2</td></tr>
+      </tbody>
+    </table>
+    <p>La première ligne, colonne BAC, montre qu'Andreïkine a marqué un point (victoire) contre Bacrot avec les blancs, et un demi-point (nulle) avec les noirs : 1,5 point en tout, quand Bacrot n'en a marqué qu'un demi (colonne AND de la ligne 3). Il existe donc une arête entre ces deux joueurs. On obtient \(G = (V, E)\) avec \(V = \{\)GRI, AND, SHA, BAC\(\}\) et \(E = \{\)(AND, GRI), (AND, BAC), (SHA, GRI)\(\}\).</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 410 100" width="410" role="img" aria-labelledby="fig-echecs-titre">
+        <title id="fig-echecs-titre">Le graphe du tournoi : SHA est relié à GRI, GRI à AND, AND à BAC. Une arête relie deux joueurs dont l'un a marqué plus de points que l'autre.</title>
+        <path class="trait" d="M62 50 H128 M172 50 H238 M282 50 H348"/>
+        <g font-size="12">
+          <circle class="boite-accent" cx="40" cy="50" r="22"/>
+          <circle class="boite-accent" cx="150" cy="50" r="22"/>
+          <circle class="boite-accent" cx="260" cy="50" r="22"/>
+          <circle class="boite-accent" cx="370" cy="50" r="22"/>
+          <text x="40" y="54" text-anchor="middle" class="mono accent">SHA</text>
+          <text x="150" y="54" text-anchor="middle" class="mono accent">GRI</text>
+          <text x="260" y="54" text-anchor="middle" class="mono accent">AND</text>
+          <text x="370" y="54" text-anchor="middle" class="mono accent">BAC</text>
+        </g>
+      </svg>
+      <figcaption>Un graphe pour représenter les rencontres où l'un des deux joueurs l'a emporté.</figcaption>
+    </figure>
+    <p><span class="badge a-verifier">À vérifier</span> Le poly présente d'abord la poule comme celle où Bacrot affronte Hikaru Nakamura (NAK), Andreï Essipenko (ESS) et Alexandre Grichtchouk (GRI) ; mais le tableau, la suite du texte et les graphes portent sur Andreïkine (AND) et Shankland (SHA). C'est cette seconde version, cohérente avec le tableau, qui est retenue.</p>
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>Ce qu'on lit dans le graphe</span></p>
+      <ul>
+        <li>Le nombre de sommets \(n = |V| = 4\) indique que 4 joueurs s'affrontent.</li>
+        <li>Il y a eu 3 rencontres où l'un des deux joueurs l'a emporté, puisque \(m = |E| = 3\).</li>
+        <li>Il y a eu 6 rencontres en tout, car un graphe à \(n\) sommets a au plus \(\dfrac{n(n-1)}{2}\) arêtes : pour \(n = 4\), on obtient 6.</li>
+      </ul>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Ce maximum s'obtient en comptant les paires de sommets distincts : chaque sommet peut être relié aux \(n - 1\) autres, et chaque arête est alors comptée deux fois, une fois depuis chacune de ses extrémités.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Voisinage et degré <span class="ref">p. 7–8 · CM 1</span></h2>
+    <p>Les questions précédentes portaient sur le graphe entier. On peut aussi interroger les sommets un par un. Question 1 du poly : comment savoir si l'un des quatre joueurs est particulièrement sorti victorieux de ces rencontres ? Pour y répondre, il faut les notions de voisinage et de degré.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 2 <span>Voisinage d'un nœud</span></p>
+      <p>Soit \(G = (V, E)\) un graphe et \(u \in V\) un nœud de ce graphe. Le <dfn>voisinage</dfn> de \(u\) s'écrit</p>
+      <div class="encadre">\[ N(u) = \{ v \in V \mid (u, v) \in E \} \]</div>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 3 <span>Degré d'un nœud</span></p>
+      <p>Soit \(G = (V, E)\) un graphe et \(u \in V\). Le <dfn>degré</dfn> de \(u\), noté \(d(u)\), est l'entier \(d(u) = |N(u)|\) : le nombre de voisins de \(u\).</p>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> Les notes du CM 1 écrivent \(N(u) = \{ u \in V \mid (u, v) \in E \}\), avec \(u\) à gauche de la barre : c'est \(v\), le voisin, qu'il faut y lire, comme dans le poly.</p>
+    <p>Dans le graphe du tournoi :</p>
+    <ul>
+      <li>\(N(\text{AND}) = \{\text{GRI}, \text{BAC}\}\), \(d(\text{AND}) = 2\) ;</li>
+      <li>\(N(\text{GRI}) = \{\text{AND}, \text{SHA}\}\), \(d(\text{GRI}) = 2\) ;</li>
+      <li>\(N(\text{BAC}) = \{\text{AND}\}\), \(d(\text{BAC}) = 1\) ;</li>
+      <li>\(N(\text{SHA}) = \{\text{GRI}\}\), \(d(\text{SHA}) = 1\).</li>
+    </ul>
+    <p>Andreïkine et Grichtchouk semblent donc impliqués tous les deux dans plus de rencontres décisives. Mais il est impossible de savoir s'ils l'ont emporté, ou si c'est leur adversaire !</p>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Les limites du modèle</span></p>
+      <p>Ce graphe montre qu'il n'y a eu que trois victoires sur six rencontres, mais pas lequel des deux joueurs l'a emporté. Il faut pour cela un modèle plus riche : un graphe orienté.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La somme des degrés</span></p>
+      <p>Chaque arête \((u, v)\) compte une fois dans \(d(u)\) et une fois dans \(d(v)\). La somme des degrés de tous les sommets vaut donc deux fois le nombre d'arêtes :</p>
+      <div class="encadre">\[ \sum_{u \in V} d(u) = 2m \]</div>
+      <p>Pour le tournoi : \(2 + 2 + 1 + 1 = 6 = 2 \times 3\). On en déduit qu'un graphe a toujours un nombre pair de sommets de degré impair ; on s'en servira pour les cycles eulériens (section 8).</p>
+    </div>
+    <div class="bloc exercice" id="ex-1">
+      <p class="bloc-titre">Exercice 1 <span>Le réseau routier</span> <span class="badge ajout">Ajout</span></p>
+      <p>Pour le graphe du réseau routier (section 2.2), donner \(n\), \(m\), le degré de chaque ville et le nombre maximal d'arêtes d'un graphe à \(n\) sommets ; vérifier que la somme des degrés vaut \(2m\).</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>\(n = 8\) villes et \(m = 11\) arêtes. Degrés : Dallas 4 ; Austin, Houston, Baton Rouge et Jackson 3 ; Fort Worth, San Antonio et New Orleans 2. La somme vaut \(4 + 4 \times 3 + 3 \times 2 = 22 = 2 \times 11\). Un graphe à 8 sommets a au plus \(8 \times 7 / 2 = 28\) arêtes : le réseau en compte 11.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Graphes orientés <span class="ref">p. 8–10 · CM 1</span></h2>
+    <p>Pour savoir qui a gagné, chaque lien doit avoir un sens : du vainqueur vers le vaincu. C'est le rôle des graphes orientés.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 4 <span>Graphe orienté</span></p>
+      <p>Soit le graphe \(G = (V, A)\), où \(V\) est l'ensemble des sommets, et \(A \subset V \times V\) l'ensemble des arêtes orientées, appelées <dfn>arcs</dfn>. Dans un <dfn>graphe orienté</dfn> (<span class="en" lang="en">directed graph</span>), si \(u\) et \(v\) sont deux sommets de \(V\), \((u, v) \ne (v, u)\). Pour un arc \((u, v) \in A\), on dit que \(u\) est le nœud <dfn>source</dfn> et \(v\) le nœud <dfn>cible</dfn>.</p>
+    </div>
+    <p>Pour le tournoi, on place un arc d'un joueur \(u\) vers un joueur \(v\) seulement si \(u\) a marqué plus de points que \(v\) lors de leur rencontre. On obtient \(G = (V, A)\) avec \(A = \{\)(AND, GRI), (AND, BAC), (SHA, GRI)\(\}\).</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 410 100" width="410" role="img" aria-labelledby="fig-echecs-oriente-titre">
+        <title id="fig-echecs-oriente-titre">Le graphe orienté du tournoi : un arc de SHA vers GRI, un arc de AND vers GRI, un arc de AND vers BAC ; chaque arc va du vainqueur au vaincu.</title>
+        <defs>
+          <marker id="fleche-echecs-oriente" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <path class="trait" d="M62 50 H126" marker-end="url(#fleche-echecs-oriente)"/>
+        <path class="trait" d="M238 50 H174" marker-end="url(#fleche-echecs-oriente)"/>
+        <path class="trait" d="M282 50 H346" marker-end="url(#fleche-echecs-oriente)"/>
+        <g font-size="12">
+          <circle class="boite-accent" cx="40" cy="50" r="22"/>
+          <circle class="boite-accent" cx="150" cy="50" r="22"/>
+          <circle class="boite-accent" cx="260" cy="50" r="22"/>
+          <circle class="boite-accent" cx="370" cy="50" r="22"/>
+          <text x="40" y="54" text-anchor="middle" class="mono accent">SHA</text>
+          <text x="150" y="54" text-anchor="middle" class="mono accent">GRI</text>
+          <text x="260" y="54" text-anchor="middle" class="mono accent">AND</text>
+          <text x="370" y="54" text-anchor="middle" class="mono accent">BAC</text>
+        </g>
+      </svg>
+      <figcaption>Un graphe orienté pour représenter les victoires : l'arc va du vainqueur au vaincu.</figcaption>
+    </figure>
+    <p>Dans un graphe orienté, on parle de voisinages et de degrés entrants (les nœuds reliés à \(u\) par des arcs dont \(u\) est la cible) et sortants (ceux reliés à \(u\) par des arcs dont \(u\) est la source). Le voisinage est l'union des voisinages entrant et sortant, et le degré la somme des degrés entrant et sortant.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définitions 5 et 6 <span>Voisinages et degrés entrants et sortants</span></p>
+      <p>Soit \(G = (V, A)\) un graphe orienté et \(u \in V\). Le voisinage entrant et le voisinage sortant de \(u\) s'écrivent</p>
+      <div class="encadre">\[ N^-(u) = \{ v \in V \mid (v, u) \in A \} \qquad N^+(u) = \{ v \in V \mid (u, v) \in A \} \]</div>
+      <p>et ses degrés entrant et sortant valent \(d^-(u) = |N^-(u)|\) et \(d^+(u) = |N^+(u)|\).</p>
+    </div>
+    <p>Comme la source de chaque arc est le vainqueur, on compte les victoires avec le degré sortant :</p>
+    <ul>
+      <li>AND (Andreïkine) est la source de deux arcs : \(N^+(\text{AND}) = \{\text{GRI}, \text{BAC}\}\), \(d^+(\text{AND}) = 2\), deux victoires ; il n'est la cible d'aucun arc, \(N^-(\text{AND}) = \varnothing\), \(d^-(\text{AND}) = 0\), aucune défaite.</li>
+      <li>BAC (Bacrot) n'est la source d'aucun arc : \(d^+(\text{BAC}) = 0\) ; il est la cible d'un arc, \(N^-(\text{BAC}) = \{\text{AND}\}\), \(d^-(\text{BAC}) = 1\), une défaite.</li>
+      <li>GRI (Grichtchouk) : \(N^+(\text{GRI}) = \varnothing\), \(d^+(\text{GRI}) = 0\) ; \(N^-(\text{GRI}) = \{\text{AND}, \text{SHA}\}\), \(d^-(\text{GRI}) = 2\), deux défaites.</li>
+      <li>SHA (Shankland) : \(N^+(\text{SHA}) = \{\text{GRI}\}\), \(d^+(\text{SHA}) = 1\), une victoire ; \(N^-(\text{SHA}) = \varnothing\), \(d^-(\text{SHA}) = 0\).</li>
+    </ul>
+    <p>Puisque \(d^+(\text{AND}) \gt d^+(\text{SHA}) \gt d^+(\text{BAC}) = d^+(\text{GRI})\), Andreïkine semble sorti victorieux du tournoi : il est d'ailleurs premier du classement.</p>
+    <p>De manière générale, un graphe orienté s'impose quand les entités du système modélisé ont des interactions <strong>asymétriques</strong>. Pour les co-occurrences de l'exemple 2, on peut orienter les liens pour savoir quel mot précède l'autre : en reliant chaque mot à celui qui le suit, le vers de <cite>Suréna</cite>, de Corneille, « Toujours aimer, toujours souffrir, toujours mourir » donne le graphe ci-dessous.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 400 180" width="400" role="img" aria-labelledby="fig-surena-titre">
+        <title id="fig-surena-titre">Le graphe orienté du vers « Toujours aimer, toujours souffrir, toujours mourir » : des arcs de toujours vers aimer et d'aimer vers toujours, de toujours vers souffrir et de souffrir vers toujours, et de toujours vers mourir.</title>
+        <defs>
+          <marker id="fleche-surena" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <path class="trait" d="M168 80 L96 44" marker-end="url(#fleche-surena)"/>
+        <path class="trait" d="M92 32 L176 76" marker-end="url(#fleche-surena)"/>
+        <path class="trait" d="M168 100 L100 140" marker-end="url(#fleche-surena)"/>
+        <path class="trait" d="M98 154 L178 104" marker-end="url(#fleche-surena)"/>
+        <path class="trait" d="M236 90 H302" marker-end="url(#fleche-surena)"/>
+        <g font-size="13">
+          <rect class="boite-accent" x="164" y="76" width="72" height="28" rx="6"/>
+          <text x="200" y="95" text-anchor="middle" class="accent">toujours</text>
+          <rect class="boite" x="28" y="16" width="64" height="28" rx="6"/>
+          <text x="60" y="35" text-anchor="middle">aimer</text>
+          <rect class="boite" x="24" y="136" width="74" height="28" rx="6"/>
+          <text x="61" y="155" text-anchor="middle">souffrir</text>
+          <rect class="boite" x="304" y="76" width="70" height="28" rx="6"/>
+          <text x="339" y="95" text-anchor="middle">mourir</text>
+        </g>
+      </svg>
+      <figcaption>\(G = (\{\)toujours, aimer, souffrir, mourir\(\}, \{\)(toujours, aimer), (aimer, toujours), (toujours, souffrir), (souffrir, toujours), (toujours, mourir)\(\})\).</figcaption>
+    </figure>
+    <p>À l'inverse, le réseau autoroutier de l'exemple 1 peut rester un graphe non orienté, puisque les autoroutes sont en général à double sens. Pour modéliser la circulation dans une ville, il faut en revanche un graphe orienté, si l'on veut tenir compte des rues à sens unique.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Graphes pondérés <span class="ref">p. 10–11</span></h2>
+    <p>Pour modéliser encore plus finement la circulation, on voudrait associer à chaque rue sa longueur, ou le temps moyen pour la traverser ; pour les co-occurrences, le nombre de fois que deux mots apparaissent ensemble. On attache alors une valeur à chaque arête.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 7 <span>Graphe pondéré</span></p>
+      <p>Un <dfn>graphe pondéré</dfn> (<span class="en" lang="en">weighted graph</span>) est un triplet \((V, E, W)\), ou \((V, A, W)\) s'il est aussi orienté, où \(V\) est un ensemble de sommets, \(E\) (ou \(A\)) l'ensemble des arêtes (ou des arcs) qui les connectent, et \(W : E \to \mathbb{R}\) (ou \(W : A \to \mathbb{R}\)) associe à chaque arête (ou arc) un <dfn>poids</dfn> réel.</p>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 8 <span>Degré pondéré</span></p>
+      <p>Soit \(u \in V\) et \(N(u)\) son voisinage dans un graphe \(G = (V, E, W)\). Le <dfn>degré pondéré</dfn> \(d_w(u)\) de \(u\) est la somme des poids des liens qui connectent \(u\) à ses voisins :</p>
+      <div class="encadre">\[ d_w(u) = \sum_{v \in N(u)} W(uv) \]</div>
+      <p>Dans un graphe orienté \(G = (V, A, W)\) : \(d_w^+(u) = \sum_{v \in N^+(u)} W(uv)\) et \(d_w^-(u) = \sum_{v \in N^-(u)} W(vu)\).</p>
+    </div>
+    <p>Le modèle du tournoi s'affine ainsi d'étape en étape : le graphe non orienté montrait les rencontres décisives, l'orientation dit qui a gagné, et le poids dit de combien de points. Andreïkine a marqué un point de plus que Bacrot, et un point de plus que Grichtchouk ; Shankland, un point de plus que Grichtchouk : les trois arcs ont le poids 1.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 410 100" width="410" role="img" aria-labelledby="fig-echecs-pondere-titre">
+        <title id="fig-echecs-pondere-titre">Le graphe orienté et pondéré du tournoi : les arcs de SHA vers GRI, de AND vers GRI et de AND vers BAC ont chacun le poids 1, l'écart de points entre le vainqueur et le vaincu.</title>
+        <defs>
+          <marker id="fleche-echecs-pondere" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <path class="trait" d="M62 50 H126" marker-end="url(#fleche-echecs-pondere)"/>
+        <path class="trait" d="M238 50 H174" marker-end="url(#fleche-echecs-pondere)"/>
+        <path class="trait" d="M282 50 H346" marker-end="url(#fleche-echecs-pondere)"/>
+        <g font-size="12">
+          <circle class="boite-accent" cx="40" cy="50" r="22"/>
+          <circle class="boite-accent" cx="150" cy="50" r="22"/>
+          <circle class="boite-accent" cx="260" cy="50" r="22"/>
+          <circle class="boite-accent" cx="370" cy="50" r="22"/>
+          <text x="40" y="54" text-anchor="middle" class="mono accent">SHA</text>
+          <text x="150" y="54" text-anchor="middle" class="mono accent">GRI</text>
+          <text x="260" y="54" text-anchor="middle" class="mono accent">AND</text>
+          <text x="370" y="54" text-anchor="middle" class="mono accent">BAC</text>
+          <text x="95" y="40" text-anchor="middle" class="gras">1</text>
+          <text x="205" y="40" text-anchor="middle" class="gras">1</text>
+          <text x="315" y="40" text-anchor="middle" class="gras">1</text>
+        </g>
+      </svg>
+      <figcaption>Le graphe pondéré du tournoi : le poids d'un arc est l'écart de points entre le vainqueur et le vaincu.</figcaption>
+    </figure>
+    <p>Autre exemple, avec des données textuelles : ces vers d'Aragon, où la répétition de « Il y aura des fleurs » est mise en valeur par un graphe orienté et pondéré.</p>
+    <blockquote>
+      <p>Il y aura des fleurs tant que vous en voudrez<br>Il y aura des fleurs couleur de l'avenir</p>
+    </blockquote>
+    <p>Comme pour le vers de Corneille, on relie chaque mot à son successeur. Le poids d'un arc vaut 1 par défaut ; si un mot succède \(p\) fois à un autre, il vaut \(p\).</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 580 168" width="580" role="img" aria-labelledby="fig-aragon-titre">
+        <title id="fig-aragon-titre">Le graphe pondéré des vers d'Aragon : la chaîne Il, y, aura, des, fleurs, dont les quatre arcs ont le poids 2 ; puis, depuis fleurs, deux branches de poids 1 : tant, que, vous, en, voudrez, et couleur, de, l'avenir.</title>
+        <defs>
+          <marker id="fleche-aragon" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <path class="trait" d="M40 84 H54" marker-end="url(#fleche-aragon)"/>
+        <path class="trait" d="M80 84 H94" marker-end="url(#fleche-aragon)"/>
+        <path class="trait" d="M140 84 H154" marker-end="url(#fleche-aragon)"/>
+        <path class="trait" d="M194 84 H208" marker-end="url(#fleche-aragon)"/>
+        <path class="trait" d="M262 76 L290 40" marker-end="url(#fleche-aragon)"/>
+        <path class="trait" d="M262 92 L290 128" marker-end="url(#fleche-aragon)"/>
+        <path class="trait" d="M330 30 H344" marker-end="url(#fleche-aragon)"/>
+        <path class="trait" d="M380 30 H394" marker-end="url(#fleche-aragon)"/>
+        <path class="trait" d="M436 30 H450" marker-end="url(#fleche-aragon)"/>
+        <path class="trait" d="M478 30 H492" marker-end="url(#fleche-aragon)"/>
+        <path class="trait" d="M350 138 H364" marker-end="url(#fleche-aragon)"/>
+        <path class="trait" d="M390 138 H404" marker-end="url(#fleche-aragon)"/>
+        <g font-size="12">
+          <rect class="boite-accent" x="10" y="70" width="30" height="28" rx="5"/>
+          <text x="25" y="88" text-anchor="middle" class="accent">Il</text>
+          <rect class="boite-accent" x="56" y="70" width="24" height="28" rx="5"/>
+          <text x="68" y="88" text-anchor="middle" class="accent">y</text>
+          <rect class="boite-accent" x="96" y="70" width="44" height="28" rx="5"/>
+          <text x="118" y="88" text-anchor="middle" class="accent">aura</text>
+          <rect class="boite-accent" x="156" y="70" width="38" height="28" rx="5"/>
+          <text x="175" y="88" text-anchor="middle" class="accent">des</text>
+          <rect class="boite-accent" x="210" y="70" width="52" height="28" rx="5"/>
+          <text x="236" y="88" text-anchor="middle" class="accent">fleurs</text>
+          <rect class="boite" x="290" y="16" width="40" height="28" rx="5"/>
+          <text x="310" y="34" text-anchor="middle">tant</text>
+          <rect class="boite" x="346" y="16" width="34" height="28" rx="5"/>
+          <text x="363" y="34" text-anchor="middle">que</text>
+          <rect class="boite" x="396" y="16" width="40" height="28" rx="5"/>
+          <text x="416" y="34" text-anchor="middle">vous</text>
+          <rect class="boite" x="452" y="16" width="26" height="28" rx="5"/>
+          <text x="465" y="34" text-anchor="middle">en</text>
+          <rect class="boite" x="494" y="16" width="62" height="28" rx="5"/>
+          <text x="525" y="34" text-anchor="middle">voudrez</text>
+          <rect class="boite" x="290" y="124" width="60" height="28" rx="5"/>
+          <text x="320" y="142" text-anchor="middle">couleur</text>
+          <rect class="boite" x="366" y="124" width="24" height="28" rx="5"/>
+          <text x="378" y="142" text-anchor="middle">de</text>
+          <rect class="boite" x="406" y="124" width="62" height="28" rx="5"/>
+          <text x="437" y="142" text-anchor="middle">l'avenir</text>
+          <g class="t2" font-size="11">
+            <text x="47" y="66" text-anchor="middle" class="gras">2</text>
+            <text x="87" y="66" text-anchor="middle" class="gras">2</text>
+            <text x="147" y="66" text-anchor="middle" class="gras">2</text>
+            <text x="201" y="66" text-anchor="middle" class="gras">2</text>
+            <text x="266" y="54" text-anchor="middle">1</text>
+            <text x="266" y="122" text-anchor="middle">1</text>
+            <text x="337" y="12" text-anchor="middle">1</text>
+            <text x="387" y="12" text-anchor="middle">1</text>
+            <text x="443" y="12" text-anchor="middle">1</text>
+            <text x="485" y="12" text-anchor="middle">1</text>
+            <text x="357" y="120" text-anchor="middle">1</text>
+            <text x="397" y="120" text-anchor="middle">1</text>
+          </g>
+        </g>
+      </svg>
+      <figcaption>Le graphe pondéré des vers d'Aragon : 13 mots, 12 arcs ; les quatre arcs de « Il y aura des fleurs » ont le poids 2.</figcaption>
+    </figure>
+    <p><span class="badge ajout">Ajout</span> Les degrés de « fleurs » montrent ce que le poids ajoute : \(d^-(\text{fleurs}) = 1\) mais \(d_w^-(\text{fleurs}) = 2\) (un seul mot le précède, « des », deux fois), et \(d^+(\text{fleurs}) = d_w^+(\text{fleurs}) = 2\) (« tant » et « couleur », une fois chacun).</p>
+    <div class="bloc exercice" id="ex-2">
+      <p class="bloc-titre">Exercice 2 <span>Le graphe d'une phrase</span> <span class="badge ajout">Ajout</span></p>
+      <p>Construire le graphe orienté et pondéré de la phrase « un chat voit un chien qui voit un chat », chaque mot étant relié à son successeur. Donner \(N^+(\text{un})\), \(d^+(\text{un})\) et \(d_w^+(\text{un})\), puis \(N^-(\text{un})\) et \(d_w^-(\text{un})\).</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Six arcs : (un, chat) de poids 2, (chat, voit) 1, (voit, un) 2, (un, chien) 1, (chien, qui) 1, (qui, voit) 1. Alors \(N^+(\text{un}) = \{\text{chat}, \text{chien}\}\), \(d^+(\text{un}) = 2\) et \(d_w^+(\text{un}) = 2 + 1 = 3\) ; \(N^-(\text{un}) = \{\text{voit}\}\) et \(d_w^-(\text{un}) = 2\). Le degré compte les voisins, le degré pondéré les occurrences.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Représenter un graphe <span class="ref">p. 11–13</span></h2>
+    <p>Au-delà des dessins, très utiles pour se représenter un graphe, il existe des structures de données simples, mais indispensables pour le représenter mathématiquement et informatiquement. Le poly en présente trois.</p>
+
+    <h3>Liste d'arêtes <span class="ref">p. 11–12</span></h3>
+    <p>La <dfn>liste d'arêtes</dfn> est l'un des formats les plus utilisés pour les entrées et sorties, mais guère pour stocker un graphe en mémoire. En mémoire, elle est plutôt économe : elle stocke \(m = |E|\) paires d'entiers, plus éventuellement les poids. En revanche, si l'on garde le graphe sous cette forme (une <code>list</code> Python, par exemple), trouver le degré d'un nœud oblige à parcourir toute la liste, ce qui n'est pas efficace pour le graphe d'un réseau social de plusieurs milliards d'arêtes. Ajouter une arête est très rapide, mais en supprimer une peut aussi demander de parcourir toute la liste.</p>
+    <p>Le graphe des vers d'Aragon s'écrit ainsi, avec une colonne pour la source, une pour la cible et une pour le poids :</p>
+<pre data-fichier="aragon.txt"><code class="language-plaintext">Il y 2
+y aura 2
+aura des 2
+des fleurs 2
+fleurs tant 1
+tant que 1
+que vous 1
+vous en 1
+en voudrez 1
+fleurs couleur 1
+couleur de 1
+de l'avenir 1</code></pre>
+    <p>Quand le graphe n'est pas pondéré, le fichier n'a que deux colonnes. Pour indiquer que le graphe est orienté, on peut ajouter un fichier <code>Readme</code> à côté.</p>
+
+    <h3>Matrice d'adjacence <span class="ref">p. 12–13</span></h3>
+    <p>La <dfn>matrice d'adjacence</dfn> est un tableau à double entrée, avec une ligne et une colonne par sommet : la case de la ligne \(u\) et de la colonne \(v\) contient 1 s'il y a une arête (ou un arc) de \(u\) vers \(v\), 0 sinon, ou le poids du lien si le graphe est pondéré. Elle contient \(n^2\) cases (avec \(n = |V|\)), ce qui dépasse en général très largement les \(m = |E|\) paires de la liste d'arêtes : elle stocke beaucoup de zéros, \(n^2 - m\).</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Le graphe Political blogs</span></p>
+      <p>Le graphe des liens hypertextes entre blogs politiques américains, très étudié, a \(n = 1224\) sommets et \(m = 33\,430\) arêtes. Sous forme de liste d'arêtes, on stocke 33 430 paires d'entiers, soit 66 860 entiers ; sous forme de matrice d'adjacence, \(1224^2 = 1\,498\,176\) entiers.</p>
+    </div>
+    <p>En revanche, ajouter ou supprimer une arête est très efficace, et calculer le degré d'un nœud ne demande que de parcourir sa ligne ou sa colonne, soit \(n\) valeurs. C'est donc un format peu efficace en mémoire, mais efficace pour manipuler le graphe et accéder à ses informations. Pour le stocker en Python, on peut utiliser les tableaux de la bibliothèque <code>numpy</code>.</p>
+    <div class="colonnes">
+      <div class="tableau mono centre compact">
+        <table>
+          <caption>Graphe non orienté du tournoi</caption>
+          <thead><tr><th></th><th>AND</th><th>BAC</th><th>GRI</th><th>SHA</th></tr></thead>
+          <tbody>
+            <tr><th>AND</th><td>0</td><td>1</td><td>1</td><td>0</td></tr>
+            <tr><th>BAC</th><td>1</td><td>0</td><td>0</td><td>0</td></tr>
+            <tr><th>GRI</th><td>1</td><td>0</td><td>0</td><td>1</td></tr>
+            <tr><th>SHA</th><td>0</td><td>0</td><td>1</td><td>0</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tableau mono centre compact">
+        <table>
+          <caption>Graphe orienté du tournoi</caption>
+          <thead><tr><th></th><th>AND</th><th>BAC</th><th>GRI</th><th>SHA</th></tr></thead>
+          <tbody>
+            <tr><th>AND</th><td>0</td><td>1</td><td>1</td><td>0</td></tr>
+            <tr><th>BAC</th><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+            <tr><th>GRI</th><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+            <tr><th>SHA</th><td>0</td><td>0</td><td>1</td><td>0</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p>La matrice du graphe non orienté est <strong>symétrique</strong> par rapport à sa diagonale ; celle du graphe orienté ne l'est pas : il existe un arc (AND, BAC), mais pas (BAC, AND). On lit le degré sortant d'un sommet sur sa ligne, son degré entrant sur sa colonne.</p>
+    <details class="depliant">
+      <summary>La matrice d'adjacence des vers d'Aragon (13 × 13)</summary>
+      <div class="tableau mono centre compact">
+        <table>
+          <caption>Ligne : source ; colonne : cible ; case : poids de l'arc</caption>
+          <thead><tr><th></th><th>Il</th><th>y</th><th>aura</th><th>des</th><th>fleurs</th><th>tant</th><th>que</th><th>vous</th><th>en</th><th>voudrez</th><th>couleur</th><th>de</th><th>l'avenir</th></tr></thead>
+          <tbody>
+            <tr><th>Il</th><td>0</td><td>2</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+            <tr><th>y</th><td>0</td><td>0</td><td>2</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+            <tr><th>aura</th><td>0</td><td>0</td><td>0</td><td>2</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+            <tr><th>des</th><td>0</td><td>0</td><td>0</td><td>0</td><td>2</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+            <tr><th>fleurs</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td></tr>
+            <tr><th>tant</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+            <tr><th>que</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+            <tr><th>vous</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+            <tr><th>en</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td></tr>
+            <tr><th>voudrez</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+            <tr><th>couleur</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td></tr>
+            <tr><th>de</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td></tr>
+            <tr><th>l'avenir</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>La matrice n'est pas symétrique, puisque le graphe est orienté : à la ligne « Il », colonne « y », le 2 dit qu'un arc de poids 2 va de « Il » à « y », mais rien ne va de « y » à « Il ». Sur ses 169 cases, 157 sont des zéros.</p>
+    </details>
+
+    <h3>Liste d'adjacence <span class="ref">p. 12–13</span></h3>
+    <p>La <dfn>liste d'adjacence</dfn> décrit, pour chaque sommet, la liste de ses voisins. On peut l'implémenter comme une <code>list</code> de <code>list</code>, ou comme un <code>dict</code> qui a pour clés les sommets et pour valeurs les listes de leurs voisins. Elle est avantageuse sur les deux plans : la mémoire, car elle ne stocke aucun zéro, et le temps de calcul, car elle donne un accès rapide aux voisins d'un sommet.</p>
+<pre data-fichier="Liste d'adjacence des vers d'Aragon"><code class="language-plaintext">{
+Il : [(y,2)]
+y : [(aura,2)]
+aura : [(des,2)]
+des : [(fleurs,2)]
+fleurs : [(tant,1), (couleur,1)]
+tant : [(que,1)]
+que : [(vous,1)]
+vous : [(en,1)]
+en : [(voudrez,1)]
+couleur : [(de,1)]
+de : [(l'avenir,1)]
+}</code></pre>
+    <p>Le graphe étant orienté, on stocke qu'« Il » a pour voisin sortant « y », mais pas l'inverse. Dans ce cas orienté et pondéré, chaque sommet \(u\) a pour valeur une liste de couples : ses voisins sortants (\(N^+(u)\)) et le poids des liens qui l'y relient. Pour les deux graphes du tournoi :</p>
+    <div class="colonnes">
+<pre data-fichier="Non orienté"><code class="language-plaintext">{
+AND : [BAC, GRI]
+BAC : [AND]
+GRI : [AND, SHA]
+SHA : [GRI]
+}</code></pre>
+<pre data-fichier="Orienté"><code class="language-plaintext">{
+AND : [BAC, GRI]
+BAC : []
+GRI : []
+SHA : [GRI]
+}</code></pre>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les trois représentations côte à côte</span></p>
+      <table>
+        <caption>Coût des trois représentations (\(n\) sommets, \(m\) arêtes)</caption>
+        <thead><tr><th></th><th>Liste d'arêtes</th><th>Matrice d'adjacence</th><th>Liste d'adjacence</th></tr></thead>
+        <tbody>
+          <tr><th>Mémoire</th><td>\(m\) paires</td><td>\(n^2\) cases</td><td>une entrée par sommet, \(m\) voisins en tout (\(2m\) si non orienté)</td></tr>
+          <tr><th>Degré d'un sommet</th><td>parcourir les \(m\) arêtes</td><td>parcourir sa ligne : \(n\) cases</td><td>la longueur de sa liste</td></tr>
+          <tr><th>Usage</th><td>fichiers d'entrée et de sortie</td><td>calcul matriciel (<code>numpy</code>)</td><td>stockage en mémoire, algorithmes</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les mêmes graphes avec NetworkX</span></p>
+      <p>La bibliothèque NetworkX, celle de l'aide-mémoire du cours, stocke ses graphes comme des listes d'adjacence (des dictionnaires imbriqués) et calcule tout ce qui précède :</p>
+<pre data-fichier="tournoi.py"><code class="language-python">import networkx as nx
+
+G = nx.Graph()                         # non orienté
+G.add_edges_from([("AND", "GRI"), ("AND", "BAC"), ("SHA", "GRI")])
+print(G.number_of_nodes(), G.number_of_edges())   # n et m
+print(dict(G.degree()))                           # d(u) pour chaque u
+
+D = nx.DiGraph()                       # orienté
+D.add_edges_from([("AND", "GRI"), ("AND", "BAC"), ("SHA", "GRI")])
+print(dict(D.out_degree()))                       # d+(u) : les victoires
+print(dict(D.in_degree()))                        # d-(u) : les défaites
+print(nx.to_numpy_array(D, nodelist=["AND", "BAC", "GRI", "SHA"]).astype(int))</code></pre>
+<pre class="terminal"><code>$ python tournoi.py
+4 3
+{'AND': 2, 'GRI': 2, 'BAC': 1, 'SHA': 1}
+{'AND': 2, 'GRI': 0, 'BAC': 0, 'SHA': 1}
+{'AND': 0, 'GRI': 2, 'BAC': 1, 'SHA': 0}
+[[0 1 1 0]
+ [0 0 0 0]
+ [0 0 0 0]
+ [0 0 1 0]]</code></pre>
+      <p>Pour un graphe pondéré, <code>add_weighted_edges_from</code> prend des triplets (source, cible, poids), et <code>D.out_degree(u, weight="weight")</code> donne le degré pondéré.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Un modèle ? <span class="ref">p. 14 · CM 1</span></h2>
+    <p>Un graphe ne retient du système réel que les entités et leurs liens. C'est un choix, qui fait sa force et ses limites.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Modèle</span></p>
+      <p>Un <dfn>modèle</dfn> est une représentation simplifiée d'un système réel. Il a pour but de simplifier l'étude et la compréhension du système, en concentrant ses caractéristiques les plus importantes. En évitant de représenter exhaustivement le système réel, on en réduit la complexité, ce qui permet de l'analyser.</p>
+    </div>
+    <p>Prenons un réseau social en ligne, modélisé par un graphe dont les sommets sont les utilisateur·rices et les arêtes les liens d'amitié. Ce modèle est pertinent pour représenter les connexions entre internautes ; mais pour comprendre <em>pourquoi</em> ces connexions existent, il manque beaucoup d'informations : les liens de parenté, les écoles, universités et entreprises fréquentées, les loisirs… Ces informations sont cruciales pour comprendre les liens entre humains, même en ligne, mais les modéliser exhaustivement est impossible, et rendrait l'analyse extrêmement complexe. On choisit donc un modèle réaliste et exploitable. Il sert déjà à répondre à des questions classiques :</p>
+    <ul>
+      <li>Quelles nouvelles connexions suggérer à un·e internaute ? C'est un problème de <dfn>recommandation</dfn>, qui s'apparente, sur un graphe, à la <dfn>prédiction de lien</dfn> : prédire l'apparition d'une arête entre deux sommets.</li>
+      <li>À qui proposer un placement de produit ? Un individu important dans le réseau, qui a de l'influence sur les autres, est susceptible de favoriser l'adoption d'un produit.</li>
+      <li>Comment endiguer la propagation d'une épidémie ? Le réseau social des personnes contaminées permet, dans certains cas, des stratégies de vaccination ou de quarantaine efficaces.</li>
+      <li>Ce profil est-il un robot ?</li>
+    </ul>
+    <p>Dans tous ces cas, connaître exhaustivement les liens et leur nature (parenté, collègues, même club de sport…) permettrait d'affiner les réponses. Mais un modèle de graphe des connexions observées en ligne apporte déjà des réponses efficaces, avec des algorithmes rapides dont on évalue les performances.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Cycles eulériens <span class="ref">notes CM 1</span></h2>
+    <p>La théorie des graphes est née d'une promenade : peut-on parcourir une ville en passant une fois et une seule sur chacun de ses ponts ? Les notes du CM 1 en donnent la réponse sous forme de condition sur les degrés.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Cycle eulérien</span> <span class="badge ajout">Ajout</span></p>
+      <p>Un <dfn>cycle eulérien</dfn> est un parcours d'un graphe qui emprunte <strong>chaque arête une fois et une seule</strong>, et revient à son point de départ. Un graphe qui en possède un est dit <dfn>eulérien</dfn>.</p>
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Théorème <span>Euler</span></p>
+      <p>Un graphe connexe admet un cycle eulérien si et seulement si tous ses sommets sont de degré pair.</p>
+      <details class="preuve">
+        <summary>Idée de la preuve</summary>
+        <p>Dans un sens : chaque fois que le cycle passe par un sommet, il y arrive par une arête et en repart par une autre ; les arêtes d'un sommet sont donc utilisées par paires, et son degré est pair. Dans l'autre sens, on construit le cycle : en partant d'un sommet, on avance sans réutiliser d'arête ; comme tous les degrés sont pairs, on ne peut rester bloqué qu'au point de départ. Si des arêtes restent inutilisées, on recommence depuis un sommet du cycle qui en touche une, et l'on greffe le nouveau cycle sur le premier.</p>
+      </details>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> Les notes écrivent : « Un graphe admet un cycle eulérien ssi ses sommets sont connectés à un autre sommet via un nombre pair d'arêtes », c'est-à-dire si tous ses sommets sont de degré pair. Il faut ajouter que le graphe est <strong>connexe</strong>, en ne comptant pas les sommets isolés : deux triangles disjoints ont tous leurs sommets de degré 2, mais aucun parcours ne passe de l'un à l'autre. La connexité est l'objet du chapitre 2 du poly.</p>
+    <p>Le carré de la section 2.1 a ses quatre sommets de degré 2 : il est eulérien, et A, B, D, C, A en est un cycle eulérien. Le réseau routier, lui, ne l'est pas : Austin, Houston, Baton Rouge et Jackson sont de degré 3.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les sept ponts de Königsberg</span> <span class="badge hors-programme">Hors programme</span></p>
+      <p>En 1736, Euler étudie la ville de Königsberg (aujourd'hui Kaliningrad), traversée par une rivière qui délimite quatre terres, reliées par sept ponts. Peut-on faire une promenade qui passe une fois sur chaque pont et revient au départ ? En représentant les terres par des sommets et les ponts par des arêtes, on obtient un graphe (avec des arêtes multiples entre deux mêmes sommets), et Euler montre que c'est impossible : les quatre sommets sont de degré impair.</p>
+      <figure class="figure">
+        <svg class="schema" viewBox="0 0 420 200" width="420" role="img" aria-labelledby="fig-konigsberg-titre">
+          <title id="fig-konigsberg-titre">Le graphe des ponts de Königsberg : l'île A est reliée deux fois à la rive B, deux fois à la rive C et une fois à la terre D ; B et C sont chacune reliées une fois à D. Les degrés sont 5 pour A, 3 pour B, C et D.</title>
+          <path class="trait" d="M190 82 Q160 52 190 38 M210 82 Q240 52 210 38 M190 118 Q160 148 190 162 M210 118 Q240 148 210 162 M222 100 H328 M220 24 Q300 26 336 84 M220 176 Q300 174 336 116"/>
+          <g font-size="14">
+            <circle class="boite-accent" cx="200" cy="100" r="20"/>
+            <circle class="boite" cx="200" cy="24" r="16"/>
+            <circle class="boite" cx="200" cy="176" r="16"/>
+            <circle class="boite" cx="350" cy="100" r="20"/>
+            <text x="200" y="105" text-anchor="middle" class="gras accent">A</text>
+            <text x="200" y="29" text-anchor="middle" class="gras">B</text>
+            <text x="200" y="181" text-anchor="middle" class="gras">C</text>
+            <text x="350" y="105" text-anchor="middle" class="gras">D</text>
+            <text x="150" y="104" text-anchor="end" class="t2" font-size="12">d(A) = 5</text>
+            <text x="225" y="18" class="t2" font-size="12">d(B) = 3</text>
+            <text x="225" y="196" class="t2" font-size="12">d(C) = 3</text>
+            <text x="378" y="104" class="t2" font-size="12">d(D) = 3</text>
+          </g>
+        </svg>
+        <figcaption>Les quatre terres de Königsberg et leurs sept ponts : aucun sommet n'est de degré pair.</figcaption>
+      </figure>
+    </div>
+    <div class="bloc exercice" id="ex-3">
+      <p class="bloc-titre">Exercice 3 <span>Réparer Königsberg</span> <span class="badge ajout">Ajout</span></p>
+      <p>Combien de ponts faut-il ajouter, au minimum, pour que le graphe de Königsberg devienne eulérien ? Entre quelles terres ?</p>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Un pont ajouté augmente de 1 le degré de chacune de ses deux extrémités.</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Les quatre sommets sont de degré impair, et un pont corrige au plus deux degrés : il en faut au moins deux. Deux suffisent, s'ils relient les sommets impairs par paires, par exemple B à C et A à D. Les degrés deviennent 6, 4, 4 et 4, et le graphe, connexe, est eulérien. NetworkX le confirme (<code>nx.is_eulerian</code>) et propose le cycle A, D, C, B, D, A, C, A, B, A, qui emprunte les neuf ponts.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Un graphe modélise les interactions entre les entités d'un système réel : \(G = (V, E)\), \(V\) les sommets (nœuds), \(E \subset V \times V\) les arêtes (liens). Ce qu'on place dans \(V\) et dans \(E\) est un choix de modélisation.</li>
+        <li>Indicateurs de base : \(n = |V|\), \(m = |E|\), et \(m \le n(n-1)/2\) pour un graphe non orienté.</li>
+        <li>Voisinage \(N(u) = \{ v \in V \mid (u, v) \in E \}\) et degré \(d(u) = |N(u)|\) ; la somme des degrés vaut \(2m\).</li>
+        <li>Graphe orienté \(G = (V, A)\) : des arcs, avec une source et une cible ; voisinages et degrés entrants \(N^-(u)\), \(d^-(u)\) et sortants \(N^+(u)\), \(d^+(u)\). Il convient aux interactions asymétriques.</li>
+        <li>Graphe pondéré \((V, E, W)\) : un poids réel par arête ; le degré pondéré \(d_w(u)\) somme les poids des liens de \(u\).</li>
+        <li>Liste d'arêtes : économe en mémoire (\(m\) paires), mais le degré demande de tout parcourir. Matrice d'adjacence : \(n^2\) cases, symétrique si le graphe n'est pas orienté, degré en \(n\) cases. Liste d'adjacence : économe et rapide.</li>
+        <li>Un modèle est une représentation simplifiée d'un système réel, qui en garde l'essentiel pour pouvoir l'analyser.</li>
+        <li>Un graphe connexe admet un cycle eulérien (passer une fois par chaque arête et revenir) si et seulement si tous ses sommets sont de degré pair.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi le premier graphe du tournoi ne permet-il pas de désigner le vainqueur ?</summary>
+        <div><p>Une arête dit qu'un des deux joueurs l'a emporté, pas lequel : \((u, v) = (v, u)\). Il faut orienter le lien, du vainqueur vers le vaincu, et compter les degrés sortants.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un graphe non orienté a 10 sommets. Combien d'arêtes au plus ?</summary>
+        <div><p>\(10 \times 9 / 2 = 45\) : une par paire de sommets distincts.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Dans un graphe orienté, que vaut le degré d'un sommet ?</summary>
+        <div><p>La somme de ses degrés entrant et sortant : \(d(u) = d^-(u) + d^+(u)\). Son voisinage est l'union \(N^-(u) \cup N^+(u)\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quand faut-il un graphe orienté ? Un graphe pondéré ?</summary>
+        <div><p>Orienté : quand les interactions sont asymétriques (victoires, mots qui se suivent, rues à sens unique). Pondéré : quand les liens n'ont pas tous la même importance (longueur d'une rue, nombre de co-occurrences, écart de points).</p></div>
+      </details>
+      <details class="carte">
+        <summary>À quoi reconnaît-on, sur sa matrice d'adjacence, qu'un graphe n'est pas orienté ?</summary>
+        <div><p>Elle est symétrique par rapport à sa diagonale : la case \((u, v)\) vaut toujours la case \((v, u)\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi stocker un grand réseau social par une liste d'adjacence plutôt que par une matrice ?</summary>
+        <div><p>La matrice a \(n^2\) cases, presque toutes nulles, car chaque personne n'a que peu de liens au regard de \(n\). La liste d'adjacence ne stocke que les liens existants, et donne pourtant un accès rapide aux voisins d'un sommet.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un graphe connexe a deux sommets de degré impair. Admet-il un cycle eulérien ?</summary>
+        <div><p>Non : il faudrait que tous les degrés soient pairs. (Il admet en revanche un chemin eulérien, qui ne revient pas au départ, entre ses deux sommets impairs ; c'est hors programme ici.)</p></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Références</h2>
+    <ul>
+      <li>N. Dugué, <cite>Graphes et applications</cite>, poly du cours, Le Mans Université, 2026-2027 : <a href="../cours/_Graphes__Cours_de_graphes_A4__1_-4.pdf">chapitre 1</a>, et ses aide-mémoire <a href="../cours/Python_CheatSheet.pdf">Python</a> et <a href="../cours/Networkx_CheatSheet.pdf">NetworkX</a>.</li>
+      <li>A.-L. Barabási et R. Albert, <cite>Emergence of Scaling in Random Networks</cite>, Science, 1999.</li>
+      <li>La base de données <a href="http://www.konect.cc/">Konect</a>, qui rassemble un grand nombre de graphes réels, dont <a href="http://konect.cc/networks/dimacs10-polblogs/">Political blogs</a>.</li>
+      <li>La documentation de <a href="https://networkx.org/documentation/stable/">NetworkX</a>.</li>
+    </ul>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="index.html"><small>← Matière</small>Théorie des graphes</a>
+    <a class="suivant" href="cours-02-connexite-erdos-renyi.html"><small>Cours 2 →</small>Connexité et modèle d'Erdős–Rényi</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Théorie des graphes · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

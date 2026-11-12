@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="c">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pointeurs, allocation dynamique et structures · Algorithmique 2 L2</title>
+<meta name="description" content="Troisième cours de C : pointeurs et adresses, passage par adresse, tableaux et chaînes de caractères, allocation dynamique avec malloc et free, codes de retour et exit, structures, typedef et pointeurs sur structure.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-bases-du-c.html" title="Quiz · Les bases du C">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Algorithmique 2</a>
+    <span aria-current="page">Cours 3 · Pointeurs et structures</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Algorithmique 2</span> Cours 3 · L2 S3</p>
+    <h1>Pointeurs, allocation dynamique et structures</h1>
+    <p class="chapeau">Un pointeur contient une adresse : il permet à une fonction de modifier une variable, de parcourir un tableau ou une chaîne, et de réserver de la mémoire pendant l'exécution avec <code>malloc</code>. Les structures, enfin, regroupent sous un seul nom des données de types différents, ce qui prépare les listes chaînées.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd>Notes prises en cours, Google Docs « Cours 3 » (17 janvier 2025) et « Cours sur l'allocation dynamique » (23 janvier 2025), dossier Drive <code>L2/Algo2/cours/</code></dd></div>
+      <div><dt>Part de Claude</dt><dd>environ un tiers du texte (blocs Complément, badges Ajout), plus les explications qui relient des notes très brèves ; le reste suit les notes, dont la fiabilité n'est pas garantie</dd></div>
+      <div><dt>Enseignant</dt><dd>Non indiqué dans les notes</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Déclarer un pointeur, prendre une adresse avec <code>&amp;</code> et suivre un pointeur avec <code>*</code>.</li>
+        <li>Écrire une fonction qui modifie une variable de l'appelant.</li>
+        <li>Manipuler un tableau et une chaîne par un pointeur, et éviter les erreurs classiques sur <code>'\0'</code>.</li>
+        <li>Allouer avec <code>malloc</code>, vérifier le résultat, libérer avec <code>free</code> et sortir proprement avec <code>exit</code>.</li>
+        <li>Définir une structure, accéder à ses champs avec <code>.</code> et <code>-&gt;</code>, et nommer son type avec <code>typedef</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-01-bases-du-c.html">Cours 1</a> : types, caractères et chaînes.</li>
+        <li><a href="cours-02-entrees-sorties-controle.html">Cours 2</a> : <code>scanf</code>, boucles, fonctions et passage par valeur.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Note <span>Deux documents de notes</span></p>
+    <p>Le Google Doc « Cours 3 » ne contient qu'une phrase, la définition d'un pointeur ; le document « Cours sur l'allocation dynamique », rangé dans le même dossier une semaine plus tard, traite de <code>malloc</code>, <code>free</code>, <code>exit</code> et des structures. Cette page réunit les deux. Tout ce qui concerne l'usage des pointeurs, les tableaux et les chaînes est ajouté, à partir de ce que demandent les TD 6 (fonctions de chaînes) et les TP de la fourmi de Langton et du TP 6 noté (structures, listes). Trois lignes des notes sont corrigées avec le badge « À vérifier ». Les exemples ont été compilés et exécutés avec <code>gcc -Wall</code>.</p>
+  </div>
+
+  <section>
+    <h2>Les pointeurs <span class="ref">notes « Cours 3 »</span></h2>
+    <p>Toute variable occupe une place dans la mémoire, repérée par un numéro : son adresse. Un pointeur permet de manipuler cette adresse, et donc d'atteindre la variable sans la nommer.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Pointeur</span></p>
+      <p>Un <dfn>pointeur</dfn> est une variable qui contient une adresse mémoire.</p>
+      <p><span class="badge ajout">Ajout</span> On déclare un pointeur sur un type donné : <code>int *p;</code> déclare <code>p</code>, pointeur sur un <code>int</code>. Deux opérateurs servent à le manipuler :</p>
+      <ul>
+        <li><code>&amp;x</code> donne l'adresse de la variable <code>x</code> ;</li>
+        <li><code>*p</code> désigne la variable dont <code>p</code> contient l'adresse (on dit qu'on <dfn>déréférence</dfn> <code>p</code>).</li>
+      </ul>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Modifier x par un pointeur</span> <span class="badge ajout">Ajout</span></p>
+<pre><code class="language-c">int x = 5;
+int *p = &amp;x;      /* p contient l'adresse de x : on dit que p pointe sur x */
+*p = 8;           /* range 8 là où pointe p, c'est-à-dire dans x */
+printf("%d %d\n", x, *p);   /* 8 8 */</code></pre>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 520 150" width="520" role="img" aria-labelledby="fig-ptr-titre">
+        <title id="fig-ptr-titre">La variable p, à l'adresse 0x7ffc10, contient l'adresse 0x7ffc14 de la variable x, qui vaut 8</title>
+        <defs>
+          <marker id="fleche-ptr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein-accent"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="40" y="50" width="150" height="46" rx="6"/>
+        <text x="115" y="79" text-anchor="middle" class="mono">0x7ffc14</text>
+        <text x="115" y="36" text-anchor="middle" class="gras mono">p</text>
+        <text x="115" y="118" text-anchor="middle" class="t2 mono">adresse 0x7ffc10</text>
+        <rect class="boite-accent" x="330" y="50" width="150" height="46" rx="6"/>
+        <text x="405" y="79" text-anchor="middle" class="mono gras">8</text>
+        <text x="405" y="36" text-anchor="middle" class="gras mono">x</text>
+        <text x="405" y="118" text-anchor="middle" class="t2 mono">adresse 0x7ffc14</text>
+        <path class="accent" d="M190 73 H326" marker-end="url(#fleche-ptr)"/>
+        <text x="258" y="63" text-anchor="middle" class="t2">pointe sur</text>
+      </svg>
+      <figcaption>Après <code>int *p = &amp;x;</code> : <code>p</code> contient l'adresse de <code>x</code> (adresses fictives).</figcaption>
+    </figure>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le pointeur NULL</span></p>
+      <p>La constante <code>NULL</code> (de <code>&lt;stdlib.h&gt;</code> ou <code>&lt;stdio.h&gt;</code>) est une adresse qui ne désigne rien. On l'emploie pour dire « pas d'objet », et une fonction qui renvoie un pointeur la renvoie en cas d'échec (c'est le cas de <code>malloc</code>). Déréférencer <code>NULL</code>, ou un pointeur jamais initialisé, arrête le programme (<span class="en" lang="en">segmentation fault</span>) dans le meilleur des cas.</p>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>L'étoile a deux sens</span> <span class="badge ajout">Ajout</span></p>
+      <p>Dans une déclaration, <code>int *p</code> dit que <code>p</code> est un pointeur. Dans une expression, <code>*p</code> déréférence. Et <code>int *p, q;</code> déclare un pointeur <code>p</code> et un <em>entier</em> <code>q</code> : l'étoile ne porte que sur le nom qui la suit.</p>
+    </div>
+
+    <h3>Modifier une variable dans une fonction</h3>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le passage par adresse</span></p>
+      <p>Le <a href="cours-02-entrees-sorties-controle.html#passage-par-valeur">cours 2</a> a montré qu'une fonction reçoit une copie de ses arguments. Pour qu'elle modifie une variable de l'appelant, on lui passe l'adresse de cette variable, et elle travaille sur <code>*p</code>. L'exemple classique échange deux entiers :</p>
+<pre><code class="language-c">void echange(int *a, int *b)
+{
+    int t = *a;
+    *a = *b;
+    *b = t;
+}
+
+int x = 1, y = 2;
+echange(&amp;x, &amp;y);
+printf("%d %d\n", x, y);   /* 2 1 */</code></pre>
+      <p>C'est ce que fait <code>scanf("%d", &amp;n)</code> : elle reçoit l'adresse de <code>n</code> et y range le nombre lu. Le même mécanisme permet à une fonction de rendre plusieurs résultats.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Tableaux et chaînes de caractères <span class="ref">ajout · TD 6</span></h2>
+    <p>Les notes ne parlent pas des tableaux, mais les chaînes du TD 6 en sont, et leur lien avec les pointeurs est à la base de l'allocation dynamique. Toute cette partie est donc ajoutée.</p>
+
+    <h3>Tableaux et pointeurs</h3>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Un tableau est une suite de cases contiguës</span></p>
+      <p><code>int t[5] = {10, 20, 30, 40, 50};</code> réserve 5 entiers côte à côte, indicés de 0 à 4. La taille doit être connue à la compilation, d'où les <code>#define N 90</code> des TP. Dans une expression, le nom du tableau vaut l'adresse de sa première case : <code>t</code> équivaut à <code>&amp;t[0]</code>.</p>
+      <p>Si <code>p</code> pointe sur une case, <code>p + i</code> pointe <code>i</code> cases plus loin (et non <code>i</code> octets), d'où l'équivalence fondamentale :</p>
+      <div class="encadre">\[ \texttt{t[i]} \;\equiv\; \texttt{*(t + i)} \]</div>
+<pre><code class="language-c">int *q = t;
+printf("%d %d %d\n", *(q + 2), q[3], *t);   /* 30 40 10 */</code></pre>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Un tableau passé à une fonction</span> <span class="badge ajout">Ajout</span></p>
+      <p>Une fonction qui reçoit un tableau reçoit en fait l'adresse de sa première case : <code>void f(int t[])</code> et <code>void f(int *t)</code> sont équivalents. Elle peut donc modifier les cases du tableau de l'appelant, mais elle ne connaît pas sa taille (<code>sizeof t</code> y vaut 8, la taille d'un pointeur) : on la passe en paramètre, ou on s'arrête sur une sentinelle, comme le <code>'\0'</code> des chaînes. Le C ne vérifie jamais les indices : écrire dans <code>t[5]</code> écrase ce qui suit le tableau.</p>
+    </div>
+
+    <h3>Les chaînes de caractères</h3>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Un tableau de char terminé par <code>'\0'</code></span></p>
+      <p>Une chaîne est un tableau de <code>char</code> dont la fin est marquée par le caractère nul (<a href="cours-01-bases-du-c.html#les-chaines-de-caracteres">cours 1</a>). Une fonction qui traite une chaîne reçoit donc un <code>char *</code> et avance jusqu'au <code>'\0'</code> :</p>
+<pre><code class="language-c">int longueur(const char *s)       /* comme strlen */
+{
+    int n = 0;
+    while (s[n] != '\0')
+        n++;
+    return n;
+}
+
+void minuscules(char *s)          /* modifie la chaîne sur place */
+{
+    for (int i = 0; s[i] != '\0'; i++)
+        if (s[i] &gt;= 'A' &amp;&amp; s[i] &lt;= 'Z')
+            s[i] += 'a' - 'A';
+}
+
+char s[] = "Bonjour LE Monde";
+minuscules(s);
+printf("%s %d\n", s, longueur(s));   /* bonjour le monde 16 */</code></pre>
+      <p><code>const char *s</code> promet que la fonction ne modifiera pas la chaîne. La bibliothèque <code>&lt;string.h&gt;</code> fournit <code>strlen</code>, <code>strcpy(dest, src)</code>, <code>strcat(dest, src)</code> et <code>strcmp(s1, s2)</code> (qui vaut 0 si les chaînes sont égales). <code>strcpy</code> et <code>strcat</code> supposent que <code>dest</code> est assez grand, <code>'\0'</code> compris.</p>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Les erreurs du TD 6</span> <span class="badge ajout">Ajout</span></p>
+      <p>Les brouillons du TD 6 (<code>TD/TD6/exo1.txt</code> à <code>exo7.txt</code>) réunissent les erreurs les plus fréquentes sur les chaînes :</p>
+      <ul>
+        <li><code>int strlen(char c)</code> : le paramètre est <em>un</em> caractère ; une chaîne se passe par <code>char *c</code> (ou <code>char c[]</code>).</li>
+        <li><code>c[i] != "\0"</code> compare un caractère à l'adresse d'une chaîne ; on écrit <code>c[i] != '\0'</code>, avec des apostrophes. De même <code>s[i] &gt;= 'A'</code> et non <code>"A"</code>.</li>
+        <li><code>scanf("%c", &amp;c)</code> ne lit qu'un caractère. Une chaîne se lit avec <code>scanf("%999s", c)</code> : sans <code>&amp;</code>, puisque <code>c</code> est déjà une adresse, et avec une largeur pour ne pas déborder du tableau.</li>
+        <li><code>c[i] &gt;= 'A' || c[i] &lt;= 'Z'</code> est toujours vrai : il faut <code>&amp;&amp;</code>.</li>
+        <li>Renvoyer un tableau local (<code>char t[n]; … return t;</code>) rend une adresse qui ne vaut plus rien après le retour : on modifie la chaîne reçue, ou on alloue le résultat avec <code>malloc</code>.</li>
+        <li>Nommer ses fonctions <code>strlen</code>, <code>strcat</code> ou <code>atoi</code> entre en conflit avec la bibliothèque : on choisit <code>ma_strlen</code>, ou un nom français.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>L'allocation dynamique <span class="ref">notes « allocation dynamique », début</span></h2>
+    <p>Un tableau déclaré a une taille fixée à la compilation. Quand la taille n'est connue qu'à l'exécution (le nombre d'éléments est saisi, un mot est lu), on demande la mémoire au système pendant que le programme tourne.</p>
+
+    <h3>Réserver : malloc</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>malloc</span></p>
+      <p><code>malloc</code> est une fonction qui permet d'allouer dynamiquement de la mémoire pour le programme.</p>
+      <p><span class="badge ajout">Ajout</span> Déclarée dans <code>&lt;stdlib.h&gt;</code>, <code>malloc(n)</code> réserve <code>n</code> octets et renvoie l'adresse du premier, ou <code>NULL</code> si la mémoire manque. On range cette adresse dans un pointeur et on l'utilise comme un tableau.</p>
+    </div>
+<pre><code class="language-c">int n;
+scanf("%d", &amp;n);
+int *tab = malloc(n * sizeof(int));   /* n entiers */
+if (tab == NULL) {
+    fprintf(stderr, "Plus de mémoire\n");
+    exit(1);
+}
+for (int i = 0; i &lt; n; i++)
+    tab[i] = i * i;</code></pre>
+
+    <h3>sizeof</h3>
+    <p>Les notes précisent que <code>sizeof</code> n'est pas une fonction, et l'appellent une « instruction ».</p>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>sizeof est un opérateur</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>Le terme exact est <dfn>opérateur</dfn> : <code>sizeof</code> s'emploie dans une expression et donne une valeur, la taille en octets d'un type ou d'une expression, calculée à la compilation. Ce n'est donc pas une instruction (il ne termine rien par un point-virgule) ni une fonction (rien n'est appelé à l'exécution, et les parenthèses ne sont obligatoires qu'autour d'un nom de type : <code>sizeof(int)</code>, mais <code>sizeof x</code>). L'idée des notes est juste : <code>sizeof</code> n'est pas une fonction.</p>
+    </div>
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>Écrire la taille à partir du pointeur</span> <span class="badge ajout">Ajout</span></p>
+      <p><code>int *tab = malloc(n * sizeof *tab);</code> reste juste si l'on change plus tard le type de <code>tab</code> : <code>sizeof *tab</code> est la taille d'une case, quelle qu'elle soit. Pour une chaîne de <code>n</code> lettres, on n'oublie pas la place du <code>'\0'</code> : <code>malloc(strlen(s) + 1)</code>.</p>
+    </div>
+
+    <h3>Codes de retour et exit</h3>
+    <p>Les notes insistent sur la documentation des codes d'erreur. Quand on fait un <code>return</code> dans le <code>main</code>, le code renvoyé en sortie peut être intéressant à gérer selon ce qui s'est passé et la façon dont le programme s'est terminé. Il faut donc une documentation qui permette de le comprendre.</p>
+    <p>Pour sortir d'un programme depuis n'importe quelle fonction, on utilise <code>exit()</code>, avec en paramètre le code renvoyé en sortie.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Conventions</span></p>
+      <p>Par convention, 0 signifie que tout s'est bien passé, une autre valeur signale une erreur ; <code>&lt;stdlib.h&gt;</code> définit <code>EXIT_SUCCESS</code> et <code>EXIT_FAILURE</code>. <code>return 3;</code> dans <code>main</code> et <code>exit(3);</code> n'importe où ont le même effet. Le shell lit ce code dans <code>$?</code> :</p>
+<pre class="terminal"><code>$ ./prog fichier_absent.txt
+Erreur : fichier introuvable
+$ echo $?
+2</code></pre>
+      <p>Documenter, c'est par exemple écrire en tête du programme : « 0 : succès ; 1 : mémoire insuffisante ; 2 : fichier introuvable ». Un script qui lance le programme peut alors réagir à chaque cas.</p>
+    </div>
+
+    <h3>Libérer : free</h3>
+    <p>La fonction <code>free</code> permet de libérer de l'espace mémoire. Pour éviter les problèmes de double désallocation, on remet le pointeur à <code>NULL</code> une fois la zone libérée.</p>
+<pre><code class="language-c">free(chaine);
+chaine = NULL;</code></pre>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>La syntaxe des notes</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>Les notes écrivent <code>free chaine;</code> : <code>free</code> est une fonction, qui s'appelle avec des parenthèses, <code>free(chaine);</code>. Elles parlent aussi de « vider le contenu de chaine » : <code>free</code> ne vide pas la zone, elle la rend au système, et c'est le pointeur que l'on met à <code>NULL</code>, la zone n'existant plus.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi remettre à NULL</span></p>
+      <p>Après <code>free(p)</code>, <code>p</code> contient toujours l'ancienne adresse : c'est un <dfn>pointeur pendant</dfn> (<span class="en" lang="en">dangling pointer</span>). Le libérer une seconde fois, ou s'en servir, a un comportement indéfini, souvent un plantage plus loin, difficile à relier à sa cause. En revanche, <code>free(NULL)</code> ne fait rien : une fois <code>p</code> remis à <code>NULL</code>, un second <code>free(p)</code> est sans danger, et un test <code>if (p != NULL)</code> dit si la zone existe encore.</p>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>La fuite de mémoire</span> <span class="badge ajout">Ajout</span></p>
+      <p>Chaque <code>malloc</code> doit avoir son <code>free</code>. Perdre la dernière adresse d'une zone allouée (en réaffectant le pointeur, ou en quittant la fonction qui la détenait) la rend impossible à libérer : c'est une <dfn>fuite de mémoire</dfn>. Sous Linux, <code>valgrind ./prog</code> les détecte. On ne libère que ce qui vient de <code>malloc</code>, jamais un tableau déclaré.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>calloc et realloc</span></p>
+      <p><code>calloc(n, taille)</code> réserve <code>n</code> cases et les met à zéro. <code>realloc(p, nouvelle_taille)</code> agrandit ou réduit une zone déjà allouée, en la déplaçant si besoin : on récupère toujours son résultat, <code>p = realloc(p, …)</code>, après avoir vérifié qu'il n'est pas <code>NULL</code>.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Les structures <span class="ref">notes « allocation dynamique », fin</span></h2>
+    <p>Un tableau regroupe des données du même type. Pour décrire une personne (un nom, un âge, une taille), il faut regrouper des données de types différents : c'est le rôle des structures.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Structure</span></p>
+      <p>Une <dfn>structure</dfn> permet de stocker ensemble des données qui n'ont pas le même type. C'est comme une variable qui contient plusieurs variables, appelées <dfn>champs</dfn>.</p>
+    </div>
+    <p>On peut déclarer directement des variables d'une structure sans nom :</p>
+<pre><code class="language-c">struct {
+    char *nom;
+    int age;
+    float taille;
+} p1, p2;</code></pre>
+    <p>Mais on doit identifier les structures en nommant des <em>modèles</em> de structure :</p>
+<pre><code class="language-c">struct personne {
+    char *nom;
+    int age;
+    float taille;
+} p3;</code></pre>
+    <p>Ici, <code>personne</code> est un identificateur. Il crée en réalité une sorte de nouveau type de variable, qui comporte plusieurs champs à la fois. <span class="badge ajout">Ajout</span> Le type s'appelle <code>struct personne</code> : on peut ensuite déclarer d'autres variables avec <code>struct personne p4, p5;</code>. Sans nom de modèle, comme pour <code>p1</code> et <code>p2</code>, on ne pourrait plus déclarer de variable du même type ailleurs, ni passer ces variables à une fonction.</p>
+
+    <h3>Accéder à un champ</h3>
+    <p>Pour accéder à un champ, on écrit le nom de la variable, un point, puis le nom du champ. Cette syntaxe se compose : si un champ est lui-même une structure, on enchaîne les points.</p>
+<pre><code class="language-c">struct date {
+    int jour, mois, annee;
+};
+
+struct personne {
+    char *nom;
+    int age;
+    struct date naissance;     /* un champ structure */
+};
+
+struct personne p3;
+p3.nom = "Richard";
+p3.age = 40;
+p3.naissance.annee = 1985;     /* les points s'enchaînent */</code></pre>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Les exemples des notes</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>Les notes écrivent <code>personne.nom = "Richard";</code> et <code>personne.date.naissance</code>. Or <code>personne</code> est le nom du <em>modèle</em>, pas une variable : le point s'applique à une variable, ici <code>p3.nom</code>. Le second exemple suppose une structure imbriquée ; il est corrigé ci-dessus en <code>p3.naissance.annee</code>, le champ <code>naissance</code> étant de type <code>struct date</code>. L'affectation <code>p3.nom = "Richard"</code> fait pointer <code>nom</code> sur une chaîne constante : on peut la lire, pas la modifier ; pour un nom saisi, on alloue une copie avec <code>malloc</code>.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Initialiser, copier, comparer</span></p>
+      <p>Une structure s'initialise à la déclaration, dans l'ordre des champs : <code>struct date d = {14, 7, 1789};</code>. L'affectation <code>p4 = p3;</code> copie tous les champs d'un coup (mais pour <code>nom</code>, c'est l'adresse qui est copiée, pas la chaîne). En revanche, <code>p3 == p4</code> n'existe pas : on compare champ par champ.</p>
+    </div>
+
+    <h3>Nommer un type : typedef</h3>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Éviter de répéter struct</span></p>
+      <p><code>typedef</code> donne un nouveau nom à un type existant. Les TP s'en servent pour leurs structures : le TP noté de la fourmi de Langton déclare</p>
+<pre><code class="language-c">typedef struct {
+    int x;
+    int y;
+    t_direction dir;
+} t_fourmi;
+
+t_fourmi f = {30, 40, nord};   /* plus besoin d'écrire struct */</code></pre>
+      <p>Les préfixes <code>t_</code> ou suffixes <code>_t</code> sont des conventions pour reconnaître un nom de type.</p>
+    </div>
+
+    <h3>Pointeur sur structure</h3>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>L'opérateur <code>-&gt;</code></span></p>
+      <p>Passer une structure à une fonction en copie toute la structure, et la fonction ne peut pas modifier l'original. On passe donc souvent son adresse. Pour atteindre un champ à partir d'un pointeur, <code>(*p).age</code> s'abrège en <code>p-&gt;age</code> :</p>
+<pre><code class="language-c">void vieillir(struct personne *p)
+{
+    p-&gt;age++;                  /* même chose que (*p).age++ */
+}
+
+vieillir(&amp;p3);                 /* p3.age passe de 40 à 41 */</code></pre>
+      <p>Les parenthèses de <code>(*p).age</code> sont nécessaires, car le point est prioritaire sur l'étoile : <code>*p.age</code> voudrait dire <code>*(p.age)</code>.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Structures allouées et structures chaînées</span></p>
+      <p>Une structure peut être allouée dynamiquement, et contenir un pointeur vers une autre structure du même type. C'est la base des <dfn>listes chaînées</dfn>, que le TP 6 noté manipule à travers des primitives fournies (<code>en_tete</code>, <code>suivant</code>, <code>ajout_droit</code>…) :</p>
+<pre><code class="language-c">typedef struct element {
+    char lettre;
+    struct element *suivant;   /* NULL pour le dernier */
+} element_t;
+
+element_t *e = malloc(sizeof *e);
+if (e == NULL)
+    exit(EXIT_FAILURE);
+e-&gt;lettre = 'a';
+e-&gt;suivant = NULL;
+/* … */
+free(e);</code></pre>
+      <p>Le nom <code>struct element</code> est obligatoire ici : à l'intérieur de sa propre définition, le nom défini par <code>typedef</code> n'existe pas encore. Les pointeurs et les structures chaînées sont repris en détail en <a href="../../algorithmique-3/generated_courses/cours-01-pointeurs.html">Algorithmique 3</a>.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Exercices <span class="ref">ajout</span></h2>
+    <p>Exercices proposés, dans l'esprit du TD 6 ; les solutions ne viennent pas de l'enseignant.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Suivre les pointeurs</span></p>
+      <p>Qu'affiche ce fragment ?</p>
+<pre><code class="language-c">int a = 3, b = 7;
+int *p = &amp;a, *q = &amp;b;
+*p = *q + 1;
+p = q;
+*p = 0;
+printf("%d %d\n", a, b);</code></pre>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p><code>8 0</code>. <code>*p = *q + 1</code> range 8 dans <code>a</code> ; <code>p = q</code> fait pointer <code>p</code> sur <code>b</code> ; <code>*p = 0</code> met donc <code>b</code> à 0.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Inverser une chaîne</span></p>
+      <p>Écrire <code>void inverse(char *s)</code>, qui retourne la chaîne sur place : <code>"abc"</code> devient <code>"cba"</code>.</p>
+      <details class="indice"><summary>Indice</summary><p>Deux indices, l'un au début, l'autre sur le dernier caractère avant <code>'\0'</code>, qui se rapprochent en échangeant leurs caractères.</p></details>
+      <details class="solution"><summary>Solution proposée</summary>
+<pre><code class="language-c">void inverse(char *s)
+{
+    int i = 0, j = 0;
+    while (s[j] != '\0')
+        j++;
+    j--;                        /* dernier caractère */
+    while (i &lt; j) {
+        char t = s[i];
+        s[i] = s[j];
+        s[j] = t;
+        i++;
+        j--;
+    }
+}</code></pre>
+        <p>Pas besoin de tableau intermédiaire, ni de renvoyer la chaîne : la fonction modifie celle de l'appelant, dont elle a reçu l'adresse.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Copier une chaîne</span></p>
+      <p>Écrire <code>char *copie(const char *s)</code>, qui renvoie une nouvelle chaîne allouée avec <code>malloc</code>, identique à <code>s</code>, ou <code>NULL</code> si la mémoire manque. Qui doit libérer le résultat ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+<pre><code class="language-c">char *copie(const char *s)
+{
+    char *c = malloc(strlen(s) + 1);   /* + 1 pour '\0' */
+    if (c == NULL)
+        return NULL;
+    strcpy(c, s);
+    return c;
+}</code></pre>
+        <p>C'est l'appelant, quand il n'a plus besoin de la copie : <code>free(c); c = NULL;</code>. Contrairement à un tableau local, la zone allouée survit au retour de la fonction.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 4 <span>Une structure de date</span></p>
+      <p>Avec <code>struct date</code> définie plus haut, écrire <code>int avant(struct date d1, struct date d2)</code>, qui renvoie 1 si <code>d1</code> est strictement antérieure à <code>d2</code>, 0 sinon.</p>
+      <details class="solution"><summary>Solution proposée</summary>
+<pre><code class="language-c">int avant(struct date d1, struct date d2)
+{
+    if (d1.annee != d2.annee)
+        return d1.annee &lt; d2.annee;
+    if (d1.mois != d2.mois)
+        return d1.mois &lt; d2.mois;
+    return d1.jour &lt; d2.jour;
+}</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Un pointeur est une variable qui contient une adresse ; <code>&amp;x</code> donne l'adresse de <code>x</code>, <code>*p</code> la variable pointée.</li>
+        <li>Pour qu'une fonction modifie une variable de l'appelant, on lui passe son adresse et elle écrit dans <code>*p</code> (comme <code>scanf</code>).</li>
+        <li>Le nom d'un tableau vaut l'adresse de sa première case, et <code>t[i]</code> équivaut à <code>*(t + i)</code> ; une fonction ne connaît pas la taille du tableau reçu.</li>
+        <li>Une chaîne est un tableau de <code>char</code> terminé par <code>'\0'</code> ; on la passe en <code>char *</code> et on compare ses caractères à <code>'\0'</code>, pas à <code>"\0"</code>.</li>
+        <li><code>malloc(n)</code> réserve <code>n</code> octets et renvoie <code>NULL</code> en cas d'échec : on teste toujours le résultat.</li>
+        <li><code>sizeof</code> est un opérateur, évalué à la compilation ; <code>malloc(n * sizeof *p)</code> alloue <code>n</code> cases.</li>
+        <li>Chaque <code>malloc</code> a son <code>free(p)</code>, suivi de <code>p = NULL</code> pour éviter la double libération.</li>
+        <li><code>exit(code)</code> termine le programme ; 0 signale le succès, et les autres codes se documentent.</li>
+        <li>Une structure regroupe des champs de types différents ; on accède à un champ par <code>variable.champ</code>, ou <code>pointeur-&gt;champ</code>, et <code>typedef</code> donne un nom court au type.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Après <code>int x = 4; int *p = &amp;x; *p += 1;</code>, que vaut <code>x</code> ?</summary>
+        <div><p>5 : <code>*p</code> désigne <code>x</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi <code>void echange(int a, int b)</code> ne peut-elle pas échanger deux variables ?</summary>
+        <div><p>Elle reçoit des copies : elle échange ses copies, et les variables de l'appelant restent intactes. Il faut <code>void echange(int *a, int *b)</code> et l'appel <code>echange(&amp;x, &amp;y)</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi n'écrit-on pas de <code>&amp;</code> dans <code>scanf("%s", mot)</code>, avec <code>char mot[50]</code> ?</summary>
+        <div><p>Le nom du tableau vaut déjà l'adresse de sa première case.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Combien d'octets faut-il allouer pour copier une chaîne de 10 lettres ?</summary>
+        <div><p>11 : <code>malloc(strlen(s) + 1)</code>, pour le <code>'\0'</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Qu'est-ce qu'un pointeur pendant, et comment s'en protège-t-on ?</summary>
+        <div><p>Un pointeur qui contient encore l'adresse d'une zone libérée. On le remet à <code>NULL</code> juste après <code>free</code> : <code>free(NULL)</code> ne fait rien et le test <code>p != NULL</code> devient fiable.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Avec <code>struct personne p3;</code>, pourquoi <code>personne.age = 20;</code> est-il faux ?</summary>
+        <div><p><code>personne</code> est le nom du modèle, pas une variable : on écrit <code>p3.age = 20;</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>À quoi équivaut <code>p-&gt;nom</code> ?</summary>
+        <div><p>À <code>(*p).nom</code> : le champ <code>nom</code> de la structure pointée par <code>p</code>.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-02-entrees-sorties-controle.html"><small>← Précédent</small>Entrées-sorties et structures de contrôle</a>
+    <a class="suivant" href="index.html"><small>Accueil →</small>Algorithmique 2</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Algorithmique 2 · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

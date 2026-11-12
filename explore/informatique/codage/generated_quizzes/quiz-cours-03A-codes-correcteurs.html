@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="codage">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Codes correcteurs d'erreurs · Codage L3</title>
+<meta name="description" content="Quiz interactif sur le cours 3A de codage de l'information (L3) : erreurs de transmission, paramètres d'un code en bloc, distance de Hamming, détection et correction, effacements, codes parfaits, matrices génératrice et de contrôle, syndrome et table de décodage, avec deux tables à remplir et un décodeur par syndrome en C.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/quiz/assets/quiz.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/quiz/assets/quiz.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="../generated_courses/index.html">Codage</a>
+    <span aria-current="page">Quiz · Codes correcteurs d'erreurs</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Codage</span> Quiz · L3 S5</p>
+    <h1>Codes correcteurs d'erreurs</h1>
+    <p class="chapeau">Vingt-trois questions sur le cours 3A : erreurs de transmission et paramètres d'un code, distance de Hamming et pouvoir de correction, effacements et codes parfaits, matrices génératrice et de contrôle, syndrome et table de décodage. Deux tables à remplir, et un décodeur par syndrome à écrire en C, exécuté et corrigé automatiquement.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-03A-codes-correcteurs.html">Cours 3A · Codes correcteurs d'erreurs</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-26">26 sept. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Codage · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "codage-cours-03a-codes-correcteurs",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 3A · Codes correcteurs d'erreurs",
+      "lien": "../generated_courses/cours-03A-codes-correcteurs.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "qcm",
+      "theme": "Erreurs et paramètres",
+      "difficulte": 1,
+      "enonce": "<p>La foudre, ou le démarrage d'un moteur, produit un bruit impulsif. Quel type d'erreurs provoque-t-il sur une transmission numérique ?</p>",
+      "choix": [
+        "Des erreurs par paquets : plusieurs bits consécutifs faux",
+        "Des erreurs aléatoires : des bits isolés, indépendants les uns des autres",
+        "Des effacements : des bits dont le récepteur connaît la position",
+        "Aucune erreur : un bruit aussi bref est filtré par le récepteur"
+      ],
+      "reponse": 0,
+      "explication": "<p>Un bruit impulsif est bref mais intense : il détruit plusieurs bits d'affilée, ce sont des erreurs par paquets. Les erreurs aléatoires, sur des bits isolés, viennent du bruit blanc. Les codes en bloc du cours visent les erreurs aléatoires : un paquet de plus de \\(t\\) erreurs dans un même bloc les met en échec.</p>",
+      "revoir": {
+        "texte": "Cours 3A · Deux types d'erreurs",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#deux-types-d-erreurs"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "numerique",
+      "theme": "Erreurs et paramètres",
+      "difficulte": 1,
+      "enonce": "<p>Un code en bloc \\(C(31, 26)\\) code des blocs de 26 éb d'information en mots de 31 éb. Quel est son rendement ? Donner trois décimales.</p>",
+      "reponse": 0.839,
+      "tolerance": 0.001,
+      "explication": "<p>Rendement \\(m/n = 26/31 \\approx 0{,}839\\). Le code ajoute \\(k = 31 - 26 = 5\\) éb de contrôle : sa redondance vaut \\(5/31 \\approx 0{,}161\\), et redondance et rendement s'additionnent à 1.</p>",
+      "revoir": {
+        "texte": "Cours 3A · Paramètres d'un code",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#parametres-d-un-code"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "vrai-faux",
+      "theme": "Erreurs et paramètres",
+      "difficulte": 1,
+      "enonce": "<p>Dans la notation du cours, un code \\(C(n, m)\\) a \\(m\\) éléments binaires de contrôle par mot.</p>",
+      "reponse": false,
+      "explication": "<p>Faux. \\(m\\) est le nombre d'éb d'information, et \\(k = n - m\\) le nombre d'éb de contrôle. Beaucoup de livres notent au contraire \\((n, k)\\), avec \\(k\\) bits d'information : avant d'appliquer une formule trouvée ailleurs, il faut vérifier la convention.</p>",
+      "revoir": {
+        "texte": "Cours 3A · Paramètres d'un code",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#parametres-d-un-code"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "reponse-courte",
+      "theme": "Erreurs et paramètres",
+      "difficulte": 1,
+      "enonce": "<p>Calculer modulo 2 la somme \\(10110 + 11100\\). Écrire le résultat sur 5 bits, sans espaces.</p>",
+      "reponses": [
+        "01010"
+      ],
+      "explication": "<p>Bit à bit, sans retenue : \\(1 + 1 = 0\\), \\(0 + 1 = 1\\), \\(1 + 1 = 0\\), \\(1 + 0 = 1\\), \\(0 + 0 = 0\\), d'où 01010. C'est un ou exclusif ; comme \\(1 + 1 = 0\\), soustraire revient à additionner.</p>",
+      "revoir": {
+        "texte": "Cours 3A · Arithmétique modulo 2",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#arithmetique-modulo-2"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "qcm",
+      "theme": "Erreurs et paramètres",
+      "difficulte": 1,
+      "enonce": "<p>Qu'est-ce qui distingue un code convolutionnel d'un code en bloc ?</p>",
+      "choix": [
+        "Ses éb de contrôle dépendent aussi des blocs antérieurs du message",
+        "Il n'ajoute aucun éb de contrôle au message",
+        "Il code chaque bloc indépendamment des autres",
+        "Il ne sert qu'à détecter les erreurs, jamais à les corriger"
+      ],
+      "reponse": 0,
+      "explication": "<p>Dans un code convolutionnel, ou récurrent, les éb de contrôle sont introduits de façon continue et dépendent aussi des blocs précédents : le codeur a une mémoire. Un code en bloc code au contraire chaque bloc de \\(m\\) éb indépendamment des autres.</p>",
+      "revoir": {
+        "texte": "Cours 3A · Codes convolutionnels",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#codes-convolutionnels"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "numerique",
+      "theme": "Distance et correction",
+      "difficulte": 1,
+      "enonce": "<p>Quelle est la distance de Hamming entre les mots 101101 et 100110 ?</p>",
+      "reponse": 3,
+      "explication": "<p>Les mots diffèrent en positions 3, 5 et 6 : \\(d = 3\\). C'est aussi le poids de leur somme, \\(101101 + 100110 = 001011\\), qui compte trois 1.</p>",
+      "revoir": {
+        "texte": "Cours 3A · Poids et distance de Hamming",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#poids-et-distance-de-hamming"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "numerique",
+      "theme": "Distance et correction",
+      "difficulte": 2,
+      "enonce": "<p>Quelle est la distance minimale du code linéaire \\(\\{00000,\\ 01101,\\ 10111,\\ 11010\\}\\) ?</p>",
+      "reponse": 3,
+      "indices": [
+        "<p>Pour un code linéaire, la distance minimale est le plus petit poids d'un mot de code non nul.</p>"
+      ],
+      "explication": "<p>Les mots non nuls ont pour poids 3, 4 et 3 : \\(d_m = 3\\). Inutile de comparer les mots deux à deux : \\(d(c, c') = w(c + c')\\), et \\(c + c'\\) est encore un mot du code. Ce code détecte 2 erreurs, ou en corrige 1.</p>",
+      "revoir": {
+        "texte": "Cours 3A · Poids et distance de Hamming",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#poids-et-distance-de-hamming"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "qcm",
+      "theme": "Distance et correction",
+      "difficulte": 2,
+      "enonce": "<p>Un code linéaire a une distance minimale \\(d_m = 5\\). Que peut-il faire, sur un canal sans symbole d'effacement ?</p>",
+      "choix": [
+        "Détecter 4 erreurs, ou en corriger 2",
+        "Détecter 5 erreurs, ou en corriger 2",
+        "Détecter 4 erreurs et, dans le même mot, en corriger 2",
+        "Détecter 4 erreurs, ou en corriger 3"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Détection : \\(d_m - 1\\) erreurs ; correction : \\(\\lfloor (d_m - 1)/2 \\rfloor\\) erreurs.</p>"
+      ],
+      "explication": "<p>Il détecte \\(d_m - 1 = 4\\) erreurs, ou en corrige \\(\\lfloor 4/2 \\rfloor = 2\\). Les deux ne se cumulent pas : un décodeur qui corrige remplace le mot reçu par le mot de code le plus proche, et trois ou quatre erreurs peuvent le faire « corriger » vers un mauvais mot sans rien signaler.</p>",
+      "revoir": {
+        "texte": "Cours 3A · Détecter et corriger",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#detecter-et-corriger"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "vrai-faux",
+      "theme": "Distance et correction",
+      "difficulte": 2,
+      "enonce": "<p>Un code de distance minimale 3, utilisé pour corriger, corrige toute erreur simple et signale en même temps toute erreur double.</p>",
+      "reponse": false,
+      "indices": [
+        "<p>Avec deux erreurs, de quel mot de code le mot reçu peut-il se retrouver le plus proche ?</p>"
+      ],
+      "explication": "<p>Faux. Deux erreurs peuvent amener le mot reçu à distance 1 d'un autre mot de code : le décodeur le corrige vers ce mauvais mot, sans rien signaler. Avec \\(d_m = 3\\), on détecte 2 erreurs <em>ou</em> on en corrige 1, pas les deux à la fois.</p>",
+      "revoir": {
+        "texte": "Cours 3A · Détecter et corriger",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#detecter-et-corriger"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "numerique",
+      "theme": "Effacements et codes parfaits",
+      "difficulte": 2,
+      "enonce": "<p>Un code linéaire a une distance minimale \\(d_m = 7\\). S'il doit corriger 2 erreurs dans un mot reçu, combien d'effacements peut-il remplir au plus dans ce même mot ?</p>",
+      "reponse": 2,
+      "indices": [
+        "<p>Condition : \\(2t + \\rho + 1 \\le d_m\\).</p>"
+      ],
+      "explication": "<p>\\(2 \\times 2 + \\rho + 1 \\le 7\\) donne \\(\\rho \\le 2\\). Dans le budget \\(d_m - 1 = 6\\), chaque erreur coûte 2 et chaque effacement 1 : deux erreurs consomment 4, il reste 2 pour les effacements. Sans erreur à corriger, ce code remplirait jusqu'à 6 effacements.</p>",
+      "revoir": {
+        "texte": "Cours 3A · Canal avec symbole d'effacement",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#canal-avec-symbole-d-effacement"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "qcm-multi",
+      "theme": "Effacements et codes parfaits",
+      "difficulte": 3,
+      "enonce": "<p>Parmi ces codes binaires, lesquels sont <strong>parfaits</strong> ?</p>",
+      "choix": [
+        "Le code de répétition \\((7, 1)\\), qui corrige 3 erreurs",
+        "Un code \\((31, 26)\\) qui corrige 1 erreur",
+        "Le code \\((6, 3)\\) du cours, qui corrige 1 erreur",
+        "Un code \\((5, 2)\\) qui corrige 1 erreur",
+        "Le code de répétition \\((4, 1)\\), qui corrige 1 erreur"
+      ],
+      "reponses": [
+        0,
+        1
+      ],
+      "indices": [
+        "<p>En binaire, un code \\(t\\)-correcteur est parfait si et seulement si \\(\\sum_{j=0}^{t} C_n^j = 2^{n-m}\\).</p>",
+        "<p>Pour \\(t = 1\\), la condition devient \\(1 + n = 2^k\\).</p>"
+      ],
+      "explication": "<p>\\((7, 1)\\) : \\(1 + 7 + 21 + 35 = 64 = 2^6\\), parfait. \\((31, 26)\\) : \\(1 + 31 = 32 = 2^5\\), parfait (c'est un code de Hamming). \\((6, 3)\\) : \\(7 \\ne 8\\) ; \\((5, 2)\\) : \\(6 \\ne 8\\) ; \\((4, 1)\\) : \\(5 \\ne 8\\). Dans un code qui n'est pas parfait, certains mots reçus ne sont dans aucune boule de rayon \\(t\\).</p>",
+      "revoir": {
+        "texte": "Cours 3A · Codes parfaits",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#codes-parfaits"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "atelier",
+      "editeur": "table",
+      "theme": "Matrices génératrice et de contrôle",
+      "difficulte": 2,
+      "titre": "Coder avec un code (6, 3)",
+      "enonce": "<p>Un code systématique \\((6, 3)\\) calcule ses éb de contrôle ainsi : \\(a_4 = u_1 + u_2\\), \\(a_5 = u_2 + u_3\\), \\(a_6 = u_1 + u_2 + u_3\\). Coder les messages du tableau.</p>",
+      "consigne": "Écrire chaque mot de code sur 6 éb, sans espaces : le message, puis les trois éb de contrôle.",
+      "options": {
+        "verrou": "depart",
+        "lignes": false,
+        "ordre": true,
+        "mono": true
+      },
+      "depart": [
+        "| Message | Mot de code |",
+        "|---|---|",
+        "| 100 |  |",
+        "| 010 |  |",
+        "| 001 |  |",
+        "| 110 |  |",
+        "| 101 |  |",
+        "| 111 |  |"
+      ],
+      "solution": [
+        "| Message | Mot de code |",
+        "|---|---|",
+        "| 100 | 100101 |",
+        "| 010 | 010111 |",
+        "| 001 | 001011 |",
+        "| 110 | 110010 |",
+        "| 101 | 101110 |",
+        "| 111 | 111001 |"
+      ],
+      "indices": [
+        "<p>Le code est systématique : les trois premiers éb du mot recopient le message.</p>",
+        "<p>Par linéarité, le mot de 110 est la somme des mots de 100 et de 010.</p>"
+      ],
+      "explication": "<p>Pour 100 : \\(a_4 = 1\\), \\(a_5 = 0\\), \\(a_6 = 1\\), d'où 100101. De même 010 → 010111 et 001 → 001011 : ce sont les colonnes de \\(G\\). Par linéarité, 110 → 100101 + 010111 = 110010, 101 → 101110 et 111 → 111001. Le plus petit poids non nul vaut 3 : ce code corrige, lui aussi, une erreur.</p>",
+      "revoir": {
+        "texte": "Cours 3A · Forme systématique",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#forme-systematique"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "qcm",
+      "theme": "Matrices génératrice et de contrôle",
+      "difficulte": 2,
+      "enonce": "<p>Un code systématique a pour matrice génératrice \\(G = \\begin{pmatrix} I_3 \\\\ P \\end{pmatrix}\\), avec \\(P = \\begin{pmatrix} 1 & 1 & 0 \\\\ 0 & 1 & 1 \\\\ 1 & 1 & 1 \\end{pmatrix}\\). Quelle est, en binaire, la transposée \\(H^T\\) de sa matrice de contrôle ?</p>",
+      "choix": [
+        "\\(H^T = (P \\mid I_3)\\)",
+        "\\(H^T = (I_3 \\mid P)\\)",
+        "\\(H^T = (P^T \\mid I_3)\\)",
+        "\\(H^T = (I_3 \\mid P^T)\\)"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>\\(H = \\begin{pmatrix} -P^T \\\\ I_{n-m} \\end{pmatrix}\\), et modulo 2, \\(-P^T = P^T\\).</p>"
+      ],
+      "explication": "<p>En binaire, \\(H = \\begin{pmatrix} P^T \\\\ I_3 \\end{pmatrix}\\), donc \\(H^T = (P \\mid I_3) = \\begin{pmatrix} 1&1&0&1&0&0 \\\\ 0&1&1&0&1&0 \\\\ 1&1&1&0&0&1 \\end{pmatrix}\\). Chaque ligne est une équation de contrôle : la première impose \\(a_4 = a_1 + a_2\\). Ce \\(P\\) n'est pas symétrique : confondre \\(P\\) et \\(P^T\\) donnerait des équations fausses.</p>",
+      "revoir": {
+        "texte": "Cours 3A · Matrice de contrôle",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#matrice-de-controle"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "numerique",
+      "theme": "Syndrome et décodage",
+      "difficulte": 1,
+      "enonce": "<p>Un code linéaire \\((10, 6)\\) est décodé par syndrome. Combien de valeurs le syndrome peut-il prendre ?</p>",
+      "reponse": 16,
+      "explication": "<p>Le syndrome \\(H^T y\\) a \\(k = n - m = 4\\) éb : il prend \\(2^4 = 16\\) valeurs. La table de décodage compte donc 16 lignes, au lieu de comparer le mot reçu aux \\(2^6 = 64\\) mots de code.</p>",
+      "revoir": {
+        "texte": "Cours 3A · La table de décodage",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#la-table-de-decodage"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "qcm",
+      "theme": "Syndrome et décodage",
+      "difficulte": 2,
+      "enonce": "<p>Un mot de code \\(c\\) est émis, et l'on reçoit \\(y = c + e\\). De quoi dépend le syndrome \\(s(y) = H^T y\\) ?</p>",
+      "choix": [
+        "De l'erreur \\(e\\) seulement",
+        "Du mot de code \\(c\\) seulement",
+        "De \\(c\\) et de \\(e\\)",
+        "Du nombre d'erreurs seulement, pas de leur position"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Que vaut \\(H^T c\\) pour un mot de code \\(c\\) ?</p>"
+      ],
+      "explication": "<p>\\(H^T y = H^T c + H^T e = 0 + H^T e\\) : le syndrome ne dépend que de l'erreur (la maladie), pas du mot émis (le patient). La position des erreurs compte : une erreur simple en position \\(i\\) a pour syndrome la colonne \\(i\\) de \\(H^T\\).</p>",
+      "revoir": {
+        "texte": "Cours 3A · Syndrome",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#syndrome"
+      }
+    },
+    {
+      "id": "q16",
+      "type": "reponse-courte",
+      "theme": "Syndrome et décodage",
+      "difficulte": 2,
+      "enonce": "<p>Le code \\((6, 3)\\) du cours a pour matrice \\(H^T = \\begin{pmatrix} 0&1&1&1&0&0 \\\\ 1&0&1&0&1&0 \\\\ 1&1&0&0&0&1 \\end{pmatrix}\\). Calculer le syndrome du mot reçu 011010. Écrire ses trois éb sans espaces.</p>",
+      "reponses": [
+        "001"
+      ],
+      "indices": [
+        "<p>Le syndrome est la somme des colonnes de \\(H^T\\) désignées par les 1 du mot reçu.</p>"
+      ],
+      "explication": "<p>Les 1 sont en positions 2, 3 et 5 : \\(101 + 110 + 010 = 001\\). C'est la colonne 6 : l'erreur porte sur le dernier éb, le mot émis était 011011 et le message 011.</p>",
+      "revoir": {
+        "texte": "Cours 3A · Décoder par le syndrome",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#decoder-par-le-syndrome"
+      }
+    },
+    {
+      "id": "q17",
+      "type": "atelier",
+      "editeur": "table",
+      "theme": "Syndrome et décodage",
+      "difficulte": 3,
+      "titre": "Décodage par la table",
+      "enonce": "<p>On reprend le code \\((6, 3)\\) du cours, de matrice \\(H^T = \\begin{pmatrix} 0&1&1&1&0&0 \\\\ 1&0&1&0&1&0 \\\\ 1&1&0&0&0&1 \\end{pmatrix}\\). Sa table de décodage associe aux syndromes 000, 001, 010, 011, 100, 101, 110 et 111 les séquences 000000, 000001, 000010, 100000, 000100, 010000, 001000 et 100100. Décoder les quatre mots reçus du tableau.</p>",
+      "consigne": "Écrire le syndrome (3 éb), le mot décodé (6 éb) et le message (3 éb), sans espaces.",
+      "options": {
+        "verrou": "depart",
+        "lignes": false,
+        "ordre": true,
+        "mono": true
+      },
+      "depart": [
+        "| Mot reçu | Syndrome | Mot décodé | Message |",
+        "|---|---|---|---|",
+        "| 111100 |  |  |  |",
+        "| 001011 |  |  |  |",
+        "| 110001 |  |  |  |",
+        "| 011011 |  |  |  |"
+      ],
+      "solution": [
+        "| Mot reçu | Syndrome | Mot décodé | Message |",
+        "|---|---|---|---|",
+        "| 111100 | 100 | 111000 | 111 |",
+        "| 001011 | 101 | 011011 | 011 |",
+        "| 110001 | 111 | 010101 | 010 |",
+        "| 011011 | 000 | 011011 | 011 |"
+      ],
+      "indices": [
+        "<p>Calculer le syndrome comme la somme des colonnes de \\(H^T\\) désignées par les 1 du mot, puis lire la séquence \\(z\\) dans la table et ajouter : \\(c = y + z\\).</p>",
+        "<p>Un syndrome nul signifie que le mot reçu est déjà un mot de code.</p>"
+      ],
+      "explication": "<p>111100 : \\(011 + 101 + 110 + 100 = 100\\), la colonne 4, d'où 111000. 001011 : \\(110 + 010 + 001 = 101\\), la colonne 2, d'où 011011. 110001 : \\(011 + 101 + 001 = 111\\), qui n'est aucune colonne : la table donne l'erreur double 100100, d'où 010101. 011011 : syndrome nul, c'est un mot de code. Le message est formé des trois premiers éb du mot décodé.</p>",
+      "revoir": {
+        "texte": "Cours 3A · Corriger un mot reçu",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#corriger-un-mot-recu"
+      }
+    },
+    {
+      "id": "q18",
+      "type": "reponse-courte",
+      "theme": "Syndrome et décodage",
+      "difficulte": 3,
+      "enonce": "<p>Le code de Hamming \\((7, 4)\\) des exercices du cours calcule \\(a_5 = u_1 + u_2 + u_4\\), \\(a_6 = u_1 + u_3 + u_4\\) et \\(a_7 = u_2 + u_3 + u_4\\). On reçoit le mot 1001100, qui contient au plus une erreur. Quel est le message émis ? Écrire ses 4 éb sans espaces.</p>",
+      "reponses": [
+        "1101"
+      ],
+      "indices": [
+        "<p>En binaire, \\(H^T = (P \\mid I_3)\\) : écrire ses sept colonnes, puis additionner celles que désignent les 1 du mot reçu.</p>",
+        "<p>Les colonnes de \\(H^T\\) sont 110, 101, 011, 111, 100, 010 et 001.</p>"
+      ],
+      "explication": "<p>Les 1 sont en positions 1, 4 et 5 : \\(110 + 111 + 100 = 101\\), la colonne 2. On inverse le deuxième éb : \\(c = 1101100\\), message 1101. Vérification : \\(a_5 = 1 + 1 + 1 = 1\\), \\(a_6 = 1 + 0 + 1 = 0\\), \\(a_7 = 1 + 0 + 1 = 0\\).</p>",
+      "revoir": {
+        "texte": "Cours 3A · Décoder par le syndrome",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#decoder-par-le-syndrome"
+      }
+    },
+    {
+      "id": "q19",
+      "type": "qcm",
+      "theme": "Syndrome et décodage",
+      "difficulte": 3,
+      "enonce": "<p>Avec le code \\((6, 3)\\) du cours et sa table de décodage, le mot reçu a pour syndrome 111. Que fait le décodeur ?</p>",
+      "choix": [
+        "Il ajoute 100100 au mot reçu : il suppose une erreur double, sur les éb 1 et 4",
+        "Il signale une erreur impossible à corriger et rejette le mot",
+        "Il inverse un seul éb : 111 est le syndrome d'une erreur simple",
+        "Il garde le mot reçu tel quel : 111 est le syndrome d'un mot de code"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Le syndrome 111 est-il l'une des colonnes de \\(H^T\\) ?</p>"
+      ],
+      "explication": "<p>Les six erreurs simples ont pour syndromes les six colonnes de \\(H^T\\) (011, 101, 110, 100, 010, 001) ; 111 n'en fait pas partie. Trois erreurs doubles ont ce syndrome (100100, 010010, 001001) ; la table en retient une, 100100, arbitrairement. Si l'erreur réelle était 010010, le décodeur se trompe sans le savoir. C'est parce que ce huitième syndrome reste disponible que le code \\((6, 3)\\) n'est pas parfait.</p>",
+      "revoir": {
+        "texte": "Cours 3A · La table de décodage",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#la-table-de-decodage"
+      }
+    },
+    {
+      "id": "q20",
+      "type": "numerique",
+      "theme": "Syndrome et décodage",
+      "difficulte": 3,
+      "enonce": "<p>Les mots du code \\((6, 3)\\) du cours traversent un canal binaire symétrique de probabilité d'erreur \\(p = 0{,}05\\). Avec la table de décodage, quelle est la probabilité de mal interpréter un mot reçu ? Donner trois décimales.</p>",
+      "reponse": 0.0307,
+      "tolerance": 0.0006,
+      "indices": [
+        "<p>Le mot est bien interprété quand l'erreur est l'une des huit séquences \\(z\\) de la table.</p>",
+        "<p>Probabilité de mauvaise interprétation : \\(1 - \\{(1-p)^6 + 6p(1-p)^5 + p^2(1-p)^4\\}\\).</p>"
+      ],
+      "explication": "<p>\\(0{,}95^6 \\approx 0{,}7351\\), \\(6 \\times 0{,}05 \\times 0{,}95^5 \\approx 0{,}2321\\), \\(0{,}05^2 \\times 0{,}95^4 \\approx 0{,}0020\\). Leur somme vaut environ 0,9693, d'où une probabilité de mal interpréter d'environ 0,031. Sans codage, un message de 3 bits est faux avec la probabilité \\(1 - 0{,}95^3 \\approx 0{,}143\\) : le code divise le risque par 4,6 environ.</p>",
+      "revoir": {
+        "texte": "Cours 3A · Probabilité de mal décoder",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#probabilite-de-mal-decoder"
+      }
+    },
+    {
+      "id": "q21",
+      "type": "vrai-faux",
+      "theme": "Syndrome et décodage",
+      "difficulte": 2,
+      "enonce": "<p>Si le vecteur d'erreur \\(e\\) est lui-même un mot de code non nul, le décodage par syndrome détecte l'erreur.</p>",
+      "reponse": false,
+      "explication": "<p>Faux. \\(y = c + e\\) est alors un autre mot de code, de syndrome \\(H^T e = 0\\) : le décodeur accepte le mot reçu tel quel. Il faut au moins \\(d_m\\) erreurs pour produire un tel \\(e\\) ; c'est pourquoi la détection n'est garantie que jusqu'à \\(d_m - 1\\) erreurs.</p>",
+      "revoir": {
+        "texte": "Cours 3A · Décoder par le syndrome",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#decoder-par-le-syndrome"
+      }
+    },
+    {
+      "id": "q22",
+      "type": "ouverte",
+      "theme": "Syndrome et décodage",
+      "difficulte": 2,
+      "enonce": "<p>Définir le syndrome d'un mot reçu, montrer qu'il ne dépend que de l'erreur, et expliquer comment on s'en sert pour décoder.</p>",
+      "reponse_modele": "<p>Le syndrome du mot reçu \\(y\\) est \\(s(y) = H^T y\\), où \\(H\\) est la matrice de contrôle ; il compte \\(k = n - m\\) éb. Un mot de code vérifie \\(H^T c = 0\\) ; si \\(y = c + e\\), alors \\(s(y) = H^T c + H^T e = H^T e\\) : il ne dépend que de l'erreur, pas du mot émis. Pour décoder, on calcule \\(s(y)\\) : s'il est nul, \\(y\\) est un mot de code ; sinon, on lit dans une table de \\(2^k\\) lignes la séquence \\(z\\) de poids minimal de syndrome \\(s(y)\\), et on décode \\(c = y + z\\). Pour un code systématique, le message est formé des \\(m\\) premiers éb de \\(c\\).</p>",
+      "criteres": [
+        "la définition \\(s(y) = H^T y\\)",
+        "la preuve : \\(H^T c = 0\\) pour un mot de code, donc \\(s(y) = H^T e\\)",
+        "le décodage : syndrome nul, mot accepté ; sinon séquence \\(z\\) de poids minimal lue dans la table, puis \\(c = y + z\\)",
+        "l'intérêt : une table de \\(2^k\\) syndromes au lieu de comparer le mot reçu aux \\(2^m\\) mots de code"
+      ],
+      "revoir": {
+        "texte": "Cours 3A · Syndrome",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#syndrome"
+      }
+    },
+    {
+      "id": "q23",
+      "type": "code",
+      "langage": "c",
+      "theme": "Syndrome et décodage",
+      "difficulte": 3,
+      "enonce": "<p>Écrire la fonction <code>decoder63(y, mot)</code>, qui décode par syndrome le mot reçu <code>y</code> (6 caractères <code>'0'</code> ou <code>'1'</code>) avec le code \\((6, 3)\\) du cours, et écrit dans <code>mot</code> les 6 éb du mot décodé. Les colonnes de \\(H^T\\) sont 011, 101, 110, 100, 010 et 001. Un syndrome égal à la colonne \\(i\\) corrige l'éb \\(i\\) ; le syndrome 111 corrige les éb 1 et 4 (séquence 100100) ; le syndrome 000 ne change rien.</p><p>Le programme de test lit le mot reçu, appelle la fonction, termine la chaîne <code>mot</code> et affiche le mot décodé, puis le message (ses trois premiers éb). Exemple : <code>110111</code> donne <code>110110 110</code>.</p>",
+      "depart": "#include <stdio.h>\n#include <string.h>\n\n/* y : 6 caractères '0' ou '1'.\n   mot : reçoit les 6 éb du mot décodé. */\nvoid decoder63(const char *y, char *mot) {\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <string.h>\n\n/* y : 6 caractères '0' ou '1'.\n   mot : reçoit les 6 éb du mot décodé. */\nvoid decoder63(const char *y, char *mot) {\n    /* colonnes de H^T, écrites comme des nombres de 3 bits */\n    const int colonne[6] = {3, 5, 6, 4, 2, 1};\n    int s = 0;\n    for (int i = 0; i < 6; i++) {\n        mot[i] = y[i];\n        if (y[i] == '1') s ^= colonne[i];\n    }\n    if (s == 7) {                          /* séquence 100100 de la table */\n        mot[0] = (mot[0] == '0') ? '1' : '0';\n        mot[3] = (mot[3] == '0') ? '1' : '0';\n    } else if (s != 0) {                   /* erreur simple */\n        for (int i = 0; i < 6; i++)\n            if (colonne[i] == s) mot[i] = (mot[i] == '0') ? '1' : '0';\n    }\n}\n",
+      "harnais": "\nint main(void) {\n    char y[16], mot[16];\n    if (scanf(\"%15s\", y) != 1) return 0;\n    decoder63(y, mot);\n    mot[6] = '\\0';\n    printf(\"%s %.3s\\n\", mot, mot);\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "exemple du cours",
+          "entree": "110111\n",
+          "sortie": "110110 110\n"
+        },
+        {
+          "nom": "mot de code",
+          "entree": "101101\n",
+          "sortie": "101101 101\n"
+        },
+        {
+          "nom": "mot nul",
+          "entree": "000000\n",
+          "sortie": "000000 000\n"
+        },
+        {
+          "nom": "erreur sur le premier éb",
+          "entree": "100000\n",
+          "sortie": "000000 000\n"
+        },
+        {
+          "nom": "erreur sur le quatrième éb",
+          "entree": "111100\n",
+          "sortie": "111000 111\n"
+        },
+        {
+          "nom": "erreur sur le cinquième éb",
+          "entree": "011001\n",
+          "sortie": "011011 011\n"
+        },
+        {
+          "nom": "syndrome 111",
+          "entree": "110001\n",
+          "sortie": "010101 010\n"
+        }
+      ],
+      "indices": [
+        "<p>Calculer le syndrome en ajoutant (ou exclusif) les colonnes de \\(H^T\\) désignées par les 1 de <code>y</code>. Écrire chaque colonne comme un nombre de 3 bits : 011 vaut 3, 101 vaut 5, etc.</p>",
+        "<p>Recopier <code>y</code> dans <code>mot</code>, puis inverser l'éb dont la colonne vaut le syndrome ; pour 111, inverser les éb 1 et 4.</p>"
+      ],
+      "explication": "<p>Coder les colonnes par des entiers de 3 bits ramène le calcul du syndrome à des ou exclusifs (<code>^</code>). La solution recopie le mot, puis inverse l'éb que désigne la table. Erreurs fréquentes : oublier le cas 111, qui n'est aucune colonne (test « syndrome 111 »), ou numéroter les positions à partir de 1 dans le tableau C.</p>",
+      "revoir": {
+        "texte": "Cours 3A · Corriger un mot reçu",
+        "lien": "../generated_courses/cours-03A-codes-correcteurs.html#corriger-un-mot-recu"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

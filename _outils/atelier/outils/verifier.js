@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 "use strict";
-/* Vérifie les ateliers des pages (studies/_outils/atelier).
+/* Vérifie les ateliers des pages (_outils/atelier).
 
    Usage :
      node _outils/atelier/outils/verifier.js [--executer] CHEMIN [CHEMIN ...]
@@ -32,7 +32,9 @@ const fs = require("fs");
 const path = require("path");
 const { charger, ATELIER } = require("./charger");
 
-const RACINE = path.resolve(ATELIER, "..", "..");
+const OUTILS = path.resolve(ATELIER, "..");
+// Racine des données : le dossier qui contient _outils (dépôt), ou ULA_RACINE (application installée)
+const RACINE = process.env.ULA_RACINE ? path.resolve(process.env.ULA_RACINE) : path.resolve(OUTILS, "..");
 const A = charger();
 const N = A.noyau;
 
@@ -48,7 +50,7 @@ let executeur = null;
 function executeurSql() {
   if (executeur !== null) return executeur;
   try {
-    const ex = require(path.join(RACINE, "_outils", "quiz", "serveur", "lib", "executer.js"));
+    const ex = require(path.join(OUTILS, "quiz", "serveur", "lib", "executer.js"));
     executeur = ex.disponibilite().sql ? ex : false;
   } catch (e) { executeur = false; }
   return executeur;
@@ -179,7 +181,7 @@ async function verifierSql(c, ed, options, solution, jeux, executer, err, avert,
   }
   if (!executer || !solution) return;
   const ex = executeurSql();
-  if (!ex) { avert("--executer : PGlite indisponible (lancer une fois studies/lancer.bat), SQL non exécuté"); return; }
+  if (!ex) { avert("--executer : PGlite indisponible (lancer une fois lancer.bat), SQL non exécuté"); return; }
   const jeu = options.jeu ? jeux[options.jeu].script : "";
   const ev = ed.evaluation(solution, solution, Object.assign({}, options, { tests: c.tests }), jeu);
   const reps = [];
@@ -215,7 +217,7 @@ function decoderJson(texte) { return JSON.parse(texte); }
 // Le chemin d'un <link>/<script> de la page mène-t-il au fichier attendu ?
 function cheminMene(page, href, cible) {
   if (!href || /^[a-z]+:/i.test(href)) return false;
-  const p = href.startsWith("/") ? path.join(RACINE, href) : path.resolve(path.dirname(page), href.split(/[?#]/)[0]);
+  const p = href.startsWith("/_outils/") ? path.join(OUTILS, href.slice("/_outils/".length).split(/[?#]/)[0]) : href.startsWith("/") ? path.join(RACINE, href.split(/[?#]/)[0]) : path.resolve(path.dirname(page), href.split(/[?#]/)[0]);
   return path.normalize(p).toLowerCase() === path.normalize(cible).toLowerCase() && fs.existsSync(p);
 }
 

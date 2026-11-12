@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="c">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ABR, tas et arbres n-aires · Algorithmique 3 L2</title>
+<meta name="description" content="Arbres binaires particuliers : arbres binaires de recherche (recherche, insertion, suppression), arbres complets, parfaits et quasi-parfaits, tas min et max et tri par tas, codage de Huffman, arbres n-aires et leurs représentations.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-06-abr-tas-arbres-n-aires.html" title="Quiz · ABR, tas et arbres n-aires">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Algorithmique 3</a>
+    <span aria-current="page">Cours 6 · ABR, tas et arbres n-aires</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Algorithmique 3</span> Cours 6 · L2 Informatique</p>
+    <h1>ABR, tas et arbres n-aires</h1>
+    <p class="chapeau">Certains arbres binaires ont des propriétés qui rendent les traitements plus efficaces. Dans un arbre binaire de recherche, on cherche et on insère en suivant une seule branche ; un tas donne toujours accès à sa plus grande valeur et tient dans un tableau. Le chapitre finit par les arbres n-aires, dont les nœuds ont un nombre quelconque de fils.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/Cours%20Algo%20INFO%202_2018_r%C3%A9cursivit%C3%A9.pdf">Cours Algo INFO 2_2018_récursivité.pdf</a> · « Arbres binaires particuliers », 52 diapos</dd></div>
+      <div><dt>Enseignant</dt><dd>Loïc Barrault</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Chercher, insérer et supprimer une valeur dans un arbre binaire de recherche.</li>
+        <li>Distinguer arbre complet, parfait et quasi-parfait, et ranger un arbre quasi-parfait dans un tableau.</li>
+        <li>Ajouter une valeur dans un tas et en retirer la racine ; trier par tas.</li>
+        <li>Parcourir un arbre n-aire et choisir sa représentation.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Arbres binaires : vocabulaire, parcours, primitives, représentation par tableau (<a href="cours-05-arbres-binaires.html">cours 5</a>).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Note <span>Les arbres particuliers</span></p>
+    <p>La diapo 2 en annonce quatre familles : les arbres binaires de recherche (ABR), les tas (min ou max), les arbres AVL et les arbres rouge-noir (ARN). Les deux derniers, des ABR qui restent équilibrés, font l'objet des chapitres 7 et 8. Les exercices correspondants sont ceux du TD 3 (<a href="../TD/TD3_r%C3%A9cursivit%C3%A9_AB_ABR_TAS.pdf">énoncé</a>).</p>
+  </div>
+
+  <section>
+    <h2>Arbres binaires de recherche <span class="ref">diapos 3–10</span></h2>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Arbre binaire de recherche</span></p>
+      <p>Un <dfn>arbre binaire de recherche</dfn> (ABR) est un arbre binaire dont les valeurs sont toutes différentes et tel que, pour chaque nœud, toutes les valeurs de son sous-arbre gauche lui sont inférieures et toutes celles de son sous-arbre droit lui sont supérieures.</p>
+    </div>
+    <p>La propriété porte sur <em>tous</em> les descendants, pas seulement sur les fils : dans l'exemple ci-dessous, 12 est inférieur à 15 parce qu'il est dans le sous-arbre gauche de 15, et supérieur à 10 parce qu'il est dans le sous-arbre droit de 10. Les valeurs peuvent être de n'importe quel type ordonné : la diapo 5 montre un ABR de noms d'animaux rangés dans l'ordre alphabétique (musaraigne à la racine, araignée et tapir en dessous, puis anaconda, buffle, sauterelle et zèbre).</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Le parcours infixe d'un ABR</span> <span class="badge ajout">Ajout</span></p>
+      <p>Le parcours infixe d'un ABR donne ses valeurs dans l'ordre croissant : on énumère d'abord tout ce qui est plus petit que la racine, puis la racine, puis tout ce qui est plus grand, et ainsi de suite dans chaque sous-arbre. Sur l'exemple : 8 10 12 15 19 25 42.</p>
+    </div>
+
+    <h3>Rechercher une valeur</h3>
+    <p>L'intérêt des ABR : la recherche et l'insertion d'une valeur ne parcourent qu'<strong>une seule branche</strong> de l'arbre, au lieu de l'arbre entier. À chaque nœud, on compare la valeur cherchée à celle du nœud et l'on descend à gauche ou à droite.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 360 183" width="360" role="img" aria-labelledby="fig-abr-titre">
+          <title id="fig-abr-titre">ABR d'entiers : 15 a pour fils 10 et 25 ; 10 a pour fils 8 et 12 ; 25 a pour fils 19 et 42. La recherche de 12 passe par 15, 10 puis 12.</title>
+          <path class="trait" d="M70 97 L30 123"/>
+          <path class="trait" d="M70 97 L110 123"/>
+          <path class="trait" d="M230 97 L190 123"/>
+          <path class="trait" d="M230 97 L270 123"/>
+          <path class="trait" d="M150 41 L70 67"/>
+          <path class="trait" d="M150 41 L230 67"/>
+          <circle class="boite" cx="30" cy="138" r="15"/>
+          <text x="30" y="142" text-anchor="middle" class="mono">8</text>
+          <circle class="boite-accent" cx="110" cy="138" r="15"/>
+          <text x="110" y="142" text-anchor="middle" class="mono">12</text>
+          <text x="110" y="167" text-anchor="middle" class="t2">trouvé</text>
+          <circle class="boite-accent" cx="70" cy="82" r="15"/>
+          <text x="70" y="86" text-anchor="middle" class="mono">10</text>
+          <text x="89" y="71" class="t2">12 &gt; 10 : à droite</text>
+          <circle class="boite" cx="190" cy="138" r="15"/>
+          <text x="190" y="142" text-anchor="middle" class="mono">19</text>
+          <circle class="boite" cx="270" cy="138" r="15"/>
+          <text x="270" y="142" text-anchor="middle" class="mono">42</text>
+          <circle class="boite" cx="230" cy="82" r="15"/>
+          <text x="230" y="86" text-anchor="middle" class="mono">25</text>
+          <circle class="boite-accent" cx="150" cy="26" r="15"/>
+          <text x="150" y="30" text-anchor="middle" class="mono">15</text>
+          <text x="169" y="15" class="t2">12 &lt; 15 : à gauche</text>
+        </svg>
+      <figcaption>La recherche de 12 (diapo 7) : trois comparaisons.</figcaption>
+    </figure>
+    <p>Recherche de 23 (diapo 8) : 23 &gt; 15, à droite ; 23 &lt; 25, à gauche ; 23 &gt; 19, à droite : il n'y a pas de fils droit, la valeur est absente.</p>
+<pre><code class="language-pseudo"><b>fonction</b> rechercher(A, v)
+    <b>tant que</b> A n'est pas vide
+        <b>si</b> v = racine de A <b>alors</b> <b>retourner</b> A
+        <b>si</b> v &lt; racine de A <b>alors</b> A ← SAG de A
+        <b>sinon</b> A ← SAD de A
+    <b>retourner</b> arbre vide          <i>// valeur absente</i></code></pre>
+
+    <h3>Insérer une valeur</h3>
+    <p>On descend comme pour la recherche. Si l'on rencontre la valeur, elle est déjà présente et l'on ne fait rien (diapo 9 : insertion de 10). Sinon, on arrive sur un sous-arbre vide, et la valeur y devient une nouvelle feuille : une insertion se fait toujours en feuille.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 320 239" width="320" role="img" aria-labelledby="fig-insertion-titre">
+          <title id="fig-insertion-titre">Insertion de 30 : 30 est plus grand que 15 puis que 25, plus petit que 42 ; il devient le fils gauche de 42.</title>
+          <path class="trait" d="M58 97 L30 123"/>
+          <path class="trait" d="M58 97 L86 123"/>
+          <path class="trait" d="M226 153 L198 179"/>
+          <path class="trait" d="M184 97 L142 123"/>
+          <path class="trait" d="M184 97 L226 123"/>
+          <path class="trait" d="M121 41 L58 67"/>
+          <path class="trait" d="M121 41 L184 67"/>
+          <circle class="boite" cx="30" cy="138" r="15"/>
+          <text x="30" y="142" text-anchor="middle" class="mono">8</text>
+          <circle class="boite" cx="86" cy="138" r="15"/>
+          <text x="86" y="142" text-anchor="middle" class="mono">12</text>
+          <circle class="boite" cx="58" cy="82" r="15"/>
+          <text x="58" y="86" text-anchor="middle" class="mono">10</text>
+          <circle class="boite" cx="142" cy="138" r="15"/>
+          <text x="142" y="142" text-anchor="middle" class="mono">19</text>
+          <circle class="boite-accent" cx="198" cy="194" r="15"/>
+          <text x="198" y="198" text-anchor="middle" class="mono">30</text>
+          <text x="198" y="223" text-anchor="middle" class="t2">nouvelle feuille</text>
+          <circle class="boite-accent" cx="226" cy="138" r="15"/>
+          <text x="226" y="142" text-anchor="middle" class="mono">42</text>
+          <text x="245" y="127" class="t2">30 &lt; 42</text>
+          <circle class="boite-accent" cx="184" cy="82" r="15"/>
+          <text x="184" y="86" text-anchor="middle" class="mono">25</text>
+          <text x="203" y="71" class="t2">30 &gt; 25</text>
+          <circle class="boite-accent" cx="121" cy="26" r="15"/>
+          <text x="121" y="30" text-anchor="middle" class="mono">15</text>
+          <text x="140" y="15" class="t2">30 &gt; 15</text>
+        </svg>
+      <figcaption>L'insertion de 30 (diapo 10) : 30 devient le fils gauche de 42.</figcaption>
+    </figure>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le coût dépend de la forme</span> <span class="badge ajout">Ajout</span></p>
+      <p>Une recherche ou une insertion fait au plus autant de comparaisons que l'arbre a de niveaux. Pour \(n\) valeurs, un arbre bien équilibré en a environ \(\log_2 n\) : une vingtaine pour un million de valeurs. Mais la forme de l'arbre dépend de l'ordre d'insertion, et un ABR peut dégénérer en une seule branche de \(n\) nœuds, où la recherche redevient linéaire (TD 3, exercice 8). Les AVL et les arbres rouge-noir corrigent la forme de l'arbre à chaque insertion pour éviter ce cas.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Supprimer un nœud <span class="ref">diapos 11–16</span></h2>
+    <p>La suppression doit préserver la propriété d'ABR.</p>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Suppression dans un ABR (diapo 12)</span></p>
+      <ul>
+        <li>Si le nœud est une <strong>feuille</strong>, on le supprime.</li>
+        <li>S'il a au moins un fils :
+          <ol>
+            <li>on cherche la valeur immédiatement inférieure (ou supérieure) dans l'arbre, avec des fonctions <code>t_arbre min(t_arbre)</code> et <code>t_arbre max(t_arbre)</code> ;</li>
+            <li>on remplace la valeur du nœud par celle-ci, avec la primitive <code>modif_racine</code> ;</li>
+            <li>on supprime cette valeur de la même manière, par un appel récursif à <code>abr_supprimer</code>.</li>
+          </ol>
+        </li>
+      </ul>
+    </div>
+    <p>La valeur immédiatement inférieure à celle d'un nœud est la plus grande de son sous-arbre gauche ; la valeur immédiatement supérieure, la plus petite de son sous-arbre droit. Mise à la place du nœud, elle reste plus grande que tout le sous-arbre gauche et plus petite que tout le sous-arbre droit.</p>
+    <div class="colonnes">
+      <figure class="figure">
+        <svg class="schema" viewBox="0 0 320 225" width="320" role="img" aria-labelledby="fig-supp-avant-titre">
+          <title id="fig-supp-avant-titre">Avant : 15 a pour fils 10 et 25 ; 25 a pour fils 19 et 42 ; 19 a pour fils 16 et 21. La valeur immédiatement inférieure à 25 est 21.</title>
+          <path class="trait" d="M58 97 L30 123"/>
+          <path class="trait" d="M58 97 L86 123"/>
+          <path class="trait" d="M170 153 L142 179"/>
+          <path class="trait" d="M170 153 L198 179"/>
+          <path class="trait" d="M212 97 L170 123"/>
+          <path class="trait" d="M212 97 L254 123"/>
+          <path class="trait" d="M135 41 L58 67"/>
+          <path class="trait" d="M135 41 L212 67"/>
+          <circle class="boite" cx="30" cy="138" r="15"/>
+          <text x="30" y="142" text-anchor="middle" class="mono">8</text>
+          <circle class="boite" cx="86" cy="138" r="15"/>
+          <text x="86" y="142" text-anchor="middle" class="mono">12</text>
+          <circle class="boite" cx="58" cy="82" r="15"/>
+          <text x="58" y="86" text-anchor="middle" class="mono">10</text>
+          <circle class="boite" cx="142" cy="194" r="15"/>
+          <text x="142" y="198" text-anchor="middle" class="mono">16</text>
+          <circle class="boite-accent" cx="198" cy="194" r="15"/>
+          <text x="198" y="198" text-anchor="middle" class="mono">21</text>
+          <text x="217" y="183" class="t2">max du SAG</text>
+          <circle class="boite" cx="170" cy="138" r="15"/>
+          <text x="170" y="142" text-anchor="middle" class="mono">19</text>
+          <circle class="boite" cx="254" cy="138" r="15"/>
+          <text x="254" y="142" text-anchor="middle" class="mono">42</text>
+          <circle class="boite-accent" cx="212" cy="82" r="15"/>
+          <text x="212" y="86" text-anchor="middle" class="mono">25</text>
+          <text x="231" y="71" class="t2">à supprimer</text>
+          <circle class="boite" cx="135" cy="26" r="15"/>
+          <text x="135" y="30" text-anchor="middle" class="mono">15</text>
+        </svg>
+        <figcaption>Suppression de 25 : la valeur immédiatement inférieure est 21.</figcaption>
+      </figure>
+      <figure class="figure">
+        <svg class="schema" viewBox="0 0 320 225" width="320" role="img" aria-labelledby="fig-supp-apres-titre">
+          <title id="fig-supp-apres-titre">Après : 21 a pris la place de 25, et la feuille 21 a été supprimée ; 19 n'a plus que le fils 16.</title>
+          <path class="trait" d="M58 97 L30 123"/>
+          <path class="trait" d="M58 97 L86 123"/>
+          <path class="trait" d="M170 153 L142 179"/>
+          <path class="trait" d="M212 97 L170 123"/>
+          <path class="trait" d="M212 97 L254 123"/>
+          <path class="trait" d="M135 41 L58 67"/>
+          <path class="trait" d="M135 41 L212 67"/>
+          <circle class="boite" cx="30" cy="138" r="15"/>
+          <text x="30" y="142" text-anchor="middle" class="mono">8</text>
+          <circle class="boite" cx="86" cy="138" r="15"/>
+          <text x="86" y="142" text-anchor="middle" class="mono">12</text>
+          <circle class="boite" cx="58" cy="82" r="15"/>
+          <text x="58" y="86" text-anchor="middle" class="mono">10</text>
+          <circle class="boite" cx="142" cy="194" r="15"/>
+          <text x="142" y="198" text-anchor="middle" class="mono">16</text>
+          <circle class="boite" cx="170" cy="138" r="15"/>
+          <text x="170" y="142" text-anchor="middle" class="mono">19</text>
+          <circle class="boite" cx="254" cy="138" r="15"/>
+          <text x="254" y="142" text-anchor="middle" class="mono">42</text>
+          <circle class="boite-accent" cx="212" cy="82" r="15"/>
+          <text x="212" y="86" text-anchor="middle" class="mono">21</text>
+          <circle class="boite" cx="135" cy="26" r="15"/>
+          <text x="135" y="30" text-anchor="middle" class="mono">15</text>
+        </svg>
+        <figcaption>21 remplace 25, puis la feuille 21 est supprimée.</figcaption>
+      </figure>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Le côté où chercher</span> <span class="badge ajout">Ajout</span></p>
+      <p>La valeur immédiatement inférieure n'est dans le sous-arbre du nœud que s'il a un fils <em>gauche</em>. Un nœud qui n'a qu'un fils droit se remplace par la valeur immédiatement supérieure, la plus petite de son sous-arbre droit. Autre solution courante pour un nœud à un seul fils : rattacher directement ce fils au père du nœud supprimé.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Arbres complets, parfaits, quasi-parfaits <span class="ref">diapos 17–22</span></h2>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition</p>
+      <ul>
+        <li>Un arbre binaire est <dfn>complet</dfn> si chaque nœud a exactement 0 ou 2 fils.</li>
+        <li>Il est <dfn>parfait</dfn> s'il est complet et que toutes ses feuilles sont à la même hauteur.</li>
+        <li>Il est <dfn>quasi-parfait</dfn> s'il est parfait sauf son dernier niveau, qui peut être incomplet à droite.</li>
+      </ul>
+    </div>
+    <div class="colonnes">
+      <figure class="figure">
+        <svg class="schema" viewBox="0 0 240 199" width="240" role="img" aria-labelledby="fig-complet-titre">
+          <title id="fig-complet-titre">Arbre complet : chaque nœud a 0 ou 2 fils ; 85 a pour fils 10 et 23, 10 a pour fils 18 et 12, 12 a pour fils 4 et 8, 23 a pour fils 9 et 42.</title>
+          <path class="trait" d="M90 135 L70 157"/>
+          <path class="trait" d="M90 135 L110 157"/>
+          <path class="trait" d="M60 87 L30 109"/>
+          <path class="trait" d="M60 87 L90 109"/>
+          <path class="trait" d="M170 87 L150 109"/>
+          <path class="trait" d="M170 87 L190 109"/>
+          <path class="trait" d="M115 39 L60 61"/>
+          <path class="trait" d="M115 39 L170 61"/>
+          <circle class="boite" cx="30" cy="122" r="13"/>
+          <text x="30" y="126" text-anchor="middle" class="mono">18</text>
+          <circle class="boite" cx="70" cy="170" r="13"/>
+          <text x="70" y="174" text-anchor="middle" class="mono">4</text>
+          <circle class="boite" cx="110" cy="170" r="13"/>
+          <text x="110" y="174" text-anchor="middle" class="mono">8</text>
+          <circle class="boite" cx="90" cy="122" r="13"/>
+          <text x="90" y="126" text-anchor="middle" class="mono">12</text>
+          <circle class="boite" cx="60" cy="74" r="13"/>
+          <text x="60" y="78" text-anchor="middle" class="mono">10</text>
+          <circle class="boite" cx="150" cy="122" r="13"/>
+          <text x="150" y="126" text-anchor="middle" class="mono">9</text>
+          <circle class="boite" cx="190" cy="122" r="13"/>
+          <text x="190" y="126" text-anchor="middle" class="mono">42</text>
+          <circle class="boite" cx="170" cy="74" r="13"/>
+          <text x="170" y="78" text-anchor="middle" class="mono">23</text>
+          <circle class="boite" cx="115" cy="26" r="13"/>
+          <text x="115" y="30" text-anchor="middle" class="mono">85</text>
+        </svg>
+        <figcaption>Complet (diapo 19).</figcaption>
+      </figure>
+      <figure class="figure">
+        <svg class="schema" viewBox="0 0 200 151" width="200" role="img" aria-labelledby="fig-parfait-titre">
+          <title id="fig-parfait-titre">Arbre parfait : complet, toutes les feuilles au même niveau ; 85, puis 10 et 23, puis 18, 12, 9 et 42.</title>
+          <path class="trait" d="M50 87 L30 109"/>
+          <path class="trait" d="M50 87 L70 109"/>
+          <path class="trait" d="M130 87 L110 109"/>
+          <path class="trait" d="M130 87 L150 109"/>
+          <path class="trait" d="M90 39 L50 61"/>
+          <path class="trait" d="M90 39 L130 61"/>
+          <circle class="boite" cx="30" cy="122" r="13"/>
+          <text x="30" y="126" text-anchor="middle" class="mono">18</text>
+          <circle class="boite" cx="70" cy="122" r="13"/>
+          <text x="70" y="126" text-anchor="middle" class="mono">12</text>
+          <circle class="boite" cx="50" cy="74" r="13"/>
+          <text x="50" y="78" text-anchor="middle" class="mono">10</text>
+          <circle class="boite" cx="110" cy="122" r="13"/>
+          <text x="110" y="126" text-anchor="middle" class="mono">9</text>
+          <circle class="boite" cx="150" cy="122" r="13"/>
+          <text x="150" y="126" text-anchor="middle" class="mono">42</text>
+          <circle class="boite" cx="130" cy="74" r="13"/>
+          <text x="130" y="78" text-anchor="middle" class="mono">23</text>
+          <circle class="boite" cx="90" cy="26" r="13"/>
+          <text x="90" y="30" text-anchor="middle" class="mono">85</text>
+        </svg>
+        <figcaption>Parfait (diapo 20).</figcaption>
+      </figure>
+      <figure class="figure">
+        <svg class="schema" viewBox="0 0 240 199" width="240" role="img" aria-labelledby="fig-quasi-titre">
+          <title id="fig-quasi-titre">Arbre quasi-parfait : parfait sauf le dernier niveau, rempli à partir de la gauche ; 18 a pour fils 4 et 8.</title>
+          <path class="trait" d="M50 135 L30 157"/>
+          <path class="trait" d="M50 135 L70 157"/>
+          <path class="trait" d="M80 87 L50 109"/>
+          <path class="trait" d="M80 87 L110 109"/>
+          <path class="trait" d="M170 87 L150 109"/>
+          <path class="trait" d="M170 87 L190 109"/>
+          <path class="trait" d="M125 39 L80 61"/>
+          <path class="trait" d="M125 39 L170 61"/>
+          <circle class="boite" cx="30" cy="170" r="13"/>
+          <text x="30" y="174" text-anchor="middle" class="mono">4</text>
+          <circle class="boite" cx="70" cy="170" r="13"/>
+          <text x="70" y="174" text-anchor="middle" class="mono">8</text>
+          <circle class="boite" cx="50" cy="122" r="13"/>
+          <text x="50" y="126" text-anchor="middle" class="mono">18</text>
+          <circle class="boite" cx="110" cy="122" r="13"/>
+          <text x="110" y="126" text-anchor="middle" class="mono">12</text>
+          <circle class="boite" cx="80" cy="74" r="13"/>
+          <text x="80" y="78" text-anchor="middle" class="mono">10</text>
+          <circle class="boite" cx="150" cy="122" r="13"/>
+          <text x="150" y="126" text-anchor="middle" class="mono">9</text>
+          <circle class="boite" cx="190" cy="122" r="13"/>
+          <text x="190" y="126" text-anchor="middle" class="mono">42</text>
+          <circle class="boite" cx="170" cy="74" r="13"/>
+          <text x="170" y="78" text-anchor="middle" class="mono">23</text>
+          <circle class="boite" cx="125" cy="26" r="13"/>
+          <text x="125" y="30" text-anchor="middle" class="mono">85</text>
+        </svg>
+        <figcaption>Quasi-parfait (diapo 21).</figcaption>
+      </figure>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Note <span>Les mots changent d'un livre à l'autre</span> <span class="badge ajout">Ajout</span></p>
+      <p>Beaucoup de livres appellent « localement complet » ou « strict » ce que le cours appelle complet, et « complet » ce que le cours appelle quasi-parfait (en anglais : <i lang="en">full</i>, <i lang="en">perfect</i> et <i lang="en">complete binary tree</i>). Le dernier niveau d'un quasi-parfait est rempli <em>à partir de la gauche</em> : un quasi-parfait n'est pas forcément complet, puisqu'un nœud du dernier niveau rempli peut n'avoir qu'un fils gauche.</p>
+    </div>
+
+    <h3>Un tableau sans perte de place</h3>
+    <p>Un arbre quasi-parfait se range dans un tableau de manière contiguë, niveau par niveau, et les accès se font par calcul (<a href="cours-05-arbres-binaires.html">cours 5</a>) : racine en 0, fils du nœud \(i\) en \(2i + 1\) et \(2i + 2\), père en \(\lfloor (i - 1)/2 \rfloor\).</p>
+    <div class="tableau compact">
+      <table>
+        <caption>L'arbre quasi-parfait de la diapo 21 dans un tableau</caption>
+        <thead><tr><th>Indice</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th></tr></thead>
+        <tbody>
+          <tr><th>Valeur</th><td>85</td><td>10</td><td>23</td><td>18</td><td>12</td><td>9</td><td>42</td><td>4</td><td>8</td></tr>
+          <tr><th>Niveau</th><td>racine</td><td colspan="2">niveau 1</td><td colspan="4">niveau 2</td><td colspan="2">niveau 3</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><span class="badge a-verifier">À vérifier</span> La diapo 22 parle d'arbre « complet », et son tableau finit par une dixième case, 9, qui n'est pas dans l'arbre. C'est l'arbre <em>quasi-parfait</em> qui se range sans trou : dans l'arbre complet de la diapo 19, les fils de 12 (4 et 8) iraient en 9 et 10, et les cases 7 et 8, celles des fils de 18, resteraient vides.</p>
+  </section>
+
+  <section>
+    <h2>Tas min et tas max <span class="ref">diapos 23–36</span></h2>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Tas</span></p>
+      <p>Un <dfn>tas max</dfn> est un arbre binaire quasi-parfait tel que la valeur de chaque nœud est supérieure à celles de tous ses descendants. Un <dfn>tas min</dfn> est un arbre binaire quasi-parfait tel que la valeur de chaque nœud est inférieure à celles de tous ses descendants.</p>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 260 225" width="260" role="img" aria-labelledby="fig-tas-titre">
+          <title id="fig-tas-titre">Tas max : 85 a pour fils 40 et 23 ; 40 a pour fils 18 et 19 ; 18 a pour fils 3 et 7 ; 23 a pour fils 9 et 2.</title>
+          <path class="trait" d="M52 153 L30 179"/>
+          <path class="trait" d="M52 153 L74 179"/>
+          <path class="trait" d="M85 97 L52 123"/>
+          <path class="trait" d="M85 97 L118 123"/>
+          <path class="trait" d="M184 97 L162 123"/>
+          <path class="trait" d="M184 97 L206 123"/>
+          <path class="trait" d="M134 41 L85 67"/>
+          <path class="trait" d="M134 41 L184 67"/>
+          <circle class="boite" cx="30" cy="194" r="15"/>
+          <text x="30" y="198" text-anchor="middle" class="mono">3</text>
+          <circle class="boite" cx="74" cy="194" r="15"/>
+          <text x="74" y="198" text-anchor="middle" class="mono">7</text>
+          <circle class="boite" cx="52" cy="138" r="15"/>
+          <text x="52" y="142" text-anchor="middle" class="mono">18</text>
+          <circle class="boite" cx="118" cy="138" r="15"/>
+          <text x="118" y="142" text-anchor="middle" class="mono">19</text>
+          <circle class="boite" cx="85" cy="82" r="15"/>
+          <text x="85" y="86" text-anchor="middle" class="mono">40</text>
+          <circle class="boite" cx="162" cy="138" r="15"/>
+          <text x="162" y="142" text-anchor="middle" class="mono">9</text>
+          <circle class="boite" cx="206" cy="138" r="15"/>
+          <text x="206" y="142" text-anchor="middle" class="mono">2</text>
+          <circle class="boite" cx="184" cy="82" r="15"/>
+          <text x="184" y="86" text-anchor="middle" class="mono">23</text>
+          <circle class="boite" cx="134" cy="26" r="15"/>
+          <text x="134" y="30" text-anchor="middle" class="mono">85</text>
+        </svg>
+      <figcaption>Un tas max (diapo 24). Le tas min de la diapo 25 est construit de même : 2 à la racine, puis 3 et 7, puis 18, 19, 9, 23, puis 40 et 85.</figcaption>
+    </figure>
+    <p>La plus grande valeur d'un tas max est toujours à la racine. En revanche, contrairement à un ABR, rien n'ordonne les sous-arbres entre eux : le sous-arbre gauche de 85 contient 18 et 19, plus petits que 23 qui est à droite, mais aussi 40, plus grand. Un tas ne sert donc pas à chercher une valeur quelconque, mais à <strong>ajouter</strong> des valeurs et à <strong>retirer la plus grande</strong>, deux opérations qui doivent préserver ses propriétés.</p>
+
+    <h3>Ajouter une valeur</h3>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Ajout dans un tas max (diapo 27)</span></p>
+      <ol>
+        <li>La valeur est ajoutée comme feuille la plus à droite du dernier niveau : l'arbre reste quasi-parfait.</li>
+        <li>Tant qu'elle est supérieure à la valeur de son père, elle est échangée avec lui : l'ordre des valeurs est rétabli.</li>
+      </ol>
+    </div>
+    <div class="colonnes">
+      <figure class="figure">
+        <svg class="schema" viewBox="0 0 280 238" width="280" role="img" aria-labelledby="fig-ajout1-titre">
+          <title id="fig-ajout1-titre">64 est ajouté comme feuille la plus à droite du dernier niveau, fils gauche de 19.</title>
+          <path class="trait" d="M50 152 L30 180"/>
+          <path class="trait" d="M50 152 L70 180"/>
+          <path class="trait" d="M130 152 L110 180"/>
+          <path class="trait" d="M90 96 L50 124"/>
+          <path class="trait" d="M90 96 L130 124"/>
+          <path class="trait" d="M210 96 L190 124"/>
+          <path class="trait" d="M210 96 L230 124"/>
+          <path class="trait" d="M150 40 L90 68"/>
+          <path class="trait" d="M150 40 L210 68"/>
+          <circle class="boite" cx="30" cy="194" r="14"/>
+          <text x="30" y="198" text-anchor="middle" class="mono">3</text>
+          <circle class="boite" cx="70" cy="194" r="14"/>
+          <text x="70" y="198" text-anchor="middle" class="mono">7</text>
+          <circle class="boite" cx="50" cy="138" r="14"/>
+          <text x="50" y="142" text-anchor="middle" class="mono">18</text>
+          <circle class="boite-accent" cx="110" cy="194" r="14"/>
+          <text x="110" y="198" text-anchor="middle" class="mono">64</text>
+          <text x="110" y="222" text-anchor="middle" class="t2">ajouté</text>
+          <circle class="boite" cx="130" cy="138" r="14"/>
+          <text x="130" y="142" text-anchor="middle" class="mono">19</text>
+          <circle class="boite" cx="90" cy="82" r="14"/>
+          <text x="90" y="86" text-anchor="middle" class="mono">40</text>
+          <circle class="boite" cx="190" cy="138" r="14"/>
+          <text x="190" y="142" text-anchor="middle" class="mono">9</text>
+          <circle class="boite" cx="230" cy="138" r="14"/>
+          <text x="230" y="142" text-anchor="middle" class="mono">2</text>
+          <circle class="boite" cx="210" cy="82" r="14"/>
+          <text x="210" y="86" text-anchor="middle" class="mono">23</text>
+          <circle class="boite" cx="150" cy="26" r="14"/>
+          <text x="150" y="30" text-anchor="middle" class="mono">85</text>
+        </svg>
+        <figcaption>Ajout de 64 (diapos 28–29) : il devient fils de 19.</figcaption>
+      </figure>
+      <figure class="figure">
+        <svg class="schema" viewBox="0 0 280 224" width="280" role="img" aria-labelledby="fig-ajout2-titre">
+          <title id="fig-ajout2-titre">Après deux échanges (avec 19 puis avec 40), 64 est sous 85, qui est plus grand : le tas est rétabli.</title>
+          <path class="trait" d="M50 152 L30 180"/>
+          <path class="trait" d="M50 152 L70 180"/>
+          <path class="trait" d="M130 152 L110 180"/>
+          <path class="trait" d="M90 96 L50 124"/>
+          <path class="trait" d="M90 96 L130 124"/>
+          <path class="trait" d="M210 96 L190 124"/>
+          <path class="trait" d="M210 96 L230 124"/>
+          <path class="trait" d="M150 40 L90 68"/>
+          <path class="trait" d="M150 40 L210 68"/>
+          <circle class="boite" cx="30" cy="194" r="14"/>
+          <text x="30" y="198" text-anchor="middle" class="mono">3</text>
+          <circle class="boite" cx="70" cy="194" r="14"/>
+          <text x="70" y="198" text-anchor="middle" class="mono">7</text>
+          <circle class="boite" cx="50" cy="138" r="14"/>
+          <text x="50" y="142" text-anchor="middle" class="mono">18</text>
+          <circle class="boite" cx="110" cy="194" r="14"/>
+          <text x="110" y="198" text-anchor="middle" class="mono">19</text>
+          <circle class="boite" cx="130" cy="138" r="14"/>
+          <text x="130" y="142" text-anchor="middle" class="mono">40</text>
+          <circle class="boite-accent" cx="90" cy="82" r="14"/>
+          <text x="90" y="86" text-anchor="middle" class="mono">64</text>
+          <circle class="boite" cx="190" cy="138" r="14"/>
+          <text x="190" y="142" text-anchor="middle" class="mono">9</text>
+          <circle class="boite" cx="230" cy="138" r="14"/>
+          <text x="230" y="142" text-anchor="middle" class="mono">2</text>
+          <circle class="boite" cx="210" cy="82" r="14"/>
+          <text x="210" y="86" text-anchor="middle" class="mono">23</text>
+          <circle class="boite" cx="150" cy="26" r="14"/>
+          <text x="150" y="30" text-anchor="middle" class="mono">85</text>
+        </svg>
+        <figcaption>64 &gt; 19 : échange ; 64 &gt; 40 : échange ; 64 &lt; 85 : fin.</figcaption>
+      </figure>
+    </div>
+
+    <h3>Retirer la plus grande valeur</h3>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Suppression dans un tas max (diapo 30)</span></p>
+      <ol>
+        <li>La valeur retirée est toujours la racine.</li>
+        <li>La racine est remplacée par la feuille la plus à droite du dernier niveau : l'arbre reste quasi-parfait.</li>
+        <li>Tant que cette valeur est inférieure à l'un de ses fils, elle est échangée avec le <strong>plus grand</strong> des deux : l'ordre est rétabli.</li>
+      </ol>
+    </div>
+    <div class="colonnes">
+      <figure class="figure">
+        <svg class="schema" viewBox="0 0 240 224" width="240" role="img" aria-labelledby="fig-retrait1-titre">
+          <title id="fig-retrait1-titre">On retire 85 ; la dernière feuille, 19, prend sa place à la racine.</title>
+          <path class="trait" d="M50 152 L30 180"/>
+          <path class="trait" d="M50 152 L70 180"/>
+          <path class="trait" d="M80 96 L50 124"/>
+          <path class="trait" d="M80 96 L110 124"/>
+          <path class="trait" d="M170 96 L150 124"/>
+          <path class="trait" d="M170 96 L190 124"/>
+          <path class="trait" d="M125 40 L80 68"/>
+          <path class="trait" d="M125 40 L170 68"/>
+          <circle class="boite" cx="30" cy="194" r="14"/>
+          <text x="30" y="198" text-anchor="middle" class="mono">3</text>
+          <circle class="boite" cx="70" cy="194" r="14"/>
+          <text x="70" y="198" text-anchor="middle" class="mono">7</text>
+          <circle class="boite" cx="50" cy="138" r="14"/>
+          <text x="50" y="142" text-anchor="middle" class="mono">18</text>
+          <circle class="boite" cx="110" cy="138" r="14"/>
+          <text x="110" y="142" text-anchor="middle" class="mono">40</text>
+          <circle class="boite" cx="80" cy="82" r="14"/>
+          <text x="80" y="86" text-anchor="middle" class="mono">64</text>
+          <circle class="boite" cx="150" cy="138" r="14"/>
+          <text x="150" y="142" text-anchor="middle" class="mono">9</text>
+          <circle class="boite" cx="190" cy="138" r="14"/>
+          <text x="190" y="142" text-anchor="middle" class="mono">2</text>
+          <circle class="boite" cx="170" cy="82" r="14"/>
+          <text x="170" y="86" text-anchor="middle" class="mono">23</text>
+          <circle class="boite-accent" cx="125" cy="26" r="14"/>
+          <text x="125" y="30" text-anchor="middle" class="mono">19</text>
+          <text x="143" y="16" class="t2">ancienne dernière feuille</text>
+        </svg>
+        <figcaption>Retrait de 85 (diapos 31–35) : 19 monte à la racine.</figcaption>
+      </figure>
+      <figure class="figure">
+        <svg class="schema" viewBox="0 0 240 224" width="240" role="img" aria-labelledby="fig-retrait2-titre">
+          <title id="fig-retrait2-titre">19 est échangé avec 64, son plus grand fils, puis avec 40 : le tas est rétabli, de racine 64.</title>
+          <path class="trait" d="M50 152 L30 180"/>
+          <path class="trait" d="M50 152 L70 180"/>
+          <path class="trait" d="M80 96 L50 124"/>
+          <path class="trait" d="M80 96 L110 124"/>
+          <path class="trait" d="M170 96 L150 124"/>
+          <path class="trait" d="M170 96 L190 124"/>
+          <path class="trait" d="M125 40 L80 68"/>
+          <path class="trait" d="M125 40 L170 68"/>
+          <circle class="boite" cx="30" cy="194" r="14"/>
+          <text x="30" y="198" text-anchor="middle" class="mono">3</text>
+          <circle class="boite" cx="70" cy="194" r="14"/>
+          <text x="70" y="198" text-anchor="middle" class="mono">7</text>
+          <circle class="boite" cx="50" cy="138" r="14"/>
+          <text x="50" y="142" text-anchor="middle" class="mono">18</text>
+          <circle class="boite-accent" cx="110" cy="138" r="14"/>
+          <text x="110" y="142" text-anchor="middle" class="mono">19</text>
+          <circle class="boite" cx="80" cy="82" r="14"/>
+          <text x="80" y="86" text-anchor="middle" class="mono">40</text>
+          <circle class="boite" cx="150" cy="138" r="14"/>
+          <text x="150" y="142" text-anchor="middle" class="mono">9</text>
+          <circle class="boite" cx="190" cy="138" r="14"/>
+          <text x="190" y="142" text-anchor="middle" class="mono">2</text>
+          <circle class="boite" cx="170" cy="82" r="14"/>
+          <text x="170" y="86" text-anchor="middle" class="mono">23</text>
+          <circle class="boite" cx="125" cy="26" r="14"/>
+          <text x="125" y="30" text-anchor="middle" class="mono">64</text>
+        </svg>
+        <figcaption>19 &lt; 64 : échange avec 64 ; 19 &lt; 40 : échange avec 40 ; 19 est une feuille : fin.</figcaption>
+      </figure>
+    </div>
+    <p>On échange avec le plus grand fils pour que la valeur qui monte soit supérieure à son nouveau frère. Échanger 19 avec 23 aurait mis 23 au-dessus de 64.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le coût des deux opérations</span> <span class="badge ajout">Ajout</span></p>
+      <p>Un arbre quasi-parfait de \(n\) nœuds a environ \(\log_2 n\) niveaux. L'ajout fait remonter la valeur d'au plus un niveau par échange, le retrait la fait descendre de même : chacune coûte \(O(\log n)\) comparaisons et échanges. Dans le tableau, ces échanges sont de simples échanges de cases, entre \(i\) et \(\lfloor (i-1)/2 \rfloor\) pour la remontée, entre \(i\) et \(2i + 1\) ou \(2i + 2\) pour la descente.</p>
+    </div>
+
+    <h3>Le tri par tas</h3>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Tri par tas (diapos 26 et 36)</span></p>
+      <ol>
+        <li>Ajouter une par une les valeurs à trier dans le tas.</li>
+        <li>Retirer une par une les valeurs du tas : elles sortent dans l'ordre croissant pour un tas min, décroissant pour un tas max.</li>
+      </ol>
+      <p>Quand les valeurs sont dans un tableau, ce tableau représente directement le tas : il n'est pas nécessaire d'introduire une seconde structure de données. La complexité est en \(O(n \log_2 n)\).</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Trier sur place</span> <span class="badge ajout">Ajout</span></p>
+      <p>Avec un tas max rangé au début du tableau, chaque valeur retirée peut aller dans la case qui vient de se libérer à la fin du tas : le tableau se retrouve trié dans l'ordre <em>croissant</em>, sans autre tableau. \(n\) ajouts et \(n\) retraits à \(O(\log n)\) chacun donnent bien \(O(n \log n)\), même dans le pire cas, contrairement au tri rapide. C'est le programme de l'exercice 10 du TD 3.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Le codage de Huffman <span class="ref">diapo 37</span></h2>
+    <p>Un arbre complet permet de coder des caractères avec une compression sans perte. Chaque caractère est une feuille ; son code est le chemin de la racine à cette feuille, 0 pour un fils gauche et 1 pour un fils droit.</p>
+    <div class="colonnes">
+      <figure class="figure">
+        <svg class="schema" viewBox="0 0 290 223" width="290" role="img" aria-labelledby="fig-huffman-titre">
+          <title id="fig-huffman-titre">Arbre de Huffman : à gauche de la racine (bit 0), la feuille a (00) et un nœud dont les feuilles sont b (010) et c (011) ; à droite (bit 1), les feuilles d (10) et e (11).</title>
+          <path class="trait" d="M105 151 L80 181"/>
+          <text x="82" y="166" text-anchor="middle" class="t2 accent">0</text>
+          <path class="trait" d="M105 151 L130 181"/>
+          <text x="128" y="166" text-anchor="middle" class="t2 accent">1</text>
+          <path class="trait" d="M68 95 L30 125"/>
+          <text x="39" y="110" text-anchor="middle" class="t2 accent">0</text>
+          <path class="trait" d="M68 95 L105 125"/>
+          <text x="96" y="110" text-anchor="middle" class="t2 accent">1</text>
+          <path class="trait" d="M205 95 L180 125"/>
+          <text x="182" y="110" text-anchor="middle" class="t2 accent">0</text>
+          <path class="trait" d="M205 95 L230 125"/>
+          <text x="228" y="110" text-anchor="middle" class="t2 accent">1</text>
+          <path class="trait" d="M136 39 L68 69"/>
+          <text x="92" y="54" text-anchor="middle" class="t2 accent">0</text>
+          <path class="trait" d="M136 39 L205 69"/>
+          <text x="181" y="54" text-anchor="middle" class="t2 accent">1</text>
+          <circle class="boite" cx="30" cy="138" r="13"/>
+          <text x="30" y="142" text-anchor="middle" class="mono">a</text>
+          <circle class="boite" cx="80" cy="194" r="13"/>
+          <text x="80" y="198" text-anchor="middle" class="mono">b</text>
+          <circle class="boite" cx="130" cy="194" r="13"/>
+          <text x="130" y="198" text-anchor="middle" class="mono">c</text>
+          <circle class="boite" cx="105" cy="138" r="13"/>
+          <text x="105" y="142" text-anchor="middle" class="mono"></text>
+          <circle class="boite" cx="68" cy="82" r="13"/>
+          <text x="68" y="86" text-anchor="middle" class="mono"></text>
+          <circle class="boite" cx="180" cy="138" r="13"/>
+          <text x="180" y="142" text-anchor="middle" class="mono">d</text>
+          <circle class="boite" cx="230" cy="138" r="13"/>
+          <text x="230" y="142" text-anchor="middle" class="mono">e</text>
+          <circle class="boite" cx="205" cy="82" r="13"/>
+          <text x="205" y="86" text-anchor="middle" class="mono"></text>
+          <circle class="boite" cx="136" cy="26" r="13"/>
+          <text x="136" y="30" text-anchor="middle" class="mono"></text>
+        </svg>
+        <figcaption>L'arbre de la diapo 37.</figcaption>
+      </figure>
+      <div class="tableau compact">
+        <table>
+          <caption>Les codes obtenus</caption>
+          <thead><tr><th>Caractère</th><th>Code</th></tr></thead>
+          <tbody>
+            <tr><td>a</td><td><code>00</code></td></tr>
+            <tr><td>b</td><td><code>010</code></td></tr>
+            <tr><td>c</td><td><code>011</code></td></tr>
+            <tr><td>d</td><td><code>10</code></td></tr>
+            <tr><td>e</td><td><code>11</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p>Comme les caractères sont tous sur des feuilles, aucun code n'est le début d'un autre : le texte codé se décode sans séparateur, en redescendant de la racine à chaque caractère. <code>0101100</code> se lit <code>010</code> (b), <code>11</code> (e), <code>00</code> (a).</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Construire l'arbre</span> <span class="badge ajout">Ajout</span></p>
+      <p>La diapo montre l'arbre sans dire comment l'obtenir. L'algorithme de Huffman part des fréquences des caractères : chaque caractère est d'abord un arbre d'une feuille, pesant sa fréquence ; tant qu'il reste plus d'un arbre, on réunit les <strong>deux arbres les plus légers</strong> sous une nouvelle racine, qui pèse la somme des deux (on les range dans un tas min pour les trouver vite).</p>
+      <p>Avec les fréquences a : 22 %, b : 10 %, c : 10 %, d : 30 %, e : 28 %, on réunit b et c (20), puis ce nœud avec a (42), puis d et e (58), puis les deux derniers arbres : on retrouve l'arbre de la diapo. La longueur moyenne d'un code est \(0{,}22 \times 2 + 0{,}10 \times 3 + 0{,}10 \times 3 + 0{,}30 \times 2 + 0{,}28 \times 2 = 2{,}2\) bits par caractère, contre 3 bits pour un code de longueur fixe pour cinq caractères.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Arbres n-aires <span class="ref">diapos 38–52</span></h2>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Arbre n-aire</span></p>
+      <p>Dans un <dfn>arbre n-aire</dfn>, le nombre de fils d'un nœud n'est pas limité : 0, 1, 2… n. Les fils ne sont pas ordonnés : il n'y a pas de fils gauche ni de fils droit.</p>
+    </div>
+    <p>On retrouve presque les mêmes parcours : en profondeur, préfixe (le nœud puis ses sous-arbres) et postfixe (les sous-arbres puis le nœud), et en largeur. Le parcours infixe, lui, n'a de sens que pour les arbres binaires. Pour parcourir, on prend les fils dans l'ordre où ils sont rangés : même s'ils ne sont pas ordonnés au sens du type abstrait, la représentation en mémoire leur donne un ordre.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 334 225" width="334" role="img" aria-labelledby="fig-naire-titre">
+          <title id="fig-naire-titre">Arbre n-aire : r a pour fils a, b et c ; a a pour fils d, qui a pour fils h et i ; c a pour fils e, f et g ; e a pour fils j et k, f a pour fils l, g a pour fils m.</title>
+          <path class="trait" d="M51 153 L30 179"/>
+          <path class="trait" d="M51 153 L72 179"/>
+          <path class="trait" d="M51 97 L51 123"/>
+          <path class="trait" d="M177 153 L156 179"/>
+          <path class="trait" d="M177 153 L198 179"/>
+          <path class="trait" d="M240 153 L240 179"/>
+          <path class="trait" d="M282 153 L282 179"/>
+          <path class="trait" d="M230 97 L177 123"/>
+          <path class="trait" d="M230 97 L240 123"/>
+          <path class="trait" d="M230 97 L282 123"/>
+          <path class="trait" d="M140 41 L51 67"/>
+          <path class="trait" d="M140 41 L114 67"/>
+          <path class="trait" d="M140 41 L230 67"/>
+          <circle class="boite" cx="30" cy="194" r="15"/>
+          <text x="30" y="198" text-anchor="middle" class="mono">h</text>
+          <circle class="boite" cx="72" cy="194" r="15"/>
+          <text x="72" y="198" text-anchor="middle" class="mono">i</text>
+          <circle class="boite" cx="51" cy="138" r="15"/>
+          <text x="51" y="142" text-anchor="middle" class="mono">d</text>
+          <circle class="boite" cx="51" cy="82" r="15"/>
+          <text x="51" y="86" text-anchor="middle" class="mono">a</text>
+          <circle class="boite" cx="114" cy="82" r="15"/>
+          <text x="114" y="86" text-anchor="middle" class="mono">b</text>
+          <circle class="boite" cx="156" cy="194" r="15"/>
+          <text x="156" y="198" text-anchor="middle" class="mono">j</text>
+          <circle class="boite" cx="198" cy="194" r="15"/>
+          <text x="198" y="198" text-anchor="middle" class="mono">k</text>
+          <circle class="boite" cx="177" cy="138" r="15"/>
+          <text x="177" y="142" text-anchor="middle" class="mono">e</text>
+          <circle class="boite" cx="240" cy="194" r="15"/>
+          <text x="240" y="198" text-anchor="middle" class="mono">l</text>
+          <circle class="boite" cx="240" cy="138" r="15"/>
+          <text x="240" y="142" text-anchor="middle" class="mono">f</text>
+          <circle class="boite" cx="282" cy="194" r="15"/>
+          <text x="282" y="198" text-anchor="middle" class="mono">m</text>
+          <circle class="boite" cx="282" cy="138" r="15"/>
+          <text x="282" y="142" text-anchor="middle" class="mono">g</text>
+          <circle class="boite" cx="230" cy="82" r="15"/>
+          <text x="230" y="86" text-anchor="middle" class="mono">c</text>
+          <circle class="boite" cx="140" cy="26" r="15"/>
+          <text x="140" y="30" text-anchor="middle" class="mono">r</text>
+        </svg>
+      <figcaption>L'arbre n-aire des diapos 43 à 51.</figcaption>
+    </figure>
+    <ul>
+      <li>Préfixe : r <u>a d h i</u> <u>b</u> <u>c e j k f l g m</u></li>
+      <li>Postfixe : h i d a b j k e l f m g c r</li>
+      <li>En largeur : r a b c d e f g h i j k l m</li>
+    </ul>
+
+    <h3>Représenter un nombre variable de fils</h3>
+    <p>Les primitives sont les mêmes groupes que pour les arbres binaires : initialisation et test, consultation et modification, ajout et retrait d'une feuille. La difficulté est le nombre variable de fils d'un nœud ; la diapo 47 propose deux solutions.</p>
+    <div class="colonnes">
+      <div>
+        <p class="cadre-titre">« Soyons frères ! »</p>
+        <p>Chaque nœud est relié à son <strong>premier fils</strong> et à son <strong>frère droit</strong> (et à son père). La structure <code>t_noeud</code> reçoit un champ <code>struct noeud * frere</code> ; une primitive <code>frere(i)</code> renvoie le i-ème frère, <code>ajout_frere</code> ajoute un frère.</p>
+<pre><code class="language-c">typedef struct noeud {
+  int val ;
+  struct noeud *pere ;
+  struct noeud *fils ;    /* premier fils */
+  struct noeud *frere ;   /* frère droit  */
+} t_noeud ;</code></pre>
+      </div>
+      <div>
+        <p class="cadre-titre">« Le patriarche ! »</p>
+        <p>Chaque nœud a un lien direct vers <strong>chacun de ses fils</strong> : le champ fils devient une collection de <code>struct noeud *</code>, avec le nombre de fils. Une primitive <code>fils(n)</code> renvoie le n-ième fils. Il faut choisir une gestion mémoire statique ou dynamique, ou ranger les fils dans une liste ou une file.</p>
+<pre><code class="language-c">typedef struct noeud {
+  int val ;
+  struct noeud *pere ;
+  int nbfils ;
+  struct noeud **fils ;   /* tableau de nbfils pointeurs */
+} t_noeud ;</code></pre>
+      </div>
+    </div>
+    <p>Les deux structures C ci-dessus traduisent les champs de la diapo 52 (valeur, père, fils, frère ou nombre de fils). Les arbres n-aires se mettent aussi en œuvre par tableau, par indiçage.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Un arbre binaire déguisé</span> <span class="badge ajout">Ajout</span></p>
+      <p>Dans la représentation « premier fils, frère droit », chaque nœud a deux liens : l'arbre n-aire est stocké comme un arbre binaire dont le fils gauche est le premier fils et le fils droit le frère suivant. Le parcours préfixe de cet arbre binaire est exactement le parcours préfixe de l'arbre n-aire ; le parcours infixe de l'arbre binaire donne son parcours postfixe.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>ABR : tout le sous-arbre gauche est plus petit que le nœud, tout le sous-arbre droit plus grand ; recherche et insertion suivent une seule branche ; le parcours infixe est trié.</li>
+        <li>Insertion : toujours en feuille. Suppression : une feuille s'enlève ; sinon on remplace la valeur par la valeur immédiatement inférieure (max du SAG) ou supérieure (min du SAD), qu'on supprime à son tour.</li>
+        <li>Complet : 0 ou 2 fils ; parfait : complet, feuilles au même niveau ; quasi-parfait : dernier niveau incomplet à droite. Un quasi-parfait tient dans un tableau sans trou.</li>
+        <li>Tas max : quasi-parfait, chaque nœud plus grand que ses descendants ; la racine est le maximum.</li>
+        <li>Ajout : en dernière feuille, puis remontée par échanges avec le père. Retrait : la racine, remplacée par la dernière feuille qui redescend en s'échangeant avec le plus grand fils. \(O(\log n)\) chacun ; tri par tas en \(O(n \log n)\).</li>
+        <li>Huffman : les caractères aux feuilles, 0 à gauche, 1 à droite ; aucun code n'est préfixe d'un autre.</li>
+        <li>Arbre n-aire : nombre de fils quelconque ; parcours préfixe, postfixe, en largeur ; représentation premier fils et frère droit, ou tableau de fils.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>On insère 17 dans l'ABR de l'exemple (15, 10, 25, 8, 12, 19, 42). Où arrive-t-il ?</summary>
+        <div><p>17 &gt; 15, à droite ; 17 &lt; 25, à gauche ; 17 &lt; 19, à gauche : il devient le fils gauche de 19.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle valeur remplace 15 si l'on supprime la racine de l'ABR de l'exemple avec la valeur immédiatement inférieure ?</summary>
+        <div><p>12, la plus grande valeur du sous-arbre gauche (on descend à droite depuis 10 tant que c'est possible).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un arbre parfait de profondeur 4 (en comptant les nœuds) a combien de nœuds ? Et de feuilles ?</summary>
+        <div><p>\(2^4 - 1 = 15\) nœuds, dont \(2^3 = 8\) feuilles.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Le tableau <code>[50, 30, 40, 10, 35]</code> représente-t-il un tas max ?</summary>
+        <div><p>Non : 35, en case 4, a pour père la case \(\lfloor 3/2 \rfloor = 1\), qui vaut 30 ; il faudrait 30 ≥ 35.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi échange-t-on avec le plus grand fils lors du retrait dans un tas max ?</summary>
+        <div><p>La valeur qui monte devient le père de l'autre fils : elle doit lui être supérieure.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Avec les codes de la diapo 37, que donne <code>1001011</code> ?</summary>
+        <div><p><code>10</code> d, <code>010</code> b, <code>11</code> e : « dbe ».</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-05-arbres-binaires.html"><small>← Précédent</small>Arbres binaires</a>
+    <a class="suivant" href="cours-07-arbres-avl.html"><small>Suivant →</small>Arbres AVL</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Algorithmique 3 · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

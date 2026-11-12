@@ -1,5 +1,5 @@
 // Page des paramètres de l'application installée : mises à jour, fenêtre au
-// lancement, raccourcis, connexion à Claude, dossier des cours, à propos.
+// lancement, raccourcis, connexion à Claude, profils, dossier des données, à propos.
 
 import { h, icone, bouton, carte, etat, note, confirmer, antiRebond, messageErreur } from './outils.js';
 import { creerCadre } from './cadre-fenetre.js';
@@ -16,7 +16,7 @@ async function enregistrer(partiel) {
 }
 
 document.getElementById('sous-titre').textContent =
-  `Studies ${info.version}${info.installee ? '' : ' (développement)'} · Electron ${info.electron}`;
+  `Universal Learn Academy ${info.version}${info.installee ? '' : ' (développement)'} · Electron ${info.electron}`;
 
 /* -- Mises à jour ------------------------------------------------------------ */
 
@@ -25,8 +25,8 @@ export function decrireMaj(s) {
     case 'recherche': return ['', 'Recherche d’une mise à jour…'];
     case 'disponible': return ['', `Version ${s.version} disponible : téléchargement en cours…`];
     case 'telechargement': return ['', `Téléchargement de la mise à jour : ${s.pourcent ?? 0} %`];
-    case 'pret': return ['ok', `Version ${s.version} prête : elle s’installera à la fermeture de Studies.`];
-    case 'a-jour': return ['ok', `Studies est à jour${s.viaGh ? ' (dépôt privé, lu avec GitHub CLI)' : ''}.`];
+    case 'pret': return ['ok', `Version ${s.version} prête : elle s’installera à la fermeture de Universal Learn Academy.`];
+    case 'a-jour': return ['ok', `Universal Learn Academy est à jour${s.viaGh ? ' (dépôt privé, lu avec GitHub CLI)' : ''}.`];
     case 'indisponible': return ['', s.message];
     case 'erreur': return ['erreur', `Échec de la recherche : ${s.message}`];
     default: return ['', 'Aucune recherche depuis le lancement.'];
@@ -52,7 +52,7 @@ function carteMisesAJour() {
   return carte('mises-a-jour', 'maj', 'Mises à jour', `Version installée : ${info.version}`,
     h('label', { class: 'interrupteur' }, auto,
       h('span', {}, h('strong', {}, 'Rechercher et installer les mises à jour au démarrage'),
-        h('br'), h('span', { class: 'aide' }, 'La nouvelle version se télécharge en arrière-plan et s’installe à la fermeture de Studies.'))),
+        h('br'), h('span', { class: 'aide' }, 'La nouvelle version se télécharge en arrière-plan et s’installe à la fermeture de Universal Learn Academy.'))),
     h('div', { class: 'ligne' },
       bouton('Rechercher maintenant', { onClick: () => api.maj.verifier() }),
       installer,
@@ -112,10 +112,10 @@ function carteFenetre() {
   perso.hidden = reglages.fenetre.mode !== 'personnalisee';
   if (!perso.hidden) preparerCadre();
 
-  return carte('fenetre', 'ecran', 'Fenêtre au lancement', 'Taille et position de la fenêtre de Studies à chaque ouverture.',
+  return carte('fenetre', 'ecran', 'Fenêtre au lancement', 'Taille et position de la fenêtre de Universal Learn Academy à chaque ouverture.',
     h('div', { class: 'choix' },
-      option('agrandie', 'Grande fenêtre', 'Studies s’ouvre agrandi sur l’écran principal (réglage par défaut).'),
-      option('personnalisee', 'Taille et position personnalisées', 'Studies s’ouvre exactement à l’endroit choisi ci-dessous ; si cet endroit n’est plus visible (écran débranché), il s’ouvre agrandi.')),
+      option('agrandie', 'Grande fenêtre', 'Universal Learn Academy s’ouvre agrandi sur l’écran principal (réglage par défaut).'),
+      option('personnalisee', 'Taille et position personnalisées', 'Universal Learn Academy s’ouvre exactement à l’endroit choisi ci-dessous ; si cet endroit n’est plus visible (écran débranché), il s’ouvre agrandi.')),
     perso);
 }
 
@@ -126,8 +126,8 @@ export function decrireRaccourci(l) {
   const cible = l.currentTarget ? ` (${l.currentTarget})` : '';
   switch (l.status) {
     case 'ok': return ['ok', `Raccourci présent : ${nom}.`];
-    case 'other-name': return ['ok', `Un raccourci vers Studies existe déjà sous un autre nom : ${nom}.`];
-    case 'outdated': return ['alerte', `${nom} ouvre une autre copie de Studies${cible}. Il peut être réparé pour ouvrir cette installation.`];
+    case 'other-name': return ['ok', `Un raccourci vers Universal Learn Academy existe déjà sous un autre nom : ${nom}.`];
+    case 'outdated': return ['alerte', `${nom} ouvre une autre copie de Universal Learn Academy${cible}. Il peut être réparé pour ouvrir cette installation.`];
     case 'broken': return ['alerte', `${nom} ne fonctionne plus : le programme qu’il ouvre n’existe plus${cible}.`];
     case 'foreign': return ['alerte', l.currentTarget ? `Un fichier ${nom} existe déjà, mais il ouvre un autre programme${cible}.` : `Un fichier ${nom} existe déjà, mais ce n’est pas un raccourci lisible.`];
     default: return ['', l.dirExiste === false ? 'Dossier introuvable.' : 'Aucun raccourci.'];
@@ -138,7 +138,7 @@ function resultatRaccourci(r, libelle) {
   switch (r.outcome) {
     case 'created': return `Raccourci créé (${libelle}).`;
     case 'repaired': return `Raccourci réparé (${libelle}) : il ouvre maintenant cette installation.`;
-    case 'replaced': return `L’ancien fichier a été remplacé par un raccourci vers Studies (${libelle}).`;
+    case 'replaced': return `L’ancien fichier a été remplacé par un raccourci vers Universal Learn Academy (${libelle}).`;
     case 'already': return `Un raccourci existe déjà (${libelle}, « ${r.location.name} ») : rien n’a été modifié.`;
     case 'removed': return `Raccourci mis à la corbeille (${libelle}).`;
     case 'missing': return `Il n’y a déjà plus de raccourci (${libelle}).`;
@@ -157,12 +157,12 @@ function carteRaccourcis() {
     try {
       let r;
       if (genre === 'supprimer') {
-        if (!await confirmer({ titre: 'Supprimer le raccourci ?', message: `« ${l.name} » (${l.label}) sera mis à la corbeille. Studies n’est pas désinstallé.`, valider: 'Supprimer', danger: true })) return;
+        if (!await confirmer({ titre: 'Supprimer le raccourci ?', message: `« ${l.name} » (${l.label}) sera mis à la corbeille. Universal Learn Academy n’est pas désinstallé.`, valider: 'Supprimer', danger: true })) return;
         r = await api.raccourcis.supprimer(l.id);
       } else {
         r = await api.raccourcis.creer(l.id);
         if (r.outcome === 'conflict') {
-          if (!await confirmer({ titre: 'Remplacer le fichier existant ?', message: `${decrireRaccourci(r.location)[1]} Le remplacer par un raccourci vers Studies ?`, valider: 'Remplacer', danger: true })) { note('Le fichier existant a été conservé.'); return; }
+          if (!await confirmer({ titre: 'Remplacer le fichier existant ?', message: `${decrireRaccourci(r.location)[1]} Le remplacer par un raccourci vers Universal Learn Academy ?`, valider: 'Remplacer', danger: true })) { note('Le fichier existant a été conservé.'); return; }
           r = await api.raccourcis.creer(l.id, { confirmReplace: true });
         }
       }
@@ -184,7 +184,7 @@ function carteRaccourcis() {
     if (l.file || l.dirExiste) actions.push(bouton('Afficher', { genre: 'leger', titre: 'Afficher dans l’explorateur de fichiers', onClick: () => api.raccourcis.afficher(l.id) }));
     if (l.removable) actions.push(bouton('Supprimer', { genre: 'discret-danger', onClick: () => executer(l, 'supprimer') }));
     if (l.choisi) actions.push(bouton('Retirer de la liste', { genre: 'leger', titre: 'Ne plus suivre ce dossier (le raccourci reste en place)', onClick: async () => { await api.raccourcis.oublier(l.id); actualiser(); } }));
-    const autres = l.others && l.others.length ? h('span', { class: 'aide' }, `Autres raccourcis vers Studies : ${l.others.map((n) => `« ${n} »`).join(', ')}.`) : null;
+    const autres = l.others && l.others.length ? h('span', { class: 'aide' }, `Autres raccourcis vers Universal Learn Academy : ${l.others.map((n) => `« ${n} »`).join(', ')}.`) : null;
     return h('div', { class: `raccourci ${genre}`.trim() },
       icone(l.id === 'bureau' ? 'ecran' : l.id === 'menu' ? 'menu' : 'dossier', 18),
       h('div', { class: 'texte' }, h('strong', {}, l.label), h('span', {}, texte), autres, h('span', { class: 'chemin', title: l.dir }, l.dir)),
@@ -209,7 +209,7 @@ function carteRaccourcis() {
   window.addEventListener('focus', () => { if (!occupe) actualiser(); });
   actualiser();
 
-  return carte('raccourcis', 'raccourci', 'Raccourcis', 'Ouvrir Studies depuis le Bureau, le menu Démarrer ou un dossier de ton choix.',
+  return carte('raccourcis', 'raccourci', 'Raccourcis', 'Ouvrir Universal Learn Academy depuis le Bureau, le menu Démarrer ou un dossier de ton choix.',
     liste,
     h('div', { class: 'ligne' },
       bouton('Créer un raccourci dans un autre dossier…', { onClick: async () => {
@@ -253,7 +253,7 @@ function carteClaude() {
             catch (e) { note(messageErreur(e), { erreur: true }); }
           } }),
           c.connecte ? bouton('Se déconnecter', { genre: 'discret-danger', onClick: async () => {
-            if (!await confirmer({ titre: 'Déconnecter Claude Code ?', message: 'Claude Code sera déconnecté sur ce poste, pour Studies comme pour tes autres usages.', valider: 'Déconnecter', danger: true })) return;
+            if (!await confirmer({ titre: 'Déconnecter Claude Code ?', message: 'Claude Code sera déconnecté sur ce poste, pour Universal Learn Academy comme pour tes autres usages.', valider: 'Déconnecter', danger: true })) return;
             try { await api.claude.deconnecter(); note('Claude Code est déconnecté.'); } catch (e) { note(messageErreur(e), { erreur: true }); }
             actualiser();
           } }) : null,
@@ -264,7 +264,7 @@ function carteClaude() {
 
     zoneCle.hidden = reglages.claude.mode !== 'cle';
     const cle = [];
-    if (s.cleEnregistree && s.cleLisible) cle.push(etat('ok', s.cleActive ? 'Clé d’API enregistrée et utilisée.' : 'Clé d’API enregistrée : elle sera utilisée après le redémarrage de Studies.'));
+    if (s.cleEnregistree && s.cleLisible) cle.push(etat('ok', s.cleActive ? 'Clé d’API enregistrée et utilisée.' : 'Clé d’API enregistrée : elle sera utilisée après le redémarrage de Universal Learn Academy.'));
     else if (s.cleEnregistree) cle.push(etat('erreur', 'La clé enregistrée ne peut plus être déchiffrée sur ce poste : la saisir à nouveau.'));
     else cle.push(etat('alerte', 'Aucune clé d’API enregistrée.'));
     if (!s.chiffrementDisponible) cle.push(etat('erreur', 'Le système ne peut pas chiffrer de secret (aucun trousseau) : la clé ne peut pas être enregistrée.'));
@@ -310,7 +310,7 @@ function carteClaude() {
   actualiser();
   return carte('claude', 'claude', 'Connexion à Claude', 'Aide pendant les quiz, correction des réponses rédigées et génération de nouveaux quiz.',
     h('div', { class: 'choix' },
-      option('compte', 'Mon compte Claude, via Claude Code', 'Tu te connectes toi-même à Claude Code avec ton abonnement Claude (Pro, Max…). Studies ne voit jamais tes identifiants.'),
+      option('compte', 'Mon compte Claude, via Claude Code', 'Tu te connectes toi-même à Claude Code avec ton abonnement Claude (Pro, Max…). Universal Learn Academy ne voit jamais tes identifiants.'),
       option('cle', 'Une clé d’API Anthropic', 'Pour utiliser Claude sans abonnement : l’usage est facturé à la clé. Claude Code reste nécessaire.')),
     zoneEtat, zoneCle,
     h('p', { class: 'aide' }, 'Anthropic n’autorise pas une application tierce à proposer la connexion avec un compte claude.ai ni à conserver ses identifiants : la connexion par compte passe donc par Claude Code, chez Anthropic.'));
@@ -392,57 +392,80 @@ function carteModeles() {
   return carte('claude-modeles', 'claude', 'Modèles de Claude et exécution du code', 'Modèle et effort pour l’aide, la correction, l’évaluation et la génération de quiz ; langages exécutables dans les questions de code.', zone);
 }
 
-/* -- Dossier des cours ---------------------------------------------------------------- */
+/* -- Profil ---------------------------------------------------------------------------- */
 
-function carteCours() {
-  const v = info.versionsCours || {};
+function carteProfils() {
+  const zone = h('div', {});
+
+  async function charger() {
+    zone.replaceChildren(h('p', { class: 'aide' }, 'Chargement…'));
+    let e;
+    try { e = await api.profils.etat(); }
+    catch (err) { zone.replaceChildren(etat('erreur', messageErreur(err)), h('div', { class: 'ligne' }, bouton('Réessayer', { genre: 'leger', onClick: charger }))); return; }
+    const nouveau = h('input', { type: 'text', value: e.profils.length ? '' : e.session, placeholder: e.session, spellcheck: 'false' });
+    const creer = async () => {
+      try { await api.profils.creer(nouveau.value || e.session); note('Profil créé et choisi.'); charger(); }
+      catch (err) { note(messageErreur(err), { erreur: true, duree: 6000 }); }
+    };
+    const liste = e.profils.map((p) => h('label', {},
+      h('input', { type: 'radio', name: 'profil', value: p.nom, checked: p.nom === e.profil, onChange: async () => {
+        try { await api.profils.choisir(p.nom); note(`Profil « ${p.nom} » choisi : recharger les pages ouvertes.`); charger(); }
+        catch (err) { note(messageErreur(err), { erreur: true }); }
+      } }),
+      h('span', {}, h('strong', {}, p.nom), h('span', {}, p.nom === e.profil ? 'Profil actif : la progression s’écrit dans son dossier.' : `Créé le ${p.cree || '—'}.`))));
+    const renommer = h('input', { type: 'text', value: e.profil || '', spellcheck: 'false' });
+    zone.replaceChildren(
+      e.profils.length ? h('div', { class: 'choix' }, ...liste) : etat('alerte', 'Aucun profil : en créer un pour enregistrer ta progression.'),
+      h('div', { class: 'ligne' },
+        h('label', { class: 'champ' }, h('span', {}, 'Nouveau profil (nom d’utilisateur)'), nouveau),
+        bouton('Ajouter', { genre: e.profils.length ? '' : 'principal', onClick: creer })),
+      e.profil ? h('div', { class: 'ligne' },
+        h('label', { class: 'champ' }, h('span', {}, `Renommer « ${e.profil} »`), renommer),
+        bouton('Renommer', { genre: 'leger', onClick: async () => {
+          try { await api.profils.renommer(e.profil, renommer.value); note('Profil renommé.'); charger(); }
+          catch (err) { note(messageErreur(err), { erreur: true, duree: 6000 }); }
+        } })) : null,
+      h('p', { class: 'aide' }, 'Chaque profil a son dossier dans le dossier des données : son cursus (dossiers libres et cours), ses tentatives, ses TD, ses TP et son suivi. Le profil choisi est mémorisé sur ce poste ; l’accueil permet aussi d’en changer.'));
+  }
+
+  charger();
+  return carte('profil', 'menu', 'Profil', 'Qui travaille sur ce poste : la progression s’écrit dans le dossier du profil actif.', zone);
+}
+
+/* -- Dossier des données -------------------------------------------------------------- */
+
+function carteDonnees() {
+  const v = info.versionsOutils || {};
   const date = (iso) => (iso ? new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '');
-  const dossierChoisi = h('p', { class: 'aide' });
-  const peindreDossier = () => {
-    dossierChoisi.replaceChildren(reglages.cours.dossier ? h('span', {}, 'Dossier choisi : ', h('code', {}, reglages.cours.dossier)) : 'Aucun dossier choisi.');
-  };
-  peindreDossier();
-
-  const option = (valeur, titre, description, ...suite) => h('label', {},
-    h('input', { type: 'radio', name: 'cours', value: valeur, checked: reglages.cours.mode === valeur, onChange: async () => {
-      if (valeur === 'dossier' && !reglages.cours.dossier) {
-        const r = await api.choisirCours();
-        if (!r.ok) { if (r.message) note(r.message, { erreur: true, duree: 6000 }); document.querySelector('input[name=cours][value=integre]').checked = true; return; }
-        reglages = await api.reglages();
-        peindreDossier();
-      }
-      await enregistrer({ cours: { mode: valeur } });
-      proposerRedemarrage();
-    } }),
-    h('span', {}, h('strong', {}, titre), h('span', {}, description), ...suite));
-
-  return carte('cours', 'livre', 'Dossier des cours', `Cours affichés en ce moment : ${info.racine || '—'}`,
-    h('div', { class: 'choix' },
-      option('integre', 'Cours livrés avec Studies', `Mis à jour avec l’application. Copie locale : ${info.dossierLocal}.`,
-        v.livre ? h('span', {}, h('br'), `Version des cours : ${date(v.livre.cree)}, ${v.livre.fichiers} fichiers.`) : null),
-      option('dossier', 'Un dossier studies sur ce poste', 'Par exemple un clone git du dépôt : ton travail (tentatives, TD, suivi) y reste, et git pull le synchronise avec tes autres postes.', h('br'), dossierChoisi)),
+  const mode = {
+    depot: 'Dépôt git d’ula : outils et catalogue sont ceux du dépôt (git pull et git push synchronisent tout).',
+    installe: `Outils livrés avec l’application${v.livre ? ` (version du ${date(v.livre.cree)}, ${v.livre.fichiers} fichiers)` : ''}, copiés dans ${info.dossierLocal}.`,
+    developpement: 'Développement : outils du dépôt de l’application.'
+  }[info.modeDonnees] || '';
+  return carte('donnees', 'dossier', 'Dossier des données', 'Le catalogue téléchargé (explore) et les dossiers des profils.',
+    h('p', {}, 'En ce moment : ', h('code', {}, info.racine || '—')),
+    h('p', { class: 'aide' }, mode),
     h('div', { class: 'ligne' },
-      bouton('Choisir le dossier…', { onClick: async () => {
-        const r = await api.choisirCours();
+      bouton('Choisir un autre dossier…', { onClick: async () => {
+        const r = await api.donnees.choisir();
         if (!r.ok) { if (r.message) note(r.message, { erreur: true, duree: 6000 }); return; }
-        reglages = await api.reglages();
-        document.querySelector('input[name=cours][value=dossier]').checked = true;
-        peindreDossier();
+        note(r.depot ? 'Dépôt d’ula reconnu.' : 'Dossier choisi.');
         proposerRedemarrage();
       } }),
-      bouton('Ouvrir le dossier des cours', { genre: 'leger', onClick: () => api.ouvrirDossier('cours') })),
-    h('p', { class: 'aide' }, 'Tes tentatives aux quiz et ton travail dans les TD sont enregistrés dans le dossier des cours (quiz_results, td_results). Ils ne font jamais partie des versions publiées de Studies.'));
+      bouton('Dossier par défaut', { genre: 'leger', onClick: async () => { const r = await api.donnees.defaut(); note(`Dossier par défaut : ${r.dossier}`); proposerRedemarrage(); } }),
+      bouton('Ouvrir le dossier', { genre: 'leger', onClick: () => api.ouvrirDossier('donnees') })),
+    h('p', { class: 'aide' }, `Par défaut : ${info.dossierParDefaut}. Les cours se téléchargent depuis le catalogue de l’accueil ; une mise à jour d’un cours ne touche jamais au travail rangé dans le dossier d’un profil.`));
 }
 
 /* -- À propos ------------------------------------------------------------------------- */
 
 function carteAPropos() {
   return carte('a-propos', 'info', 'À propos', null,
-    h('p', {}, `Studies ${info.version}, Electron ${info.electron}, ${info.installee ? 'version installée' : 'version de développement'}.`),
+    h('p', {}, `Universal Learn Academy ${info.version}, Electron ${info.electron}, ${info.installee ? 'version installée' : 'version de développement'}.`),
     h('p', { class: 'aide' }, 'Paramètres : ', h('code', {}, info.donnees)),
     h('div', { class: 'ligne' },
-      bouton('Ouvrir le dossier des paramètres', { genre: 'leger', onClick: () => api.ouvrirDossier('donnees') }),
-      bouton('Redémarrer Studies', { genre: 'leger', onClick: () => api.redemarrer() })));
+      bouton('Ouvrir le dossier des paramètres', { genre: 'leger', onClick: () => api.ouvrirDossier('parametres') }),
+      bouton('Redémarrer Universal Learn Academy', { genre: 'leger', onClick: () => api.redemarrer() })));
 }
 
 /* -- Redémarrage ---------------------------------------------------------------------- */
@@ -451,7 +474,7 @@ let proposition = null;
 function proposerRedemarrage() {
   if (proposition) return;
   proposition = h('div', { class: 'carte' },
-    etat('alerte', 'Ce changement s’applique au prochain démarrage de Studies.'),
+    etat('alerte', 'Ce changement s’applique au prochain démarrage de Universal Learn Academy.'),
     h('div', { class: 'ligne' }, bouton('Redémarrer maintenant', { genre: 'principal', onClick: () => api.redemarrer() }), bouton('Plus tard', { genre: 'leger', onClick: () => { proposition.remove(); proposition = null; } })));
   document.getElementById('cartes').prepend(proposition);
   window.scrollTo({ top: 0 });
@@ -459,7 +482,7 @@ function proposerRedemarrage() {
 
 /* -- Page ------------------------------------------------------------------------------- */
 
-document.getElementById('cartes').append(carteMisesAJour(), carteFenetre(), carteRaccourcis(), carteClaude(), carteModeles(), carteCours(), carteAPropos());
+document.getElementById('cartes').append(carteMisesAJour(), carteFenetre(), carteRaccourcis(), carteClaude(), carteModeles(), carteProfils(), carteDonnees(), carteAPropos());
 
 const aller = (section) => { const el = section && document.getElementById(section); if (el) el.scrollIntoView(); };
 aller(location.hash.slice(1));

@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="reseau">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TCP et UDP : la couche transport · Réseaux L2</title>
+<meta name="description" content="Cours 6 de réseaux (L2) : rôle de la couche transport (suivi des conversations, segmentation, identification des applications), TCP et UDP, numéros de port et multiplexage, en-tête TCP, numéros de séquence et d'acquittement, indicateurs, connexion en trois temps, retransmission, fermeture, datagramme UDP, choix entre TCP et UDP.">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-06-couche-transport.html" title="Quiz · Cours 6 · Couche transport">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Réseaux</a>
+    <span aria-current="page">Cours 6 · Couche transport</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Réseaux</span> Cours 6 · L2 S3</p>
+    <h1>TCP et UDP : la couche transport</h1>
+    <p class="chapeau">IP achemine des paquets d'une machine à une autre, sans rien garantir. La couche transport fait le lien avec les applications : elle distingue les conversations grâce aux numéros de port, et, avec TCP, rend l'échange fiable (connexion, numérotation, acquittements, retransmission). UDP, lui, fait le choix inverse : rien de tout cela, mais la vitesse.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/06%20-%20TCP-UDP%20-%20couche%20transport.pdf">06 - TCP-UDP - couche transport.pdf</a> · 23 diapos ; livre Cisco, chapitre « La couche transport »</dd></div>
+      <div><dt>Autre version</dt><dd><a href="../cours/06%20-%20transport.pdf">06 - transport.pdf</a> (2022) : sans la diapo de l'en-tête TCP et avec une table des ports plus courte</dd></div>
+      <div><dt>Enseignant</dt><dd>Sylvain Meignier</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Citer les trois services de la couche transport.</li>
+        <li>Expliquer à quoi sert un numéro de port et comment plusieurs connexions se distinguent sur une même machine.</li>
+        <li>Lire l'en-tête TCP et l'en-tête UDP ; décoder l'octet des indicateurs.</li>
+        <li>Dérouler l'ouverture en trois temps, un échange avec acquittements et retransmission, puis la fermeture d'une connexion TCP.</li>
+        <li>Choisir entre TCP et UDP pour une application donnée.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-02-modele-de-communication.html">Cours 2</a> : modèle OSI, modèle TCP/IP, encapsulation.</li>
+        <li><a href="cours-05-couche-reseau.html">Cours 5</a> : IP, protocole « au mieux », routage.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Rôle de la couche transport <span class="ref">diapos 2–4</span></h2>
+    <p>La couche transport (couche 4) est la dernière avant les applications. Dans le modèle ARPA, elle s'appelle simplement « TCP/UDP », du nom de ses deux protocoles. C'est la première couche, en descendant, qui ajoute ses propres informations aux données de l'application.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Couche transport</span></p>
+      <p>La couche transport achemine les données d'une application sur un hôte vers une application sur un autre hôte. Elle fait l'interface entre les processus qui tournent sur la machine et le flux envoyé sur le réseau.</p>
+    </div>
+
+    <p>Elle rend trois services :</p>
+    <div class="tableau">
+      <table>
+        <thead><tr><th>Service</th><th>Ce que cela veut dire</th></tr></thead>
+        <tbody>
+          <tr><td>Suivi des conversations</td><td>Une application dialogue avec une application d'un autre équipement ; la couche transport garde la trace de chaque conversation.</td></tr>
+          <tr><td>Segmentation et réassemblage</td><td>Les données sont découpées pour que chaque paquet respecte la taille admise ; le destinataire remet les morceaux dans l'ordre.</td></tr>
+          <tr><td>Identification des applications</td><td>Un numéro (le port) désigne l'application visée sur l'hôte.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Segment ou datagramme</span></p>
+      <p>Le schéma de la diapo 2 nomme « datagrammes » les données de la couche transport. L'usage courant distingue : on parle de <strong>segment</strong> pour TCP et de <strong>datagramme</strong> pour UDP (et parfois aussi pour IP).</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Deux protocoles : TCP et UDP <span class="ref">diapos 5–7</span></h2>
+    <div class="colonnes">
+      <div class="colonne">
+        <p><strong>TCP</strong> (<i>Transmission Control Protocol</i>)</p>
+        <ul>
+          <li>Transport fiable et sans erreur, quitte à être moins rapide.</li>
+          <li>Demande d'établir une connexion avant d'échanger.</li>
+          <li>Numérote, acquitte et retransmet ; remet les données dans l'ordre.</li>
+        </ul>
+      </div>
+      <div class="colonne">
+        <p><strong>UDP</strong> (<i>User Datagram Protocol</i>)</p>
+        <ul>
+          <li>Transmet les données aussi vite que possible, quitte à perdre en fiabilité.</li>
+          <li>Pas de connexion : chaque datagramme part seul.</li>
+          <li>Ni ordre, ni acquittement, ni retransmission.</li>
+        </ul>
+      </div>
+    </div>
+
+    <p>Les diapos 6 et 7 montrent où travaille chaque protocole. IP est présent sur chaque nœud traversé : chaque routeur lit l'en-tête IP pour choisir la route. TCP, lui, n'existe qu'aux deux extrémités (les <i>end systems</i>) : les routeurs ne lisent pas l'en-tête TCP, et le « flux TCP » relie directement les deux hôtes au-dessus du chemin IP.</p>
+
+    <div class="bloc retenir">
+      <p class="bloc-titre">À retenir <span>De bout en bout</span></p>
+      <p>IP va de nœud en nœud ; TCP et UDP vont de bout en bout. La fiabilité de TCP est assurée par les deux hôtes seuls, au-dessus d'un réseau IP qui, lui, reste « au mieux ».</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les numéros de port <span class="ref">diapos 9–10</span></h2>
+    <p>Une machine a une adresse IP, mais fait tourner en même temps un serveur web, un client de messagerie, un navigateur… Pour savoir à quelle application remettre les données, la couche transport utilise un <strong>numéro de port</strong>.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Port</span></p>
+      <p>Un port est un numéro sur <strong>16 bits</strong> (donc \(2^{16} = 65\,536\) valeurs, de 0 à 65 535) qui identifie une application sur un hôte. Ce n'est pas un port physique (série, parallèle) mais un port <strong>logique</strong>. Il permet d'offrir plusieurs services à la fois sur une même machine (web, courriel, FTP…).</p>
+    </div>
+
+    <h3>Ports bien connus</h3>
+    <p>Les serveurs écoutent sur des numéros fixés par l'IANA, que les clients connaissent d'avance :</p>
+    <div class="tableau compact">
+      <table>
+        <thead><tr><th>Port</th><th>TCP</th><th>UDP</th><th>Service</th></tr></thead>
+        <tbody>
+          <tr><td>20</td><td>oui</td><td>attribué</td><td>FTP, données</td></tr>
+          <tr><td>21</td><td>oui</td><td>attribué</td><td>FTP, commandes</td></tr>
+          <tr><td>22</td><td>oui</td><td>attribué</td><td>SSH : connexion sécurisée, transfert de fichiers (scp, sftp), redirection de port</td></tr>
+          <tr><td>23</td><td>oui</td><td>attribué</td><td>Telnet : terminal à distance, en clair</td></tr>
+          <tr><td>25</td><td>oui</td><td>attribué</td><td>SMTP : acheminement du courriel entre serveurs de messagerie</td></tr>
+          <tr><td>53</td><td>attribué</td><td>attribué</td><td>DNS <span class="badge a-verifier">À vérifier</span></td></tr>
+          <tr><td>67</td><td>attribué</td><td>oui</td><td>DHCP, serveur</td></tr>
+          <tr><td>68</td><td>attribué</td><td>oui</td><td>DHCP, client</td></tr>
+          <tr><td>80</td><td>oui</td><td>attribué</td><td>HTTP</td></tr>
+          <tr><td>110</td><td>oui</td><td>attribué</td><td>POP3 : relève du courriel</td></tr>
+          <tr><td>143</td><td>oui</td><td>oui <span class="badge a-verifier">À vérifier</span></td><td>IMAP : gestion du courriel sur le serveur</td></tr>
+          <tr><td>443</td><td>oui</td><td>attribué</td><td>HTTPS</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>« Oui » : protocole normalisé, spécifié ou largement utilisé sur ce numéro. « Attribué » : numéro réservé par l'IANA pour ce protocole, mais pas forcément utilisé ainsi.</p>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Deux cases de la diapo 10</span></p>
+      <p>Pour DNS (53), la diapo met « attribué » partout. En pratique, DNS est le premier usage d'UDP 53 pour les requêtes, et utilise aussi TCP 53 (réponses longues, transferts de zone). Pour IMAP (143), c'est l'inverse : IMAP fonctionne sur TCP ; UDP 143 est seulement réservé. Retenir surtout : DNS et DHCP sur UDP, les autres de la liste sur TCP.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les trois plages de ports</span> <span class="badge ajout">Ajout</span></p>
+      <ul>
+        <li><strong>0 à 1023</strong> : ports bien connus (<i>well-known</i>), ceux des services standard ci-dessus ;</li>
+        <li><strong>1024 à 49 151</strong> : ports enregistrés, réservés à des applications précises (3306 pour MySQL, par exemple) ;</li>
+        <li><strong>49 152 à 65 535</strong> : ports dynamiques ou éphémères, que le système d'un client choisit au hasard pour chaque nouvelle connexion.</li>
+      </ul>
+      <p>Le serveur écoute donc sur un port connu ; le client part d'un port quelconque, choisi pour l'occasion.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Multiplexage des connexions <span class="ref">diapos 11–13</span></h2>
+    <p>Sur la diapo 11, la machine A offre plusieurs services (http 80, ftp 20/21, telnet 23, smtp 25, https 443, dns 53…) ; les machines B et C s'y connectent en même temps, sur des ports différents ou sur le même port. Comment A sait-il à quelle conversation appartient chaque segment ?</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Ce qui identifie une connexion</span></p>
+      <p>Une connexion TCP est identifiée par quatre valeurs : <strong>adresse IP source, port source, adresse IP destination, port destination</strong>. Il suffit que l'une des quatre diffère pour qu'il s'agisse d'une autre connexion. Le couple (adresse IP, port) d'une extrémité s'appelle une <em>socket</em>.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Trois sessions telnet vers le même serveur</span></p>
+      <p>Le serveur <em>almond</em> (128.66.12.1) accepte des connexions telnet sur le port 23. Diapo 12, trois clients différents s'y connectent ; diapo 13, un même client ouvre trois sessions :</p>
+      <div class="tableau mono compact">
+        <table>
+          <thead><tr><th>Cas</th><th>IP source</th><th>Port source</th><th>IP destination</th><th>Port destination</th></tr></thead>
+          <tbody>
+            <tr><td>Diapo 12</td><td>128.66.12.2</td><td>9811</td><td>128.66.12.1</td><td>23</td></tr>
+            <tr><td></td><td>128.66.12.4</td><td>2001</td><td>128.66.12.1</td><td>23</td></tr>
+            <tr><td></td><td>128.66.12.5</td><td>5123</td><td>128.66.12.1</td><td>23</td></tr>
+            <tr><td>Diapo 13</td><td>128.66.12.2</td><td>9811</td><td>128.66.12.1</td><td>23</td></tr>
+            <tr><td></td><td>128.66.12.2</td><td>2001</td><td>128.66.12.1</td><td>23</td></tr>
+            <tr><td></td><td>128.66.12.2</td><td>5123</td><td>128.66.12.1</td><td>23</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Dans le premier cas, c'est l'adresse source qui distingue les connexions ; dans le second, c'est le port source. Côté serveur, les trois arrivent toutes sur le port 23.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>L'en-tête TCP <span class="ref">diapos 8, 14 et 15</span></h2>
+    <p>Chaque segment TCP commence par un en-tête d'au moins 20 octets, présenté par lignes de 32 bits :</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 660 230" width="660" role="img" aria-labelledby="fig-tcp-titre">
+        <title id="fig-tcp-titre">En-tête TCP sur des lignes de 32 bits : port source et port destination ; numéro de séquence ; numéro d'acquittement ; longueur de l'en-tête, réservé, indicateurs NS, CWR, ECE, URG, ACK, PSH, RST, SYN, FIN, fenêtre ; somme de contrôle, pointeur de données urgentes ; options et remplissage ; puis les données.</title>
+        <text x="10" y="14" class="t2 mono">0</text><text x="90" y="14" class="t2 mono">4</text><text x="170" y="14" class="t2 mono">8</text><text x="330" y="14" class="t2 mono">16</text><text x="630" y="14" class="t2 mono">31</text>
+        <rect class="boite-accent" x="10" y="20" width="320" height="28"/><text x="170" y="39" text-anchor="middle">Port source</text>
+        <rect class="boite-accent" x="330" y="20" width="320" height="28"/><text x="490" y="39" text-anchor="middle">Port destination</text>
+        <rect class="boite-accent" x="10" y="48" width="640" height="28"/><text x="330" y="67" text-anchor="middle">Numéro de séquence</text>
+        <rect class="boite-accent" x="10" y="76" width="640" height="28"/><text x="330" y="95" text-anchor="middle">Numéro d'acquittement</text>
+        <rect class="boite" x="10" y="104" width="80" height="28"/><text x="50" y="123" text-anchor="middle" class="t2">Lg en-tête</text>
+        <rect class="boite" x="90" y="104" width="60" height="28"/><text x="120" y="123" text-anchor="middle" class="t2">Rés.</text>
+        <rect class="boite" x="150" y="104" width="20" height="28"/><text x="160" y="122" text-anchor="middle" class="t2 mono">N</text>
+        <rect class="boite" x="170" y="104" width="20" height="28"/><text x="180" y="122" text-anchor="middle" class="t2 mono">C</text>
+        <rect class="boite" x="190" y="104" width="20" height="28"/><text x="200" y="122" text-anchor="middle" class="t2 mono">E</text>
+        <rect class="boite" x="210" y="104" width="20" height="28"/><text x="220" y="122" text-anchor="middle" class="t2 mono">U</text>
+        <rect class="boite-accent" x="230" y="104" width="20" height="28"/><text x="240" y="122" text-anchor="middle" class="mono">A</text>
+        <rect class="boite" x="250" y="104" width="20" height="28"/><text x="260" y="122" text-anchor="middle" class="t2 mono">P</text>
+        <rect class="boite-accent" x="270" y="104" width="20" height="28"/><text x="280" y="122" text-anchor="middle" class="mono">R</text>
+        <rect class="boite-accent" x="290" y="104" width="20" height="28"/><text x="300" y="122" text-anchor="middle" class="mono">S</text>
+        <rect class="boite-accent" x="310" y="104" width="20" height="28"/><text x="320" y="122" text-anchor="middle" class="mono">F</text>
+        <rect class="boite" x="330" y="104" width="320" height="28"/><text x="490" y="123" text-anchor="middle">Fenêtre</text>
+        <rect class="boite" x="10" y="132" width="320" height="28"/><text x="170" y="151" text-anchor="middle">Somme de contrôle</text>
+        <rect class="boite" x="330" y="132" width="320" height="28"/><text x="490" y="151" text-anchor="middle">Pointeur de données urgentes</text>
+        <rect class="boite" x="10" y="160" width="640" height="28"/><text x="330" y="179" text-anchor="middle" class="t2">Options (facultatives) + remplissage</text>
+        <rect class="pointille" x="10" y="188" width="640" height="28" fill="none"/><text x="330" y="207" text-anchor="middle" class="t2">Données</text>
+      </svg>
+      <figcaption>En-tête TCP (diapo 8). Les huit cases de la ligne 4 sont les indicateurs, un bit chacun (N = NS, C = CWR, E = ECE, U = URG, A = ACK, P = PSH, R = RST, S = SYN, F = FIN) ; en couleur, les champs utiles pour suivre une connexion.</figcaption>
+    </figure>
+
+    <div class="tableau compact">
+      <table>
+        <thead><tr><th>Champ</th><th>Taille</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td>Port source, port destination</td><td>16 bits chacun</td><td>Applications émettrice et destinataire.</td></tr>
+          <tr><td>Numéro de séquence</td><td>32 bits</td><td>Position, dans le flux d'octets envoyé, du premier octet de données du segment.</td></tr>
+          <tr><td>Numéro d'acquittement</td><td>32 bits</td><td>Numéro du prochain octet attendu : confirme à l'émetteur que tout ce qui précède est bien arrivé.</td></tr>
+          <tr><td>Longueur de l'en-tête</td><td>4 bits</td><td>En mots de 32 bits : 5 pour un en-tête sans option (20 octets), 15 au plus (60 octets). <span class="badge ajout">Ajout</span></td></tr>
+          <tr><td>Indicateurs (flags)</td><td>8 bits (+ NS)</td><td>Fonction du segment : ouverture, acquittement, fermeture… (tableau ci-dessous).</td></tr>
+          <tr><td>Fenêtre</td><td>16 bits</td><td>Nombre d'octets que le destinataire accepte encore de recevoir avant d'acquitter. <span class="badge ajout">Ajout</span></td></tr>
+          <tr><td>Somme de contrôle</td><td>16 bits</td><td>Détection des erreurs sur l'en-tête et les données.</td></tr>
+          <tr><td>Pointeur de données urgentes</td><td>16 bits</td><td>Fin des données urgentes, si URG est à 1.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Les indicateurs</h3>
+    <p>Les indicateurs (<i>flags</i>) disent à quoi sert un segment. Codés sur 8 bits, chacun est noté par une lettre ou par trois :</p>
+    <div class="tableau mono compact">
+      <table>
+        <thead><tr><th>Lettre</th><th>Nom</th><th>Valeur</th><th>Signification</th></tr></thead>
+        <tbody>
+          <tr><td>F</td><td>FIN</td><td>0000 0001</td><td>Demande la fin d'une connexion.</td></tr>
+          <tr><td>S</td><td>SYN</td><td>0000 0010</td><td>Demande une synchronisation pour établir une connexion.</td></tr>
+          <tr><td>R</td><td>RST</td><td>0000 0100</td><td>Signale une rupture inattendue de la connexion.</td></tr>
+          <tr><td>P</td><td>PSH</td><td>0000 1000</td><td>Signale des données à transmettre immédiatement à l'application.</td></tr>
+          <tr><td>A</td><td>ACK</td><td>0001 0000</td><td>Le numéro d'acquittement est valable : accusé de réception.</td></tr>
+          <tr><td>U</td><td>URG</td><td>0010 0000</td><td>Signale des données urgentes.</td></tr>
+          <tr><td>E</td><td>ECE</td><td>0100 0000</td><td>Signale une congestion.</td></tr>
+          <tr><td>C</td><td>CWR</td><td>1000 0000</td><td>Indique que des mesures ont été prises contre la congestion.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Plusieurs indicateurs peuvent être à 1 en même temps : l'octet vaut alors la somme de leurs valeurs. Un segment SYN + ACK porte ainsi <code>0001 0010</code>, soit 0x12. La diapo 15 écrit « ECN » pour le bit E ; son nom exact est ECE (<i>ECN-Echo</i>), ECN étant le mécanisme de notification de congestion dont il fait partie.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>La vie d'une connexion TCP <span class="ref">diapos 14–18</span></h2>
+
+    <h3>Numéros de séquence et d'acquittement</h3>
+    <p>TCP voit les données comme un flux d'octets. Le <strong>numéro de séquence</strong> d'un segment donne la position de son premier octet dans ce flux ; le destinataire peut ainsi remettre les segments dans l'ordre et repérer les trous. Le <strong>numéro d'acquittement</strong> qu'il renvoie confirme à l'émetteur ce qui est bien arrivé.</p>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Calculer un acquittement</span> <span class="badge ajout">Ajout</span></p>
+      <ol class="etapes">
+        <li>Prendre le numéro de séquence du segment reçu.</li>
+        <li>Y ajouter le nombre d'octets de données qu'il transporte.</li>
+        <li>Le résultat est le numéro d'acquittement : le numéro du prochain octet attendu. Un segment SYN ou FIN compte pour un octet, bien qu'il ne porte pas de données.</li>
+      </ol>
+    </div>
+
+    <h3>Ouverture, échange et fermeture</h3>
+    <p>Les diapos 16 à 18 montrent les trois phases d'une connexion. La figure les reprend en ajoutant des numéros pour suivre le calcul.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 600 470" width="600" role="img" aria-labelledby="fig-vie-titre">
+        <title id="fig-vie-titre">Échange TCP entre un client et un serveur. Ouverture : SYN seq 100 ; SYN ACK seq 300 ack 101 ; ACK seq 101 ack 301. Transfert : le client envoie 50 octets avec seq 101 ; le serveur répond ACK ack 151. Fermeture : FIN seq 151 ; ACK ack 152 ; FIN seq 301 ; ACK ack 302.</title>
+        <defs>
+          <marker id="fleche-vie" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein-accent"/>
+          </marker>
+          <marker id="fleche-vie-gris" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="190" y="6" width="100" height="28" rx="6"/><text x="240" y="25" text-anchor="middle" class="gras">Client</text>
+        <rect class="boite" x="450" y="6" width="100" height="28" rx="6"/><text x="500" y="25" text-anchor="middle" class="gras">Serveur</text>
+        <path class="trait" d="M240 34 V462"/>
+        <path class="trait" d="M500 34 V462"/>
+
+        <text x="10" y="90" class="gras accent">Ouverture</text>
+        <text x="10" y="106" class="t2">(diapo 16)</text>
+        <path class="accent" d="M240 50 L498 74" marker-end="url(#fleche-vie)"/>
+        <text x="370" y="52" text-anchor="middle" class="mono">SYN  seq=100</text>
+        <path class="accent" d="M500 86 L242 110" marker-end="url(#fleche-vie)"/>
+        <text x="370" y="88" text-anchor="middle" class="mono">SYN,ACK  seq=300 ack=101</text>
+        <path class="accent" d="M240 122 L498 146" marker-end="url(#fleche-vie)"/>
+        <text x="370" y="124" text-anchor="middle" class="mono">ACK  seq=101 ack=301</text>
+
+        <path class="pointille" d="M10 170 H590"/>
+        <text x="10" y="210" class="gras">Transfert</text>
+        <text x="10" y="226" class="t2">(diapo 17)</text>
+        <path class="trait" d="M240 190 L498 214" marker-end="url(#fleche-vie-gris)"/>
+        <text x="370" y="192" text-anchor="middle" class="mono">seq=101, 50 octets</text>
+        <path class="trait" d="M500 226 L242 250" marker-end="url(#fleche-vie-gris)"/>
+        <text x="370" y="228" text-anchor="middle" class="mono">ACK  ack=151</text>
+
+        <path class="pointille" d="M10 274 H590"/>
+        <text x="10" y="350" class="gras accent">Fermeture</text>
+        <text x="10" y="366" class="t2">(diapo 18)</text>
+        <path class="accent" d="M240 294 L498 318" marker-end="url(#fleche-vie)"/>
+        <text x="370" y="296" text-anchor="middle" class="mono">FIN  seq=151</text>
+        <path class="accent" d="M500 330 L242 354" marker-end="url(#fleche-vie)"/>
+        <text x="370" y="332" text-anchor="middle" class="mono">ACK  ack=152</text>
+        <path class="accent" d="M500 374 L242 398" marker-end="url(#fleche-vie)"/>
+        <text x="370" y="376" text-anchor="middle" class="mono">FIN  seq=301</text>
+        <path class="accent" d="M240 410 L498 434" marker-end="url(#fleche-vie)"/>
+        <text x="370" y="412" text-anchor="middle" class="mono">ACK  ack=302</text>
+      </svg>
+      <figcaption>Ouverture en trois temps, un envoi de 50 octets, fermeture en quatre temps. Les numéros de départ (100 et 300) sont des exemples : chaque côté tire le sien au hasard.</figcaption>
+    </figure>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Poignée de main en trois temps</span></p>
+      <p>Pour ouvrir une connexion (diapo 16) :</p>
+      <ol class="etapes">
+        <li>le client envoie un segment <strong>SYN</strong> avec son numéro de séquence initial ;</li>
+        <li>le serveur répond <strong>SYN, ACK</strong> : il acquitte le SYN du client et envoie son propre numéro initial ;</li>
+        <li>le client répond <strong>ACK</strong> : la connexion est établie dans les deux sens.</li>
+      </ol>
+    </div>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Fermeture</span></p>
+      <p>Pour fermer (diapo 18), chaque sens est fermé séparément : un côté envoie <strong>FIN</strong>, l'autre l'acquitte (<strong>ACK</strong>) ; puis l'autre côté envoie à son tour <strong>FIN</strong>, acquitté par un dernier <strong>ACK</strong>. Quatre segments en tout. Un segment <strong>RST</strong>, lui, coupe la connexion brutalement, sans cet échange.</p>
+    </div>
+
+    <h3>Acquittement et retransmission</h3>
+    <p>La diapo 17 montre comment TCP rattrape une perte. À chaque envoi, l'émetteur arme un minuteur (« tempo ») ; s'il reçoit l'acquittement avant la fin du minuteur, tout va bien. Sinon, il renvoie le segment.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 600 330" width="600" role="img" aria-labelledby="fig-retrans-titre">
+        <title id="fig-retrans-titre">A envoie le message 1 et arme un minuteur ; B l'acquitte avant la fin du minuteur. A envoie le message 2 et arme un minuteur ; le message 2 se perd ; à l'expiration du minuteur, A réémet le message 2, que B acquitte.</title>
+        <defs>
+          <marker id="fleche-retrans" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein-accent"/>
+          </marker>
+          <marker id="fleche-retrans-gris" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="240" y="22" text-anchor="middle" class="gras">A (émetteur)</text>
+        <text x="500" y="22" text-anchor="middle" class="gras">B (destinataire)</text>
+        <path class="trait" d="M240 32 V322"/>
+        <path class="trait" d="M500 32 V322"/>
+
+        <path class="pointille" d="M200 46 V110"/>
+        <text x="190" y="50" text-anchor="end" class="t2">tempo armée</text>
+        <path class="accent" d="M240 46 L498 72" marker-end="url(#fleche-retrans)"/>
+        <text x="370" y="50" text-anchor="middle" class="mono">msg 1</text>
+        <path class="trait" d="M500 80 L242 106" marker-end="url(#fleche-retrans-gris)"/>
+        <text x="370" y="84" text-anchor="middle" class="mono">ACK</text>
+        <text x="190" y="104" text-anchor="end" class="t2">ACK à temps</text>
+
+        <path class="pointille" d="M200 140 V230"/>
+        <text x="190" y="144" text-anchor="end" class="t2">tempo armée</text>
+        <path class="accent" d="M240 140 L380 154"/>
+        <text x="392" y="160" class="gras accent">✕ perdu</text>
+        <text x="330" y="140" text-anchor="middle" class="mono">msg 2</text>
+        <text x="190" y="234" text-anchor="end" class="t2 gras">fin de tempo</text>
+
+        <path class="pointille" d="M200 234 V316"/>
+        <path class="accent" d="M240 234 L498 260" marker-end="url(#fleche-retrans)"/>
+        <text x="370" y="238" text-anchor="middle" class="mono">msg 2 (réémis)</text>
+        <path class="trait" d="M500 270 L242 296" marker-end="url(#fleche-retrans-gris)"/>
+        <text x="370" y="274" text-anchor="middle" class="mono">ACK</text>
+      </svg>
+      <figcaption>Retransmission sur expiration du minuteur (d'après la diapo 17) : le message 2 est réémis faute d'acquittement.</figcaption>
+    </figure>
+
+    <p>L'émetteur réémet dans trois cas, qu'il ne sait d'ailleurs pas distinguer : le segment a été perdu ; il est arrivé mais n'a pas été acquitté à temps ; ou c'est l'acquittement qui s'est perdu. Dans ces deux derniers cas, B reçoit le segment deux fois : grâce au numéro de séquence, il reconnaît le doublon et le jette (« ancien ACK rejeté » sur la diapo).</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La fenêtre glissante</span> <span class="badge ajout">Ajout</span></p>
+      <p>Attendre l'acquittement de chaque segment avant d'envoyer le suivant (comme sur la diapo 17) serait très lent sur un long trajet. En réalité, TCP envoie plusieurs segments d'affilée, tant que le volume non acquitté reste inférieur à la <strong>fenêtre</strong> annoncée par le destinataire dans son en-tête. Quand les acquittements arrivent, la fenêtre « glisse » et de nouveaux segments partent. Le destinataire ajuste cette fenêtre selon la place qui lui reste : c'est le <em>contrôle de flux</em>.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>UDP <span class="ref">diapos 19–20</span></h2>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>UDP</span></p>
+      <p>UDP (<i>User Datagram Protocol</i>) est un protocole de couche 4 <strong>sans connexion</strong>, sur le modèle de la poste : chaque datagramme est envoyé seul.</p>
+      <ul>
+        <li>Pas de contrôle de séquence : les messages peuvent arriver dans un autre ordre que celui de l'envoi.</li>
+        <li>Pas de garantie d'arrivée.</li>
+        <li>Non fiable, mais rapide : bien adapté à l'audio, à la vidéo et aux petits échanges.</li>
+      </ul>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>« Données garanties non corrompues »</span></p>
+      <p>La diapo 19 dit que les données reçues sont garanties non corrompues. Il faut le comprendre ainsi : la somme de contrôle permet de <em>détecter</em> une erreur, et un datagramme abîmé est jeté au lieu d'être remis. Ce n'est pas une garantie forte : la somme de contrôle sur 16 bits ne repère pas toutes les erreurs, et elle est même facultative en IPv4 (valeur 0).</p>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 660 120" width="660" role="img" aria-labelledby="fig-udp-titre">
+        <title id="fig-udp-titre">En-tête UDP sur deux lignes de 32 bits : port source et port destination ; longueur et somme de contrôle ; puis les données, de longueur variable.</title>
+        <text x="10" y="14" class="t2 mono">0</text><text x="330" y="14" class="t2 mono">16</text><text x="630" y="14" class="t2 mono">31</text>
+        <rect class="boite-accent" x="10" y="20" width="320" height="28"/><text x="170" y="39" text-anchor="middle">Port source (16 bits)</text>
+        <rect class="boite-accent" x="330" y="20" width="320" height="28"/><text x="490" y="39" text-anchor="middle">Port destination (16 bits)</text>
+        <rect class="boite-accent" x="10" y="48" width="320" height="28"/><text x="170" y="67" text-anchor="middle">Longueur (16 bits)</text>
+        <rect class="boite-accent" x="330" y="48" width="320" height="28"/><text x="490" y="67" text-anchor="middle">Somme de contrôle (16 bits)</text>
+        <rect class="pointille" x="10" y="76" width="640" height="28" fill="none"/><text x="330" y="95" text-anchor="middle" class="t2">Données (longueur variable)</text>
+      </svg>
+      <figcaption>Datagramme UDP (diapo 20) : un en-tête de 8 octets seulement, contre 20 au moins pour TCP.</figcaption>
+    </figure>
+
+    <ul>
+      <li><strong>Port source</strong> : facultatif (0 s'il n'est pas utilisé), car le flux est souvent à sens unique, sans réponse du destinataire.</li>
+      <li><strong>Port destination</strong> : obligatoire.</li>
+      <li><strong>Longueur</strong> : taille du datagramme, en-tête compris.</li>
+      <li><strong>Données</strong> : de 0 octet à environ 64 ko.</li>
+    </ul>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>D'où vient « environ 64 ko »</span> <span class="badge ajout">Ajout</span></p>
+      <p>Le champ longueur fait 16 bits : un datagramme UDP mesure au plus 65 535 octets, dont 8 d'en-tête. Comme il voyage dans un paquet IPv4 dont la longueur totale est elle aussi limitée à 65 535 octets, avec au moins 20 octets d'en-tête IP, il reste au plus \(65\,535 - 20 - 8 = 65\,507\) octets de données.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Choisir entre TCP et UDP <span class="ref">diapos 22–23</span></h2>
+    <p>Le choix dépend des besoins de l'application.</p>
+    <div class="colonnes">
+      <div class="colonne">
+        <p><strong>UDP est préféré si</strong></p>
+        <ul>
+          <li>le transfert doit être rapide ;</li>
+          <li>il n'est pas nécessaire d'acquitter les données ;</li>
+          <li>retransmettre une donnée perdue ne sert à rien ;</li>
+          <li>les données sont traitées « à la volée ».</li>
+        </ul>
+      </div>
+      <div class="colonne">
+        <p><strong>TCP est préféré si</strong></p>
+        <ul>
+          <li>l'ordre des segments compte ;</li>
+          <li>l'hôte doit pouvoir réassembler les segments ;</li>
+          <li>un acquittement est nécessaire ;</li>
+          <li>la perte de données est critique.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Quelques applications</span> <span class="badge ajout">Ajout</span></p>
+      <div class="tableau compact">
+        <table>
+          <thead><tr><th>Application</th><th>Protocole</th><th>Pourquoi</th></tr></thead>
+          <tbody>
+            <tr><td>Web (HTTP, HTTPS), courriel (SMTP, POP3, IMAP), SSH, transfert de fichiers</td><td>TCP</td><td>Un octet manquant ou déplacé rend la page, le message ou le fichier inutilisable.</td></tr>
+            <tr><td>Téléphonie sur IP, visioconférence, jeu en ligne</td><td>UDP</td><td>Un morceau de son qui arrive en retard ne sert plus : mieux vaut le sauter que l'attendre.</td></tr>
+            <tr><td>Requête DNS, DHCP</td><td>UDP</td><td>Une question, une réponse, toutes deux courtes : ouvrir une connexion coûterait plus que l'échange ; on redemande si rien ne revient.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <p>La diapo 23 conseille de lire la description des protocoles TCP et UDP (RFC 9293 pour TCP, RFC 768 pour UDP, ou le chapitre du livre Cisco).</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exercices</h2>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>TCP ou UDP ?</span></p>
+      <p>Pour chaque usage, choisir TCP ou UDP et justifier : (a) télécharger une mise à jour du système ; (b) diffuser en direct un match à des milliers de spectateurs ; (c) envoyer un courriel ; (d) un capteur qui envoie sa température toutes les secondes ; (e) une session SSH.</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <ul>
+          <li>(a) TCP : le fichier doit arriver complet et dans l'ordre.</li>
+          <li>(b) UDP : le direct ne peut pas attendre une retransmission ; une image perdue passe inaperçue.</li>
+          <li>(c) TCP (SMTP, port 25) : la perte d'une partie du message est inacceptable.</li>
+          <li>(d) UDP : une mesure perdue est remplacée par la suivante une seconde après ; inutile de la renvoyer.</li>
+          <li>(e) TCP (port 22) : chaque frappe compte, et dans l'ordre.</li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Suivre les numéros</span></p>
+      <p>Un client ouvre une connexion avec le numéro de séquence initial 1000 ; le serveur choisit 5000. Puis le client envoie trois segments de 200, 300 et 100 octets, que le serveur acquitte un par un. Donner les numéros de séquence et d'acquittement de chaque segment, de l'ouverture jusqu'au dernier acquittement.</p>
+      <details class="indice"><summary>Indice</summary><p>Le SYN compte pour un octet ; ensuite, acquittement = séquence + taille.</p></details>
+      <details class="solution"><summary>Solution proposée</summary>
+        <div class="tableau mono compact">
+          <table>
+            <thead><tr><th>Sens</th><th>Indicateurs</th><th>seq</th><th>ack</th><th>Données</th></tr></thead>
+            <tbody>
+              <tr><td>C → S</td><td>SYN</td><td>1000</td><td>—</td><td>0</td></tr>
+              <tr><td>S → C</td><td>SYN, ACK</td><td>5000</td><td>1001</td><td>0</td></tr>
+              <tr><td>C → S</td><td>ACK</td><td>1001</td><td>5001</td><td>0</td></tr>
+              <tr><td>C → S</td><td>ACK</td><td>1001</td><td>5001</td><td>200</td></tr>
+              <tr><td>S → C</td><td>ACK</td><td>5001</td><td>1201</td><td>0</td></tr>
+              <tr><td>C → S</td><td>ACK</td><td>1201</td><td>5001</td><td>300</td></tr>
+              <tr><td>S → C</td><td>ACK</td><td>5001</td><td>1501</td><td>0</td></tr>
+              <tr><td>C → S</td><td>ACK</td><td>1501</td><td>5001</td><td>100</td></tr>
+              <tr><td>S → C</td><td>ACK</td><td>5001</td><td>1601</td><td>0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Les segments sans données ne font pas avancer le numéro de séquence (sauf SYN et FIN).</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Décoder les indicateurs</span></p>
+      <p>Quels indicateurs sont à 1 dans un octet valant 0x12 ? 0x11 ? 0x04 ? 0x18 ? À quel moment de la connexion voit-on chacun ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <ul>
+          <li>0x12 = 0001 0010 : ACK + SYN, deuxième temps de l'ouverture (réponse du serveur).</li>
+          <li>0x11 = 0001 0001 : ACK + FIN, demande de fermeture qui acquitte en même temps les dernières données reçues.</li>
+          <li>0x04 = 0000 0100 : RST, rupture brutale (par exemple, connexion vers un port où rien n'écoute).</li>
+          <li>0x18 = 0001 1000 : ACK + PSH, segment de données en cours de connexion, à remettre tout de suite à l'application.</li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 4 <span>Combien de connexions ?</span></p>
+      <p>Le serveur 10.0.0.1 voit arriver des segments portant les couples (source → destination) suivants : <code>10.0.0.7:50000 → 10.0.0.1:443</code>, <code>10.0.0.7:50001 → 10.0.0.1:443</code>, <code>10.0.0.8:50000 → 10.0.0.1:443</code>, <code>10.0.0.7:50000 → 10.0.0.1:22</code>. Combien de connexions TCP distinctes ? Quels services sont utilisés ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>Quatre : chaque quadruplet diffère des autres par au moins une valeur (port source, adresse source ou port destination). Trois connexions HTTPS (443), dont deux depuis le même poste 10.0.0.7, et une session SSH (22). Le fait que 10.0.0.7 réutilise le port 50000 vers le port 22 ne gêne pas : le port de destination suffit à distinguer.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 5 <span>Tailles d'en-têtes</span></p>
+      <p>Une application envoie 100 octets. Quelle est la taille du paquet IP si elle utilise UDP ? TCP (sans option) ? Quelle part du paquet occupent les en-têtes dans chaque cas ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>UDP : \(100 + 8 + 20 = 128\) octets, en-têtes \(28/128 \approx 22\,\%\). TCP : \(100 + 20 + 20 = 140\) octets, en-têtes \(40/140 \approx 29\,\%\). Sans compter, pour TCP, les trois segments d'ouverture et les quatre de fermeture, ni les acquittements : pour un petit échange, UDP est bien plus léger.</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>La couche transport (4) relie des applications : suivi des conversations, segmentation et réassemblage, identification des applications par les ports.</li>
+        <li>TCP et UDP ne sont lus que par les hôtes d'extrémité ; les routeurs ne regardent que l'en-tête IP.</li>
+        <li>Port : 16 bits, 65 536 valeurs. 20/21 FTP, 22 SSH, 23 Telnet, 25 SMTP, 53 DNS, 67/68 DHCP, 80 HTTP, 110 POP3, 143 IMAP, 443 HTTPS.</li>
+        <li>Une connexion = IP source, port source, IP destination, port destination.</li>
+        <li>TCP : orienté connexion, fiable, ordonné. Numéro de séquence = position des données ; acquittement = prochain octet attendu.</li>
+        <li>Ouverture en trois temps : SYN, SYN/ACK, ACK. Fermeture : FIN, ACK, FIN, ACK. RST coupe net.</li>
+        <li>Faute d'acquittement avant la fin du minuteur, l'émetteur retransmet ; les doublons sont reconnus grâce au numéro de séquence.</li>
+        <li>UDP : sans connexion, ni ordre ni garantie d'arrivée, en-tête de 8 octets (ports, longueur, somme de contrôle) ; rapide.</li>
+        <li>UDP pour la vitesse et le temps réel (voix, vidéo, DNS, DHCP) ; TCP quand la perte ou le désordre sont inacceptables.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Quels sont les trois services de la couche transport ?</summary>
+        <div><p>Le suivi des conversations, la segmentation et le réassemblage, l'identification des applications (ports).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Sur combien de bits est codé un numéro de port ? combien de valeurs ?</summary>
+        <div><p>16 bits, soit 65 536 valeurs (0 à 65 535).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un routeur lit-il l'en-tête TCP pour acheminer un paquet ?</summary>
+        <div><p>Non : il ne lit que l'en-tête IP. TCP n'est traité que par les deux hôtes d'extrémité.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quels segments ouvrent une connexion TCP ?</summary>
+        <div><p>SYN (client), SYN/ACK (serveur), ACK (client) : la poignée de main en trois temps.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un segment de 400 octets porte le numéro de séquence 7000. Quel acquittement le destinataire renvoie-t-il ?</summary>
+        <div><p>7400 : le numéro du prochain octet attendu.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que fait TCP s'il ne reçoit pas d'acquittement ?</summary>
+        <div><p>À l'expiration du minuteur armé à l'envoi, il retransmet le segment.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que contient l'en-tête UDP ?</summary>
+        <div><p>Port source (facultatif), port destination, longueur et somme de contrôle : 4 champs de 16 bits, 8 octets.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi la voix sur IP utilise-t-elle UDP ?</summary>
+        <div><p>Parce qu'un échantillon de son retransmis arriverait trop tard pour servir : mieux vaut un petit trou qu'un retard.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-05-couche-reseau.html"><small>← Précédent</small>Internet : la couche réseau</a>
+    <a class="suivant" href="cours-07-vlan-stp.html"><small>Suivant →</small>VLAN et STP</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Réseaux · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

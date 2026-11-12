@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="gl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Problématique du développement informatique · Génie logiciel L3</title>
+<meta name="description" content="Cours 1 de génie logiciel (L3) : l'industrie du logiciel et ses acteurs, la crise du logiciel (études du Standish Group, coût des erreurs), les objectifs et la définition du génie logiciel, les principes de Ghezzi, les quatre processus logiciels, la qualité (définition ISO, facteurs de la norme ISO 25010, métriques) et la maturité des organisations (CMMI).">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<link rel="quiz" href="../generated_quizzes/quiz-cours-01-problematique.html" title="Quiz · Problématique du développement">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Génie logiciel 1</a>
+    <span aria-current="page">Cours 1 · Problématique du développement</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Génie logiciel 1</span> Cours 1 · L3 S5</p>
+    <h1>Problématique du développement informatique</h1>
+    <p class="chapeau">Pourquoi tant de projets informatiques dépassent leur budget, leurs délais ou échouent, et ce que le génie logiciel propose pour passer de l'artisanat à l'industrie : des méthodes, des processus et une démarche qualité. Ce premier cours pose le vocabulaire de tout le module : logiciel, processus logiciel, qualité, maturité.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/L3-175UD05-C1-2025-complet-print.pdf">L3-175UD05-C1-2025-complet-print.pdf</a> · 27 diapos ; fiches <a href="../cours/Fiches%20de%20cours-20261016/GL-def.pdf">GL-def</a>, <a href="../cours/Fiches%20de%20cours-20261016/Lehman-Cat%C3%A9gories%20Logiciel.pdf">Lehman</a>, <a href="../cours/Fiches%20de%20cours-20261016/Qualit%C3%A9.pdf">Qualité</a>, <a href="../cours/Fiches%20de%20cours-20261016/CMMI.pdf">CMMI</a> ; texte <a href="../cours/pavillon.pdf">pavillon.pdf</a></dd></div>
+      <div><dt>Enseignante</dt><dd>C. Piau-Toffolon</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-16">16 oct. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Situer les acteurs de l'industrie du logiciel et les modes de contrat d'une ESN.</li>
+        <li>Expliquer la « crise du logiciel » et pourquoi une erreur coûte d'autant plus cher qu'elle est découverte tard.</li>
+        <li>Définir le génie logiciel, le produit logiciel et le processus logiciel.</li>
+        <li>Décrire les quatre processus logiciels : technique, gestion, qualité, gestion des risques.</li>
+        <li>Citer les facteurs de qualité de la norme ISO 25010 et les cinq niveaux de maturité du CMMI.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Avoir écrit et testé des programmes : le cours s'intéresse à ce qui change quand on passe d'un programme à un projet.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>L'industrie du logiciel <span class="ref">diapos 2–5</span></h2>
+    <p>Avant de parler de méthode, il faut voir où se fabriquent les logiciels, et pour qui. Trois acteurs se partagent le marché, avec des modèles économiques différents.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Industrie du logiciel, logiciel</span></p>
+      <p>L'<dfn>industrie du logiciel</dfn> regroupe la création, la correction et l'amélioration des logiciels. Un <dfn>logiciel</dfn> est ici un ensemble de programmes informatiques s'exécutant sur une machine réelle ou virtuelle (une machine simulée). Les machines réelles vont des supercalculateurs aux plateformes mobiles (téléphone, tablette, ordinateur de bord…), en passant par les ordinateurs « classiques », les PC de bureau ou portables.</p>
+    </div>
+
+    <h3>Les trois acteurs</h3>
+    <dl class="glossaire">
+      <dt>Éditeur de logiciel</dt>
+      <dd>Il produit des logiciels « standards », les <dfn>progiciels</dfn>, pour les entreprises et les particuliers : logiciels de gestion, éditeurs, jeux… Exemples d'éditeurs : Microsoft, Apple, IBM.</dd>
+      <dt>Entreprise de services numériques (ESN, anciennement SSII)</dt>
+      <dd>Elle produit des logiciels « sur mesure », généralement pour des entreprises : gestion de contrats d'assurance, application ou site web… Exemples d'ESN européennes : Sopra Group, Capgemini, Atos Origin, Logica.</dd>
+      <dt>Communauté du logiciel libre</dt>
+      <dd>Elle produit des logiciels non propriétaires, dont tout le monde peut lire et modifier librement le code source (du moins ceux qui en sont capables). Exemples : GNU/Linux, The Gimp, Emacs, OpenOffice.</dd>
+    </dl>
+
+    <p>Une ESN travaille selon trois types de contrat :</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Les modes de travail d'une ESN</caption>
+        <thead><tr><th>Contrat</th><th>Principe</th></tr></thead>
+        <tbody>
+          <tr><th>Au forfait</th><td>l'ESN fournit au client un service clé en main</td></tr>
+          <tr><th>En régie</th><td>l'ESN délègue ses employés chez le client, une sorte d'intérim</td></tr>
+          <tr><th>En centre de service</th><td>le centre regroupe des employés pour un « gros » client, pour un domaine particulier, ou pour une ou plusieurs technologies</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Le logiciel libre</span></p>
+      <p>Un logiciel libre ne peut pas devenir propriétaire, mais il peut être commercialisé. Il est développé bénévolement ou par des salariés. Les frontières entre acteurs sont poreuses : un éditeur ou une ESN peut proposer et utiliser du logiciel libre, une société peut être à la fois éditeur et ESN, ou éditeur de logiciel et constructeur de matériel (Apple, IBM).</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>La crise du logiciel <span class="ref">diapos 6–9</span></h2>
+    <p>On parle de « crise du logiciel » depuis la fin des années 1960 : les projets informatiques échouent ou dérapent bien plus souvent que les projets des autres industries. Les études du Standish Group (rapports CHAOS) en donnent la mesure.</p>
+
+    <h3>Peu de projets réussissent</h3>
+    <p>Sur les très grands projets logiciels de 2003 à 2012 de la base CHAOS, seuls 6 % ont réussi. Un projet <dfn>réussi</dfn> (<span class="en" lang="en">successful</span>) est livré à temps, dans le budget, avec une mise en œuvre satisfaisante ; un projet <dfn>contesté</dfn> (<span class="en" lang="en">challenged</span>) dépasse son budget ou ses délais, ou sa mise en œuvre n'est pas satisfaisante ; un projet en <dfn>échec</dfn> (<span class="en" lang="en">failed</span>) est abandonné avant la fin, ou jamais utilisé après sa mise en œuvre.</p>
+    <div class="colonnes">
+      <div class="tableau compact">
+        <table>
+          <caption>Issue des très grands projets, 2003–2012</caption>
+          <thead><tr><th>Issue</th><th>Part</th></tr></thead>
+          <tbody>
+            <tr><td>Contestés</td><td>52 %</td></tr>
+            <tr><td>Échecs</td><td>42 %</td></tr>
+            <tr><td>Réussis</td><td>6 %</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tableau compact">
+        <table>
+          <caption>Causes des interruptions de service (20 ans d'études)</caption>
+          <thead><tr><th>Cause</th><th>Part</th></tr></thead>
+          <tbody>
+            <tr><td>Bug ou erreur de l'application</td><td>42 %</td></tr>
+            <tr><td>Environnement et autres</td><td>18 %</td></tr>
+            <tr><td>Défaillance du logiciel d'infrastructure</td><td>17 %</td></tr>
+            <tr><td>Virus, piratage…</td><td>8 %</td></tr>
+            <tr><td>Réseau</td><td>6 %</td></tr>
+            <tr><td>Panne matérielle</td><td>6 %</td></tr>
+            <tr><td>Erreur d'opérateur</td><td>5 %</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p>La courbe des rapports CHAOS de 1996 à 2019 montre que la situation change peu : environ un projet sur trois réussit (27 % en 1996, autour de 31 % en 2019), environ la moitié sont contestés, et près d'un sur cinq échoue (environ 19 % en 2019). Malgré l'arrivée des méthodes agiles (manifeste de 2001, guide Scrum en 2010, SAFe 4.0 en 2016), le graphique annonce une tendance de −3 % pour les succès et +4 % pour les échecs. La diapo 6 renvoie aussi à une liste des désastres logiciels les plus fameux (<a href="http://www.devtopics.com/20-famous-software-disasters/">devtopics.com</a>).</p>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Citation <span>La conclusion du Standish Group</span></p>
+      <p lang="en">« Research at the Standish Group indicates that smaller time frames, with delivery of software components early and often, will increase the success rate. Shorter time frames result in an iterative process of design, prototype, develop, test and deploy small elements. This process is known as growing software as opposed to the old concept of developping software. Growing software engages the user earlier. »</p>
+      <p><span class="badge ajout">Ajout</span> Autrement dit : livrer tôt et souvent de petits morceaux de logiciel, dans un processus itératif (concevoir, prototyper, développer, tester, déployer), augmente le taux de succès. On « fait pousser » le logiciel au lieu de le développer d'un bloc, et l'utilisateur est impliqué plus tôt. C'est l'idée des cycles de vie itératifs du cours 2.</p>
+    </div>
+
+    <h3>Où passe l'argent</h3>
+    <p>Les chiffres de Boehm (1975) montrent que le développement proprement dit n'est qu'une petite partie du coût d'un logiciel, et que la programmation n'est qu'une petite partie du développement.</p>
+    <div class="colonnes">
+      <div class="tableau compact">
+        <table>
+          <caption>Répartition de l'effort de développement (Boehm 75)</caption>
+          <thead><tr><th>Activité</th><th>Part</th></tr></thead>
+          <tbody>
+            <tr><td>Élaboration du cahier des charges</td><td>10 %</td></tr>
+            <tr><td>Spécification des exigences</td><td>10 %</td></tr>
+            <tr><td>Conception</td><td>15 %</td></tr>
+            <tr><td>Codage</td><td>20 %</td></tr>
+            <tr><td>Tests unitaires</td><td>25 %</td></tr>
+            <tr><td>Tests d'intégration</td><td>20 %</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tableau compact">
+        <table>
+          <caption>Répartition du coût total de production (Boehm 75)</caption>
+          <thead><tr><th>Activité</th><th>Part</th></tr></thead>
+          <tbody>
+            <tr><td>Maintenance</td><td>67 %</td></tr>
+            <tr><td>Tests unitaires</td><td>8 %</td></tr>
+            <tr><td>Codage</td><td>7 %</td></tr>
+            <tr><td>Tests d'intégration</td><td>7 %</td></tr>
+            <tr><td>Conception</td><td>5 %</td></tr>
+            <tr><td>Spécification des exigences</td><td>3 %</td></tr>
+            <tr><td>Élaboration du cahier des charges</td><td>3 %</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Le coût des erreurs</span></p>
+      <p>45 % de l'effort sert à tester et corriger de mauvaises spécifications ou conceptions, qui ne représentent pourtant qu'une petite partie de l'effort total. La correction des erreurs représente 50 % du coût total de production, et les erreurs coûtent d'autant plus cher qu'elles sont commises tôt : erreurs de spécification &gt; erreurs de conception &gt; erreurs de codage.</p>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Les deux camemberts ne se lisent pas de la même façon : à gauche, le développement seul ; à droite, toute la vie du logiciel, où la maintenance (corrections, adaptations, évolutions après la mise en service) écrase tout le reste. Le codage, qu'on croit souvent être l'essentiel du travail, ne pèse que 20 % du développement et 7 % du coût total.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les facteurs d'échec d'un projet</span> <span class="badge examen">Examen</span></p>
+      <p>L'examen de 2020 demandait : « Quels sont les principaux facteurs d'échec d'un projet ? ». Le cours en donne les éléments, qu'on peut regrouper ainsi :</p>
+      <ul>
+        <li>des besoins mal exprimés ou mal compris : les erreurs de spécification sont les plus nombreuses et les plus coûteuses (diapos 9 et 21) ;</li>
+        <li>un client trop peu impliqué, qui ne découvre le produit qu'à la livraison (conclusion du Standish Group, et le texte du pavillon en fin de page) ;</li>
+        <li>des budgets et des délais imposés sans rapport avec le travail réel, et des estimations absentes ou fausses ;</li>
+        <li>des changements de besoins en cours de route, mal maîtrisés ;</li>
+        <li>une validation trop tardive : les erreurs sont trouvées quand elles coûtent le plus cher ;</li>
+        <li>l'absence de méthode, de suivi, de gestion des risques et de démarche qualité.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les objectifs du génie logiciel <span class="ref">diapos 10–12</span></h2>
+    <p>Face à cette crise, le génie logiciel veut faire de la production de logiciel une activité d'ingénieur, maîtrisée et reproductible.</p>
+
+    <div class="tableau compact">
+      <table>
+        <caption>Passer de l'artisanat à l'industrie</caption>
+        <thead><tr><th>Artisanat</th><th>Industrie</th></tr></thead>
+        <tbody>
+          <tr><td><span lang="en">Programming in the small</span></td><td><span lang="en">Programming in the large</span></td></tr>
+          <tr><td>Amateurs</td><td>Professionnels</td></tr>
+          <tr><td>Travail d'une personne</td><td>Une ou plusieurs équipes</td></tr>
+          <tr><td>Utilisateur = programmeur</td><td>Clients / fournisseurs</td></tr>
+          <tr><td>Produit = code (documenté ?)</td><td>Multitude de produits</td></tr>
+          <tr><td>Processus simple de production</td><td>Processus complexe</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>L'objectif est de parvenir, in fine, à une maîtrise parfaite du processus de développement.</p>
+
+    <h3>Du langage naturel au langage machine</h3>
+    <p>En substance, le processus de développement consiste à traduire en langage machine des idées exprimées en langage naturel. La difficulté vient de la différence de niveau sémantique entre ces deux langages : il faut passer par des langages de niveau sémantique intermédiaire, ceux de l'analyse, de la conception et de la programmation.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 560 250" width="560" role="img" aria-labelledby="fig-niveaux-titre">
+        <title id="fig-niveaux-titre">Le processus de développement descend du langage naturel au langage machine, en passant par l'analyse, la conception et la programmation : à chaque étape, le niveau sémantique des langages baisse.</title>
+        <defs>
+          <marker id="fleche-niveaux" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <path class="trait" d="M40 230 V20" marker-end="url(#fleche-niveaux)"/>
+        <text x="30" y="125" text-anchor="middle" class="t2" transform="rotate(-90 30 125)">Niveau sémantique des langages</text>
+        <rect class="boite" x="70" y="20" width="170" height="36" rx="8"/>
+        <text x="155" y="43" text-anchor="middle" class="gras">Langage naturel</text>
+        <rect class="boite" x="150" y="70" width="140" height="32" rx="8"/>
+        <text x="220" y="91" text-anchor="middle">Analyse</text>
+        <rect class="boite" x="230" y="116" width="140" height="32" rx="8"/>
+        <text x="300" y="137" text-anchor="middle">Conception</text>
+        <rect class="boite" x="310" y="162" width="140" height="32" rx="8"/>
+        <text x="380" y="183" text-anchor="middle">Programmation</text>
+        <rect class="boite-accent" x="330" y="206" width="220" height="36" rx="8"/>
+        <text x="440" y="229" text-anchor="middle" class="gras accent">Produit fini (langage machine)</text>
+        <path class="accent" d="M250 38 C 470 40, 520 120, 500 200" marker-end="url(#fleche-niveaux)"/>
+        <text x="505" y="105" class="t2">sens du</text>
+        <text x="505" y="121" class="t2">processus</text>
+      </svg>
+      <figcaption>Le développement descend par paliers, du langage naturel du client au langage machine (diapo 11).</figcaption>
+    </figure>
+
+    <h3>Maîtriser le développement : la règle CQFD</h3>
+    <p>Pour maîtriser un développement logiciel, il faut suivre des méthodes strictes, réutilisables, qui intègrent un contrôle de la qualité. Trois consignes les résument :</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Trois consignes de méthode</caption>
+        <thead><tr><th>Consigne</th><th>Ce qu'elle demande</th></tr></thead>
+        <tbody>
+          <tr><td>Écrivez ce que vous faites</td><td>documenter, documenter et encore documenter</td></tr>
+          <tr><td>Faites ce qui est écrit</td><td>lire, lire et encore lire</td></tr>
+          <tr><td>Prouvez que vous le faites</td><td>tester, tester et encore tester</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>La règle CQFD</span></p>
+      <p>La maîtrise du développement permet de respecter la règle <dfn>CQFD</dfn> :</p>
+      <ul>
+        <li>les <strong>C</strong>oûts restent dans les limites prévues ;</li>
+        <li>le système est de <strong>Q</strong>ualité ;</li>
+        <li>les <strong>F</strong>onctionnalités répondent aux besoins ;</li>
+        <li>les <strong>D</strong>élais restent dans les limites prévues.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Définitions <span class="ref">diapos 13–15 · fiches GL-def et Lehman</span></h2>
+    <p>Le génie logiciel ne s'intéresse pas qu'au programme : il considère tout ce qui permet de le produire, de l'exploiter et de le faire évoluer, et la manière de le faire.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Produit logiciel, processus logiciel</span></p>
+      <p>Le <dfn>produit logiciel</dfn> est le programme et les produits nécessaires pour sa production, son exploitation et sa maintenance, documentation comprise.</p>
+      <p>Le <dfn>processus logiciel</dfn> est l'ensemble des activités effectuées, des méthodes et des pratiques suivies pour la production et la maintenance du produit logiciel.</p>
+    </div>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Logiciel (arrêté du 22 décembre 1981)</span></p>
+      <p>« Logiciel : ensemble de programmes, procédés et règles, et éventuellement de la documentation, relatifs au fonctionnement d'un ensemble de traitement de données. »</p>
+    </div>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Génie logiciel</span> <span class="badge examen">Examen</span></p>
+      <p>Le <dfn>génie</dfn> (ou ingénierie), au sens de science et pratique de l'ingénieur, est l'application de principes scientifiques à la conception et à la réalisation d'ensembles destinés à des fonctions utiles, de nature diverse selon le qualificatif attaché au terme : génie civil, chimique, électrique…</p>
+      <p>Le <dfn>génie logiciel</dfn> (<span class="en" lang="en">software engineering</span>) s'attache à définir et à appliquer des méthodes, des outils et des pratiques propres à assurer la production de logiciel répondant à des besoins spécifiés et respectant certains critères de qualité, eux-mêmes spécifiés, ainsi que des contraintes économiques.</p>
+      <p>Sa spécificité tient beaucoup au caractère immatériel des objets produits, qui résultent d'une construction intellectuelle. Deux conséquences en découlent : le caractère malléable du produit, qui retentit sur ses modalités de production et d'évolution, et l'importance déterminante des facteurs humains (d'après <a href="https://interstices.info/la-naissance-du-genie-logiciel/">interstices.info</a>).</p>
+    </div>
+    <p>La fiche « GL-def » cite d'autres définitions :</p>
+    <ul>
+      <li>le génie logiciel est une branche de l'ingénierie associée au développement de logiciels utilisant des principes, méthodes et procédures scientifiques bien définis ; son résultat est un produit logiciel efficace et fiable ;</li>
+      <li>Boehm (1976) : l'application pratique de la connaissance scientifique dans la conception et l'élaboration de programmes informatiques et de la documentation associée nécessaire pour les développer, les mettre en œuvre et les maintenir ;</li>
+      <li>arrêté ministériel du 30 décembre 1983 : « l'ensemble des activités de conception et de mise en œuvre des produits et procédures tendant à rationaliser la production du logiciel et son suivi » ;</li>
+      <li>IEEE : l'application d'une approche systématique, disciplinée et quantifiable au développement, à l'exploitation et à la maintenance des logiciels, c'est-à-dire l'application de l'ingénierie aux logiciels.</li>
+    </ul>
+    <p>Le génie logiciel englobe un ensemble de tâches ou d'activités : spécification, conception, implémentation, test unitaire et d'intégration, déploiement, maintenance, plus la documentation, la vérification et la validation.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Définir « génie logiciel » et « logiciel »</span> <span class="ref">diapo 14</span></p>
+      <p>Définir « génie logiciel ». Définir « logiciel ».</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <div>
+          <p><strong>Logiciel</strong> : un ensemble de programmes, avec les procédés, les règles et la documentation qui permettent de les produire, de les exploiter et de les maintenir (arrêté de 1981, et la définition du produit logiciel de la diapo 13).</p>
+          <p><strong>Génie logiciel</strong> : l'application d'une démarche d'ingénieur (systématique, disciplinée et mesurable) au développement, à l'exploitation et à la maintenance des logiciels ; elle définit et applique des méthodes, des outils et des pratiques pour produire un logiciel qui réponde à des besoins spécifiés, avec la qualité attendue, dans les coûts et les délais prévus.</p>
+          <p>Une bonne réponse d'examen cite les trois éléments que l'on retrouve dans toutes les définitions : une <em>démarche d'ingénieur</em>, appliquée à <em>tout le cycle de vie</em> (et pas seulement au codage), pour tenir des <em>objectifs</em> de besoins, de qualité, de coûts et de délais.</p>
+        </div>
+      </details>
+    </div>
+
+    <h3>Les trois types de logiciel de Lehman</h3>
+    <p>Un logiciel recouvre de multiples activités, de multiples produits reliés entre eux, de multiples acteurs, de multiples domaines d'application et de multiples procédés. Lehman distingue trois catégories de logiciel, selon leur rapport à l'évolution :</p>
+    <dl class="glossaire">
+      <dt>Type S (statique)</dt>
+      <dd>Un logiciel qui fonctionne selon des spécifications et des solutions définies : la solution et la méthode pour y parvenir sont comprises avant le codage. C'est le moins soumis aux modifications, donc le plus simple. Exemple : une calculatrice.</dd>
+      <dt>Type P (pratique)</dt>
+      <dd>Un logiciel défini par un ensemble de procédures : les spécifications peuvent être décrites, mais la solution n'est pas évidente immédiatement. Exemple : un logiciel de jeu.</dd>
+      <dt>Type E (embarqué)</dt>
+      <dd>Un logiciel étroitement lié aux exigences d'un environnement réel. Il évolue beaucoup, car les situations réelles changent (lois, taxes…). Exemple : un logiciel de trafic en ligne.</dd>
+    </dl>
+    <p>Pour les logiciels de type E, Lehman énonce huit lois d'évolution :</p>
+    <ol>
+      <li><strong>Changement continu</strong> : le logiciel doit continuer à s'adapter aux changements du monde réel, sinon il devient progressivement moins utile.</li>
+      <li><strong>Complexité croissante</strong> : au fil de son évolution, sa complexité augmente, à moins qu'un travail soit fait pour la maintenir ou la réduire.</li>
+      <li><strong>Conservation de la familiarité</strong> : la connaissance du logiciel, de la façon dont il a été développé et des raisons de ses choix, doit être conservée à tout prix pour pouvoir le modifier.</li>
+      <li><strong>Croissance continue</strong> : pour un système qui répond à un problème commercial, la taille des modifications augmente avec les changements de l'entreprise.</li>
+      <li><strong>Qualité décroissante</strong> : sa qualité diminue, sauf s'il est rigoureusement entretenu et adapté à un environnement qui change.</li>
+      <li><strong>Systèmes de rétroaction</strong> : un tel logiciel est un système de rétroaction à plusieurs boucles et à plusieurs niveaux, et doit être traité comme tel pour être modifié ou amélioré avec succès.</li>
+      <li><strong>Autorégulation</strong> : son processus d'évolution s'autorégule, la distribution des mesures du produit et du procédé étant presque normale.</li>
+      <li><strong>Stabilité organisationnelle</strong> : le taux d'activité global effectif moyen reste invariant pendant la durée de vie du produit.</li>
+    </ol>
+    <p><span class="badge ajout">Ajout</span> Dans la terminologie de Lehman, le E vient de l'anglais <span class="en" lang="en">embedded</span> : le logiciel est « plongé » dans le monde réel, qui change sans cesse. C'est le cas de la plupart des logiciels de gestion, et c'est pourquoi la maintenance pèse 67 % du coût total.</p>
+
+    <h3>Les principes du génie logiciel (Ghezzi, 2002)</h3>
+    <p>Ghezzi retient huit principes, que le cours énumère ; la vérification y est définie comme la détermination du respect des spécifications établies sur la base des besoins identifiés dans la phase précédente du cycle de vie.</p>
+    <dl class="glossaire">
+      <dt>Rigueur</dt>
+      <dd><span class="badge ajout">Ajout</span> travailler avec précision et méthode, jusqu'à la formalisation quand c'est nécessaire ;</dd>
+      <dt>Généralisation</dt>
+      <dd>résoudre un problème plus général que celui posé, pour réutiliser la solution ;</dd>
+      <dt>Structuration</dt>
+      <dd>organiser le produit et le processus en parties clairement articulées ;</dd>
+      <dt>Modularité</dt>
+      <dd>découper le système en modules indépendants, compréhensibles et testables séparément ;</dd>
+      <dt>Abstraction</dt>
+      <dd>ne retenir que ce qui est utile à un niveau donné, en masquant les détails ;</dd>
+      <dt>Construction incrémentale</dt>
+      <dd>construire le logiciel par étapes, chacune apportant des fonctionnalités vérifiées ;</dd>
+      <dt>Documentation</dt>
+      <dd>écrire ce qui est décidé et réalisé, pour les autres et pour la maintenance ;</dd>
+      <dt>Vérification</dt>
+      <dd>déterminer si le produit respecte les spécifications établies à partir des besoins identifiés dans la phase précédente du cycle de vie.</dd>
+    </dl>
+    <p><span class="badge ajout">Ajout</span> Le cours ne fait que nommer les sept premiers principes : leurs explications sont ajoutées ici, d'après l'ouvrage cité (C. Ghezzi, <cite>Fundamentals of Software Engineering</cite>, Prentice Hall, 2002).</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les processus logiciels <span class="ref">diapos 16–19</span></h2>
+    <p>Le processus logiciel n'est pas qu'une suite d'étapes de développement : il réunit plusieurs processus qui se déroulent en parallèle, pour produire, piloter, garantir la qualité et anticiper les risques.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 600 330" width="600" role="img" aria-labelledby="fig-processus-titre">
+        <title id="fig-processus-titre">Le processus logiciel : en haut, le processus de gestion (gestion de programme et des risques, gestion des configurations, « peopleware ») ; en bas à gauche, le processus technique (étude préalable, puis développement : spécification et conception, production, intégration et validation, exploitation, avec une boucle de maintenance et support) ; en bas à droite, le processus qualité (assurance qualité, contrôle qualité, mesure).</title>
+        <defs>
+          <marker id="fleche-processus" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="10" y="10" width="580" height="80" rx="12"/>
+        <text x="300" y="30" text-anchor="middle" class="gras">Processus de gestion</text>
+        <rect class="boite" x="25" y="42" width="170" height="38" rx="6"/>
+        <text x="110" y="58" text-anchor="middle">Gestion de programme</text>
+        <text x="110" y="74" text-anchor="middle">Gestion des risques</text>
+        <rect class="boite" x="215" y="42" width="170" height="38" rx="6"/>
+        <text x="300" y="66" text-anchor="middle">Gestion des configurations</text>
+        <rect class="boite" x="405" y="42" width="170" height="38" rx="6"/>
+        <text x="490" y="58" text-anchor="middle">« Peopleware »</text>
+        <text x="490" y="74" text-anchor="middle" class="t2">équipe, sous-traitants</text>
+
+        <rect class="boite" x="10" y="100" width="420" height="220" rx="12"/>
+        <text x="420" y="310" text-anchor="end" class="gras">Processus technique</text>
+        <rect class="boite" x="25" y="112" width="210" height="30" rx="6"/>
+        <text x="130" y="132" text-anchor="middle">Étude préalable, avant-projet</text>
+        <rect class="pointille" x="60" y="152" width="355" height="130" rx="6"/>
+        <text x="405" y="170" text-anchor="end" class="gras accent">Développement</text>
+        <rect class="boite" x="80" y="178" width="170" height="24" rx="6"/>
+        <text x="165" y="195" text-anchor="middle">Spécification &amp; conception</text>
+        <rect class="boite" x="120" y="206" width="170" height="24" rx="6"/>
+        <text x="205" y="223" text-anchor="middle">Production</text>
+        <rect class="boite" x="160" y="234" width="170" height="24" rx="6"/>
+        <text x="245" y="251" text-anchor="middle">Intégration &amp; validation</text>
+        <rect class="boite-accent" x="200" y="262" width="170" height="24" rx="6"/>
+        <text x="285" y="279" text-anchor="middle">Exploitation</text>
+        <path class="accent" d="M200 274 H70 V190 H78" marker-end="url(#fleche-processus)"/>
+        <text x="75" y="300" class="accent">Maintenance &amp; support</text>
+
+        <rect class="boite" x="440" y="100" width="150" height="220" rx="12"/>
+        <text x="515" y="310" text-anchor="middle" class="gras">Processus qualité</text>
+        <rect class="boite" x="455" y="125" width="120" height="38" rx="6"/>
+        <text x="515" y="149" text-anchor="middle">Assurance qualité</text>
+        <rect class="boite" x="455" y="180" width="120" height="38" rx="6"/>
+        <text x="515" y="204" text-anchor="middle">Contrôle qualité</text>
+        <rect class="boite" x="455" y="235" width="120" height="30" rx="6"/>
+        <text x="515" y="255" text-anchor="middle">Mesure</text>
+      </svg>
+      <figcaption>Le processus logiciel est composé de plusieurs processus (diapo 16) ; la maintenance ramène de l'exploitation à la spécification.</figcaption>
+    </figure>
+
+    <p>Le processus logiciel se compose de quatre branches :</p>
+    <dl class="glossaire">
+      <dt>Le processus technique</dt>
+      <dd>Il modélise la procédure à suivre pour réaliser le produit, et il est décrit par un cycle de vie (cours 2). Il comporte notamment l'analyse, la conception, le codage et les tests, la validation.</dd>
+      <dt>Le processus de gestion</dt>
+      <dd>Il modélise la procédure à suivre pour contrôler les délais et les coûts et gérer les équipes : estimation des durées, des coûts et de l'effort humain nécessaires à chaque activité du cycle ; mesures d'avancement pour suivre et contrôler le déroulement du projet, anticiper les écarts et rétablir la situation.</dd>
+      <dt>Le processus qualité</dt>
+      <dd>Il modélise la procédure à suivre pour garantir la qualité du produit, garantir que le processus de gestion est réalisé comme prévu, et garantir que le processus qualité lui-même s'effectue correctement. La garantie de la qualité logicielle consiste à définir les exigences du client, contrôler qu'elles sont bien prises en compte dans les produits du cycle (les artefacts), et améliorer a posteriori le processus technique.</dd>
+      <dt>Le processus de gestion des risques</dt>
+      <dd>Il modélise la procédure à suivre pour analyser les risques, techniques, de gestion ou de qualité. Peu connu, il se développe ; il comporte l'identification du risque, son évaluation, la réaction au risque et l'apprentissage.</dd>
+    </dl>
+
+    <h3>Le processus de gestion</h3>
+    <p>Gérer, c'est prévoir, organiser, faire le point et réagir :</p>
+    <ul>
+      <li>estimer les coûts et les délais ;</li>
+      <li>planifier, avec des diagrammes de PERT et de Gantt (cours 5) ;</li>
+      <li>suivre le projet : gestion de l'équipe, des échéances et des fournitures à remettre au client ;</li>
+      <li>gérer les risques, par des mesures préventives ou correctives ;</li>
+      <li>gérer les configurations : les sources, les tests et les documents associés aux différentes versions ;</li>
+      <li>gérer les documents associés aux différentes phases de la production du logiciel, ce qui fait partie de la gestion de configuration.</li>
+    </ul>
+    <p>Le tout dans le respect des normes qualité : documents types, circuits de validation, règles de nommage.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>La qualité <span class="ref">diapos 20–25 · fiche Qualité</span></h2>
+    <p>Personne ne sait aujourd'hui créer de logiciel sans défaut. La qualité, notion présente dans toute industrie, devient donc une démarche : une entreprise sans démarche qualité est vouée à stagner ou à péricliter. Accepteriez-vous de monter dans un avion dans lequel presque tout a été vérifié ?</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Qualité (ISO)</span></p>
+      <p>La <dfn>qualité</dfn> est l'aptitude d'un ensemble de caractéristiques intrinsèques d'un produit, d'un système ou d'un processus à satisfaire les exigences des clients et autres parties intéressées. Une caractéristique peut être physique, comportementale, temporelle, ergonomique ou fonctionnelle ; une exigence peut correspondre à un besoin ou à une attente, implicite ou explicite.</p>
+      <p>La fiche Qualité cite une autre formulation de l'ISO : « l'ensemble des caractéristiques et des éléments d'un produit ou d'un service qui influent sur sa capacité à satisfaire des besoins exprimés ou implicites ».</p>
+    </div>
+
+    <h3>Ce que la qualité apporte</h3>
+    <p>La qualité permet de répondre aux besoins des clients, et d'être économe : le coût de résolution d'une erreur augmente au fil du temps, et plus l'erreur est corrigée tôt, moins elle coûte. Au final, un produit de qualité demande moins de corrections et moins de maintenance.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Répartition des erreurs et de leur coût selon leur origine (CHAOS 2009)</caption>
+        <thead><tr><th>Origine de l'erreur</th><th>En nombre</th><th>En coût</th></tr></thead>
+        <tbody>
+          <tr><td>Expression des besoins</td><td>56 %</td><td>82 %</td></tr>
+          <tr><td>Conception</td><td>27 %</td><td>13 %</td></tr>
+          <tr><td>Autre</td><td>10 %</td><td>4 %</td></tr>
+          <tr><td>Développement</td><td>7 %</td><td>1 %</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Plus de la moitié des erreurs viennent de l'expression des besoins, et elles comptent pour 82 % du coût de correction : une erreur sur le besoin n'apparaît souvent qu'à la livraison, et elle oblige alors à reprendre la conception, le code et les tests. Les erreurs de développement, nombreuses en apparence, sont les moins chères à corriger.</p>
+
+    <h3>Les principes de la qualité</h3>
+    <p>La qualité est l'affaire de tous les participants, tout au long du projet. Elle ne doit pas être considérée comme accessoire ou comme une obligation, mais comme une occasion de mieux travailler : il doit exister dans l'entreprise une culture de la qualité, entretenue de manière centrale et continue (amélioration constante).</p>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p><strong>Faire de la qualité permet</strong> :</p>
+        <ul>
+          <li>d'avoir la reconnaissance de ses collègues et de ses supérieurs ;</li>
+          <li>d'avoir de la satisfaction (moins de stress…).</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p><strong>Un travail de moindre qualité entraîne</strong> :</p>
+        <ul>
+          <li>le stress (heures supplémentaires, travail recommencé plusieurs fois…) ;</li>
+          <li>l'insatisfaction (projets non rentables, clients mécontents…) ;</li>
+          <li>des dysfonctionnements.</li>
+        </ul>
+      </div>
+    </div>
+    <p>Pour faire des produits de qualité, il faut identifier les caractéristiques d'un produit de qualité, définir et utiliser un processus qualité, et former les personnes à la qualité.</p>
+
+    <h3>Facteurs de qualité et métriques</h3>
+    <p>Le produit logiciel ne se détériore pas : sa qualité est uniquement due à sa construction. On l'évalue selon :</p>
+    <ul>
+      <li>des <dfn>facteurs externes</dfn>, directement observables par l'utilisateur ;</li>
+      <li>des <dfn>facteurs internes</dfn>, observables uniquement par le développeur.</li>
+    </ul>
+    <p>Certains facteurs sont mesurables par des <dfn>métriques</dfn>, prises en compte par le processus qualité. Exemples de métriques du codage : le nombre de lignes de code, d'opérandes, d'opérations ; la <dfn>complexité cyclomatique</dfn>, le nombre de chemins possibles dans une fonction ou une méthode ; le taux de commentaires.</p>
+
+    <h3>La norme ISO 25010 <span class="badge examen">Examen</span></h3>
+    <p>La norme ISO 25010, qui s'appuie sur les travaux de Boehm et McCall, de l'US Air Force et d'autres, retient neuf facteurs de qualité (la norme ISO/IEC 9126 qu'elle remplace en comptait six). Chacun se décompose en sous-caractéristiques.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Les neuf caractéristiques de qualité du produit logiciel (ISO 25010)</caption>
+        <thead><tr><th>Caractéristique</th><th>Ce qu'elle mesure</th><th>Sous-caractéristiques</th></tr></thead>
+        <tbody>
+          <tr><th><span lang="en">Functional suitability</span> (capacité fonctionnelle)</th><td>le produit fournit des fonctions qui répondent aux besoins déclarés et implicites des usagers, dans des conditions spécifiées</td><td>complétude, exactitude, pertinence fonctionnelles</td></tr>
+          <tr><th><span lang="en">Performance efficiency</span> (efficacité)</th><td>le rapport entre les ressources utilisées (matériel, temps, personnel) et les résultats délivrés</td><td>comportement temporel, utilisation des ressources, capacité</td></tr>
+          <tr><th><span lang="en">Compatibility</span> (compatibilité)</th><td>le produit échange des informations avec d'autres et partage un environnement et des ressources sans gêner les autres</td><td>coexistence, interopérabilité</td></tr>
+          <tr><th><span lang="en">Interaction capability</span> (facilité d'utilisation)</th><td>l'effort nécessaire pour apprendre à manipuler le logiciel ; une utilisation incorrecte n'entraîne pas de dysfonctionnement</td><td>appropriateness recognizability, learnability, operability, user error protection, user engagement, inclusivity, user assistance, self-descriptiveness</td></tr>
+          <tr><th><span lang="en">Reliability</span> (fiabilité)</th><td>la capacité à rendre des résultats corrects quelles que soient les conditions d'exploitation, pendant une période donnée</td><td>faultlessness, availability, fault tolerance, recoverability</td></tr>
+          <tr><th><span lang="en">Security</span> (sécurité)</th><td>la défense contre les attaques, et la protection des données selon le niveau d'autorisation de chacun</td><td>confidentiality, integrity, non-repudiation, accountability, authenticity, resistance</td></tr>
+          <tr><th><span lang="en">Maintainability</span> (maintenabilité)</th><td>l'efficacité avec laquelle le produit peut être modifié pour l'améliorer, le corriger ou l'adapter</td><td>modularity, reusability, analysability, modifiability, testability</td></tr>
+          <tr><th><span lang="en">Flexibility</span> (flexibilité)</th><td>l'adaptation du produit à l'évolution de ses exigences, de ses contextes d'utilisation ou de son environnement</td><td>adaptability, scalability, installability, replaceability</td></tr>
+          <tr><th><span lang="en">Safety</span> (sûreté)</th><td>le produit évite, dans des conditions définies, de mettre en danger la vie humaine, la santé, les biens ou l'environnement</td><td>operational constraint, risk identification, fail safe, hazard warning, safe integration</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>La fiche Qualité compte 27 sous-caractéristiques en tout.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les versions de la norme</span></p>
+      <p>La norme ISO/IEC 9126 (2001) comptait six caractéristiques : capacité fonctionnelle, fiabilité, facilité d'utilisation, efficacité, maintenabilité, portabilité. L'ISO/IEC 25010 l'a remplacée en 2011 avec huit caractéristiques ; sa révision de 2023 en compte neuf, celles du tableau : la facilité d'utilisation (<span lang="en">usability</span>) y devient <span lang="en">interaction capability</span>, la portabilité devient <span lang="en">flexibility</span>, et la sûreté (<span lang="en">safety</span>) est ajoutée. Un QCM qui parle de la norme 9126 attend donc les six caractéristiques d'origine, dont la portabilité.</p>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> La fiche Qualité date la version à neuf caractéristiques de 2017 (« ré-examinée en 2017 ») ; les neuf caractéristiques du tableau sont celles de la révision de 2023.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Mesurer la maturité <span class="ref">diapos 26–27 · fiche CMMI</span></h2>
+    <p>Le zéro bug n'existe pas : la validation de Windows 2000 avait fait appel à 600 000 bêta-testeurs, et il restait pourtant 63 000 problèmes potentiels dans le code au lancement. Un logiciel commercial type contient entre 20 et 30 bugs pour mille lignes, et tant que la programmation sera manuelle, il y aura des bugs. Plutôt que d'espérer un logiciel parfait, on mesure la maturité de l'équipe qui le produit.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Maturité, CMMI</span> <span class="badge examen">QCM</span></p>
+      <p>La maturité d'un logiciel est directement fonction de la maturité de l'équipe qui l'a développé. Le modèle <dfn>CMMI</dfn> (<span class="en" lang="en">Capability Maturity Model Integration</span>), proposé par le <span lang="en">Software Engineering Institute</span> (SEI) de l'université Carnegie Mellon, définit le niveau d'organisation d'une entreprise sur cinq niveaux.</p>
+    </div>
+    <div class="tableau">
+      <table>
+        <caption>Les cinq niveaux de maturité du CMMI (diapo 27, d'après Wikipédia, et fiche CMMI)</caption>
+        <thead><tr><th>Niveau</th><th>Pratiques</th></tr></thead>
+        <tbody>
+          <tr><th>1. Initial</th><td>Le résultat final est imprévisible. Il repose plus sur les personnes, leur engagement et leur bonne volonté, que sur l'application disciplinée de bonnes pratiques ; une réussite n'est pas forcément reproductible. Pas d'évaluation de l'efficacité ni des performances, pas de plan ni de vision de la direction, pas de documentation.</td></tr>
+          <tr><th>2. Discipliné (géré)</th><td>Une discipline est établie pour chaque projet, sous la forme de plans de projet (plan de développement, d'assurance qualité, de gestion de configuration…). Le chef de projet a une forte responsabilité : il définit, documente, applique et tient à jour ses plans ; d'un projet à l'autre, il capitalise et améliore ses pratiques.</td></tr>
+          <tr><th>3. Ajusté (défini)</th><td>Les pratiques sont standardisées, capitalisées de façon centralisée (en particulier les mesures faites dans les projets), et le référentiel interne (système qualité) est maîtrisé. Il existe des lignes directrices, un plan stratégique et une planification de l'amélioration des processus ; les employés sont formés et conscients de leurs responsabilités.</td></tr>
+          <tr><th>4. Géré quantitativement</th><td>Les projets sont pilotés sur des objectifs quantitatifs de qualité du produit et du processus. L'organisation détermine la capacité de ses activités critiques et les modèles de performance et de prévision associés ; la qualité demandée par le client sert à quantifier les objectifs du projet.</td></tr>
+          <tr><th>5. Optimisé</th><td>Les processus gérés quantitativement sont en optimisation constante, pour anticiper les évolutions prévues (besoins des clients, nouvelles technologies…).</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>La fiche CMMI nomme les niveaux 2 et 3 « géré » (<span lang="en">managed</span>) et « défini » (<span lang="en">defined</span>), là où la diapo écrit « discipliné » et « ajusté ». Elle ajoute que moins de 10 % des organisations atteignent les niveaux 4 ou 5 (environ 5 à 15 % le niveau 4), et que la plupart restent bloquées aux niveaux 2 ou 3, faute d'avoir adopté des mesures quantitatives pour gérer leurs processus.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Un pavillon construit comme un projet informatique <span class="ref">pavillon.pdf</span></h2>
+    <p>Un texte du site <a href="http://www.projetsinformatiques.com">projetsinformatiques.com</a>, fourni avec le cours, raconte ce que donnerait la construction d'une maison menée comme sont souvent menés les projets informatiques. Il illustre, par l'absurde, les facteurs d'échec de la crise du logiciel.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Maîtrise d'ouvrage, maîtrise d'œuvre</span></p>
+      <p>Dans un projet informatique, la <dfn>maîtrise d'ouvrage</dfn> (MOA) est le client, qui exprime le besoin et le valide ; la <dfn>maîtrise d'œuvre</dfn> (MOE) est le réalisateur. Dans le texte, M. et Mme Emmoa sont la maîtrise d'ouvrage, l'entrepreneur M. Hémoeux la maîtrise d'œuvre.</p>
+    </div>
+    <ol class="etapes">
+      <li><strong>La commande</strong> : les clients ne savent pas ce qu'ils veulent, mais exigent un prix et un délai ; l'entrepreneur annonce 800 000 F et 6 mois, et accepte finalement 500 000 F et 3 mois, livraison impérative au 1<sup>er</sup> août.</li>
+      <li><strong>La conception</strong> : faute de besoin exprimé, l'entrepreneur imagine lui-même la maison ; les clients ne viennent pas valider les plans (trois semaines de retard), puis le laissent démarrer sans eux.</li>
+      <li><strong>La construction</strong> : les questions sur les équipements restent sans réponse ; les clients ne viennent jamais sur le chantier.</li>
+      <li><strong>La livraison</strong> : après des équipes doubles et des accidents de chantier, la maison est prête à la date… mais les clients sont en vacances jusqu'au 15 septembre.</li>
+      <li><strong>L'installation</strong> : la maison, simple, fonctionnelle et de qualité pour son budget, n'est « pas du tout ce que nous voulions » ; faute de preuve des manquements de ses clients, l'entrepreneur doit tout reprendre, et le coût est multiplié par 20.</li>
+    </ol>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>La morale du texte</span></p>
+      <p>Les projets dérapent pour les raisons de l'histoire : budgets et délais ridicules et injustifiés, besoins non exprimés, modifications incessantes après réalisation. La maîtrise d'œuvre est alors tenue pour coupable, qu'elle le soit ou non. La maîtrise d'ouvrage doit traiter son projet informatique comme la construction de sa propre maison : identifier son besoin réel avant de réclamer une application finie, et participer à sa définition.</p>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Chaque épisode correspond à une leçon du cours : un besoin non exprimé est l'erreur la plus coûteuse (82 % du coût des erreurs), une validation tardive coûte cher, et l'absence de trace écrite (« vous avez une preuve ? ») montre pourquoi le génie logiciel insiste sur « écrivez ce que vous faites » et sur le cahier des charges (cours 3).</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Trois acteurs produisent les logiciels : les éditeurs (progiciels), les ESN (sur mesure, au forfait, en régie ou en centre de service) et la communauté du logiciel libre.</li>
+        <li>Crise du logiciel : seuls 6 % des très grands projets réussissent, et environ un projet sur trois en général ; livrer tôt et souvent améliore le taux de succès.</li>
+        <li>La maintenance représente 67 % du coût total d'un logiciel ; la correction des erreurs, la moitié du coût de production.</li>
+        <li>Plus une erreur est commise tôt (spécification), plus elle coûte cher : les erreurs sur les besoins pèsent 82 % du coût des erreurs.</li>
+        <li>Le génie logiciel applique une démarche d'ingénieur, systématique, disciplinée et mesurable, au développement, à l'exploitation et à la maintenance des logiciels.</li>
+        <li>Produit logiciel = programme + tout ce qui sert à le produire, l'exploiter et le maintenir ; processus logiciel = activités, méthodes et pratiques pour le produire et le maintenir.</li>
+        <li>Règle CQFD : Coûts, Qualité, Fonctionnalités, Délais.</li>
+        <li>Quatre processus : technique (cycle de vie), gestion (coûts, délais, équipes), qualité, gestion des risques.</li>
+        <li>ISO 25010 : neuf caractéristiques de qualité, de la capacité fonctionnelle à la sûreté ; la 9126 en comptait six.</li>
+        <li>CMMI : cinq niveaux de maturité, initial, discipliné (géré), ajusté (défini), géré quantitativement, optimisé.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Quelle différence entre un contrat au forfait et un contrat en régie ?</summary>
+        <div><p>Au forfait, l'ESN s'engage sur un résultat clé en main, pour un prix fixé ; en régie, elle met ses employés à la disposition du client, qui dirige leur travail : elle s'engage sur des moyens, pas sur un résultat.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi une erreur de spécification coûte-t-elle plus cher qu'une erreur de codage ?</summary>
+        <div><p>Elle est découverte tard, souvent à la recette ou en exploitation, et tout ce qui a été construit dessus (conception, code, tests) est à reprendre. Une erreur de codage se corrige localement, souvent dès les tests unitaires.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que signifie la règle CQFD ?</summary>
+        <div><p>Les Coûts restent dans les limites prévues, le système est de Qualité, les Fonctionnalités répondent aux besoins, les Délais restent dans les limites prévues.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un logiciel de calcul d'impôts est-il de type S, P ou E selon Lehman ?</summary>
+        <div><p>De type E : il dépend du monde réel (les lois et les taux changent chaque année) et doit sans cesse évoluer pour rester utile, selon la loi du changement continu.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quels sont les quatre processus du processus logiciel ?</summary>
+        <div><p>Le processus technique (réaliser le produit, décrit par un cycle de vie), le processus de gestion (délais, coûts, équipes), le processus qualité (garantir la qualité du produit et des processus) et le processus de gestion des risques.</p></div>
+      </details>
+      <details class="carte">
+        <summary>La maintenabilité est-elle un facteur de qualité interne ou externe ?</summary>
+        <div><p>Interne : l'utilisateur ne la voit pas directement, seul le développeur l'observe, quand il doit modifier le logiciel. La fiabilité ou la facilité d'utilisation, à l'inverse, sont externes.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Qu'est-ce qui distingue le niveau 4 du niveau 3 du CMMI ?</summary>
+        <div><p>Au niveau 3, les processus sont standardisés et documentés pour toute l'organisation ; au niveau 4, ils sont en plus pilotés par des mesures, sur des objectifs quantitatifs de qualité.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Dans le texte du pavillon, qui est la maîtrise d'ouvrage, et quelle est sa faute principale ?</summary>
+        <div><p>M. et Mme Emmoa, les clients. Ils n'expriment jamais leur besoin, imposent un prix et un délai sans rapport avec lui, et ne participent ni à la conception ni à la validation.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Références</h2>
+    <ul>
+      <li>Software Engineering Body of Knowledge (SWEBOK Guide), IEEE.</li>
+      <li><a href="http://www.devtopics.com/21-laws-of-computer-programming/">21 laws of computer programming</a>, devtopics.com.</li>
+      <li>M. Volle, <a href="http://www.volle.com/ouvrages/e-conomie/informatique.htm">Économie du logiciel</a>.</li>
+      <li>Histoire de l'informatique : microstory.net, histoire.info.online.fr.</li>
+      <li>Standish Group, <a href="http://www.standishgroup.com/sample_research_files/BigBangBoom.pdf">Big Bang Boom</a> (rapports CHAOS).</li>
+      <li>C. Ghezzi, <cite>Fundamentals of Software Engineering</cite>, Prentice Hall, 2<sup>e</sup> éd., 2002.</li>
+      <li>Norme ISO 25010 : <a href="https://iso25000.com/index.php/en/iso-25000-standards/iso-25010">iso25000.com</a>.</li>
+    </ul>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="index.html"><small>← Matière</small>Génie logiciel 1</a>
+    <a class="suivant" href="cours-02-activites-cycle-de-vie.html"><small>Cours 2 →</small>Activités et cycle de vie</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Génie logiciel 1 · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Probabilités, dénombrement et formule de Bayes · Probabilités et statistiques L2</title>
+<meta name="description" content="Cours 1 de probabilités et statistiques (L2) : le hasard, univers et événements, opérations sur les ensembles, axiomes de Kolmogorov, équiprobabilité, dénombrement (p-listes, arrangements, permutations, combinaisons), indépendance, probabilités conditionnelles, probabilités totales et formule de Bayes.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<link rel="quiz" href="../generated_quizzes/quiz-denombrement.html" title="Quiz · Dénombrement">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Mathématiques</a>
+    <a href="index.html">Probabilités et statistiques</a>
+    <span aria-current="page">Cours 1 · Probabilités et Bayes</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Probabilités et statistiques</span> Cours 1 · L2 · janvier 2026</p>
+    <h1>Probabilités, dénombrement et formule de Bayes</h1>
+    <p class="chapeau">Ce premier chapitre rappelle les bases : décrire une expérience aléatoire par un univers et des événements, définir une probabilité, compter des cas, puis raisonner avec l'indépendance et le conditionnement jusqu'à la formule de Bayes. Tout le reste du module, à commencer par les variables aléatoires, s'appuie sur ces outils.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/cours1_proba.pdf">cours1_proba.pdf</a> · 29 diapos</dd></div>
+      <div><dt>Enseignant</dt><dd>Alexandre Popier (conception Marie Tahon)</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-25">25 septembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Modéliser une expérience aléatoire : univers, événements, probabilité.</li>
+        <li>Manipuler les opérations sur les ensembles et les propriétés d'une probabilité.</li>
+        <li>Dénombrer en choisissant entre p-liste, arrangement, permutation et combinaison.</li>
+        <li>Distinguer des événements incompatibles et des événements indépendants.</li>
+        <li>Calculer une probabilité conditionnelle, appliquer la formule des probabilités totales et la formule de Bayes.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Dénombrement et probabilités de terminale et du semestre 2 : ce chapitre les rappelle.</li>
+        <li>Notations ensemblistes : \(\in\), \(\subset\), \(\cup\), \(\cap\).</li>
+        <li>Pour les TP : Python 3 installé sur sa machine.</li>
+      </ul>
+    </div>
+  </div>
+
+  <section>
+    <h2>Le module <span class="ref">diapos 1–4</span></h2>
+    <p>Avant d'entrer dans le cours, les premières diapos fixent ce que l'on attend du module et comment il est organisé.</p>
+
+    <h3>Objectifs du module</h3>
+    <ul>
+      <li>Revoir le dénombrement et les probabilités, au niveau de la terminale et des mathématiques du semestre 2.</li>
+      <li>Savoir manipuler les lois de probabilité.</li>
+      <li>Savoir reconnaître la loi la mieux adaptée au problème posé.</li>
+      <li>Écrire des scripts en Python.</li>
+    </ul>
+
+    <h3>Organisation</h3>
+    <div class="tableau compact">
+      <table>
+        <caption>Volume horaire et évaluation</caption>
+        <thead><tr><th>Activité</th><th>Volume</th><th>Remarque</th></tr></thead>
+        <tbody>
+          <tr><th>Cours magistral</th><td>8 h</td><td>A. Larcher, A. Popier (conception M. Tahon)</td></tr>
+          <tr><th>TD</th><td>10 h</td><td></td></tr>
+          <tr><th>TP</th><td>15 h</td><td>Sur machine, en Python ; J. Kamdje, A. Larcher, A. Rembauville</td></tr>
+          <tr><th>CC1 <span class="badge examen">Examen</span></th><td>1 h</td><td>Date à préciser</td></tr>
+          <tr><th>CC2 <span class="badge examen">Examen</span></th><td>2 h</td><td>Date à préciser</td></tr>
+          <tr><th>Contrôle continu <span class="badge examen">Examen</span></th><td>—</td><td>TP notés</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Les séances de TP durent 3 h. Il faut installer Python 3 sur sa machine. À la fin de chaque séance, on rend son script Python, pour que l'enseignant puisse vérifier le travail réalisé.</p>
+  </section>
+
+  <section>
+    <h2>Qu'est-ce que le hasard ? <span class="ref">diapos 5–8</span></h2>
+    <p>Les probabilités mesurent le hasard. Encore faut-il savoir ce que l'on appelle « hasard » : la notion est difficile à définir et dépasse largement les mathématiques.</p>
+
+    <h3>Une notion difficile à définir</h3>
+    <p>Le dictionnaire Robert définit le hasard comme un « cas, événement fortuit ; concours de circonstances inattendu et inexplicable », ou comme une « cause attribuée à des événements significatifs pour l'être humain et apparemment inexplicables ». Le mot vient de l'arabe et désigne un jeu de dés. <dfn>Aléa</dfn> a la même origine, mais latine : <i lang="la">alea</i>, le dé.</p>
+    <p>La question dépasse le cadre scientifique :</p>
+    <ul>
+      <li>c'est une question philosophique, traitée par Aristote, Pascal, Spinoza, Cournot et bien d'autres ;</li>
+      <li>le hasard a longtemps été associé à la magie ou à une volonté divine ;</li>
+      <li>il s'oppose au déterminisme, dont Laplace est la figure classique ;</li>
+      <li>il est souvent associé à notre ignorance. Bernanos : « Le hasard est l'alibi des imbéciles. »</li>
+    </ul>
+    <p>Le hasard tient aussi une place importante dans la vie quotidienne : on tire au sort pour décider.</p>
+
+    <h3>Les jeux, berceau des probabilités</h3>
+    <p>Les probabilités sont nées au XVII<sup>e</sup> siècle de l'étude des jeux. Les jeux font intervenir un aléa plus ou moins fort : pile ou face, dé à 6 faces (ou 4, 8, 12, 20), cartes (combien de fois faut-il battre les cartes ?), roulette.</p>
+    <p>Dans un jeu de stratégie, le joueur fait ses choix en fonction de l'aléa, des autres joueurs, de l'information dont il dispose (ou non) et de ses biais cognitifs, le tout dans le respect des règles du jeu, qui sont des contraintes. Son but : gagner. Le vocabulaire mathématique en garde la trace : <dfn>espérance</dfn> (<span class="en" lang="en">expectation</span>) et <dfn>martingale</dfn> viennent du jeu.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Deux repères</span></p>
+      <p>La date de naissance habituellement retenue est 1654 : la correspondance entre Pascal et Fermat sur le « problème des partis », qui demande comment partager équitablement les mises d'une partie interrompue avant la fin.</p>
+      <p>La question des cartes a une réponse célèbre <span class="badge hors-programme">Hors programme</span> : pour un jeu de 52 cartes battu « à l'américaine », il faut environ 7 mélanges pour que l'ordre obtenu soit proche d'un ordre tiré uniformément au hasard (Bayer et Diaconis, 1992).</p>
+    </div>
+
+    <h3>Quand le hasard s'invite : pierre-feuille-ciseaux</h3>
+    <p>Deux joueurs choisissent simultanément une des trois possibilités. Le tableau donne le gagnant de chaque partie.</p>
+    <div class="tableau centre compact">
+      <table>
+        <caption>Matrice des gains (ligne : choix du joueur 2 ; colonne : choix du joueur 1)</caption>
+        <thead><tr><th>Joueur 2 \ Joueur 1</th><th>Pierre</th><th>Feuille</th><th>Ciseaux</th></tr></thead>
+        <tbody>
+          <tr><th>Pierre</th><td>Égalité</td><td>Joueur 1</td><td>Joueur 2</td></tr>
+          <tr><th>Feuille</th><td>Joueur 2</td><td>Égalité</td><td>Joueur 1</td></tr>
+          <tr><th>Ciseaux</th><td>Joueur 1</td><td>Joueur 2</td><td>Égalité</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Question : quelle est la meilleure stratégie, la stratégie optimale ? Réponse : jouer <em>au hasard</em> l'une des trois possibilités. C'est le seul <dfn>équilibre de Nash</dfn> (<span class="en" lang="en">Nash equilibrium</span>) du jeu, du nom de John Nash (« prix Nobel » d'économie 1994, prix Abel 2015, héros du film <cite>Un homme d'exception</cite>). Ici, l'aléa vient du manque d'information : on ne sait pas ce que va jouer l'autre.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi jouer au hasard est optimal</span></p>
+      <p>Si le joueur 1 joue chaque coup avec la probabilité \(\frac13\), alors, quoi que fasse le joueur 2, le joueur 1 gagne avec probabilité \(\frac13\), perd avec probabilité \(\frac13\) et fait égalité avec probabilité \(\frac13\) : son gain moyen est nul et l'adversaire ne peut rien y changer.</p>
+      <p>S'il joue « pierre » plus souvent que le reste, un adversaire qui l'a remarqué joue plus souvent « feuille » et gagne en moyenne. Toute préférence est exploitable ; seul le tirage uniforme ne l'est pas.</p>
+    </div>
+
+    <h3>Le hasard en sciences</h3>
+    <p>Le XX<sup>e</sup> siècle réhabilite le hasard dans la science :</p>
+    <ul>
+      <li><strong>Phénomènes quantiques</strong>, fondamentalement non déterministes. Einstein n'y croyait pas : « Dieu ne joue pas aux dés. »</li>
+      <li><strong>Systèmes chaotiques</strong>, déterministes mais imprévisibles : le double pendule (vidéo de l'EPFL), ou le modèle de Verhulst (début du XIX<sup>e</sup> siècle), \(x_{n+1} = \lambda\, x_n (1 - x_n)\).</li>
+      <li><strong>Systèmes trop complexes</strong>, où l'aléa sert d'outil de description : mécanique statistique, météorologie.</li>
+      <li><strong>Biologie</strong> : évolution des espèces, disposition des cônes de la rétine.</li>
+      <li><strong>Incertitudes de mesure</strong>.</li>
+      <li><strong>IA, science des données, apprentissage automatique</strong>.</li>
+    </ul>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Imprévisible sans être aléatoire</span></p>
+      <p>La suite de Verhulst ne contient aucun hasard : \(x_0\) et \(\lambda\) déterminent tous les termes. Pourtant, avec \(\lambda = 4\), deux points de départ qui diffèrent d'un millionième, \(x_0 = 0{,}3\) et \(x_0 = 0{,}300001\), donnent des termes qui s'écartent de plus de 0,1 dès la 18<sup>e</sup> itération. Comme on ne connaît jamais une condition initiale exactement, la suite est imprévisible en pratique : c'est ce que l'on appelle la sensibilité aux conditions initiales.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Événements et opérations sur les ensembles <span class="ref">diapos 9–12</span></h2>
+    <p>Pour calculer avec le hasard, il faut d'abord décrire l'expérience : quels résultats sont possibles, et de quoi veut-on mesurer la chance ? Le langage naturel de cette description est celui des ensembles.</p>
+
+    <h3>Expérience, univers, événement</h3>
+    <p>Définition « intuitive » : une probabilité est un <em>nombre</em> de \([0, 1]\), associé à un <em>événement</em> \(A\), qui indique la <em>chance</em> que cet événement se réalise dans une <em>expérience aléatoire</em>.</p>
+
+    <div class="tableau compact">
+      <table>
+        <caption>Le vocabulaire sur deux exemples (diapo 10)</caption>
+        <thead><tr><th>Notion</th><th>Notation</th><th>Lancer d'un dé à 6 faces</th><th>Météo à la sortie du cours</th></tr></thead>
+        <tbody>
+          <tr><th>Expérience aléatoire</th><td></td><td>lancer un dé à 6 faces</td><td>sortir de cours et observer la météo</td></tr>
+          <tr><th>Espace des réalisations (ou univers)</th><td>\(\Omega\)</td><td>\(\{1, 2, 3, 4, 5, 6\}\)</td><td>{pluie, soleil, nuage, brouillard}</td></tr>
+          <tr><th>Réalisation</th><td>\(\omega \in \Omega\)</td><td>5</td><td>pluie</td></tr>
+          <tr><th>Événement</th><td>\(A\)</td><td>face paire</td><td>il pleut quand je sors de cours</td></tr>
+          <tr><th>Probabilité de l'événement</th><td>\(p(A)\)</td><td>\(\frac12\) <span class="badge a-verifier">À vérifier</span></td><td>0,8</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Erreur sur la diapo 10</span></p>
+      <p>La diapo donne \(p(A) = 1/6\) pour l'événement « face paire ». C'est la probabilité d'<em>une</em> face ; l'événement « face paire » regroupe trois faces, \(A = \{2, 4, 6\}\), donc \(p(A) = \frac36 = \frac12\) avec un dé équilibré. Le tableau ci-dessus donne la valeur corrigée.</p>
+    </div>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Univers, réalisation, événement</span></p>
+      <p><span class="badge ajout">Ajout</span> L'<dfn>univers</dfn> (<span class="en" lang="en">sample space</span>) \(\Omega\) est l'ensemble de tous les résultats possibles d'une expérience aléatoire. Une <dfn>réalisation</dfn> (ou issue, <span class="en" lang="en">outcome</span>) est un élément \(\omega\) de \(\Omega\). Un <dfn>événement</dfn> (<span class="en" lang="en">event</span>) est une partie \(A \subset \Omega\) : il est réalisé quand le résultat \(\omega\) de l'expérience appartient à \(A\).</p>
+    </div>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Deux sortes de probabilités</span></p>
+      <p><span class="badge ajout">Ajout</span> Les deux exemples ne sont pas de même nature. Pour le dé, \(\frac12\) se déduit d'un modèle : les faces sont supposées équiprobables. Pour la météo, 0,8 est une estimation, obtenue par exemple à partir de la fréquence de la pluie les jours précédents. Les statistiques, deuxième moitié du module, servent justement à estimer ce type de probabilité à partir de données.</p>
+    </div>
+
+    <h3>Opérations sur les ensembles</h3>
+    <p>Les événements sont des ensembles : on les combine avec les opérations ensemblistes, dont chacune se lit comme un connecteur logique.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Opérations ensemblistes</span></p>
+      <ul>
+        <li><dfn>Ensemble vide</dfn> \(\emptyset\) : il ne contient aucun élément. C'est l'événement impossible.</li>
+        <li><dfn>Inclusion</dfn> : \(A \subset B\) quand tout élément de \(A\) est dans \(B\). <span class="badge ajout">Ajout</span> Si \(A\) est réalisé, \(B\) l'est aussi.</li>
+        <li><dfn>Union</dfn> : \(x \in A \cup B \iff (x \in A)\) <strong>OU</strong> \((x \in B)\).</li>
+        <li><dfn>Intersection</dfn> : \(x \in A \cap B \iff (x \in A)\) <strong>ET</strong> \((x \in B)\).</li>
+        <li><dfn>Incompatibilité</dfn> : \(A\) et \(B\) sont <dfn>incompatibles</dfn> (ou <dfn>disjoints</dfn>, <span class="en" lang="en">mutually exclusive</span>) quand ils ne peuvent pas se réaliser en même temps, c'est-à-dire \(A \cap B = \emptyset\).</li>
+      </ul>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 165" width="640" role="img" aria-labelledby="fig-ensembles-titre">
+        <title id="fig-ensembles-titre">Quatre diagrammes de Venn : C inclus dans A ; union de A et B coloriée ; intersection de A et B coloriée ; A et B disjoints</title>
+        <defs>
+          <clipPath id="clip-ensembles-a"><circle cx="57" cy="62" r="36"/></clipPath>
+        </defs>
+        <g transform="translate(5,5)">
+          <rect class="boite" x="0" y="0" width="150" height="120" rx="6"/>
+          <text x="142" y="17" text-anchor="end" class="t2">Ω</text>
+          <circle class="trait" cx="75" cy="62" r="46"/>
+          <circle class="plein-accent" fill-opacity="0.3" cx="64" cy="72" r="20"/><circle class="accent" cx="64" cy="72" r="20"/>
+          <text x="64" y="77" text-anchor="middle" class="gras">C</text>
+          <text x="96" y="45" text-anchor="middle" class="gras">A</text>
+          <text x="75" y="148" text-anchor="middle">C ⊂ A</text>
+        </g>
+        <g transform="translate(165,5)">
+          <rect class="boite" x="0" y="0" width="150" height="120" rx="6"/>
+          <text x="142" y="17" text-anchor="end" class="t2">Ω</text>
+          <g opacity="0.3"><circle class="plein-accent" cx="57" cy="62" r="36"/><circle class="plein-accent" cx="93" cy="62" r="36"/></g>
+          <circle class="trait" cx="57" cy="62" r="36"/>
+          <circle class="trait" cx="93" cy="62" r="36"/>
+          <text x="40" y="67" text-anchor="middle" class="gras">A</text>
+          <text x="110" y="67" text-anchor="middle" class="gras">B</text>
+          <text x="75" y="148" text-anchor="middle">A ∪ B</text>
+        </g>
+        <g transform="translate(325,5)">
+          <rect class="boite" x="0" y="0" width="150" height="120" rx="6"/>
+          <text x="142" y="17" text-anchor="end" class="t2">Ω</text>
+          <circle class="plein-accent" fill-opacity="0.3" cx="93" cy="62" r="36" clip-path="url(#clip-ensembles-a)"/>
+          <circle class="trait" cx="57" cy="62" r="36"/>
+          <circle class="trait" cx="93" cy="62" r="36"/>
+          <text x="40" y="67" text-anchor="middle" class="gras">A</text>
+          <text x="110" y="67" text-anchor="middle" class="gras">B</text>
+          <text x="75" y="148" text-anchor="middle">A ∩ B</text>
+        </g>
+        <g transform="translate(485,5)">
+          <rect class="boite" x="0" y="0" width="150" height="120" rx="6"/>
+          <text x="142" y="17" text-anchor="end" class="t2">Ω</text>
+          <circle class="trait" cx="42" cy="64" r="28"/>
+          <circle class="trait" cx="108" cy="64" r="28"/>
+          <text x="42" y="69" text-anchor="middle" class="gras">A</text>
+          <text x="108" y="69" text-anchor="middle" class="gras">B</text>
+          <text x="75" y="148" text-anchor="middle">A ∩ B = ∅</text>
+        </g>
+      </svg>
+      <figcaption>Inclusion, union, intersection et incompatibilité. La zone colorée est l'ensemble indiqué sous chaque diagramme ; le rectangle représente l'univers \(\Omega\).</figcaption>
+    </figure>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Sur un lancer de dé</span> <span class="ref">diapo 11</span></p>
+      <p>On lance un dé à 6 faces. On considère les événements \(A\) : « tirer un nombre pair », \(B\) : « tirer un nombre \(\ge 3\) » et \(C\) : « tirer un 2 ». On a \(C \subset A\). Que valent \(A \cup B\) et \(A \cap B\) ? On a \(B \cap C = \emptyset\) ; mais que vaut \(B \cup C\) ?</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>On écrit chaque événement comme une partie de \(\Omega = \{1, \dots, 6\}\) : \(A = \{2, 4, 6\}\), \(B = \{3, 4, 5, 6\}\), \(C = \{2\}\).</p>
+        <ul>
+          <li>\(A \cup B = \{2, 3, 4, 5, 6\}\) : tout sauf le 1.</li>
+          <li>\(A \cap B = \{4, 6\}\) : les nombres pairs supérieurs ou égaux à 3.</li>
+          <li>\(B \cup C = \{2, 3, 4, 5, 6\}\) : c'est le même ensemble que \(A \cup B\), bien que \(B\) et \(C\) soient disjoints et que \(A\) et \(B\) ne le soient pas.</li>
+        </ul>
+      </details>
+    </div>
+
+    <h3>Ensembles, parties et complémentaire</h3>
+    <p>Un ensemble \(E\) est constitué d'éléments \(x_i\) tous distincts, par exemple \(E = \{x_1, x_2, x_3, x_4\}\) avec \(x_i \ne x_j\) pour \(i \ne j\). Une partie (ou sous-ensemble) de \(E\) contient <em>certains</em> éléments de \(E\) : par exemple, \(\{x_1, x_3, x_4\}\) est une partie de \(E\). Deux ensembles sont <dfn>disjoints</dfn> quand \(A \cap B = \emptyset\).</p>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Notation de la diapo 12</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>La diapo écrit « \(\forall (i, j)\ x_i \cap x_j = \emptyset\) ». L'intersection porte sur des ensembles, pas sur des éléments, et la condition ne peut valoir pour \(i = j\). L'idée est que les éléments sont deux à deux distincts : \(x_i \ne x_j\) pour \(i \ne j\), ou, de façon équivalente, \(\{x_i\} \cap \{x_j\} = \emptyset\) pour \(i \ne j\).</p>
+    </div>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Complémentaire</span></p>
+      <p>Le <dfn>complémentaire</dfn> de \(A\) dans \(\Omega\), noté \(\overline{A}\), est l'ensemble des éléments de \(\Omega\) qui ne sont pas dans \(A\). <span class="badge ajout">Ajout</span> L'événement \(\overline{A}\), « non \(A\) », est l'<dfn>événement contraire</dfn> de \(A\). En particulier \(\overline{\Omega} = \emptyset\) et \(\overline{\emptyset} = \Omega\).</p>
+    </div>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Complémentaire et lois de De Morgan</span></p>
+      <ul>
+        <li>\(A\) et \(\overline{A}\) sont disjoints : \(A \cap \overline{A} = \emptyset\).</li>
+        <li>Leur union est l'univers : \(A \cup \overline{A} = \Omega\).</li>
+        <li>Lois de De Morgan : \(\overline{A \cup B} = \overline{A} \cap \overline{B}\) et \(\overline{A \cap B} = \overline{A} \cup \overline{B}\).</li>
+      </ul>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 165" width="640" role="img" aria-labelledby="fig-demorgan-titre">
+        <title id="fig-demorgan-titre">Trois diagrammes : complémentaire de A ; complémentaire de A union B ; complémentaire de A inter B, la zone colorée étant chaque fois le complémentaire</title>
+        <defs>
+          <clipPath id="clip-demorgan-a"><circle cx="78" cy="62" r="38"/></clipPath>
+        </defs>
+        <g transform="translate(10,5)">
+          <rect class="plein-accent" fill-opacity="0.3" x="0" y="0" width="190" height="120" rx="6"/><rect class="accent" x="0" y="0" width="190" height="120" rx="6"/>
+          <text x="182" y="17" text-anchor="end" class="t2">Ω</text>
+          <circle class="boite" cx="95" cy="62" r="38"/>
+          <text x="95" y="67" text-anchor="middle" class="gras">A</text>
+          <text x="95" y="148" text-anchor="middle">complémentaire de A</text>
+        </g>
+        <g transform="translate(225,5)">
+          <rect class="plein-accent" fill-opacity="0.3" x="0" y="0" width="190" height="120" rx="6"/><rect class="accent" x="0" y="0" width="190" height="120" rx="6"/>
+          <text x="182" y="17" text-anchor="end" class="t2">Ω</text>
+          <circle class="boite" cx="78" cy="62" r="38"/>
+          <circle class="boite" cx="112" cy="62" r="38"/>
+          <circle class="trait" cx="78" cy="62" r="38"/>
+          <circle class="trait" cx="112" cy="62" r="38"/>
+          <text x="62" y="67" text-anchor="middle" class="gras">A</text>
+          <text x="128" y="67" text-anchor="middle" class="gras">B</text>
+          <text x="95" y="148" text-anchor="middle">complémentaire de A ∪ B</text>
+        </g>
+        <g transform="translate(440,5)">
+          <rect class="plein-accent" fill-opacity="0.3" x="0" y="0" width="190" height="120" rx="6"/><rect class="accent" x="0" y="0" width="190" height="120" rx="6"/>
+          <text x="182" y="17" text-anchor="end" class="t2">Ω</text>
+          <circle class="boite" cx="112" cy="62" r="38" clip-path="url(#clip-demorgan-a)"/>
+          <circle class="trait" cx="78" cy="62" r="38"/>
+          <circle class="trait" cx="112" cy="62" r="38"/>
+          <text x="62" y="67" text-anchor="middle" class="gras">A</text>
+          <text x="128" y="67" text-anchor="middle" class="gras">B</text>
+          <text x="95" y="148" text-anchor="middle">complémentaire de A ∩ B</text>
+        </g>
+      </svg>
+      <figcaption>En couleur, de gauche à droite : \(\overline{A}\), puis \(\overline{A \cup B} = \overline{A} \cap \overline{B}\) (ni dans \(A\) ni dans \(B\)), puis \(\overline{A \cap B} = \overline{A} \cup \overline{B}\) (hors de \(A\) ou hors de \(B\)).</figcaption>
+    </figure>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Ω ou E ?</span></p>
+      <p>On notera \(\Omega\) l'ensemble des réalisations possibles d'une expérience, et \(E\) un ensemble quelconque. On peut donc avoir \(\Omega = E\).</p>
+    </div>
+
+    <h3>Produit d'ensembles</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Produit cartésien</span></p>
+      <p>Le <dfn>produit</dfn> \(A \times B\) est l'ensemble des couples \((x, y)\) tels que \(x \in A\) et \(y \in B\). On note \(E^p = E \times E \times \dots \times E\) (\(p\) fois) : c'est l'ensemble des suites de \(p\) éléments de \(E\).</p>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Produits d'ensembles</span> <span class="ref">diapo 12</span></p>
+      <p>Exemple 1 : pour \(E = \{0, 1\}\), donner \(E^3\). Exemple 2 : \(\R^2\) est le plan des couples de réels.</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>\(E^3\) contient les 8 triplets de 0 et de 1, c'est-à-dire les 8 mots binaires de longueur 3 :</p>
+        \[ E^3 = \{(0,0,0),\ (0,0,1),\ (0,1,0),\ (0,1,1),\ (1,0,0),\ (1,0,1),\ (1,1,0),\ (1,1,1)\} \]
+        <p>Il y en a \(2^3 = 8\) : 2 choix pour chaque coordonnée. De manière générale, \(\mathrm{card}(A \times B) = \mathrm{card}(A) \times \mathrm{card}(B)\), d'où \(\mathrm{card}(E^p) = n^p\) quand \(E\) a \(n\) éléments. C'est la formule des p-listes, qui revient dans la partie sur le dénombrement.</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2>Probabilité : axiomes et propriétés <span class="ref">diapos 13–16</span></h2>
+    <p>La définition intuitive ne suffit pas pour démontrer. Depuis Kolmogorov (1933), une probabilité se définit par deux axiomes, dont on déduit toutes les règles de calcul.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Probabilité (axiomes de Kolmogorov)</span></p>
+      <p>Soit \(\Omega\) un univers associé à une expérience aléatoire, et \(\mathcal{P}(\Omega)\) l'ensemble des événements de \(\Omega\). Une <dfn>probabilité</dfn> (<span class="en" lang="en">probability measure</span>) \(P\) est une application de \(\mathcal{P}(\Omega)\) dans \([0, 1]\) telle que :</p>
+      <ol>
+        <li>\(P(\Omega) = 1\) ;</li>
+        <li>pour tous événements \(A\) et \(B\), \(A \cap B = \emptyset \implies P(A \cup B) = P(A) + P(B)\).</li>
+      </ol>
+    </div>
+    <p>À tout événement \(A \subset \Omega\) (autrement dit \(A \in \mathcal{P}(\Omega)\)), on associe donc un nombre \(P(A) \in [0, 1]\), appelé probabilité de \(A\).</p>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Additivité : seulement pour des événements incompatibles</span></p>
+      <p>Dans l'axiome 2, \(A\) et \(B\) sont obligatoirement incompatibles. Par exemple, pour un dé, \(A\) « tirer un 5 » et \(B\) « tirer un pair » sont incompatibles, et \(P(A \cup B) = \frac16 + \frac36 = \frac46\). <span class="badge ajout">Ajout</span> En revanche, pour « tirer un pair » et « tirer au moins 3 », la somme \(\frac36 + \frac46\) dépasse 1 : on a compté deux fois les faces 4 et 6.</p>
+    </div>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>\(\mathcal{P}(\Omega)\), ensemble des parties</span></p>
+      <p><span class="badge ajout">Ajout</span> \(\mathcal{P}(\Omega)\) désigne l'ensemble des parties de \(\Omega\). Si \(\Omega\) a \(n\) éléments, il y a \(2^n\) événements : pour un dé, \(2^6 = 64\), de \(\emptyset\) à \(\Omega\).</p>
+    </div>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Additivité pour \(n\) événements</span></p>
+      <p>L'axiome 2 se généralise à 3 événements : si \(A \cap B = \emptyset\), \(A \cap C = \emptyset\) et \(B \cap C = \emptyset\), alors \(P(A \cup B \cup C) = P(A) + P(B) + P(C)\).</p>
+      <p>Et à \(n\) événements : si \(A_1, A_2, \dots, A_n\) sont incompatibles deux à deux (\(A_i \cap A_j = \emptyset\) pour \(i \ne j\)), alors</p>
+      \[ P\left( \bigcup_{i=1}^{n} A_i \right) = \sum_{i=1}^{n} P(A_i). \]
+      <details class="preuve">
+        <summary>Preuve</summary>
+        <p><span class="badge ajout">Ajout</span> Par récurrence sur \(n\). Si \(A_1, \dots, A_{n+1}\) sont incompatibles deux à deux, alors \(A_1 \cup \dots \cup A_n\) et \(A_{n+1}\) sont disjoints : un élément commun serait dans un \(A_i\) et dans \(A_{n+1}\). L'axiome 2 donne \(P(A_1 \cup \dots \cup A_{n+1}) = P(A_1 \cup \dots \cup A_n) + P(A_{n+1})\), et l'hypothèse de récurrence conclut.</p>
+      </details>
+    </div>
+
+    <h3>Propriétés fondamentales</h3>
+    <p>Ces propriétés essentielles découlent directement de la définition.</p>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Règles de calcul</span></p>
+      <ol>
+        <li>\(P(\emptyset) = 0\).</li>
+        <li>\(P(\overline{A}) = 1 - P(A)\) pour tout \(A \in \mathcal{P}(\Omega)\).</li>
+        <li>\(P(A \cup B) = P(A) + P(B) - P(A \cap B)\) pour tous \(A, B \in \mathcal{P}(\Omega)\).</li>
+        <li>\(A \subset B \implies P(A) \le P(B)\) ; on vérifie donc \(0 \le P(A) \le 1\).</li>
+      </ol>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Démontrer les quatre propriétés</span> <span class="ref">diapo 15</span></p>
+      <p>Démontrer les quatre propriétés ci-dessus à partir des axiomes de la définition d'une probabilité.</p>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>À chaque fois, écrire l'ensemble qui intéresse comme une union de deux ensembles <em>disjoints</em>, puis appliquer l'axiome 2. Le découpage utile est \(B = (A \cap B) \cup (\overline{A} \cap B)\).</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p><strong>1.</strong> \(\Omega\) et \(\emptyset\) sont disjoints et \(\Omega \cup \emptyset = \Omega\). L'axiome 2 donne \(P(\Omega) = P(\Omega) + P(\emptyset)\), donc \(P(\emptyset) = 0\).</p>
+        <p><strong>2.</strong> \(A\) et \(\overline{A}\) sont disjoints et \(A \cup \overline{A} = \Omega\). Par les axiomes 2 puis 1 : \(P(A) + P(\overline{A}) = P(\Omega) = 1\).</p>
+        <p><strong>3.</strong> On découpe en morceaux disjoints : \(A \cup B = A \cup (\overline{A} \cap B)\) et \(B = (A \cap B) \cup (\overline{A} \cap B)\). L'axiome 2 donne</p>
+        \[ P(A \cup B) = P(A) + P(\overline{A} \cap B) \quad\text{et}\quad P(B) = P(A \cap B) + P(\overline{A} \cap B). \]
+        <p>En soustrayant, \(P(A \cup B) - P(B) = P(A) - P(A \cap B)\), ce qui est la formule.</p>
+        <p><strong>4.</strong> Si \(A \subset B\), alors \(B = A \cup (\overline{A} \cap B)\), union disjointe, donc \(P(B) = P(A) + P(\overline{A} \cap B) \ge P(A)\), car une probabilité est positive. Comme \(\emptyset \subset A \subset \Omega\), on obtient \(P(\emptyset) \le P(A) \le P(\Omega)\), c'est-à-dire \(0 \le P(A) \le 1\).</p>
+      </details>
+    </div>
+
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>Passer par le contraire</span></p>
+      <p><span class="badge ajout">Ajout</span> La propriété 2 est l'outil le plus rentable du chapitre. Dès qu'un énoncé dit « au moins un », l'événement contraire, « aucun », est souvent bien plus simple : par exemple, la probabilité d'obtenir au moins un 6 en 4 lancers de dé vaut \(1 - \left(\frac56\right)^4 \approx 0{,}518\).</p>
+    </div>
+
+    <h3>Équiprobabilité</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Équiprobabilité</span></p>
+      <p>Soit \(E = \{x_1, \dots, x_n\}\) un ensemble fini, avec \(\mathrm{card}(E) = n\). Il y a <dfn>équiprobabilité</dfn> (<span class="en" lang="en">equally likely outcomes</span>) quand les événements élémentaires \(A_i = \{x_i\}\) ont tous la même probabilité de se réaliser : \(p_i = P(\{x_i\}) = \frac1n\). Alors :</p>
+      <div class="encadre">
+        \[ P(A) = \frac{\mathrm{card}(A)}{\mathrm{card}(E)} = \frac{\text{nombre de cas favorables}}{\text{nombre de cas possibles}} \]
+      </div>
+    </div>
+    <p>C'est un choix particulier de probabilité. Exemples : tirage d'une carte dans un jeu de 52 (\(p_i = \frac{1}{52}\)), jet d'un dé, d'une pièce (pile ou face)… et des cas plus compliqués. Le calcul d'une probabilité se ramène alors à compter des cas : c'est le rôle du dénombrement, ou analyse combinatoire.</p>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>L'équiprobabilité est une hypothèse de modèle</span></p>
+      <p><span class="badge ajout">Ajout</span> On ne peut appliquer « cas favorables sur cas possibles » que si les cas possibles sont vraiment équiprobables. Avec deux dés, les 11 sommes possibles (de 2 à 12) ne le sont pas. Les 36 couples \((d_1, d_2)\), eux, le sont : la somme 7 s'obtient par 6 couples, d'où \(P(S = 7) = \frac{6}{36} = \frac16\), alors que la somme 2 ne s'obtient que par \((1, 1)\) : \(P(S = 2) = \frac{1}{36}\).</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Dénombrement <span class="ref">diapos 17–20</span></h2>
+    <p>Sous l'hypothèse d'équiprobabilité, calculer une probabilité revient à compter les éléments d'un ensemble. Encore faut-il savoir compter sans oubli ni doublon : c'est l'objet du dénombrement.</p>
+
+    <h3>Cardinal d'un ensemble</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Cardinal</span></p>
+      <p>Le <dfn>cardinal</dfn> (<span class="en" lang="en">cardinality</span>) d'un ensemble fini désigne le nombre de ses éléments. Il se note \(\mathrm{card}(E)\) ou \(|E|\).</p>
+    </div>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Cardinal d'une union</span></p>
+      <ol>
+        <li>Si \(A\) et \(B\) sont disjoints, alors \(\mathrm{card}(A \cup B) = \mathrm{card}(A) + \mathrm{card}(B)\).</li>
+        <li>Sinon : \(\mathrm{card}(A \cup B) = \mathrm{card}(A) + \mathrm{card}(B) - \mathrm{card}(A \cap B)\).</li>
+      </ol>
+      <p><span class="badge ajout">Ajout</span> Ce sont exactement l'axiome 2 et la propriété 3 des probabilités : on retire \(\mathrm{card}(A \cap B)\) parce que les éléments communs ont été comptés deux fois.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Exercice 1 : divisibles par 5, mais ni par 4 ni par 7</span> <span class="ref">diapos 17–18</span></p>
+      <p>Combien a-t-on d'entiers compris entre 1 et 300 inclus qui sont divisibles par 5, mais pas par 4 ni par 7 ?</p>
+      <p>On aimerait utiliser la formule du cardinal d'une union. On commence donc par définir plusieurs ensembles :</p>
+      <ol>
+        <li>l'ensemble le plus large qui soit adapté au problème : soit \(E\) l'ensemble des entiers entre 1 et 300 qui sont divisibles par 5 ;</li>
+        <li>puis des parties de \(E\) : soit \(A\) l'ensemble des entiers entre 1 et 300 divisibles par 5 et 4, \(B\) celui des entiers divisibles par 5 et 7, et \(C\) celui des entiers divisibles par 5, 4 et 7.</li>
+      </ol>
+      <p>Que cherche-t-on ? Le cardinal de \(\overline{A \cup B}\), complémentaire pris dans \(E\). Or on sait que \(\mathrm{card}(A \cup B) = \mathrm{card}(A) + \mathrm{card}(B) - \mathrm{card}(A \cap B)\).</p>
+      <p><span class="badge ajout">Ajout</span> Fin du calcul, que la diapo laisse au lecteur. Être divisible par 5 et par 4 revient à être divisible par 20, car 4 et 5 sont premiers entre eux ; de même pour 35 et 140. Le nombre de multiples de \(d\) entre 1 et 300 est la partie entière de \(300/d\) :</p>
+      <ul>
+        <li>\(\mathrm{card}(E) = 300/5 = 60\) ;</li>
+        <li>\(\mathrm{card}(A) = 300/20 = 15\) ;</li>
+        <li>\(\mathrm{card}(B) = 8\), car \(35 \times 8 = 280 \le 300 \lt 315\) ;</li>
+        <li>\(A \cap B = C\), multiples de 140 : 140 et 280, donc \(\mathrm{card}(A \cap B) = 2\).</li>
+      </ul>
+      <p>Ainsi \(\mathrm{card}(A \cup B) = 15 + 8 - 2 = 21\), et le nombre cherché est \(\mathrm{card}(\overline{A \cup B}) = 60 - 21 = 39\).</p>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 420 190" width="420" role="img" aria-labelledby="fig-exo1-titre">
+        <title id="fig-exo1-titre">Diagramme de l'exercice 1 : dans E (60 multiples de 5), A (multiples de 20) et B (multiples de 35) se coupent en C (2 éléments) ; 13 éléments sont dans A seulement, 6 dans B seulement et 39 hors de A et de B</title>
+        <ellipse class="plein-accent" fill-opacity="0.3" cx="210" cy="95" rx="200" ry="85"/><ellipse class="accent" cx="210" cy="95" rx="200" ry="85"/>
+        <circle class="boite" cx="180" cy="98" r="55"/>
+        <circle class="boite" cx="250" cy="98" r="52"/>
+        <circle class="trait" cx="180" cy="98" r="55"/>
+        <circle class="trait" cx="250" cy="98" r="52"/>
+        <text x="385" y="100" text-anchor="middle" class="gras">E</text>
+        <text x="158" y="86" text-anchor="middle" class="gras">A</text>
+        <text x="272" y="86" text-anchor="middle" class="gras">B</text>
+        <text x="158" y="112" text-anchor="middle">13</text>
+        <text x="216" y="94" text-anchor="middle" class="gras">C</text>
+        <text x="216" y="114" text-anchor="middle">2</text>
+        <text x="272" y="112" text-anchor="middle">6</text>
+        <text x="70" y="104" text-anchor="middle" class="gras accent">39</text>
+      </svg>
+      <figcaption>Les nombres indiquent le cardinal de chaque zone. La zone colorée, \(\overline{A \cup B}\) dans \(E\), est celle que l'on compte : \(60 - (13 + 2 + 6) = 39\).</figcaption>
+    </figure>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Vérifier en Python</span></p>
+      <p>Sur un petit ensemble, un programme peut compter directement et confirmer le résultat :</p>
+<pre><code class="language-python">print(len([n for n in range(1, 301) if n % 5 == 0 and n % 4 != 0 and n % 7 != 0]))
+# 39</code></pre>
+    </div>
+
+    <h3>Analyse combinatoire</h3>
+    <p>Le <dfn>dénombrement</dfn> (<span class="en" lang="en">counting</span>) est l'action de compter le nombre de réalisations possibles \(\mathrm{card}(A)\) d'un événement \(A\). Soit \(E\) un ensemble fini à \(n\) éléments et \(A\) l'événement « tirer \(p\) éléments parmi les \(n\) de cet ensemble ». Par exemple \(E = \{R, V, B\}\) (3 boules : rouge, verte, bleue) et \(p = 2\).</p>
+    <p>Pour choisir la formule, on se pose deux questions sur la configuration :</p>
+    <ul>
+      <li><strong>Les éléments sont-ils ordonnés ?</strong> Ordonnés : \((R, B) \ne (B, R)\), on parle de couple ou de <dfn>p-uplet</dfn> (<span class="en" lang="en">tuple</span>). Non ordonnés : \(\{R, B\}\), c'est un ensemble.</li>
+      <li><strong>Un élément peut-il se répéter ?</strong> Répétition possible (tirage <em>avec</em> remise) : \((R, R)\) est permis. Répétition non autorisée : \((R, V)\), mais pas \((R, R)\).</li>
+    </ul>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>{R, B} n'est pas (R, B)</span></p>
+      <p>Il ne faut pas confondre l'ensemble \(\{R, B\}\), où l'ordre ne compte pas (\(\{R, B\} = \{B, R\}\)), et le couple \((R, B)\), où il compte, comme pour les coordonnées d'un point : \((1, 2) \ne (2, 1)\).</p>
+    </div>
+
+    <div class="tableau centre">
+      <table>
+        <caption>Bilan : nombre de façons de tirer \(p\) éléments parmi \(n\) (diapo 20)</caption>
+        <thead><tr><th></th><th>Ordonné ?</th><th>Répétition ?</th><th>\(\mathrm{card}(\Omega)\)</th></tr></thead>
+        <tbody>
+          <tr><th>p-liste</th><td class="oui">oui</td><td class="oui">oui</td><td>\(n^p\)</td></tr>
+          <tr><th>arrangement</th><td class="oui">oui</td><td class="non">non</td><td>\(A_n^p = \dfrac{n!}{(n-p)!}\)</td></tr>
+          <tr><th>permutation</th><td class="oui">oui</td><td class="non">non</td><td>\(A_n^n = n!\)</td></tr>
+          <tr><th>combinaison</th><td class="non">non</td><td class="non">non</td><td>\(C_n^p = \dfrac{n!}{(n-p)!\,p!}\)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Formulaire</span></p>
+      <p><span class="badge ajout">Ajout</span> Le formulaire du module (<a href="../cours/formulaire.pdf">formulaire.pdf</a>) rappelle \(A_n^p\), \(C_n^p\) et la formule de Bayes. On rencontre aussi la notation \(\binom{n}{p}\) pour \(C_n^p\), notamment en Python et dans les ouvrages anglophones.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les quatre cas sur l'exemple des boules</span></p>
+      <p>Avec \(E = \{R, V, B\}\) (\(n = 3\)) et \(p = 2\) :</p>
+      <ul>
+        <li><strong>p-listes</strong> : \(3^2 = 9\) couples, de \((R, R)\) à \((B, B)\). Situation type : un code, un mot de passe, des tirages successifs avec remise.</li>
+        <li><strong>arrangements</strong> : \(A_3^2 = \frac{3!}{1!} = 6\) couples sans répétition. Situation type : un podium, des tirages successifs sans remise.</li>
+        <li><strong>permutations</strong> : \(3! = 6\) façons d'ordonner les trois boules. Situation type : les anagrammes d'un mot, l'ordre de passage de \(n\) personnes.</li>
+        <li><strong>combinaisons</strong> : \(C_3^2 = \frac{3!}{1!\,2!} = 3\) paires \(\{R, V\}\), \(\{R, B\}\), \(\{V, B\}\). Situation type : une main de cartes, un tirage simultané, une grille de loto.</li>
+      </ul>
+      <p>Chaque combinaison correspond à \(p!\) arrangements, obtenus en ordonnant ses éléments : c'est pourquoi \(C_n^p = A_n^p / p!\). Le module <code>itertools</code> de Python énumère ces configurations, et <code>math</code> les compte :</p>
+<pre data-fichier="denombrement.py"><code class="language-python">from itertools import product, permutations, combinations
+from math import comb, perm, factorial
+
+E = ["R", "V", "B"]                      # n = 3 boules, on en tire p = 2
+
+print(list(product(E, repeat=2)))        # 2-listes : ordre + répétition
+print(list(permutations(E, 2)))          # arrangements : ordre, sans répétition
+print(list(combinations(E, 2)))          # combinaisons : ni ordre ni répétition
+print(3 ** 2, perm(3, 2), factorial(3), comb(3, 2))</code></pre>
+<pre class="terminal"><code>$ python denombrement.py
+[('R', 'R'), ('R', 'V'), ('R', 'B'), ('V', 'R'), ('V', 'V'), ('V', 'B'), ('B', 'R'), ('B', 'V'), ('B', 'B')]
+[('R', 'V'), ('R', 'B'), ('V', 'R'), ('V', 'B'), ('B', 'R'), ('B', 'V')]
+[('R', 'V'), ('R', 'B'), ('V', 'B')]
+9 6 6 3</code></pre>
+      <p>Le tableau laisse de côté le cas « non ordonné, avec répétition » <span class="badge hors-programme">Hors programme</span> : il y en a \(C_{n+p-1}^{p}\), soit \(C_4^2 = 6\) ici : \(\{R,R\}\), \(\{V,V\}\), \(\{B,B\}\), \(\{R,V\}\), \(\{R,B\}\), \(\{V,B\}\).</p>
+    </div>
+
+    <p>Pour s'entraîner à reconnaître le bon cas, la feuille d'<a href="../TD/td_denombrement.pdf">exercices supplémentaires de dénombrement</a> commence justement par classer des situations en p-listes, arrangements, permutations ou combinaisons.</p>
+  </section>
+
+  <section>
+    <h2>Indépendance <span class="ref">diapos 21–23</span></h2>
+    <p>Deux événements peuvent n'avoir aucun lien : le résultat d'un premier lancer de dé ne dit rien du second. L'indépendance traduit cette absence d'influence par une règle de calcul simple.</p>
+    <p>Dans cette partie, \(\Omega\) est un univers et \(P\) une probabilité définie sur \(\mathcal{P}(\Omega)\).</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Événements indépendants</span></p>
+      <p>Deux événements sont <dfn>indépendants</dfn> (<span class="en" lang="en">independent</span>) lorsque la réalisation de l'un n'a pas d'influence sur celle de l'autre :</p>
+      <div class="encadre">
+        \[ A \text{ et } B \text{ indépendants} \iff P(A \cap B) = P(A) \times P(B). \]
+      </div>
+    </div>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Indépendance mutuelle</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>Généralisation : la diapo dit que les événements \(A_1, \dots, A_n\) sont <dfn>mutuellement indépendants</dfn> quand</p>
+      \[ P\left( \bigcap_{i=1}^{n} A_i \right) = \prod_{i=1}^{n} P(A_i), \quad\text{c'est-à-dire}\quad P(A_1 \cap A_2 \cap \dots \cap A_n) = P(A_1) \times P(A_2) \times \dots \times P(A_n). \]
+      <p><span class="badge ajout">Ajout</span> Cette égalité seule ne suffit pas : la définition exacte l'exige pour <em>toute sous-famille</em>. Pour tout ensemble d'indices \(I \subset \{1, \dots, n\}\), on doit avoir \(P\left(\bigcap_{i \in I} A_i\right) = \prod_{i \in I} P(A_i)\). Voir le complément ci-dessous.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi toutes les sous-familles</span></p>
+      <p>Sur un lancer de dé, prenons \(A_1 = A_2 = \) « face paire » et \(A_3 = \emptyset\). Le produit pour les trois événements est vérifié, \(P(A_1 \cap A_2 \cap A_3) = 0 = \frac12 \times \frac12 \times 0\), alors que \(A_1\) et \(A_2\) ne sont pas indépendants : \(P(A_1 \cap A_2) = \frac12 \ne \frac14\).</p>
+      <p>À l'inverse, l'indépendance deux à deux ne suffit pas non plus. On lance deux pièces ; \(A\) : « pile au premier lancer », \(B\) : « pile au second », \(C\) : « les deux lancers donnent la même face ». Chaque paire est indépendante (\(P(A \cap B) = P(A \cap C) = P(B \cap C) = \frac14 = \frac12 \times \frac12\)), mais \(P(A \cap B \cap C) = P(\{PP\}) = \frac14 \ne \frac18\).</p>
+    </div>
+
+    <h3>Incompatible ou indépendant ?</h3>
+    <p>Il ne faut pas confondre les deux notions.</p>
+    <div class="colonnes">
+      <div class="colonne">
+        <p class="colonne-titre">Incompatibles</p>
+        <p>\(A\) et \(B\) ne peuvent pas avoir lieu simultanément. Exemple : tirer un 5 et tirer un pair.</p>
+        <p>\(P(A \cap B) = 0\) et \(P(A \cup B) = P(A) + P(B)\).</p>
+      </div>
+      <div class="colonne">
+        <p class="colonne-titre">Indépendants</p>
+        <p>La réalisation de l'un n'a aucune influence sur celle de l'autre. Exemple : tirer un 5 et tirer un 6 <span class="badge a-verifier">À vérifier</span>.</p>
+        <p>\(P(A \cap B) = P(A) \times P(B)\).</p>
+      </div>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>« Tirer un 5 et tirer un 6 »</span></p>
+      <p>L'exemple de la diapo 23 n'a de sens qu'avec <em>deux</em> lancers : « tirer un 5 au premier lancer » et « tirer un 6 au second » sont indépendants, et \(P = \frac16 \times \frac16 = \frac{1}{36}\). Sur un seul lancer, « tirer un 5 » et « tirer un 6 » sont au contraire incompatibles.</p>
+      <p><span class="badge ajout">Ajout</span> Plus généralement, deux événements incompatibles de probabilités non nulles ne sont <em>jamais</em> indépendants : \(P(A \cap B) = 0\) alors que \(P(A) \times P(B) \gt 0\). Savoir que l'un s'est produit apprend que l'autre ne s'est pas produit : c'est une influence maximale.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Probabilités conditionnelles <span class="ref">diapos 24–25</span></h2>
+    <p>Une information nouvelle change les chances : la probabilité d'un événement n'est plus la même quand on sait qu'un autre s'est produit. La probabilité conditionnelle mesure cette mise à jour.</p>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>L'avion</span> <span class="ref">diapo 24</span></p>
+      <p>Soit \(A\) : « mourir dans un accident d'avion » et \(B\) : « l'avion s'écrase ». La probabilité de mourir dans un accident d'avion est très faible : \(P(A) \simeq 0\). La probabilité de mourir dans un accident d'avion <em>sachant que</em> l'avion s'écrase est très élevée : \(P(A \mid B) \simeq 1\).</p>
+      <p>Il ne faut pas confondre les deux événements « l'avion s'écrase et le passager meurt », \(A \cap B\), et « sachant que l'avion s'écrase, le passager meurt », \(A \mid B\).</p>
+    </div>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Probabilité conditionnelle</span></p>
+      <p>Soient \(\Omega\) un univers associé à une expérience aléatoire, \(P\) une probabilité définie sur \(\mathcal{P}(\Omega)\), et \(A\), \(B\) deux événements tels que \(P(B) \ne 0\). On définit la <dfn>probabilité conditionnelle</dfn> de \(A\) <dfn>sachant</dfn> \(B\) (<span class="en" lang="en">conditional probability of A given B</span>), notée \(P_B(A)\) ou \(P(A \mid B)\), par :</p>
+      <div class="encadre">
+        \[ P_B(A) = P(A \mid B) = \frac{P(A \cap B)}{P(B)}. \]
+      </div>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Lecture de la formule</span></p>
+      <p>Savoir que \(B\) est réalisé réduit l'univers à \(B\). Parmi les issues de \(B\), celles qui réalisent aussi \(A\) forment \(A \cap B\) ; on divise par \(P(B)\) pour que le nouvel univers ait une probabilité totale égale à 1. En situation d'équiprobabilité, cela revient à compter : \(P(A \mid B) = \dfrac{\mathrm{card}(A \cap B)}{\mathrm{card}(B)}\).</p>
+    </div>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>\(P_B\) est une probabilité</span></p>
+      <p>L'application \(P_B \colon \mathcal{P}(\Omega) \to [0, 1]\) est une probabilité.</p>
+      <details class="preuve">
+        <summary>Preuve</summary>
+        <p><span class="badge ajout">Ajout</span> Comme \(A \cap B \subset B\), on a \(0 \le P(A \cap B) \le P(B)\), donc \(P_B(A) \in [0, 1]\). Ensuite, \(P_B(\Omega) = P(\Omega \cap B)/P(B) = P(B)/P(B) = 1\). Enfin, si \(A \cap A' = \emptyset\), les événements \(A \cap B\) et \(A' \cap B\) sont disjoints et leur union est \((A \cup A') \cap B\), donc \(P_B(A \cup A') = \frac{P(A \cap B) + P(A' \cap B)}{P(B)} = P_B(A) + P_B(A')\).</p>
+        <p>Conséquence : toutes les règles de calcul s'appliquent à \(P_B\), par exemple \(P(\overline{A} \mid B) = 1 - P(A \mid B)\).</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>L'as et le pique</span> <span class="ref">diapo 25</span></p>
+      <p>On pioche une carte dans un jeu de 52 cartes. Soit \(A\) : « piocher un as » et \(B\) : « piocher un ♠ ». Déterminer \(P(A \mid B)\).</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Les 52 cartes sont équiprobables. \(A \cap B\) est l'as de pique, donc \(P(A \cap B) = \frac{1}{52}\) ; il y a 13 piques, donc \(P(B) = \frac{13}{52}\). Ainsi</p>
+        \[ P(A \mid B) = \frac{1/52}{13/52} = \frac{1}{13}. \]
+        <p>Intuitivement : parmi les 13 piques, un seul est un as. On remarque que \(P(A) = \frac{4}{52} = \frac{1}{13}\) aussi : savoir que la carte est un pique ne change pas la chance d'avoir un as. \(A\) et \(B\) sont donc indépendants, ce qu'exprime la remarque suivante.</p>
+      </details>
+    </div>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Indépendance et conditionnement</span></p>
+      <p>Si \(P(A) \ne 0\) et \(P(B) \ne 0\) :</p>
+      \[ A \text{ et } B \text{ indépendants} \iff P(A \mid B) = \frac{P(A \cap B)}{P(B)} = P(A) \iff P(B \mid A) = P(B). \]
+      <details class="preuve">
+        <summary>Preuve</summary>
+        <p><span class="badge ajout">Ajout</span> Il suffit de diviser l'égalité \(P(A \cap B) = P(A)\,P(B)\) par \(P(B)\), ou par \(P(A)\), qui sont non nuls.</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2>Système complet et formule de Bayes <span class="ref">diapos 26–29</span></h2>
+    <p>On connaît souvent les probabilités « dans le mauvais sens » : la probabilité d'un symptôme sachant la maladie, et non celle de la maladie sachant le symptôme. La formule de Bayes permet de retourner le conditionnement ; la formule des probabilités totales fournit le dénominateur.</p>
+
+    <h3>Système complet d'événements</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Système complet d'événements</span></p>
+      <p>Soient \(B_1, \dots, B_n\) des événements de l'univers \(\Omega\). \(\{B_1, \dots, B_n\}\) est un <dfn>système complet d'événements</dfn> (<span class="en" lang="en">partition</span>) de \(\Omega\) si et seulement si :</p>
+      <ol>
+        <li>ils sont disjoints deux à deux : \(B_i \cap B_j = \emptyset\) pour tous \(i \ne j\) ;</li>
+        <li>ils forment une partition de \(\Omega\) : leur union est \(B_1 \cup B_2 \cup \dots \cup B_n = \bigcup_i B_i = \Omega\).</li>
+      </ol>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Deux systèmes complets</span></p>
+      <ul>
+        <li>Soit \(A\) un événement ; alors \((A, \overline{A})\) est un système complet d'événements : \(A \cap \overline{A} = \emptyset\) et \(A \cup \overline{A} = \Omega\).</li>
+        <li>Soit \(D_i\) l'événement « le dé tombe sur la face \(i\) » ; alors \((D_1, D_2, D_3, D_4, D_5, D_6)\) est un système complet d'événements.</li>
+      </ul>
+      <p><span class="badge ajout">Ajout</span> Autrement dit, un système complet décrit une alternative : exactement un des \(B_i\) se réalise, quel que soit le résultat de l'expérience.</p>
+    </div>
+
+    <h3>Formule de Bayes</h3>
+    <p>La définition de la probabilité conditionnelle se lit dans les deux sens. C'est la <dfn>réversibilité</dfn> : si \(P(A) \ne 0\) et \(P(B) \ne 0\),</p>
+    \[ P(A \cap B) = P(A \mid B)\,P(B) = P(B \mid A)\,P(A). \]
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Théorème <span>Formule de Bayes</span></p>
+      <p>En divisant par \(P(B)\), on obtient la <dfn>formule de Bayes</dfn> (<span class="en" lang="en">Bayes' theorem</span>) : si \(P(B) \ne 0\),</p>
+      <div class="encadre">
+        \[ P(A \mid B) = \frac{P(B \mid A)\,P(A)}{P(B)}. \]
+      </div>
+      <p>\(P(A)\) est la probabilité <dfn>a priori</dfn> (<span class="en" lang="en">prior</span>) de \(A\), avant de savoir que \(B\) s'est produit ; \(P(A \mid B)\) est sa probabilité <dfn>a posteriori</dfn> (<span class="en" lang="en">posterior</span>), une fois \(B\) observé.</p>
+    </div>
+
+    <h3>Formule des probabilités totales</h3>
+    <p>Il reste souvent à calculer \(P(B)\), le dénominateur de la formule de Bayes. On découpe l'univers selon un système complet.</p>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Théorème <span>Formule des probabilités totales</span></p>
+      <p>Si \(P(B) \ne 0\) et \(P(\overline{B}) \ne 0\), alors :</p>
+      <div class="encadre">
+        \[ P(A) = P(A \cap B) + P(A \cap \overline{B}) = P(A \mid B)\,P(B) + P(A \mid \overline{B})\,P(\overline{B}). \]
+      </div>
+      <p>Généralisation, la <dfn>formule des probabilités totales</dfn> (<span class="en" lang="en">law of total probability</span>) : si \(\{B_1, \dots, B_n\}\) est un système complet d'événements, alors</p>
+      <div class="encadre">
+        \[ P(A) = \sum_{i=1}^{n} P(A \cap B_i) = \sum_{i=1}^{n} P(A \mid B_i)\,P(B_i). \]
+      </div>
+      <details class="preuve">
+        <summary>Preuve</summary>
+        <p><span class="badge ajout">Ajout</span> Les \(A \cap B_i\) sont disjoints deux à deux, car les \(B_i\) le sont, et leur union est \(A \cap \Omega = A\). L'additivité donne la première égalité, la réversibilité la seconde. Il faut \(P(B_i) \ne 0\) pour écrire \(P(A \mid B_i)\).</p>
+      </details>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 480 200" width="480" role="img" aria-labelledby="fig-totales-titre">
+        <title id="fig-totales-titre">Un univers découpé en quatre bandes B1 à B4 ; l'événement A, une ellipse, est coupé en quatre morceaux A inter B1 à A inter B4</title>
+        <rect class="boite" x="10" y="10" width="460" height="175" rx="6"/>
+        <ellipse class="plein-accent" fill-opacity="0.3" cx="240" cy="112" rx="190" ry="50"/><ellipse class="accent" cx="240" cy="112" rx="190" ry="50"/>
+        <path class="pointille" d="M125 10 V185 M240 10 V185 M355 10 V185"/>
+        <text x="67" y="34" text-anchor="middle" class="gras">B₁</text>
+        <text x="182" y="34" text-anchor="middle" class="gras">B₂</text>
+        <text x="297" y="34" text-anchor="middle" class="gras">B₃</text>
+        <text x="412" y="34" text-anchor="middle" class="gras">B₄</text>
+        <text x="460" y="178" text-anchor="end" class="t2">Ω</text>
+        <text x="258" y="56" text-anchor="middle" class="gras accent">A</text>
+        <text x="90" y="117" text-anchor="middle" font-size="13">A ∩ B₁</text>
+        <text x="182" y="117" text-anchor="middle" font-size="13">A ∩ B₂</text>
+        <text x="297" y="117" text-anchor="middle" font-size="13">A ∩ B₃</text>
+        <text x="390" y="117" text-anchor="middle" font-size="13">A ∩ B₄</text>
+      </svg>
+      <figcaption>Le système complet \(\{B_1, B_2, B_3, B_4\}\) découpe \(A\) en morceaux disjoints, et \(P(A)\) est la somme de leurs probabilités. La diapo 28 dessine le cas de deux événements, \(B\) et \(\overline{B}\).</figcaption>
+    </figure>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Bayes avec un système complet</span></p>
+      <p><span class="badge ajout">Ajout</span> En combinant les deux formules, on obtient la forme la plus utilisée en pratique : pour un système complet \(\{B_1, \dots, B_n\}\) et un événement observé \(A\) tel que \(P(A) \ne 0\),</p>
+      \[ P(B_j \mid A) = \frac{P(A \mid B_j)\,P(B_j)}{\displaystyle\sum_{i=1}^{n} P(A \mid B_i)\,P(B_i)}. \]
+      <p>On la visualise avec un <dfn>arbre pondéré</dfn> : le premier niveau porte les \(P(B_i)\), le second les \(P(A \mid B_i)\). La probabilité d'un chemin est le produit des branches ; \(P(A)\) est la somme des chemins qui mènent à \(A\) ; et \(P(B_j \mid A)\) est la part du chemin passant par \(B_j\) dans cette somme.</p>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Un test de dépistage</span></p>
+      <p><span class="badge ajout">Ajout</span> Une maladie touche 1 % de la population. Un test la détecte chez 99 % des malades, mais il est aussi positif chez 2 % des personnes saines. Une personne prise au hasard a un test positif. Quelle est la probabilité qu'elle soit malade ?</p>
+      <details class="indice">
+        <summary>Indice</summary>
+        <p>Noter \(M\) : « être malade » et \(T\) : « test positif ». Traduire l'énoncé : \(P(M)\), \(P(T \mid M)\), \(P(T \mid \overline{M})\). La question demande \(P(M \mid T)\), le conditionnement « dans l'autre sens ».</p>
+      </details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>On a \(P(M) = 0{,}01\), \(P(T \mid M) = 0{,}99\) et \(P(T \mid \overline{M}) = 0{,}02\). Le système complet est \((M, \overline{M})\).</p>
+        <figure class="figure">
+          <svg class="schema" viewBox="0 0 520 200" width="520" role="img" aria-labelledby="fig-arbre-titre">
+            <title id="fig-arbre-titre">Arbre pondéré du test : malade avec probabilité 0,01, puis positif avec probabilité 0,99 ; sain avec probabilité 0,99, puis positif avec probabilité 0,02</title>
+            <circle class="plein" cx="20" cy="100" r="4"/>
+            <path class="trait" d="M24 98 L140 55 M24 102 L140 145"/>
+            <path class="trait" d="M192 48 L330 26 M192 54 L330 76 M192 146 L330 124 M192 152 L330 174"/>
+            <text x="166" y="55" text-anchor="middle" class="gras">M</text>
+            <text x="166" y="153" text-anchor="middle" class="gras">non M</text>
+            <text x="78" y="64" text-anchor="middle" class="t2 mono" font-size="12">0,01</text>
+            <text x="78" y="148" text-anchor="middle" class="t2 mono" font-size="12">0,99</text>
+            <text x="255" y="28" text-anchor="middle" class="t2 mono" font-size="12">0,99</text>
+            <text x="255" y="78" text-anchor="middle" class="t2 mono" font-size="12">0,01</text>
+            <text x="255" y="126" text-anchor="middle" class="t2 mono" font-size="12">0,02</text>
+            <text x="255" y="176" text-anchor="middle" class="t2 mono" font-size="12">0,98</text>
+            <text x="338" y="31" class="gras accent">T</text>
+            <text x="338" y="81">non T</text>
+            <text x="338" y="129" class="gras accent">T</text>
+            <text x="338" y="179">non T</text>
+            <text x="420" y="31" class="mono accent">0,0099</text>
+            <text x="420" y="81" class="mono t2">0,0001</text>
+            <text x="420" y="129" class="mono accent">0,0198</text>
+            <text x="420" y="179" class="mono t2">0,9702</text>
+          </svg>
+          <figcaption>Arbre pondéré du test. À droite, la probabilité de chaque chemin ; les deux chemins qui mènent à un test positif sont en couleur.</figcaption>
+        </figure>
+        <p>Probabilités totales : \(P(T) = 0{,}99 \times 0{,}01 + 0{,}02 \times 0{,}99 = 0{,}0099 + 0{,}0198 = 0{,}0297\). Bayes :</p>
+        \[ P(M \mid T) = \frac{P(T \mid M)\,P(M)}{P(T)} = \frac{0{,}0099}{0{,}0297} = \frac13. \]
+        <p>Malgré un test fiable à 99 %, deux positifs sur trois sont des personnes saines : la maladie est si rare que les faux positifs, pris parmi les 99 % de gens sains, sont plus nombreux que les vrais. Confondre \(P(T \mid M) = 0{,}99\) et \(P(M \mid T) = \frac13\) est l'erreur classique.</p>
+      </details>
+    </div>
+
+    <h3>Application : que contient l'urne ?</h3>
+    <p>La diapo 29 applique la formule de Bayes à un problème d'inférence : remonter des observations à leur cause probable.</p>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>L'urne à six boules</span> <span class="ref">diapo 29</span></p>
+      <p><strong>Problème.</strong> Une urne contient six boules, blanches ou noires. Pour en savoir plus sur son contenu, on effectue 6 tirages successifs avec remise, qui donnent tous une boule blanche. Que peut-on dire de la composition de l'urne ?</p>
+      <p><strong>Réponse bayésienne.</strong></p>
+      <ol>
+        <li>Renseignements a priori : le nombre et les couleurs des boules.</li>
+        <li>Information a posteriori : le résultat \(R\), « les 6 tirages ont tous donné une boule blanche ».</li>
+        <li>Modélisation : sept compositions de l'urne sont possibles, de 0 boule blanche et 6 noires (0B, 6N) jusqu'à 6 blanches et 0 noire (6B, 0N). Ce sont les états dits accessibles \(A_k\), où \(k\) est le nombre de boules blanches.</li>
+        <li>A priori, rien ne permet de privilégier l'une ou l'autre : d'où l'équiprobabilité \(P(A_k) = \frac17\).</li>
+      </ol>
+      <p>La probabilité de tirer une boule blanche dans une urne qui en contient \(k\) est \(\frac{k}{6}\). Celle de tirer successivement 6 boules blanches est \(\left(\frac{k}{6}\right)^6\) : c'est \(P(R \mid A_k)\). Les probabilités a posteriori des compositions valent alors :</p>
+      <div class="encadre">
+        \[ P(A_k \mid R) = \frac{k^6}{\displaystyle\sum_{m=0}^{6} m^6} = \frac{k^6}{67171}. \]
+      </div>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>D'où vient cette formule</span></p>
+      <p>Les tirages se font avec remise : la composition ne change pas d'un tirage à l'autre, et les 6 tirages sont indépendants sachant \(A_k\). C'est ce qui justifie la puissance 6 dans \(P(R \mid A_k) = \left(\frac{k}{6}\right)^6\).</p>
+      <p>Les \(A_k\), pour \(k = 0, \dots, 6\), forment un système complet. La méthode ci-dessus donne</p>
+      \[ P(A_k \mid R) = \frac{P(R \mid A_k)\,P(A_k)}{\sum_{m=0}^{6} P(R \mid A_m)\,P(A_m)} = \frac{\left(\frac{k}{6}\right)^6 \times \frac17}{\sum_{m=0}^{6} \left(\frac{m}{6}\right)^6 \times \frac17} = \frac{k^6}{\sum_{m=0}^{6} m^6}. \]
+      <p>Les facteurs \(\frac17\) et \(\frac{1}{6^6}\) se simplifient, et \(\sum_{m=0}^{6} m^6 = 0 + 1 + 64 + 729 + 4096 + 15625 + 46656 = 67171\).</p>
+    </div>
+
+    <div class="tableau centre compact">
+      <table>
+        <caption>Probabilités a posteriori des compositions de l'urne (diapo 29)</caption>
+        <thead><tr><th>Composition \(A_k\)</th><th>0B, 6N</th><th>1B, 5N</th><th>2B, 4N</th><th>3B, 3N</th><th>4B, 2N</th><th>5B, 1N</th><th>6B, 0N</th></tr></thead>
+        <tbody>
+          <tr><th>\(k\)</th><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td></tr>
+          <tr><th>\(P(A_k \mid R)\), diapo</th><td>—</td><td>—</td><td>\(10^{-3}\)</td><td>0,01</td><td>0,06</td><td>0,23</td><td>0,70</td></tr>
+          <tr><th>Valeur à \(10^{-4}\) près <span class="badge ajout">Ajout</span></th><td>0</td><td>0,0000</td><td>0,0010</td><td>0,0109</td><td>0,0610</td><td>0,2326</td><td>0,6946</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 520 250" width="520" role="img" aria-labelledby="fig-urne-titre">
+        <title id="fig-urne-titre">Diagramme en barres des probabilités a posteriori selon k : pratiquement nulles jusqu'à k = 3, puis 0,06 pour k = 4, 0,23 pour k = 5 et 0,69 pour k = 6</title>
+        <path class="pointille" d="M60 155 H505 M60 110 H505 M60 65 H505 M60 20 H505"/>
+        <text x="52" y="204" text-anchor="end" class="t2 mono" font-size="12">0</text>
+        <text x="52" y="159" text-anchor="end" class="t2 mono" font-size="12">0,2</text>
+        <text x="52" y="114" text-anchor="end" class="t2 mono" font-size="12">0,4</text>
+        <text x="52" y="69" text-anchor="end" class="t2 mono" font-size="12">0,6</text>
+        <text x="52" y="24" text-anchor="end" class="t2 mono" font-size="12">0,8</text>
+        <rect class="plein-accent" x="199" y="199.8" width="36" height="0.2"><title>k = 2 : 0,0010</title></rect>
+        <rect class="plein-accent" x="262" y="197.5" width="36" height="2.5"><title>k = 3 : 0,0109</title></rect>
+        <path class="plein-accent" d="M325 200 V190.3 Q325 186.3 329 186.3 H357 Q361 186.3 361 190.3 V200 Z"><title>k = 4 : 0,0610</title></path>
+        <path class="plein-accent" d="M388 200 V151.7 Q388 147.7 392 147.7 H420 Q424 147.7 424 151.7 V200 Z"><title>k = 5 : 0,2326</title></path>
+        <path class="plein-accent" d="M451 200 V47.7 Q451 43.7 455 43.7 H483 Q487 43.7 487 47.7 V200 Z"><title>k = 6 : 0,6946</title></path>
+        <path class="trait" d="M60 200 H505"/>
+        <text x="280" y="190" text-anchor="middle" class="mono" font-size="12">0,01</text>
+        <text x="343" y="179" text-anchor="middle" class="mono" font-size="12">0,06</text>
+        <text x="406" y="140" text-anchor="middle" class="mono" font-size="12">0,23</text>
+        <text x="469" y="36" text-anchor="middle" class="mono" font-size="12">0,69</text>
+        <text x="91" y="218" text-anchor="middle" class="t2 mono" font-size="12">0</text>
+        <text x="154" y="218" text-anchor="middle" class="t2 mono" font-size="12">1</text>
+        <text x="217" y="218" text-anchor="middle" class="t2 mono" font-size="12">2</text>
+        <text x="280" y="218" text-anchor="middle" class="t2 mono" font-size="12">3</text>
+        <text x="343" y="218" text-anchor="middle" class="t2 mono" font-size="12">4</text>
+        <text x="406" y="218" text-anchor="middle" class="t2 mono" font-size="12">5</text>
+        <text x="469" y="218" text-anchor="middle" class="t2 mono" font-size="12">6</text>
+        <text x="282" y="242" text-anchor="middle" class="t2">k, nombre de boules blanches dans l'urne</text>
+      </svg>
+      <figcaption>Probabilité a posteriori \(P(A_k \mid R)\) de chaque composition après 6 boules blanches. La diapo donne le même graphique en points reliés ; il est redessiné ici en barres.</figcaption>
+    </figure>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Arrondi</span></p>
+      <p><span class="badge ajout">Ajout</span> La diapo arrondit \(P(A_6 \mid R)\) à 0,70 ; la valeur exacte \(\frac{46656}{67171} \approx 0{,}6946\) s'arrondit plutôt à 0,69. L'écart est sans conséquence sur la conclusion.</p>
+    </div>
+
+    <p>Même problème, mais cette fois le nombre total \(M\) de boules est inconnu :</p>
+    <ol>
+      <li>la composition \(A_k\) est \(\{k\,\mathrm{B}, (M - k)\,\mathrm{N}\}\) ;</li>
+      <li>les probabilités \(P(A_k)\) sont inconnues, mais on suppose l'équiprobabilité a priori ;</li>
+      <li>la probabilité \(P(R \mid A_k)\) de tirer 6 boules blanches dans l'urne qui contient \(k\) blanches sur \(M\) est \(\left(\frac{k}{M}\right)^6\) ;</li>
+      <li>la probabilité a posteriori cherchée est \(P(A_k \mid R) = \dfrac{k^6}{f(M)}\), avec \(f(M) = \displaystyle\sum_{m=0}^{M} m^6\).</li>
+    </ol>
+    <p>Conclusion : \(f(M)\) est inconnu, mais il ne dépend pas de \(k\). On obtient donc un renseignement <em>relatif</em> sur la composition de l'urne : les compositions qui contiennent beaucoup de blanches sont favorisées, avec un poids proportionnel à \(k^6\).</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Le calcul en Python</span></p>
+      <p>Le module <code>fractions</code> calcule en valeurs exactes, sans erreur d'arrondi. Le script suit pas à pas la formule des probabilités totales, puis celle de Bayes :</p>
+<pre data-fichier="urne.py"><code class="language-python">from fractions import Fraction
+
+# Nombre de boules blanches possibles : k = 0, 1, ..., 6
+vraisemblance = {k: Fraction(k, 6) ** 6 for k in range(7)}   # P(R | A_k)
+a_priori = Fraction(1, 7)                                     # P(A_k)
+
+# Formule des probabilités totales : P(R) = somme des P(R | A_k) P(A_k)
+p_R = sum(v * a_priori for v in vraisemblance.values())
+
+for k in range(7):
+    a_posteriori = vraisemblance[k] * a_priori / p_R          # Bayes
+    print(f"k = {k} : P(A_k | R) = {float(a_posteriori):.4f}")</code></pre>
+<pre class="terminal"><code>$ python urne.py
+k = 0 : P(A_k | R) = 0.0000
+k = 1 : P(A_k | R) = 0.0000
+k = 2 : P(A_k | R) = 0.0010
+k = 3 : P(A_k | R) = 0.0109
+k = 4 : P(A_k | R) = 0.0610
+k = 5 : P(A_k | R) = 0.2326
+k = 6 : P(A_k | R) = 0.6946</code></pre>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Une expérience aléatoire se décrit par un univers \(\Omega\) ; un événement est une partie de \(\Omega\).</li>
+        <li>Une probabilité est une application \(P \colon \mathcal{P}(\Omega) \to [0, 1]\) avec \(P(\Omega) = 1\) et \(P(A \cup B) = P(A) + P(B)\) quand \(A \cap B = \emptyset\) (axiomes de Kolmogorov).</li>
+        <li>Conséquences : \(P(\emptyset) = 0\), \(P(\overline{A}) = 1 - P(A)\), \(P(A \cup B) = P(A) + P(B) - P(A \cap B)\), et \(A \subset B \implies P(A) \le P(B)\).</li>
+        <li>Lois de De Morgan : \(\overline{A \cup B} = \overline{A} \cap \overline{B}\) et \(\overline{A \cap B} = \overline{A} \cup \overline{B}\).</li>
+        <li>En cas d'équiprobabilité, et seulement dans ce cas, \(P(A) = \mathrm{card}(A) / \mathrm{card}(\Omega)\) : cas favorables sur cas possibles.</li>
+        <li>Pour dénombrer, deux questions : ordonné ? répétition ? Oui-oui : \(n^p\) ; oui-non : \(A_n^p = \frac{n!}{(n-p)!}\) (et \(n!\) si \(p = n\)) ; non-non : \(C_n^p = \frac{n!}{(n-p)!\,p!}\).</li>
+        <li>Incompatibles : \(P(A \cap B) = 0\). Indépendants : \(P(A \cap B) = P(A)\,P(B)\). Deux événements incompatibles de probabilités non nulles ne sont jamais indépendants.</li>
+        <li>\(P(A \mid B) = P(A \cap B) / P(B)\) pour \(P(B) \ne 0\) ; \(P_B\) est une probabilité, et \(A\), \(B\) sont indépendants si et seulement si \(P(A \mid B) = P(A)\).</li>
+        <li>Probabilités totales : pour un système complet \(\{B_i\}\), \(P(A) = \sum_i P(A \mid B_i)\,P(B_i)\).</li>
+        <li>Bayes : \(P(A \mid B) = P(B \mid A)\,P(A) / P(B)\) fait passer de la probabilité a priori \(P(A)\) à la probabilité a posteriori \(P(A \mid B)\).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>On sait que \(P(A) = 0{,}5\), \(P(B) = 0{,}4\) et \(P(A \cap B) = 0{,}2\). Calculer \(P(A \cup B)\), \(P(\overline{A})\) et \(P(A \mid B)\). \(A\) et \(B\) sont-ils indépendants ?</summary>
+        <div><p>\(P(A \cup B) = 0{,}5 + 0{,}4 - 0{,}2 = 0{,}7\) ; \(P(\overline{A}) = 0{,}5\) ; \(P(A \mid B) = 0{,}2 / 0{,}4 = 0{,}5\). Comme \(P(A \mid B) = P(A)\), ou encore \(0{,}2 = 0{,}5 \times 0{,}4\), ils sont indépendants.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Deux événements incompatibles peuvent-ils être indépendants ?</summary>
+        <div><p>Seulement si l'un des deux est de probabilité nulle. Sinon \(P(A \cap B) = 0\) alors que \(P(A)\,P(B) \gt 0\). Être incompatibles est même une forte dépendance : si l'un se produit, l'autre est exclu.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Combien de codes à 4 chiffres (de 0 à 9) existe-t-il ? Et si les 4 chiffres doivent être distincts ?</summary>
+        <div><p>L'ordre compte et la répétition est permise : p-listes, \(10^4 = 10\,000\). Avec des chiffres distincts : arrangements, \(A_{10}^4 = 10 \times 9 \times 8 \times 7 = 5\,040\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Combien de mains de 5 cartes peut-on tirer d'un jeu de 32 cartes ?</summary>
+        <div><p>Une main est un tirage simultané : ni ordre ni répétition. C'est une combinaison : \(C_{32}^5 = \frac{32 \times 31 \times 30 \times 29 \times 28}{5!} = 201\,376\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>On lance deux dés. Pourquoi ne peut-on pas dire que \(P(\text{somme} = 2) = \frac{1}{11}\) ?</summary>
+        <div><p>Les 11 sommes possibles ne sont pas équiprobables. Les 36 couples \((d_1, d_2)\), eux, le sont : seul \((1, 1)\) donne 2, donc \(P = \frac{1}{36}\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un test détecte 99 % des malades. Un patient est positif : a-t-il 99 % de chances d'être malade ?</summary>
+        <div><p>Non : 99 %, c'est \(P(T \mid M)\), alors que la question porte sur \(P(M \mid T)\). Il faut la formule de Bayes et la fréquence de la maladie. Avec une maladie à 1 % et 2 % de faux positifs, \(P(M \mid T) = \frac13\) seulement.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Qu'est-ce qu'un système complet d'événements, et à quoi sert-il ?</summary>
+        <div><p>Des événements deux à deux disjoints dont l'union est \(\Omega\) : exactement un se réalise. Il permet de découper un calcul par cas avec la formule des probabilités totales, \(P(A) = \sum_i P(A \mid B_i)\,P(B_i)\), qui fournit le dénominateur de la formule de Bayes.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pour trois événements, suffit-il que \(P(A \cap B \cap C) = P(A)\,P(B)\,P(C)\) pour qu'ils soient mutuellement indépendants ?</summary>
+        <div><p>Non : il faut aussi que chaque paire vérifie la règle du produit. Avec \(C = \emptyset\), l'égalité du triple est toujours vraie, quels que soient \(A\) et \(B\).</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="index.html"><small>← Matière</small>Probabilités et statistiques</a>
+    <a class="suivant" href="cours-02-variables-aleatoires-discretes.html"><small>Suivant →</small>Variables aléatoires discrètes</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Probabilités et statistiques · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

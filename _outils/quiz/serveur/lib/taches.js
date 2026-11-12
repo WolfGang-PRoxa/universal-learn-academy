@@ -7,7 +7,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const { RACINE, relatif, pageQuiz } = require("./chemins");
+const { RACINE, OUTILS, relatif, depuisUrl, pageQuiz } = require("./chemins");
 const claude = require("./claude");
 const assistant = require("./assistant");
 const catalogue = require("./catalogue");
@@ -40,9 +40,14 @@ function texteDemande(o, quiz) {
 }
 
 function creer(page, options) {
-  const q = pageQuiz(page);
+  const q = pageQuiz(page, { creer: true });
   if (!q) throw new Error("Page de quiz invalide.");
   if (!q.deMatiere) throw new Error("La génération se lance depuis un quiz de matière (dossier generated_quizzes).");
+  if (!q.matiere) throw new Error(q.raison || "Aucun profil choisi.");
+  // Le nouveau quiz va dans l'espace du profil (dossier du cours de son cursus),
+  // jamais dans explore/ : ses liens partent de la racine (/_outils/…, /explore/…)
+  const sortie = path.join(q.matiere, "generated_quizzes");
+  fs.mkdirSync(sortie, { recursive: true });
   const d = catalogue.donneesQuiz(fs.readFileSync(q.abs, "utf8")) || { questions: [] };
   const source = fs.readFileSync(q.abs, "utf8");
   const quiz = {
@@ -62,7 +67,7 @@ function creer(page, options) {
       tentative = "## Dernière tentative\n\nAucune tentative terminée : couvrir l'ensemble du quiz de départ.";
     }
   }
-  const matiere = relatif(q.matiere);
+  const matiere = relatif(q.cours);
   const message = assistant.prompt("generation")
     .replace(/\{\{demande\}\}/g, texteDemande(options, quiz))
     .replace(/\{\{page\}\}/g, relatif(q.abs))
@@ -71,9 +76,13 @@ function creer(page, options) {
     .replace(/\{\{types\}\}/g, quiz.types.join(", "))
     .replace(/\{\{themes\}\}/g, quiz.themes.join(" ; ") || "aucun")
     .replace(/\{\{tentative\}\}/g, tentative)
-    .replace(/\{\{matiere\}\}/g, matiere);
+    .replace(/\{\{matiere\}\}/g, matiere)
+    .replace(/\{\{sortie\}\}/g, relatif(sortie))
+    .replace(/\{\{outils\}\}/g, path.relative(RACINE, OUTILS).startsWith("..") ? OUTILS.split(path.sep).join("/") : "_outils")
+    .replace(/\{\{accueil\}\}/g, "/" + matiere + "/generated_courses/index.html")
+    .replace(/\{\{domaine\}\}/g, "/" + matiere.split("/").slice(0, 2).join("/") + "/index.html");
 
-  const avant = new Set(fs.readdirSync(q.dossierQuiz));
+  const avant = new Set(fs.readdirSync(sortie));
   const id = crypto.randomUUID();
   const tache = {
     id, page: relatif(q.abs), etat: "en_cours", debut: Date.now(), fin: null,
@@ -92,6 +101,7 @@ function creer(page, options) {
     autorises: "Read Grep Glob Write Edit Bash(python:*) Bash(py:*) Bash(node:*) PowerShell(python:*) PowerShell(node:*)",
     permission: "acceptEdits",
     cwd: RACINE,
+    dossiers: [OUTILS],
     journalTexte: true,
     delai: 40 * 60 * 1000,
     surEvenement(e) {
@@ -105,10 +115,10 @@ function creer(page, options) {
   appel.promesse.then((r) => {
     const m = (r.texte || "").match(/FICHIER:\s*(\S+\.html)/);
     let fichier = m ? m[1].replace(/\\/g, "/").replace(/^\.?\//, "") : null;
-    if (fichier && !fs.existsSync(path.join(RACINE, fichier))) fichier = null;
+    if (fichier && !(depuisUrl("/" + fichier) && fs.existsSync(depuisUrl("/" + fichier)))) fichier = null;
     if (!fichier) {
-      const nouveaux = fs.readdirSync(q.dossierQuiz).filter((n) => !avant.has(n) && n.endsWith(".html"));
-      if (nouveaux.length) fichier = relatif(path.join(q.dossierQuiz, nouveaux[0]));
+      const nouveaux = fs.readdirSync(sortie).filter((n) => !avant.has(n) && n.endsWith(".html"));
+      if (nouveaux.length) fichier = relatif(path.join(sortie, nouveaux[0]));
     }
     tache.fichier = fichier;
     tache.etat = fichier ? "terminee" : "erreur";

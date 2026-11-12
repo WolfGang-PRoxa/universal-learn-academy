@@ -79,7 +79,7 @@
         }
         if (ed.asynchrone) {
           var C = Q.connexion;
-          if (!C.executable("sql")) return Promise.resolve({ score: null, rapport: { type: "indisponible", message: "Pour exécuter et comparer le SQL, ouvrir ce quiz depuis le serveur local (studies/lancer.bat)." } });
+          if (!C.executable("sql")) return Promise.resolve({ score: null, rapport: { type: "indisponible", message: "Pour exécuter et comparer le SQL, ouvrir ce quiz depuis le serveur local (lancer.bat)." } });
           var jeu = q.options && q.options.jeu && Q.donnees && Q.donnees.jeux && Q.donnees.jeux[q.options.jeu];
           var ev = ed.evaluation(v.modele, sol, Object.assign({}, q.options || {}, { tests: q.tests }), jeu ? jeu.script : "");
           return Promise.all(ev.demandes.map(function (d) { return C.executer(d); })).then(function (reps) {

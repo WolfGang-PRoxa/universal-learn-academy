@@ -1,5 +1,5 @@
 "use strict";
-/* Extensions du serveur local : les autres outils de studies/ peuvent
+/* Extensions du serveur local : les autres outils de _outils/ peuvent
    ajouter leurs routes à l'API sans modifier le serveur. Au démarrage,
    chaque fichier _outils/<outil>/serveur/extension.js est chargé. Il exporte :
 
@@ -15,14 +15,14 @@
 
 const fs = require("fs");
 const path = require("path");
-const { RACINE } = require("./chemins");
+const { OUTILS } = require("./chemins");
 
 let liste = null;
 
 function charger(journal) {
   liste = [];
   let dossiers = [];
-  const OUTILS = path.join(RACINE, "_outils");
+
   try { dossiers = fs.readdirSync(OUTILS, { withFileTypes: true }).filter((d) => d.isDirectory()); } catch (e) { return liste; }
   for (const d of dossiers) {
     const f = path.join(OUTILS, d.name, "serveur", "extension.js");

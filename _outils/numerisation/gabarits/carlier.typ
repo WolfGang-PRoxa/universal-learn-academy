@@ -50,7 +50,7 @@
   monte: 0pt,                         // décalage de cette ligne vers le haut
   corps,
 ) = {
-  set document(title: titre, author: auteur, date: none, keywords: ("recomposé d'après un scan", "studies/_outils/numerisation"))
+  set document(title: titre, author: auteur, date: none, keywords: ("recomposé d'après un scan", "_outils/numerisation"))
   set page(width: 595.3pt, height: 841.9pt, margin: (left: marge, right: marge, top: haut, bottom: bas))
   set text(font: polices, size: taille, lang: "fr", hyphenate: false, top-edge: 0.891em, bottom-edge: -0.216em)
   set par(justify: true, leading: 0.042em, spacing: 0.042em)

@@ -52,7 +52,7 @@
       var nom = A.editeurs.code.LANGAGES[langage] || langage;
       if (!b) aide.textContent = nom + " · Tab indente · le code s'écrit et se relit, sans exécution";
       else if (executable()) aide.textContent = "Ctrl+Entrée exécute le programme";
-      else aide.textContent = "Pour exécuter le code, ouvrir la page depuis le serveur local (studies/lancer.bat).";
+      else aide.textContent = "Pour exécuter le code, ouvrir la page depuis le serveur local (lancer.bat).";
       if (b) b.disabled = !executable();
     }
     majAide();

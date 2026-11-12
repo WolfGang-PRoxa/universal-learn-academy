@@ -15,10 +15,10 @@
 
 const path = require("path");
 
-const NOM = "Studies";
+const NOM = "Universal Learn Academy";
 
 function fichierRaccourci(plateforme = process.platform) {
-  return plateforme === "win32" ? NOM + ".lnk" : "studies.desktop";
+  return plateforme === "win32" ? NOM + ".lnk" : "universal-learn-academy.desktop";
 }
 
 /** Chemin comparable : séparateurs unifiés, sans guillemets (et sans casse sous Windows). */

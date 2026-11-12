@@ -1,6 +1,6 @@
 "use strict";
 /* ==========================================================================
-   Application de bureau Studies (studies/_outils/app)
+   Application de bureau Studies (_outils/app)
    --------------------------------------------------------------------------
    Le portail, les cours, les quiz et les TD dans leur propre fenêtre, sans
    navigateur ni terminal. Les pages et le serveur sont ceux de lancer.bat ;
@@ -42,7 +42,7 @@ function prevenirFinDeTache(t) {
 
 function surArretServeur(code) {
   const choix = dialog.showMessageBoxSync({
-    type: "error", title: "Studies", message: "Le serveur local s'est arrêté (code " + code + ").",
+    type: "error", title: "Universal Learn Academy", message: "Le serveur local s'est arrêté (code " + code + ").",
     detail: "Le détail est dans le journal.", buttons: ["Relancer", "Voir le journal", "Quitter"], defaultId: 0, cancelId: 2
   });
   if (choix === 1) shell.openPath(serveur.JOURNAL);
@@ -58,7 +58,7 @@ async function demarrerServeur(fenetre) {
     await fenetres.afficherPageDeDepart(fenetre);
     serveur.surveillerTaches(prevenirFinDeTache);
   } catch (e) {
-    dialog.showErrorBox("Studies", "Le serveur local n'a pas démarré : " + e.message + "\n\nJournal : " + serveur.JOURNAL);
+    dialog.showErrorBox("Universal Learn Academy", "Le serveur local n'a pas démarré : " + e.message + "\n\nJournal : " + serveur.JOURNAL);
     app.quit();
   }
 }

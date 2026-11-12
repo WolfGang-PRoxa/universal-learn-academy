@@ -1,10 +1,10 @@
 #!/bin/sh
-# Construit l'AppImage de Studies sous Linux, ou dans WSL depuis Windows
+# Construit l'AppImage d'Universal Learn Academy sous Linux, ou dans WSL depuis Windows
 # (electron-builder ne sait pas faire d'AppImage sous Windows).
 #
 #   sh scripts/construire-linux.sh <dossier app>
 #
-# Le programme (sans node_modules ni dist) et les cours préparés (.contenu) sont
+# Le programme (sans node_modules ni dist) et les outils préparés (.outils) sont
 # copiés dans un dossier de travail Linux (~/.cache/studies-build), où les
 # dépendances sont installées pour Linux ; l'AppImage, sa carte de blocs et
 # latest-linux.yml reviennent ensuite dans <dossier app>/dist.
@@ -18,9 +18,9 @@ PATH="$HOME/.local/node/bin:$PATH"
 export PATH
 
 command -v node >/dev/null 2>&1 || { echo "Node.js est introuvable dans Linux (ni dans le PATH, ni dans ~/.local/node)." >&2; exit 1; }
-[ -f "$SOURCE/.contenu/.studies-contenu.json" ] || { echo "Cours non préparés : lancer d'abord npm run contenu." >&2; exit 1; }
+[ -f "$SOURCE/.outils/.ula-outils.json" ] || { echo "Outils non préparés : lancer d'abord npm run contenu." >&2; exit 1; }
 
-echo "▸ Copie du programme et des cours dans $TRAVAIL"
+echo "▸ Copie du programme et des outils dans $TRAVAIL"
 rm -rf "$TRAVAIL/app"
 mkdir -p "$TRAVAIL/app"
 tar -C "$SOURCE" --exclude=./node_modules --exclude=./dist -cf - . | tar -C "$TRAVAIL/app" -xf -

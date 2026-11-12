@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="reseau">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Annexe A2 : la couche application · Réseaux L2</title>
+<meta name="description" content="Annexe A2 de réseaux (L2) : modèle client-serveur, Telnet, courrier électronique (SMTP, POP3, IMAP, MUA, MTA, MDA), ICMP (ping, traceroute), HTTP (URL, requête, méthodes, réponse, codes de statut), FTP (canaux de commande et de données, modes actif et passif, commandes), DNS (arborescence, domaines, TLD, registres, enregistrements A, CNAME, MX, NS, SOA, résolution récursive et itérative, serveurs racines), DHCP (bail, échange en quatre temps).">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-a2-couche-application.html" title="Quiz · Annexe A2 · Couche application">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Réseaux</a>
+    <span aria-current="page">Annexe A2 · Couche application</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Réseaux</span> Annexe A2 · L2 S3</p>
+    <h1>La couche application</h1>
+    <p class="chapeau">Au sommet de la pile, les protocoles que l'on utilise sans y penser : le web (HTTP), le courrier (SMTP, POP, IMAP), le transfert de fichiers (FTP), le terminal à distance (Telnet). Et trois services qui font marcher tout le reste : ICMP pour les messages d'erreur (ping, traceroute), DNS pour traduire les noms en adresses, DHCP pour donner une adresse aux machines qui arrivent.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/A2%20-%20application.pdf">A2 - application.pdf</a> · 94 diapos (« Chapitre 6 – Application »)</dd></div>
+      <div><dt>Enseignant</dt><dd>Sylvain Meignier</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Associer chaque protocole à son rôle, à son transport (TCP ou UDP) et à son port.</li>
+        <li>Décrire l'acheminement d'un courriel (MUA, MTA, MDA ; SMTP puis POP ou IMAP).</li>
+        <li>Expliquer ce que font <code>ping</code> et <code>traceroute</code> avec ICMP et le TTL.</li>
+        <li>Lire une requête et une réponse HTTP ; connaître les méthodes et les codes de statut courants.</li>
+        <li>Distinguer les modes actif et passif de FTP.</li>
+        <li>Décrire l'arborescence du DNS, ses enregistrements et la résolution récursive ou itérative.</li>
+        <li>Dérouler l'échange DHCP en quatre temps.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-01-introduction.html">Cours 1</a> : modèle client-serveur.</li>
+        <li><a href="cours-05-couche-reseau.html">Cours 5</a> : en-tête IP, TTL, diffusion.</li>
+        <li><a href="cours-06-couche-transport.html">Cours 6</a> : TCP, UDP, ports.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le modèle client-serveur <span class="ref">diapos 2–4</span></h2>
+    <p>Presque toutes les applications réseau suivent le modèle client-serveur : les <strong>serveurs</strong> hébergent les services (stockage, impression, annuaire, pages web…), les <strong>clients</strong> s'adressent à eux pour en profiter. Côté pile, l'application échange des données de bout en bout, la couche transport des segments ou datagrammes, la couche Internet des paquets, réseau après réseau.</p>
+
+    <p>La frise de la diapo 4 date les premières spécifications :</p>
+    <div class="tableau compact">
+      <table>
+        <thead><tr><th>Protocole</th><th>Première RFC</th><th>Date</th></tr></thead>
+        <tbody>
+          <tr><td>FTP</td><td>RFC 114</td><td>avril 1971</td></tr>
+          <tr><td>SMTP</td><td>RFC 821</td><td>août 1982</td></tr>
+          <tr><td>Telnet</td><td>RFC 854</td><td>mai 1983</td></tr>
+          <tr><td>POP</td><td>RFC 918</td><td>octobre 1984</td></tr>
+          <tr><td>FTP (version actuelle)</td><td>RFC 959</td><td>octobre 1985</td></tr>
+          <tr><td>DHCP</td><td>RFC 1531</td><td>octobre 1993</td></tr>
+          <tr><td>IMAP4</td><td>RFC 1730</td><td>décembre 1994</td></tr>
+          <tr><td>HTTP/1.0</td><td>RFC 1945</td><td>mai 1996</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>La frise place aussi une RFC 765 (FTP) en juin 1985 ; c'est en fait une version de juin 1980. Et elle situe IMAP en décembre 1995, alors que la RFC 1730 date de décembre 1994. Rien de grave : retenir l'ordre, FTP d'abord, le web en dernier. <span class="badge a-verifier">À vérifier</span></p>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Qu'est-ce qu'une RFC ?</span></p>
+      <p>Une RFC (<i>Request For Comments</i>) est un document numéroté qui décrit un protocole ou une pratique d'Internet. Les numéros ne sont jamais réutilisés : une nouvelle version d'un protocole reçoit un nouveau numéro, qui « remplace » l'ancien.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Telnet <span class="ref">diapos 5–8</span></h2>
+    <p>Dans les années 1970, l'informatique est centralisée : de gros ordinateurs, auxquels on accède par des <strong>terminaux</strong> (un écran, un clavier et une liaison série). Il faut pouvoir y accéder à distance, à travers le réseau. <strong>Telnet</strong> (<i>Teletype Network</i>, RFC 764 en 1980, puis RFC 854 ; options dans les RFC 855 à 866) est l'application qui le permet : c'est un <strong>terminal virtuel</strong>.</p>
+    <p>Le client Telnet ouvre une connexion TCP vers le port <strong>23</strong> du serveur ; tout ce que l'utilisateur tape est envoyé au serveur, qui renvoie ce qu'il affiche (diapo 8).</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Tout passe en clair</span> <span class="badge ajout">Ajout</span></p>
+      <p>Telnet ne chiffre rien, pas même le mot de passe. On le remplace aujourd'hui par <strong>SSH</strong> (port 22), qui offre le même service avec chiffrement. Telnet reste utile en TP pour administrer un équipement Cisco à distance (lignes <code>vty</code>, <a href="cours-a1-introduction-ios.html">annexe A1</a>), ou pour « parler » à la main à un serveur texte (SMTP, HTTP).</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le courrier électronique <span class="ref">diapos 9–12 et 24–29</span></h2>
+    <p>Le courrier utilise deux familles de protocoles :</p>
+    <ul>
+      <li><strong>SMTP</strong> (<i>Simple Mail Transfer Protocol</i>) pour <strong>transférer</strong> les messages vers la boîte du destinataire ;</li>
+      <li><strong>POP</strong> (<i>Post Office Protocol</i>) ou <strong>IMAP</strong> (<i>Internet Message Access Protocol</i>) pour que le destinataire <strong>récupère</strong> ses messages.</li>
+    </ul>
+
+    <div class="tableau compact">
+      <table>
+        <thead><tr><th>Sigle</th><th>Nom</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td>MUA</td><td><i>Mail User Agent</i></td><td>Le logiciel de messagerie de l'utilisateur (Thunderbird, Outlook…).</td></tr>
+          <tr><td>MTA</td><td><i>Mail Transfer Agent</i></td><td>Le serveur qui relaie le courrier vers le domaine destinataire.</td></tr>
+          <tr><td>MDA</td><td><i>Mail Delivery Agent</i></td><td>Le programme qui dépose le message dans la boîte aux lettres.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Le trajet d'un courriel (diapo 11)</span></p>
+      <ol class="etapes">
+        <li>Le MUA de expediteur@ccna.fr remet le message en SMTP au MTA de son domaine.</li>
+        <li>Ce MTA demande au DNS le serveur de messagerie (enregistrement MX) du domaine cisco.com.</li>
+        <li>Il transmet le message en SMTP, éventuellement via d'autres MTA, jusqu'au MTA de cisco.com.</li>
+        <li>Le MDA le range dans la boîte de destinataire@cisco.com.</li>
+        <li>Le MUA du destinataire demande « ai-je reçu du courrier ? » en POP ou IMAP…</li>
+        <li>… et récupère le message.</li>
+      </ol>
+    </div>
+
+    <h3>SMTP</h3>
+    <p>Proposé en 1982 (RFC 821), SMTP transporte les messages, en client-serveur, sur TCP port <strong>25</strong>. Chaque requête est une ligne de texte terminée par CRLF :</p>
+    <div class="tableau mono compact">
+      <table>
+        <thead><tr><th>Commande</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td>HELO &lt;domaine&gt;</td><td>Ouvre la session ; le client donne son nom de domaine complet (FQDN).</td></tr>
+          <tr><td>MAIL FROM:&lt;adresse&gt;</td><td>Adresse de l'émetteur, qui recevra les éventuels messages d'erreur.</td></tr>
+          <tr><td>RCPT TO:&lt;adresse&gt;</td><td>Adresse d'un destinataire (une commande par destinataire).</td></tr>
+          <tr><td>DATA</td><td>Envoie l'en-tête et le corps du message, terminés par une ligne contenant un seul point.</td></tr>
+          <tr><td>QUIT</td><td>Termine la session.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Les dates de la diapo 10</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>La diapo date de 1990 les RFC 2554 (authentification) et 2476 : elles sont de 1999 et 1998. La RFC 5321 (2008) n'est pas « le courrier mobile » mais la version actuelle de SMTP, qui remplace la RFC 821.</p>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Une session SMTP</span> <span class="badge ajout">Ajout</span></p>
+      <p>Le serveur répond à chaque commande par un code à trois chiffres (2xx succès, 3xx suite attendue, 4xx et 5xx erreurs). Les lignes du client sont précédées de C, celles du serveur de S :</p>
+<pre class="terminal"><code>S: 220 mail.cisco.com ESMTP
+C: HELO mail.ccna.fr
+S: 250 mail.cisco.com
+C: MAIL FROM:&lt;expediteur@ccna.fr&gt;
+S: 250 OK
+C: RCPT TO:&lt;destinataire@cisco.com&gt;
+S: 250 OK
+C: DATA
+S: 354 End data with &lt;CR&gt;&lt;LF&gt;.&lt;CR&gt;&lt;LF&gt;
+C: Subject: Bonjour
+C:
+C: Ceci est un test.
+C: .
+S: 250 OK, message accepted
+C: QUIT
+S: 221 Bye</code></pre>
+    </div>
+
+    <h3>POP3</h3>
+    <p>POP3 (RFC 1939, TCP port <strong>110</strong>), très répandu, sert à <strong>relever définitivement</strong> les messages : le client se connecte, les messages sont transférés vers lui et, en général, supprimés du serveur. Le client s'authentifie, par défaut avec un mot de passe en clair, sinon sous TLS/SSL.</p>
+    <div class="tableau mono compact">
+      <table>
+        <thead><tr><th>Commande</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td>USER</td><td>Nom de la boîte aux lettres.</td></tr>
+          <tr><td>PASS</td><td>Mot de passe (en clair).</td></tr>
+          <tr><td>STAT</td><td>Nombre de messages dans la boîte.</td></tr>
+          <tr><td>RETR n</td><td>Transfère le message n.</td></tr>
+          <tr><td>DELE n</td><td>Marque le message n pour suppression.</td></tr>
+          <tr><td>QUIT</td><td>Fin de session (les suppressions sont alors appliquées).</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>IMAP4</h3>
+    <p>IMAP4 (RFC 3501, qui remplace la RFC 2060 ; TCP port <strong>143</strong>) est plus complet que POP. Les messages <strong>restent sur le serveur</strong> ; le client s'y connecte pour les consulter, en mode connecté ou déconnecté (les courriers récupérés pendant la connexion restent alors en cache). On peut ainsi lire son courrier depuis plusieurs machines et logiciels, avec les mêmes dossiers partout.</p>
+    <p>Ses commandes (diapo 29) : <code>AUTHENTICATE</code>, <code>LOGIN</code>, <code>LOGOUT</code> ; <code>CREATE</code>, <code>DELETE</code>, <code>RENAME</code> pour les boîtes ; <code>SELECT</code>, <code>EXAMINE</code> pour en ouvrir une ; <code>LIST</code>, <code>LSUB</code>, <code>STATUS</code> ; <code>EXPUNGE</code>, <code>CLOSE</code> pour détruire les messages marqués ; <code>SEARCH</code> ; <code>FETCH</code> pour récupérer un message ; <code>COPY</code> ; <code>CAPABILITY</code> ; <code>NOOP</code>.</p>
+
+    <div class="tableau compact">
+      <table>
+        <thead><tr><th></th><th>POP3</th><th>IMAP4</th></tr></thead>
+        <tbody>
+          <tr><td>Port</td><td>110 (995 chiffré)</td><td>143 (993 chiffré)</td></tr>
+          <tr><td>Où restent les messages</td><td>Téléchargés sur le client</td><td>Sur le serveur</td></tr>
+          <tr><td>Plusieurs appareils</td><td>Mal adapté</td><td>Prévu pour</td></tr>
+          <tr><td>Dossiers, recherche sur le serveur</td><td>Non</td><td>Oui</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>ICMP, ping et traceroute <span class="ref">diapos 13–23</span></h2>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>ICMP</span></p>
+      <p>ICMP (<i>Internet Control Message Protocol</i>, RFC 792) transporte des messages de contrôle et d'erreur qui renseignent sur l'état du réseau. Il est associé à la couche réseau : ses messages voyagent directement dans des paquets IP, sans TCP ni UDP.</p>
+    </div>
+    <p>IP ne vérifie pas que ses paquets arrivent. Quand une passerelle ne peut pas router ou livrer un paquet, ou qu'un événement anormal survient (hôte injoignable), il faut prévenir l'émetteur : ICMP est ce mécanisme de signalement des erreurs au niveau IP.</p>
+
+    <h3>Format</h3>
+    <p>Un message ICMP commence par trois champs :</p>
+    <ul>
+      <li><strong>Type</strong> (8 bits) : la nature du message ;</li>
+      <li><strong>Code</strong> (8 bits) : précise le type ;</li>
+      <li><strong>Somme de contrôle</strong> (16 bits) : même calcul que pour IP, mais portant sur le seul message ICMP (celle de l'en-tête IP ne couvre que l'en-tête, pas les données).</li>
+    </ul>
+
+    <div class="tableau compact">
+      <table>
+        <thead><tr><th>Type</th><th>Nom</th><th>Quand</th></tr></thead>
+        <tbody>
+          <tr><td>8</td><td>Echo request</td><td>Une machine teste si un destinataire est joignable (<code>ping</code>).</td></tr>
+          <tr><td>0</td><td>Echo reply</td><td>Toute machine qui reçoit un echo request doit y répondre.</td></tr>
+          <tr><td>3</td><td>Destination unreachable</td><td>Une passerelle ne peut pas livrer le paquet. Code 0 : réseau injoignable ; 1 : hôte injoignable ; 2 : protocole injoignable ; 3 : port injoignable ; 4 : fragmentation nécessaire mais interdite (DF) ; 5 : échec du routage par la source.</td></tr>
+          <tr><td>11</td><td>Time exceeded</td><td>Un routeur a ramené le TTL à 0 : il détruit le paquet et prévient l'émetteur.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>ping</h3>
+<pre class="terminal"><code>$ ping ma.univ-lemans.fr
+PING ma.univ-lemans.fr (193.52.29.108): 56 data bytes
+64 bytes from 193.52.29.108: icmp_seq=0 ttl=49 time=52.050 ms
+64 bytes from 193.52.29.108: icmp_seq=1 ttl=49 time=53.542 ms
+64 bytes from 193.52.29.108: icmp_seq=2 ttl=49 time=50.943 ms
+64 bytes from 193.52.29.108: icmp_seq=3 ttl=49 time=52.495 ms
+^C
+--- ma.univ-lemans.fr ping statistics ---
+4 packets transmitted, 4 packets received, 0% packet loss
+round-trip min/avg/max/stddev = 50.943/52.258/53.542/0.932 ms</code></pre>
+    <p>On y lit : l'adresse obtenue par le DNS ; pour chaque réponse, son numéro (<code>icmp_seq</code>), le TTL restant à l'arrivée et le temps aller-retour ; enfin le taux de perte et les temps minimal, moyen et maximal. Les 64 octets reçus sont les 56 octets de données plus 8 octets d'en-tête ICMP.</p>
+
+    <h3>traceroute</h3>
+    <p><code>traceroute</code> (ou <code>tracepath</code>, <code>tracert</code> sous Windows) affiche les routeurs traversés jusqu'à une destination. Il s'appuie sur le TTL : chaque routeur le décrémente, et celui qui le ramène à 0 détruit le paquet et renvoie un message ICMP <em>time exceeded</em> à l'expéditeur, révélant ainsi son adresse.</p>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Comment traceroute découvre le chemin</span> <span class="badge ajout">Ajout</span></p>
+      <ol class="etapes">
+        <li>Envoyer un paquet avec TTL = 1 : le premier routeur le détruit et répond ; on connaît le saut 1.</li>
+        <li>Recommencer avec TTL = 2, 3… : chaque fois, le routeur suivant se dévoile.</li>
+        <li>Quand le paquet atteint la destination, celle-ci répond autrement (echo reply, ou ICMP <em>port unreachable</em> si l'on a visé un port UDP fermé) : c'est la fin.</li>
+        <li>Un routeur qui ne répond pas apparaît comme <code>no reply</code> ou <code>*</code>.</li>
+      </ol>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>« Paquet ICMP (type 30) »</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>La diapo 23 attribue la trace à des paquets ICMP de type 30. Ce type (<i>traceroute</i>, RFC 1393) est expérimental et abandonné. En pratique, <code>traceroute</code> sous Linux envoie des datagrammes UDP, <code>tracert</code> sous Windows des echo request ; dans les deux cas, ce sont les réponses <em>time exceeded</em> (type 11) qui dessinent le chemin.</p>
+    </div>
+
+    <p>Sur la trace de la diapo 23, depuis une box (192.168.1.1), on voit le réseau du fournisseur d'accès, puis RENATER (le réseau de la recherche : Paris, Poitiers, Nantes), puis le pare-feu de l'université, au 18<sup>e</sup> saut. La mention <code>asymm</code> signale que le retour ne prend pas le même nombre de sauts que l'aller.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>HTTP <span class="ref">diapos 30–40</span></h2>
+    <p>Le <strong>World Wide Web</strong> est une application qui fait coopérer un ensemble de serveurs pour fournir des documents typés, écrits en HTML et reliés par des liens (hypertexte). <strong>HTTP</strong> (<i>HyperText Transfer Protocol</i>) est le protocole qui les échange, en client-serveur, sur TCP (port <strong>80</strong> ; 443 pour HTTPS).</p>
+    <ul>
+      <li>Contenus <strong>statiques</strong> : HTML, texte, images, son, envoyés tels quels.</li>
+      <li>Contenus <strong>dynamiques</strong> côté serveur (SSI, CGI, PHP… produits à chaque requête) ou côté client (JavaScript, autrefois applets Java et ActiveX).</li>
+    </ul>
+
+    <h3>Les versions</h3>
+    <ul>
+      <li><strong>HTTP/1.0</strong> (RFC 1945, mai 1996) : méthodes <code>GET</code>, <code>HEAD</code>, <code>POST</code>.</li>
+      <li><strong>HTTP/1.1</strong> (RFC 2616, juin 1999) : ajoute notamment <code>OPTIONS</code>, <code>TRACE</code>, <code>PUT</code> et <code>DELETE</code> (ces deux dernières souvent désactivées sur les serveurs) ; la connexion TCP peut servir à plusieurs requêtes.</li>
+      <li><strong>HTTP/2</strong> : approuvé le 18 février 2015 (publié en RFC 7540 en mai 2015).</li>
+    </ul>
+
+    <h3>URI et URL</h3>
+    <p>Un <strong>URI</strong> est une chaîne qui identifie de manière unique une ressource sur Internet. En HTTP, on parle d'<strong>URL</strong> (<i>Uniform Resource Locator</i>), qui dit aussi où la trouver : <code>http://&lt;serveur&gt;:&lt;port&gt;/&lt;chemin&gt;/&lt;ressource&gt;</code>, le port (80 par défaut) et la ressource pouvant être omis.</p>
+
+    <h3>La requête</h3>
+    <p>Le navigateur envoie au serveur un ensemble de lignes :</p>
+    <ol>
+      <li>une ligne de commande : méthode, URI, version du protocole ;</li>
+      <li>des champs d'en-tête (<code>nom: valeur</code>), facultatifs ;</li>
+      <li>une ligne vide, puis éventuellement un corps (les données d'un <code>POST</code>).</li>
+    </ol>
+<pre class="terminal"><code>GET http://www.commentcamarche.net HTTP/1.0
+Accept: text/html
+If-Modified-Since: Saturday, 15-January-2000 14:37:11 GMT
+User-Agent: Mozilla/4.0 (compatible; MSIE 5.0; Windows 95)</code></pre>
+
+    <div class="tableau mono compact">
+      <table>
+        <thead><tr><th>Méthode</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td>GET</td><td>Demande une ressource, sans la modifier ; la plus courante.</td></tr>
+          <tr><td>HEAD</td><td>Demande seulement l'en-tête de la réponse, sans le document.</td></tr>
+          <tr><td>POST</td><td>Envoie des données au serveur (formulaire, message de forum).</td></tr>
+          <tr><td>PUT</td><td>Remplace ou crée la ressource désignée par l'URL.</td></tr>
+          <tr><td>DELETE</td><td>Supprime une ressource.</td></tr>
+          <tr><td>OPTIONS</td><td>Demande les options de communication d'une ressource ou du serveur.</td></tr>
+          <tr><td>TRACE</td><td>Demande au serveur de renvoyer ce qu'il a reçu (test).</td></tr>
+          <tr><td>CONNECT</td><td>Utilise un proxy comme tunnel.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>La réponse</h3>
+    <p>Le serveur renvoie une <strong>ligne de statut</strong> (version, code, signification), des champs d'en-tête, une ligne vide, puis le corps : le document demandé.</p>
+<pre class="terminal"><code>HTTP/1.0 200 OK
+Date: Sat, 15 Jan 2000 14:37:12 GMT
+Server: Microsoft-IIS/2.0
+Content-Type: text/html
+Content-Length: 1245
+Last-Modified: Fri, 14 Jan 2000 08:25:13 GMT
+
+&lt;html&gt;… (le document)</code></pre>
+
+    <div class="tableau mono compact">
+      <table>
+        <thead><tr><th>Code</th><th>Message</th><th>Signification</th></tr></thead>
+        <tbody>
+          <tr><td>200</td><td>OK</td><td>Requête traitée avec succès.</td></tr>
+          <tr><td>301</td><td>Moved Permanently</td><td>Document déplacé définitivement.</td></tr>
+          <tr><td>302</td><td>Moved Temporarily</td><td>Document déplacé temporairement.</td></tr>
+          <tr><td>304</td><td>Not Modified</td><td>Document inchangé depuis la dernière requête (réponse à un <code>If-Modified-Since</code>).</td></tr>
+          <tr><td>404</td><td>Not Found</td><td>Document introuvable.</td></tr>
+          <tr><td>500</td><td>Internal Server Error</td><td>Erreur interne du serveur.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>Le premier chiffre</span></p>
+      <p>1xx information, <strong>2xx succès</strong>, <strong>3xx redirection</strong>, <strong>4xx erreur du client</strong> (requête fautive, ressource absente, accès refusé : 403), <strong>5xx erreur du serveur</strong>.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>FTP <span class="ref">diapos 41–54</span></h2>
+    <p>FTP (<i>File Transfer Protocol</i>) date de 1971 et est défini aujourd'hui par la RFC 959 (1985), complétée par des extensions de sécurité (RFC 2228), d'internationalisation (RFC 2640) et d'autres (RFC 3659). La diapo 42 cite la « RFC 141 » comme première version <span class="badge a-verifier">À vérifier</span> : la frise et l'historique donnent la RFC 114 (avril 1971).</p>
+    <p>Ses objectifs : partager des fichiers entre machines distantes, indépendamment de leurs systèmes de fichiers, et transférer les données efficacement.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Deux canaux</span></p>
+      <p>FTP ouvre <strong>deux connexions TCP</strong> : un <strong>canal de commande</strong> (contrôle), vers le port <strong>21</strong> du serveur, qui reste ouvert toute la session ; et un <strong>canal de données</strong>, ouvert pour chaque transfert (fichier ou liste de fichiers). Côté serveur, le canal de données part du port <strong>20</strong> en mode actif.</p>
+    </div>
+
+    <h3>Mode actif et mode passif</h3>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 680 270" width="680" role="img" aria-labelledby="fig-ftp-titre">
+        <title id="fig-ftp-titre">Mode actif : le client, depuis son port 5150, envoie PORT 5151 au port 21 du serveur, qui répond OK ; puis le serveur ouvre la connexion de données depuis son port 20 vers le port 5151 du client, qui répond OK. Mode passif : le client envoie PASV au port 21, le serveur répond OK 3267 ; le client ouvre la connexion de données depuis son port 5151 vers le port 3267 du serveur, qui répond OK.</title>
+        <defs>
+          <marker id="fleche-ftp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein-accent"/>
+          </marker>
+          <marker id="fleche-ftp-gris" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="180" y="16" text-anchor="middle" class="gras accent">Mode actif</text>
+        <text x="85" y="38" text-anchor="middle" class="gras">Serveur</text>
+        <text x="275" y="38" text-anchor="middle" class="gras">Client</text>
+        <text x="60" y="56" text-anchor="middle" class="t2 mono">20</text>
+        <text x="110" y="56" text-anchor="middle" class="t2 mono">21</text>
+        <text x="250" y="56" text-anchor="middle" class="t2 mono">5150</text>
+        <text x="300" y="56" text-anchor="middle" class="t2 mono">5151</text>
+        <path class="trait" d="M60 62 V250"/><path class="trait" d="M110 62 V250"/><path class="trait" d="M250 62 V250"/><path class="trait" d="M300 62 V250"/>
+        <path class="trait" d="M250 84 L112 100" marker-end="url(#fleche-ftp-gris)"/><text x="180" y="82" text-anchor="middle" class="t2 mono">PORT 5151</text>
+        <path class="trait" d="M110 124 L248 140" marker-end="url(#fleche-ftp-gris)"/><text x="180" y="122" text-anchor="middle" class="t2 mono">OK</text>
+        <path class="accent" d="M60 164 L298 190" marker-end="url(#fleche-ftp)"/><text x="180" y="166" text-anchor="middle" class="t2 accent">données</text>
+        <path class="trait" d="M300 214 L62 236" marker-end="url(#fleche-ftp-gris)"/><text x="180" y="214" text-anchor="middle" class="t2 mono">OK</text>
+
+        <text x="520" y="16" text-anchor="middle" class="gras accent">Mode passif</text>
+        <text x="425" y="38" text-anchor="middle" class="gras">Serveur</text>
+        <text x="615" y="38" text-anchor="middle" class="gras">Client</text>
+        <text x="400" y="56" text-anchor="middle" class="t2 mono">21</text>
+        <text x="450" y="56" text-anchor="middle" class="t2 mono">3267</text>
+        <text x="590" y="56" text-anchor="middle" class="t2 mono">5150</text>
+        <text x="640" y="56" text-anchor="middle" class="t2 mono">5151</text>
+        <path class="trait" d="M400 62 V250"/><path class="trait" d="M450 62 V250"/><path class="trait" d="M590 62 V250"/><path class="trait" d="M640 62 V250"/>
+        <path class="trait" d="M590 84 L402 100" marker-end="url(#fleche-ftp-gris)"/><text x="520" y="82" text-anchor="middle" class="t2 mono">PASV</text>
+        <path class="trait" d="M400 124 L588 140" marker-end="url(#fleche-ftp-gris)"/><text x="520" y="122" text-anchor="middle" class="t2 mono">OK 3267</text>
+        <path class="accent" d="M640 164 L452 190" marker-end="url(#fleche-ftp)"/><text x="545" y="166" text-anchor="middle" class="t2 accent">données</text>
+        <path class="trait" d="M450 214 L638 236" marker-end="url(#fleche-ftp-gris)"/><text x="545" y="214" text-anchor="middle" class="t2 mono">OK</text>
+      </svg>
+      <figcaption>Modes actif et passif (diapos 45 et 46) : la différence est de savoir qui ouvre le canal de données (en couleur).</figcaption>
+    </figure>
+    <ul>
+      <li><strong>Actif</strong> : le client annonce sur le canal de commande un port à lui (<code>PORT</code>) ; c'est le <em>serveur</em> qui ouvre la connexion de données, depuis son port 20.</li>
+      <li><strong>Passif</strong> : le client demande <code>PASV</code> ; le serveur ouvre un port (ici 3267) et l'annonce ; c'est le <em>client</em> qui ouvre la connexion de données.</li>
+    </ul>
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>Pourquoi le mode passif est le plus utilisé</span></p>
+      <p>Derrière un NAT ou un pare-feu, une connexion qui vient de l'extérieur vers le client est bloquée : le mode actif échoue (voir le <a href="cours-08-nat.html">cours 8</a>). En mode passif, le client ouvre lui-même les deux connexions, ce qui passe.</p>
+    </div>
+
+    <h3>Les commandes du protocole</h3>
+    <div class="tableau mono compact">
+      <table>
+        <thead><tr><th>Commande</th><th>Type</th><th>Rôle</th></tr></thead>
+        <tbody>
+          <tr><td>USER</td><td>contrôle</td><td>Identifiant de l'utilisateur.</td></tr>
+          <tr><td>PASS</td><td>contrôle</td><td>Mot de passe, juste après USER.</td></tr>
+          <tr><td>ACCT</td><td>contrôle</td><td>Compte de l'utilisateur (rarement demandé).</td></tr>
+          <tr><td>CWD</td><td>contrôle</td><td>Change de répertoire courant.</td></tr>
+          <tr><td>CDUP</td><td>contrôle</td><td>Remonte au répertoire parent.</td></tr>
+          <tr><td>QUIT</td><td>contrôle</td><td>Termine la session après le transfert en cours.</td></tr>
+          <tr><td>RETR</td><td>service</td><td>Demande une copie d'un fichier (téléchargement).</td></tr>
+          <tr><td>STOR</td><td>service</td><td>Envoie un fichier au serveur, qui le crée ou l'écrase.</td></tr>
+          <tr><td>DELE</td><td>service</td><td>Supprime un fichier.</td></tr>
+          <tr><td>MKD, RMD</td><td>service</td><td>Crée, supprime un répertoire.</td></tr>
+          <tr><td>PWD</td><td>service</td><td>Renvoie le répertoire courant.</td></tr>
+          <tr><td>LIST</td><td>service</td><td>Liste les fichiers (envoyée sur le canal de données).</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Utiliser un client FTP</h3>
+<pre class="terminal"><code>$ ftp ftpperso.free.fr
+User: mon_login
+Password:
+ftp&gt; ls
+200 PORT command successful.
+150 Opening ASCII mode data connection for file list.
+mysql
+index.html
+226 Transfer complete.
+ftp&gt; cd images
+250 CWD command successful.
+ftp&gt; bin
+ftp&gt; put index.html
+ftp&gt; mget *.gif
+ftp&gt; quit</code></pre>
+    <ul>
+      <li><code>ls</code>, <code>cd</code>, <code>mkdir</code> agissent sur le serveur ; <code>lcd</code> change de répertoire local.</li>
+      <li><code>bin</code> passe en mode binaire (indispensable pour les images, les archives) ; <code>hash</code> affiche la progression.</li>
+      <li><code>put</code>/<code>mput</code> envoient un ou plusieurs fichiers ; <code>get</code>/<code>mget</code> les téléchargent.</li>
+      <li><code>close</code> ferme la connexion, <code>open</code> en ouvre une autre, <code>quit</code> quitte.</li>
+      <li>Connexion <strong>anonyme</strong> : identifiant <code>anonymous</code>, une adresse électronique en guise de mot de passe ; téléchargement possible, dépôt interdit.</li>
+      <li>Un navigateur accepte aussi les URL <code>ftp://toto@machine.fr</code>.</li>
+    </ul>
+    <p>Dans la sortie ci-dessus, <code>200 PORT command successful</code> montre que le client utilise le mode actif.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>DNS <span class="ref">diapos 55–85</span></h2>
+
+    <h3>Pourquoi un annuaire</h3>
+    <p>Les machines s'identifient par des adresses IP (192.168.1.36), pénibles à retenir ; les humains préfèrent des noms (www.univ-lemans.fr). Il faut donc un service qui fasse la correspondance entre nom et adresse.</p>
+    <p>Au début d'Internet, c'était un fichier unique, <code>/etc/hosts</code>, qui listait toutes les machines ; chacun devait le télécharger. Cela marchait avec quelques centaines d'ordinateurs, plus avec des millions (3 100 hôtes en 1986, 137 000 en 1990, plus de 4 millions en 1995) : diffusion lente, correspondance figée, noms en double. Le fichier existe toujours, pour quelques entrées locales :</p>
+<pre class="terminal"><code>127.0.0.1         localhost
+255.255.255.255   broadcasthost
+::1               localhost
+192.168.10.250    toto.home.lan</code></pre>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>DNS</span></p>
+      <p>Le DNS (<i>Domain Name System</i>, RFC 1034 et 1035) est un système de nommage <strong>hiérarchique</strong> qui identifie des ressources (hôtes, boîtes aux lettres, services) : l'annuaire d'Internet. C'est une <strong>base de données distribuée</strong> : l'espace des noms est un arbre, découpé logiquement (indépendamment de l'emplacement physique) en zones dont chacune est gérée par son propriétaire. On y accède en client-serveur ; la réplication assure la fiabilité, les caches la rapidité.</p>
+    </div>
+
+    <h3>L'arborescence des noms</h3>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 250" width="640" role="img" aria-labelledby="fig-dns-titre">
+        <title id="fig-dns-titre">Arbre du DNS : sous la racine, les domaines de premier niveau fr, com et org. Sous fr : univ-lemans, gouv et afnic. Sous univ-lemans : l'hôte www. Sous gouv : le sous-domaine impots. Sous afnic : les hôtes www et ftp. Sous org : wikipedia, et sous wikipedia : fr.</title>
+        <rect class="boite-accent" x="290" y="10" width="60" height="28" rx="6"/><text x="320" y="29" text-anchor="middle" class="gras">.</text>
+        <text x="362" y="29" class="t2">racine</text>
+        <rect class="boite" x="150" y="76" width="60" height="28" rx="6"/><text x="180" y="95" text-anchor="middle" class="mono">fr</text>
+        <rect class="boite" x="290" y="76" width="60" height="28" rx="6"/><text x="320" y="95" text-anchor="middle" class="mono">com</text>
+        <rect class="boite" x="470" y="76" width="60" height="28" rx="6"/><text x="500" y="95" text-anchor="middle" class="mono">org</text>
+        <text x="560" y="95" class="t2">TLD</text>
+        <path class="trait" d="M300 38 L190 76"/><path class="trait" d="M320 38 V76"/><path class="trait" d="M340 38 L490 76"/>
+        <rect class="boite" x="20" y="142" width="110" height="28" rx="6"/><text x="75" y="161" text-anchor="middle" class="mono">univ-lemans</text>
+        <rect class="boite" x="150" y="142" width="60" height="28" rx="6"/><text x="180" y="161" text-anchor="middle" class="mono">gouv</text>
+        <rect class="boite" x="230" y="142" width="70" height="28" rx="6"/><text x="265" y="161" text-anchor="middle" class="mono">afnic</text>
+        <rect class="boite" x="450" y="142" width="100" height="28" rx="6"/><text x="500" y="161" text-anchor="middle" class="mono">wikipedia</text>
+        <path class="trait" d="M165 104 L85 142"/><path class="trait" d="M180 104 V142"/><path class="trait" d="M195 104 L255 142"/><path class="trait" d="M500 104 V142"/>
+        <rect class="boite-accent" x="45" y="208" width="60" height="28" rx="6"/><text x="75" y="227" text-anchor="middle" class="mono">www</text>
+        <rect class="boite" x="145" y="208" width="70" height="28" rx="6"/><text x="180" y="227" text-anchor="middle" class="mono">impots</text>
+        <rect class="boite-accent" x="225" y="208" width="50" height="28" rx="6"/><text x="250" y="227" text-anchor="middle" class="mono">www</text>
+        <rect class="boite-accent" x="285" y="208" width="50" height="28" rx="6"/><text x="310" y="227" text-anchor="middle" class="mono">ftp</text>
+        <rect class="boite-accent" x="475" y="208" width="50" height="28" rx="6"/><text x="500" y="227" text-anchor="middle" class="mono">fr</text>
+        <path class="trait" d="M75 170 V208"/><path class="trait" d="M180 170 V208"/><path class="trait" d="M255 170 L250 208"/><path class="trait" d="M275 170 L310 208"/><path class="trait" d="M500 170 V208"/>
+      </svg>
+      <figcaption>Un extrait de l'arbre : un domaine est une branche (fr, gouv.fr), un hôte une feuille (en couleur : www.univ-lemans.fr, www.afnic.fr, ftp.afnic.fr, fr.wikipedia.org). Un nom se lit de la feuille vers la racine.</figcaption>
+    </figure>
+    <ul>
+      <li>Le nom de domaine identifie une entité dont les machines sont reliées à Internet. Ses éléments sont séparés par des points, comme les répertoires par des <code>/</code> dans un chemin.</li>
+      <li>Sur un réseau local, une machine a un nom court (commande <code>hostname</code>) ; sur Internet, on lui ajoute son domaine : la machine <code>www</code> du domaine <code>afnic.fr</code> devient <code>www.afnic.fr</code>.</li>
+      <li>Un <strong>sous-domaine</strong> est un nœud intermédiaire (ni racine, ni feuille) : <code>impots</code> sous <code>gouv</code> sous <code>fr</code>. Un <strong>hôte</strong> est une feuille, à laquelle on associe une ou plusieurs adresses IP.</li>
+      <li>Les <strong>zones</strong> se juxtaposent pour former la base globale ; chacune en porte un fragment.</li>
+    </ul>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Nom de domaine et URL</span></p>
+      <p>Un nom de domaine n'est qu'une partie d'une URL. Pour le domaine <code>abcd.fr</code> : <code>http://www.abcd.fr</code>, <code>http://www.tot3.abcd.fr/doc</code> et <code>http://abcd.fr/info/pub/prod.htm</code> sont des ressources web de machines du domaine et du sous-domaine <code>tot3.abcd.fr</code> ; <code>root@abcd.fr</code> et <code>info@www.abcd.fr</code> sont des boîtes aux lettres.</p>
+    </div>
+
+    <h3>Domaines de premier niveau et registres</h3>
+    <p>Les <strong>TLD</strong> (<i>Top-Level Domains</i>) sont juste sous la racine (RFC 1591). On distingue les TLD <strong>nationaux</strong> (ccTLD : <code>.fr</code>, <code>.de</code>) et <strong>génériques</strong> (gTLD : <code>.com</code>, <code>.org</code>). Leur gestion a été confiée à l'IANA jusqu'en 1998, à l'ICANN depuis.</p>
+    <div class="tableau compact">
+      <table>
+        <thead><tr><th>Qui</th><th>Fait quoi</th></tr></thead>
+        <tbody>
+          <tr><td>ICANN</td><td>Coordonne noms et adresses ; délègue l'attribution des adresses IP aux registres régionaux.</td></tr>
+          <tr><td>RIR (registres régionaux)</td><td>Attribuent des blocs d'adresses aux registres locaux. RIPE NCC (Europe, Moyen-Orient, ex-URSS), ARIN (Amérique du Nord), APNIC (Asie-Pacifique), LACNIC (Amérique latine, 2001), AfriNIC (Afrique, 2005).</td></tr>
+          <tr><td>LIR (registres locaux)</td><td>En général les fournisseurs d'accès ; attribuent les adresses aux utilisateurs finaux, au plus juste vu la pénurie.</td></tr>
+          <tr><td>Gestionnaire d'un TLD</td><td>Fixe les règles d'attribution des noms : l'AFNIC pour <code>.fr</code>.</td></tr>
+          <tr><td>Bureau d'enregistrement</td><td>Loue un nom de domaine (de 6 mois à 10 ans) ; il faut fournir les adresses de deux serveurs DNS.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Les enregistrements de ressources</h3>
+    <p>Le DNS a trois composants : les <strong>enregistrements de ressources</strong> (l'information portée par chaque nœud), les <strong>serveurs de noms</strong> (un ou plusieurs par zone, pour la redondance) et les <strong>résolveurs</strong> (qui interrogent les serveurs pour le compte des applications).</p>
+    <div class="tableau mono compact">
+      <table>
+        <thead><tr><th>Type</th><th>Rôle</th><th>Exemple</th></tr></thead>
+        <tbody>
+          <tr><td>A</td><td>Nom → adresse IPv4.</td><td>text.esams.wikimedia.org. IN A 91.198.174.232</td></tr>
+          <tr><td>CNAME</td><td>Alias vers un autre nom.</td><td>fr.wikipedia.org. IN CNAME text.wikimedia.org.</td></tr>
+          <tr><td>MX</td><td>Serveurs de courrier du domaine, avec une priorité (le plus petit nombre d'abord).</td><td>wikimedia.org. IN MX 10 mchenry.wikimedia.org.</td></tr>
+          <tr><td>NS</td><td>Serveurs DNS d'un domaine : délègue un sous-domaine.</td><td>wikipedia NS ns1.wikimedia.org.</td></tr>
+          <tr><td>SOA</td><td>Informations générales de la zone : serveur primaire, contact, durées.</td><td>wikipedia.org. IN SOA ns0.wikimedia.org. hostmaster.wikimedia.org. …</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul>
+      <li>Les <strong>CNAME</strong> peuvent s'enchaîner : <code>fr.wikipedia.org</code> → <code>text.wikimedia.org</code> → <code>text.esams.wikimedia.org</code>, qui porte enfin l'enregistrement A.</li>
+      <li>Avec deux <strong>MX</strong> (priorités 10 et 50), on essaie d'abord <code>mchenry</code> ; <code>lists</code> sert de secours.</li>
+      <li>Le <strong>SOA</strong> désigne le serveur <strong>primaire</strong>, le seul où l'on modifie la zone ; les serveurs <strong>secondaires</strong> s'en recopient. L'adresse du contact s'écrit avec un point à la place de l'arobase (<code>hostmaster.wikimedia.org</code>), suivie du numéro de série et des durées de rafraîchissement, de nouvel essai, d'expiration et de cache.</li>
+    </ul>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Deux autres types courants</span> <span class="badge ajout">Ajout</span></p>
+      <p><strong>AAAA</strong> associe un nom à une adresse IPv6 ; <strong>PTR</strong> fait la résolution inverse (adresse → nom), dans le domaine spécial <code>in-addr.arpa</code> : c'est grâce à lui que <code>tracepath</code> affiche des noms de routeurs. La commande <code>nslookup</code> (ou <code>dig</code>) interroge le DNS à la main : <code>nslookup -type=MX univ-lemans.fr</code>.</p>
+    </div>
+
+    <h3>Le transport des messages DNS</h3>
+    <ul>
+      <li>En <strong>UDP</strong>, port serveur <strong>53</strong> : sans connexion, rapide ; les messages sont limités à 512 octets.</li>
+      <li>En <strong>TCP</strong>, port 53 aussi : quand la réponse dépasse 512 octets (et pour les transferts de zone entre serveurs).</li>
+    </ul>
+
+    <h3>La résolution : récursive ou itérative</h3>
+    <div class="colonnes">
+      <div class="colonne">
+        <p><strong>Mode récursif</strong></p>
+        <p>Le client envoie sa requête au serveur DNS, qui lui renvoie une réponse <em>complète</em> : la correspondance cherchée ou une erreur. Si le nom n'est ni dans son cache ni dans une zone dont il a l'autorité, c'est le serveur qui interroge les autres serveurs.</p>
+      </div>
+      <div class="colonne">
+        <p><strong>Mode itératif</strong></p>
+        <p>Le serveur renvoie la réponse s'il fait autorité, sinon une réponse <em>partielle</em> : l'adresse d'un autre serveur, plus proche du nom. Le client relance sa requête vers ce serveur, et descend ainsi l'arbre niveau par niveau.</p>
+      </div>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Résoudre www.eni.fr (diapo 83)</span></p>
+      <ol class="etapes">
+        <li>Le navigateur demande www.eni.fr au résolveur de son fournisseur d'accès (requête <strong>récursive</strong>).</li>
+        <li>Le résolveur ne l'a pas en cache. Il demande à un serveur racine, qui répond : « pour <code>fr</code>, voir les serveurs de l'AFNIC ».</li>
+        <li>Il demande au serveur de <code>fr</code>, qui répond : « pour <code>eni.fr</code>, voir dns.eni.fr ».</li>
+        <li>Il demande à dns.eni.fr, qui fait autorité et répond : 81.80.245.20. Les étapes 2 à 4 sont <strong>itératives</strong>.</li>
+        <li>Le résolveur garde la réponse en cache et la transmet au navigateur.</li>
+      </ol>
+    </div>
+
+    <h3>Les serveurs racine</h3>
+    <ul>
+      <li>Ils connaissent les serveurs de tous les domaines de premier niveau : sans eux, plus d'Internet. En 2002, une attaque par déni de service en a rendu 7 sur 13 inopérants.</li>
+      <li>Il en existe <strong>13</strong> logiques, nommés de A à M, dupliqués sur toute la planète grâce à l'<strong>anycast</strong> : une même adresse IP est donnée à plusieurs serveurs physiques, et le routage mène au plus proche. La diapo cite 46 instances du serveur F, toutes à l'adresse 192.5.5.241 (il y en a bien plus aujourd'hui).</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>DHCP <span class="ref">diapos 86–94</span></h2>
+    <p>Sur un grand réseau, ou quand les utilisateurs changent souvent (portables de passage, nouveaux postes), attribuer une adresse IP à chaque machine à la main n'est pas tenable. DHCP (<i>Dynamic Host Configuration Protocol</i>) les attribue automatiquement.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Groupe et bail</span></p>
+      <p>Le serveur DHCP choisit l'adresse dans une plage configurée, le <strong>groupe</strong> (<i>pool</i>), et l'attribue <strong>temporairement</strong>, pour une durée appelée <strong>bail</strong>. Les adresses qui ne servent plus retournent automatiquement dans le groupe.</p>
+    </div>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 680 330" width="680" role="img" aria-labelledby="fig-dhcp-titre">
+        <title id="fig-dhcp-titre">Échange DHCP en quatre temps : DHCPDISCOVER du client en diffusion, de 0.0.0.0 port 68 vers 255.255.255.255 port 67 ; DHCPOFFER du serveur avec une adresse, un masque, un bail et l'adresse du serveur ; DHCPREQUEST du client en diffusion, qui nomme le serveur choisi ; DHCPACK du serveur, avec d'éventuels paramètres comme la passerelle et le DNS.</title>
+        <defs>
+          <marker id="fleche-dhcp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein-accent"/>
+          </marker>
+          <marker id="fleche-dhcp-gris" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="80" y="8" width="100" height="30" rx="6"/><text x="130" y="28" text-anchor="middle" class="gras">Client</text>
+        <rect class="boite" x="510" y="8" width="100" height="30" rx="6"/><text x="560" y="28" text-anchor="middle" class="gras">Serveur</text>
+        <path class="trait" d="M130 38 V322"/><path class="trait" d="M560 38 V322"/>
+        <path class="accent" d="M130 64 L558 86" marker-end="url(#fleche-dhcp)"/>
+        <text x="345" y="60" text-anchor="middle" class="mono gras accent">DHCPDISCOVER</text>
+        <text x="345" y="106" text-anchor="middle" class="t2">diffusion : 0.0.0.0:68 → 255.255.255.255:67</text>
+        <text x="60" y="80" text-anchor="middle" class="t2">1. demande</text>
+        <path class="trait" d="M560 132 L132 154" marker-end="url(#fleche-dhcp-gris)"/>
+        <text x="345" y="128" text-anchor="middle" class="mono gras">DHCPOFFER</text>
+        <text x="345" y="174" text-anchor="middle" class="t2">adresse, masque, durée du bail, adresse du serveur</text>
+        <text x="60" y="148" text-anchor="middle" class="t2">2. offre</text>
+        <path class="accent" d="M130 200 L558 222" marker-end="url(#fleche-dhcp)"/>
+        <text x="345" y="196" text-anchor="middle" class="mono gras accent">DHCPREQUEST</text>
+        <text x="345" y="242" text-anchor="middle" class="t2">diffusion : « je prends l'offre du serveur X »</text>
+        <text x="60" y="216" text-anchor="middle" class="t2">3. sélection</text>
+        <path class="trait" d="M560 268 L132 290" marker-end="url(#fleche-dhcp-gris)"/>
+        <text x="345" y="264" text-anchor="middle" class="mono gras">DHCPACK</text>
+        <text x="345" y="310" text-anchor="middle" class="t2">confirmation + passerelle, serveur DNS…</text>
+        <text x="60" y="284" text-anchor="middle" class="t2">4. accusé</text>
+      </svg>
+      <figcaption>Les quatre phases de l'obtention d'une adresse (diapos 89 à 94), sur UDP : port 67 pour le serveur, 68 pour le client.</figcaption>
+    </figure>
+
+    <ol class="etapes">
+      <li><strong>Demande de bail</strong> (DHCPDISCOVER) : en arrivant sur le réseau, le client, qui n'a pas encore d'adresse, diffuse une demande : IP source 0.0.0.0, destination 255.255.255.255 ; MAC source la sienne, destination FF:FF:FF:FF:FF:FF. Sans réponse au bout d'une seconde, il recommence.</li>
+      <li><strong>Offre de bail</strong> (DHCPOFFER) : chaque serveur qui reçoit la demande propose une offre, avec l'adresse MAC du client, une adresse IP, un masque, la durée du bail (pendant laquelle l'adresse ne sera donnée à personne d'autre) et sa propre adresse.</li>
+      <li><strong>Sélection</strong> (DHCPREQUEST) : le client retient une offre, en général la première, et l'annonce par diffusion, en nommant le serveur choisi. Celui-ci sait que son offre est retenue ; les autres retirent la leur.</li>
+      <li><strong>Accusé de réception</strong> (DHCPACK) : le serveur choisi confirme, en ajoutant souvent d'autres paramètres (passerelle par défaut, serveurs DNS…).</li>
+    </ol>
+    <p>La capture de la diapo 90 montre le premier message : <code>Src: 0.0.0.0, Dst: 255.255.255.255</code>, <code>Src Port: bootpc (68), Dst Port: bootps (67)</code>, ce qui rappelle que DHCP descend de BOOTP.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Renouveler le bail, et le relais</span> <span class="badge ajout">Ajout</span></p>
+      <p>À la moitié du bail, le client demande au serveur de le prolonger (DHCPREQUEST adressé directement au serveur, sans diffusion). Comme les diffusions ne traversent pas les routeurs, un serveur DHCP placé sur un autre réseau ne voit pas les DHCPDISCOVER : il faut configurer le routeur en <strong>relais DHCP</strong> (commande <code>ip helper-address</code> sous IOS), qui transmet les demandes au serveur en unicast.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exercices</h2>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Protocoles, transports et ports</span></p>
+      <p>Compléter : pour Telnet, SMTP, POP3, IMAP, HTTP, HTTPS, FTP (commandes), DNS (requête courte), DHCP (serveur), SSH, donner le transport et le port du serveur.</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <div class="tableau mono compact">
+          <table>
+            <thead><tr><th>Protocole</th><th>Transport</th><th>Port</th></tr></thead>
+            <tbody>
+              <tr><td>Telnet</td><td>TCP</td><td>23</td></tr>
+              <tr><td>SMTP</td><td>TCP</td><td>25</td></tr>
+              <tr><td>POP3</td><td>TCP</td><td>110</td></tr>
+              <tr><td>IMAP</td><td>TCP</td><td>143</td></tr>
+              <tr><td>HTTP</td><td>TCP</td><td>80</td></tr>
+              <tr><td>HTTPS</td><td>TCP</td><td>443</td></tr>
+              <tr><td>FTP (commandes)</td><td>TCP</td><td>21 (données : 20 en actif)</td></tr>
+              <tr><td>DNS</td><td>UDP</td><td>53 (TCP 53 au-delà de 512 octets)</td></tr>
+              <tr><td>DHCP</td><td>UDP</td><td>67 (client : 68)</td></tr>
+              <tr><td>SSH</td><td>TCP</td><td>22</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 2 <span>Lire une trace</span></p>
+      <p>Un <code>ping</code> affiche <code>ttl=49</code>. Sachant que la machine distante émet avec un TTL initial de 64, combien de routeurs le paquet a-t-il traversés ? Et pourquoi un <code>traceroute</code> vers la même machine peut-il trouver un autre nombre ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>\(64 - 49 = 15\) routeurs sur le chemin du <em>retour</em> (la réponse est un paquet émis par la machine distante). <code>traceroute</code> mesure le chemin <em>aller</em> ; les deux peuvent différer (routage asymétrique, mention <code>asymm</code> de <code>tracepath</code>).</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 3 <span>Requête HTTP</span></p>
+      <p>Écrire la requête HTTP/1.1 minimale pour obtenir <code>http://www.exemple.fr:8080/cours/index.html</code>. Quelle réponse obtient-on si la page n'a pas changé depuis la date donnée dans <code>If-Modified-Since</code> ? si elle n'existe pas ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+<pre class="terminal"><code>GET /cours/index.html HTTP/1.1
+Host: www.exemple.fr:8080
+</code></pre>
+        <p>La connexion TCP part vers le port 8080. L'en-tête <code>Host</code> est obligatoire en HTTP/1.1 (plusieurs sites peuvent partager une adresse IP) ; la ligne vide termine la requête. Page inchangée : <code>304 Not Modified</code>, sans corps. Page absente : <code>404 Not Found</code>.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 4 <span>Lire une zone</span></p>
+      <p>Une zone contient : <code>exemple.fr. IN MX 10 mx1.exemple.fr.</code>, <code>exemple.fr. IN MX 20 mx2.exemple.fr.</code>, <code>www IN CNAME serveur1</code>, <code>serveur1 IN A 192.0.2.10</code>, <code>mx1 IN A 192.0.2.25</code>. Où est livré un courriel pour <code>contact@exemple.fr</code> ? Quelle adresse obtient un navigateur pour <code>www.exemple.fr</code> ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>Le courriel est livré à mx1.exemple.fr (priorité 10, la plus forte), donc à 192.0.2.25 ; mx2 sert de secours. <code>www.exemple.fr</code> est un alias de <code>serveur1.exemple.fr</code>, dont l'enregistrement A donne 192.0.2.10.</p>
+      </details>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 5 <span>DHCP</span></p>
+      <p>(a) Pourquoi le DHCPDISCOVER part-il de l'adresse 0.0.0.0 et vers 255.255.255.255 ? (b) Pourquoi le DHCPREQUEST est-il diffusé alors que le client connaît déjà le serveur ? (c) Deux serveurs DHCP répondent ; que devient l'offre non retenue ?</p>
+      <details class="solution"><summary>Solution proposée</summary>
+        <p>(a) Le client n'a pas encore d'adresse et ne connaît pas celle du serveur : il diffuse. (b) Pour que <em>tous</em> les serveurs qui ont fait une offre apprennent laquelle a été retenue. (c) Le serveur non choisi retire son offre : l'adresse proposée retourne dans son groupe.</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Telnet (TCP 23) : terminal virtuel, tout en clair ; remplacé par SSH (22).</li>
+        <li>Courrier : SMTP (TCP 25) transfère, du MUA aux MTA ; POP3 (110) relève et télécharge ; IMAP (143) consulte en laissant les messages sur le serveur. Commandes SMTP : HELO, MAIL FROM, RCPT TO, DATA, QUIT.</li>
+        <li>ICMP (couche réseau) : messages d'erreur et de contrôle (type, code, somme de contrôle). Echo request 8 / reply 0 (<code>ping</code>), destination unreachable 3, time exceeded 11 (<code>traceroute</code>, qui joue sur le TTL).</li>
+        <li>HTTP (TCP 80) : requête = méthode + URI + version, en-têtes, ligne vide, corps. Méthodes GET, HEAD, POST, PUT, DELETE… Codes 200, 301, 302, 304, 404, 500.</li>
+        <li>FTP : canal de commande TCP 21, canal de données séparé. Actif : le serveur ouvre la connexion de données (depuis 20). Passif : le client l'ouvre (PASV), ce qui passe les NAT.</li>
+        <li>DNS : base distribuée et hiérarchique (racine, TLD, domaines, hôtes). Enregistrements A, CNAME, MX, NS, SOA. UDP 53 (TCP au-delà de 512 octets). Résolution récursive (le serveur fait tout) ou itérative (le client descend l'arbre). 13 serveurs racine logiques, en anycast.</li>
+        <li>DHCP (UDP 67/68) : adresse prêtée pour un bail, prise dans un groupe. Discover, Offer, Request, Ack ; les deux messages du client sont diffusés.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Quel protocole envoie un courriel ? lesquels permettent de le lire ?</summary>
+        <div><p>SMTP pour l'envoi et le transfert ; POP3 ou IMAP pour la lecture.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle est la principale différence entre POP3 et IMAP ?</summary>
+        <div><p>POP3 télécharge les messages sur le client (et les supprime du serveur) ; IMAP les laisse sur le serveur, consultables depuis plusieurs appareils.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quel message ICMP renvoie un routeur qui ramène le TTL à 0 ?</summary>
+        <div><p>Time exceeded (type 11).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que signifie le code HTTP 304 ?</summary>
+        <div><p>Not Modified : le document n'a pas changé depuis la date indiquée par le client, qui peut garder sa copie.</p></div>
+      </details>
+      <details class="carte">
+        <summary>En FTP passif, qui ouvre la connexion de données ?</summary>
+        <div><p>Le client, vers un port que le serveur lui a indiqué en réponse à PASV.</p></div>
+      </details>
+      <details class="carte">
+        <summary>À quoi sert un enregistrement MX ?</summary>
+        <div><p>À indiquer les serveurs de courrier (SMTP) d'un domaine, avec leur priorité.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Combien y a-t-il de serveurs racine logiques ?</summary>
+        <div><p>13, nommés de A à M, chacun dupliqué en de nombreuses instances par anycast.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quels sont les quatre messages DHCP, dans l'ordre ?</summary>
+        <div><p>DHCPDISCOVER, DHCPOFFER, DHCPREQUEST, DHCPACK.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-a1-introduction-ios.html"><small>← Précédent</small>Annexe A1 : introduction à l'IOS Cisco</a>
+    <a class="suivant" href="index.html"><small>Suivant →</small>Tous les chapitres</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Réseaux · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

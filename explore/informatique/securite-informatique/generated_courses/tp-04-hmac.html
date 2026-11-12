@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="securite">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TP 4 · Gestionnaire de mots de passe v2 · Sécurité informatique L2</title>
+<meta name="description" content="TP 4 de sécurité informatique (L2) : politique de mot de passe, étude de HMAC-SHA256, contrôle d'intégrité du fichier du gestionnaire de mots de passe en C. Sujet, fichiers fournis, commandes pour compiler et lancer les tests sous Linux et sous Windows (WSL), correction officielle.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/langues/dos.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Sécurité informatique</a>
+    <span aria-current="page">TP 4 · HMAC</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Sécurité informatique</span> TP 4 · L2 S4</p>
+    <h1>Gestionnaire de mots de passe v2</h1>
+    <p class="chapeau">Suite du TP 3 : le gestionnaire impose maintenant une politique de mot de passe, et on protège l'intégrité de son fichier de données par un HMAC-SHA256, pour qu'un mauvais mot de passe ou un fichier modifié soient détectés. Cette page reprend le sujet et donne les commandes pour compiler et lancer les tests fournis, à la fac comme sous Windows.</p>
+    <dl class="meta">
+      <div><dt>Sujet</dt><dd><a href="../TP/TP4/L2-174UD06-TP4.pdf">L2-174UD06-TP4.pdf</a> · 3 pages</dd></div>
+      <div><dt>Fichiers</dt><dd><a href="../TP/TP4/annexe/">TP/TP4/annexe/</a> : <code>lib/</code>, <code>test/</code>, <code>memopwd.c</code>, <code>Makefile</code> (fournis) ; fiche <a href="../TP/TP4/HMAC_Wikipedia.pdf">HMAC (Wikipédia)</a></dd></div>
+      <div><dt>Enseignant</dt><dd>Thierry Lemeunier</dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Analyser une politique de création de mot de passe (<a href="cours-03-securite-si-reseaux.html#la-politique-des-mots-de-passe">cours 3</a>).</li>
+        <li>Comprendre l'algorithme HMAC et son implémentation (<a href="cours-02-initiation-cryptographie.html#principe">cours 2</a>).</li>
+        <li>Contrôler l'intégrité du fichier <code>memopwd.data</code> en finissant <code>do_command_add</code> et <code>do_command_print</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">À rendre</p>
+      <ul>
+        <li>Une archive <code>Prénom_Nom_TP4.zip</code> : tous les fichiers source, le <code>Makefile</code> et un document texte avec les réponses aux questions, déposée sur UMTICE.</li>
+      </ul>
+    </div>
+  </div>
+
+  <section>
+    <h2>Le sujet <span class="ref">p. 1–3</span></h2>
+    <p>Seul <code>memopwd.c</code> est à modifier ; <code>lib/</code> (AES, aléa, SHA-256, HMAC-SHA256) et <code>test/</code> sont fournis.</p>
+    <ol class="etapes">
+      <li><strong>Compiler et tester.</strong> Regarder <code>lib/</code> et <code>test/</code>, étudier le <code>Makefile</code> principal, compiler avec <code>make</code> (des avertissements sont normaux à ce stade), puis lancer <code>test_SHA256</code> et <code>test_HMAC_SHA256</code>, qui doivent afficher les empreintes ci-dessous.</li>
+      <li><strong>Politique de mot de passe</strong> (questions 1 à 3). Lancer <code>memopwd</code> plusieurs fois, trouver la fonction de contrôle de conformité, l'endroit où elle est appelée, et expliquer la politique mise en œuvre.</li>
+      <li><strong>Étude de HMAC</strong> (questions 4 à 8). Lire les pages 1 et 2 de la fiche Wikipédia, puis la fonction <code>hmac_sha256</code> de <code>hmac_sha256.c</code> : pourquoi la clé est limitée à 64 octets, pourquoi la hacher quand elle est plus longue, pourquoi \(\mathit{key} \xor \mathit{opad}\) et \(\mathit{key} \xor \mathit{ipad}\), à quelles lignes ils sont calculés, et pourquoi le code appelle les fonctions internes de <code>sha256.h</code> plutôt que <code>sha256</code>.</li>
+      <li><strong>HMAC dans le gestionnaire.</strong> Finir <code>do_command_add</code> et <code>do_command_print</code> : le programme affiche un message du type « Bad password or data file corrupted ! » et s'arrête si le mot de passe n'est pas celui qui a créé <code>memopwd.data</code>, ou si ce fichier a été modifié sans passer par <code>memopwd</code>. L'empreinte peut être calculée sur le clair ou sur le chiffré.</li>
+      <li><strong>Tester</strong>, en modifiant <code>memopwd.data</code> à la main : dans vim, <code>:%!xxd</code> passe en hexadécimal, <code>:%!xxd -r</code> revient au binaire, <code>:wq</code> enregistre.</li>
+    </ol>
+    <p>Sortie attendue des tests fournis, identique aux captures du sujet :</p>
+<pre class="terminal"><code>$ ./test_SHA256
+6e278294576c2f66766761d23661bea2fc16007b03cda93fc5ea35131956663b
+005399dd15cd5dec3494df7b2e13e803b4bb29eaa024469e1905a6a1925ac167
+$ ./test_HMAC_SHA256
+b613679a0814d9ec772f95d778c35fc5ff1697c493715653c6c712144292c5ad
+f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8</code></pre>
+    <p><code>test_AES128</code> et <code>test2_AES128</code> sont les deux tests du TP 3.</p>
+  </section>
+
+  <section>
+    <h2>Compiler et lancer</h2>
+    <p>Comme au TP 3, le code fourni lit <code>/dev/urandom</code> : sous Windows, on passe par WSL.</p>
+    <h3>À la fac, sous Linux</h3>
+<pre class="terminal"><code>$ cd TP/TP4
+$ ./run.sh test
+$ ./run.sh memopwd</code></pre>
+    <p><code>./run.sh</code> compile seulement (<code>make</code> dans <code>annexe/</code>), <code>./run.sh test</code> lance les quatre tests fournis (AES-128, SHA-256, HMAC-SHA256), <code>./run.sh memopwd</code> lance le gestionnaire, <code>./run.sh clean</code> supprime les fichiers compilés en gardant <code>memopwd.data</code>. Pour vérifier le contrôle d'intégrité, ouvrir <code>annexe/memopwd.data</code> dans vim comme indiqué plus haut, changer un octet, puis relancer <code>./run.sh memopwd</code>.</p>
+    <h3>Chez soi, sous Windows</h3>
+    <p><code>run.bat</code> lance le même script dans WSL (Ubuntu), après avoir monté le lecteur de Google Drive. Une seule fois, installer gcc et make dans WSL :</p>
+<pre class="terminal"><code>$ sudo apt install build-essential</code></pre>
+    <p>Puis, dans une invite de commandes ouverte dans <code>TP\TP4</code> :</p>
+<pre><code class="language-dos">run.bat test
+run.bat memopwd</code></pre>
+    <p>Pour modifier <code>memopwd.data</code> sous Windows, une extension d'éditeur hexadécimal dans Visual Studio Code fait l'affaire, comme le propose le sujet.</p>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">HMAC et intégrité</p>
+      <ul>
+        <li>\(\mathrm{HMAC}(K, m) = H\big((K' \xor \mathit{opad}) \parallel H((K' \xor \mathit{ipad}) \parallel m)\big)\), où \(K'\) est la clé ramenée à la taille d'un bloc de \(H\) (64 octets pour SHA-256), \(\mathit{ipad}\) l'octet <code>0x36</code> répété et \(\mathit{opad}\) l'octet <code>0x5c</code> répété.</li>
+        <li>Une empreinte sans clé ne protège pas d'un attaquant : il modifie le fichier et recalcule l'empreinte. Avec un HMAC, il lui faudrait la clé.</li>
+        <li>Si l'empreinte recalculée diffère de l'empreinte stockée, le mot de passe est faux ou le fichier a été modifié ; on ne peut pas savoir lequel, et dans les deux cas on s'arrête.</li>
+        <li>Une politique de mot de passe fixe au moins une longueur minimale et des classes de caractères (<a href="cours-03-securite-si-reseaux.html#la-politique-des-mots-de-passe">cours 3</a>).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi une simple empreinte SHA-256 de <code>memopwd.data</code> ne suffirait-elle pas ?</summary>
+        <div><p>N'importe qui peut la recalculer : un attaquant qui modifie le fichier remplace aussi l'empreinte, et la vérification passe.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Combien d'octets fait une empreinte HMAC-SHA256, et combien de caractères en hexadécimal ?</summary>
+        <div><p>32 octets (256 bits), donc 64 chiffres hexadécimaux, comme dans la sortie de <code>test_HMAC_SHA256</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi un mauvais mot de passe fait-il échouer la vérification ?</summary>
+        <div><p>La clé est tirée du mot de passe : un autre mot de passe donne une autre clé, donc un autre HMAC que celui enregistré.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quel avantage à calculer l'empreinte sur le chiffré plutôt que sur le clair ?</summary>
+        <div><p>On vérifie l'intégrité avant de déchiffrer quoi que ce soit : des données altérées ne sont jamais traitées. C'est le principe <span class="en" lang="en">encrypt-then-MAC</span>, que reprennent les modes AEAD (<a href="cours-02-initiation-cryptographie.html#empreinte-et-chiffrement-ae-aead-et-gcm">cours 2</a>).</p></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2>Correction</h2>
+    <details class="depliant">
+      <summary>Correction officielle</summary>
+      <p>La correction de l'enseignant (réponses aux questions 1 à 8) est dans <a href="../TP/TP4/L2-174UD06-TP4-Correction.pdf">L2-174UD06-TP4-Correction.pdf</a>. À n'ouvrir qu'après avoir fait le TP.</p>
+    </details>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="tp-03-primitives-cryptographiques.html"><small>← Précédent</small>TP 3 · Primitives cryptographiques</a>
+    <a class="suivant" href="tp-05-connexion-tls.html"><small>Suivant →</small>TP 5 · Connexion TLS à un serveur web</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Sécurité informatique · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

@@ -1,4 +1,4 @@
-// Carte de blocs de l'AppImage en fichier à part (Studies-<version>.AppImage.blockmap).
+// Carte de blocs de l'AppImage en fichier à part (Universal-Learn-Academy-<version>.AppImage.blockmap).
 //
 // Pour une AppImage, electron-builder intègre la carte de blocs à la fin du fichier :
 // le JSON compressé (deflate brut, « blockMapSize » octets dans latest-linux.yml),
@@ -6,7 +6,7 @@
 // jour différentielles. On en publie aussi une copie à part, au même format que
 // celle de l'installeur Windows (JSON compressé en gzip).
 //
-//   node scripts/carte-appimage.mjs dist/Studies-1.0.0.AppImage dist/latest-linux.yml
+//   node scripts/carte-appimage.mjs dist/Universal-Learn-Academy-2.0.0.AppImage dist/latest-linux.yml
 
 import fs from 'node:fs';
 import path from 'node:path';

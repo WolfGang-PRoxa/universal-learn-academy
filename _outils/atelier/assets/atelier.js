@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Atelier · point d'entrée (studies/_outils/atelier)
+   Atelier · point d'entrée (_outils/atelier)
    --------------------------------------------------------------------------
    Les pages qui contiennent des ateliers (TD interactifs, quiz, exemples de
    cours) ne chargent que ce fichier, avec defer. Il crée l'espace de noms

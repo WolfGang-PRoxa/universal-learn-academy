@@ -1,23 +1,26 @@
 #!/usr/bin/env node
 "use strict";
 /* ==========================================================================
-   Serveur local de l'outil de quiz (studies/_outils/quiz)
+   Serveur local de l'outil de quiz (_outils/quiz)
    --------------------------------------------------------------------------
-   Sert le dossier studies/ sur http://127.0.0.1:<port>/ et ajoute une API
-   pour ce qu'une page ouverte depuis le disque ne peut pas faire :
+   Sert la racine des données ula/ (catalogue explore/, espaces des profils,
+   accueil index.html) et les outils (/_outils/) sur http://127.0.0.1:<port>/,
+   et ajoute une API pour ce qu'une page ouverte depuis le disque ne peut pas faire :
      - demander de l'aide, une correction ou un bilan à Claude (Claude Code,
        avec l'abonnement du compte connecté) ;
      - exécuter le code des questions (SQL, Python, JavaScript, C) ;
-     - enregistrer les tentatives dans le dossier de la matière, et les relire ;
+     - enregistrer les tentatives dans l'espace du profil actif, et les relire ;
      - générer un nouveau quiz en arrière-plan ;
      - lire et modifier les réglages (_outils/quiz/reglages.json).
 
-   Lancement : studies/lancer.bat (Windows) ou studies/lancer.sh, ou
+   Lancement : lancer.bat (Windows) ou lancer.sh, à la racine, ou
                node _outils/quiz/serveur/serveur.js [--port 5178] [--ouvrir]
+   Racine des données : le dossier qui contient _outils, ou ULA_RACINE.
 
    Sécurité : écoute sur 127.0.0.1 seulement ; refuse les requêtes dont
    l'hôte ou l'origine n'est pas le serveur lui-même (pas d'appel possible
-   depuis un autre site) ; aucun fichier servi ou écrit hors de studies/.
+   depuis un autre site) ; aucun fichier servi ou écrit hors de la racine
+   des données et du dossier des outils.
    ========================================================================== */
 
 const fs = require("fs");
@@ -25,7 +28,7 @@ const http = require("http");
 const path = require("path");
 const { spawn } = require("child_process");
 
-const { RACINE, VERSION, depuisUrl, relatif } = require("./lib/chemins");
+const { RACINE, OUTILS, VERSION, depuisUrl, relatif, espace } = require("./lib/chemins");
 const reglages = require("./lib/reglages");
 const claude = require("./lib/claude");
 const executer = require("./lib/executer");
@@ -123,11 +126,58 @@ function autorise(req) {
 
 /* Fichiers statiques ------------------------------------------------------------- */
 
+// Un fichier absent d'un cours du catalogue est cherché dans le dossier de ce cours
+// de l'espace du profil actif (son TP, son devoir…) : les liens relatifs des pages
+// (« ../TP/TP1/script.txt ») mènent ainsi au travail de l'utilisateur.
+function superposition(abs) {
+  const c = espace.coursDuChemin(relatif(abs));
+  if (!c || !c.reste) return null;
+  const lien = espace.lienDuCours(RACINE, espace.profilActif(RACINE), c.id);
+  if (!lien) return null;
+  const f = path.resolve(lien, ...c.reste.split("/"));
+  return f.startsWith(lien) && fs.existsSync(f) ? f : null;
+}
+
+function echapperHtml(t) {
+  return String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+// Page d'un cours qui n'est pas (ou plus) installé : renvoi vers le catalogue de l'accueil
+function pageAbsente(res, chemin) {
+  const c = espace.coursDuChemin(relatif(depuisUrl(chemin) || RACINE));
+  if (c && /\.html?$/i.test(chemin) && !fs.existsSync(path.join(RACINE, "explore", c.domaine, c.id))) {
+    const corps = `<!doctype html><html lang="fr"><meta charset="utf-8"><title>Cours non installé</title>
+<link rel="stylesheet" href="/_outils/charte/assets/cours.css"><script src="/_outils/charte/assets/cours.js"></script>
+<header class="barre"><nav class="fil"><span class="pastille"></span><a href="/index.html">ULA</a><span aria-current="page">Cours non installé</span></nav></header>
+<div class="page"><main class="cours sans-numeros sans-sommaire"><header class="entete"><h1>Cours non installé</h1>
+<p class="chapeau">La page demandée appartient au cours « ${echapperHtml(c.id)} », qui n'est pas installé sur ce poste.</p></header>
+<p><a class="bouton principal" href="/index.html#catalogue">Ouvrir le catalogue</a> pour le télécharger, puis revenir à cette page.</p></main></div></html>`;
+    res.writeHead(404, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+    return res.end(corps);
+  }
+  return erreur(res, 404, "Introuvable : " + chemin);
+}
+
+// Accueil général et accueils de domaine : servis par la page dynamique de l'outil ula
+// (profils, cursus, catalogue). Le fichier index.html de la racine, produit par
+// index_niveau.py, ne sert qu'aux pages ouvertes depuis le disque.
+const ACCUEIL = path.join(OUTILS, "ula", "accueil.html");
+function estAccueil(chemin, abs) {
+  if (chemin === "/index.html") return true;
+  return /^\/explore\/[^/]+\/index\.html$/.test(chemin) && !fs.existsSync(abs);
+}
+
 function servirFichier(req, res, chemin) {
   let abs = depuisUrl(chemin);
   if (!abs) return erreur(res, 403, "Chemin refusé.");
+  if (estAccueil(decodeURIComponent(chemin), abs) && fs.existsSync(ACCUEIL)) abs = ACCUEIL;
   let stat;
-  try { stat = fs.statSync(abs); } catch (e) { return erreur(res, 404, "Introuvable : " + chemin); }
+  try { stat = fs.statSync(abs); } catch (e) {
+    const autre = superposition(abs);
+    if (!autre) return pageAbsente(res, chemin);
+    abs = autre;
+    stat = fs.statSync(abs);
+  }
   if (stat.isDirectory()) {
     if (!chemin.endsWith("/")) { res.writeHead(301, { Location: chemin + "/" }); return res.end(); }
     abs = path.join(abs, "index.html");
@@ -165,6 +215,8 @@ function etatServeur(forcer) {
     app: "studies-quiz",
     version: VERSION,
     racine: RACINE,
+    outils: OUTILS,
+    profil: espace.profilActif(RACINE),
     claude: c.executable ? { disponible: true, executable: c.executable, version: c.version } : { disponible: false, erreur: c.erreur },
     executeurs: Object.fromEntries(Object.entries(executer.disponibilite(forcer)).map(([k, v]) => [k, v ? v.version : null])),
     reglages: r,
@@ -181,7 +233,7 @@ async function api(req, res, url) {
   const m = req.method;
   const q = url.searchParams;
 
-  if (route === "ping") return envoyerJson(res, 200, { app: "studies-quiz", version: VERSION });
+  if (route === "ping") return envoyerJson(res, 200, { app: "studies-quiz", version: VERSION, racine: RACINE });
   if (route === "etat" && m === "GET") return envoyerJson(res, 200, etatServeur(q.get("forcer") === "1"));
 
   if (route === "reglages") {
@@ -286,7 +338,7 @@ const serveur = http.createServer(async (req, res) => {
   try {
     if (url.pathname.startsWith("/api/")) return await api(req, res, url);
     if (req.method !== "GET" && req.method !== "HEAD") return erreur(res, 405, "Méthode refusée.");
-    if (url.pathname === "/") { res.writeHead(302, { Location: "/_outils/quiz/portail.html" }); return res.end(); }
+    if (url.pathname === "/") { res.writeHead(302, { Location: "/index.html" }); return res.end(); }
     if (url.pathname === "/favicon.ico") { res.writeHead(204); return res.end(); }
     return servirFichier(req, res, url.pathname);
   } catch (e) {
@@ -320,7 +372,7 @@ async function demarrer() {
     if (ouvrir) ouvrirNavigateur(adresse);
     return;
   }
-  console.log("Outil de quiz " + VERSION + " · dossier " + RACINE);
+  console.log("Outil de quiz " + VERSION + " · données " + RACINE + (path.relative(RACINE, OUTILS) === "_outils" ? "" : " · outils " + OUTILS));
   extensions.charger((m) => console.log(m));
   executer.nettoyer();
   executer.installerPglite((m) => console.log(m));

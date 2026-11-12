@@ -113,7 +113,7 @@
       P.envoyer.title = "Envoyer";
     } else {
       P.infos.appendChild(el("span", "claude-puce alerte", C.enLigne ? "Claude Code introuvable : voir les réglages" : "Hors ligne : la demande sera copiée pour claude.ai"));
-      P.mode.textContent = C.enLigne ? "" : "Lancer studies/lancer.bat pour parler à Claude ici";
+      P.mode.textContent = C.enLigne ? "" : "Lancer lancer.bat pour parler à Claude ici";
       P.envoyer.title = "Copier la demande et ouvrir claude.ai";
     }
   }

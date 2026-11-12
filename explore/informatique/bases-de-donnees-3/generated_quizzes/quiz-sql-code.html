@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · SQL à écrire · Bases de données L3</title>
+<meta name="description" content="Quinze requêtes SQL à écrire, exécutées et corrigées automatiquement, pour s'entraîner au TP noté de bases de données (L3) : filtres et tri, jointures, regroupements, sous-requêtes, division, création de table avec contraintes, vue et mise à jour, sur les tables fournies du TP 1 et sur la base de cinéma du TD 1.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/quiz/assets/quiz.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/quiz/assets/quiz.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="../generated_courses/index.html">Bases de données</a>
+    <span aria-current="page">Quiz · SQL à écrire</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> Quiz · L3 S5</p>
+    <h1>SQL à écrire : quinze requêtes exécutées</h1>
+    <p class="chapeau">Quinze requêtes à écrire, exécutées sur PostgreSQL et corrigées automatiquement, pour s'entraîner au TP noté : filtres et tri, jointures, regroupements, sous-requêtes et division, création d'une table avec ses contraintes, vue et mise à jour. Deux bases : les tables fournies du TP 1 (plateforme de jeux), sans celles que le TP fait créer, et la base de cinéma du TD 1. Aucune question ne reprend celles du TP 1.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-02-sql.html">Cours 2 · Le langage SQL</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-01">1<sup>er</sup> oct. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "bd-sql-code",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 2 · Le langage SQL",
+      "lien": "../generated_courses/cours-02-sql.html"
+    }
+  ],
+  "jeux": {
+    "plateforme": {
+      "titre": "plateforme de jeux (tables fournies du TP 1)",
+      "description": "<p>Les tables que crée le script fourni pour le TP 1, avec ses données : <code>visiteur(<u>id_visiteur</u>, login, mdp, mail, ville)</code>, <code>objet(<u>id_objet</u>, nom_objet, prix, puissance)</code>, <code>stock(<u>#id_objet, #id_visiteur</u>, nb_achat, nb_dispo)</code>, <code>race(<u>id_race</u>, nom_race, txt_race)</code>, <code>avatar(<u>id_avatar</u>, nom_avatar, sexe, xp, code_dsc, #id_visiteur, #id_race)</code>. Les tables <code>jeu</code>, <code>partie</code> et <code>save</code>, que le TP fait créer, n'y sont pas.</p>",
+      "script": "DROP TABLE IF EXISTS ville;\nDROP TABLE IF EXISTS save;\nDROP TABLE IF EXISTS partie;\nDROP TABLE IF EXISTS jeu;\nDROP TABLE IF EXISTS avatar;\nDROP TABLE IF EXISTS race;\nDROP TABLE IF EXISTS stock;\nDROP TABLE IF EXISTS objet;\nDROP TABLE IF EXISTS visiteur;\n\n\n-- CREATION DES TABLES\nCREATE TABLE visiteur (\n\tid_visiteur serial PRIMARY KEY,\n\tlogin varchar(10) NOT NULL,\n\tmdp varchar(10) NOT NULL,\n\tmail varchar(50),\n\tville varchar(50)\n);\n\nCREATE TABLE objet (\n\tid_objet serial PRIMARY KEY,\n\tnom_objet varchar(40) NOT NULL,\n\tprix integer,\n\tpuissance integer\n);\n\nCREATE TABLE stock (\n\tid_objet bigint REFERENCES objet,\n\tid_visiteur bigint REFERENCES visiteur,\n\tnb_achat integer,\n\tnb_dispo integer,\n\tPRIMARY KEY (id_objet, id_visiteur)\n);\n\nCREATE TABLE race(\n\tid_race serial PRIMARY KEY,\n\tnom_race varchar(20) NOT NULL,\n\ttxt_race text NOT NULL\t\n);\n\nCREATE TABLE avatar (\n\tid_avatar serial PRIMARY KEY,\n\tnom_avatar varchar(20) NOT NULL,\n\tsexe char(1),\n\txp integer,\n\tcode_dsc integer,\n\tid_visiteur bigint REFERENCES visiteur,\n\tid_race bigint REFERENCES race\n);\n\n\n\n\n\nINSERT INTO visiteur VALUES (DEFAULT, 'Elijah', 'toto','toto@toto.me','Dunkerque');\nINSERT INTO visiteur VALUES (DEFAULT, 'Ian', 'titi');\nINSERT INTO visiteur VALUES (DEFAULT, 'Sean', 'tata');\nINSERT INTO visiteur VALUES (DEFAULT, 'Billy', 'tutu','tutu@tutu.me','Grenoble');\nINSERT INTO visiteur VALUES (DEFAULT, 'Dominic', 'tyty','tyty@tyty.me','Annecy');\nINSERT INTO visiteur VALUES (DEFAULT, 'Viggo', 'tete','tete@tete.me','Foix');\n\nINSERT INTO objet VALUES (DEFAULT, 'Amulette en ivoire',520,40);\nINSERT INTO objet VALUES (DEFAULT, 'Bille de force',680,70);\nINSERT INTO objet VALUES (DEFAULT, 'Bouclier de nécrophage',990,140);\nINSERT INTO objet VALUES (DEFAULT, 'Chaine tourbillonnante',543,70);\nINSERT INTO objet VALUES (DEFAULT, 'Crane des ténèbres',264,30);\nINSERT INTO objet VALUES (DEFAULT, 'Cristal de sécurité',377,40);\nINSERT INTO objet VALUES (DEFAULT, 'Dague de défiance',590,80);\nINSERT INTO objet VALUES (DEFAULT, 'Elixir de déplacement furtif',521,90);\nINSERT INTO objet VALUES (DEFAULT, 'Filet aquatique',343,30);\nINSERT INTO objet VALUES (DEFAULT, 'Gant de venin',678,100);\nINSERT INTO objet VALUES (DEFAULT, 'Sceptre de maitrise des dragons',802,150);\n\nINSERT INTO stock VALUES (1,1,2,1);\nINSERT INTO stock VALUES (7,1,1,0);\nINSERT INTO stock VALUES (6,1,1,0);\nINSERT INTO stock VALUES (9,1,3,2);\nINSERT INTO stock VALUES (3,1,4,3);\nINSERT INTO stock VALUES (4,1,10,8);\nINSERT INTO stock VALUES (2,2,3,1);\nINSERT INTO stock VALUES (5,2,2,0);\nINSERT INTO stock VALUES (6,2,1,1);\nINSERT INTO stock VALUES (8,2,1,1);\nINSERT INTO stock VALUES (2,3,2,1);\nINSERT INTO stock VALUES (9,3,1,0);\nINSERT INTO stock VALUES (9,4,3,1);\nINSERT INTO stock VALUES (11,4,2,1);\nINSERT INTO stock VALUES (8,5,1,1);\nINSERT INTO stock VALUES (7,5,4,1);\nINSERT INTO stock VALUES (6,5,3,2);\nINSERT INTO stock VALUES (5,5,2,0);\nINSERT INTO stock VALUES (4,5,1,1);\nINSERT INTO stock VALUES (3,5,1,0);\n\nINSERT INTO race VALUES (DEFAULT, 'Homme', ' Les humains sont les Seconds Enfants d Ilúvatar, les \"Suivants\" (quenya Hildor). Contrairement aux elfes, leur durée de vie n est pas liée à Arda (dans un langage plus courant, on peut les considérer comme mortels).');\nINSERT INTO race VALUES (DEFAULT, 'Elfe', 'Les elfes (Quendi, « ceux qui parlent », en quenya) sont des êtres sages et immortels (vieillesse et maladies n ont aucun effet sur eux). Seule une souffrance trop grande ou un rejet de la vie, ainsi qu une mort physique, peut les tuer. Lorsqu un elfe meurt, son esprit se rend dans les cavernes de Mandos. Ce sont les premiers-nés, conçus par Ilúvatar seul.');\nINSERT INTO race VALUES (DEFAULT, 'Nain', 'Ils ne mesurent pas plus d 1,50 mètre. Ils portent de longues barbes. Ils sont spécialisés dans l exploitation des mines : ils ont construit les mines de la Moria ou Khazad-dûm et plus largement sur une grande partie de la Terre du milieu. Ils sont de piètres cavaliers mais il sont très endurants. Ils parlent le Khuzdul.');\nINSERT INTO race VALUES (DEFAULT, 'Ainur', 'Les Ainur (en quenya, « les saints », au singulier Ainu) sont présents dans Le Silmarillion et les Contes et légendes inachevés. Ils créèrent le monde avec Ilúvatar à travers la Musique des Ainur. Après la création d Arda, une partie des Ainur y descendit pour la guider et réguler sa croissance.');\nINSERT INTO race VALUES (DEFAULT, 'Valar', 'Les Valar (nom quenya) sont présents dans Le Silmarillion. Les Valar (« puissances ») sont les quatorze plus puissants Ainur (esprits angéliques) qui soient descendus sur Arda, la Terre, pour y faire naître ce qui a été entrevu dans l Ainulindalë. Parmi eux, les huit plus puissants se nomment les « Aratar » (en quenya, « les exaltés »); ils étaient Neuf avant le bannissement de Melkor, divinité maléfique, dont le but est de détruire et défigurer Arda. Parmi les quatorze, on compte sept esprits masculins et sept féminins (appelés Valier).');\nINSERT INTO race VALUES (DEFAULT, 'Maiar', 'Les Maiar (nom quenya, au singulier : Maia) sont présents dans Le Silmarilion et les Contes et légendes inachevés. Les Maiar font partie des Ainur, les divinités issues de l esprit d Ilúvatar, le père des dieux. Ce sont cependant des esprits de second rang, servant les esprits supérieurs, les Valar. Ils sont beaucoup plus nombreux que ces derniers, mais seule une petite partie d entre eux est nommée. Parmi les serviteurs de Melkor, le dieu maléfique, figurent Sauron et les Balrogs.');\nINSERT INTO race VALUES (DEFAULT, 'Hobbit', 'Les Hobbits sont des créatures de petite taille, de 0,60 à 1,20 m et vivent dans des terriers confortables pour les plus riches, des trous pour les plus pauvres, ou des habitations de surface depuis leur installation dans la Comté. Ce sont des bons vivants, amateurs d herbe à pipe, de bière et de bonne chère. Ils sont accueillants mais se dissimulent souvent aux étrangers. Ils vivent dans la Terre du milieu et plus précisément dans la Comté, et dans une moindre mesure à Bree. Sauf exception, ils n aiment pas voyager.');\nINSERT INTO race VALUES (DEFAULT, 'Orques','Un orque est une créature inspirée du gobelin des légendes germaniques. C est à l origine une espèce humanoïde aux moeurs brutales. Le nom « orque » vient du sindarin « orch » (pluriel : yrch).'); \nINSERT INTO race VALUES (DEFAULT, 'Troll', 'Les trolls furent créés par Melkor au premier Âge du monde, mais leur origine n est pas connue. Sylvebarbe indique qu ils ont été créés à partir d ents qui auraient été corrompus à l instar des orcs qui seraient des elfes torturés et corrompus.');\nINSERT INTO race VALUES (DEFAULT, 'Balrog','Les balrogs (sindarin pour Démon de Puissance, analogue du quenya valarauko (pl. valaraukar)), sont des créatures fantastiques. Aux origines du monde, ils faisaient partie des Maiar. Ils furent corrompus par Melkor et prirent l apparence de formes ténébreuses et horribles. Ils se présentent comme des démons enveloppés de feu et d obscurité, munis de fouets de feu.'); \n\nINSERT INTO avatar VALUES (DEFAULT, 'Hector', 'M',170,345,1,1);\nINSERT INTO avatar VALUES (DEFAULT, 'Timothy', 'M',135,126,2,2);\nINSERT INTO avatar VALUES (DEFAULT, 'Matthis', 'M',90,336,3,3);\nINSERT INTO avatar VALUES (DEFAULT, 'Baptiste', 'M',80,456,4,4);\nINSERT INTO avatar VALUES (DEFAULT, 'David', 'M',102,333,4,5);\nINSERT INTO avatar VALUES (DEFAULT, 'Yannick', 'M',145,234,5,6);\nINSERT INTO avatar VALUES (DEFAULT, 'Luc', 'M',130,145,6,7);\nINSERT INTO avatar VALUES (DEFAULT, 'Antoine', 'M',85,321,1,8);\nINSERT INTO avatar VALUES (DEFAULT, 'Wajdi', 'M',140,234,1,8);\nINSERT INTO avatar VALUES (DEFAULT, 'Yann', 'M',82,344,2,10);\nINSERT INTO avatar VALUES (DEFAULT, 'Eliass', 'M',90,145,3,1);\nINSERT INTO avatar VALUES (DEFAULT, 'Mohammed', 'M',100,321,3,2);\nINSERT INTO avatar VALUES (DEFAULT, 'Youssef', 'M',150,321,4,3);\nINSERT INTO avatar VALUES (DEFAULT, 'Ayas', 'M',150,345,4,4);\nINSERT INTO avatar VALUES (DEFAULT, 'Merieme', 'F',110,431,5,5);\nINSERT INTO avatar VALUES (DEFAULT, 'Stevy', 'M',152,241,6,6);\nINSERT INTO avatar VALUES (DEFAULT, 'Victorien', 'M',135,241,1,7);\nINSERT INTO avatar VALUES (DEFAULT, 'Houssam', 'M',145,214,1,8);\nINSERT INTO avatar VALUES (DEFAULT, 'Pierre', 'M',120,234,2,8);\nINSERT INTO avatar VALUES (DEFAULT, 'Etienne', 'M',85,432,3,10);\nINSERT INTO avatar VALUES (DEFAULT, 'Marius', 'M',127,132,4,2);\nINSERT INTO avatar VALUES (DEFAULT, 'Choukri', 'F',135,342,4,3);\nINSERT INTO avatar VALUES (DEFAULT, 'Ahmed', 'M',100,121,5,4);\nINSERT INTO avatar VALUES (DEFAULT, 'Joris', 'M',130,345,6,5);\n"
+    },
+    "cinema": {
+      "titre": "cinéma (base du TD 1)",
+      "description": "<p>La base de l'exercice 1 du TD 1 : <code>film(<u>id_film</u>, titre, annee, duree)</code>, <code>personne(<u>id_personne</u>, nom, prenom)</code>, <code>distribution(<u>#id_personne, #id_film</u>, role)</code>, <code>realise(<u>#id_personne, #id_film</u>)</code>, <code>genre(<u>id_genre</u>, libelle)</code>, <code>genre_film(<u>#id_film, #id_genre</u>)</code>, <code>cinema(<u>id_cinema</u>, nom, #id_adresse)</code>, <code>salle(<u>id_salle, #id_cinema</u>, nom, nb_places)</code>, <code>seance(<u>id_seance</u>, date_heure, version, #id_film, #(id_salle, id_cinema))</code>, et <code>adresse</code>.</p>",
+      "script": "CREATE TABLE personne (id_personne integer PRIMARY KEY, nom varchar(40) NOT NULL, prenom varchar(40));\nCREATE TABLE adresse (id_adresse integer PRIMARY KEY, rue varchar(80), code_postal varchar(10), ville varchar(40));\nCREATE TABLE agent (id_agent integer PRIMARY KEY, nom varchar(40) NOT NULL);\nCREATE TABLE film (id_film integer PRIMARY KEY, titre varchar(80) NOT NULL, annee integer, duree integer);\nCREATE TABLE genre (id_genre integer PRIMARY KEY, libelle varchar(30) NOT NULL);\nCREATE TABLE cinema (id_cinema integer PRIMARY KEY, nom varchar(40) NOT NULL, id_adresse integer NOT NULL REFERENCES adresse);\nCREATE TABLE salle (id_salle integer, id_cinema integer REFERENCES cinema ON DELETE CASCADE, nom varchar(20), nb_places integer, PRIMARY KEY (id_salle, id_cinema));\nCREATE TABLE seance (id_seance integer PRIMARY KEY, date_heure timestamp NOT NULL, version varchar(10), id_film integer NOT NULL REFERENCES film, id_salle integer NOT NULL, id_cinema integer NOT NULL, FOREIGN KEY (id_salle, id_cinema) REFERENCES salle);\nCREATE TABLE distribution (id_personne integer REFERENCES personne, id_film integer REFERENCES film, role varchar(60), PRIMARY KEY (id_personne, id_film));\nCREATE TABLE realise (id_personne integer REFERENCES personne, id_film integer REFERENCES film, PRIMARY KEY (id_personne, id_film));\nCREATE TABLE habite (id_personne integer REFERENCES personne, id_adresse integer REFERENCES adresse, PRIMARY KEY (id_personne, id_adresse));\nCREATE TABLE represente (id_personne integer REFERENCES personne, id_agent integer REFERENCES agent, PRIMARY KEY (id_personne, id_agent));\nCREATE TABLE genre_film (id_film integer REFERENCES film, id_genre integer REFERENCES genre, PRIMARY KEY (id_film, id_genre));\n\nINSERT INTO personne VALUES\n(1, 'Eastwood', 'Clint'), (2, 'Pitt', 'Brad'), (3, 'Freeman', 'Morgan'), (4, 'Fincher', 'David'),\n(5, 'Norton', 'Edward'), (6, 'Paltrow', 'Gwyneth'), (7, 'Petersen', 'Wolfgang'), (8, 'Bana', 'Eric'),\n(9, 'Kruger', 'Diane'), (10, 'Malkovich', 'John'), (11, 'Tarantino', 'Quentin'), (12, 'DiCaprio', 'Leonardo'),\n(13, 'Robbie', 'Margot'), (14, 'Pacino', 'Al'), (15, 'Laurent', 'Mélanie'), (16, 'Waltz', 'Christoph'),\n(17, 'Swank', 'Hilary'), (18, 'Damon', 'Matt'), (19, 'Scott', 'Ridley'), (20, 'Sarandon', 'Susan'),\n(21, 'Davis', 'Geena'), (22, 'Vang', 'Bee'), (23, 'Bonham Carter', 'Helena'), (24, 'Russo', 'Rene'),\n(25, 'Russell', 'Kurt');\n\nINSERT INTO film VALUES\n(1, 'Gran Torino', 2008, 116), (2, 'Million Dollar Baby', 2004, 132), (3, 'Invictus', 2009, 134),\n(4, 'Fight Club', 1999, 139), (5, 'Seven', 1995, 127), (6, 'Troie', 2004, 163),\n(7, 'Dans la ligne de mire', 1993, 128), (8, 'Once Upon a Time… in Hollywood', 2019, 161),\n(9, 'Inglourious Basterds', 2009, 153), (10, 'Thelma et Louise', 1991, 130),\n(11, 'Poussière d''or', 2024, 118), (12, 'Le Shérif de Carson City', 2026, 124);\n\nINSERT INTO realise VALUES\n(1, 1), (1, 2), (1, 3), (4, 4), (4, 5), (7, 6), (7, 7), (11, 8), (11, 9), (19, 10), (1, 11), (1, 12);\n\nINSERT INTO distribution VALUES\n(1, 1, 'Walt Kowalski'), (22, 1, 'Thao Vang Lor'),\n(1, 2, 'Frankie Dunn'), (17, 2, 'Maggie Fitzgerald'), (3, 2, 'Eddie Dupris'),\n(3, 3, 'Nelson Mandela'), (18, 3, 'François Pienaar'),\n(2, 4, 'Tyler Durden'), (5, 4, 'le narrateur'), (23, 4, 'Marla Singer'),\n(2, 5, 'David Mills'), (3, 5, 'William Somerset'), (6, 5, 'Tracy Mills'),\n(2, 6, 'Achille'), (8, 6, 'Hector'), (9, 6, 'Hélène'),\n(1, 7, 'Frank Horrigan'), (10, 7, 'Mitch Leary'), (24, 7, 'Lilly Raines'),\n(12, 8, 'Rick Dalton'), (2, 8, 'Cliff Booth'), (13, 8, 'Sharon Tate'), (14, 8, 'Marvin Schwarz'), (25, 8, 'Randy'),\n(2, 9, 'Aldo Raine'), (15, 9, 'Shosanna Dreyfus'), (16, 9, 'Hans Landa'), (9, 9, 'Bridget von Hammersmark'),\n(20, 10, 'Louise Sawyer'), (21, 10, 'Thelma Dickinson'), (2, 10, 'J.D.'),\n(2, 11, 'Jake Morrow'), (3, 11, 'Ned Harlan'), (1, 11, 'le shérif Cole'),\n(2, 12, 'Billy Carson'), (18, 12, 'Tom Hale');\n\nINSERT INTO genre VALUES (1, 'Drame'), (2, 'Western'), (3, 'Thriller'), (4, 'Guerre'), (5, 'Comédie'), (6, 'Policier'), (7, 'Historique');\nINSERT INTO genre_film VALUES\n(1, 1), (2, 1), (3, 1), (3, 7), (4, 1), (4, 3), (5, 3), (5, 6), (6, 7), (6, 4), (7, 3), (7, 6),\n(8, 1), (8, 5), (9, 4), (9, 7), (10, 1), (11, 2), (12, 2);\n\nINSERT INTO adresse VALUES (1, '12 avenue du Général-Leclerc', '72000', 'Le Mans'), (2, '3 place de la République', '72000', 'Le Mans');\nINSERT INTO cinema VALUES (1, 'Le Palace', 1), (2, 'Cinéma du Centre', 2);\nINSERT INTO salle VALUES (1, 1, 'Salle 1', 320), (2, 1, 'Salle 2', 180), (3, 1, 'Salle 3', 90), (1, 2, 'Salle 1', 240), (2, 2, 'Salle 2', 110);\nINSERT INTO seance VALUES\n(1, '2026-09-25 14:00', 'VF', 1, 1, 1), (2, '2026-09-25 20:30', 'VOST', 8, 1, 1), (3, '2026-09-25 18:00', 'VOST', 4, 2, 1),\n(4, '2026-09-26 21:00', 'VF', 12, 1, 2), (5, '2026-09-26 16:00', 'VOST', 9, 2, 2), (6, '2026-09-27 20:30', 'VF', 11, 3, 1);\n"
+    }
+  },
+  "questions": [
+    {
+      "id": "q01",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "plateforme",
+      "theme": "Filtres et tri",
+      "difficulte": 1,
+      "enonce": "<p>Afficher le nom et le prix des objets de puissance au moins égale à 100, du plus cher au moins cher (deux colonnes).</p>",
+      "depart": "SELECT ",
+      "solution": "SELECT nom_objet, prix\nFROM objet\nWHERE puissance >= 100\nORDER BY prix DESC;",
+      "ordre": true,
+      "explication": "<p>La condition porte sur une colonne de la table : elle va dans <code>WHERE</code>, et « au moins égale à » s'écrit <code>&gt;=</code>. <code>ORDER BY prix DESC</code> trie du plus cher au moins cher ; sans <code>DESC</code>, l'ordre serait croissant. Trois objets : le bouclier (990), le sceptre (802) et le gant (678).</p>",
+      "revoir": {
+        "texte": "Cours 2 · ORDER BY, LIMIT et OFFSET",
+        "lien": "../generated_courses/cours-02-sql.html#order-by-limit-et-offset"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "plateforme",
+      "theme": "Filtres et tri",
+      "difficulte": 1,
+      "enonce": "<p>Afficher le login et le mail des visiteurs dont le mail se termine par « .me », par ordre alphabétique de login (deux colonnes).</p>",
+      "depart": "SELECT ",
+      "solution": "SELECT login, mail\nFROM visiteur\nWHERE mail LIKE '%.me'\nORDER BY login;",
+      "ordre": true,
+      "indices": [
+        "<p>Dans un motif <code>LIKE</code>, <code>%</code> remplace une suite quelconque de caractères, et <code>_</code> un seul caractère.</p>"
+      ],
+      "explication": "<p><code>LIKE '%.me'</code> accepte tout texte qui finit par « .me » ; dans un motif <code>LIKE</code>, le point est un caractère ordinaire. Ian et Sean n'ont pas de mail : pour eux, <code>mail LIKE …</code> vaut <code>NULL</code>, ni vrai ni faux, et la ligne n'est pas retenue, sans rien à écrire de plus.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La clause WHERE",
+        "lien": "../generated_courses/cours-02-sql.html#la-clause-where"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "plateforme",
+      "theme": "Jointures",
+      "difficulte": 1,
+      "enonce": "<p>Afficher le nom de chaque avatar du visiteur dont le login est « Billy », et le nom de sa race, par ordre alphabétique du nom d'avatar (deux colonnes).</p>",
+      "depart": "SELECT ",
+      "solution": "SELECT a.nom_avatar, r.nom_race\nFROM avatar a\nJOIN visiteur v ON v.id_visiteur = a.id_visiteur\nJOIN race r ON r.id_race = a.id_race\nWHERE v.login = 'Billy'\nORDER BY a.nom_avatar;",
+      "ordre": true,
+      "indices": [
+        "<p>Trois tables : l'avatar porte les clés étrangères <code>id_visiteur</code> et <code>id_race</code>. Chaque jointure suit l'une d'elles.</p>"
+      ],
+      "explication": "<p>On part d'<code>avatar</code>, qui porte les deux clés étrangères, et l'on joint <code>visiteur</code> (pour filtrer sur le login) et <code>race</code> (pour son nom). Une condition de jointure oubliée produirait un produit cartésien : chaque avatar associé à toutes les races. Billy a six avatars.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La clause FROM et les jointures",
+        "lien": "../generated_courses/cours-02-sql.html#la-clause-from-et-les-jointures"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "plateforme",
+      "theme": "Regroupements",
+      "difficulte": 2,
+      "enonce": "<p>Afficher le nom des races représentées par au moins trois avatars, avec leur nombre d'avatars (deux colonnes).</p>",
+      "depart": "SELECT ",
+      "solution": "SELECT r.nom_race, count(*)\nFROM race r\nJOIN avatar a ON a.id_race = r.id_race\nGROUP BY r.id_race, r.nom_race\nHAVING count(*) >= 3;",
+      "indices": [
+        "<p>Un nombre par race : on regroupe par race, puis on compte dans chaque groupe.</p>",
+        "<p>« Au moins trois » porte sur le résultat du comptage, donc sur le groupe : la condition va dans <code>HAVING</code>, pas dans <code>WHERE</code>.</p>"
+      ],
+      "explication": "<p><code>GROUP BY</code> forme un groupe par race, <code>count(*)</code> compte ses avatars, et <code>HAVING</code> ne garde que les groupes d'au moins trois. <code>WHERE count(*) &gt;= 3</code> serait refusé : <code>WHERE</code> filtre les lignes avant le regroupement, quand les comptes n'existent pas encore. Grouper aussi par <code>id_race</code> évite de fusionner deux races qui porteraient le même nom. Cinq races : Ainur, Elfe, Nain et Valar (3 avatars chacune), Orques (4).</p>",
+      "revoir": {
+        "texte": "Cours 2 · La clause HAVING",
+        "lien": "../generated_courses/cours-02-sql.html#la-clause-having"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "plateforme",
+      "theme": "Sous-requêtes",
+      "difficulte": 2,
+      "enonce": "<p>Afficher le login des visiteurs qui n'ont aucun objet dans la table <code>stock</code>.</p>",
+      "depart": "SELECT ",
+      "solution": "SELECT login\nFROM visiteur v\nWHERE NOT EXISTS (SELECT *\n                  FROM stock s\n                  WHERE s.id_visiteur = v.id_visiteur);",
+      "indices": [
+        "<p>Une jointure ne fait apparaître que les visiteurs qui ont des lignes dans <code>stock</code>. Pour ceux qui n'en ont pas, il faut une négation : <code>NOT EXISTS</code>, <code>NOT IN</code>, ou une jointure externe suivie d'un test <code>IS NULL</code>.</p>"
+      ],
+      "explication": "<p><code>NOT EXISTS</code> garde un visiteur quand la sous-requête, corrélée par <code>v.id_visiteur</code>, ne renvoie aucune ligne. <code>WHERE id_visiteur NOT IN (SELECT id_visiteur FROM stock)</code> marche aussi ici, parce que <code>stock.id_visiteur</code>, qui fait partie de la clé primaire, n'est jamais <code>NULL</code> ; sur une colonne qui peut l'être, <code>NOT IN</code> ne renverrait rien. Seul Viggo n'a rien acheté.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Sous-requêtes et filtrage",
+        "lien": "../generated_courses/cours-02-sql.html#sous-requetes-et-filtrage"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "plateforme",
+      "theme": "Regroupements",
+      "difficulte": 2,
+      "enonce": "<p>Pour chaque objet acheté au moins une fois, afficher son nom, le nombre de visiteurs qui l'ont acheté et le nombre total d'exemplaires achetés (trois colonnes, colonne <code>nb_achat</code> de <code>stock</code>).</p>",
+      "depart": "SELECT ",
+      "solution": "SELECT o.nom_objet, count(*), sum(s.nb_achat)\nFROM objet o\nJOIN stock s ON s.id_objet = o.id_objet\nGROUP BY o.id_objet, o.nom_objet;",
+      "indices": [
+        "<p>Une ligne de <code>stock</code> = un visiteur et un objet. Après regroupement par objet, <code>count(*)</code> compte les visiteurs, et <code>sum</code> additionne les exemplaires.</p>"
+      ],
+      "explication": "<p>Dans <code>stock</code>, la clé <code>(id_objet, id_visiteur)</code> garantit une seule ligne par visiteur et par objet : dans le groupe d'un objet, <code>count(*)</code> compte donc les visiteurs, et <code>sum(s.nb_achat)</code> les exemplaires. La jointure interne écarte d'elle-même l'objet jamais acheté (le gant de venin). Dix lignes, dont la chaîne tourbillonnante : 2 visiteurs, 11 exemplaires.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La clause GROUP BY",
+        "lien": "../generated_courses/cours-02-sql.html#la-clause-group-by"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "cinema",
+      "theme": "Sous-requêtes",
+      "difficulte": 2,
+      "enonce": "<p>Afficher le titre et la durée des films plus longs que la durée moyenne des films, du plus long au plus court (deux colonnes).</p>",
+      "depart": "SELECT ",
+      "solution": "SELECT titre, duree\nFROM film\nWHERE duree > (SELECT avg(duree) FROM film)\nORDER BY duree DESC;",
+      "ordre": true,
+      "indices": [
+        "<p>La moyenne se calcule sur toute la table, dans une sous-requête qui renvoie une seule valeur.</p>"
+      ],
+      "explication": "<p>Une fonction d'agrégation ne peut pas figurer dans <code>WHERE</code> : <code>WHERE duree &gt; avg(duree)</code> est refusé. On calcule la moyenne dans une sous-requête scalaire, qui renvoie une seule valeur (135,4 minutes), et l'on compare chaque film à cette valeur. Quatre films : Troie, Once Upon a Time… in Hollywood, Inglourious Basterds et Fight Club.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Sous-requêtes et filtrage",
+        "lien": "../generated_courses/cours-02-sql.html#sous-requetes-et-filtrage"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "cinema",
+      "theme": "Jointures",
+      "difficulte": 2,
+      "enonce": "<p>Afficher le titre des films dans lesquels leur réalisateur joue aussi, par ordre alphabétique (une colonne).</p>",
+      "depart": "SELECT ",
+      "solution": "SELECT f.titre\nFROM film f\nJOIN realise r ON r.id_film = f.id_film\nJOIN distribution d ON d.id_film = f.id_film\n                   AND d.id_personne = r.id_personne\nORDER BY f.titre;",
+      "ordre": true,
+      "indices": [
+        "<p>Il s'agit de la même personne, dans le même film, à la fois dans <code>realise</code> et dans <code>distribution</code> : la jointure porte sur deux colonnes.</p>"
+      ],
+      "explication": "<p>La jointure entre <code>realise</code> et <code>distribution</code> se fait à la fois sur le film et sur la personne : avec le film seul, on obtiendrait chaque film autant de fois qu'il a d'acteurs. Clint Eastwood joue dans trois des films qu'il réalise : Gran Torino, Million Dollar Baby et Poussière d'or.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La clause FROM et les jointures",
+        "lien": "../generated_courses/cours-02-sql.html#la-clause-from-et-les-jointures"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "cinema",
+      "theme": "Jointures",
+      "difficulte": 2,
+      "enonce": "<p>Pour chaque film, afficher son titre et son nombre de séances, y compris les films qui n'en ont aucune, avec le nombre 0 (deux colonnes).</p>",
+      "depart": "SELECT ",
+      "solution": "SELECT f.titre, count(s.id_seance)\nFROM film f\nLEFT JOIN seance s ON s.id_film = f.id_film\nGROUP BY f.id_film, f.titre;",
+      "indices": [
+        "<p>Une jointure interne fait disparaître les films sans séance : il faut une jointure externe, qui garde tous les films.</p>",
+        "<p>Pour un film sans séance, la jointure externe produit une ligne dont les colonnes de <code>seance</code> valent <code>NULL</code>. Que compte alors <code>count(*)</code> ?</p>"
+      ],
+      "explication": "<p><code>LEFT JOIN</code> garde chaque film, même sans séance : ses colonnes de <code>seance</code> valent alors <code>NULL</code>. <code>count(s.id_seance)</code> ne compte que les valeurs non nulles et donne 0 pour ces films ; <code>count(*)</code>, qui compte les lignes, donnerait 1. Douze films, dont six à 1 séance et six à 0.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Fonctions d'agrégation",
+        "lien": "../generated_courses/cours-02-sql.html#fonctions-d-agregation"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "cinema",
+      "theme": "Sous-requêtes",
+      "difficulte": 3,
+      "enonce": "<p>Pour chaque genre, afficher son libellé et le titre de son film le plus long ; en cas d'égalité, tous les films de durée maximale (deux colonnes).</p>",
+      "depart": "SELECT ",
+      "solution": "SELECT g.libelle, f.titre\nFROM genre g\nJOIN genre_film gf ON gf.id_genre = g.id_genre\nJOIN film f ON f.id_film = gf.id_film\nWHERE f.duree = (SELECT max(f2.duree)\n                 FROM genre_film gf2\n                 JOIN film f2 ON f2.id_film = gf2.id_film\n                 WHERE gf2.id_genre = g.id_genre);",
+      "indices": [
+        "<p><code>GROUP BY</code> donne la durée maximale de chaque genre, mais pas le titre du film qui l'atteint : on ne peut pas afficher une colonne ni groupée ni agrégée.</p>",
+        "<p>Garder un film quand sa durée égale le maximum de son genre : une sous-requête corrélée, qui recalcule ce maximum pour le genre de la ligne courante.</p>"
+      ],
+      "explication": "<p>Le piège classique est <code>SELECT libelle, titre, max(duree) … GROUP BY libelle</code>, refusé parce que <code>titre</code> n'est ni groupé ni agrégé. La sous-requête corrélée calcule, pour le genre de la ligne courante (<code>g.id_genre</code>), la durée maximale, et l'on garde le film qui l'atteint ; en cas d'égalité, tous les films concernés passent. Un film appartient à plusieurs genres : Troie est le plus long des films historiques et des films de guerre. Sept lignes, une par genre.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Sous-requêtes et filtrage",
+        "lien": "../generated_courses/cours-02-sql.html#sous-requetes-et-filtrage"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "cinema",
+      "theme": "Sous-requêtes",
+      "difficulte": 3,
+      "enonce": "<p>Afficher le nom et le prénom des acteurs qui ont joué dans <strong>tous</strong> les films réalisés par David Fincher (deux colonnes).</p>",
+      "depart": "SELECT ",
+      "solution": "SELECT p.nom, p.prenom\nFROM personne p\nWHERE NOT EXISTS (\n    SELECT *\n    FROM realise r\n    JOIN personne q ON q.id_personne = r.id_personne\n    WHERE q.prenom = 'David' AND q.nom = 'Fincher'\n      AND NOT EXISTS (SELECT *\n                      FROM distribution d\n                      WHERE d.id_personne = p.id_personne\n                        AND d.id_film = r.id_film));",
+      "indices": [
+        "<p>« Tous les films de Fincher » se reformule : il n'existe aucun film de Fincher dans lequel l'acteur n'a pas joué.</p>",
+        "<p>Deux <code>NOT EXISTS</code> imbriqués ; ou bien compter, pour chaque acteur, ses films de Fincher, et comparer au nombre total de films de Fincher (<code>HAVING count(*) = (SELECT count(*) …)</code>).</p>"
+      ],
+      "explication": "<p>C'est une division relationnelle. Avec la double négation, on garde une personne s'il n'existe aucun film de Fincher sans elle dans sa distribution. L'autre méthode joint <code>distribution</code> aux films de Fincher, regroupe par acteur et garde ceux dont le nombre de films égale le nombre de films de Fincher. Fincher a réalisé Fight Club et Seven : seul Brad Pitt joue dans les deux.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Sous-requêtes et filtrage",
+        "lien": "../generated_courses/cours-02-sql.html#sous-requetes-et-filtrage"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "cinema",
+      "theme": "Filtres et tri",
+      "difficulte": 1,
+      "enonce": "<p>Afficher le titre du film et la version des séances qui commencent à 18 h ou plus tard, par ordre chronologique (deux colonnes ; l'horaire est dans <code>seance.date_heure</code>).</p>",
+      "depart": "SELECT ",
+      "solution": "SELECT f.titre, s.version\nFROM seance s\nJOIN film f ON f.id_film = s.id_film\nWHERE EXTRACT(HOUR FROM s.date_heure) >= 18\nORDER BY s.date_heure;",
+      "ordre": true,
+      "indices": [
+        "<p><code>EXTRACT(HOUR FROM …)</code> donne l'heure d'un <code>timestamp</code> ; on peut aussi comparer <code>s.date_heure::time</code> à <code>'18:00'</code>.</p>"
+      ],
+      "explication": "<p><code>EXTRACT(HOUR FROM s.date_heure)</code> isole l'heure, quel que soit le jour ; comparer <code>date_heure</code> à un <code>timestamp</code> ne marcherait que pour un jour donné. On peut trier sur une colonne qui n'est pas affichée : <code>ORDER BY s.date_heure</code> donne l'ordre chronologique, jour compris. Quatre séances, de Fight Club à 18 h le 25 à Poussière d'or le 27.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La clause WHERE",
+        "lien": "../generated_courses/cours-02-sql.html#la-clause-where"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "atelier",
+      "editeur": "sql",
+      "theme": "Définition et modification",
+      "difficulte": 2,
+      "titre": "Créer la table critique",
+      "enonce": "<p>Créer la table <code>critique</code> : <code>id_critique</code>, entier attribué automatiquement et clé primaire ; <code>id_film</code>, obligatoire, qui référence un film ; <code>note</code>, entier compris entre 0 et 10 ; <code>commentaire</code>, texte obligatoire. Des insertions éprouvent ensuite la table : celles qui respectent ces règles doivent passer, les autres doivent être refusées.</p>",
+      "options": {
+        "jeu": "cinema",
+        "mode": "script"
+      },
+      "depart": "CREATE TABLE critique (\n\n);",
+      "solution": "CREATE TABLE critique (\n    id_critique serial PRIMARY KEY,\n    id_film     integer NOT NULL REFERENCES film,\n    note        integer CHECK (note BETWEEN 0 AND 10),\n    commentaire text NOT NULL\n);",
+      "tests": [
+        {
+          "nom": "une critique valide est acceptée",
+          "requete": "INSERT INTO critique (id_film, note, commentaire) VALUES (1, 8, 'Un grand Eastwood');",
+          "doit": "reussir"
+        },
+        {
+          "nom": "une note de 11 est refusée",
+          "requete": "INSERT INTO critique (id_film, note, commentaire) VALUES (1, 11, 'Trop généreux');",
+          "doit": "echouer"
+        },
+        {
+          "nom": "une note négative est refusée",
+          "requete": "INSERT INTO critique (id_film, note, commentaire) VALUES (1, -1, 'Trop sévère');",
+          "doit": "echouer"
+        },
+        {
+          "nom": "un film inexistant est refusé",
+          "requete": "INSERT INTO critique (id_film, note, commentaire) VALUES (99, 5, 'Film inconnu');",
+          "doit": "echouer"
+        },
+        {
+          "nom": "le film est obligatoire",
+          "requete": "INSERT INTO critique (id_film, note, commentaire) VALUES (NULL, 5, 'Sans film');",
+          "doit": "echouer"
+        },
+        {
+          "nom": "le commentaire est obligatoire",
+          "requete": "INSERT INTO critique (id_film, note, commentaire) VALUES (1, 5, NULL);",
+          "doit": "echouer"
+        },
+        {
+          "nom": "les identifiants sont attribués automatiquement",
+          "requete": "INSERT INTO critique (id_film, note, commentaire) VALUES (2, 7, 'Bien'), (3, 9, 'Très bien');\nSELECT count(DISTINCT id_critique) FROM critique;",
+          "resultat": true
+        }
+      ],
+      "indices": [
+        "<p>Un entier attribué automatiquement : <code>serial</code>. Une valeur obligatoire : <code>NOT NULL</code>. Une plage de valeurs : <code>CHECK</code>.</p>"
+      ],
+      "explication": "<p><code>serial</code> crée une séquence qui numérote les lignes. <code>REFERENCES film</code> vise la clé primaire de <code>film</code> et refuse un film inexistant, mais pas une valeur <code>NULL</code> : d'où le <code>NOT NULL</code>. <code>CHECK (note BETWEEN 0 AND 10)</code> borne la note, qui reste facultative, car une contrainte <code>CHECK</code> laisse passer <code>NULL</code>.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les contraintes d'intégrité",
+        "lien": "../generated_courses/cours-02-sql.html#les-contraintes-d-integrite"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "cinema",
+      "theme": "Définition et modification",
+      "difficulte": 2,
+      "enonce": "<p>Créer la vue <code>v_affiche</code> (<code>titre</code>, <code>cinema</code>, <code>salle</code>, <code>date_heure</code>), qui associe chaque séance au titre de son film, au nom de son cinéma et au nom de sa salle. Puis, à partir de la vue, afficher le titre et la salle de chaque séance du cinéma « Cinéma du Centre », par ordre alphabétique de titre (deux colonnes). Attention : une salle est identifiée par le couple <code>(id_salle, id_cinema)</code>.</p>",
+      "depart": "CREATE VIEW v_affiche AS\n",
+      "solution": "CREATE VIEW v_affiche AS\nSELECT f.titre, c.nom AS cinema, sa.nom AS salle, s.date_heure\nFROM seance s\nJOIN film f ON f.id_film = s.id_film\nJOIN cinema c ON c.id_cinema = s.id_cinema\nJOIN salle sa ON sa.id_salle = s.id_salle\n             AND sa.id_cinema = s.id_cinema;\n\nSELECT titre, salle\nFROM v_affiche\nWHERE cinema = 'Cinéma du Centre'\nORDER BY titre;",
+      "ordre": true,
+      "indices": [
+        "<p>Les deux cinémas ont chacun une « Salle 1 » et une « Salle 2 » : joindre <code>salle</code> sur <code>id_salle</code> seul associerait chaque séance à deux salles.</p>"
+      ],
+      "explication": "<p>La vue mémorise la requête, pas ses lignes : on l'interroge ensuite comme une table. La jointure avec <code>salle</code> doit porter sur les deux colonnes de sa clé ; sur <code>id_salle</code> seul, chaque séance serait dupliquée, une fois par cinéma qui possède une salle de ce numéro. Deux séances au Cinéma du Centre : Inglourious Basterds (Salle 2) et Le Shérif de Carson City (Salle 1).</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les vues",
+        "lien": "../generated_courses/cours-02-sql.html#les-vues"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "code",
+      "langage": "sql",
+      "jeu": "cinema",
+      "theme": "Définition et modification",
+      "difficulte": 2,
+      "enonce": "<p>Le « Cinéma du Centre » agrandit ses salles : ajouter 20 au nombre de places de chacune de ses salles, sans écrire son identifiant en dur. Puis afficher le nom et le nombre de places de ses salles, par ordre alphabétique de nom (deux colonnes).</p>",
+      "depart": "UPDATE salle\n",
+      "solution": "UPDATE salle\nSET nb_places = nb_places + 20\nWHERE id_cinema = (SELECT id_cinema FROM cinema WHERE nom = 'Cinéma du Centre');\n\nSELECT nom, nb_places\nFROM salle\nWHERE id_cinema = (SELECT id_cinema FROM cinema WHERE nom = 'Cinéma du Centre')\nORDER BY nom;",
+      "ordre": true,
+      "indices": [
+        "<p>La condition de l'<code>UPDATE</code> retrouve le cinéma par son nom, dans une sous-requête.</p>"
+      ],
+      "explication": "<p><code>SET nb_places = nb_places + 20</code> calcule la nouvelle valeur à partir de l'ancienne, ligne par ligne. Sans <code>WHERE</code>, toutes les salles des deux cinémas seraient agrandies. La sous-requête évite d'écrire l'identifiant 2 en dur. Les deux salles passent à 260 et 130 places.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Mettre à jour : UPDATE",
+        "lien": "../generated_courses/cours-02-sql.html#mettre-a-jour-update"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

@@ -1,7 +1,7 @@
 // Construit les exécutables sans les publier : `npm run dist` (Windows et Linux),
 // `npm run dist -- --win` ou `-- --linux` pour un seul.
 //
-// 1. Prépare les cours (preparer-contenu.mjs).
+// 1. Prépare les outils (preparer-contenu.mjs) : les cours ne sont plus livrés (catalogue.mjs).
 // 2. Windows : installeur NSIS x64, sa carte de blocs (.blockmap) et latest.yml.
 // 3. Linux : AppImage x64, latest-linux.yml, et sa carte de blocs mise à part
 //    (carte-appimage.mjs). Depuis Windows, l'AppImage se construit dans WSL
@@ -23,8 +23,8 @@ const require = createRequire(import.meta.url);
 
 export function fichiersAttendus(version, { win = true, linux = true } = {}) {
   return [
-    ...(win ? [`Studies-Setup-${version}.exe`, `Studies-Setup-${version}.exe.blockmap`, 'latest.yml'] : []),
-    ...(linux ? [`Studies-${version}.AppImage`, `Studies-${version}.AppImage.blockmap`, 'latest-linux.yml'] : []),
+    ...(win ? [`Universal-Learn-Academy-Setup-${version}.exe`, `Universal-Learn-Academy-Setup-${version}.exe.blockmap`, 'latest.yml'] : []),
+    ...(linux ? [`Universal-Learn-Academy-${version}.AppImage`, `Universal-Learn-Academy-${version}.AppImage.blockmap`, 'latest-linux.yml'] : []),
   ];
 }
 
@@ -39,7 +39,7 @@ export function construire({ win = true, linux = true } = {}) {
   const fichiers = fichiersAttendus(version, { win, linux });
   for (const n of fichiers) fs.rmSync(path.join(dist, n), { force: true });
 
-  console.log('\n▸ Préparation des cours');
+  console.log('\n▸ Préparation des outils');
   preparer();
 
   if (win) {
@@ -61,7 +61,7 @@ export function construire({ win = true, linux = true } = {}) {
     } else {
       throw new Error('L’AppImage se construit sous Linux ou dans WSL.');
     }
-    const carte = extraireCarte(path.join(dist, `Studies-${version}.AppImage`), path.join(dist, 'latest-linux.yml'));
+    const carte = extraireCarte(path.join(dist, `Universal-Learn-Academy-${version}.AppImage`), path.join(dist, 'latest-linux.yml'));
     console.log(`  • carte de blocs de l’AppImage  ${path.basename(carte.sortie)}`);
   }
 

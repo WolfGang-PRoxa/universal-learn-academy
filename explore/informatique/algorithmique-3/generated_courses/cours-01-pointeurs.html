@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="c">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retour sur les pointeurs en C · Algorithmique 3 L2</title>
+<meta name="description" content="Pointeurs en C : adressage indirect, arithmétique des pointeurs, objets statiques et dynamiques, pointeurs de fonctions, const, passage de paramètres, généricité avec void * et qsort.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-01-pointeurs.html" title="Quiz · Les pointeurs">
+<link rel="quiz" href="../generated_quizzes/quiz-pointeurs-code.html" title="Quiz · Pointeurs en C, par le code">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Algorithmique 3</a>
+    <span aria-current="page">Cours 1 · Les pointeurs</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Algorithmique 3</span> Cours 1 · L2 Informatique</p>
+    <h1>Retour sur les pointeurs en C</h1>
+    <p class="chapeau">Un pointeur est une variable qui contient une adresse. Ce chapitre reprend leur mécanisme (adressage indirect, arithmétique), leurs usages (objets statiques et dynamiques, fonctions, passage de résultats, structures chaînées) et la généricité qu'ils permettent en C : pointeurs <code>void *</code>, fonctions génériques, tri avec <code>qsort</code>.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/cours_pointeurs.pdf">cours_pointeurs.pdf</a> · 33 p. ; programmes de <a href="../cours/Exemples_Cours_Pointeurs/">Exemples_Cours_Pointeurs/</a></dd></div>
+      <div><dt>Enseignant</dt><dd>Bruno Jacob</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Lire et écrire une déclaration de pointeur, y compris sur fonction.</li>
+        <li>Calculer le déplacement produit par <code>p + i</code> et l'adresse de <code>T[i][j]</code>.</li>
+        <li>Distinguer objets statiques et dynamiques, et éviter fuites mémoire et pointeurs fous.</li>
+        <li>Passer un résultat ou un objet complexe à une fonction par son adresse.</li>
+        <li>Écrire une fonction générique avec <code>void *</code> et l'utiliser, comme <code>qsort</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li>Le langage C d'Algorithmique 2 : types, tableaux, structures, fonctions.</li>
+        <li>Compiler un programme en ligne de commande (<code>gcc</code>, <code>make</code>).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Note <span>Les programmes de l'enseignant</span></p>
+    <p>Le cours renvoie à des programmes du dossier <code>Exemples_Cours_Pointeurs/</code> (compiler avec <code>make ARCH=linux</code> sous Linux ou WSL, <code>make</code> seul vise macOS). Les sorties montrées ici ont été obtenues sous Linux 64 bits : les adresses changent d'une exécution à l'autre. <span class="badge a-verifier">À vérifier</span> Le fichier <code>copie.h</code>, inclus par <code>test_copie.c</code> et les deux <code>tri_generique_perso</code>, manque dans le dossier ; il suffit d'une ligne, <code>extern void * copie( void * cible , void * source , int n ) ;</code>.</p>
+  </div>
+
+  <section>
+    <h2>Le mécanisme des pointeurs <span class="ref">p. 1–6</span></h2>
+    <p>Un pointeur permet d'atteindre un objet sans le nommer, par son adresse. Le cours prend « objet » au sens large : tout ce qu'un pointeur peut atteindre, variable, zone mémoire, structure.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Pointeur</span></p>
+      <p>Un <dfn>pointeur</dfn> est une variable comme les autres, qui contient l'adresse d'un objet. Sa taille dépend de la taille de la mémoire à adresser : sur 4 octets (32 bits), un pointeur distingue \(2^{32}\) adresses, soit 4 giga-objets. Sur les machines 64 bits actuelles, <code>sizeof(p)</code> vaut 8.</p>
+    </div>
+
+    <h3>Déclaration</h3>
+    <p>Il n'y a pas de type « pointeur » tout court, mais des pointeurs <em>sur un type</em> : <code>type_t * p ;</code> déclare une variable <code>p</code> qui pointe sur un objet de type <code>type_t</code>. Les parenthèses changent le sens :</p>
+<pre><code class="language-c">int * p ;        /* p : pointeur sur un int */
+int * p[N] ;     /* p : tableau de N pointeurs sur des int */
+int (* p)[N] ;   /* p : pointeur sur un tableau de N entiers */</code></pre>
+
+    <h3>L'adressage indirect</h3>
+    <p>On atteint le contenu d'un objet par <dfn>adressage indirect</dfn>, technique fréquente en assembleur. Deux opérateurs : <code>*v</code> désigne le contenu pointé par <code>v</code>, <code>&amp;v</code> l'adresse de la variable <code>v</code>.</p>
+<pre><code class="language-c">char x = 'A' ;
+char * p = &amp;x ;     /* p contient l'adresse de x   */
+char ** p2 = &amp;p ;   /* p2 contient l'adresse de p : pointeur de pointeur */</code></pre>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 560 130" width="560" role="img" aria-labelledby="fig-indirect-titre">
+        <title id="fig-indirect-titre">Adressage indirect : p2, à l'adresse 0x0200, contient 0x0112, l'adresse de p ; p contient 0x0006, l'adresse de x ; x contient le caractère A</title>
+        <defs>
+          <marker id="fleche-indirect" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="80" y="30" text-anchor="middle" class="gras mono">p2</text>
+        <rect class="boite" x="20" y="40" width="120" height="44" rx="6"/>
+        <text x="80" y="67" text-anchor="middle" class="mono">0x0112</text>
+        <text x="80" y="104" text-anchor="middle" class="t2 mono">@ 0x0200</text>
+        <path class="trait" d="M140 62 H208" marker-end="url(#fleche-indirect)"/>
+        <text x="280" y="30" text-anchor="middle" class="gras mono">p</text>
+        <rect class="boite" x="220" y="40" width="120" height="44" rx="6"/>
+        <text x="280" y="67" text-anchor="middle" class="mono">0x0006</text>
+        <text x="280" y="104" text-anchor="middle" class="t2 mono">@ 0x0112</text>
+        <path class="trait" d="M340 62 H408" marker-end="url(#fleche-indirect)"/>
+        <text x="480" y="30" text-anchor="middle" class="gras mono">x</text>
+        <rect class="boite-accent" x="420" y="40" width="120" height="44" rx="6"/>
+        <text x="480" y="67" text-anchor="middle" class="mono accent">'A'</text>
+        <text x="480" y="104" text-anchor="middle" class="t2 mono">@ 0x0006</text>
+      </svg>
+      <figcaption>Avec les adresses du cours : <code>p</code> vaut l'adresse de <code>x</code>, <code>p2</code> celle de <code>p</code> (l'adresse de <code>p2</code> est inventée pour le schéma).</figcaption>
+    </figure>
+
+    <ul>
+      <li><code>p</code> = 0x0006 = <code>&amp;x</code> ; <code>*p</code> = contenu de <code>x</code> = <code>'A'</code>.</li>
+      <li><code>&amp;p</code> = 0x0112 = valeur de <code>p2</code> ; <code>*p2</code> = contenu de <code>p</code> = adresse de <code>x</code> ; <code>**p2</code> = contenu de <code>x</code>.</li>
+    </ul>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>adressage_indirect.c</span></p>
+<pre data-fichier="adressage_indirect.c"><code class="language-c">#include &lt;stdio.h&gt;
+
+int
+main()
+{
+  /* Declarations */
+  char x = 'A' ;
+  char * p = &amp;x ;
+  char ** p2 = &amp;p ;
+
+  /* Test adressage indirect */
+  printf( "taille d'un pointeur = %ld\n" , sizeof(p) ) ;
+  printf( " adresse de x  = %p , contenu de x  = %c\n" , &amp;x , x ) ;
+  printf( " adresse de p  = %p , contenu de p  = %p , adressage indirect de p  = %c\n" , &amp;p , p , *p ) ;
+  printf( " adresse de p2 = %p , contenu de p2 = %p , adressage indirect de p2 = %p , double adressage indirect de p2 = %c\n" ,
+	  &amp;p2 , p2 , *p2 , **p2 ) ;
+
+  return(0);
+}</code></pre>
+<pre class="terminal"><code>$ ./adressage_indirect
+taille d'un pointeur = 8
+ adresse de x  = 0x7fff3e6f68f7 , contenu de x  = A
+ adresse de p  = 0x7fff3e6f68f8 , contenu de p  = 0x7fff3e6f68f7 , adressage indirect de p  = A
+ adresse de p2 = 0x7fff3e6f6900 , contenu de p2 = 0x7fff3e6f68f8 , adressage indirect de p2 = 0x7fff3e6f68f7 , double adressage indirect de p2 = A</code></pre>
+    </div>
+
+    <h3>Tailles</h3>
+    <p>Une case mémoire fait un octet (8 bits). La taille de l'objet pointé, en cases, est donnée par le type de la déclaration : avec <code>char *</code>, l'objet pointé occupe <code>sizeof(char)</code> = 1 case ; avec <code>int *</code>, <code>sizeof(int)</code> cases, qui dépend de la machine. Si <code>sizeof(int)</code> vaut 4, l'objet pointé est manipulé comme une zone de 4 octets, soit 32 bits.</p>
+
+    <h3>L'arithmétique des pointeurs</h3>
+    <p>Ajouter un entier à un pointeur ne l'avance pas d'un octet mais d'un objet : c'est tout l'intérêt de connaître le type pointé.</p>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Addition sur des objets homogènes</span></p>
+      <p>Pour <code>type_t * p</code> et un entier <code>i</code>, l'instruction <code>p = p + i</code> est traduite par le compilateur en \(p = p + \text{taille}(\text{type\_t}) \times i\). Avec <code>i</code> = 1, <code>p = p + 1</code> équivaut à <code>p++</code>.</p>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>quatre entiers de 2 octets</span></p>
+      <p>Si un <code>int</code> occupe 2 octets et que <code>p</code> = 0x0010 pointe sur une zone de 4 entiers : <code>*p</code> donne l'entier 1 ; après <code>p++</code>, \(p = \texttt{0x0010} + 2 = \texttt{0x0012}\) et <code>*p</code> donne l'entier 2 ; après <code>p = p + 2</code>, \(p = \texttt{0x0012} + 2 \times 2 = \texttt{0x0016}\) et <code>*p</code> donne l'entier 4.</p>
+      <p>Le programme <code>arithm_pointeur_1.c</code> le vérifie sur une machine où <code>sizeof(int)</code> vaut 4 : chaque <code>p++</code> ajoute 4 à l'adresse.</p>
+<pre class="terminal"><code>$ ./arithm_pointeur_1
+ Taille d'un int = 4
+
+ adresse de p = 0x55ad04e172a0 , contenu de p = 11
+ adresse de p = 0x55ad04e172a4 , contenu de p = 22
+ adresse de p = 0x55ad04e172a8 , contenu de p = 33
+ adresse de p = 0x55ad04e172ac , contenu de p = 44
+ adresse de p = 0x55ad04e172b0 , contenu de p = 55</code></pre>
+    </div>
+
+    <p>Sur des objets <strong>hétérogènes</strong> rangés les uns après les autres (un entier, un double, une structure, un caractère, un flottant), le compilateur ne peut pas deviner la taille du saut. On la lui donne par un <dfn>forceur</dfn> (<span class="en" lang="en">cast</span>) : pour passer de l'entier au double, <code>(int *)p + 1</code> ; du double à la structure, <code>(double *)p + 1</code> ; et ainsi de suite, chaque fois avec le type de l'élément que l'on quitte.</p>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>arithm_pointeur_2.c</span></p>
+      <p>Le programme range un <code>int</code>, un <code>double</code>, une <code>struct S</code> (un tableau de 10 caractères et un <code>int</code>), un <code>char</code> et un <code>float</code> dans une zone obtenue par <code>malloc</code>, avec <code>memcpy</code>, puis les relit en avançant <code>p</code> (un <code>char *</code>) par des forceurs. Les sauts suivent les tailles des types : 4, 8, 16, 1, 4.</p>
+<pre class="terminal"><code>$ ./arithm_pointeur_2
+ Taille d'un entier = 4
+ Taille d'un double = 8
+ Taille de la structure  = 16
+ Taille d'un char  = 1
+ Taille d'un float  = 4
+ adresse de p = 0x55a0ee7902a0 , contenu de p = 11
+              + 4
+ adresse de p = 0x55a0ee7902a4 , contenu de p = 123.45
+              + 8
+ adresse de p = 0x55a0ee7902ac , contenu de p = { abcde , 22 }
+              + 16
+ adresse de p = 0x55a0ee7902bc , contenu de p = Z
+              + 1
+ adresse de p = 0x55a0ee7902bd , contenu de p = 67.889999
+              + 4
+ adresse de p = 0x55a0ee7902c1</code></pre>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi 16 octets pour la structure ?</span></p>
+      <p>Les champs de <code>struct S</code> font 10 + 4 = 14 octets, mais le compilateur ajoute 2 octets de remplissage (<span class="en" lang="en">padding</span>) pour que l'entier commence à une adresse multiple de 4. C'est pourquoi on écrit toujours <code>sizeof(struct S)</code> au lieu d'additionner les champs. Le programme range ici les objets sans respecter ces alignements (le double à une adresse multiple de 4 seulement, le flottant à une adresse impaire) : <code>memcpy</code> le permet, mais lire directement <code>*(double *)p</code> à une adresse mal alignée est un comportement indéfini.</p>
+    </div>
+
+    <p>Les autres opérations sur les pointeurs (<code>arithm_pointeur_3.c</code>) :</p>
+    <ul>
+      <li><strong>Soustraction</strong> <code>p - i</code> : comme <code>p + i</code>, en reculant.</li>
+      <li><strong>Différence de deux pointeurs</strong> <code>p1 - p2</code> : sur des objets homogènes, elle donne le <em>nombre d'éléments</em> qui les séparent, pas le nombre d'octets ; sur des objets hétérogènes, elle ne veut rien dire.</li>
+      <li><strong>Égalité</strong> <code>p1 == p2</code> : compare des adresses, et n'a de sens qu'entre pointeurs de même type. Deux pointeurs de types différents peuvent être égaux sans que <code>p1 + 1 == p2 + 1</code> le soit, puisque les sauts diffèrent.</li>
+      <li><strong>Ordre</strong> <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code> : possibles, mais utiles seulement entre éléments d'un même tableau, rangés à la suite en mémoire.</li>
+    </ul>
+<pre class="terminal"><code>Test comparaison de 2 pointeurs
+p  (pointeur sur int)  = 0x562da57462a0
+p2 (pointeur sur char) = 0x562da57462a0
+p3 (pointeur sur int)  = 0x562da57462a0
+ p == p2 ? --&gt; VRAI , p == p3 ? --&gt; VRAI
+ p+1 == p2+1 ? --&gt; FAUX , p+1 == p3+1 ? --&gt; VRAI</code></pre>
+
+    <h3>Indexation des tableaux</h3>
+    <p>L'indexation d'un tableau n'est que de l'arithmétique de pointeurs, déjà vue en Algorithmique 2.</p>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Tableau à une dimension</span></p>
+      <p>Pour <code>type_t T[N]</code>, <code>T[i]</code> ⇔ <code>*(T + i)</code>, que le compilateur calcule comme \(*(T + i \times \text{taille}(\text{type\_t}))\).</p>
+    </div>
+    <p>Avec <code>int T[8]</code> rempli de 11 à 88 à partir de l'adresse 0x0010 et des entiers de 2 octets, <code>T[5]</code> ⇔ <code>*(T + 5)</code>, calculé comme \(*(\texttt{0x0010} + 5 \times 2) = *(\texttt{0x001a})\) = 66.</p>
+
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Tableau à deux dimensions</span></p>
+      <p>Un tableau <code>type_t T[L][C]</code> est rangé ligne après ligne. <code>T[i][j]</code> ⇔ <code>*(T[i] + j)</code> ⇔ \(*(T + i \times C + j)\) en nombre d'éléments, que le compilateur calcule comme \(*(T + i \times C \times \text{taille}(\text{type\_t}) + j \times \text{taille}(\text{type\_t}))\).</p>
+    </div>
+    <p>Avec <code>int T[4][2]</code> (lignes 11 12, 21 22, 31 32, 41 42) à partir de 0x0010 et des entiers de 2 octets : <code>T[2][1]</code> ⇔ \(*(T + 2 \times 2 + 1)\), soit \(*(\texttt{0x0010} + 8 + 2) = *(\texttt{0x001a})\) = 32.</p>
+  </section>
+
+  <section>
+    <h2>Objets statiques et objets dynamiques <span class="ref">p. 7–12</span></h2>
+    <p>Un pointeur peut désigner un objet dont la place est réservée à la compilation ou à l'exécution. Les deux cas ont des avantages et des pièges différents.</p>
+
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 360 170" width="360" role="img" aria-labelledby="fig-zones-titre">
+        <title id="fig-zones-titre">Espace d'adressage d'un processus : données statiques, tas des données dynamiques, pile</title>
+        <rect class="boite" x="60" y="10" width="240" height="44" rx="4"/>
+        <text x="180" y="37" text-anchor="middle">données statiques</text>
+        <rect class="boite" x="60" y="62" width="240" height="44" rx="4"/>
+        <text x="180" y="89" text-anchor="middle">données dynamiques (tas)</text>
+        <rect class="boite-accent" x="60" y="114" width="240" height="44" rx="4"/>
+        <text x="180" y="141" text-anchor="middle">pile</text>
+      </svg>
+      <figcaption>Les trois zones principales de l'espace d'adressage d'un processus.</figcaption>
+    </figure>
+
+    <h3>Pointeurs sur des objets statiques</h3>
+    <p>La place d'un objet statique est réservée à la compilation : dans la zone statique pour une variable globale, dans la pile, à l'appel de la fonction, pour une variable locale. Un pointeur sur un tel objet s'obtient avec <code>&amp;</code>.</p>
+<pre><code class="language-c">typedef struct S_s
+{
+        char c1 ;
+        double c2 ;
+} S_t ;
+
+int * p1 ;            /* Déclaration */
+S_t * p2 ;
+
+int v1 ;              /* Initialisation */
+S_t v2 ;
+p1 = &amp;v1 ;
+p2 = &amp;v2 ;
+
+(*p1) = 99 ;          /* Utilisation */
+p2-&gt;c1 = 'a' ;        /* (*p2).c1 = 'a' */
+p2-&gt;c2 = 33333 ;</code></pre>
+    <p>L'opérateur flèche simplifie l'accès à un champ : <code>p-&gt;c</code> ⇔ <code>(*p).c</code>.</p>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Point ou flèche</span></p>
+      <p>Le point s'applique à une structure, la flèche à un pointeur sur structure : <code>v2.c1</code> et <code>p2-&gt;c1</code> sont justes, <code>v2-&gt;c1</code> et <code>p2.c1</code> ne compilent pas.</p>
+    </div>
+
+    <p>On ne peut pas détruire un objet statique, c'est-à-dire libérer sa place ; on peut seulement faire en sorte que le pointeur ne pointe plus dessus : <code>p1 = NULL ;</code>. Avantage : aucune fuite mémoire possible. Piège : le <dfn>pointeur fou</dfn> (<span class="en" lang="en">dangling pointer</span>), qui pointe sur un objet disparu, typiquement quand une fonction renvoie l'adresse d'une de ses variables locales. Au retour de la fonction, son contexte dans la pile est libéré, et la place sera réutilisée par l'appel suivant.</p>
+<pre><code class="language-c">type_t * f()
+{
+        type_t o ;
+        type_t * p = &amp;o ;
+        return p ;       /* adresse d'une variable locale */
+}
+main()
+{
+        type_t * p2 = NULL ;
+        p2 = f() ;       /* KO : o n'existe plus */
+}</code></pre>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>objets_statiques_pointeur_fou.c avec un gcc récent</span></p>
+      <p>Le programme de l'enseignant renvoie <code>&amp;i</code>, appelle une autre fonction qui « chamboule » la pile, puis lit <code>*p1</code> : il voulait montrer une valeur écrasée. Avec gcc 13 sous Linux, la compilation avertit (<code>function returns address of local variable</code>) et <code>f</code> renvoie en fait <code>NULL</code> : le programme s'arrête sur une erreur de segmentation, sans rien afficher. Les deux comportements sont permis, car lire un pointeur fou est un comportement indéfini. D'où la règle : ne jamais renvoyer l'adresse d'une variable locale (non <code>static</code>).</p>
+    </div>
+
+    <h3>Pointeurs sur des objets dynamiques</h3>
+    <p>La place d'un objet dynamique est réservée à l'exécution, dans le tas, par les fonctions d'allocation de <code>&lt;stdlib.h&gt;</code> :</p>
+    <ul>
+      <li><code>void * malloc(size_t size);</code> réserve une zone de <code>size</code> octets ;</li>
+      <li><code>void * realloc(void *ptr, size_t size);</code> agrandit ou réduit une zone déjà réservée (en la déplaçant si besoin) ;</li>
+      <li><code>void * calloc(size_t count, size_t size);</code> réserve <code>count</code> objets de <code>size</code> octets et met la zone à zéro ;</li>
+      <li><code>void free(void *ptr);</code> libère une zone.</li>
+    </ul>
+    <p>Un objet alloué dans une fonction <code>f</code> survit au retour de <code>f</code> : il est dans le tas, pas dans la pile. Seul le pointeur local qui le désignait disparaît.</p>
+<pre><code class="language-c">int * p1 = NULL ;               /* mieux que int * p1 ; */
+S_t * p2 = NULL ;
+
+p1 = malloc( sizeof(int) ) ;    /* Initialisation */
+p2 = malloc( sizeof(S_t) ) ;
+
+(*p1) = 99 ;                    /* Utilisation (idem) */
+p2-&gt;c1 = 'a' ;
+p2-&gt;c2 = 33333 ;
+
+free( p1 ) ;                    /* Suppression */
+p1 = NULL ;
+free( p2 ) ;
+p2 = NULL ;</code></pre>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Une coquille du polycopié</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>Le polycopié (p. 12) écrit <code>free( p1 ) ; ( *p1 ) = NULL ;</code>. C'est le pointeur qu'il faut remettre à <code>NULL</code> (<code>p1 = NULL ;</code>) : écrire dans <code>*p1</code> après <code>free</code> est justement l'erreur du pointeur fou. Le code ci-dessus est corrigé.</p>
+    </div>
+
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="cadre-titre">Avantage</p>
+        <ul><li>Les objets ne sont pas volatiles : ils vivent jusqu'au <code>free</code>, quel que soit l'endroit où ils ont été créés.</li></ul>
+      </div>
+      <div class="colonne contre">
+        <p class="cadre-titre">Pièges</p>
+        <ul>
+          <li><dfn>Fuite mémoire</dfn> : autant de <code>malloc</code> que de <code>free</code> sur les mêmes objets, sinon de la mémoire reste réservée (on peut tenir un compteur de références par objet).</li>
+          <li>Pointeur fou : utiliser un pointeur après le <code>free</code> de l'objet.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Traquer fuites et pointeurs fous</span></p>
+      <p>Sous Linux, <code>valgrind ./prog</code> signale les lectures après <code>free</code> et, en fin d'exécution, les octets jamais libérés. Compiler avec <code>gcc -g -fsanitize=address</code> donne le même diagnostic, avec la ligne fautive, au moment de l'erreur.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Pointeurs sur fonctions <span class="ref">p. 13–17</span></h2>
+    <p>Le code d'une fonction est lui aussi en mémoire. Son nom désigne l'adresse du début de ses instructions, comme le nom d'un tableau désigne l'adresse de son premier élément.</p>
+
+    <p>Avec <code>double F() { … }</code>, <code>F</code> est l'adresse du début de <code>F</code> : un pointeur sur <code>F</code>. Pour exécuter la fonction, on ajoute les parenthèses : <code>F()</code> est l'appel. On peut donc manipuler <code>F</code> comme un pointeur : <code>F2 = F ; F2() ;</code> exécute <code>F</code>.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Déclaration d'un pointeur sur fonction</span></p>
+      <p><code>type_t (* pt_fonction)( … paramètres … ) ;</code> déclare <code>pt_fonction</code>, un pointeur sur une fonction qui renvoie un <code>type_t</code> et prend les paramètres indiqués. Sans paramètre, on écrit <code>void</code> entre les parenthèses.</p>
+    </div>
+<pre><code class="language-c">double (* F2)( void ) ;     /* pointeur sur une fonction sans paramètre qui renvoie un double */
+int (* F3)( int , S_t * ) ; /* pointeur sur une fonction (int, S_t *) qui renvoie un int */</code></pre>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>pointeurs_fonctions.c</span></p>
+<pre data-fichier="pointeurs_fonctions.c"><code class="language-c">#include &lt;stdio.h&gt;
+
+void F1()
+{
+  printf("F1 : coucou \n");
+}
+
+int F2( int i1 , int i2 )
+{
+  return(i1+i2) ;
+}
+
+int
+main()
+{
+  void (*p_f1)(void) = F1 ;
+  int (*p_f2)(int , int) = F2 ;
+
+  printf("Appel de F1\n") ;
+  p_f1() ;
+  printf("\nAppel de F2\n");
+  printf( "Resultat de F2( 5 ,6 ) = %d\n" , p_f2( 5 , 6 ) ) ;
+
+  printf("\nAppels alternatifs de F1\n");
+  printf( "(*p_f1)() : " ) ; (*p_f1)()  ;
+  printf( "(*F1)()   : " ) ; (*F1)()    ;
+
+  printf("\nAppels alternatifs de F2\n");
+  printf( "Resultat de (*p_f2)(2,3) = %d\n" ,(*p_f2)(2,3) ) ;
+  printf( "Resultat de (*F2)(2,3)   = %d\n"   ,(*F2)(2,3) ) ;
+
+  return(0) ;
+}</code></pre>
+<pre class="terminal"><code>$ ./pointeurs_fonctions
+Appel de F1
+F1 : coucou
+
+Appel de F2
+Resultat de F2( 5 ,6 ) = 11
+
+Appels alternatifs de F1
+(*p_f1)() : F1 : coucou
+(*F1)()   : F1 : coucou
+
+Appels alternatifs de F2
+Resultat de (*p_f2)(2,3) = 5
+Resultat de (*F2)(2,3)   = 5</code></pre>
+      <p><code>p_f1()</code> et <code>(*p_f1)()</code> sont équivalents : un pointeur sur fonction s'appelle avec ou sans étoile.</p>
+    </div>
+
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Les parenthèses autour de l'étoile</span></p>
+      <p>Sans elles, la déclaration change de nature : <code>double * F2( void ) ;</code> déclare une <em>fonction</em> qui renvoie un <code>double *</code>, et non un pointeur sur fonction.</p>
+    </div>
+
+    <h3>Généraliser la déclaration</h3>
+    <p>La forme <code>type1_t (* truc)(param1)</code> se lit : « <code>truc</code>, une fois déréférencé, est une fonction qui prend <code>param1</code> et renvoie <code>type1_t</code> ». On remplace <code>truc</code> par ce qu'on veut déclarer :</p>
+    <ul>
+      <li><code>truc</code> = une variable <code>p</code> : <code>type1_t (* p)(param1)</code>, la déclaration précédente ;</li>
+      <li><code>truc</code> = une fonction <code>F2(param2)</code> qui renvoie un tel pointeur : <code>type1_t (* F2(param2))(param1)</code> ;</li>
+      <li><code>truc</code> = un pointeur <code>p</code> sur une telle fonction <code>F2</code> : <code>type1_t (* (*p)(param2))(param1)</code> ;</li>
+      <li>une fonction <code>F3(param3)</code> qui renvoie un pointeur sur une fonction <code>F2</code>, elle-même renvoyant un pointeur sur <code>F1</code> : <code>type1_t (*(*F3(param3))(param2))(param1)</code> ;</li>
+      <li>un pointeur <code>p</code> sur cette fonction <code>F3</code> : <code>type1_t (*(*(*p)(param3))(param2))(param1)</code> <span class="badge a-verifier">À vérifier</span> le polycopié (p. 15) termine par <code>(param3)</code> au lieu de <code>(param1)</code>, ce qui contredit la ligne précédente ;</li>
+      <li>une fonction <code>F2(param2)</code> qui renvoie un pointeur de pointeur sur fonction : <code>type1_t (** F2(param2))(param1)</code> ; un pointeur de pointeur : <code>type1_t (** p)(param1)</code>.</li>
+    </ul>
+    <p>On retrouve ces formes dans les tableaux de pointeurs sur fonctions : <code>type1_t (* tab[N])(param1)</code> déclare un tableau de N pointeurs sur des fonctions qui prennent <code>param1</code> et renvoient un <code>type1_t</code>.</p>
+
+    <h3>Salade de pointeurs</h3>
+    <div class="tableau compact">
+      <table>
+        <caption>Déclarations à savoir lire (p. 17)</caption>
+        <thead><tr><th>Déclaration</th><th><code>p</code> est…</th></tr></thead>
+        <tbody>
+          <tr><td><code>type_t *p</code></td><td>un pointeur sur un <code>type_t</code></td></tr>
+          <tr><td><code>type_t *p[10]</code></td><td>un tableau de 10 pointeurs sur des <code>type_t</code></td></tr>
+          <tr><td><code>type_t *p(void)</code></td><td>une fonction sans paramètre qui renvoie un pointeur sur un <code>type_t</code></td></tr>
+          <tr><td><code>type_t (*p)(void)</code></td><td>un pointeur sur une fonction sans paramètre qui renvoie un <code>type_t</code></td></tr>
+          <tr><td><code>type_t *(*p)(void)</code></td><td>un pointeur sur une fonction sans paramètre qui renvoie un pointeur sur un <code>type_t</code></td></tr>
+          <tr><td><code>type_t (*p[10])(void)</code></td><td>un tableau de 10 pointeurs sur des fonctions qui renvoient un <code>type_t</code></td></tr>
+          <tr><td><code>type_t *(*p[10])(void)</code></td><td>un tableau de 10 pointeurs sur des fonctions qui renvoient un pointeur sur un <code>type_t</code></td></tr>
+          <tr><td><code>type_t (*p(int))(void)</code></td><td>une fonction à un paramètre <code>int</code> qui renvoie un pointeur sur une fonction sans paramètre renvoyant un <code>type_t</code></td></tr>
+          <tr><td><code>type_t (*(*p)(int))(void)</code></td><td>un pointeur sur une fonction de même signature que la précédente</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>La déclaration de <code>signal</code></span></p>
+      <p><code>void (* signal( int sig , void (* func)(int) ))(int) ;</code> déclare la fonction qui installe un gestionnaire de signal. <code>signal</code> a deux paramètres : un <code>int sig</code>, et un pointeur <code>func</code> sur une fonction qui prend un <code>int</code> et ne renvoie rien. Elle renvoie un pointeur sur une fonction de même forme (l'ancien gestionnaire). Un <code>typedef</code> rend la déclaration lisible :</p>
+<pre><code class="language-c">typedef void (* handler_t)( int ) ;
+handler_t signal( int sig , handler_t func ) ;</code></pre>
+    </div>
+
+    <div class="bloc astuce">
+      <p class="bloc-titre">Astuce <span>Lire une déclaration de l'intérieur vers l'extérieur</span></p>
+      <p>On part du nom, on lit d'abord ce qui est à sa droite (<code>[N]</code> : tableau de, <code>(…)</code> : fonction qui prend…), puis ce qui est à sa gauche (<code>*</code> : pointeur sur), en sortant des parenthèses une à une. Pour <code>type_t *(*p[10])(void)</code> : <code>p</code> est un tableau de 10… pointeurs sur… des fonctions sans paramètre… qui renvoient un pointeur sur un <code>type_t</code>.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Pointeurs et constantes <span class="ref">p. 18</span></h2>
+    <p>Le mot clé <code>const</code> indique qu'une valeur ne doit pas changer. Il permet au compilateur d'optimiser, et donne à l'utilisateur d'une fonction la garantie qu'elle ne modifiera pas ce qu'on lui passe.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Les quatre combinaisons</caption>
+        <thead><tr><th>Déclaration</th><th>Le pointeur peut changer</th><th>La valeur pointée peut changer</th></tr></thead>
+        <tbody>
+          <tr><td><code>char * p</code></td><td>oui</td><td>oui</td></tr>
+          <tr><td><code>const char * p</code></td><td>oui</td><td>non (pointeur sur une constante)</td></tr>
+          <tr><td><code>char * const p</code></td><td>non (pointeur constant)</td><td>oui</td></tr>
+          <tr><td><code>const char * const p</code></td><td>non</td><td>non</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Le compilateur protège la constante : <code>int * p2 = &amp;x ;</code> (avec <code>const int x</code>) provoque un avertissement, et <code>(*p) = 56 ;</code> avec <code>const int * p</code> une erreur. Mais un forceur « casse » le <code>const</code> :</p>
+<pre data-fichier="attention_const.c"><code class="language-c">const int x = 45 ;
+const int * p = &amp;x ;
+printf( "constante x AVANT = %d\n" , x ) ;
+(*(int *)p) = 67 ;      /* passe sur certains compilateurs */
+printf( "constante x APRES = %d\n" , x ) ;</code></pre>
+<pre class="terminal"><code>$ ./attention_const
+constante x AVANT = 45
+constante x APRES = 67</code></pre>
+    <p>Moralité de l'enseignant : le forceur est à utiliser en connaissance de cause.</p>
+    <div class="bloc note">
+      <p class="bloc-titre">Note <span>Un comportement indéfini</span> <span class="badge ajout">Ajout</span></p>
+      <p>Modifier un objet déclaré <code>const</code> est un comportement indéfini : ici gcc affiche 67, mais avec <code>-O2</code>, ou pour une constante globale rangée en mémoire en lecture seule, le résultat peut être 45 ou un arrêt du programme.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Utiliser les pointeurs <span class="ref">p. 19–24</span></h2>
+    <p>Plutôt que de manipuler des objets complexes en entier, on manipule des références sur eux. Cela sert à relier des structures, à partager des objets et à passer des paramètres.</p>
+
+    <h3>Des structures reliées par des pointeurs</h3>
+    <p>Une structure peut contenir un pointeur sur une autre structure, qui doit alors être déclarée avant elle :</p>
+<pre><code class="language-c">typedef struct brosse_a_dent_s
+{
+        char * couleur ;
+        int longueur ;
+} brosse_a_dent_t ;
+
+typedef struct individu_s
+{
+        char * prenom ;
+        char * nom ;
+        brosse_a_dent_t * brosse ;
+} individu_t ;</code></pre>
+
+    <p>Une <dfn>structure récursive</dfn> contient des pointeurs sur son propre type : listes chaînées, arbres… Deux écritures équivalentes, la seconde annonçant le <code>typedef</code> d'abord :</p>
+<pre><code class="language-c">typedef struct noeud_s                 typedef struct noeud_s noeud_t ;
+{                                      struct noeud_s
+  char * etiquette ;                   {
+  struct noeud_s * fils_gauche ;         char * etiquette ;
+  struct noeud_s * fils_droit ;          noeud_t * fils_gauche ;
+} noeud_t ;                              noeud_t * fils_droit ;
+                                       } ;</code></pre>
+
+    <p>Deux structures sont <dfn>mutuellement récursives</dfn> quand chacune pointe sur l'autre. Dans l'exemple du cours, une famille pointe sur la liste de ses membres et sur la famille suivante ; chaque individu pointe sur le suivant et sur sa famille :</p>
+<pre><code class="language-c">typedef struct familles famille_t ;
+typedef struct individus individu_t ;
+
+struct familles                        struct individus
+{                                      {
+  char * nom ;                           char * prenom ;
+  individu_t * membres ;                 individu_t * suivant ;
+  famille_t * suivante ;                 famille_t * appartient ;
+} ;                                    } ;</code></pre>
+    <p>La famille Dupont a pour membres Pierre, Paul et Jacques ; sa <code>suivante</code> est la famille Donald (Riri, Fifi, Loulou), dont la <code>suivante</code> vaut <code>NULL</code>. Chaque individu pointe sur sa famille par <code>appartient</code>.</p>
+
+    <h3>Le partage d'objets</h3>
+    <p>Plusieurs références peuvent désigner le même objet. Exemple : les listes des enseignants et des étudiants de l'IC2 pointent sur les individus de la liste des personnes, sans les recopier.</p>
+<pre><code class="language-c">typedef struct individus
+{
+  char * prenom ;
+  char * nom ;
+} individu_t ;
+
+typedef struct listes
+{
+  individu_t * individu ;
+  struct listes * suivant ;
+} liste_t ;
+
+liste_t * personnes , * enseignants , * eleves ;</code></pre>
+    <p>On gagne de la mémoire, et surtout les mises à jour sont plus sûres et plus rapides : un individu modifié l'est dans toutes les listes. Il faut en revanche détruire les listes avec soin pour éviter pointeurs fous et fuites :</p>
+    <ol class="etapes">
+      <li>supprimer les listes des étudiants et des enseignants : seulement leurs cellules, pas les individus (<code>free(chainon)</code>) ;</li>
+      <li>supprimer la liste des personnes : les cellules <em>et</em> les individus (<code>free(chainon-&gt;individu)</code> puis <code>free(chainon)</code>).</li>
+    </ol>
+    <div class="bloc note">
+      <p class="bloc-titre">Note <span>L'ordre des deux <code>free</code></span> <span class="badge ajout">Ajout</span></p>
+      <p>Le polycopié écrit <code>free(chainon) + free(chainon-&gt;individu)</code> ; dans le code, l'individu doit être libéré <em>avant</em> la cellule, sinon on lit <code>chainon-&gt;individu</code> dans une zone déjà libérée.</p>
+    </div>
+
+    <h3>Rendre un résultat par un paramètre</h3>
+    <p>En C, les paramètres sont passés <strong>par valeur</strong> : la fonction reçoit une copie de la variable, et c'est cette copie qu'elle modifie. Pour qu'une fonction modifie une variable de l'appelant, on lui passe l'adresse de cette variable, qu'elle manipule comme un pointeur.</p>
+    <div class="colonnes">
+      <div class="colonne contre">
+        <p class="cadre-titre">Mauvais exemple</p>
+<pre><code class="language-c">void F( int x )
+{
+   x = 10 ;   /* modifie la copie */
+}
+/* appel */
+i = 5 ;
+F( i ) ;      /* i vaut toujours 5 */</code></pre>
+      </div>
+      <div class="colonne pour">
+        <p class="cadre-titre">Exemple correct</p>
+<pre><code class="language-c">void F( int * x ) /* pointeur sur un résultat */
+{
+   (*x) = 10 ;
+}
+/* appel */
+i = 5 ;
+F( &amp;i ) ;     /* @ du résultat : i vaut 10 */</code></pre>
+      </div>
+    </div>
+    <p>Le programme <code>parametres_resultat.c</code> le montre en affichant les adresses : dans <code>F_bad</code>, <code>x</code> est à une autre adresse que <code>i</code> ; dans <code>F_good</code>, <code>*x</code> est <code>i</code> lui-même.</p>
+<pre class="terminal"><code>$ ./parametres_resultat
+MAIN : variable i [0x7ffc43f1df24] AVANT f_bad = 5
+	F_bad : variable x [0x7ffc43f1df0c] ENTREE = 5
+	F_bad : variable x [0x7ffc43f1df0c] SORTIE = 11
+MAIN : variable i [0x7ffc43f1df24] APRES F_bad = 5
+
+MAIN : variable i [0x7ffc43f1df24] AVANT F_good = 5
+	F_good : variable x [0x7ffc43f1df24] ENTREE = 5
+	F_good : variable x [0x7ffc43f1df24] SORTIE = 22
+MAIN : variable i [0x7ffc43f1df24] APRES F_good = 22</code></pre>
+
+    <h3>Passer un paramètre complexe</h3>
+    <p>Pour un paramètre « complexe » (tableau, structure, chaîne, fonction : tout ce qui n'est pas un type simple comme <code>int</code> ou <code>float</code>), on passe un pointeur plutôt que sa valeur, même s'il n'est pas modifié : on évite la copie.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Déclarer et passer un paramètre complexe (p. 23)</caption>
+        <thead><tr><th>Argument</th><th>Déclaration du paramètre</th><th>Passage</th></tr></thead>
+        <tbody>
+          <tr><td><code>int T[10000]</code></td><td><code>F( int * T )</code></td><td><code>F(T)</code></td></tr>
+          <tr><td><code>noeud_t * N1</code></td><td rowspan="2"><code>F( noeud_t * N )</code></td><td><code>F(N1)</code></td></tr>
+          <tr><td><code>noeud_t N2</code></td><td><code>F(&amp;N2)</code></td></tr>
+          <tr><td><code>char * s1 = "abc"</code></td><td rowspan="2"><code>F( char * s )</code></td><td><code>F(s1)</code></td></tr>
+          <tr><td><code>char s2[4] = "abc"</code></td><td><code>F(s2)</code></td></tr>
+          <tr><td><code>void F2(int i)</code></td><td><code>F( void (*f)(int) )</code></td><td><code>F(F2)</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Un tableau et une fonction se passent par leur nom, qui est déjà une adresse ; une structure, par <code>&amp;</code>.</p>
+
+    <h3>Des pointeurs de fonctions dans les structures</h3>
+    <p>Mettre des pointeurs de fonctions dans une structure rapproche le C de la programmation objet : les structures sont les types des objets, leurs champs sont les attributs, et les pointeurs de fonctions sont les méthodes. Le programme <code>affichage_objets.c</code> en donne le principe simplifié ; <code>affichage_objets_2.c</code> se rapproche de l'envoi de messages aux objets, avec une fonction générique d'aiguillage.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Une « méthode » dans une structure</span></p>
+      <p>Un exemple minimal, dans l'esprit de <code>affichage_objets.c</code> : chaque objet porte la fonction qui sait l'afficher.</p>
+<pre data-fichier="methode.c"><code class="language-c">#include &lt;stdio.h&gt;
+
+typedef struct objet_s objet_t ;
+struct objet_s
+{
+  int valeur ;
+  void (* afficher)( objet_t * ) ;   /* la « méthode » */
+} ;
+
+static void afficher_entier( objet_t * o ) { printf( "entier = %d\n" , o-&gt;valeur ) ; }
+static void afficher_hexa( objet_t * o )   { printf( "hexa = %#x\n" , o-&gt;valeur ) ; }
+
+int main()
+{
+  objet_t a = { 10 , afficher_entier } ;
+  objet_t b = { 255 , afficher_hexa } ;
+  objet_t * tab[2] = { &amp;a , &amp;b } ;
+  for( int i = 0 ; i &lt; 2 ; i++ )
+    tab[i]-&gt;afficher( tab[i] ) ;     /* chaque objet s'affiche à sa façon */
+  return 0 ;
+}</code></pre>
+<pre class="terminal"><code>$ ./methode
+entier = 10
+hexa = 0xff</code></pre>
+    </div>
+  </section>
+
+  <section>
+    <h2>La généricité en C <span class="ref">p. 25–33</span></h2>
+    <p>Un pointeur contient une adresse, qui peut en principe désigner n'importe quel objet. Le C s'en sert pour écrire des fonctions qui marchent sur des objets de tout type : copier, échanger, trier.</p>
+
+    <h3>Le pointeur générique <code>void *</code></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Pointeur générique</span></p>
+      <p>Un <dfn>pointeur générique</dfn>, déclaré <code>void * p ;</code>, pointe sur n'importe quoi (<code>void</code> : « bon à tout, bon à rien »).</p>
+    </div>
+    <ul>
+      <li><strong>Compatible avec n'importe quel pointeur</strong> : on l'affecte à un <code>int *</code>, un <code>float *</code>, un <code>struct … *</code>, et réciproquement, sans forceur. C'est pourquoi on écrit <code>ind = malloc( sizeof(individu_t) ) ;</code> sans cast, puisque <code>malloc</code> renvoie un <code>void *</code>. Pour limiter les erreurs, l'enseignant recommande de ne pas en mettre.</li>
+      <li><strong>Opération déconseillée</strong> : l'arithmétique (<code>p++</code>, <code>p--</code>, <code>p + i</code>). La taille de l'objet pointé est inconnue ; gcc compile quand même et compte alors 1 octet par élément (<code>arithm_void.c</code> : <code>p++</code> ajoute 1).</li>
+      <li><strong>Opération interdite</strong> : le déréférencement. <code>(*p)</code> sur un <code>void *</code> ne compile pas.</li>
+      <li><strong>Opérations autorisées</strong> : l'affectation entre <code>void *</code> (<code>p = q</code>), et le passage en paramètre : une fonction <code>void F( void * )</code> accepte un <code>int *</code> comme un <code>float *</code>.</li>
+    </ul>
+    <div class="bloc note">
+      <p class="bloc-titre">Note <span>L'arithmétique sur <code>void *</code></span> <span class="badge ajout">Ajout</span></p>
+      <p>En C standard, <code>p + i</code> sur un <code>void *</code> est interdit ; c'est une extension de gcc qui l'accepte, avec un pas de 1 octet (l'option <code>-Wpointer-arith</code> la signale). Pour avancer d'octet en octet de façon portable, on passe par un <code>char *</code> : <code>(char *)p + i</code>.</p>
+    </div>
+
+    <h3>Fonctions génériques : copier des objets inconnus</h3>
+    <p>On veut une fonction qui copie <code>n</code> octets d'une adresse source vers une adresse cible et renvoie un pointeur sur la zone de départ. Une première version avec des <code>void *</code> est incorrecte : <code>*cible++ = *source++</code> déréférence des <code>void *</code>, ce qui est interdit.</p>
+<pre><code class="language-c">void * copie( void * cible , void * source , int n )   /* incorrecte */
+{
+  void * depart = source ;
+  while( n-- ) *cible++ = *source++ ;
+  return( depart ) ;
+}</code></pre>
+    <p>On l'écrit donc avec des <code>char</code>, qui font un octet et permettent de transférer la zone octet par octet :</p>
+<pre data-fichier="copie.c"><code class="language-c">extern
+char  * copie( char * cible , char * source , int n )
+{
+  char * d = source ;
+  while( n-- ) *cible++ = *source++ ;
+  return d ;
+}</code></pre>
+    <p>Le lien avec la généricité est dans son <em>utilisation</em> : compilée à part, la fonction est déclarée pour les programmes qui l'appellent avec des <code>void *</code> (c'est le rôle de <code>copie.h</code>) :</p>
+<pre data-fichier="copie.h"><code class="language-c">extern void * copie( void * cible , void * source , int n ) ;</code></pre>
+    <p>Tout est alors cohérent : n'importe quel pointeur passé en argument est compatible avec <code>void *</code>, le résultat <code>void *</code> s'affecte à n'importe quel pointeur, et les <code>++</code> se font sur des <code>char</code>, le plus petit objet adressable : <code>char</code> a la plus petite contrainte d'alignement. Le programme <code>test_copie.c</code> copie ainsi un <code>int</code>, un <code>float</code>, un <code>double</code>, une structure et un tableau de 10 entiers, chaque fois avec <code>sizeof</code> comme nombre d'octets :</p>
+<pre class="terminal"><code>$ ./test_copie
+AVANT i1 = 11 , i2 = 0
+APRES i1 = 11 , i2 = 11
+…
+AVANT tabi1 = { 1 2 3 4 5 6 7 8 9 10 }
+      tabi2 = { -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 }
+APRES tabi1 = { 1 2 3 4 5 6 7 8 9 10 }
+      tabi2 = { 1 2 3 4 5 6 7 8 9 10 }</code></pre>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La bibliothèque standard</span></p>
+      <p><code>copie</code> refait <code>memcpy</code> de <code>&lt;string.h&gt;</code>, de signature <code>void * memcpy( void * dest , const void * src , size_t n )</code>, à une différence près : <code>memcpy</code> renvoie <code>dest</code>, alors que <code>copie</code> renvoie la source.</p>
+    </div>
+
+    <h3>Fonctions génériques : échanger deux pointeurs</h3>
+    <p>Échanger deux pointeurs coûte moins cher qu'échanger les deux objets. Une première idée compile, mais ne fait rien :</p>
+<pre><code class="language-c">void echange( void * p , void * q )   /* incorrecte */
+{
+  void * w ;
+  w = p ; p = q ; q = w ;
+}</code></pre>
+    <p>Avec <code>echange( a , b )</code>, la fonction échange <code>p</code> et <code>q</code>, qui sont des <em>copies</em> de <code>a</code> et <code>b</code> : au retour, <code>a</code> et <code>b</code> n'ont pas bougé. Il faut passer les adresses de <code>a</code> et <code>b</code> :</p>
+<pre data-fichier="echange_generique.c"><code class="language-c">void echange( void ** p , void ** q )
+{
+        void * w ;
+        w = (*p) ; (*p) = (*q) ; (*q) = w ;
+}
+/* appel : echange( (void **)&amp;a , (void **)&amp;b ) ; */</code></pre>
+<pre class="terminal"><code>$ ./echange_generique
+
+AVANT : p_i1 = 5 et p_i2 = 10
+APRES mauvais echange : p_i1 = 5 et p_i2 = 10
+APRES bon echange : p_i1 = 10 et p_i2 = 5
+…</code></pre>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span><code>void **</code> n'est pas générique</span> <span class="badge ajout">Ajout</span></p>
+      <p>Seul <code>void *</code> est compatible avec tout pointeur. <code>void **</code> est un pointeur sur un <code>void *</code> précis : passer <code>&amp;a</code> (un <code>int **</code>) provoque un avertissement. C'est pourquoi le programme de l'enseignant écrit le forceur <code>(void **)&amp;p_i1</code>, et laisse en commentaire l'appel sans forceur.</p>
+    </div>
+
+    <h3>Étude de cas : le tri générique d'un tableau</h3>
+    <p>On veut trier un tableau d'éléments sans connaître leur représentation. Le cours part d'un tri à bulles simple à programmer, qui recommence au début après chaque échange :</p>
+<pre><code class="language-pseudo"><b>tri</b>( T , n )
+<b>Debut</b>
+  i ← 0
+  <b>TQ</b> i &lt; n−1 <b>FRE</b>
+    <b>SI</b> T[i] &lt; T[i+1] <b>ALORS</b>
+       T[i] ↔ T[i+1]
+       i ← 0
+    <b>SINON</b>
+       i ← i+1
+    <b>FSI</b>
+  <b>FTQ</b>
+<b>Fin</b></code></pre>
+    <p>Avec la comparaison <code>T[i] &lt; T[i+1]</code>, ce tri range le tableau dans l'ordre <strong>décroissant</strong>. Traduit directement en C avec <code>void * T</code>, il pose deux problèmes.</p>
+
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Problème 1 : comparer des objets inconnus</span></p>
+      <p>On ne sait pas comparer des objets dont on ignore la représentation : la fonction de tri reçoit donc une <strong>fonction de comparaison</strong> en paramètre, par un pointeur de fonction. Elle prend deux éléments <code>e1</code> et <code>e2</code> et renvoie une valeur négative si <code>e1 &lt; e2</code>, nulle s'ils sont égaux, positive si <code>e1 &gt; e2</code>.</p>
+<pre><code class="language-c">void tri( void * T , int n , int (* comparer)( void * , void * ) ) ;</code></pre>
+      <p>Comme <code>tri</code> appelle <code>comparer</code> avec des pointeurs, la fonction de comparaison des entiers prend des pointeurs, pas des valeurs : <code>int comparer_int( int * e1 , int * e2 ) { return (*e1) - (*e2) ; }</code>.</p>
+    </div>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Problème 2 : échanger des objets de taille inconnue</span></p>
+      <p><code>T[i]</code> ⇔ <code>*(T + i)</code> est interdit sur un <code>void *</code>. La fonction <code>echange</code> de pointeurs ne convient pas, puisqu'on veut échanger les objets eux-mêmes, comme dans le tri à bulles classique : on utilise <code>copie</code>, à condition de connaître la <strong>taille</strong> des éléments, qui devient un paramètre.</p>
+<pre><code class="language-c">void tri( void * T , int n , int (* comparer)( void * , void * ) , int taille ) ;</code></pre>
+    </div>
+
+    <p>La solution complète, <code>tri_generique_perso_1.c</code>, compile avec des avertissements, car <code>comparer_int</code> attend des <code>int *</code> et non des <code>void *</code>. <code>tri_generique_perso_2.c</code> les supprime avec une <dfn>fonction d'encapsulation</dfn> (<span class="en" lang="en">callback</span>) qui a exactement la signature attendue :</p>
+<pre data-fichier="tri_generique_perso_2.c"><code class="language-c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+#include &lt;copie.h&gt;
+
+/* FONCTION GENERIQUE DE TRI d'UN TABLEAU */
+
+static
+void tri( void * T , /* Tableau de pointeurs sur des objets generiques */
+	  const int N , /* Nombre d'objets dans le tableau  */
+	  const int taille , /* Taille des elements du tableau */
+	  int (*comparer)(void * e1 , void * e2) ) /* Fonction de comparaison de 2 objets generiques */
+{
+  int i = 0 ;
+  void * w = malloc(taille) ;
+
+  while( i &lt; N-1 )
+    {
+      if( (*comparer)( T+(i*taille) , T+((i+1)*taille) ) &gt; 0 )
+	{
+	  copie( w , T+(i*taille) , taille ) ;
+	  copie( T+(i*taille) , T+((i+1)*taille) , taille ) ;
+	  copie( T+((i+1)*taille) , w , taille ) ;
+	  i = 0 ;
+	}
+      else
+	i++ ;
+    }
+  free(w) ;
+}
+
+/* Fonction de comparaison de 2 pointeurs sur 2 entiers */
+static
+int comparer_int( int * i1 , int * i2 )
+{
+  return( (*i1) - (*i2) ) ;
+}
+
+/* Fonction d'encapsulation */
+static
+int comparer_int_cb( void * i1 , void * i2 )
+{
+  return( comparer_int( i1 , i2 ) ) ;
+}
+
+/* Fonction d'affichage d'un tableau d'entiers */
+static
+void afficher_int( int * T , const int N )
+{
+  int i = 0 ;
+  for( i=0 ; i&lt;N ; i++ )
+      printf( "%d " , T[i] ) ;
+  printf("\n" );
+}
+
+/* Fonction d'encapsulation de comparaison de 2 pointeurs sur 2 chaines de car */
+static
+int comparer_str(  char ** s1 ,  char ** s2 )
+{
+  return( strcmp( (*s1) , (*s2) ) ) ;
+}
+
+static
+int comparer_str_cb( void * s1 , void * s2 )
+{
+  return( comparer_str( s1 , s2 ) ) ;
+}
+
+/* Fonction d'affichage d'un tableau de chaines de car */
+static
+void afficher_str( char ** T , const int N )
+{
+  int i = 0 ;
+  for( i=0 ; i&lt;N ; i++ )
+      printf( "%s " , T[i] ) ;
+  printf("\n" );
+}
+
+/* Programme d'appel de la fonction generique */
+int
+main()
+{
+  int tab_i[10] = { 9 , 2 , 5 , 4 , 8 , 0 , 7 , 1 , 3 , 6 } ;
+  char * tab_s[5] = { "DDDD" , "AAA" , "ZZZZ" , "UUUU" , "II" } ;
+
+  printf( "\nTableau d'entiers AVANT tri:\n") ;
+  afficher_int( tab_i , 10 ) ;
+  tri( tab_i , 10 , sizeof(int) , comparer_int_cb ) ;
+  printf( "Tableau d'entiers APRES tri:\n") ;
+  afficher_int( tab_i , 10 ) ;
+
+  printf( "\nTableau de chaines de car AVANT tri:\n") ;
+  afficher_str( tab_s , 5 ) ;
+  tri( tab_s , 5 , sizeof(char *) , comparer_str_cb ) ;
+  printf( "Tableau de chaines de car APRES tri:\n") ;
+  afficher_str( tab_s , 5 ) ;
+
+  return(0);
+}</code></pre>
+<pre class="terminal"><code>$ ./tri_generique_perso_2
+
+Tableau d'entiers AVANT tri:
+9 2 5 4 8 0 7 1 3 6
+Tableau d'entiers APRES tri:
+0 1 2 3 4 5 6 7 8 9
+
+Tableau de chaines de car AVANT tri:
+DDDD AAA ZZZZ UUUU II
+Tableau de chaines de car APRES tri:
+AAA DDDD II UUUU ZZZZ</code></pre>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Ce qu'il faut remarquer</span></p>
+      <ul>
+        <li>Le programme échange quand <code>comparer</code> renvoie une valeur <strong>positive</strong> : il trie dans l'ordre croissant, à l'inverse du pseudo-code (et de <code>tri_generique_perso_1.c</code>, qui suit le pseudo-code et donne 9 8 … 0).</li>
+        <li>Pour trier des chaînes, le tableau contient des <code>char *</code> : chaque élément passé à la comparaison est donc un <code>char **</code>, d'où le <code>(*s1)</code> avant <code>strcmp</code>.</li>
+        <li><code>T+(i*taille)</code> fait de l'arithmétique sur un <code>void *</code>, ce que le cours déconseille : cela marche avec gcc (pas de 1 octet), et s'écrirait <code>(char *)T + i*taille</code> en C standard.</li>
+      </ul>
+    </div>
+
+    <h3>Le tri avec <code>qsort</code></h3>
+    <p>Pas besoin d'écrire le tri : la bibliothèque standard (<code>&lt;stdlib.h&gt;</code>) fournit <code>qsort</code>, un tri rapide (<span class="en" lang="en">quicksort</span>) bien plus efficace qu'un tri à bulles. Sa signature est celle de notre <code>tri</code>, avec des <code>const</code> qui garantissent que les éléments comparés ne seront pas modifiés :</p>
+<pre><code class="language-c">void qsort( void * base ,      /* @ debut tableau */
+            size_t nel ,       /* Nb elements */
+            size_t width ,     /* Taille des elements */
+            int (* compar)( const void * , const void * ) ) ;
+            /* Fonction de comparaison */</code></pre>
+<pre data-fichier="tri_generique_qsort.c (extrait)"><code class="language-c">static
+int comparer_int( const int * i1 , const int * i2 )
+{
+  return( (*i2) - (*i1) ) ; /* dans l'ordre decroissant */
+}
+
+static
+int comparer_int_cb( const void * v1 , const void * v2 )
+{
+  return( comparer_int( v1 , v2 ) ) ;
+}
+/* … */
+qsort( tab_i , 10 , sizeof(int) , comparer_int_cb ) ;</code></pre>
+<pre class="terminal"><code>$ ./tri_generique_qsort
+Tableau d'entiers AVANT le tri par qsort
+9 2 5 4 8 0 7 1 3 6
+Tableau d'entiers APRES le tri par qsort
+9 8 7 6 5 4 3 2 1 0
+
+Tableau de chaines de car AVANT tri:
+DDDD AAA ZZZZ UUUU II
+Tableau de chaines de car APRES tri:
+AAA DDDD II UUUU ZZZZ</code></pre>
+    <div class="bloc note">
+      <p class="bloc-titre">Note <span><code>heapsort</code> et <code>mergesort</code></span> <span class="badge ajout">Ajout</span></p>
+      <p>Le cours cite aussi <code>heapsort</code> (tri par tas) et <code>mergesort</code> (tri fusion), de même signature. Ils existent sur macOS et les BSD, mais pas dans la bibliothèque C de Linux (glibc) ni dans la norme : seul <code>qsort</code> est portable.</p>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Trier des structures avec <code>qsort</code></span> <span class="badge ajout">Ajout</span></p>
+      <p>Avec <code>typedef struct { char nom[20] ; int age ; } personne_t ;</code>, écrire la fonction de comparaison qui permet de trier un tableau de <code>personne_t</code> par âge croissant avec <code>qsort</code>, et l'appel correspondant pour un tableau <code>tab</code> de <code>n</code> éléments.</p>
+      <details class="indice"><summary>Indice</summary><p>Les éléments du tableau sont des <code>personne_t</code> : la comparaison reçoit des <code>const void *</code> qui pointent chacun sur une <code>personne_t</code>.</p></details>
+      <details class="solution"><summary>Solution proposée</summary>
+<pre><code class="language-c">static int comparer_age( const void * v1 , const void * v2 )
+{
+  const personne_t * p1 = v1 ;
+  const personne_t * p2 = v2 ;
+  return p1-&gt;age - p2-&gt;age ;
+}
+/* … */
+qsort( tab , n , sizeof(personne_t) , comparer_age ) ;</code></pre>
+        <p>La taille passée est celle d'un élément, <code>sizeof(personne_t)</code>, et non celle d'un pointeur. La différence <code>p1-&gt;age - p2-&gt;age</code> convient pour des âges ; pour des entiers quelconques, elle peut déborder, et l'on écrit plus sûrement <code>(a &gt; b) - (a &lt; b)</code>.</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Un pointeur est une variable qui contient une adresse ; <code>&amp;v</code> donne l'adresse de <code>v</code>, <code>*p</code> le contenu pointé par <code>p</code>.</li>
+        <li><code>p + i</code> avance de <code>i</code> <em>objets</em> : l'adresse augmente de <code>i × sizeof(type pointé)</code> ; la différence de deux pointeurs compte des éléments.</li>
+        <li><code>T[i]</code> ⇔ <code>*(T + i)</code> ; <code>T[i][j]</code> ⇔ <code>*(T + i × C + j)</code> pour un tableau de C colonnes.</li>
+        <li>Objet statique : pas de fuite, mais jamais d'adresse de variable locale renvoyée. Objet dynamique (<code>malloc</code>, <code>free</code>) : autant de <code>free</code> que de <code>malloc</code>, et le pointeur remis à <code>NULL</code> après <code>free</code>.</li>
+        <li><code>type_t (*p)(params)</code> est un pointeur sur fonction ; le nom d'une fonction est son adresse ; un <code>typedef</code> rend les déclarations lisibles.</li>
+        <li><code>const char * p</code> : valeur pointée constante ; <code>char * const p</code> : pointeur constant.</li>
+        <li>Les paramètres sont passés par valeur : pour rendre un résultat, passer l'adresse (<code>F(&amp;i)</code>) ; pour un objet complexe, passer un pointeur.</li>
+        <li><code>void *</code> est compatible avec tout pointeur, mais ne se déréférence pas et ne devrait pas servir à l'arithmétique.</li>
+        <li>Une fonction générique reçoit la taille des éléments et une fonction de comparaison ; <code>qsort(base, nel, width, compar)</code> la fournit toute faite.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Avec <code>int * p</code> = 0x1000 et <code>sizeof(int)</code> = 4, que vaut <code>p + 3</code> ?</summary>
+        <div><p>0x100c : l'adresse avance de 3 × 4 = 12 octets.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que déclare <code>int (*p)[10]</code> ? Et <code>int *p[10]</code> ?</summary>
+        <div><p>Le premier : un pointeur sur un tableau de 10 entiers. Le second : un tableau de 10 pointeurs sur des entiers.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi une fonction ne doit-elle pas renvoyer l'adresse d'une variable locale ?</summary>
+        <div><p>La variable est dans le contexte de la fonction, sur la pile, qui est libéré au retour : le pointeur renvoyé est un pointeur fou, sur une place réutilisée par les appels suivants.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Écrire la déclaration d'un pointeur <code>pf</code> sur une fonction qui prend un <code>char *</code> et renvoie un <code>int</code>.</summary>
+        <div><p><code>int (*pf)( char * ) ;</code></p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi <code>void echange( void * p , void * q )</code> n'échange-t-il rien ?</summary>
+        <div><p>Les paramètres sont des copies des pointeurs de l'appelant : on échange les copies. Il faut passer les adresses des pointeurs, avec <code>void ** p</code> et <code>void ** q</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quels sont les quatre arguments de <code>qsort</code> ?</summary>
+        <div><p>L'adresse du tableau, le nombre d'éléments, la taille d'un élément, et un pointeur sur la fonction de comparaison <code>int (*)(const void *, const void *)</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que permet, et que n'empêche pas, <code>const int * p = &amp;x</code> ?</summary>
+        <div><p>Le compilateur refuse <code>*p = 56</code> et avertit pour <code>int * p2 = &amp;x</code>. Mais un forceur <code>*(int *)p = 67</code> passe : il « casse » le <code>const</code>, au prix d'un comportement indéfini.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="index.html"><small>← Accueil</small>Algorithmique 3</a>
+    <a class="suivant" href="cours-02-arguments-variables.html"><small>Suivant →</small>Les arguments variables</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Algorithmique 3 · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

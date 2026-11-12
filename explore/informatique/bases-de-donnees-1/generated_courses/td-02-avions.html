@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TD 2 · Les avions · Bases de données L2</title>
+<meta name="description" content="TD 2 interactif de bases de données (L2) : modéliser un petit trafic aérien en UML, le traduire en modèle relationnel et le créer en SQL ; puis le remettre en troisième forme normale (types d'avion, aéroports, licences) et modifier la base, à faire dans la page.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+<script type="application/json" id="atelier-jeux">
+{
+  "vide": {
+    "titre": "Base vide",
+    "description": "<p>Aucune table : le script crée tout.</p>",
+    "script": "-- Base vide : le script de la réponse crée les tables\nSELECT 1;"
+  },
+  "avions-v1": {
+    "titre": "Avions, version 1 (données du TP 2)",
+    "description": "<p>Les trois tables du modèle de l'enseignant, <code>avion(id_avion, nom_type, nb_place, nom_aero_ratt)</code>, <code>pilote(id_pilote, nom_pilote, nom_aero)</code> et <code>vol(id_vol, id_pilote, id_avion, nom_aero_dep, nom_aero_arr, heure_dep, heure_arr)</code>, remplies par le script fourni au TP 2 (<code>TP/TP2/script_1.txt</code> : 14 avions, 9 pilotes, 14 vols). Ajout : quatre vols (1014 à 1017), dont trois au départ du Mans, pour que la question 3b ait une réponse.</p>",
+    "script": "CREATE TABLE avion (\n  id_avion integer PRIMARY KEY,\n  nom_type varchar(20),\n  nb_place integer,\n  nom_aero_ratt varchar(30)\n);\nCREATE TABLE pilote (\n  id_pilote SERIAL PRIMARY KEY,\n  nom_pilote varchar(30),\n  nom_aero varchar(30)\n);\nCREATE TABLE vol (\n  id_vol integer PRIMARY KEY,\n  id_pilote integer REFERENCES pilote (id_pilote),\n  id_avion integer REFERENCES avion (id_avion),\n  nom_aero_dep varchar(30),\n  nom_aero_arr varchar(30),\n  heure_dep time,\n  heure_arr time\n);\n\n-- Données : script fourni au TP 2 (TP/TP2/script_1.txt)\nINSERT INTO avion VALUES (123,'A300',300,'Paris Orly');\nINSERT INTO avion VALUES (102,'A320',320,'Paris Orly');\nINSERT INTO avion VALUES (103,'A300',300,'Marseille Marignane');\nINSERT INTO avion VALUES (104,'A320',320,'Paris Roissy');\nINSERT INTO avion VALUES (105,'A300',300,'Toulouse');\nINSERT INTO avion VALUES (106,'B747',248,'Paris Orly');\nINSERT INTO avion VALUES (107,'B747',248,'Bordeaux');\nINSERT INTO avion VALUES (108,'ATR44',144,'Avignon');\nINSERT INTO avion VALUES (109,'ATR44',144,'Nancy');\nINSERT INTO avion VALUES (110,'Foker100',100,'Paris Orly');\nINSERT INTO avion VALUES (111,'Foker100',100,'Avignon');\nINSERT INTO avion VALUES (112,'B747',248,'Avignon');\nINSERT INTO avion VALUES (100,'A300',300,'Marseille Marignane');\nINSERT INTO avion VALUES (101,'A310',310,'Strasbourg');\n\nINSERT INTO pilote VALUES (default,'Pierre','Paris Orly');\nINSERT INTO pilote VALUES (default,'Paul','Paris Orly');\nINSERT INTO pilote VALUES (default,'Jacques','Paris Roissy');\nINSERT INTO pilote VALUES (default,'Fernande','Avignon');\nINSERT INTO pilote VALUES (default,'Marie','Toulouse');\nINSERT INTO pilote VALUES (default,'Philippe','Avignon');\nINSERT INTO pilote VALUES (default,'Frederic','Nancy');\nINSERT INTO pilote VALUES (default,'Cecile','Strasbourg');\nINSERT INTO pilote VALUES (default,'Jean','Lyon');\n\nINSERT INTO vol VALUES (1000,(select id_pilote from pilote where nom_pilote like 'Pierre'),101,'Paris Orly','Toulouse','10:05','12:53');\nINSERT INTO vol VALUES (1001,(select id_pilote from pilote where nom_pilote like 'Pierre'),101,'Toulouse','Paris Orly','14:25','17:07');\nINSERT INTO vol VALUES (1002,(select id_pilote from pilote where nom_pilote like 'Paul'),102,'Paris Orly','Marseille Marignane','08:35','09:30');\nINSERT INTO vol VALUES (1003,(select id_pilote from pilote where nom_pilote like 'Paul'),103,'Marseille Marignane','Strasbourg','13:15','14:48');\nINSERT INTO vol VALUES (1004,(select id_pilote from pilote where nom_pilote like 'Philippe'),104,'Paris Orly','Toulouse','18:24','20:06');\nINSERT INTO vol VALUES (1005,(select id_pilote from pilote where nom_pilote like 'Fernande'),105,'Toulouse','Nancy','11:05','13:53');\nINSERT INTO vol VALUES (1006,(select id_pilote from pilote where nom_pilote like 'Cecile'),110,'Avignon','Paris Orly','07:35','08:22');\nINSERT INTO vol VALUES (1007,(select id_pilote from pilote where nom_pilote like 'Marie'),108,'Paris Roissy','Nancy','07:05','07:55');\nINSERT INTO vol VALUES (1008,(select id_pilote from pilote where nom_pilote like 'Fernande'),123,'Lyon','Avignon','06:55','07:35');\nINSERT INTO vol VALUES (1009,(select id_pilote from pilote where nom_pilote like 'Frederic'),100,'Paris Orly','Lyon','10:05','10:43');\nINSERT INTO vol VALUES (1010,(select id_pilote from pilote where nom_pilote like 'Marie'),100,'Lyon','Paris Orly','15:18','16:03');\nINSERT INTO vol VALUES (1011,(select id_pilote from pilote where nom_pilote like 'Jacques'),112,'Lyon','Avignon','19:20','20:05');\nINSERT INTO vol VALUES (1012,(select id_pilote from pilote where nom_pilote like 'Fernande'),112,'Paris Roissy','Lyon','17:15','18:02');\nINSERT INTO vol VALUES (1013,(select id_pilote from pilote where nom_pilote like 'Jacques'),112,'Avignon','Paris Roissy','21:45','22:38');\n\n-- Ajouts pour la question 3b : le script du TP n'a aucun vol au départ du Mans\nINSERT INTO vol VALUES (1014,(select id_pilote from pilote where nom_pilote like 'Jean'),111,'Le Mans','Avignon','08:10','11:45');\nINSERT INTO vol VALUES (1015,(select id_pilote from pilote where nom_pilote like 'Cecile'),110,'Le Mans','Avignon','12:30','14:05');\nINSERT INTO vol VALUES (1016,(select id_pilote from pilote where nom_pilote like 'Philippe'),108,'Le Mans','Lyon','07:00','08:20');\nINSERT INTO vol VALUES (1017,(select id_pilote from pilote where nom_pilote like 'Paul'),102,'Paris Orly','Avignon','09:40','10:55');\n"
+  },
+  "avions-aeroport": {
+    "titre": "Avions, version 1, avec la table aeroport",
+    "description": "<p>Les tables de la version 1, <code>vol</code> vide (« il n'y a aucune donnée »), et la nouvelle table <code>aeroport(id_aero, nom_aero, nom_ville)</code> avec quatre aéroports. Un avion (123) et un pilote (1) existent, pour que les tests puissent créer un vol.</p>",
+    "script": "CREATE TABLE avion (\n  id_avion integer PRIMARY KEY,\n  nom_type varchar(20),\n  nb_place integer,\n  nom_aero_ratt varchar(30)\n);\nCREATE TABLE pilote (\n  id_pilote SERIAL PRIMARY KEY,\n  nom_pilote varchar(30),\n  nom_aero varchar(30)\n);\nCREATE TABLE vol (\n  id_vol integer PRIMARY KEY,\n  id_pilote integer REFERENCES pilote (id_pilote),\n  id_avion integer REFERENCES avion (id_avion),\n  nom_aero_dep varchar(30),\n  nom_aero_arr varchar(30),\n  heure_dep time,\n  heure_arr time\n);\nCREATE TABLE aeroport (\n  id_aero SERIAL PRIMARY KEY,\n  nom_aero varchar(30) NOT NULL,\n  nom_ville varchar(30)\n);\nINSERT INTO aeroport (nom_aero, nom_ville) VALUES ('Orly', 'Paris'), ('Roissy', 'Paris'), ('Avignon', 'Avignon'), ('Le Mans', 'Le Mans');\nINSERT INTO avion VALUES (123, 'A300', 300, 'Paris Orly');\nINSERT INTO pilote VALUES (DEFAULT, 'Pierre', 'Paris Orly');\n"
+  }
+}
+</script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Bases de données</a>
+    <span aria-current="page">TD 2 · Les avions</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> TD 2 · L2 S3 · interactif</p>
+    <h1>TD 2 : les avions</h1>
+    <p class="chapeau">Une même base, en deux versions : on la modélise, on la traduit et on la crée en SQL, puis on découvre qu'elle n'est pas en troisième forme normale et on la corrige. Le TD met en œuvre les cours 1 et 2, et prépare le TP 2, qui reprend la même base.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TD/TD2_Avions.pdf">TD2_Avions.pdf</a> · séance 2, 2 pages</dd></div>
+      <div><dt>Enseignants</dt><dd>Nathalie Camelin, Sylvain Meignier</dd></div>
+      <div><dt>Cours</dt><dd><a href="cours-01-modele-entite-association.html">Cours 1 · Modèle entité-association</a> · <a href="cours-02-sql-postgresql.html">Cours 2 · SQL avec PostgreSQL</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Modéliser un petit domaine en UML, puis le traduire en relations.</li>
+        <li>Créer les tables en SQL, avec clés primaires et étrangères, dans le bon ordre.</li>
+        <li>Repérer une dépendance qui viole la troisième forme normale, et la corriger en créant une entité.</li>
+        <li>Modifier une table existante avec <code>ALTER TABLE</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Notions utilisées</p>
+      <ul>
+        <li><a href="cours-01-modele-entite-association.html">Cours 1</a> : associations, formes normales, règles de passage au relationnel.</li>
+        <li><a href="cours-02-sql-postgresql.html">Cours 2</a> : types, <code>CREATE TABLE</code>, contraintes, <code>ALTER TABLE</code>, premières requêtes <code>SELECT</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Mode d'emploi</p>
+    <ul>
+      <li>La réponse se construit sur le dessin ou dans la vue texte (« Les deux ») ; les deux restent synchronisés.</li>
+      <li>« Vérifier » contrôle la forme sans rien dévoiler, « Comparer » mesure l'écart avec une solution de référence, « Claude » répond aux questions et corrige.</li>
+      <li>Les solutions restent cachées. Pour les modèles conceptuels et relationnels, le bouton s'appelle « Correction » : ce sont les modèles de l'enseignant, rappelés dans le sujet du <a href="../TP/TP2/TP2_Avions-2025.pdf">TP 2</a>. Les solutions SQL sont proposées.</li>
+      <li>Le SQL s'exécute avec le serveur local (<code>studies/lancer.bat</code>), sur PostgreSQL : chaque exécution repart d'une base neuve. Le travail s'enregistre tout seul, dans <code>td_results/</code> avec le serveur.</li>
+    </ul>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Première version <span class="ref">TD, p. 1</span></h2>
+    <p>Une base volontairement minuscule : trois sortes d'informations, sur les avions, les vols du jour et leurs pilotes.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Les avions, première version</span></p>
+      <p>Un ensemble d'aéroports souhaite sauvegarder un tout petit ensemble d'informations concernant le trafic aérien. Il faut donc mettre en place une base de données très petite qui ne permet pas de modéliser réellement le trafic aérien.</p>
+      <p>Pour les avions, par exemple, ce qui intéresse le client c'est de connaître le type et la capacité de chaque avion. On voudra par exemple savoir qu'un avion numéro X est de type A310 et qu'il contient 280 places tandis que l'avion Y est de type B747 et qu'il contient 348 places. On voudra également connaître l'aéroport de rattachement de l'avion.</p>
+      <p>On désire également conserver les informations concernant les vols sur la journée uniquement : d'où un avion est parti, à quelle heure, pour aller où à quelle heure. Finalement, on aimerait également enregistrer le pilote principal de l'avion sur ce vol, en conservant son nom et sa ville de résidence.</p>
+    </div>
+
+    <h3>Modèle conceptuel</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 1 <span>Diagramme de classes</span></p>
+      <p>Donnez le modèle conceptuel en utilisant le formalisme UML présenté en cours.</p>
+    </div>
+    <div class="atelier" id="td2-v1-q1-classes" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "Question 1 · Diagramme de classes, version 1",
+        "options": {
+          "bdd": true
+        },
+        "hauteur": 400,
+        "solution_source": "enseignant",
+        "solution": [
+          "classe Vol",
+          "  id_vol {PK}",
+          "  nom_aero_dep",
+          "  nom_aero_arr",
+          "  heure_dep",
+          "  heure_arr",
+          "classe Pilote",
+          "  id_pilote {PK}",
+          "  nom_pilote",
+          "  nom_aero",
+          "classe Avion",
+          "  id_avion {PK}",
+          "  nom_type",
+          "  nb_place",
+          "  nom_aero_ratt",
+          "Vol \"0..*\" -- \"1..1\" Pilote : commander",
+          "Vol \"0..*\" -- \"1..1\" Avion : utiliser"
+        ],
+        "explication": "<p>Modèle de l'enseignant, rappelé au début du TP 2 (<code>TP2_Avions-2025.pdf</code>, p. 1) ; les noms des deux associations, absents de cette figure, sont repris de la version 2.</p><p>Trois entités suffisent : un vol est fait par exactement un avion et commandé par exactement un pilote principal (<code>1..1</code>), et un avion ou un pilote peut faire plusieurs vols dans la journée (<code>0..*</code>). Les aéroports ne sont que des noms, et le type et la capacité des attributs de l'avion : c'est ce que demande l'énoncé, et c'est ce que la version 2 corrige. Le TP appelle <code>nom_aero</code> la « ville de résidence » du pilote, car la version 2 révèle que c'est en fait son aéroport de rattachement.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Quelles « choses » ont un identifiant propre dans l'énoncé ? Un vol relie un avion et un pilote : combien d'avions et de pilotes pour un vol, combien de vols pour un avion dans la journée ?</p></div>
+    </details>
+
+    <h3>Modèle relationnel</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 2 <span>Les relations</span></p>
+      <p>Donnez le modèle relationnel correspondant.</p>
+    </div>
+    <div class="atelier" id="td2-v1-q2-relationnel" data-editeur="relationnel">
+      <script type="application/json">
+      {
+        "titre": "Question 2 · Modèle relationnel, version 1",
+        "consigne": "<p>Une relation par ligne : clé primaire <code>_id_</code>, clé étrangère <code>#id</code>, sa cible entre parenthèses si besoin. Écrire d'abord les relations référencées.</p>",
+        "vue": "les-deux",
+        "solution_source": "enseignant",
+        "solution": [
+          "Pilote(_id_pilote_, nom_pilote, nom_aero)",
+          "Avion(_id_avion_, nom_type, nb_place, nom_aero_ratt)",
+          "Vol(_id_vol_, #id_pilote(Pilote), #id_avion(Avion), nom_aero_dep, nom_aero_arr, heure_dep, heure_arr)"
+        ],
+        "explication": "<p>Modèle relationnel de l'enseignant (TP 2, p. 1). Règle 1 : trois relations. Règle 3, deux fois : Vol est du côté <code>0..*</code> de ses deux associations, il reçoit les clés de Pilote et d'Avion, toutes deux NOT NULL (minimum 1). Pilote et Avion sont référencées : elles se créent avant Vol.</p>"
+      }
+      </script>
+    </div>
+
+    <h3>En SQL</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3a <span>Créer les tables</span></p>
+      <p>Enfin du SQL : créer toutes les tables !</p>
+    </div>
+    <div class="atelier" id="td2-v1-q3a-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 3a · Création des tables",
+        "consigne": "<p>Partir de son modèle relationnel. Pour que les tests puissent insérer des lignes, garder les noms du modèle de l'enseignant (ouvrir pour les voir, ils donnent la réponse de la question 2) :</p><details><summary>Noms attendus par les tests</summary><p><code>pilote(id_pilote, nom_pilote, nom_aero)</code>, <code>avion(id_avion, nom_type, nb_place, nom_aero_ratt)</code>, <code>vol(id_vol, id_pilote, id_avion, nom_aero_dep, nom_aero_arr, heure_dep, heure_arr)</code> ; les heures de type <code>time</code>.</p></details><p>« Comparer » exécute le script sur une base vide, puis six tests.</p>",
+        "options": {
+          "jeu": "vide",
+          "mode": "script",
+          "lignes": 16
+        },
+        "depart": "CREATE TABLE ",
+        "tests": [
+          {
+            "nom": "Un pilote, un avion et un vol corrects sont acceptés",
+            "requete": "INSERT INTO pilote (id_pilote, nom_pilote, nom_aero) VALUES (1, 'Pierre', 'Paris Orly');\nINSERT INTO avion (id_avion, nom_type, nb_place, nom_aero_ratt) VALUES (101, 'A310', 310, 'Strasbourg');\nINSERT INTO vol (id_vol, id_pilote, id_avion, nom_aero_dep, nom_aero_arr, heure_dep, heure_arr) VALUES (1000, 1, 101, 'Paris Orly', 'Toulouse', '10:05', '12:53');",
+            "doit": "reussir"
+          },
+          {
+            "nom": "Un vol avec un avion inconnu est refusé",
+            "requete": "INSERT INTO pilote (id_pilote, nom_pilote, nom_aero) VALUES (1, 'Pierre', 'Paris Orly');\nINSERT INTO vol (id_vol, id_pilote, id_avion, nom_aero_dep, nom_aero_arr, heure_dep, heure_arr) VALUES (1000, 1, 999, 'Paris Orly', 'Toulouse', '10:05', '12:53');",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Un vol avec un pilote inconnu est refusé",
+            "requete": "INSERT INTO avion (id_avion, nom_type, nb_place, nom_aero_ratt) VALUES (101, 'A310', 310, 'Strasbourg');\nINSERT INTO vol (id_vol, id_pilote, id_avion, nom_aero_dep, nom_aero_arr, heure_dep, heure_arr) VALUES (1000, 99, 101, 'Paris Orly', 'Toulouse', '10:05', '12:53');",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Deux avions de même numéro sont refusés",
+            "requete": "INSERT INTO avion (id_avion, nom_type, nb_place, nom_aero_ratt) VALUES (101, 'A310', 310, 'Strasbourg');\nINSERT INTO avion (id_avion, nom_type, nb_place, nom_aero_ratt) VALUES (101, 'B747', 348, 'Bordeaux');",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Deux vols de même numéro sont refusés",
+            "requete": "INSERT INTO pilote (id_pilote, nom_pilote, nom_aero) VALUES (1, 'Pierre', 'Paris Orly');\nINSERT INTO avion (id_avion, nom_type, nb_place, nom_aero_ratt) VALUES (101, 'A310', 310, 'Strasbourg');\nINSERT INTO vol (id_vol, id_pilote, id_avion, nom_aero_dep, nom_aero_arr, heure_dep, heure_arr) VALUES (1000, 1, 101, 'Paris Orly', 'Toulouse', '10:05', '12:53');\nINSERT INTO vol (id_vol, id_pilote, id_avion, nom_aero_dep, nom_aero_arr, heure_dep, heure_arr) VALUES (1000, 1, 101, 'Toulouse', 'Paris Orly', '14:25', '17:07');",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Les heures sont des heures : on peut les comparer à midi",
+            "requete": "INSERT INTO pilote (id_pilote, nom_pilote, nom_aero) VALUES (1, 'Pierre', 'Paris Orly');\nINSERT INTO avion (id_avion, nom_type, nb_place, nom_aero_ratt) VALUES (101, 'A310', 310, 'Strasbourg');\nINSERT INTO vol (id_vol, id_pilote, id_avion, nom_aero_dep, nom_aero_arr, heure_dep, heure_arr) VALUES (1000, 1, 101, 'Paris Orly', 'Toulouse', '10:05', '12:53'), (1001, 1, 101, 'Toulouse', 'Paris Orly', '9:25', '11:07');\nSELECT id_vol FROM vol WHERE heure_arr < '12:00';",
+            "resultat": true
+          }
+        ],
+        "solution": "CREATE TABLE pilote (\n  id_pilote SERIAL PRIMARY KEY,\n  nom_pilote varchar(30) NOT NULL,\n  nom_aero varchar(30)\n);\n\nCREATE TABLE avion (\n  id_avion integer PRIMARY KEY,\n  nom_type varchar(20) NOT NULL,\n  nb_place integer CHECK (nb_place > 0),\n  nom_aero_ratt varchar(30)\n);\n\nCREATE TABLE vol (\n  id_vol integer PRIMARY KEY,\n  id_pilote integer NOT NULL REFERENCES pilote (id_pilote),\n  id_avion integer NOT NULL REFERENCES avion (id_avion),\n  nom_aero_dep varchar(30),\n  nom_aero_arr varchar(30),\n  heure_dep time,\n  heure_arr time\n);",
+        "explication": "<p>Les tables référencées d'abord : <code>vol</code> ne peut citer <code>pilote</code> et <code>avion</code> que si elles existent. Chaque table a sa clé primaire ; dans <code>vol</code>, les deux clés étrangères sont <code>NOT NULL</code>, car un vol a toujours un avion et un pilote (<code>1..1</code>). Le type <code>time</code> permet de comparer les heures entre elles : en texte, <code>'9:25' &lt; '12:00'</code> serait faux. Le <code>SERIAL</code> du pilote et le <code>CHECK</code> sur la capacité vont au-delà de la question (le TP 2 demande le <code>SERIAL</code>).</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Dans quel ordre créer les tables ? Une clé étrangère s'écrit <code>REFERENCES table (colonne)</code>, et ne peut citer qu'une table déjà créée.</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3b <span>Une requête</span></p>
+      <p>Quel vol au départ du Mans me permet d'arriver avant midi à Avignon ?</p>
+    </div>
+    <div class="atelier" id="td2-v1-q3b-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 3b · Le Mans – Avignon avant midi",
+        "consigne": "<p>Sur les données du TP 2, complétées de vols au départ du Mans (voir le jeu de données). Afficher le numéro du vol et ses heures de départ et d'arrivée, dans cet ordre. Les aéroports s'écrivent comme dans les données : <code>'Le Mans'</code>, <code>'Avignon'</code>.</p>",
+        "options": {
+          "jeu": "avions-v1"
+        },
+        "depart": "SELECT ",
+        "solution": "SELECT id_vol, heure_dep, heure_arr\nFROM vol\nWHERE nom_aero_dep = 'Le Mans'\n  AND nom_aero_arr = 'Avignon'\n  AND heure_arr < '12:00';",
+        "explication": "<p>Trois conditions, reliées par <code>AND</code>. La comparaison <code>heure_arr &lt; '12:00'</code> fonctionne parce que la colonne est de type <code>time</code> : la chaîne est convertie en heure. Le vol 1015 va bien du Mans à Avignon, mais arrive à 14 h 05 ; le vol 1017 arrive avant midi à Avignon, mais part d'Orly.</p>"
+      }
+      </script>
+    </div>
+
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Deuxième version <span class="ref">TD, p. 2</span></h2>
+    <p>La base de la version 1 a été mise en service, et l'usage révèle trois défauts. Il faut corriger le modèle, puis la base elle-même.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice 1 <span>Les avions, deuxième version</span></p>
+      <p>La base « aéroport » a été implémentée dans sa première version.</p>
+      <p>Après réflexion, oh horreur, oh malheur, vous vous rendez compte que vous n'êtes pas en 3NF !! En effet, la capacité de l'avion est « théorique », c'est-à-dire qu'elle est liée au type de l'avion et pas à l'avion lui-même. Par exemple l'avion identifié 2, un B747, a 2 fauteuils cassés, sa capacité n'est plus de 348 places.</p>
+      <p>Après discussion avec l'aéroport, vous vous rendez compte que c'est bien la capacité théorique du type d'avion qu'ils souhaitent sauvegarder et non pas le nombre maximum possible de passagers de chaque avion. C'est donc bien le type général des avions qu'il faut sauvegarder. Le type est caractérisé par un nom de type (A310 ou B747 par ex.) et sa capacité. Nous modifions donc le modèle conceptuel afin de modéliser que : un avion est d'un seul type donné. En revanche, il existe plusieurs avions d'un même type.</p>
+      <p>Il y a eu des erreurs dans la saisie des noms d'aéroport. Ainsi on retrouve dans la base les valeurs <em>Orly</em>, <em>orly</em> mais aussi <em>Orli</em>… Il faut donc mettre à part l'information concernant l'aéroport. On souhaitera en plus du nom de l'aéroport conserver sa ville. Tous les attributs qui contenaient un nom d'aéroport devront donc maintenant être supprimés pour associer directement les identifiants d'aéroport. On se rend compte par l'usage également que ce qui est saisi dans la ville de résidence du pilote est en fait son aéroport de rattachement…</p>
+      <p>Pour finir, on souhaite s'assurer que chaque pilote principal possède la licence adéquate pour piloter l'avion sur lequel il est affecté pour un vol. Une liste des licences est donc sauvegardée dans la base (identifiant et nom). Chaque licence peut donner l'autorisation de piloter un ou plusieurs types d'avion. Chaque pilote peut avoir plusieurs licences. L'autorisation de piloter un type d'avions peut se faire via différentes licences.</p>
+    </div>
+
+    <h3>La troisième forme normale</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 1 <span>Diagnostic</span></p>
+      <p>Expliquez en quoi la version 1 n'était pas en 3NF.</p>
+    </div>
+    <div class="atelier" id="td2-v2-q1-texte" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Question 1 · Pourquoi pas en 3NF ?",
+        "options": {
+          "lignes": 6,
+          "placeholder": "La relation … n'est pas en 3NF parce que …"
+        },
+        "solution": "La relation Avion(id_avion, nom_type, nb_place, nom_aero_ratt) n'est pas en 3NF. L'attribut nb_place ne dépend pas directement de la clé id_avion : il dépend de nom_type, qui n'est pas une clé (dépendance id_avion → nom_type → nb_place, dite transitive). Conséquence : la capacité d'un type est répétée pour chaque avion de ce type, et deux avions du même type peuvent avoir des capacités différentes (redondance, risque d'incohérence). Correction : une entité Type(id_type, nom_type, nb_place), à laquelle chaque avion est relié.",
+        "explication": "<p>Rappel du cours 1 (formes normales) : en 3NF, tout attribut non clé dépend de la clé, de toute la clé, et de rien d'autre que la clé. Ici, <code>nb_place</code> dépend d'un autre attribut non clé, <code>nom_type</code>. Les noms d'aéroport saisis à la main (Orly, orly, Orli) sont un autre défaut de la version 1, de cohérence plutôt que de forme normale : on les remplace aussi par une entité.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Écrire les dépendances de la relation Avion : de quoi dépend <code>nb_place</code> ? Est-ce la clé ?</p></div>
+    </details>
+
+    <h3>Nouveau modèle conceptuel</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 2 <span>Modifier le diagramme</span></p>
+      <p>Apportez les modifications nécessaires à votre modèle conceptuel.</p>
+    </div>
+    <div class="atelier" id="td2-v2-q2-classes" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "Question 2 · Diagramme de classes, version 2",
+        "consigne": "<p>Partir du diagramme de la question 1 : le copier depuis sa vue texte (menu ⋯, « Copier le texte »), puis le coller ici dans la vue texte.</p>",
+        "options": {
+          "bdd": true
+        },
+        "hauteur": 560,
+        "solution_source": "enseignant",
+        "disposition": {
+          "Vol": [
+            430,
+            20
+          ],
+          "Pilote": [
+            100,
+            170
+          ],
+          "Aeroport": [
+            860,
+            170
+          ],
+          "Avion": [
+            470,
+            300
+          ],
+          "Licence": [
+            20,
+            430
+          ],
+          "Type": [
+            440,
+            460
+          ]
+        },
+        "solution": [
+          "classe Vol",
+          "  id_vol {PK}",
+          "  heure_dep",
+          "  heure_arr",
+          "classe Pilote",
+          "  id_pilote {PK}",
+          "  nom_pilote",
+          "classe Avion",
+          "  id_avion {PK}",
+          "classe Type",
+          "  id_type {PK}",
+          "  nom_type",
+          "  nb_place",
+          "classe Licence",
+          "  id_licence {PK}",
+          "  nom_licence",
+          "classe Aeroport",
+          "  id_aero {PK}",
+          "  nom_aero",
+          "  nom_ville",
+          "Vol \"0..*\" -- \"1..1\" Pilote : commander",
+          "Vol \"0..*\" -- \"1..1\" Avion : utiliser",
+          "Vol \"0..*\" -- \"1..1\" Aeroport : arriver",
+          "Vol \"0..*\" -- \"1..1\" Aeroport : être au départ de",
+          "Pilote \"0..*\" -- \"1..1\" Aeroport : attacher",
+          "Avion \"0..*\" -- \"1..1\" Aeroport : attacher",
+          "Avion \"0..*\" -- \"1..1\" Type : est",
+          "Pilote \"0..*\" -- \"0..*\" Licence : obtenir",
+          "Licence \"0..*\" -- \"0..*\" Type : autoriser"
+        ],
+        "explication": "<p>Modèle de l'enseignant (TP 2, p. 3).</p><ul><li><b>Type</b> : nouvelle entité qui porte le nom et la capacité ; un avion est d'un seul type (<code>1..1</code>), un type a plusieurs avions (<code>0..*</code>).</li><li><b>Aeroport</b> : chaque nom d'aéroport devient une association vers cette entité. Vol en a deux (départ et arrivée), Avion et Pilote une chacun (rattachement). Plusieurs associations entre les mêmes classes : association plurielle.</li><li><b>Licence</b> : deux associations <code>* — *</code>, avec Pilote (« chaque pilote peut avoir plusieurs licences ») et avec Type (« une licence autorise un ou plusieurs types », « via différentes licences »).</li></ul><p>Le modèle permet de <em>vérifier</em> qu'un pilote a la licence du type de l'avion de son vol (par une requête), mais ne l'impose pas : c'est une contrainte d'intégrité en plus, que le TP 2 cherche à la question 23.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Trois paragraphes, trois défauts : chacun se corrige par une nouvelle entité. Pour les licences, lire les multiplicités dans l'énoncé : « une ou plusieurs », « plusieurs », « différentes ».</p></div>
+    </details>
+
+    <h3>Nouveau modèle relationnel</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3 <span>Les relations</span></p>
+      <p>Décrivez l'ensemble de relations issues de cette modélisation.</p>
+    </div>
+    <div class="atelier" id="td2-v2-q3-relationnel" data-editeur="relationnel">
+      <script type="application/json">
+      {
+        "titre": "Question 3 · Modèle relationnel, version 2",
+        "consigne": "<p>Deux clés étrangères vers la même relation se distinguent par leur nom : <code>#id_aero_dep(Aeroport)</code>, <code>#id_aero_arr(Aeroport)</code>. Écrire d'abord les relations référencées.</p>",
+        "vue": "les-deux",
+        "solution_source": "enseignant",
+        "solution": [
+          "Type(_id_type_, nom_type, nb_place)",
+          "Licence(_id_licence_, nom_licence)",
+          "Licence_Type(_#id_licence_(Licence), _#id_type_(Type))",
+          "Aeroport(_id_aero_, nom_aero, nom_ville)",
+          "Avion(_id_avion_, #id_type(Type), #id_aero(Aeroport))",
+          "Pilote(_id_pilote_, nom_pilote, #id_aero(Aeroport))",
+          "Licence_Pilote(_#id_licence_(Licence), _#id_pilote_(Pilote))",
+          "Vol(_id_vol_, #id_avion(Avion), #id_aero_dep(Aeroport), #id_aero_arr(Aeroport), #id_pilote(Pilote), heure_dep, heure_arr)"
+        ],
+        "explication": "<p>Modèle relationnel de l'enseignant (TP 2, p. 3), relations remises dans un ordre de création possible : le sujet du TP écrit Licence_Pilote avant Pilote, qu'elle référence.</p><p>Règle 1 : six entités, six relations. Règle 2 : les deux associations <code>* — *</code> donnent Licence_Type et Licence_Pilote, de clé le couple des deux clés étrangères. Règle 3 pour toutes les autres : la clé étrangère va du côté <code>*</code>, d'où deux clés vers Aeroport dans Vol.</p>"
+      }
+      </script>
+    </div>
+
+    <h3>Modifier la base</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 4a <span>La table aéroport</span></p>
+      <p>Un peu de SQL : créer la table aéroport.</p>
+    </div>
+    <div class="atelier" id="td2-v2-q4a-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 4a · Création de la table aeroport",
+        "consigne": "<p>Colonnes du modèle de l'enseignant : <code>aeroport(id_aero, nom_aero, nom_ville)</code>. « Comparer » exécute le script sur une base vide, puis trois tests.</p>",
+        "options": {
+          "jeu": "vide",
+          "mode": "script",
+          "lignes": 7
+        },
+        "depart": "CREATE TABLE aeroport (\n  \n);",
+        "tests": [
+          {
+            "nom": "Un aéroport et sa ville sont acceptés",
+            "requete": "INSERT INTO aeroport (id_aero, nom_aero, nom_ville) VALUES (1, 'Orly', 'Paris');\n",
+            "doit": "reussir"
+          },
+          {
+            "nom": "Deux aéroports de même identifiant sont refusés",
+            "requete": "INSERT INTO aeroport (id_aero, nom_aero, nom_ville) VALUES (1, 'Orly', 'Paris');\nINSERT INTO aeroport (id_aero, nom_aero, nom_ville) VALUES (1, 'Roissy', 'Paris');",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Les aéroports se relisent",
+            "requete": "INSERT INTO aeroport (id_aero, nom_aero, nom_ville) VALUES (1, 'Orly', 'Paris');\nINSERT INTO aeroport (id_aero, nom_aero, nom_ville) VALUES (2, 'Marignane', 'Marseille');\nSELECT id_aero, nom_aero, nom_ville FROM aeroport;",
+            "resultat": true
+          }
+        ],
+        "solution": "CREATE TABLE aeroport (\n  id_aero SERIAL PRIMARY KEY,\n  nom_aero varchar(30) NOT NULL,\n  nom_ville varchar(30)\n);",
+        "explication": "<p>Une clé primaire, de type <code>SERIAL</code> pour que PostgreSQL numérote lui-même les aéroports (le TP 2 le demande). Le nom est obligatoire ; la ville peut rester vide le temps de la saisie (le TP 2, question 17, la remplit après coup).</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 4b <span>Modifier la table Vol</span></p>
+      <p>Écrire le code SQL qui permet la modification de la table Vol afin que l'aéroport de départ ne soit plus un nom d'aéroport, mais un identifiant <em>(version facile : il n'y a aucune donnée !!)</em>.</p>
+    </div>
+    <div class="atelier" id="td2-v2-q4b-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 4b · L'aéroport de départ devient un identifiant",
+        "consigne": "<p>La table <code>vol</code> de la version 1 existe, vide, ainsi que <code>aeroport(id_aero, nom_aero, nom_ville)</code>. Nommer la nouvelle colonne <code>id_aero_dep</code>. « Comparer » exécute le script, puis quatre tests.</p>",
+        "options": {
+          "jeu": "avions-aeroport",
+          "mode": "script",
+          "lignes": 6
+        },
+        "depart": "ALTER TABLE vol ",
+        "tests": [
+          {
+            "nom": "La colonne nom_aero_dep a disparu",
+            "requete": "SELECT nom_aero_dep FROM vol;",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Un vol part d'un aéroport connu, désigné par son identifiant",
+            "requete": "INSERT INTO vol (id_vol, id_pilote, id_avion, nom_aero_arr, heure_dep, heure_arr, id_aero_dep) VALUES (2000, 1, 123, 'Avignon', '08:10', '11:45', 4);",
+            "doit": "reussir"
+          },
+          {
+            "nom": "Un aéroport de départ inconnu est refusé",
+            "requete": "INSERT INTO vol (id_vol, id_pilote, id_avion, nom_aero_arr, heure_dep, heure_arr, id_aero_dep) VALUES (2000, 1, 123, 'Avignon', '08:10', '11:45', 99);",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Les autres colonnes de vol sont intactes",
+            "requete": "SELECT id_vol, id_pilote, id_avion, nom_aero_arr, heure_dep, heure_arr FROM vol;",
+            "doit": "reussir"
+          }
+        ],
+        "solution": "ALTER TABLE vol DROP COLUMN nom_aero_dep;\nALTER TABLE vol ADD COLUMN id_aero_dep integer REFERENCES aeroport (id_aero);",
+        "explication": "<p>Comme la table est vide, on peut supprimer l'ancienne colonne puis ajouter la nouvelle, clé étrangère vers <code>aeroport</code>. Avec des données, il faudrait d'abord ajouter la colonne, la remplir à partir des noms (<code>UPDATE … FROM aeroport</code>), puis seulement supprimer l'ancienne : c'est la partie bonus du TP 2 et la fin du cours 4. On peut aussi écrire les deux modifications dans un seul <code>ALTER TABLE</code>, séparées par une virgule.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p><code>ALTER TABLE vol DROP COLUMN …</code> et <code>ALTER TABLE vol ADD COLUMN … REFERENCES …</code> (cours 2).</p></div>
+    </details>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>Une base se crée dans l'ordre des références : d'abord les tables que l'on cite dans un <code>REFERENCES</code>.</li>
+        <li>Un vol <code>1..1</code> avion devient une clé étrangère <code>NOT NULL</code> dans vol.</li>
+        <li>Les heures et les dates ont leur type (<code>time</code>, <code>date</code>) : ainsi seulement les comparaisons sont justes.</li>
+        <li>Un attribut qui dépend d'un autre attribut non clé (la capacité, du type) viole la 3NF : on en fait une entité, reliée à l'ancienne.</li>
+        <li>Une valeur saisie librement et répétée (un nom d'aéroport) gagne à devenir une entité, désignée par son identifiant : plus de fautes de frappe.</li>
+        <li>Plusieurs associations entre les deux mêmes classes (départ, arrivée) donnent plusieurs clés étrangères, nommées d'après leur rôle.</li>
+        <li><code>ALTER TABLE</code> ajoute ou supprime une colonne ; avec des données, on ajoute, on remplit, puis on supprime.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Avion(id_avion, nom_type, nb_place) : quelle dépendance pose problème ?</summary>
+        <div><p><code>nom_type → nb_place</code> : un attribut non clé dépend d'un autre attribut non clé. La relation n'est pas en 3NF.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi créer <code>pilote</code> et <code>avion</code> avant <code>vol</code> ?</summary>
+        <div><p>Parce que <code>vol</code> les référence : une clé étrangère ne peut citer qu'une table qui existe.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Combien de clés étrangères vers Aeroport dans Vol, version 2 ?</summary>
+        <div><p>Deux : l'aéroport de départ et celui d'arrivée, deux associations distinctes.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Licence — Type est <code>* — *</code> : que devient-elle ?</summary>
+        <div><p>Une relation Licence_Type(#id_licence, #id_type), de clé le couple (règle 2).</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="td-01-soutien-entreprise.html"><small>← TD 1</small>Soutien scolaire et employés</a>
+    <a class="suivant" href="td-03-universite-cd-jazz.html"><small>TD 3 →</small>Université et CD de jazz</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

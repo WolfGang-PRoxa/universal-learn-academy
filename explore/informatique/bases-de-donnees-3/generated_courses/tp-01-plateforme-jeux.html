@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TP 1 : plateforme de jeux en ligne · Bases de données L3</title>
+<meta name="description" content="TP 1 de bases de données (L3) : plateforme de jeux en ligne. Consignes, modèle entité-association et modèle relationnel, connexion au serveur PostgreSQL de la fac, les 33 questions du sujet, et une console SQL pour travailler chez soi : le compte rendu entier, script fourni compris, rejoué sur une base PostgreSQL neuve à chaque exécution.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+<script type="application/json" id="atelier-jeux">
+{
+  "fac": {
+    "titre": "réglages du serveur de la fac",
+    "description": "<p>Base neuve, vide. Seul réglage : les dates s'écrivent jour/mois/année (<code>DateStyle</code>), comme sur le serveur de la fac, sans quoi les dates du script (<code>'24/01/16'</code>) sont refusées.</p>",
+    "script": "SET datestyle TO 'ISO, DMY';"
+  }
+}
+</script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Bases de données</a>
+    <span aria-current="page">TP 1 · Plateforme de jeux</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> TP 1 · L3 S5</p>
+    <h1>TP 1 : plateforme de jeux en ligne</h1>
+    <p class="chapeau">Une plateforme de jeux en ligne : des visiteurs, leurs avatars, les objets qu'ils achètent, les jeux auxquels ils participent et leurs sauvegardes. On se connecte au serveur PostgreSQL de la fac, on crée des schémas, on complète et on exécute le script de la base, on la modifie, puis on l'interroge et on crée des vues. Pour travailler chez soi, une console SQL rejoue tout le compte rendu sur une base PostgreSQL neuve.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TP/TP1/%5B26%5DTP1_PlateformeJeux.pdf">[26]TP1_PlateformeJeux.pdf</a> · 3 pages · script <a href="../TP/TP1/script.sql">script.sql</a></dd></div>
+      <div><dt>Enseignante</dt><dd>N. Camelin</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-01">1<sup>er</sup> oct. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Se connecter au serveur PostgreSQL de la fac et interroger ses catalogues.</li>
+        <li>Créer des schémas et régler le <code>search_path</code>.</li>
+        <li>Compléter et exécuter un script de création : tables, types, contraintes.</li>
+        <li>Modifier une base existante sans perdre de données, puis l'interroger et créer des vues.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">À rendre</p>
+      <ul>
+        <li>Rien : le compte rendu <code>TP1_Monnom.txt</code> ou <code>.sql</code> n'est pas à rendre. Il garde la trace du travail, le chargé de TP s'en sert pour vérifier en séance, et il est <strong>autorisé au TP noté</strong>.</li>
+        <li>Cours à revoir : <a href="cours-02-sql.html">le langage SQL</a>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Consignes <span class="ref">p. 1</span></h2>
+    <dl class="glossaire">
+      <dt>Compte rendu</dt>
+      <dd>On écrit dans un fichier <code>TPX_Monnom.txt</code> ou <code>TPX_Monnom.sql</code> (pas d'odt, de rtf ni d'autre format, et pas de zip) les requêtes de chaque question. Ce compte rendu n'est pas à rendre : il sert à garder une trace du travail, et au chargé de TP pour le vérifier et le corriger pendant la séance. On a le droit de le consulter pendant le TP noté.</dd>
+      <dt>Suivi</dt>
+      <dd>On communique avec son chargé de TP tout au long de la séance. Chaque fois que l'on passe à la question suivante, la précédente est notée dans le compte rendu.</dd>
+      <dt>Aide</dt>
+      <dd>Beaucoup de solutions se trouvent dans les supports de cours. Ce TP applique les notions vues au premier semestre et lors du premier cours de SQL de ce semestre.</dd>
+    </dl>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le modèle de la base <span class="ref">p. 1</span></h2>
+    <p>Des visiteurs créent des avatars, chacun d'une race ; ils achètent des objets ; leurs avatars participent à des jeux, avec un rôle et un meilleur score, et y font des sauvegardes.</p>
+
+    <h3>Modèle entité-association</h3>
+    <div class="atelier" id="tp1-mea" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Modèle entité-association",
+  "mode": "lecture",
+  "vue": "dessin",
+  "hauteur": 540,
+  "depart": [
+    "classe Visiteur",
+    "  id_visiteur : INTEGER [1] {PK}",
+    "  login : VARCHAR [1]",
+    "  mdp : VARCHAR [1]",
+    "  email : VARCHAR [1] {UNIQUE}",
+    "  ville : VARCHAR [0..1]",
+    "classe Avatar",
+    "  id_avatar : INTEGER [1] {PK}",
+    "  nom_avatar : VARCHAR [1]",
+    "  sexe : VARCHAR [0..1]",
+    "  xp : NUMERIC [1]",
+    "  code_desc : VARCHAR [1]",
+    "classe Race",
+    "  id_race : INTEGER [1] {PK}",
+    "  nom_race : VARCHAR [1]",
+    "  txt_race : VARCHAR [1]",
+    "classe Objet",
+    "  id_objet : INTEGER [1] {PK}",
+    "  nom_objet : VARCHAR [1]",
+    "  prix : NUMERIC [1]",
+    "  puissance : NUMERIC [1]",
+    "classe Jeu",
+    "  id_jeu : INTEGER {PK}",
+    "  nom_jeu : VARCHAR [1]",
+    "  type : VARCHAR [1]",
+    "  nb_joueur : INTEGER [1]",
+    "classe Achat",
+    "  nb_achat : INT [1]",
+    "  nb_dispo : INT [1]",
+    "classe Participation",
+    "  role : VARCHAR [1]",
+    "  highscore : NUM [1]",
+    "classe Sauvegarde",
+    "  date : DATE [1]",
+    "  nb_pv : NUM [1]",
+    "  fichier : VCHAR [1]",
+    "Visiteur \"1..1\" -- \"*\" Avatar : Crée >",
+    "Avatar \"*\" -- \"1..1\" Race : Possède >",
+    "Visiteur \"*\" -- \"*\" Objet : Achète [Achat]",
+    "Avatar \"1..*\" -- \"*\" Jeu [Participation]",
+    "Avatar \"1..*\" -- \"*\" Jeu [Sauvegarde]"
+  ],
+  "disposition": {
+    "Visiteur": [
+      40,
+      20
+    ],
+    "Avatar": [
+      370,
+      20
+    ],
+    "Race": [
+      700,
+      20
+    ],
+    "Objet": [
+      40,
+      380
+    ],
+    "Jeu": [
+      370,
+      380
+    ]
+  }
+}
+      </script>
+    </div>
+    <p>Diagramme redessiné d'après le sujet, où les associations entre <code>Avatar</code> et <code>Jeu</code> s'appellent « Participe » et « Sauvegarde », avec leurs classes d'association. Le diagramme nomme <code>email</code> l'attribut que le modèle relationnel et le script appellent <code>mail</code>, et <code>code_desc</code> celui qu'ils appellent <code>code_dsc</code> : c'est le script qui fait foi pour écrire les requêtes.</p>
+
+    <h3>Modèle relationnel</h3>
+    <div class="relations">
+      <p><b>visiteur</b> (<u>id_visiteur</u>, login, mdp, mail, ville)</p>
+      <p><b>objet</b> (<u>id_objet</u>, nom_objet, prix, puissance)</p>
+      <p><b>stock</b> (<u>#id_objet, #id_visiteur</u>, nb_achat, nb_dispo)</p>
+      <p><b>race</b> (<u>id_race</u>, nom_race, txt_race)</p>
+      <p><b>avatar</b> (<u>id_avatar</u>, nom_avatar, sexe, xp, code_dsc, #id_visiteur, #id_race)</p>
+      <p><b>jeu</b> (<u>id_jeu</u>, nom_jeu, type, nb_joueur)</p>
+      <p><b>partie</b> (<u>#id_avatar, #id_jeu</u>, role, highscore)</p>
+      <p><b>save</b> (<u>#id_avatar, #id_jeu, date_s</u>, nb_pv, fichier)</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Connexion à PostgreSQL <span class="ref">p. 1–2</span></h2>
+    <p>On se connecte d'abord à sa base de données, sous son propre utilisateur. Le serveur PostgreSQL est hébergé sur le serveur de l'IC2 nommé <code>erebor</code>, et le nom d'utilisateur Unix, le nom d'utilisateur PostgreSQL et le nom de la base sont les mêmes : le numéro étudiant.</p>
+<pre class="terminal"><code>$ psql -h erebor -U num_etu</code></pre>
+    <p>Le mot de passe est formé des deux premières lettres du nom, des deux premières lettres du prénom et des deux premiers caractères du numéro étudiant, le tout en minuscules : pour John Doe, s245681, c'est <code>dojos2</code>.</p>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Rester dans psql</span></p>
+      <p>Pour se connecter à une autre base de données, on reste dans l'environnement de PostgreSQL : la commande Unix <code>psql</code> ne sert plus.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les questions <span class="ref">p. 2–3</span></h2>
+    <p>Les questions du sujet, dans son ordre et avec ses intitulés de parties.</p>
+
+    <h3>Database</h3>
+    <ol start="1">
+      <li>Listez l'ensemble des bases de données disponibles par une commande PostgreSQL, puis par une commande SQL (il faut pour cela interroger le bon catalogue).</li>
+      <li>Listez toutes les tables de votre base de données. Rien ne s'affiche ? N'oubliez pas de faire la liste de toutes les tables qui appartiennent à tous les schémas.</li>
+      <li>Connectez-vous à la base de données <code>template1</code>. Listez toutes les tables. Vous devriez retrouver exactement le même résultat qu'à la requête précédente.</li>
+      <li>Reconnectez-vous à votre base de données afin de pouvoir travailler.</li>
+    </ol>
+
+    <h3>Schéma</h3>
+    <ol start="5">
+      <li>Utilisez une commande PostgreSQL pour lister les schémas, puis une commande DML pour écrire le nombre exact de schémas (interroger un catalogue… la mauvaise réponse est 1, la bonne réponse est 4).</li>
+      <li>Quel est le nom des schémas qui ne contiennent aucune table ?</li>
+      <li>Créez les schémas <code>toto1</code>, <code>toto2</code> et <code>jeu</code>.</li>
+      <li>Modifiez votre <code>search_path</code> pour travailler dans le schéma <code>jeu</code> en priorité, puis dans le schéma <code>toto1</code>.</li>
+    </ol>
+
+    <h3>Conception : tables</h3>
+    <p>Récupérez le fichier <code>Script_PlateformeJeux.txt</code> sur la plateforme UMTICE (il est dans le Drive : <a href="../TP/TP1/script.sql">script.sql</a>).</p>
+    <ol start="9">
+      <li>Complétez le script avec la création des tables <code>jeu</code>, <code>partie</code> et <code>save</code>. Pour cela, basez-vous sur la modélisation donnée (MEA et MR) et sur les informations complémentaires suivantes :
+        <ol type="a">
+          <li><code>jeu</code> : <code>id_jeu</code> de type <code>serial</code> et clé primaire, <code>nom_jeu</code> de type <code>varchar(20)</code>, unique et non nul, <code>type</code>, qui peut prendre uniquement les valeurs « role », « plateau », « tower defense », « MMORPG » ou « Autre », <code>nb_joueur</code> de type <code>integer</code> ;</li>
+          <li>pas d'informations supplémentaires pour <code>partie</code> ;</li>
+          <li><code>save</code> : <code>id_avatar</code> de type <code>bigint</code>, qui fait référence à <code>id_avatar</code> de la table <code>avatar</code> et fait partie de la clé primaire, <code>id_jeu</code> de type <code>bigint</code>, qui fait référence à <code>id_jeu</code> de la table <code>jeu</code> et fait partie de la clé primaire, <code>date_s</code> de type <code>date</code>, qui fait partie de la clé primaire, <code>nb_pv</code> de type <code>integer</code> et <code>fichier</code> de type <code>varchar(50)</code>, qui doit être unique et n'admet pas de valeur nulle.</li>
+        </ol>
+        Attention : pensez également à regarder les enregistrements qui vont être saisis dans ces tables, afin qu'il y ait correspondance entre les valeurs des <code>INSERT</code> et l'ordre des attributs dans la création de chaque table.</li>
+      <li>Modifiez la table <code>visiteur</code> dans le script afin qu'une vérification mineure soit faite sur le mail : un caractère <code>@</code> doit être dans la valeur de <code>mail</code>.</li>
+      <li>Créez une table <code>localisation</code> : <code>id_loc</code> de type <code>serial</code> et clé primaire, <code>nom_loc</code> de type <code>varchar(50)</code> et <code>code_postal</code> de type <code>integer</code>.</li>
+    </ol>
+
+    <h3>Implémentation</h3>
+    <ol start="12">
+      <li>Exécutez le script pour générer la base de données.</li>
+    </ol>
+    <p>Normalement, toutes vos tables ont été créées dans le schéma <code>jeu</code> sans que vous ayez spécifié le nom du schéma lors de la création des tables. Vous pouvez le vérifier en listant les tables. Si ce n'est pas le cas, vous avez mal configuré votre <code>search_path</code>…</p>
+
+    <h3>Après la création de la base</h3>
+    <ol start="13">
+      <li>Insérez les tuples suivants dans la table <code>localisation</code> : 13100 Aix en Provence, 72250 Brette les Pins, 09000 Foix, 54000 Nancy, 59640 Dunkerque, 38000 Grenoble et 74000 Annecy.</li>
+      <li>Modifiez la table <code>visiteur</code> afin que les villes ne soient plus des <code>varchar</code>, mais que cette information soit obtenue grâce à la table <code>localisation</code>. Pour cela, vous devrez créer une clé étrangère dans la table <code>visiteur</code> pointant vers la table <code>localisation</code>. Attention, vous ne devez pas perdre les informations permettant de savoir quel visiteur habite dans quelle ville !</li>
+      <li>Mettez à jour les données afin de sauvegarder que Ian habite à Aix en Provence et que Sean habite à Brette les Pins.</li>
+      <li>Renommez le champ <code>nb_joueur</code> de la table <code>jeu</code> en <code>nb_joueur_max</code>.</li>
+    </ol>
+
+    <h3>Commandes SELECT</h3>
+    <ol start="17">
+      <li>Quel est l'ensemble des avatars (nom) et leur race ? Cet affichage devra permettre d'afficher toutes les races, même si elles ne sont pas associées à un avatar.</li>
+      <li>Quels sont les noms d'objets actuellement disponibles pour « Elijah » ?</li>
+      <li>Quel est le top 5 (nom des avatars et highscore) du jeu « Solitaire » ? On renverra les 5 premiers de la liste, tant pis pour les ex æquo…
+        <p>19 bis. Affichez le top 5 en excluant le gagnant ultime, c'est-à-dire les avatars des places 2 à 6.</p></li>
+      <li>Quel avatar (nom, race et sexe) a le plus de points d'xp ?</li>
+      <li>Combien chaque visiteur a-t-il d'avatars ? Affichez l'id du visiteur et le nombre de ses avatars dans une colonne nommée « nb avatars » (oui, avec l'espace…).</li>
+      <li>Combien d'objets disponibles ont les joueurs ayant un avatar « Elfe » ?</li>
+      <li>Combien a dépensé Elijah en achat d'objets ?</li>
+    </ol>
+
+    <h3>Vues</h3>
+    <ol start="24">
+      <li>Créez une vue <code>v_qui_joue</code> comprenant les champs <code>id_visiteur</code>, <code>login</code>, <code>nom_avatar</code>, <code>nom_race</code>, <code>nom_jeu</code>, <code>highscore</code>.</li>
+      <li>Créez une vue <code>v_stock</code> comprenant les champs <code>login</code>, <code>nom_objet</code>, <code>nb_dispo</code>, <code>sum_tot</code>, avec <code>sum_tot</code> la valeur totale qu'a dépensée <code>login</code> pour l'achat de l'objet <code>nom_objet</code>. Exemple : Elijah a acheté 10 baguettes magiques à 5 € chacune, et il ne lui en reste actuellement que 3 disponibles. Le n-uplet affiché dans <code>v_stock</code> pour Elijah sur baguette magique est : Elijah, baguette magique, 3, 50.</li>
+    </ol>
+
+    <h3>SELECT : utilisation des vues</h3>
+    <ol start="26">
+      <li>Quel(s) est (sont) le (les) objet(s) qui a (ont) généré le plus de revenu ?</li>
+      <li>Quelle est la moyenne des highscores des jeux dont le nombre de visiteurs différents qui y jouent est supérieur à 4 ?</li>
+      <li>Quelle est la race de l'avatar qui a obtenu le meilleur highscore au jeu « Plants vs Zombies » ?</li>
+    </ol>
+
+    <h3>SELECT : bonus</h3>
+    <ol start="29">
+      <li>Quels avatars dont le nom contient un « a » en 2<sup>e</sup> lettre ont des sauvegardes pour un des jeux « Solitaire », « Plants vs Zombies » ou « League of Angels » ?</li>
+      <li>Quel est le rôle (méchant ou gentil ?) de l'avatar qui a obtenu le plus haut score au jeu « Plants vs Zombies » ?</li>
+      <li>Quel(s) jeu(x) compte(nt) le plus de sauvegardes ?</li>
+      <li>Indiquez pour chaque jeu quel est le login du visiteur détenant le highscore. Voici un exemple de l'affichage attendu :
+<pre class="terminal"><code>      nom_jeu      |  login  | highscore
+-------------------+---------+-----------
+ Kingdom Rush      | Sean    |       543
+ Plants vs Zombies | Billy   |       987
+ Forge of Empire   | Dominic |       290
+ Mahjong           | Billy   |       734
+ Drakensang Online | Elijah  |       885
+ Cooking Fever     | Elijah  |       566
+ League of Angels  | Viggo   |       786
+ Solitaire         | Ian     |       883
+(8 lignes)</code></pre></li>
+      <li>Quels sont les avatars jouant à « Plants vs Zombies » dont le highscore n'est qu'à 10 % du highscore du meilleur joueur de ce jeu ?</li>
+    </ol>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Chez soi : la console SQL du TP</h2>
+    <p>Le serveur de la fac n'est pas accessible de chez soi. La console ci-dessous exécute le compte rendu entier sur une base PostgreSQL neuve (PGlite), par le serveur local des quiz : <code>studies/lancer.bat</code>, puis cette page ouverte depuis le portail. Sans le serveur, on peut écrire, mais pas exécuter.</p>
+    <ol class="etapes">
+      <li>La console contient au départ le script fourni. Les réponses aux questions 5 à 8 (schémas, <code>search_path</code>) se placent au-dessus du script, les questions 9 à 11 se font dans le script lui-même, et les suivantes s'écrivent à la suite, dans l'ordre.</li>
+      <li><b>Exécuter</b> (ou <kbd>Ctrl</kbd> + <kbd>Entrée</kbd>) rejoue tout le texte, depuis le début, sur une base neuve : les tables, les modifications et les vues des questions précédentes sont donc là quand arrive la dernière requête.</li>
+      <li>La console affiche le résultat de la <strong>dernière</strong> requête qui renvoie des lignes, ou la première erreur. On travaille donc en fin de texte ; pour revoir une requête plus ancienne, on la recopie à la fin.</li>
+      <li>Le travail s'enregistre tout seul : dans le navigateur, et, avec le serveur, dans le dossier <code>td_results/</code> de ce cours, dans ton espace. Pour en faire le fichier de compte rendu, le menu ⋯ de la console copie le texte, à coller dans <code>TP1_Monnom.sql</code>.</li>
+    </ol>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Ce qui ne se fait qu'à la fac</span></p>
+      <p>Les commandes qui commencent par une barre oblique inverse (<code>\l</code>, <code>\dt</code>, <code>\dn</code>, <code>\c</code>) appartiennent au client <code>psql</code>, pas au langage SQL : la console les refuse (<code>syntax error</code>). On les garde en commentaire (<code>-- \dt</code>) dans le compte rendu. De même, on ne peut pas s'y connecter à une autre base (questions 3 et 4). Les requêtes SQL sur les catalogues, elles, fonctionnent.</p>
+    </div>
+    <div class="atelier" id="tp1-compte-rendu" data-editeur="sql">
+      <script type="application/json">
+{
+  "titre": "Compte rendu du TP 1",
+  "consigne": "<p>Le script fourni est déjà là : le compléter aux emplacements indiqués, puis écrire les réponses à la suite, dans l'ordre des questions. <b>Exécuter</b> rejoue tout, depuis le début, sur une base neuve, et affiche le résultat de la dernière requête qui renvoie des lignes, ou la première erreur.</p>",
+  "options": {
+    "jeu": "fac",
+    "lignes": 28
+  },
+  "depart": "DROP TABLE IF EXISTS ville;\nDROP TABLE IF EXISTS save;\nDROP TABLE IF EXISTS partie;\nDROP TABLE IF EXISTS jeu;\nDROP TABLE IF EXISTS avatar;\nDROP TABLE IF EXISTS race;\nDROP TABLE IF EXISTS stock;\nDROP TABLE IF EXISTS objet;\nDROP TABLE IF EXISTS visiteur;\n\n\n-- CREATION DES TABLES\nCREATE TABLE visiteur (\n\tid_visiteur serial PRIMARY KEY,\n\tlogin varchar(10) NOT NULL,\n\tmdp varchar(10) NOT NULL,\n\tmail varchar(50),\n\tville varchar(50)\n);\n\nCREATE TABLE objet (\n\tid_objet serial PRIMARY KEY,\n\tnom_objet varchar(40) NOT NULL,\n\tprix integer,\n\tpuissance integer\n);\n\nCREATE TABLE stock (\n\tid_objet bigint REFERENCES objet,\n\tid_visiteur bigint REFERENCES visiteur,\n\tnb_achat integer,\n\tnb_dispo integer,\n\tPRIMARY KEY (id_objet, id_visiteur)\n);\n\nCREATE TABLE race(\n\tid_race serial PRIMARY KEY,\n\tnom_race varchar(20) NOT NULL,\n\ttxt_race text NOT NULL\t\n);\n\nCREATE TABLE avatar (\n\tid_avatar serial PRIMARY KEY,\n\tnom_avatar varchar(20) NOT NULL,\n\tsexe char(1),\n\txp integer,\n\tcode_dsc integer,\n\tid_visiteur bigint REFERENCES visiteur,\n\tid_race bigint REFERENCES race\n);\n\n---- Emplacement de la création de table JEU\n\n---- Emplacement de la création de table PARTIE\n\n---- Emplacement de la création de table SAVE\n\n\nINSERT INTO visiteur VALUES (DEFAULT, 'Elijah', 'toto','toto@toto.me','Dunkerque');\nINSERT INTO visiteur VALUES (DEFAULT, 'Ian', 'titi');\nINSERT INTO visiteur VALUES (DEFAULT, 'Sean', 'tata');\nINSERT INTO visiteur VALUES (DEFAULT, 'Billy', 'tutu','tutu@tutu.me','Grenoble');\nINSERT INTO visiteur VALUES (DEFAULT, 'Dominic', 'tyty','tyty@tyty.me','Annecy');\nINSERT INTO visiteur VALUES (DEFAULT, 'Viggo', 'tete','tete@tete.me','Foix');\n\nINSERT INTO objet VALUES (DEFAULT, 'Amulette en ivoire',520,40);\nINSERT INTO objet VALUES (DEFAULT, 'Bille de force',680,70);\nINSERT INTO objet VALUES (DEFAULT, 'Bouclier de nécrophage',990,140);\nINSERT INTO objet VALUES (DEFAULT, 'Chaine tourbillonnante',543,70);\nINSERT INTO objet VALUES (DEFAULT, 'Crane des ténèbres',264,30);\nINSERT INTO objet VALUES (DEFAULT, 'Cristal de sécurité',377,40);\nINSERT INTO objet VALUES (DEFAULT, 'Dague de défiance',590,80);\nINSERT INTO objet VALUES (DEFAULT, 'Elixir de déplacement furtif',521,90);\nINSERT INTO objet VALUES (DEFAULT, 'Filet aquatique',343,30);\nINSERT INTO objet VALUES (DEFAULT, 'Gant de venin',678,100);\nINSERT INTO objet VALUES (DEFAULT, 'Sceptre de maitrise des dragons',802,150);\n\nINSERT INTO stock VALUES (1,1,2,1);\nINSERT INTO stock VALUES (7,1,1,0);\nINSERT INTO stock VALUES (6,1,1,0);\nINSERT INTO stock VALUES (9,1,3,2);\nINSERT INTO stock VALUES (3,1,4,3);\nINSERT INTO stock VALUES (4,1,10,8);\nINSERT INTO stock VALUES (2,2,3,1);\nINSERT INTO stock VALUES (5,2,2,0);\nINSERT INTO stock VALUES (6,2,1,1);\nINSERT INTO stock VALUES (8,2,1,1);\nINSERT INTO stock VALUES (2,3,2,1);\nINSERT INTO stock VALUES (9,3,1,0);\nINSERT INTO stock VALUES (9,4,3,1);\nINSERT INTO stock VALUES (11,4,2,1);\nINSERT INTO stock VALUES (8,5,1,1);\nINSERT INTO stock VALUES (7,5,4,1);\nINSERT INTO stock VALUES (6,5,3,2);\nINSERT INTO stock VALUES (5,5,2,0);\nINSERT INTO stock VALUES (4,5,1,1);\nINSERT INTO stock VALUES (3,5,1,0);\n\nINSERT INTO race VALUES (DEFAULT, 'Homme', ' Les humains sont les Seconds Enfants d Ilúvatar, les \"Suivants\" (quenya Hildor). Contrairement aux elfes, leur durée de vie n est pas liée à Arda (dans un langage plus courant, on peut les considérer comme mortels).');\nINSERT INTO race VALUES (DEFAULT, 'Elfe', 'Les elfes (Quendi, « ceux qui parlent », en quenya) sont des êtres sages et immortels (vieillesse et maladies n ont aucun effet sur eux). Seule une souffrance trop grande ou un rejet de la vie, ainsi qu une mort physique, peut les tuer. Lorsqu un elfe meurt, son esprit se rend dans les cavernes de Mandos. Ce sont les premiers-nés, conçus par Ilúvatar seul.');\nINSERT INTO race VALUES (DEFAULT, 'Nain', 'Ils ne mesurent pas plus d 1,50 mètre. Ils portent de longues barbes. Ils sont spécialisés dans l exploitation des mines : ils ont construit les mines de la Moria ou Khazad-dûm et plus largement sur une grande partie de la Terre du milieu. Ils sont de piètres cavaliers mais il sont très endurants. Ils parlent le Khuzdul.');\nINSERT INTO race VALUES (DEFAULT, 'Ainur', 'Les Ainur (en quenya, « les saints », au singulier Ainu) sont présents dans Le Silmarillion et les Contes et légendes inachevés. Ils créèrent le monde avec Ilúvatar à travers la Musique des Ainur. Après la création d Arda, une partie des Ainur y descendit pour la guider et réguler sa croissance.');\nINSERT INTO race VALUES (DEFAULT, 'Valar', 'Les Valar (nom quenya) sont présents dans Le Silmarillion. Les Valar (« puissances ») sont les quatorze plus puissants Ainur (esprits angéliques) qui soient descendus sur Arda, la Terre, pour y faire naître ce qui a été entrevu dans l Ainulindalë. Parmi eux, les huit plus puissants se nomment les « Aratar » (en quenya, « les exaltés »); ils étaient Neuf avant le bannissement de Melkor, divinité maléfique, dont le but est de détruire et défigurer Arda. Parmi les quatorze, on compte sept esprits masculins et sept féminins (appelés Valier).');\nINSERT INTO race VALUES (DEFAULT, 'Maiar', 'Les Maiar (nom quenya, au singulier : Maia) sont présents dans Le Silmarilion et les Contes et légendes inachevés. Les Maiar font partie des Ainur, les divinités issues de l esprit d Ilúvatar, le père des dieux. Ce sont cependant des esprits de second rang, servant les esprits supérieurs, les Valar. Ils sont beaucoup plus nombreux que ces derniers, mais seule une petite partie d entre eux est nommée. Parmi les serviteurs de Melkor, le dieu maléfique, figurent Sauron et les Balrogs.');\nINSERT INTO race VALUES (DEFAULT, 'Hobbit', 'Les Hobbits sont des créatures de petite taille, de 0,60 à 1,20 m et vivent dans des terriers confortables pour les plus riches, des trous pour les plus pauvres, ou des habitations de surface depuis leur installation dans la Comté. Ce sont des bons vivants, amateurs d herbe à pipe, de bière et de bonne chère. Ils sont accueillants mais se dissimulent souvent aux étrangers. Ils vivent dans la Terre du milieu et plus précisément dans la Comté, et dans une moindre mesure à Bree. Sauf exception, ils n aiment pas voyager.');\nINSERT INTO race VALUES (DEFAULT, 'Orques','Un orque est une créature inspirée du gobelin des légendes germaniques. C est à l origine une espèce humanoïde aux moeurs brutales. Le nom « orque » vient du sindarin « orch » (pluriel : yrch).'); \nINSERT INTO race VALUES (DEFAULT, 'Troll', 'Les trolls furent créés par Melkor au premier Âge du monde, mais leur origine n est pas connue. Sylvebarbe indique qu ils ont été créés à partir d ents qui auraient été corrompus à l instar des orcs qui seraient des elfes torturés et corrompus.');\nINSERT INTO race VALUES (DEFAULT, 'Balrog','Les balrogs (sindarin pour Démon de Puissance, analogue du quenya valarauko (pl. valaraukar)), sont des créatures fantastiques. Aux origines du monde, ils faisaient partie des Maiar. Ils furent corrompus par Melkor et prirent l apparence de formes ténébreuses et horribles. Ils se présentent comme des démons enveloppés de feu et d obscurité, munis de fouets de feu.'); \n\nINSERT INTO avatar VALUES (DEFAULT, 'Hector', 'M',170,345,1,1);\nINSERT INTO avatar VALUES (DEFAULT, 'Timothy', 'M',135,126,2,2);\nINSERT INTO avatar VALUES (DEFAULT, 'Matthis', 'M',90,336,3,3);\nINSERT INTO avatar VALUES (DEFAULT, 'Baptiste', 'M',80,456,4,4);\nINSERT INTO avatar VALUES (DEFAULT, 'David', 'M',102,333,4,5);\nINSERT INTO avatar VALUES (DEFAULT, 'Yannick', 'M',145,234,5,6);\nINSERT INTO avatar VALUES (DEFAULT, 'Luc', 'M',130,145,6,7);\nINSERT INTO avatar VALUES (DEFAULT, 'Antoine', 'M',85,321,1,8);\nINSERT INTO avatar VALUES (DEFAULT, 'Wajdi', 'M',140,234,1,8);\nINSERT INTO avatar VALUES (DEFAULT, 'Yann', 'M',82,344,2,10);\nINSERT INTO avatar VALUES (DEFAULT, 'Eliass', 'M',90,145,3,1);\nINSERT INTO avatar VALUES (DEFAULT, 'Mohammed', 'M',100,321,3,2);\nINSERT INTO avatar VALUES (DEFAULT, 'Youssef', 'M',150,321,4,3);\nINSERT INTO avatar VALUES (DEFAULT, 'Ayas', 'M',150,345,4,4);\nINSERT INTO avatar VALUES (DEFAULT, 'Merieme', 'F',110,431,5,5);\nINSERT INTO avatar VALUES (DEFAULT, 'Stevy', 'M',152,241,6,6);\nINSERT INTO avatar VALUES (DEFAULT, 'Victorien', 'M',135,241,1,7);\nINSERT INTO avatar VALUES (DEFAULT, 'Houssam', 'M',145,214,1,8);\nINSERT INTO avatar VALUES (DEFAULT, 'Pierre', 'M',120,234,2,8);\nINSERT INTO avatar VALUES (DEFAULT, 'Etienne', 'M',85,432,3,10);\nINSERT INTO avatar VALUES (DEFAULT, 'Marius', 'M',127,132,4,2);\nINSERT INTO avatar VALUES (DEFAULT, 'Choukri', 'F',135,342,4,3);\nINSERT INTO avatar VALUES (DEFAULT, 'Ahmed', 'M',100,121,5,4);\nINSERT INTO avatar VALUES (DEFAULT, 'Joris', 'M',130,345,6,5);\n\nINSERT INTO jeu VALUES (DEFAULT,'Forge of Empire','role');\nINSERT INTO jeu VALUES (DEFAULT,'Solitaire','plateau');\nINSERT INTO jeu VALUES (DEFAULT,'Plants vs Zombies','tower defense');\nINSERT INTO jeu VALUES (DEFAULT,'Drakensang Online','MMORPG');\nINSERT INTO jeu VALUES (DEFAULT,'Cooking Fever','Autre');\nINSERT INTO jeu VALUES (DEFAULT,'Kingdom Rush','tower defense');\nINSERT INTO jeu VALUES (DEFAULT,'League of Angels','role');\nINSERT INTO jeu VALUES (DEFAULT,'Mahjong','plateau');\n\n\nINSERT INTO partie VALUES (1, 2, 'gentil', 345);\nINSERT INTO partie VALUES (2, 7, 'méchant', 234);\nINSERT INTO partie VALUES (3, 6, 'gentil', 543);\nINSERT INTO partie VALUES (4, 3, 'méchant', 987);\nINSERT INTO partie VALUES (4, 2, 'gentil', 554);\nINSERT INTO partie VALUES (23, 1, 'méchant', 290);\nINSERT INTO partie VALUES (12, 4, 'gentil', 541);\nINSERT INTO partie VALUES (17, 5, 'méchant', 509);\nINSERT INTO partie VALUES (9, 3, 'gentil', 80);\nINSERT INTO partie VALUES (15, 7, 'méchant', 589);\nINSERT INTO partie VALUES (3, 3, 'gentil', 430);\nINSERT INTO partie VALUES (4, 8, 'méchant', 734);\nINSERT INTO partie VALUES (14, 2, 'gentil', 127);\nINSERT INTO partie VALUES (6, 2, 'méchant', 343);\nINSERT INTO partie VALUES (7, 6, 'gentil', 13);\nINSERT INTO partie VALUES (19, 8, 'méchant', 84);\nINSERT INTO partie VALUES (8, 4, 'gentil', 885);\nINSERT INTO partie VALUES (10, 5, 'méchant', 413);\nINSERT INTO partie VALUES (2, 6, 'gentil', 283);\nINSERT INTO partie VALUES (7, 1, 'méchant', 145);\nINSERT INTO partie VALUES (12, 2, 'gentil', 587);\nINSERT INTO partie VALUES (14, 3, 'méchant', 175);\nINSERT INTO partie VALUES (21, 3, 'gentil', 497);\nINSERT INTO partie VALUES (21, 4, 'méchant', 383);\nINSERT INTO partie VALUES (8, 5, 'gentil', 566);\nINSERT INTO partie VALUES (24, 7, 'méchant', 786);\nINSERT INTO partie VALUES (8, 1, 'méchant', 12);\nINSERT INTO partie VALUES (1, 1, 'gentil', 76);\nINSERT INTO partie VALUES (7, 4, 'méchant', 55);\nINSERT INTO partie VALUES (6, 5, 'gentil', 496);\nINSERT INTO partie VALUES (16, 5, 'méchant', 448);\nINSERT INTO partie VALUES (2, 2, 'gentil', 883);\n\n\nINSERT INTO save VALUES (1, 2, '01/02/16', 45, '/Save/Part001_02_010216.txt');\nINSERT INTO save VALUES (2, 7, '01/02/16', 34, '/Save/Part002_07_010216.txt');\nINSERT INTO save VALUES (3, 6, '24/01/16', 43, '/Save/Part003_06_240116.txt');\nINSERT INTO save VALUES (4, 3, '12/01/16', 87, '/Save/Part004_03_120116.txt');\nINSERT INTO save VALUES (4, 2, '18/01/16', 54, '/Save/Part004_02_180116.txt');\nINSERT INTO save VALUES (23, 1, '19/02/16', 90, '/Save/Part023_01_190216.txt');\nINSERT INTO save VALUES (12, 4, '18/02/16', 41, '/Save/Part012_04_180216.txt');\nINSERT INTO save VALUES (17, 5, '15/01/16', 19, '/Save/Part017_05_150116.txt');\nINSERT INTO save VALUES (9, 3, '19/02/16', 28, '/Save/Part009_03_190216.txt');\nINSERT INTO save VALUES (15, 7, '08/01/16', 89, '/Save/Part015_07_080116.txt');"
+}
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>À la fac : <code>psql -h erebor -U num_etu</code> ; base, utilisateur Unix et utilisateur PostgreSQL portent le numéro étudiant.</li>
+        <li>Le compte rendu <code>TP1_Monnom.txt</code> ou <code>.sql</code> garde chaque requête ; il n'est pas à rendre, mais il est autorisé au TP noté.</li>
+        <li>Le script fourni ne s'exécute qu'une fois complété : les tables <code>jeu</code>, <code>partie</code> et <code>save</code> sont à écrire (question 9).</li>
+        <li>Chez soi, la console rejoue tout le compte rendu sur une base neuve et affiche le résultat de la dernière requête ; les commandes <code>psql</code> (<code>\dt</code>…) n'y existent pas.</li>
+        <li>Les dates du script s'écrivent jour/mois/année : la console règle <code>DateStyle</code> comme le serveur de la fac.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Le script fourni, exécuté tel quel, s'arrête sur <code>relation "jeu" does not exist</code>. Pourquoi ?</summary>
+        <div><p>Il insère des lignes dans <code>jeu</code>, <code>partie</code> et <code>save</code>, mais ne crée pas ces tables : leur création est laissée aux emplacements prévus du script, c'est la question 9.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi un PostgreSQL réglé par défaut refuse-t-il la date <code>'24/01/16'</code> ?</summary>
+        <div><p>Par défaut, <code>DateStyle</code> lit les dates dans l'ordre mois/jour/année, et il n'y a pas de 24<sup>e</sup> mois. Le serveur de la fac, comme la console, lit jour/mois/année.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi <code>\dt</code> provoque-t-il une erreur dans la console, alors qu'il marche à la fac ?</summary>
+        <div><p>C'est une commande du client <code>psql</code>, qui la traduit en requête sur les catalogues : ce n'est pas du SQL, et la console n'exécute que du SQL.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Comment voir, dans la console, le résultat d'une requête écrite plus haut ?</summary>
+        <div><p>La console n'affiche que la dernière requête qui renvoie des lignes : on recopie la requête à la fin du texte, ou l'on met en commentaire celles qui la suivent.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="index.html"><small>← Matière</small>Bases de données</a>
+    <a class="suivant" href="tp-02-plateforme-jeux.html"><small>TP 2 →</small>Plateforme de jeux (suite)</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

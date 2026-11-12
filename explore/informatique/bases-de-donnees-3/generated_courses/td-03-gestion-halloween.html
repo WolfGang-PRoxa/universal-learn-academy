@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TD 3 · La gestion d'Halloween · Bases de données L3</title>
+<meta name="description" content="TD 3 interactif de bases de données, d'après le CC 2023 : modéliser la gestion d'Halloween (sorts, fabriques, squelettes, chaudrons, souhaits des enfants) en diagramme de classes puis en modèle relationnel, citer les commandes d'exploitation, puis écrire en SQL une table, deux requêtes, une vue, une fonction SQL et une fonction PL/pgSQL, exécutées et testées.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+<script type="application/json" id="atelier-jeux">
+{
+  "halloween": {
+    "titre": "Halloween Town (questions 5 à 9)",
+    "description": "<p>La base du modèle relationnel proposé à la question 2 : <code>squelette</code>, <code>fabrique</code>, <code>affectation</code>, <code>sort</code>, <code>production</code>, <code>categorie</code>, <code>chaudron</code>, <code>contenu</code>, <code>personne</code>, <code>responsable</code>, <code>souhait</code>, <code>evaluation</code>. À ouvrir après avoir fait les questions 1 et 2, puisqu'il en donne une solution.</p><p>Les personnages du sujet y sont (ThéMar, AghSin, SylMei, le chaudron 3021 à destination de la Sarthe…), complétés par des données inventées. Le poids des sorts (<code>sort.poids</code>, en kg) sert aux questions 5 et 6. La date d'ouverture de MisteryScape (201 av. J.-C.) n'est pas saisie : PostgreSQL accepte les dates avant notre ère (<code>DATE '0201-10-31 BC'</code>), mais l'affichage des résultats de la page ne sait pas les montrer.</p>",
+    "script": "CREATE TABLE squelette (\n  id_squelette serial PRIMARY KEY,\n  surnom varchar(20) NOT NULL,\n  caractere varchar(40)\n);\n\nCREATE TABLE fabrique (\n  id_fabrique serial PRIMARY KEY,\n  nom varchar(20) NOT NULL,\n  position_geo varchar(40),\n  date_ouverture date,\n  id_chef integer NOT NULL UNIQUE REFERENCES squelette,\n  id_adjoint integer UNIQUE REFERENCES squelette,\n  CHECK (id_chef <> id_adjoint)\n);\n\nCREATE TABLE affectation (\n  id_squelette integer REFERENCES squelette,\n  id_fabrique integer REFERENCES fabrique,\n  date_debut date,\n  date_fin date,\n  PRIMARY KEY (id_squelette, id_fabrique, date_debut)\n);\n\nCREATE TABLE sort (\n  id_sort serial PRIMARY KEY,\n  nom varchar(40) NOT NULL,\n  duree integer,\n  puissance integer,\n  type varchar(20),\n  caracteristiques text,\n  poids numeric(6,2)\n);\n\nCREATE TABLE production (\n  id_sort integer REFERENCES sort,\n  id_fabrique integer REFERENCES fabrique,\n  annee integer,\n  nb_exemplaires integer NOT NULL,\n  PRIMARY KEY (id_sort, id_fabrique, annee)\n);\n\nCREATE TABLE categorie (\n  id_categorie serial PRIMARY KEY,\n  nom varchar(20) NOT NULL UNIQUE,\n  capacite bigint,\n  stock integer\n);\n\nCREATE TABLE chaudron (\n  id_chaudron integer PRIMARY KEY,\n  annee integer NOT NULL,\n  destination varchar(40),\n  heure_livraison timestamp,\n  id_categorie integer NOT NULL REFERENCES categorie,\n  id_superviseur integer NOT NULL REFERENCES squelette\n);\n\nCREATE TABLE contenu (\n  id_chaudron integer REFERENCES chaudron,\n  id_sort integer REFERENCES sort,\n  nb_exemplaires integer NOT NULL,\n  PRIMARY KEY (id_chaudron, id_sort)\n);\n\nCREATE TABLE personne (\n  id_personne serial PRIMARY KEY,\n  nom varchar(30) NOT NULL,\n  prenom varchar(30) NOT NULL,\n  date_naissance date NOT NULL,\n  adresse varchar(80)\n);\n\nCREATE TABLE responsable (\n  id_responsable integer REFERENCES personne,\n  id_enfant integer REFERENCES personne,\n  PRIMARY KEY (id_responsable, id_enfant)\n);\n\nCREATE TABLE souhait (\n  id_enfant integer REFERENCES personne,\n  id_sort integer REFERENCES sort,\n  annee integer,\n  rang integer NOT NULL,\n  valide_parents boolean,\n  valide_jack boolean,\n  PRIMARY KEY (id_enfant, id_sort, annee),\n  CHECK (NOT valide_jack OR valide_parents)\n);\n\nCREATE TABLE evaluation (\n  id_enfant integer REFERENCES personne,\n  annee integer,\n  note integer CHECK (note BETWEEN 1 AND 10),\n  remarques text,\n  PRIMARY KEY (id_enfant, annee)\n);\n\nINSERT INTO squelette (surnom, caractere) VALUES\n('ThéMar', 'assez souvent grincheux'), ('AghSin', 'inépuisable'), ('MarTah', 'ambitieuse'),\n('SylMei', 'farceur'), ('MaTha', 'grincheux'), ('NicoDug', 'joyeux luron'),\n('Grimbald', 'grincheux'), ('Osseline', 'rêveuse'), ('Craquos', 'grincheux'),\n('Tibias', 'jovial'), ('Rotule', 'grincheux'), ('Vertèbre', 'timide'), ('Clavicule', 'bavard');\n\nINSERT INTO fabrique (nom, position_geo, date_ouverture, id_chef, id_adjoint) VALUES\n('BloodyHappyTree', 'Forêt des Pendus', '1520-10-31', 7, 8),\n('MisteryScape', 'Colline Brumeuse', NULL, 2, 3),\n('SellsGemmery', 'Marais aux Lanternes', '1789-10-31', 9, 12),\n('TrustyFriends', 'Vallée des Citrouilles', '1901-10-31', 10, 11),\n('MysteryFalls', 'Cascade Sanglante', '1666-10-31', 5, 13);\n\nINSERT INTO affectation VALUES\n(1, 1, '1635-07-01', '2026-09-02'), (1, 2, '2026-09-03', NULL),\n(3, 2, '1998-03-01', NULL), (4, 1, '1850-01-01', NULL), (5, 5, '1666-10-31', NULL),\n(6, 3, '2020-10-01', NULL), (7, 1, '1520-10-31', NULL), (8, 1, '1700-05-12', NULL),\n(9, 3, '1789-10-31', NULL), (10, 4, '1901-10-31', NULL), (11, 4, '1950-02-02', NULL),\n(12, 3, '1990-06-15', NULL), (13, 5, '2003-04-04', NULL);\n\nINSERT INTO sort (nom, duree, puissance, type, caracteristiques, poids) VALUES\n('Mauvais Œil', 72, 3, 'malédiction', 'malchance garantie', 0.5),\n('Pétrification niveau 1000', 120, 1000, 'malédiction', 'change la cible en statue de pierre', 4),\n('Momification', 480, 70, 'métamorphose', 'bandelettes fournies', 2.5),\n('Invisibilité', 35040, 90, 'envoûtement', 'rend invisible', 1.2),\n('Crapaud rose vintage', 24, 40, 'métamorphose', 'crapaud rose, style vintage', 0.8),\n('Sommeil de plomb', 8, 20, 'envoûtement', 'sommeil profond', 1),\n('Rire incontrôlable', 1, 5, 'envoûtement', 'fou rire garanti', 0.3),\n('Pluie de verrues', 72, 15, 'malédiction', 'verrues sur le nez', 3.5);\n\nINSERT INTO production VALUES\n(1, 1, 2024, 210), (1, 1, 2025, 346), (2, 1, 2026, 50), (8, 1, 2023, 90),\n(2, 2, 2026, 950), (1, 2, 2025, 80), (4, 2, 2003, 1),\n(3, 3, 2023, 120), (6, 3, 2025, 300),\n(6, 4, 2024, 200), (7, 4, 2025, 650),\n(5, 5, 2025, 40), (7, 5, 2024, 500);\n\nINSERT INTO categorie (nom, capacite, stock) VALUES\n('Or', 500000000, 12), ('Vermeil', 50000000, 20), ('Argent', 1000000, 40),\n('Bronze', 10000, 120), ('Rubis', 5000000, 7), ('Saphir', 2000000, 75);\n\nINSERT INTO chaudron VALUES\n(666, 1987, 'Hawaï', '1987-10-31 18:00', 5, 4),\n(2301, 2023, 'Sarthe', '2023-10-31 22:00', 6, 8),\n(2302, 2023, 'Bretagne', '2023-10-31 21:30', 3, 12),\n(2303, 2023, 'Écosse', '2023-10-31 20:00', 4, 13),\n(2304, 2023, 'Transylvanie', '2023-10-31 23:30', 1, 1),\n(3021, 2026, 'Sarthe', '2026-10-31 23:00', 6, 4),\n(3022, 2026, 'Mayenne', '2026-10-31 22:30', 4, 6);\n\nINSERT INTO contenu VALUES\n(666, 7, 10),\n(2301, 3, 40), (2301, 7, 100),\n(2302, 8, 30), (2302, 1, 50),\n(2303, 7, 400),\n(2304, 6, 20), (2304, 3, 10),\n(3021, 2, 26), (3021, 5, 50), (3021, 1, 30),\n(3022, 7, 20);\n\nINSERT INTO personne (nom, prenom, date_naissance, adresse) VALUES\n('Doudar', 'Abdou', '2016-04-12', '4 rue des Tilleuls, Le Mans'),\n('Doudar', 'Samia', '1984-07-02', '4 rue des Tilleuls, Le Mans'),\n('Doudar', 'Karim', '1982-11-20', '4 rue des Tilleuls, Le Mans'),\n('Smith', 'Jane', '1995-06-06', '221 Baker Street, Londres'),\n('Smith', 'Robert', '1965-01-15', '221 Baker Street, Londres'),\n('Martin', 'Lucas', '2018-09-01', '12 place de la République, Laval'),\n('Martin', 'Lucas', '2018-09-01', '8 impasse des Lilas, Tours'),\n('Martin', 'Claire', '1988-03-03', '12 place de la République, Laval'),\n('Leroy', 'Inès', '2014-12-24', '3 quai de la Maine, Angers'),\n('Leroy', 'Paul', '1980-05-05', '3 quai de la Maine, Angers');\n\nINSERT INTO responsable VALUES (2, 1), (3, 1), (5, 4), (8, 6), (10, 9);\n\nINSERT INTO souhait VALUES\n(4, 4, 2003, 1, false, false),\n(1, 1, 2024, 1, true, true),\n(1, 7, 2025, 1, true, true), (1, 6, 2025, 2, true, false), (1, 3, 2025, 3, true, true),\n(9, 5, 2025, 1, true, true), (9, 2, 2025, 2, false, false),\n(6, 7, 2025, 1, true, true),\n(7, 6, 2025, 1, true, true);\n\nINSERT INTO evaluation VALUES\n(4, 2003, 3, 'Veut rendre ses parents invisibles.'),\n(1, 2024, 8, 'Très sage ; a aidé à ramasser les feuilles mortes.'),\n(1, 2025, 6, 'A caché le chat dans une citrouille.'),\n(9, 2025, 9, 'Irréprochable.'),\n(6, 2025, 7, 'Range sa chambre une fois sur deux.'),\n(7, 2025, 5, 'A peint le chien en orange.');\n"
+  },
+  "halloween-q4": {
+    "titre": "Halloween Town, sans la table fabrique (question 4)",
+    "description": "<p>La seule table <code>squelette(id_squelette, surnom, caractere)</code> et ses 13 squelettes : la table <code>fabrique</code> est à créer. Les tests insèrent ensuite des fabriques dans la table créée.</p>",
+    "script": "CREATE TABLE squelette (\n  id_squelette serial PRIMARY KEY,\n  surnom varchar(20) NOT NULL,\n  caractere varchar(40)\n);\n\nINSERT INTO squelette (surnom, caractere) VALUES\n('ThéMar', 'assez souvent grincheux'), ('AghSin', 'inépuisable'), ('MarTah', 'ambitieuse'),\n('SylMei', 'farceur'), ('MaTha', 'grincheux'), ('NicoDug', 'joyeux luron'),\n('Grimbald', 'grincheux'), ('Osseline', 'rêveuse'), ('Craquos', 'grincheux'),\n('Tibias', 'jovial'), ('Rotule', 'grincheux'), ('Vertèbre', 'timide'), ('Clavicule', 'bavard');\n"
+  }
+}
+</script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Bases de données</a>
+    <span aria-current="page">TD 3 · La gestion d'Halloween</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> TD 3 · L3 S5 · interactif</p>
+    <h1>La gestion d'Halloween</h1>
+    <p class="chapeau">Un sujet d'examen complet, d'après le CC 2023 : de la description d'Halloween Town, tirer le diagramme de classes et le modèle relationnel, dire quelles commandes l'exploiteraient, puis écrire en SQL une table, des requêtes, une vue et deux fonctions. Chaque réponse se construit dans un atelier, avec contrôles, comparaison à une solution et aide de Claude.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TD/%5B26%5DTD3_GestionHalloween.pdf">[26]TD3_GestionHalloween.pdf</a> · 4 pages</dd></div>
+      <div><dt>Enseignants</dt><dd>T. Mariotte, N. Camelin</dd></div>
+      <div><dt>Cours</dt><dd><a href="cours-01-uml-vers-relationnel.html">Cours 1</a>, <a href="cours-02-sql.html">cours 2</a> et <a href="cours-03-sql-avance-plpgsql.html">cours 3</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-29">29 sept. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Modéliser un domaine décrit en français, avec des informations datées (production annuelle, mutations, souhaits).</li>
+        <li>Traduire le diagramme en modèle relationnel, en soignant les clés primaires et étrangères.</li>
+        <li>Choisir les commandes SQL d'une opération de gestion.</li>
+        <li>Écrire une table avec ses contraintes, des requêtes avec négation et maximum, une vue, une fonction SQL et une fonction PL/pgSQL.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Notions utilisées</p>
+      <ul>
+        <li><a href="cours-01-uml-vers-relationnel.html#les-associations">Associations</a>, <a href="cours-01-uml-vers-relationnel.html#association-reflexive">association réflexive</a>, <a href="cours-01-uml-vers-relationnel.html#composition">composition</a> et <a href="cours-01-uml-vers-relationnel.html#traduire-en-modele-relationnel">règles de traduction</a></li>
+        <li><a href="cours-02-sql.html#les-contraintes-d-integrite">Contraintes d'intégrité</a>, <a href="cours-02-sql.html#sous-requetes-et-filtrage">sous-requêtes</a>, <a href="cours-02-sql.html#les-vues">vues</a> et <a href="cours-02-sql.html#les-fonctions-sql">fonctions SQL</a></li>
+        <li><a href="cours-03-sql-avance-plpgsql.html#retour-sur-le-type-serial">SERIAL</a> et <a href="cours-03-sql-avance-plpgsql.html#le-langage-pl-pgsql">PL/pgSQL</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Mode d'emploi</p>
+    <ul>
+      <li>Diagramme et modèle relationnel se construisent sur le dessin ou dans la vue texte (« Les deux ») ; les deux restent synchronisés. Double-clic sur le fond pour une nouvelle classe, sur un élément pour le modifier ; « Relier » pour tracer une association.</li>
+      <li>« Vérifier » contrôle la forme sans rien dévoiler, « Comparer » mesure l'écart avec la solution ou lance les tests SQL, « Claude » répond aux questions et corrige. La solution reste cachée tant qu'on ne la demande pas.</li>
+      <li>Le travail s'enregistre tout seul. Avec le serveur local (<code>studies/lancer.bat</code>), il va dans <code>td_results/</code>, Claude est disponible et le SQL s'exécute.</li>
+    </ul>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Conception <span class="ref">TD, p. 1–3 · 90 %</span></h2>
+    <p>Tout le sujet tient dans un texte à lire de près : chaque phrase apporte une classe, un attribut, une multiplicité ou une contrainte. C'est la partie qui pèse le plus lourd à l'examen.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Sujet <span>La gestion d'Halloween (d'après CC 2023)</span></p>
+      <p><strong>Présentation générale.</strong> Ce sujet est inspiré du mythe d'Halloween. Toute ressemblance avec des personnages existants serait purement fortuite.</p>
+      <p>Vous devez vous mettre à la place de la famille de Mr Jack qui doit gérer la fabrication et la livraison de tous les sorts demandés par les enfants et approuvés ou non par les parents, dans la limite des stocks de sorts disponibles dans les différentes fabriques d'Halloween Town et des capacités des divers chaudrons.</p>
+      <p><strong>Présentation détaillée.</strong> Commençons par la définition des sorts. Ceux-ci ont un nom, une durée et une puissance, un type (malédiction, métamorphose, envoûtement, …) et des caractéristiques regroupées dans un champ de type texte. Chaque année, ces sorts sont invoqués en un certain nombre d'exemplaires par l'une des fabriques d'Halloween Town. Pour chaque fabrique, on connaitra son nom, sa position géographique et sa date d'ouverture. On pourra donc savoir qu'en 2025 la fabrique BloodyHappyTree a invoqué exactement 346 Mauvais Œil de caractéristiques « malchance garantie », alors que seulement 210 avaient été confectionnés l'année précédente.</p>
+      <p>Pour faire fonctionner les fabriques, un ensemble d'ouvriers squelettes est employé par la famille Jack. Le registre des squelettes répertorie pour chacun son surnom et son caractère. Les squelettes sont affectés à une seule fabrique à la fois, mais peuvent éventuellement demander leur mutation d'une fabrique à une autre s'ils veulent se réorienter professionnellement. Par exemple, le squelette ThéMar, de caractère assez souvent grincheux, avait travaillé à la fabrique BloodyHappyTree depuis juillet 1635. Cette année, depuis le 3 septembre, il a choisi d'aller travailler à la fabrique MisteryScape où il est bien connu que l'imagination est une compétence plus exploitée.</p>
+      <p>Chaque fabrique est dirigée par un squelette en chef, qui est secondé par un squelette adjoint. On sait par exemple que AghSin est squelette en chef de la fabrique MisteryScape depuis son ouverture en 201 av. JC. Il a eu de nombreux squelettes adjoints qui espéraient un jour prendre sa place… mais il semble inépuisable et n'est pas prêt à la laisser. Son adjointe MarTah a d'ailleurs décidé qu'elle demanderait sa mutation dans une autre fabrique dès le prochain Halloween. Malheureusement, ce qu'il faut savoir, c'est qu'on ne peut être qu'une seule fois dans sa carrière squelette adjoint ou squelette en chef. C'est pourquoi, assez souvent, les postes de squelettes en chef sont brigués par les squelettes adjoints et les postes de squelettes en chef sont disponibles uniquement lorsque ce dernier a décidé de prendre un dernier repos bien mérité au cimetière du coin. Ces histoires sont tellement tristes qu'elles restent simplement vivantes dans la mémoire collective des squelettes, transmise oralement (sans corde vocale) de génération en génération (sans oreille). On sauvegarde officiellement qui sont les squelettes en chef et adjoint d'une fabrique à l'instant t.</p>
+      <p>Un autre poste important pour les squelettes et beaucoup moins long à obtenir (car il y a de nombreuses places) est celui de superviseur d'un chaudron. Le remplissage de chaque chaudron est, en effet, supervisé par un squelette qui doit vérifier que tout est prêt pour l'heure de livraison prévue cette année-là sur ce chaudron-là.</p>
+      <p>Il existe plusieurs catégories de chaudrons : les ors, les vermeils, les argents… ils correspondent tous à une capacité. Par exemple, les chaudrons de catégorie Or peuvent contenir jusqu'à 500M de sorts, tandis que les Bronze ne peuvent en contenir que 10k. La famille Jack fait un inventaire à chaque automne pour savoir combien de chaudrons sont disponibles pour l'Halloween suivant et met ainsi son stock à jour. Le dernier Halloween, comme beaucoup de précédents, aucune perte de chaudron à signaler. Le stock de chaque catégorie de chaudrons est donc resté inchangé. On se remémore néanmoins, à voix basse autour d'une potion bien chaude de la pause de 16h, qu'une année, le petit squelette SylMei avait fait son malin en allumant des feux d'artifices dans un chaudron Rubis, faisant exploser et prendre feu tout son contenu… Le chaudron 666 avait ainsi été perdu et le nombre de chaudrons de catégorie Rubis avait dû être décrémenté de 1 (sans parler des enfants hawaïens qui avaient failli ne pas recevoir à temps leurs sorts… Heureusement que le décalage horaire était en faveur des squelettes et les fabriques très performantes…). Bref, concentrons-nous sur le positif et notons par exemple que cette année, en 2026, le chaudron 3021, de type Saphir, a une livraison prévue pour la destination Sarthe avec tout son précieux chargement. Il y a actuellement 75 chaudrons de catégories Saphir (on ne fait pas l'historique des stocks, on sait simplement à l'instant t la quantité de chaque catégorie).</p>
+      <p>Concernant la modélisation des chaudrons, le choix fait ici est celui de représenter les chaudrons comme des instances d'une catégorie donnée, une année donnée qui sont « à destination de » pour « heure exacte ». L'objet chaudron en soit, celui qu'on peut toucher, n'est lui pas défini de manière unique.</p>
+      <p>Parlons donc maintenant du chargement des chaudrons. Chaque chaudron contient plusieurs sorts, il s'agit de savoir combien d'exemplaires de chaque sort est contenu dans quel chaudron. Par exemple, le chaudron 3021 en 2026 contiendra 26 sorts de Pétrification niveau 1000. Il faut comprendre deux choses : 1. Un nouvel identifiant de chaudron est créé chaque année de manière unique. Donc le chaudron 3021 ne peut correspondre qu'au chaudron Saphir de 2022, à destination de la Sarthe et qui contient entre autres des sorts de Pétrification ; 2. Quand on remplit un chaudron, on ne sait pas à qui sont destinés les sorts. Le squelette responsable du chaudron, par exemple SylMei pour le 3021, reçoit un listing de tout ce que doit contenir son chaudron. Il le remplit avec ce qui est sur sa liste en se rendant au triage central où atterrissent tous les sorts de toutes les fabriques. On ne saura donc pas quelle usine a fabriqué les sorts de Pétrification qui sont dans le chaudron 3021, ni même s'ils ont tous été produits par la même fabrique. En revanche, on sait que la fabrique MisteryScape a fabriqué plus de 90% de ces sorts cette année-là. Il y a alors fort à parier qu'ils viennent de cette fabrique.</p>
+      <p>Mais comment sont ainsi obtenus ces fameux listings que reçoivent les squelettes superviseurs de chaudrons ? Ils sont obtenus à partir de l'ensemble des souhaits émis par les enfants lors de l'établissement de leur liste d'Halloween.</p>
+      <p>La famille Jack étant dans l'ère numérique du siècle, tous les enfants et tous les parents sur Terre ont un compte sur le site d'Halloween Town. Chaque personne, à sa naissance, voit donc son nom, son prénom, sa date de naissance et son adresse inscrits sur le site. Par la suite, on peut savoir qui est le parent de qui ou disons plus simplement qu'on connaît l'ensemble des responsables légaux d'un enfant. Lorsque Halloween approche, chaque enfant doit inscrire sur le site l'ensemble de ses souhaits pour les sorts. Il doit définir quels sorts il souhaite cette année-là et attribuer à chacun un rang de priorité. Pour chaque sort souhaité, la famille Jack a besoin de savoir s'il est validé ou pas par un des responsables légaux puis indique également de son côté s'il valide ou pas le sort. Les parents ayant toujours raison, un sort qui n'est pas validé par les parents ne sera pas validé par la famille Jack. Cela a permis d'éviter, par exemple, que la petite Jane rende invisible ses parents pendant 4 ans (sort souhaité en rang 1 pour l'année 2003 après avoir visionné Harry Potter) car ce sort n'était pas validé par ses parents et donc n'a pas été validé par la famille Jack (et donc non contenu dans un chaudron pour livraison). Il faut comprendre que la validation parentale n'est pas donnée par une personne en particulier, mais la famille Jack connaît le sentiment des parents et associe cette information « par magie » à chaque souhait.</p>
+      <p>De son côté, la famille Jack établit une évaluation chaque année pour chaque enfant. La note de l'évaluation résume en un entier numérique entre 1 et 10 si l'enfant a été sage ou pas cette année-là. Leur évaluation est basée sur l'ensemble des remarques prises tout au long de l'année et saisies dans l'évaluation. Ensuite, lorsqu'il s'agit de valider ou non un sort souhaité, la famille se réunit et se réfère à l'évaluation de l'enfant pour valider tout ou partie de la liste souhaitée. C'est l'ensemble des sorts validés par la famille Jack qui devra trouver place dans les différents chaudrons. Les listings seront donc constitués en fonction des zones géographiques et des quantités de sorts qu'ils peuvent contenir. Cette répartition est un problème NP-complet qu'il est difficile de résoudre, mais le joyeux luron NicoDug, dernier-né de la famille Jack, a mis en place un algorithme remarquable pour gérer cela (algorithme top secret qu'il ne partage pas et qui ne fait pas partie de notre modélisation. Peut-être le révèlera-t-il en cours de complexité ?).</p>
+      <p>Vous savez tout maintenant et pouvez passer à la modélisation de ce problème.</p>
+    </div>
+
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Deux années pour le chaudron 3021</span></p>
+      <p><span class="badge a-verifier">À vérifier</span> Le sujet parle du chaudron 3021 « cette année, en 2026 », puis écrit qu'il « ne peut correspondre qu'au chaudron Saphir de 2022 ». Le sujet d'origine date de 2023 : 2022 est sans doute un reste de la version précédente, et c'est 2026 qu'il faut lire. Cela ne change rien à la modélisation : un identifiant de chaudron désigne un seul chaudron, d'une seule année.</p>
+    </div>
+
+    <h3>Le diagramme de classes</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 1 <span>70 à 80 %</span></p>
+      <p>Écrire le diagramme de classes permettant de prendre en compte toutes les situations exprimées.</p>
+    </div>
+    <div class="atelier" id="td3-q1-classes" data-editeur="classes">
+      <script type="application/json">
+      {
+        "titre": "Diagramme de classes",
+        "hauteur": 620,
+        "consigne": "<p>Construire le diagramme sur le dessin ou dans la vue texte. « Vérifier » signale ce qui empêchera la traduction en relationnel (identifiant manquant, attribut multivalué…). La solution proposée est une modélisation raisonnable parmi d'autres : un écart n'est pas forcément une erreur.</p>",
+        "options": {
+          "bdd": true
+        },
+        "solution": [
+          "classe Sort",
+          "  id_sort : int {PK}",
+          "  nom : varchar",
+          "  duree : int",
+          "  puissance : int",
+          "  type : varchar",
+          "  caracteristiques : text",
+          "  poids : numeric",
+          "classe Fabrique",
+          "  id_fabrique : int {PK}",
+          "  nom : varchar",
+          "  position_geo : varchar",
+          "  date_ouverture : date",
+          "classe Production",
+          "  annee : int",
+          "  nb_exemplaires : int",
+          "classe Squelette",
+          "  id_squelette : int {PK}",
+          "  surnom : varchar",
+          "  caractere : varchar",
+          "classe Affectation",
+          "  date_debut : date",
+          "  date_fin : date [0..1]",
+          "classe Categorie",
+          "  id_categorie : int {PK}",
+          "  nom : varchar",
+          "  capacite : int",
+          "  stock : int",
+          "classe Chaudron",
+          "  id_chaudron : int {PK}",
+          "  annee : int",
+          "  destination : varchar",
+          "  heure_livraison : timestamp",
+          "classe Contenu",
+          "  nb_exemplaires : int",
+          "classe Personne",
+          "  id_personne : int {PK}",
+          "  nom : varchar",
+          "  prenom : varchar",
+          "  date_naissance : date",
+          "  adresse : varchar",
+          "classe Souhait",
+          "  annee : int",
+          "  rang : int",
+          "  valide_parents : boolean [0..1]",
+          "  valide_jack : boolean [0..1]",
+          "classe Evaluation",
+          "  annee : int {PK}",
+          "  note : int",
+          "  remarques : text",
+          "Sort \"*\" -- \"*\" Fabrique : est invoqué par > [Production]",
+          "Squelette \"*\" -- \"1..*\" Fabrique : travaille dans > [Affectation]",
+          "Squelette \"1 chef\" -- \"0..1\" Fabrique : dirige >",
+          "Squelette \"0..1 adjoint\" -- \"0..1\" Fabrique : seconde >",
+          "Squelette \"1 superviseur\" -- \"*\" Chaudron : supervise >",
+          "Chaudron \"*\" -- \"1\" Categorie : est de catégorie >",
+          "Chaudron \"*\" -- \"1..*\" Sort : contient > [Contenu]",
+          "Personne \"* responsable\" -- \"* enfant\" Personne : est responsable légal de >",
+          "Personne \"*\" -- \"*\" Sort : souhaite > [Souhait]",
+          "Personne \"1\" *-- \"*\" Evaluation : est évalué par >"
+        ],
+        "explication": "<p>Les choix de cette solution :</p><ul><li><b>Production</b>, <b>Affectation</b> et <b>Souhait</b> sont des classes d'association datées : un même sort est produit par la même fabrique plusieurs années de suite, un squelette peut revenir dans une fabrique qu'il a quittée, un enfant peut souhaiter le même sort deux années de suite. Le modèle relationnel ajoute donc l'année (ou la date de début) à leur clé, comme <code>date_debut</code> pour Activité dans le cours.</li><li><b>Chef et adjoint</b> : deux associations 0..1 — 1 et 0..1 — 0..1, puisque l'on ne garde que la situation à l'instant t et qu'un squelette n'occupe chaque poste qu'une fois. Elles deviennent deux clés étrangères uniques dans <code>fabrique</code> (règle 5). L'historique des adjoints d'AghSin, « transmis oralement », n'est pas modélisé.</li><li><b>Chaudron</b> : l'identifiant est unique d'une année à l'autre (« un nouvel identifiant de chaudron est créé chaque année »), l'année est un simple attribut. La catégorie est une classe, puisqu'elle porte la capacité et le stock ; il n'y a pas de classe pour l'objet physique, comme le demande l'énoncé. Rien ne relie un chaudron aux fabriques : on ne sait pas d'où viennent ses sorts.</li><li><b>Personne</b> regroupe enfants et parents, reliés par une association réflexive « est responsable légal de ». La validation parentale est un attribut du souhait, puisqu'elle n'est « pas donnée par une personne en particulier ».</li><li><b>Évaluation</b> : une par enfant et par an, qui n'existe pas sans l'enfant : composition, dont la clé comprend l'année.</li><li><span class='badge a-verifier'>À vérifier</span> <b>Poids</b> : l'énoncé ne parle pas du poids des sorts, mais les questions 5 et 6 l'utilisent (« sort de plus de 3 kg », « chaudrons les plus lourds »). Il est ajouté ici à Sort.</li></ul><p>D'autres choix sont défendables : une classe TypeSort ou Zone (destination), une classe Enfant spécialisation de Personne, l'année en {PK} dans les classes d'association. L'algorithme de répartition de NicoDug est explicitement hors modèle.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Relever d'abord les noms communs qui ont des propriétés : sort, fabrique, squelette, catégorie, chaudron, personne, évaluation. Puis chercher ce qui dépend d'un <em>couple</em> et d'une <em>date</em> : le nombre d'exemplaires d'un sort invoqués par une fabrique <em>une année</em>, la fabrique d'un squelette <em>depuis une date</em>, le rang d'un sort souhaité par un enfant <em>une année</em>. Ce sont des classes d'association, dont la date entrera dans la clé.</p></div>
+    </details>
+    <details class="indice">
+      <summary>Deuxième indice</summary>
+      <div><p>Chef et adjoint : on ne garde que la situation à l'instant t, et un squelette n'occupe chaque poste qu'une fois : deux associations dont les multiplicités valent au plus 1 des deux côtés. Parents et enfants sont des personnes : une <a href="cours-01-uml-vers-relationnel.html#association-reflexive">association réflexive</a>. Enfin, relire les questions 5 et 6 : elles utilisent une information que le texte ne donne pas.</p></div>
+    </details>
+
+    <h3>Le modèle relationnel</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 2 <span>10 à 20 %</span></p>
+      <p>Écrire le modèle relationnel CORRESPONDANT. Ce qui est noté ici c'est votre capacité à passer d'un diagramme à un MR. Le MR devra donc être la traduction directe de votre diagramme. Une attention particulière devra être portée sur les clés primaires et #étrangères. (À titre d'info, une douzaine de tables apparaissent dans ma modélisation)</p>
+    </div>
+    <div class="atelier" id="td3-q2-relationnel" data-editeur="relationnel">
+      <script type="application/json">
+      {
+        "titre": "Modèle relationnel",
+        "consigne": "<p>Traduire son propre diagramme (ou celui de la solution de la question 1). Noms de relations en minuscules ; l'ordre des relations est celui de l'implémentation : une table référencée vient avant celles qui la référencent.</p>",
+        "solution": [
+          "squelette(_id_squelette_, surnom, caractere)",
+          "fabrique(_id_fabrique_, nom, position_geo, date_ouverture, #id_chef(squelette), #id_adjoint(squelette))",
+          "affectation(_#id_squelette_, _#id_fabrique_, _date_debut_, date_fin)",
+          "sort(_id_sort_, nom, duree, puissance, type, caracteristiques, poids)",
+          "production(_#id_sort_, _#id_fabrique_, _annee_, nb_exemplaires)",
+          "categorie(_id_categorie_, nom, capacite, stock)",
+          "chaudron(_id_chaudron_, annee, destination, heure_livraison, #id_categorie, #id_superviseur(squelette))",
+          "contenu(_#id_chaudron_, _#id_sort_, nb_exemplaires)",
+          "personne(_id_personne_, nom, prenom, date_naissance, adresse)",
+          "responsable(_#id_responsable_(personne), _#id_enfant_(personne))",
+          "souhait(_#id_enfant_(personne), _#id_sort_, _annee_, rang, valide_parents, valide_jack)",
+          "evaluation(_#id_enfant_(personne), _annee_, note, remarques)"
+        ],
+        "explication": "<p>Douze relations, comme dans la modélisation de l'enseignante ou de l'enseignant (« une douzaine de tables »).</p><ul><li><b>Règle 1</b> : une relation par classe (squelette, fabrique, sort, categorie, chaudron, personne).</li><li><b>Règle 2</b> : une table par association * — * (production, affectation, contenu, responsable, souhait). Pour les associations datées, l'année ou la date de début entre dans la clé : sans elle, <code>production</code> n'aurait qu'une ligne par couple (sort, fabrique), et les 210 Mauvais Œil de 2024 écraseraient les 346 de 2025.</li><li><b>Règle 3</b> : la clé du côté 1 va du côté * (<code>chaudron.#id_categorie</code>, <code>chaudron.#id_superviseur</code>).</li><li><b>Règle 5</b> : chef et adjoint deviennent <code>#id_chef</code> et <code>#id_adjoint</code> dans <code>fabrique</code>, le côté où la participation est obligatoire. En SQL, ces colonnes sont <code>UNIQUE</code> : c'est la question 4.</li><li><b>Réflexive</b> : <code>responsable</code> référence deux fois <code>personne</code>, avec deux noms de colonnes qui disent le rôle.</li><li><b>Composition</b> : la clé de <code>evaluation</code> comprend celle de l'enfant.</li></ul>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Appliquer les <a href="cours-01-uml-vers-relationnel.html#traduire-en-modele-relationnel">règles du cours</a> une à une. Pour une association * — * datée, la clé de la table d'association réunit les deux clés étrangères <em>et</em> la date ou l'année. Pour une association sans * (chef, adjoint), relire la <a href="cours-01-uml-vers-relationnel.html#regle-5-les-associations-sans">règle 5</a> : de quel côté placer la clé étrangère ?</p></div>
+    </details>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exploitation <span class="ref">TD, p. 3 · 10 %</span></h2>
+    <p>Sans écrire les requêtes en entier, il s'agit de dire quelles commandes une opération demande, et dans quel ordre. La réponse dépend du modèle : les noms de tables sont ceux de sa propre modélisation.</p>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3 <span>Commandes</span></p>
+      <p>Quelle(s) commande(s), 3 premiers mots uniquement, utiliseriez-vous pour (Vous pouvez répondre par des SI … ALORS si besoin ou POUR faire …) :</p>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Pour chaque opération, se demander : quelles lignes changent, lesquelles apparaissent ou disparaissent, et dans quel ordre, pour que les clés étrangères restent valides ? Une information datée ne se modifie pas : on clôt l'ancienne ligne et on en insère une nouvelle. Ajouter une information qui n'existe pas encore dans le modèle, c'est modifier le schéma.</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3a <span>Mutation</span></p>
+      <p>Mutez le squelette MaTha de la fabrique MysteryFalls qu'il quitte aujourd'hui à SellsGemmery qu'il intègrera la semaine prochaine (et oui il prend une semaine de congés bien méritée).</p>
+    </div>
+    <div class="atelier" id="td3-q3a-commandes" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Question 3a · commandes",
+        "options": {
+          "lignes": 4,
+          "placeholder": "Une commande par ligne, ses 3 premiers mots (par exemple : UPDATE affectation SET) ; SI … ALORS au besoin."
+        },
+        "solution": "UPDATE affectation SET … (date_fin = aujourd'hui, sur son affectation en cours à MysteryFalls)\nINSERT INTO affectation … (SellsGemmery, date_debut = aujourd'hui + 7 jours)\nSI MaTha est chef ou adjoint de MysteryFalls ALORS UPDATE fabrique SET … (le remplacer)",
+        "explication": "<p>Avec une affectation historisée, une mutation ne modifie pas l'ancienne ligne : on la clôt (<code>date_fin</code>) et on en ajoute une nouvelle, qui commence dans une semaine. Entre les deux, MaTha n'est affecté nulle part : c'est son congé.</p><p>Dans les données de la page, MaTha est le chef de MysteryFalls : le poste ne peut pas rester vide (<code>id_chef NOT NULL</code>), il faut nommer un remplaçant avant qu'il parte.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3b <span>Reniement</span></p>
+      <p>Reniez le squelette NicoDug, comme s'il n'avait jamais existé.</p>
+    </div>
+    <div class="atelier" id="td3-q3b-commandes" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Question 3b · commandes",
+        "options": {
+          "lignes": 4,
+          "placeholder": "Une commande par ligne, ses 3 premiers mots (par exemple : UPDATE affectation SET) ; SI … ALORS au besoin."
+        },
+        "solution": "DELETE FROM affectation WHERE …\nSI NicoDug supervise des chaudrons ALORS UPDATE chaudron SET … (autre superviseur)\nSI NicoDug est chef ou adjoint ALORS UPDATE fabrique SET …\nDELETE FROM squelette WHERE …",
+        "explication": "<p>« Comme s'il n'avait jamais existé » : on efface aussi son historique. Les lignes qui le référencent doivent disparaître ou changer <em>avant</em> la suppression du squelette, sinon la clé étrangère la refuse. <code>ON DELETE CASCADE</code> sur <code>affectation</code> ferait la première étape automatiquement ; pour un chaudron, on ne supprime pas le chaudron, on change son superviseur.</p><p><span class='badge a-verifier'>À vérifier</span> Le sujet présente NicoDug comme le « dernier-né de la famille Jack », pas comme un squelette.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3c <span>Production</span></p>
+      <p>Sauvegarder le nombre d'exemplaires de Momification fabriqués par SellsGemmery en 2022 (la production est terminée pour cette année).</p>
+    </div>
+    <div class="atelier" id="td3-q3c-commandes" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Question 3c · commandes",
+        "options": {
+          "lignes": 4,
+          "placeholder": "Une commande par ligne, ses 3 premiers mots (par exemple : UPDATE affectation SET) ; SI … ALORS au besoin."
+        },
+        "solution": "INSERT INTO production VALUES … (Momification, SellsGemmery, 2022, nombre)\n(ou, SI une ligne 2022 existe déjà, UPDATE production SET nb_exemplaires = …)",
+        "explication": "<p>La production d'une année est une ligne de la table d'association datée <code>production</code>. Si l'on enregistrait la production au fil de l'eau, la ligne existe et on la met à jour ; sinon on l'insère.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3d <span>Prix coûtant</span></p>
+      <p>Rajoutez l'information du prix coutant de chaque sort (même si c'est une production interne, le coût magique peut tout de même être estimé).</p>
+    </div>
+    <div class="atelier" id="td3-q3d-commandes" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Question 3d · commandes",
+        "options": {
+          "lignes": 4,
+          "placeholder": "Une commande par ligne, ses 3 premiers mots (par exemple : UPDATE affectation SET) ; SI … ALORS au besoin."
+        },
+        "solution": "ALTER TABLE sort ADD … (COLUMN prix_coutant numeric)\nUPDATE sort SET prix_coutant = … (pour chaque sort)",
+        "explication": "<p>Ajouter une information, c'est modifier le schéma (DDL) : <code>ALTER TABLE … ADD COLUMN</code>. La colonne est vide pour les sorts existants, qu'on renseigne ensuite par <code>UPDATE</code>.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3e <span>Promotion</span></p>
+      <p>Promouvoir le squelette SylMei, en chef de la fabrique TrustyFriends et le squelette AghSin adjoint.</p>
+    </div>
+    <div class="atelier" id="td3-q3e-commandes" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Question 3e · commandes",
+        "options": {
+          "lignes": 4,
+          "placeholder": "Une commande par ligne, ses 3 premiers mots (par exemple : UPDATE affectation SET) ; SI … ALORS au besoin."
+        },
+        "solution": "SI SylMei ou AghSin n'ont jamais occupé ce poste ALORS\nUPDATE fabrique SET … (MisteryScape : nouveau chef à la place d'AghSin)\nUPDATE fabrique SET … (TrustyFriends : id_chef = SylMei, id_adjoint = AghSin)\nUPDATE affectation SET … / INSERT INTO affectation … (s'ils ne travaillent pas déjà à TrustyFriends)",
+        "explication": "<p>Une promotion est une modification de <code>fabrique</code>. Deux obstacles : AghSin dirige MisteryScape, qui ne peut pas rester sans chef, et « on ne peut être qu'une seule fois dans sa carrière squelette adjoint ou squelette en chef ». La contrainte <code>UNIQUE</code> ne vérifie que la situation présente : la base, qui ne garde pas l'historique des postes, ne peut pas savoir si AghSin a déjà été adjoint. D'où le SI … ALORS.</p><p>Les deux squelettes doivent enfin travailler à TrustyFriends : clôture de leur affectation actuelle et nouvelle affectation.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3f <span>Souhait</span></p>
+      <p>Sauvegarder que l'enfant Abdou Doudar veut en top priorité pour sa liste de 2025 un sort de métamorphose en crapaud rose vintage.</p>
+    </div>
+    <div class="atelier" id="td3-q3f-commandes" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Question 3f · commandes",
+        "options": {
+          "lignes": 4,
+          "placeholder": "Une commande par ligne, ses 3 premiers mots (par exemple : UPDATE affectation SET) ; SI … ALORS au besoin."
+        },
+        "solution": "SI le sort n'existe pas ALORS INSERT INTO sort …\nSI Abdou a déjà un souhait de rang 1 en 2025 ALORS UPDATE souhait SET rang = rang + 1 …\nINSERT INTO souhait VALUES … (Abdou, crapaud rose vintage, 2025, rang 1, validations à NULL)",
+        "explication": "<p>Abdou a un compte depuis sa naissance : pas d'<code>INSERT</code> dans <code>personne</code>. Le souhait est une ligne de <code>souhait</code> ; les validations restent vides (<code>NULL</code>) tant que les parents et la famille Jack ne se sont pas prononcés. « Top priorité » : rang 1, en décalant les souhaits déjà classés.</p>"
+      }
+      </script>
+    </div>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 3g <span>Validation parentale</span></p>
+      <p>Indiquez qu'un de ses parents n'a pas validé ce choix.</p>
+    </div>
+    <div class="atelier" id="td3-q3g-commandes" data-editeur="texte">
+      <script type="application/json">
+      {
+        "titre": "Question 3g · commandes",
+        "options": {
+          "lignes": 4,
+          "placeholder": "Une commande par ligne, ses 3 premiers mots (par exemple : UPDATE affectation SET) ; SI … ALORS au besoin."
+        },
+        "solution": "UPDATE souhait SET valide_parents = false (et valide_jack = false) WHERE …",
+        "explication": "<p>La validation parentale est un attribut du souhait, sans parent désigné : un seul <code>UPDATE</code>. Comme « un sort qui n'est pas validé par les parents ne sera pas validé par la famille Jack », on peut fixer <code>valide_jack</code> à faux en même temps ; dans la base de la page, une contrainte <code>CHECK (NOT valide_jack OR valide_parents)</code> l'impose.</p>"
+      }
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>SQL <span class="ref">TD, p. 4 · si le temps le permet</span></h2>
+    <p>Les dernières questions passent à la pratique : chaque réponse s'exécute sur une base PostgreSQL remplie avec les personnages du sujet. Une requête est comparée au résultat de la solution ; une création de table, de vue ou de fonction est éprouvée par des tests.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La base de données</span></p>
+      <p>Les questions 5 à 9 portent sur une base qui suit le modèle relationnel proposé à la question 2 (bouton « Données » de chaque atelier) : la consulter après avoir fait les questions 1 et 2. Pour que les tests puissent appeler la table, la vue ou la fonction demandée, les consignes en fixent les noms (préfixes <code>v_</code> et <code>f_</code>, comme dans le cours). Le poids des sorts, qui manque au sujet, est ajouté dans <code>sort.poids</code>, en kilogrammes.</p>
+    </div>
+
+    <h3>Créer une table</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 4 <span>La table Fabrique</span></p>
+      <p>Créez la table Fabrique. L'identifiant devra s'auto-incrémenter automatiquement. Le nom de la fabrique ne peut pas contenir plus de 20 caractères. Et surtout n'oubliez pas : « on ne peut être qu'une seule fois dans sa carrière squelette adjoint ou squelette en chef ».</p>
+    </div>
+    <div class="atelier" id="td3-q4-fabrique" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 4 · Créer la table fabrique",
+        "consigne": "<p>La table <code>squelette</code> existe déjà. Créer <code>fabrique</code> avec les colonnes du modèle relationnel proposé, pour que les tests puissent y insérer des lignes : <code>id_fabrique</code>, <code>nom</code>, <code>position_geo</code>, <code>date_ouverture</code>, <code>id_chef</code>, <code>id_adjoint</code>. « Comparer » exécute le script, puis six tests.</p>",
+        "options": {
+          "jeu": "halloween-q4",
+          "mode": "script",
+          "lignes": 12
+        },
+        "depart": "CREATE TABLE fabrique (\n  \n);",
+        "tests": [
+          {
+            "nom": "Deux fabriques insérées sans identifiant reçoivent deux identifiants différents",
+            "requete": "INSERT INTO fabrique (nom, position_geo, date_ouverture, id_chef, id_adjoint) VALUES ('Fabrique A', 'Ici', '2026-01-01', 1, 2);\nINSERT INTO fabrique (nom, position_geo, date_ouverture, id_chef, id_adjoint) VALUES ('Fabrique B', 'Là', '2026-01-02', 3, 4);\nSELECT count(DISTINCT id_fabrique) AS nb FROM fabrique;",
+            "resultat": true
+          },
+          {
+            "nom": "Un nom de 20 caractères est accepté",
+            "requete": "INSERT INTO fabrique (nom, position_geo, date_ouverture, id_chef, id_adjoint) VALUES ('ABCDEFGHIJKLMNOPQRST', 'Ici', '2026-01-01', 1, 2);",
+            "doit": "reussir"
+          },
+          {
+            "nom": "Un nom de 21 caractères est refusé",
+            "requete": "INSERT INTO fabrique (nom, position_geo, date_ouverture, id_chef, id_adjoint) VALUES ('ABCDEFGHIJKLMNOPQRSTU', 'Ici', '2026-01-01', 1, 2);",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Un squelette ne dirige pas deux fabriques",
+            "requete": "INSERT INTO fabrique (nom, position_geo, date_ouverture, id_chef, id_adjoint) VALUES ('Fabrique A', 'Ici', '2026-01-01', 1, 2);\nINSERT INTO fabrique (nom, position_geo, date_ouverture, id_chef, id_adjoint) VALUES ('Fabrique B', 'Là', '2026-01-02', 1, 3);",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Un squelette n'est pas adjoint de deux fabriques",
+            "requete": "INSERT INTO fabrique (nom, position_geo, date_ouverture, id_chef, id_adjoint) VALUES ('Fabrique A', 'Ici', '2026-01-01', 1, 2);\nINSERT INTO fabrique (nom, position_geo, date_ouverture, id_chef, id_adjoint) VALUES ('Fabrique B', 'Là', '2026-01-02', 3, 2);",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Le chef est un squelette qui existe",
+            "requete": "INSERT INTO fabrique (nom, position_geo, date_ouverture, id_chef, id_adjoint) VALUES ('Fabrique A', 'Ici', '2026-01-01', 99, 2);",
+            "doit": "echouer"
+          }
+        ],
+        "solution": "CREATE TABLE fabrique (\n  id_fabrique serial PRIMARY KEY,\n  nom varchar(20) NOT NULL,\n  position_geo varchar(40),\n  date_ouverture date,\n  id_chef integer NOT NULL UNIQUE REFERENCES squelette,\n  id_adjoint integer UNIQUE REFERENCES squelette,\n  CHECK (id_chef <> id_adjoint)\n);",
+        "explication": "<p><code>serial</code> crée une séquence et donne à <code>id_fabrique</code> la valeur suivante à chaque insertion (<code>GENERATED ALWAYS AS IDENTITY</code> convient aussi). <code>varchar(20)</code> refuse un nom plus long.</p><p>« On ne peut être qu'une seule fois squelette adjoint ou squelette en chef » : dans la base, qui ne garde que la situation présente, cela devient <code>UNIQUE</code> sur <code>id_chef</code> et sur <code>id_adjoint</code> (un squelette ne dirige pas deux fabriques à la fois). Le <code>CHECK (id_chef &lt;&gt; id_adjoint)</code> interdit d'être son propre adjoint. Les deux clés étrangères référencent <code>squelette</code>.</p><p>Ce que les contraintes ne vérifient pas : qu'un squelette ne soit pas chef d'une fabrique et adjoint d'une autre (il faudrait un trigger, cours 3), ni qu'il n'ait jamais occupé le poste auparavant, puisque l'historique n'est pas conservé.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Un identifiant auto-incrémenté : <a href="cours-03-sql-avance-plpgsql.html#retour-sur-le-type-serial">le type <code>serial</code></a>. Un squelette qui ne peut être chef qu'une fois ne peut pas apparaître deux fois dans la colonne <code>id_chef</code> : quelle <a href="cours-02-sql.html#les-contraintes-d-integrite">contrainte</a> interdit les doublons dans une colonne ?</p></div>
+    </details>
+
+    <h3>Deux requêtes</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 5 <span>Chefs grincheux</span></p>
+      <p>Quelles sont les fabriques (nom et position géographique) qui ont un chef au caractère grincheux et qui ne fabriquent aucun sort de plus de 3 kg ?</p>
+    </div>
+    <div class="atelier" id="td3-q5-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 5 · Chefs grincheux, sorts légers",
+        "consigne": "<p>Fabriques dont le chef a un caractère grincheux (<code>caractere = 'grincheux'</code>) et qui n'ont fabriqué aucun sort de plus de 3 kg. Colonnes attendues : <code>nom</code>, <code>position_geo</code>.</p>",
+        "options": {
+          "jeu": "halloween"
+        },
+        "depart": "SELECT ",
+        "solution": "SELECT f.nom, f.position_geo\nFROM fabrique f\nJOIN squelette s ON s.id_squelette = f.id_chef\nWHERE s.caractere = 'grincheux'\n  AND NOT EXISTS (SELECT *\n                  FROM production p\n                  JOIN sort so ON so.id_sort = p.id_sort\n                  WHERE p.id_fabrique = f.id_fabrique AND so.poids > 3);",
+        "explication": "<p>Le chef se trouve par <code>fabrique.id_chef</code>, pas par <code>affectation</code> : ThéMar est grincheux, mais simple ouvrier à MisteryScape, et Rotule est l'adjoint (grincheux) de TrustyFriends.</p><p>« Aucun sort de plus de 3 kg » est une négation sur un ensemble : <code>NOT EXISTS</code> (ou <code>NOT IN</code>) sur les productions lourdes de la fabrique. Une jointure avec <code>WHERE so.poids &lt;= 3</code> garde les fabriques qui ont fabriqué <em>au moins un</em> sort léger : BloodyHappyTree, qui fabrique aussi de la Pétrification (4 kg), apparaîtrait à tort.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>« Aucun » appelle une négation sur un ensemble : <code>NOT EXISTS (SELECT … )</code> ou <code>NOT IN (SELECT … )</code>, avec une sous-requête qui cherche les sorts lourds fabriqués par la fabrique. Et le chef, où le trouve-t-on ?</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 6 <span>Chaudrons lourds</span></p>
+      <p>Quel est le (ou les) chaudrons (id) qui sont les plus lourds en 2023 ?</p>
+    </div>
+    <div class="atelier" id="td3-q6-sql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 6 · Les chaudrons les plus lourds en 2023",
+        "consigne": "<p>Le ou les chaudrons de 2023 dont le chargement pèse le plus (nombre d'exemplaires × poids du sort). Colonne attendue : <code>id_chaudron</code>.</p>",
+        "options": {
+          "jeu": "halloween"
+        },
+        "depart": "SELECT ",
+        "solution": "SELECT c.id_chaudron\nFROM chaudron c\nJOIN contenu co ON co.id_chaudron = c.id_chaudron\nJOIN sort s ON s.id_sort = co.id_sort\nWHERE c.annee = 2023\nGROUP BY c.id_chaudron\nHAVING sum(co.nb_exemplaires * s.poids) >= ALL (\n  SELECT sum(co2.nb_exemplaires * s2.poids)\n  FROM chaudron c2\n  JOIN contenu co2 ON co2.id_chaudron = c2.id_chaudron\n  JOIN sort s2 ON s2.id_sort = co2.id_sort\n  WHERE c2.annee = 2023\n  GROUP BY c2.id_chaudron);",
+        "explication": "<p>Le poids d'un chaudron est <code>sum(nb_exemplaires * poids)</code> sur son contenu. On garde le ou les chaudrons dont le poids est au moins égal à celui de tous les autres chaudrons <em>de 2023</em> : l'année doit aussi filtrer la sous-requête, sinon on compare au chaudron 3021 de 2026, plus lourd, et la requête ne renvoie rien.</p><p>Deux chaudrons sont ex æquo (130 kg) : <code>ORDER BY … DESC LIMIT 1</code> n'en garderait qu'un, alors que l'énoncé demande « le (ou les) chaudrons ». Le chaudron 2303 contient le plus d'exemplaires (400), mais des sorts légers : compter les exemplaires ne suffit pas.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Calculer le poids de chaque chaudron (une somme de produits, par chaudron), puis garder celui ou ceux dont le poids est au moins égal à tous les autres : <code>HAVING … &gt;= ALL (sous-requête)</code>, comme au TD 1. La sous-requête compare-t-elle bien aux seuls chaudrons de 2023 ?</p></div>
+    </details>
+
+    <h3>Une vue et deux fonctions</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 7 <span>Vue</span></p>
+      <p>Créez la vue qui permet de lister le contenu de chaque chaudron en précisant : numéro du chaudron, nom de sa catégorie puis dans une colonne nommée « contenu » nom et nombre d'exemplaires des sorts, et enfin la destination.</p>
+    </div>
+    <div class="atelier" id="td3-q7-vue" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 7 · La vue du contenu des chaudrons",
+        "consigne": "<p>Créer la vue <code>v_contenu_chaudron</code>, de colonnes <code>id_chaudron</code>, <code>categorie</code> (nom de la catégorie), <code>contenu</code> (nom et nombre d'exemplaires des sorts) et <code>destination</code>. La forme du texte de <code>contenu</code> est libre ; les tests vérifient les chaudrons, les catégories, les destinations, et que le contenu du 3021 cite ses 26 Pétrifications.</p>",
+        "options": {
+          "jeu": "halloween",
+          "mode": "script",
+          "lignes": 10
+        },
+        "depart": "CREATE VIEW v_contenu_chaudron AS\nSELECT ",
+        "tests": [
+          {
+            "nom": "La vue existe, avec les quatre colonnes demandées",
+            "requete": "SELECT id_chaudron, categorie, contenu, destination FROM v_contenu_chaudron;",
+            "doit": "reussir"
+          },
+          {
+            "nom": "Mêmes chaudrons, catégories et destinations que la solution",
+            "requete": "SELECT DISTINCT id_chaudron, categorie, destination FROM v_contenu_chaudron;",
+            "resultat": true
+          },
+          {
+            "nom": "Le contenu du chaudron 3021 cite ses 26 sorts de Pétrification",
+            "requete": "SELECT count(*) AS nb FROM v_contenu_chaudron WHERE id_chaudron = 3021 AND contenu LIKE '%Pétrification%' AND contenu LIKE '%26%';",
+            "resultat": true
+          },
+          {
+            "nom": "La vue suit ses données : un sort ajouté au chaudron 3022 y apparaît",
+            "requete": "INSERT INTO contenu VALUES (3022, 4, 3);\nSELECT count(*) AS nb FROM v_contenu_chaudron WHERE id_chaudron = 3022 AND contenu LIKE '%Invisibilité%';",
+            "resultat": true
+          }
+        ],
+        "solution": "CREATE VIEW v_contenu_chaudron AS\nSELECT c.id_chaudron,\n       cat.nom AS categorie,\n       s.nom || ' : ' || co.nb_exemplaires AS contenu,\n       c.destination\nFROM chaudron c\nJOIN categorie cat ON cat.id_categorie = c.id_categorie\nJOIN contenu co ON co.id_chaudron = c.id_chaudron\nJOIN sort s ON s.id_sort = co.id_sort;",
+        "explication": "<p>Quatre jointures, et une concaténation (<code>||</code>) pour réunir le nom du sort et le nombre d'exemplaires dans la colonne <code>contenu</code>. La vue donne une ligne par sort de chaque chaudron ; une ligne par chaudron, avec <code>string_agg(…, ', ')</code> et un <code>GROUP BY</code>, répond aussi à la question.</p><p>Une vue ne stocke pas ses lignes : elle rejoue sa requête à chaque utilisation. <code>CREATE TABLE … AS SELECT</code> figerait le contenu du jour, et échouerait au dernier test.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Écrire d'abord la requête <code>SELECT</code>, la mettre au point, puis la précéder de <code>CREATE VIEW v_contenu_chaudron AS</code>. Pour réunir deux valeurs dans une colonne : l'opérateur de concaténation <code>||</code>, et un alias <code>AS contenu</code>.</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 8 <span>Fonction SQL</span></p>
+      <p>Créez la fonction SQL qui permet pour un numéro de chaudron donné, de lister son contenu.</p>
+    </div>
+    <div class="atelier" id="td3-q8-fonction" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 8 · Fonction SQL : le contenu d'un chaudron",
+        "consigne": "<p>Créer la fonction SQL <code>f_contenu_chaudron(integer)</code>, qui renvoie une ligne par sort du chaudron donné : nom du sort, nombre d'exemplaires. Les tests l'appellent par <code>SELECT * FROM f_contenu_chaudron(3021)</code>.</p>",
+        "options": {
+          "jeu": "halloween",
+          "mode": "script",
+          "lignes": 10
+        },
+        "depart": "CREATE FUNCTION f_contenu_chaudron (p_id integer)\nRETURNS ",
+        "tests": [
+          {
+            "nom": "Contenu du chaudron 3021",
+            "requete": "SELECT * FROM f_contenu_chaudron(3021);",
+            "resultat": true
+          },
+          {
+            "nom": "Contenu du chaudron 2304",
+            "requete": "SELECT * FROM f_contenu_chaudron(2304);",
+            "resultat": true
+          },
+          {
+            "nom": "Un chaudron inconnu ne renvoie aucune ligne",
+            "requete": "SELECT * FROM f_contenu_chaudron(9999);",
+            "resultat": true
+          }
+        ],
+        "solution": "CREATE FUNCTION f_contenu_chaudron (p_id integer)\nRETURNS TABLE (nom varchar, nb_exemplaires integer) AS $$\n  SELECT s.nom, co.nb_exemplaires\n  FROM contenu co\n  JOIN sort s ON s.id_sort = co.id_sort\n  WHERE co.id_chaudron = p_id;\n$$ LANGUAGE SQL;",
+        "explication": "<p>La fonction renvoie plusieurs lignes : son type de retour est un ensemble. <code>RETURNS TABLE (nom varchar, nb_exemplaires integer)</code> nomme les colonnes ; <code>RETURNS SETOF record</code> obligerait à les décrire à chaque appel, et <code>RETURNS varchar</code> ne renverrait que le premier sort, sans erreur (le piège du cours 2).</p><p>Le paramètre se désigne par son nom (<code>p_id</code>) ou par sa position (<code>$1</code>). Le corps peut aussi réutiliser la vue de la question 7.</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>La fonction renvoie plusieurs lignes de deux colonnes : relire <a href="cours-02-sql.html#le-type-de-retour">le type de retour</a> d'une fonction SQL. <code>RETURNS TABLE (…)</code> décrit les colonnes renvoyées, et le corps entre <code>$$ … $$</code> évite de doubler les apostrophes.</p></div>
+    </details>
+
+    <div class="bloc exercice">
+      <p class="bloc-titre">Question 9 <span>Fonction PL/pgSQL</span></p>
+      <p>Créez la fonction plpgSQL qui permet de lister pour un enfant (nom, prénom, date de naissance) et une année donnée, la liste des sorts (nom, type et rang) qu'il recevra. Si plusieurs enfants ou aucun ne correspond, une erreur devra être renvoyée. Un affichage de type notice permettra d'indiquer la note et l'évaluation de l'enfant cette année-là.</p>
+    </div>
+    <div class="atelier" id="td3-q9-plpgsql" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Question 9 · Fonction PL/pgSQL : les sorts d'un enfant",
+        "consigne": "<p>Créer la fonction PL/pgSQL <code>f_sorts_recus(nom, prenom, date_naissance, annee)</code>, qui renvoie les sorts que l'enfant recevra cette année-là : nom du sort, type, rang (trois colonnes). Elle lève une erreur si aucun enfant, ou plusieurs, correspondent, et affiche la note et l'évaluation de l'année par un <code>RAISE NOTICE</code>. Les tests appellent <code>SELECT * FROM f_sorts_recus('Doudar', 'Abdou', '2016-04-12', 2025)</code>. Le <code>NOTICE</code> n'apparaît pas dans les résultats de la page : il se voit dans <code>psql</code>.</p>",
+        "options": {
+          "jeu": "halloween",
+          "mode": "script",
+          "lignes": 24
+        },
+        "depart": "CREATE FUNCTION f_sorts_recus (p_nom varchar, p_prenom varchar, p_naissance date, p_annee integer)\nRETURNS TABLE (nom_sort varchar, type_sort varchar, rang integer) AS $$\nDECLARE\n\nBEGIN\n\nEND;\n$$ LANGUAGE plpgsql;",
+        "tests": [
+          {
+            "nom": "Abdou Doudar en 2025 : ses deux sorts validés par la famille Jack",
+            "requete": "SELECT * FROM f_sorts_recus('Doudar', 'Abdou', '2016-04-12', 2025);",
+            "resultat": true
+          },
+          {
+            "nom": "Inès Leroy en 2025 : le sort refusé par ses parents n'y est pas",
+            "requete": "SELECT * FROM f_sorts_recus('Leroy', 'Inès', '2014-12-24', 2025);",
+            "resultat": true
+          },
+          {
+            "nom": "Aucun enfant ne correspond : erreur",
+            "requete": "SELECT * FROM f_sorts_recus('Doudar', 'Abdou', '2016-04-13', 2025);",
+            "doit": "echouer"
+          },
+          {
+            "nom": "Deux enfants homonymes nés le même jour : erreur",
+            "requete": "SELECT * FROM f_sorts_recus('Martin', 'Lucas', '2018-09-01', 2025);",
+            "doit": "echouer"
+          }
+        ],
+        "solution": "CREATE FUNCTION f_sorts_recus (p_nom varchar, p_prenom varchar, p_naissance date, p_annee integer)\nRETURNS TABLE (nom_sort varchar, type_sort varchar, rang integer) AS $$\nDECLARE\n  v_nb integer;\n  v_id integer;\n  v_note integer;\n  v_remarques text;\nBEGIN\n  SELECT count(*) INTO v_nb\n  FROM personne\n  WHERE nom = p_nom AND prenom = p_prenom AND date_naissance = p_naissance;\n  IF v_nb = 0 THEN\n    RAISE EXCEPTION 'Aucun enfant % % né le %', p_prenom, p_nom, p_naissance;\n  ELSIF v_nb > 1 THEN\n    RAISE EXCEPTION '% enfants % % nés le % : impossible de choisir', v_nb, p_prenom, p_nom, p_naissance;\n  END IF;\n\n  SELECT id_personne INTO v_id\n  FROM personne\n  WHERE nom = p_nom AND prenom = p_prenom AND date_naissance = p_naissance;\n\n  SELECT e.note, e.remarques INTO v_note, v_remarques\n  FROM evaluation e\n  WHERE e.id_enfant = v_id AND e.annee = p_annee;\n  RAISE NOTICE 'Évaluation % : note %, %', p_annee, v_note, v_remarques;\n\n  RETURN QUERY\n    SELECT s.nom, s.type, so.rang\n    FROM souhait so\n    JOIN sort s ON s.id_sort = so.id_sort\n    WHERE so.id_enfant = v_id AND so.annee = p_annee AND so.valide_jack\n    ORDER BY so.rang;\nEND;\n$$ LANGUAGE plpgsql;",
+        "explication": "<p>Compter d'abord les enfants qui correspondent (<code>SELECT count(*) INTO</code>), et lever une erreur avec <code>RAISE EXCEPTION</code> s'il n'y en a pas exactement un : les deux Lucas Martin nés le 1<sup>er</sup> septembre 2018 sont là pour le vérifier. Puis lire l'évaluation de l'année (<code>SELECT … INTO</code>) pour le <code>RAISE NOTICE</code>, et renvoyer les souhaits validés par la famille Jack avec <code>RETURN QUERY</code>.</p><p>« Qu'il recevra » : seuls les souhaits validés par la famille Jack (<code>valide_jack</code>), qui l'ont forcément été par les parents. Attention aux colonnes de <code>RETURNS TABLE</code>, qui deviennent des variables : <code>rang</code> est aussi une colonne de <code>souhait</code>, d'où l'alias <code>so.rang</code> pour éviter l'erreur « column reference is ambiguous ».</p>"
+      }
+      </script>
+    </div>
+    <details class="indice">
+      <summary>Indice</summary>
+      <div><p>Trois étapes : compter les enfants qui correspondent (<code>SELECT count(*) INTO …</code>) et <a href="cours-03-sql-avance-plpgsql.html#commentaires-et-messages"><code>RAISE EXCEPTION</code></a> s'il n'y en a pas exactement un ; lire l'évaluation de l'année dans des variables et l'afficher par <code>RAISE NOTICE</code> ; renvoyer les souhaits avec <a href="cours-03-sql-avance-plpgsql.html#les-types-de-retour"><code>RETURN QUERY</code></a>. Quels souhaits l'enfant recevra-t-il vraiment ?</p></div>
+    </details>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>Une information qui dépend d'un couple d'objets et d'une date (production d'une année, affectation depuis une date, souhait d'une année) va dans une classe d'association ; en relationnel, la date entre dans la clé.</li>
+        <li>« On ne garde que la situation à l'instant t » : pas d'historique, donc une simple association, sans date.</li>
+        <li>Deux rôles d'une même classe (chef et adjoint, parent et enfant) donnent deux associations, ou une association réflexive, avec des rôles nommés.</li>
+        <li>Une association 0..1 — 1 devient une clé étrangère du côté obligatoire, rendue <code>UNIQUE</code> en SQL.</li>
+        <li>Une information datée ne se modifie pas : on clôt l'ancienne ligne (<code>UPDATE … SET date_fin</code>) et on en insère une nouvelle.</li>
+        <li>« Aucun » s'écrit avec <code>NOT EXISTS</code> ou <code>NOT IN</code> ; « le ou les plus » avec <code>&gt;= ALL</code>, en appliquant les mêmes filtres dans la sous-requête.</li>
+        <li>Une vue rejoue sa requête à chaque utilisation ; une fonction qui renvoie plusieurs lignes se déclare <code>RETURNS TABLE (…)</code> ou <code>RETURNS SETOF …</code>.</li>
+        <li>En PL/pgSQL, <code>RAISE EXCEPTION</code> arrête la fonction avec une erreur, <code>RAISE NOTICE</code> affiche un message sans l'arrêter.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi l'année doit-elle entrer dans la clé de <code>production</code> ?</summary>
+        <div><p>Une même fabrique invoque le même sort plusieurs années : BloodyHappyTree, 210 Mauvais Œil en 2024 et 346 en 2025. Avec la clé (sort, fabrique), il ne pourrait y avoir qu'une ligne par couple.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi n'y a-t-il pas d'association entre Chaudron et Fabrique ?</summary>
+        <div><p>Les sorts passent par le triage central : on ne sait pas quelle fabrique a produit ceux d'un chaudron. Une telle association enregistrerait une information que personne ne connaît.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Où ranger la validation parentale d'un souhait ?</summary>
+        <div><p>Dans le souhait lui-même, comme attribut : elle n'est « pas donnée par une personne en particulier », elle ne relie donc pas le souhait à un parent.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que traduit <code>UNIQUE</code> sur <code>fabrique.id_chef</code> ?</summary>
+        <div><p>Qu'un squelette dirige au plus une fabrique : l'association « dirige » est 0..1 du côté Fabrique. Sans cette contrainte, la clé étrangère permettrait à un squelette de diriger plusieurs fabriques, comme dans une association 1 — *.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi <code>WHERE so.poids &lt;= 3</code> ne répond-il pas à « aucun sort de plus de 3 kg » ?</summary>
+        <div><p>Après la jointure, cette condition garde les fabriques qui ont fabriqué <em>au moins un</em> sort léger, même si elles fabriquent aussi des sorts lourds. Il faut exclure celles pour lesquelles il existe un sort lourd : <code>NOT EXISTS</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle différence entre une vue et une table créée par <code>CREATE TABLE … AS SELECT</code> ?</summary>
+        <div><p>La vue ne stocke que sa requête et la rejoue à chaque lecture : elle suit les données. La table copie le résultat une fois pour toutes.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="td-02-compagnie-sw7.html"><small>← TD 2</small>La compagnie SW7</a>
+    <a class="suivant" href="td-04-winter-rave.html"><small>TD 4 →</small>Winter Rave</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

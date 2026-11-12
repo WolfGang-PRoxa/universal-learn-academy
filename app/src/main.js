@@ -1,20 +1,21 @@
 "use strict";
 /* ==========================================================================
-   Studies, application installée (app/) : processus principal
+   Universal Learn Academy, application installée (app/) : processus principal
    --------------------------------------------------------------------------
-   L'application installée est un « hôte » autour du programme de studies/
+   L'application installée est un « hôte » autour du programme des outils
    (_outils/app/principal.js : fenêtres, menu, serveur local), le même que
    lance lancer-app.bat. L'hôte ajoute ce qu'une application distribuée doit
    avoir : paramètres, mises à jour automatiques, fenêtre au lancement,
-   raccourcis, connexion à Claude, choix du dossier des cours.
+   raccourcis, connexion à Claude, dossier des données, profils.
 
    Au démarrage :
-   1. il lit les paramètres et choisit le dossier des cours (cours.js) ; les
-      cours intégrés sont copiés ou mis à jour dans le dossier local ;
+   1. il lit les paramètres et choisit le dossier des données et celui des
+      outils (donnees.js) ; les outils livrés sont copiés ou mis à jour dans le
+      dossier local ; les cours, eux, se téléchargent depuis l'accueil ;
    2. il installe PGlite (questions SQL) dans le dossier local de l'outil s'il
       manque, à partir de la copie livrée : pas besoin de Node sur le poste ;
    3. il applique la clé d'API Anthropic s'il y en a une (claude.js) ;
-   4. il publie global.studiesHote, puis charge le programme du dossier des cours ;
+   4. il publie global.studiesHote et ULA_RACINE, puis charge le programme des outils ;
    5. il recherche une mise à jour si le paramètre est activé.
    ========================================================================== */
 
@@ -27,26 +28,45 @@ const lancement = require("./fenetre-lancement");
 const majs = require("./mises-a-jour");
 const raccourcis = require("./raccourcis");
 const claude = require("./claude");
-const cours = require("./cours");
+const donnees = require("./donnees");
 const { ID_APP, URL_RELEASES } = require("./depot");
 
-// Dossier de données alternatif (essais automatiques)
-if (process.env.STUDIES_USER_DATA) app.setPath("userData", process.env.STUDIES_USER_DATA);
+const NOM = "Universal Learn Academy";
+
+// Dossier de paramètres alternatif (essais automatiques)
+const essai = process.env.ULA_USER_DATA || process.env.STUDIES_USER_DATA;
+if (essai) app.setPath("userData", essai);
+else migrerParametres();
+
+// Jusqu'à la version 1.0.3, l'application s'appelait Studies : ses paramètres étaient
+// dans %APPDATA%\Studies (~/.config/Studies). Ils sont repris une fois.
+function migrerParametres() {
+  try {
+    const nouveau = app.getPath("userData");
+    const ancien = path.join(app.getPath("appData"), "Studies");
+    if (fs.existsSync(path.join(nouveau, "parametres.json")) || !fs.existsSync(path.join(ancien, "parametres.json"))) return;
+    fs.mkdirSync(nouveau, { recursive: true });
+    for (const f of ["parametres.json", "fenetre.json"]) {
+      if (fs.existsSync(path.join(ancien, f))) fs.copyFileSync(path.join(ancien, f), path.join(nouveau, f));
+    }
+  } catch (e) { /* paramètres par défaut */ }
+}
 
 // Lancé depuis un terminal de VS Code : Electron se prendrait pour Node dans le serveur
 delete process.env.ELECTRON_RUN_AS_NODE;
 
 app.setAppUserModelId(ID_APP);
 
-// Tant que le programme n'est pas chargé (préparation des cours, dialogues), fermer
+// Tant que le programme n'est pas chargé (préparation des outils, dialogues), fermer
 // une fenêtre ne doit pas quitter l'application ; principal.js gère ensuite la fin.
 app.on("window-all-closed", () => {});
 
 let fenetreParametres = null;
 let racine = null;
-let modeCours = null;
+let outils = null;
+let modeDonnees = null;
 
-/* -- Fenêtre de préparation des cours (première ouverture, nouvelle version) -- */
+/* -- Fenêtre de préparation des outils (première ouverture, nouvelle version) -- */
 
 function fenetrePreparation() {
   const sombre = nativeTheme.shouldUseDarkColors;
@@ -60,7 +80,7 @@ function fenetrePreparation() {
     h1{font-size:17px;margin:0 0 6px}p{margin:0 0 16px;opacity:.75}
     .barre{height:8px;border-radius:4px;background:${sombre ? "#2a2c31" : "#e6e3dc"};overflow:hidden}
     .barre i{display:block;height:100%;width:0;background:#3d6fb6;transition:width .2s}</style>
-    <h1>Préparation des cours…</h1><p id="t">Copie des cours de cette version dans le dossier local.</p>
+    <h1>Préparation des outils…</h1><p id="t">Copie des outils de cette version dans le dossier local.</p>
     <div class="barre"><i id="b"></i></div>`;
   f.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html));
   f.once("ready-to-show", () => f.show());
@@ -69,12 +89,12 @@ function fenetrePreparation() {
 
 function attendre(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
-async function synchroniserCours(cible) {
+async function synchroniserOutils(cible) {
   const f = fenetrePreparation();
   await attendre(150);
   let resultat;
   try {
-    resultat = cours.synchroniser(cours.dossierLivre(), cible, (fait, total) => {
+    resultat = donnees.synchroniser(donnees.outilsLivres(), cible, (fait, total) => {
       const p = Math.round((fait / total) * 100);
       if (!f.isDestroyed()) f.webContents.executeJavaScript(`b.style.width="${p}%";t.textContent="${fait} fichiers sur ${total}"`).catch(() => {});
     });
@@ -82,36 +102,36 @@ async function synchroniserCours(cible) {
     if (!f.isDestroyed()) f.destroy();
   }
   if (resultat.conserves.length) {
-    fs.writeFileSync(path.join(cible, ".studies-conserves.txt"),
-      "Fichiers modifiés dans ce dossier, gardés tels quels lors de la mise à jour des cours :\n" + resultat.conserves.join("\n") + "\n");
+    fs.writeFileSync(path.join(cible, ".ula-conserves.txt"),
+      "Fichiers modifiés dans ce dossier, gardés tels quels lors de la mise à jour des outils :\n" + resultat.conserves.join("\n") + "\n");
   }
   return resultat;
 }
 
-/* -- Choix du dossier des cours au démarrage ------------------------------------ */
+/* -- Choix du dossier des données au démarrage ------------------------------------ */
 
-async function dossierDesCours() {
+async function dossierDesDonnees() {
   for (;;) {
-    const r = cours.resoudre(reglages.lire().cours);
+    const r = donnees.resoudre(reglages.lire());
     if (r.racine) {
       if (r.aSynchroniser) {
-        try { await synchroniserCours(r.racine); }
+        try { await synchroniserOutils(donnees.dossierOutilsLocal()); }
         catch (e) {
-          dialog.showErrorBox("Studies", "La copie des cours a échoué : " + e.message);
+          dialog.showErrorBox(NOM, "La copie des outils a échoué : " + e.message);
           return null;
         }
       }
       return r;
     }
     const choix = dialog.showMessageBoxSync({
-      type: "warning", title: "Studies", message: r.erreur,
-      detail: "Choisir le dossier studies (celui qui contient _outils et les dossiers L1, L2, L3), ou revenir aux cours livrés avec l'application.",
-      buttons: ["Choisir un dossier…", "Utiliser les cours intégrés", "Quitter"], defaultId: 0, cancelId: 2
+      type: "warning", title: NOM, message: r.erreur,
+      detail: "Choisir le dossier des données (celui qui contient explore et les dossiers des profils), ou revenir au dossier par défaut (" + donnees.dossierParDefaut() + ").",
+      buttons: ["Choisir un dossier…", "Dossier par défaut", "Quitter"], defaultId: 0, cancelId: 2
     });
     if (choix === 2) return null;
-    if (choix === 1) { reglages.modifier({ cours: { mode: "integre" } }); continue; }
-    const d = dialog.showOpenDialogSync({ title: "Dossier studies", properties: ["openDirectory"] });
-    if (d && d[0]) reglages.modifier({ cours: { mode: "dossier", dossier: d[0] } });
+    if (choix === 1) { reglages.modifier({ donnees: { dossier: "" }, cours: { mode: "integre", dossier: "" } }); continue; }
+    const d = dialog.showOpenDialogSync({ title: "Dossier des données", properties: ["openDirectory", "createDirectory"] });
+    if (d && d[0]) reglages.modifier({ donnees: { dossier: d[0] }, cours: { mode: "integre", dossier: "" } });
   }
 }
 
@@ -136,6 +156,25 @@ function installerPglite() {
   } catch (e) { /* le serveur essaiera npm, comme sans l'application */ }
 }
 
+/* -- Anciens raccourcis « Studies » ---------------------------------------------------- */
+
+// Jusqu'à la version 1.0.3, les raccourcis s'appelaient « Studies ». Ceux du Bureau
+// et du menu Démarrer qui ouvrent cette installation (ou une installation disparue)
+// sont retirés : les nouveaux portent le nom de l'application.
+function nettoyerAnciensRaccourcis() {
+  if (process.platform !== "win32" || !app.isPackaged) return;
+  const dossiers = [app.getPath("desktop"), path.join(app.getPath("appData"), "Microsoft", "Windows", "Start Menu", "Programs")];
+  const ici = path.dirname(process.execPath).toLowerCase();
+  for (const d of dossiers) {
+    const f = path.join(d, "Studies.lnk");
+    if (!fs.existsSync(f)) continue;
+    try {
+      const cible = String(shell.readShortcutLink(f).target || "");
+      if (path.dirname(cible).toLowerCase() === ici || (/studies\.exe$/i.test(cible) && !fs.existsSync(cible))) fs.rmSync(f, { force: true });
+    } catch (e) { /* raccourci illisible : laissé */ }
+  }
+}
+
 /* -- Paramètres ------------------------------------------------------------------- */
 
 function ouvrirParametres(section) {
@@ -148,7 +187,7 @@ function ouvrirParametres(section) {
   const parent = BrowserWindow.getFocusedWindow() || undefined;
   fenetreParametres = new BrowserWindow({
     width: 900, height: 820, minWidth: 640, minHeight: 480, show: false, parent,
-    title: "Paramètres de Studies", autoHideMenuBar: true,
+    title: "Paramètres de " + NOM, autoHideMenuBar: true,
     backgroundColor: nativeTheme.shouldUseDarkColors ? "#131417" : "#fafaf8",
     icon: path.join(__dirname, "assets", "icone.png"),
     webPreferences: { preload: path.join(__dirname, "parametres", "pont.cjs"), contextIsolation: true, sandbox: true, nodeIntegration: false }
@@ -174,12 +213,12 @@ function redemarrer() {
 /** Appel à l'API du serveur local de l'outil de quiz (port de _outils/quiz/reglages.json). */
 async function apiQuiz(methode, route, corps) {
   let port = 5178;
-  try { port = JSON.parse(fs.readFileSync(path.join(racine, "_outils", "quiz", "reglages.json"), "utf8")).port || port; } catch (e) { /* port par défaut */ }
+  try { port = JSON.parse(fs.readFileSync(path.join(outils, "quiz", "reglages.json"), "utf8")).port || port; } catch (e) { /* port par défaut */ }
   let r;
   try {
     r = await fetch(`http://127.0.0.1:${port}/api/${route}`, {
       method: methode,
-      headers: corps ? { "Content-Type": "application/json" } : undefined,
+      headers: corps ? { "Content-Type": "application/json", Origin: `http://127.0.0.1:${port}` } : undefined,
       body: corps ? JSON.stringify(corps) : undefined,
       signal: AbortSignal.timeout(route.startsWith("claude/") ? 180000 : 20000)
     });
@@ -195,31 +234,36 @@ function enregistrerIpc() {
   const traiter = (canal, fn) => ipcMain.handle(canal, (evenement, ...args) => fn(...args, evenement));
 
   traiter("app:info", () => ({
+    nom: NOM,
     version: app.getVersion(),
     electron: process.versions.electron,
     plateforme: process.platform,
     installee: app.isPackaged,
     donnees: app.getPath("userData"),
     racine,
-    modeCours,
+    outils,
+    modeDonnees,
     releases: URL_RELEASES,
-    versionsCours: cours.versions(),
-    dossierLocal: cours.dossierLocal()
+    versionsOutils: donnees.versions(),
+    dossierLocal: donnees.dossierOutilsLocal(),
+    dossierParDefaut: donnees.dossierParDefaut()
   }));
   traiter("app:redemarrer", () => redemarrer());
   traiter("app:ouvrir-dossier", (quoi) => {
-    const dossier = { donnees: app.getPath("userData"), cours: racine, local: cours.dossierLocal() }[quoi];
+    const dossier = { parametres: app.getPath("userData"), donnees: racine, outils, local: donnees.dossierOutilsLocal() }[quoi];
     return dossier ? shell.openPath(dossier) : false;
   });
   traiter("app:ouvrir-releases", () => shell.openExternal(URL_RELEASES));
 
   traiter("reglages:lire", () => reglages.publics());
   traiter("reglages:modifier", (partiel) => {
-    // L'interface ne touche ni à la clé d'API ni à la liste des dossiers de raccourcis
+    // L'interface ne touche ni à la clé d'API, ni à la liste des dossiers de raccourcis,
+    // ni au dossier des données (qui passe par donnees:choisir)
     const sur = Object.assign({}, partiel);
     if (sur.claude) sur.claude = { mode: sur.claude.mode === "cle" ? "cle" : "compte" };
     delete sur.raccourcis;
-    if (sur.cours) sur.cours = { mode: sur.cours.mode === "dossier" ? "dossier" : "integre" };
+    delete sur.cours;
+    delete sur.donnees;
     return reglages.publics(reglages.modifier(sur));
   });
   traiter("fenetre:ecrans", () => lancement.ecrans());
@@ -228,15 +272,22 @@ function enregistrerIpc() {
     return f ? f.getNormalBounds() : null;
   });
 
-  traiter("cours:choisir", async (evenement) => {
-    const r = await dialog.showOpenDialog(BrowserWindow.fromWebContents(evenement.sender), { title: "Dossier studies", properties: ["openDirectory"] });
+  traiter("donnees:choisir", async (evenement) => {
+    const r = await dialog.showOpenDialog(BrowserWindow.fromWebContents(evenement.sender), { title: "Dossier des données", properties: ["openDirectory", "createDirectory"] });
     if (r.canceled || !r.filePaths[0]) return { ok: false, annule: true };
-    if (!cours.estDossierStudies(r.filePaths[0])) {
-      return { ok: false, message: "Ce dossier ne contient pas studies (il faut _outils/app et _outils/quiz/serveur)." };
-    }
-    reglages.modifier({ cours: { mode: "dossier", dossier: r.filePaths[0] } });
-    return { ok: true, dossier: r.filePaths[0] };
+    reglages.modifier({ donnees: { dossier: r.filePaths[0] }, cours: { mode: "integre", dossier: "" } });
+    return { ok: true, dossier: r.filePaths[0], depot: donnees.estDepot(r.filePaths[0]) };
   });
+  traiter("donnees:defaut", () => {
+    reglages.modifier({ donnees: { dossier: "" }, cours: { mode: "integre", dossier: "" } });
+    return { ok: true, dossier: donnees.dossierParDefaut() };
+  });
+
+  // Profils : par l'API du serveur local (extension ula), comme l'accueil
+  traiter("profils:etat", () => apiQuiz("GET", "ula/etat"));
+  traiter("profils:choisir", (nom) => apiQuiz("PUT", "ula/profil", { nom: String(nom) }));
+  traiter("profils:creer", (nom) => apiQuiz("POST", "ula/profils", { nom: String(nom) }));
+  traiter("profils:renommer", (ancien, nouveau) => apiQuiz("POST", "ula/profils/renommer", { ancien: String(ancien), nouveau: String(nouveau) }));
 
   traiter("raccourcis:statut", () => raccourcis.statut());
   traiter("raccourcis:creer", (id, options) => raccourcis.creer(String(id), { confirmReplace: Boolean(options && options.confirmReplace) }));
@@ -245,15 +296,14 @@ function enregistrerIpc() {
   traiter("raccourcis:choisir", (evenement) => raccourcis.choisirDossier(BrowserWindow.fromWebContents(evenement.sender)));
   traiter("raccourcis:oublier", (id) => raccourcis.oublierDossier(String(id)));
 
-  traiter("claude:statut", () => claude.statut(racine));
-  traiter("claude:connecter", () => claude.connecter(racine));
-  traiter("claude:deconnecter", () => claude.deconnecter(racine));
+  traiter("claude:statut", () => claude.statut(outils));
+  traiter("claude:connecter", () => claude.connecter(outils));
+  traiter("claude:deconnecter", () => claude.deconnecter(outils));
   traiter("claude:cle", (valeur) => claude.enregistrerCle(valeur));
   traiter("claude:lien", (nom) => claude.ouvrirLien(String(nom)));
 
   // Réglages de l'outil de quiz (modèles de Claude par usage, chemin de Claude Code,
-  // exécution du code) : lus et modifiés par l'API du serveur local, comme le faisait
-  // la fenêtre « Réglages » des quiz, désormais réunie aux paramètres de l'application
+  // exécution du code) : lus et modifiés par l'API du serveur local
   traiter("quiz:etat", () => apiQuiz("GET", "etat?forcer=1"));
   traiter("quiz:reglages", (r) => apiQuiz("PUT", "reglages", r));
   traiter("quiz:tester", (usage) => apiQuiz("POST", "claude/test", { usage: String(usage) }));
@@ -271,13 +321,23 @@ async function demarrer() {
     for (const f of BrowserWindow.getAllWindows()) if (!f.isDestroyed()) f.webContents.send("maj:statut", statut);
   });
 
-  const choix = await dossierDesCours();
+  const choix = await dossierDesDonnees();
   if (!choix) return app.quit();
+  // Ancien réglage « cours » (Studies 1.x) ou dossier renommé : le dossier retenu est
+  // noté dans le nouveau réglage, une fois pour toutes
+  const r0 = reglages.lire();
+  if (choix.racine !== donnees.dossierParDefaut() && (r0.donnees || {}).dossier !== choix.racine) {
+    reglages.modifier({ donnees: { dossier: choix.racine }, cours: { mode: "integre", dossier: "" } });
+  }
   racine = choix.racine;
-  modeCours = choix.mode;
+  outils = choix.outils;
+  modeDonnees = choix.mode;
+  // Le serveur local (et tout ce qu'il lance) lit la racine des données dans ULA_RACINE
+  process.env.ULA_RACINE = racine;
 
   installerPglite();
   claude.appliquer();
+  nettoyerAnciensRaccourcis();
 
   // Les pages reconnaissent l'application installée à son agent utilisateur et ajoutent
   // alors le bouton « Paramètres » à leur barre (_outils/charte/assets/cours.js)
@@ -286,6 +346,8 @@ async function demarrer() {
   global.studiesHote = {
     version: app.getVersion(),
     idApp: ID_APP,
+    nom: NOM,
+    racine,
     // Fenêtre principale au lancement : { bornes, agrandie }
     etatFenetre: () => lancement.etatInitial(reglages.lire().fenetre),
     ouvrirParametres,
@@ -293,9 +355,9 @@ async function demarrer() {
   };
 
   try {
-    require(path.join(racine, cours.PROGRAMME));
+    require(path.join(outils, "app", "principal.js"));
   } catch (e) {
-    dialog.showErrorBox("Studies", "Le programme du dossier des cours n'a pas pu démarrer :\n" + e.message + "\n\nDossier : " + racine);
+    dialog.showErrorBox(NOM, "Le programme des outils n'a pas pu démarrer :\n" + e.message + "\n\nDossier : " + outils);
     return app.quit();
   }
 

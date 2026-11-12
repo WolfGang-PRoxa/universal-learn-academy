@@ -504,7 +504,7 @@
     var zone = el("div", "atelier-evaluation");
     section.appendChild(zone);
     if (!C || !C.executable || !C.executable("sql")) {
-      zone.appendChild(el("p", "atelier-aide", "Pour exécuter et comparer le résultat, ouvrir la page depuis le serveur local (studies/lancer.bat)."));
+      zone.appendChild(el("p", "atelier-aide", "Pour exécuter et comparer le résultat, ouvrir la page depuis le serveur local (lancer.bat)."));
       return Promise.resolve(null);
     }
     var jeu = this.jeu();

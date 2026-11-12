@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TP 5 · TP noté : la compagnie SW7 · Bases de données L2</title>
+<meta name="description" content="TP noté de bases de données (L2, session 1 2025-2026, 2 h 30) : la compagnie de transport SW7, création des tables manquantes, modification de la structure (suppression de la table ZONE, carburant des pleins), requêtes d'exploitation et mises à jour des positions ; sujet complet et console SQL pour s'entraîner en conditions d'examen.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+<script type="application/json" id="atelier-jeux">
+{
+  "fac": {
+    "titre": "Base neuve (comme sw7_… au début du TP)",
+    "description": "<p>Base neuve, vide. Seul réglage : les dates s'écrivent jour-mois-année (<code>DateStyle</code>), comme sur le serveur de la fac ; le script fourni en dépend (<code>'30-11-25'</code>).</p>",
+    "script": "SET datestyle TO 'ISO, DMY';"
+  }
+}
+</script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Bases de données</a>
+    <span aria-current="page">TP 5 · TP noté SW7</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> TP 5 · TP noté · L2 S3</p>
+    <h1>TP noté : la compagnie SW7</h1>
+    <p class="chapeau">Le TP noté de la session 1 de 2025-2026, en 2 h 30 : compléter le script de la compagnie de transport SW7, faire évoluer sa structure, puis l'exploiter. Pour s'entraîner chez soi, une console SQL rejoue le fichier rendu sur une base PostgreSQL neuve.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../TP/TP5/Exam_TP_SW7-2025_26.pdf">Exam_TP_SW7-2025_26.pdf</a> · 2 pages · script fourni <a href="../TP/TP5/script.txt">script.txt</a> (Script_SW7.sql)</dd></div>
+      <div><dt>Enseignants</dt><dd>S. Meignier, C. Piau-Toffolon, S. Hamdi</dd></div>
+      <div><dt>Durée</dt><dd>2 h 30</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Conditions de l'épreuve</p>
+      <ul>
+        <li>Durée : 2 h 30.</li>
+        <li>Aucun appareil communicant autorisé ; aucun document papier.</li>
+        <li>Seuls fichiers autorisés : les solutions des TP qui se trouvent sur votre compte.</li>
+        <li>Seul site web autorisé : UMTICE, pour déposer votre fichier et consulter la documentation PostgreSQL.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Pour s'entraîner</p>
+      <ul>
+        <li>Se donner 2 h 30, avec un minuteur à côté (la page n'en a pas), ses comptes rendus des <a href="tp-01-entreprise.html">TP 1</a> à <a href="tp-04-cd-theque.html">4</a> et la documentation PostgreSQL (<a href="https://docs.postgresql.fr/14/">docs.postgresql.fr/14</a>).</li>
+        <li>Écrire les réponses dans la console en bas de page ; le menu ⋯ en copie le texte.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Consignes <span class="ref">p. 1</span></h2>
+    <p>Vous devez rendre un fichier nommé <code>NOM_PRENOM.txt</code> sur la plateforme UMTICE dans le temps imparti. Toutes les questions numérotées appellent une réponse. Indiquez vos noms et prénoms dans le fichier rendu.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention !!</p>
+      <p>Seule la requête est demandée. Ne pas mettre de texte ou la réponse du SGBD.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le cas <span class="ref">p. 1</span></h2>
+    <h3>Rappel du cas</h3>
+    <p>La compagnie des transports SW7 souhaite informatiser son système d'information. L'activité couverte par la base de données concerne : le parc de véhicules, son entretien, l'administration des chauffeurs et de leur emploi du temps.</p>
+
+    <h3>Modélisation conceptuelle</h3>
+    <p>Suite à votre étude de cas, vous avez proposé la modélisation suivante :</p>
+    <div class="relations">
+      <p><b>ZONE</b> (<u>id_zone</u>, nom_zone)</p>
+      <p><b>STATION</b> (<u>id_station</u>, nom_station, #id_zone)</p>
+      <p><b>MODELE</b> (<u>id_modele</u>, nom_modele, nb_pers, type_carbu, cat_perm_m, type_bav, pds)</p>
+      <p><b>VEHICULE</b> (<u>id_vehicule</u>, no_chassis, nom_vehicule, date_mes, #id_station_v, #id_modele)</p>
+      <p><b>PLEIN</b> (<u>#id_vehicule, id_plein</u>, date_p, nb_km, qte_carbu)</p>
+      <p><b>ENTRETIEN</b> (<u>#id_vehicule, id_entretien</u>, date_e, descr)</p>
+      <p><b>CHAUFFEUR</b> (<u>id_chauffeur</u>, nom, prenom, adr, #id_station_c)</p>
+      <p><b>PERMIS</b> (<u>#id_chauffeur, cat_perm_c</u>)</p>
+      <p><b>POSITION</b> (<u>#id_vehicule, date, th</u>, #id_chauffeur, #id_zone)</p>
+    </div>
+    <ul>
+      <li>La table <b>ZONE</b> donne l'identifiant et le nom d'une zone géographique.</li>
+      <li>La table <b>STATION</b> indique les stations d'une zone géographique (<em>id_zone</em>).</li>
+      <li>La table <b>MODELE</b> décrit les modèles de véhicules. Chaque modèle dispose d'un type de carburant, d'un nombre de places (<em>nb_pers</em>) et nécessite un type de permis (<em>cat_perm_m</em>) pour être conduit. La colonne <em>type_bav</em> correspond au type de boîte de vitesse. La colonne <em>pds</em> ne sera pas utilisée.</li>
+      <li>La table <b>VEHICULE</b> liste les véhicules de la compagnie de transport. Chaque véhicule est rattaché à une station (<em>id_station_v</em>), et chaque véhicule correspond à un modèle (<em>id_modele</em>).</li>
+      <li>La table <b>PLEIN</b> permet de connaître la quantité de carburant (<em>qte_carbu</em>) qui a été mise dans chaque véhicule à une date donnée (<em>date_p</em>). Cette table indique aussi le nombre de kilomètres (<em>nb_km</em>) permis par ce plein.</li>
+      <li>La table <b>ENTRETIEN</b> décrit les entretiens effectués à une date donnée (<em>date_e</em>) sur un véhicule (<em>id_vehicule</em>).</li>
+      <li>La table <b>CHAUFFEUR</b> liste les chauffeurs et indique leur station d'affectation (<em>id_station_c</em>).</li>
+      <li>La table <b>PERMIS</b> décrit les permis (<em>cat_perm_c</em>) de chaque chauffeur (<em>id_chauffeur</em>).</li>
+      <li>La table <b>POSITION</b> indique qu'un chauffeur (<em>id_chauffeur</em>) est en service avec un véhicule (<em>id_vehicule</em>) dans une zone (<em>id_zone</em>) à une date donnée (<em>date</em>) et une tranche horaire donnée (<em>th</em>).</li>
+    </ul>
+
+    <h3>Ajout d'une table</h3>
+    <p>Afin de gérer l'attribution des courses à un chauffeur, on dispose en plus de la table DISTANCE qui indique la distance (en parsec) entre chaque zone :</p>
+    <div class="relations">
+      <p><b>DISTANCE</b> (<u>nom_zone1, nom_zone2</u>, parsec)</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Implémentation <span class="ref">p. 1–2</span></h2>
+    <ol>
+      <li>Connectez-vous à votre base de données : <code>sw7_sXXXXX</code>.</li>
+      <li>2 tables sont manquantes : créez les tables PERMIS et CHAUFFEUR. Implémentez la base de données grâce au script <code>Script_SW7.sql</code> (ici <a href="../TP/TP5/script.txt">script.txt</a>).</li>
+      <li>Le type des boîtes de vitesse (<code>type_bav</code>) des modèles de véhicule doit être « A » ou « M ».</li>
+      <li>Vous souhaitez simplifier votre base de données en supprimant la table ZONE et indiquer directement dans les tables STATION et POSITION l'attribut <em>nom_zone</em> au lieu d'un identifiant <em>id_zone</em>. Modifiez la base de données en ce sens.</li>
+      <li>Avec les nouveaux biocarburants qui sont compatibles avec différents moteurs, les pleins ne sont pas forcément faits avec le carburant initialement prévu pour le modèle du véhicule.
+        <ol type="a">
+          <li>Ajoutez le champ <em>type_carbu</em> dans la table PLEIN afin que soit stocké le type de carburant effectivement mis dans le véhicule au moment du plein.</li>
+          <li>Pour les enregistrements existants, mettez cette valeur à jour avec le type de carburant correspondant au modèle du véhicule.</li>
+        </ol>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exploitation <span class="ref">p. 2</span></h2>
+    <ol start="6">
+      <li>Combien de véhicules ont effectué un entretien en 2024 ?</li>
+      <li>Donnez la liste des chauffeurs (Numéro, Nom, Prénom) de la station « Geonosis » triés par ordre alphabétique sur le nom (on affichera le nom et prénom dans une seule colonne nommée <em>chauffeur</em>).
+        <pre class="terminal"><code>    chauffeur
+-----------------
+ Dark Sidius
+ Organa Leia
+ Skywalker Luke
+ Windu Mace
+(4 lignes)</code></pre>
+      </li>
+      <li>Donnez la liste de TOUTES les stations avec, pour celles qui en ont, leurs chauffeurs (nom et prénom dans une seule colonne nommée <em>chauffeur</em>).</li>
+      <li>Listez les véhicules de type « cargo YT-1300 » dont le plein a été effectué il y a moins de 4 mois. Une seule occurrence de chaque véhicule devra apparaître.</li>
+      <li>Quelle est la consommation moyenne d'un « voilier solaire geonosien » ?
+        <p><b>Aide</b> : somme de la quantité de carburant * 100 / somme quantité de km parcourus.</p></li>
+      <li>Quelles zones se trouvent à 10 parsec au plus de la station « Coruscant » ?</li>
+      <li>Affichez la liste des noms des véhicules actuellement disponibles ainsi que le nom de la zone de disponibilité, le nom du chauffeur et la capacité de chaque véhicule.</li>
+      <li>Quels sont les chauffeurs qui ne sont pas en service actuellement et qui sont susceptibles de pouvoir conduire un « cargo YT-1300 » ?</li>
+      <li>Quelles sont les stations, hormis « Coruscant », qui possèdent le plus grand parc de véhicules ?</li>
+      <li>Suite à plusieurs appels téléphoniques, la position des chauffeurs doit être mise à jour :
+        <ol type="a">
+          <li>Plus aucun véhicule de la station « Geonosis » n'est disponible aujourd'hui ;</li>
+          <li>Luke Skywalker est lui à nouveau disponible dans la zone « Arkanis » ;</li>
+          <li>Mace Windu prend son service avec le véhicule « Starship troopers », il est disponible dans la zone « Cadavine ».</li>
+        </ol>
+        <p><em>Attention !! Seules les informations de la tranche horaire 2 d'aujourd'hui doivent être modifiées.</em></p>
+      </li>
+      <li>Le central téléphonique reçoit une demande pour une course dans la zone « Cadavine » pour 18 personnes.
+        <ol type="a">
+          <li>Recherchez tous les chauffeurs disponibles dans cette zone ainsi que ceux disponibles dans une zone qui se situe à moins de 6 parsec. Indiquez leur nom, leur modèle de voiture et leur zone actuelle. <em>Bien entendu ils devront être en mesure de transporter 18 personnes…</em></li>
+          <li>Choisissez un chauffeur qui effectuera la course et rendez-le indisponible.</li>
+        </ol>
+      </li>
+    </ol>
+    <div class="bloc note">
+      <p class="bloc-titre"><span class="badge a-verifier">À vérifier</span> « Aujourd'hui » et « actuellement »</p>
+      <p>Les données datent de décembre 2025 : les positions du script s'arrêtent au 10 décembre 2025, et seule la tranche horaire 2 de ce jour-là a des zones renseignées. C'est sans doute le jour de l'épreuve, et la tranche 2 celle du moment (la question 15 la nomme). Les questions 9, 12, 13 et 15 se rapportent donc à ce jour : chez soi, une requête écrite avec la date du jour ne trouve plus rien. Pour retrouver la situation de l'épreuve, écrire le 10 décembre 2025 à la place de la date du jour.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Chez soi : la console SQL du TP noté</h2>
+    <p>La console ci-dessous exécute le fichier rendu entier sur une base PostgreSQL neuve (PGlite), par le serveur local : <code>studies/lancer.bat</code>, puis cette page ouverte depuis le portail. Sans le serveur, on peut écrire, mais pas exécuter.</p>
+    <ol class="etapes">
+      <li>Le script fourni est déjà en place (question 2) : les tables CHAUFFEUR et PERMIS s'écrivent aux emplacements repérés par <code>-- 2.</code>, entre le <code>DROP TABLE</code> et les insertions de chacune. Les autres réponses s'écrivent à la suite, dans l'ordre des questions.</li>
+      <li><b>Exécuter</b> (ou <kbd>Ctrl</kbd> + <kbd>Entrée</kbd>) rejoue tout, depuis le début, sur une base neuve, et affiche le résultat de la <strong>dernière</strong> requête qui renvoie des lignes, ou la première erreur. Pour voir le résultat d'une question, on la met en dernier, ou on met en commentaire (<code>--</code>) les requêtes qui suivent.</li>
+      <li>Le travail s'enregistre tout seul : dans le navigateur, et, avec le serveur, dans le dossier <code>td_results/</code> de ce cours, dans ton espace. Le menu ⋯ copie le texte, à coller dans <code>NOM_PRENOM.txt</code>.</li>
+    </ol>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Ce qui change par rapport à la fac</span></p>
+      <ul>
+        <li>Les sept lignes d'en-tête du script commencent par <code>//</code>, qui n'est pas un commentaire SQL : <code>psql</code> les signale en erreur et poursuit, la console s'arrêterait. Elles sont passées en commentaires <code>--</code> ; le reste du script est inchangé.</li>
+        <li>Tant que CHAUFFEUR et PERMIS ne sont pas créées, l'exécution s'arrête sur le <code>DELETE FROM chauffeur</code> du script.</li>
+        <li>La base de la console écrit les dates jour-mois-année, comme celle de la fac.</li>
+      </ul>
+    </div>
+    <div class="atelier" id="tp5-compte-rendu" data-editeur="sql">
+      <script type="application/json">
+      {
+        "titre": "Fichier rendu du TP noté",
+        "consigne": "<p>Le script fourni d'abord, avec les tables CHAUFFEUR et PERMIS aux emplacements prévus, puis les réponses à la suite, dans l'ordre des questions. <b>Exécuter</b> rejoue tout, depuis le début, sur une base neuve, et affiche le résultat de la dernière requête qui renvoie des lignes, ou la première erreur.</p>",
+        "options": {
+          "jeu": "fac",
+          "lignes": 28
+        },
+        "depart": "-- NOM Prénom\n\n-- 1. et 2. Script_SW7.sql (fourni, TP/TP5/script.txt) ;\n--    les tables CHAUFFEUR et PERMIS (question 2) s'écrivent sous « -- 2. »\n--\n--  ScriptsSW7.txt\n--\n--\n--  Updated by Claudine Piau-Toffolon on 02/12/2025.\n--  Filling with SW data by Nathalie Camelin on 09/12/2015\n--\n\nDROP TABLE IF EXISTS position;\nDROP TABLE IF EXISTS permis;\nDROP TABLE IF EXISTS chauffeur;\nDROP TABLE IF EXISTS entretien;\nDROP TABLE IF EXISTS plein;\nDROP TABLE IF EXISTS vehicule;\nDROP TABLE IF EXISTS modele;\nDROP TABLE IF EXISTS station;\nDROP TABLE IF EXISTS zone;\n\n----\nDROP TABLE IF EXISTS zone;\n\nCREATE TABLE zone (   id_zone SERIAL NOT NULL,\n                      nom_zone VARCHAR(12) NOT NULL,\n                      CONSTRAINT PK_zone PRIMARY KEY (id_zone)\n                      );\n\nINSERT INTO zone VALUES\n    (DEFAULT,'Arkanis'),\n    (DEFAULT,'Cadavine'),\n    (DEFAULT,'Chommel'),\n    (DEFAULT,'Sluis'),\n    (DEFAULT,'Core Words'),\n    (DEFAULT,'Mayagil');\n\n----\nDROP TABLE IF EXISTS station;\n\nCREATE TABLE station (id_station BIGINT NOT NULL,\n                      nom_station VARCHAR(20) NOT NULL,\n                      id_zone BIGINT,\n                      CONSTRAINT PK_station PRIMARY KEY (id_station),\n                      CONSTRAINT FK_station FOREIGN KEY (id_zone) REFERENCES zone\n                      );\n\nINSERT INTO station VALUES\n    (1,'Tatooine',1),\n    (2,'Geonosis',2),\n    (3,'Naboo',3),\n    (4,'Dagobah',4),\n    (5,'Mustafar',6),\n    (6,'Coruscant',5);\n\n----\nDROP TABLE IF EXISTS modele;\n\nCREATE TABLE modele (id_modele BIGINT NOT NULL ,\n                     nom_modele VARCHAR(30) NOT NULL,\n                     nb_pers INTEGER,\n                     type_carbu VARCHAR(10),\n                     cat_perm_m VARCHAR(10),\n                     type_bav VARCHAR(1),\n                     pds INTEGER,\n                     CONSTRAINT PK_modele PRIMARY KEY (id_modele)\n                     );\n\nINSERT INTO modele VALUES\n    (1, 'cargo YT-1300', 6, 'X37', 'CL', 'M', 1200),\n    (2, 'voilier solaire geonosien', 20, 'Z12', 'GP','A', 8500),\n    (11,'corvette corellienne', 120 , 'Z12', 'CC','A', NULL),\n    (12, 'ARC-170 starfighter', 3, 'X37', 'SC', 'M', 850);\n\n----\nDROP TABLE IF EXISTS vehicule;\n\nCREATE TABLE vehicule (id_vehicule BIGINT NOT NULL,\n                       no_chassis  INTEGER NOT NULL,\n                       nom_vehicule VARCHAR(30) NOT NULL,\n                       date_mes date,\n                       id_station_v BIGINT ,\n                       id_modele BIGINT,\n                       CONSTRAINT PK_vehicule PRIMARY KEY (id_vehicule),\n                       CONSTRAINT FK_vehicule_station FOREIGN KEY (id_station_v) REFERENCES station (id_station),\n                       CONSTRAINT FK_vehicule_modele FOREIGN KEY (id_modele) REFERENCES modele (id_modele)\n                       );\n\nINSERT INTO vehicule VALUES\n    (1,100001, 'Faucon millenium', '11-11-25', 1,1),\n    (2,100002,'Geonosis power', '24-01-24', 2,2),\n    (3,100003,'Geonosis power plus','14-05-25', 2,2),\n    (4,100004,'Starship troopers','14-06-25', 2,1),\n    (5,100005, 'Nebuleuse 300', '20-12-23', 3,11),\n    (6,100006,'Aigle royal','13-11-24',3,1);\n\n----\nDROP TABLE IF EXISTS plein;\n\nCREATE TABLE plein(\n                    id_vehicule BIGINT NOT NULL,\n                    id_plein BIGINT NOT NULL ,\n                    date_p date,\n                    nb_km INTEGER  ,\n                    qte_carbu INTEGER,\n                    CONSTRAINT PK_plein PRIMARY KEY (id_vehicule,id_plein),\n                    CONSTRAINT FK_plein_vehicule FOREIGN KEY (id_vehicule) REFERENCES vehicule (id_vehicule)\n                    );\n\nINSERT INTO plein VALUES\n    (1,1, '7-12-25',300, 30),\n    (2,1, '12-02-24',600, 122),\n    (2,2, '14-04-24',620, 134),\n    (2,3, '21-05-24', 580, 117),\n    (2,4, '15-07-24', 300, 75),\n    (3,1, '12-06-25', 500, 122),\n    (3,2, '14-08-25', 520, 134),\n    (3,3, '21-10-25', 480, 117),\n    (4,1, '15-07-25', 270, 27),\n    (4,2, '14-09-25', 250, 25),\n    (4,3, '21-11-25', 265, 28),\n    (5,1, '21-01-24', 1265, 234),\n    (5,2, '17-02-25', 1005, 203),\n    (6,1, '17-01-25', 270, 24),\n    (6,2, '12-03-25', 256, 26),\n    (6,3, '06-05-25', 291, 28),\n    (6,4, '15-07-25', 234, 25),\n    (6,5, '21-09-25', 287, 20),\n    (6,6, '14-11-25', 301, 26),\n    (6,7, '7-12-25', 241, 24);\n\n----\nDROP TABLE IF EXISTS entretien;\n\nCREATE TABLE entretien (\n           id_vehicule BIGINT NOT NULL,\n           id_entretien BIGINT NOT NULL,\n           date_e date NOT NULL,\n           descr VARCHAR(50),\n           CONSTRAINT PK_entretien PRIMARY KEY (id_vehicule,id_entretien),\n           CONSTRAINT FK_entretien_vehicule FOREIGN KEY (id_vehicule) REFERENCES vehicule (id_vehicule)\n           );\n\nINSERT INTO entretien VALUES\n    (2,1,'12-01-25', 'vidange'),\n    (5,1,'10-07-24', 'boite de vitesse'),\n    (5,2,'12-08-25','controle technique'),\n    (6,1,'25-03-25','vidange'),\n    (6,2,'30-11-25','propulsion atomique');\n\n----\nDROP TABLE IF EXISTS chauffeur;\n-- 2. Table CHAUFFEUR\n\n\nDELETE FROM chauffeur;\n\nINSERT INTO chauffeur VALUES\n    (111, 'Han','Solo',NULL,1),\n    (211,'Organa','Leia','Alderaan',2),\n    (310,'Skywalker','Luke','Tatooine',2),\n    (411,'Windu','Mace','Coruscant',2),\n    (511,'Dark','Sidius','Coruscant',2),\n    (601,'Binks','Jar Jar','Naboo',3),\n    (671,'Trooper','Phasma',NULL,3),\n    (761,'Kenobi','Obi-Wan','Tatooine',4);\n\n----\nDROP TABLE IF EXISTS permis;\n-- 2. Table PERMIS\n\n\nDELETE FROM permis;\n\nINSERT INTO permis VALUES\n    (111,'CL'),\n    (111,'GP'),\n    (111,'SC'),\n    (111,'CC'),\n    (211,'GP'),\n    (211,'SC'),\n    (211,'CC'),\n    (310,'CL'),\n    (310,'GP'),\n    (310,'SC'),\n    (310,'CC'),\n    (411,'CL'),\n    (601,'CL'),\n    (601,'CC'),\n    (671,'CC'),\n    (761,'CL');\n\n----\nDROP TABLE IF EXISTS position;\n\nCREATE TABLE position (\n          id_vehicule BIGINT NOT NULL,\n          date date,\n          th integer,\n          id_chauffeur BIGINT NOT NULL,\n          id_zone BIGINT,\n          CONSTRAINT PK_position PRIMARY KEY (id_vehicule,date,th),\n          CONSTRAINT FK_position_vehicule FOREIGN KEY (id_vehicule) REFERENCES vehicule (id_vehicule),\n          CONSTRAINT FK_position_chauffeur FOREIGN KEY (id_chauffeur) REFERENCES chauffeur (id_chauffeur),\n          CONSTRAINT FK_position_zone FOREIGN KEY (id_zone) REFERENCES zone\n                       );\n\nINSERT INTO position VALUES\n    (1,'09-12-25',1,111,NULL),\n    (2,'09-12-25',1,310,NULL),\n    (3,'09-12-25',1,211,NULL),\n    (5,'09-12-25',1,601,NULL),\n    (1,'09-12-25',2,111,NULL),\n    (2,'09-12-25',2,310,NULL),\n    (3,'09-12-25',2,211,NULL),\n    (5,'09-12-25',2,671,NULL),\n    (6,'09-12-25',2,601,NULL),\n    (1,'09-12-25',3,111,NULL),\n    (2,'09-12-25',3,310,NULL),\n    (3,'09-12-25',3,211,NULL),\n    (4,'09-12-25',3,411,NULL),\n    (5,'09-12-25',3,671,NULL),\n    (6,'09-12-25',3,601,NULL),\n    (1,'10-12-25',1,111,NULL),\n    (2,'10-12-25',1,310,NULL),\n    (3,'10-12-25',1,211,NULL),\n    (5,'10-12-25',1,671,NULL),\n    (1,'10-12-25',2,511,NULL),\n    (2,'10-12-25',2,211,6),\n    (3,'10-12-25',2,310,3),\n    (5,'10-12-25',2,671,5),\n    (6,'10-12-25',2,601,3);\n\n----\nDROP TABLE IF EXISTS distance;\n\nCREATE TABLE distance (\n          nom_zone1 Varchar(12) NOT NULL,\n          nom_zone2 Varchar(12) NOT NULL,\n          parsec INTEGER,\n          CONSTRAINT PK_distance PRIMARY KEY (nom_zone1,nom_zone2)\n                       );\n\nDELETE FROM distance;\n\nINSERT INTO distance VALUES\n ('Arkanis'  , 'Arkanis', 0),\n ('Arkanis'  , 'Cadavine', 1),\n ('Arkanis'  , 'Chommel', 3),\n ('Arkanis'  , 'Sluis', 6),\n ('Arkanis'  , 'Core Words', 11),\n ('Arkanis'  , 'Mayagil', 6),\n ('Cadavine'  , 'Arkanis', 1),\n ('Cadavine'  , 'Cadavine', 0),\n ('Cadavine'  , 'Chommel', 2),\n ('Cadavine'  , 'Sluis', 5),\n ('Cadavine'  , 'Core Words', 11),\n ('Cadavine'  , 'Mayagil', 5),\n ('Chommel'    , 'Arkanis', 3),\n ('Chommel'    , 'Cadavine', 2),\n ('Chommel'    , 'Chommel', 0),\n ('Chommel'    , 'Sluis', 4),\n ('Chommel'    , 'Core Words', 10),\n ('Chommel'    , 'Mayagil', 4),\n ('Core Words' , 'Arkanis', 11),\n ('Core Words' , 'Cadavine', 11),\n ('Core Words' , 'Chommel', 10),\n ('Core Words' , 'Sluis', 11),\n ('Core Words' , 'Core Words', 0),\n ('Core Words' , 'Mayagil', 10),\n ('Sluis'     , 'Arkanis', 6),\n ('Sluis'      , 'Cadavine', 5),\n ('Sluis'      , 'Chommel', 4),\n ('Sluis'      , 'Core Words', 11),\n ('Sluis'      , 'Sluis', 0),\n ('Sluis'      , 'Mayagil', 1),\n ('Mayagil'    , 'Arkanis', 6),\n ('Mayagil'    , 'Cadavine', 5),\n ('Mayagil'    , 'Chommel', 4),\n ('Mayagil'    , 'Core Words', 10),\n ('Mayagil'    , 'Sluis', 1),\n ('Mayagil'    , 'Mayagil', 0);\n\n-- ===== Implémentation =====\n-- 3.\n\n-- 4.\n\n-- 5a.\n\n-- 5b.\n\n-- ===== Exploitation =====\n-- 6.\n\n-- 7.\n\n-- 8.\n\n-- 9.\n\n-- 10.\n\n-- 11.\n\n-- 12.\n\n-- 13.\n\n-- 14.\n\n-- 15a.\n\n-- 15b.\n\n-- 15c.\n\n-- 16a.\n\n-- 16b.\n"
+      }
+      </script>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">Les méthodes</p>
+      <ul>
+        <li>Compléter un script fourni : chaque table se crée après celles qu'elle référence et avant ses insertions, avec les colonnes dans l'ordre des <code>VALUES</code>.</li>
+        <li>Faire évoluer une structure remplie : même protocole qu'au TP 2 (NB1) : ajouter, remplir, vérifier, puis seulement supprimer.</li>
+        <li>Une contrainte ajoutée après coup ne passe que si les données déjà présentes la respectent.</li>
+        <li>« Aujourd'hui », « actuellement », « il y a moins de 4 mois » : des requêtes qui dépendent de la date ; on les vérifie sur la date des données.</li>
+        <li>Seule la requête est rendue : ni texte, ni réponse du SGBD.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi la création de CHAUFFEUR doit-elle précéder celle de POSITION dans le script ?</summary>
+        <div><p>POSITION référence CHAUFFEUR par une clé étrangère : la table référencée doit exister d'abord.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi les lignes <code>//</code> du script passent-elles à la fac et pas ailleurs ?</summary>
+        <div><p><code>//</code> n'est pas un commentaire SQL : <code>psql</code> signale l'erreur et passe à la suite, alors qu'une exécution d'un seul bloc s'arrête à la première erreur.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que doit contenir le fichier rendu ?</summary>
+        <div><p>Nom et prénom, puis les requêtes, numérotées : ni texte, ni réponse du SGBD.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="tp-04-cd-theque.html"><small>← TP 4</small>La CD-thèque de jazz</a>
+    <a class="suivant" href="index.html"><small>Accueil →</small>Bases de données</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

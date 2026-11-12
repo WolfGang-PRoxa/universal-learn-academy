@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="codage">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Codes pseudo-aléatoires et cycliques · Codage L3</title>
+<meta name="description" content="Quiz interactif sur le cours 4 de codage de l'information (L3) : registres à décalage à réaction linéaire, codes à longueur maximale et leurs propriétés, table des prises, codes de Gold et JPL, codes cycliques, codage par multiplication et par division, avec un registre et un codage à remplir dans des tables et un codeur par division en C.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/quiz/assets/quiz.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/quiz/assets/quiz.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="../generated_courses/index.html">Codage</a>
+    <span aria-current="page">Quiz · Codes pseudo-aléatoires et cycliques</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Codage</span> Quiz · L3 S5</p>
+    <h1>Codes pseudo-aléatoires et cycliques</h1>
+    <p class="chapeau">Vingt-trois questions sur le cours 4 : registres à décalage à réaction linéaire, propriétés des codes à longueur maximale, codes de Gold et JPL, codes cycliques, codage par multiplication et par division. Un registre à faire tourner et un codage à remplir dans des tables, et un codeur par division à écrire en C, exécuté et corrigé automatiquement.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-04-pseudo-aleatoires-cycliques.html">Cours 4 · Codes pseudo-aléatoires, de Gold, JPL et cycliques</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-26">26 sept. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Codage · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "codage-cours-04-pseudo-aleatoires-cycliques",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 4 · Codes pseudo-aléatoires, de Gold, JPL et cycliques",
+      "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "qcm-multi",
+      "theme": "Registres à décalage",
+      "difficulte": 1,
+      "enonce": "<p>Parmi ces qualités, lesquelles sont attendues d'un code pseudo-aléatoire ?</p>",
+      "choix": [
+        "Être généré facilement",
+        "Être suffisamment long",
+        "Être difficile à reconstituer à partir d'un segment",
+        "Avoir une distribution des bits qui paraît aléatoire",
+        "Être impossible à reproduire, même par le récepteur"
+      ],
+      "reponses": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "explication": "<p>Ce sont les quatre conditions du cours. Une suite impossible à reproduire serait inutilisable : le récepteur doit pouvoir la regénérer, par exemple pour désétaler un signal CDMA. D'où le « pseudo » : la suite est calculée, donc reproductible, mais elle a les apparences du hasard. Les registres à réaction linéaire remplissent mal la troisième condition.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Qualités d'un code pseudo-aléatoire",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#qualites-d-un-code-pseudo-aleatoire"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "vrai-faux",
+      "theme": "Registres à décalage",
+      "difficulte": 1,
+      "enonce": "<p>Un registre à décalage à réaction linéaire de 5 étages peut produire une séquence de période 32.</p>",
+      "reponse": false,
+      "explication": "<p>Faux. Le registre a \\(2^5 = 32\\) états, mais l'état 00000 est un point fixe qui ne produit que des 0 : partant d'un état non nul, il reste au plus 31 états, et la période vaut au plus \\(2^5 - 1 = 31\\).</p>",
+      "revoir": {
+        "texte": "Cours 4 · Registre à décalage à réaction linéaire",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#registre-a-decalage-a-reaction-lineaire"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "numerique",
+      "theme": "Registres à décalage",
+      "difficulte": 1,
+      "enonce": "<p>Quelle est la longueur du code à longueur maximale produit par un registre de 9 étages ?</p>",
+      "reponse": 511,
+      "unite": "bits",
+      "explication": "<p>\\(L = 2^9 - 1 = 511\\). Le registre passe une fois par chacun de ses 511 états non nuls avant de revenir à son état de départ.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Registre à décalage à réaction linéaire",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#registre-a-decalage-a-reaction-lineaire"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "qcm",
+      "theme": "Registres à décalage",
+      "difficulte": 1,
+      "enonce": "<p>Dans la convention de la table des prises, quel polynôme correspond au registre de 9 étages dont les prises sont [4, 9] ?</p>",
+      "choix": [
+        "\\(1 + x^4 + x^9\\)",
+        "\\(x^4 + x^9\\)",
+        "\\(1 + x^5 + x^9\\)",
+        "\\(1 + x + x^4 + x^9\\)"
+      ],
+      "reponse": 0,
+      "explication": "<p>Chaque étage relié au ou exclusif donne un terme \\(x^i\\), et l'on ajoute le terme constant 1 : \\(1 + x^4 + x^9\\). Le polynôme « retourné » \\(1 + x^5 + x^9\\) décrit le même registre dans l'autre numérotation des étages, celle de la diapo 3. Avec quatre termes, \\(1 + x + x^4 + x^9\\) serait divisible par \\(1 + x\\).</p>",
+      "revoir": {
+        "texte": "Cours 4 · Forme polynomiale",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#forme-polynomiale"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "atelier",
+      "editeur": "table",
+      "theme": "Registres à décalage",
+      "difficulte": 2,
+      "titre": "Registre [3, 4]",
+      "enonce": "<p>Un registre de 4 étages a ses prises sur les cases 3 et 4 : à chaque top, la case 1 reçoit case 3 ⊕ case 4, les autres bits avancent d'une case, et le bit émis est celui de la case 4. Partant de l'état 1010, donner les états successifs et le bit émis à chaque top.</p>",
+      "consigne": "Écrire chaque état sous la forme c1c2c3c4, sans espaces, et le bit émis (0 ou 1).",
+      "options": {
+        "verrou": "depart",
+        "lignes": false,
+        "ordre": true,
+        "mono": true
+      },
+      "depart": [
+        "| Top | État | Bit émis |",
+        "|---|---|---|",
+        "| 0 | 1010 |  |",
+        "| 1 |  |  |",
+        "| 2 |  |  |",
+        "| 3 |  |  |",
+        "| 4 |  |  |",
+        "| 5 |  |  |",
+        "| 6 |  |  |",
+        "| 7 |  |  |",
+        "| 8 |  |  |"
+      ],
+      "solution": [
+        "| Top | État | Bit émis |",
+        "|---|---|---|",
+        "| 0 | 1010 | 0 |",
+        "| 1 | 1101 | 1 |",
+        "| 2 | 1110 | 0 |",
+        "| 3 | 1111 | 1 |",
+        "| 4 | 0111 | 1 |",
+        "| 5 | 0011 | 1 |",
+        "| 6 | 0001 | 1 |",
+        "| 7 | 1000 | 0 |",
+        "| 8 | 0100 | 0 |"
+      ],
+      "indices": [
+        "<p>Premier top : la case 1 reçoit 1 ⊕ 0 = 1 (cases 3 et 4 de 1010), et les bits 1, 0, 1 avancent d'une case : 1101.</p>"
+      ],
+      "explication": "<p>Au top 1, la case 1 reçoit case 3 ⊕ case 4 = 1 ⊕ 0 = 1 : 1101. Puis 1110, 1111, 0111, 0011, 0001, 1000 et 0100. Le polynôme \\(1 + x^3 + x^4\\) est primitif (c'est le retourné de \\(1 + x + x^4\\), celui du cours) : le registre parcourt ses 15 états non nuls, et la séquence a pour période 15. Erreur fréquente : émettre le bit de la case 1 au lieu de celui de la case 4.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Un exemple : le registre de longueur 4",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#un-exemple-le-registre-de-longueur-4"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "qcm",
+      "theme": "Registres à décalage",
+      "difficulte": 2,
+      "enonce": "<p>Pourquoi un registre de 4 étages à prises [1, 2, 4] ne peut-il pas produire une séquence à longueur maximale ?</p>",
+      "choix": [
+        "Son polynôme \\(1 + x + x^2 + x^4\\) a un nombre pair de termes : il est divisible par \\(1 + x\\)",
+        "Le dernier étage ne participe pas à la contre-réaction",
+        "Un registre à longueur maximale n'a jamais plus de deux prises",
+        "Trois prises donnent une séquence avec autant de 0 que de 1"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Évaluer le polynôme en \\(x = 1\\), modulo 2.</p>"
+      ],
+      "explication": "<p>\\(f(1) = 1 + 1 + 1 + 1 = 0\\) modulo 2 : \\(1 + x\\) divise \\(f\\), qui n'est donc ni irréductible ni primitif. Un registre à longueur maximale a toujours un nombre pair de prises. Deux prises ne suffisent d'ailleurs pas toujours : pour 8 étages, la table ne propose que des jeux de quatre prises ou plus.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Forme polynomiale",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#forme-polynomiale"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "numerique",
+      "theme": "Codes à longueur maximale",
+      "difficulte": 2,
+      "enonce": "<p>Sur une période, combien de « 1 » contient le code à longueur maximale d'un registre de 7 étages ?</p>",
+      "reponse": 64,
+      "indices": [
+        "<p>La période vaut \\(L = 2^7 - 1\\), et le code contient \\((L + 1)/2\\) « 1 ».</p>"
+      ],
+      "explication": "<p>\\(L = 127\\), d'où \\((127 + 1)/2 = 64\\) « 1 » et \\((127 - 1)/2 = 63\\) « 0 ». Sur une période, le registre passe une fois par chaque état non nul, et \\(2^6 = 64\\) de ces états ont un 1 dans le dernier étage.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Schéma simplifié",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#schema-simplifie"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "numerique",
+      "theme": "Codes à longueur maximale",
+      "difficulte": 2,
+      "enonce": "<p>Sur une période du code à longueur maximale d'un registre de 6 étages, combien y a-t-il de séries de « 0 » de longueur 2 ?</p>",
+      "reponse": 4,
+      "indices": [
+        "<p>Pour \\(1 \\le P \\le R - 2\\), il y a \\(2^{R-P-2}\\) séries de chaque sorte de longueur \\(P\\).</p>"
+      ],
+      "explication": "<p>\\(R = 6\\) et \\(P = 2\\) : \\(2^{6-2-2} = 4\\) séries de « 0 » de longueur 2, et autant de « 1 ». La moitié des séries ont la longueur 1, le quart la longueur 2 : c'est ce qu'on attend en moyenne d'une suite de pile ou face.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Les séries",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#les-series"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "qcm",
+      "theme": "Codes à longueur maximale",
+      "difficulte": 3,
+      "enonce": "<p>Un code à longueur maximale a pour période \\(L = 31\\). On le compare à un de ses décalés de \\(\\tau\\) positions (\\(\\tau\\) non multiple de 31), en comptant les accords moins les désaccords. Quel résultat obtient-on ?</p>",
+      "choix": [
+        "−1, quel que soit τ",
+        "0, quel que soit τ",
+        "31, quel que soit τ",
+        "Une valeur qui dépend de τ, entre −31 et 31"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Les désaccords sont les 1 de la somme modulo 2 de la séquence et de son décalé. Or cette somme est encore un décalé de la séquence.</p>"
+      ],
+      "explication": "<p>La somme est un décalé de la séquence : elle contient \\((L+1)/2 = 16\\) « 1 », donc 16 désaccords, et 15 accords. \\(R(\\tau) = 15 - 16 = -1\\). Sans décalage, \\(R(0) = 31\\) : ce pic unique permet au récepteur de savoir exactement quand sa copie est calée (CDMA, GPS).</p>",
+      "revoir": {
+        "texte": "Cours 4 · Addition de deux décalés",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#addition-de-deux-decales"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "vrai-faux",
+      "theme": "Codes à longueur maximale",
+      "difficulte": 2,
+      "enonce": "<p>La somme modulo 2 d'une séquence à longueur maximale et d'un de ses décalés (non nul) est encore un décalé de la même séquence.</p>",
+      "reponse": true,
+      "explication": "<p>Vrai. La contre-réaction est linéaire : la somme obéit à la même règle, c'est la séquence produite à partir de l'état somme, qui n'est pas nul. Or tout état non nul appartient au cycle unique de longueur maximale. Sur l'exemple du cours, \\(C(n) \\xor C(n+6) = C(n+8)\\).</p>",
+      "revoir": {
+        "texte": "Cours 4 · Addition de deux décalés",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#addition-de-deux-decales"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "reponse-courte",
+      "theme": "Codes à longueur maximale",
+      "difficulte": 3,
+      "enonce": "<p>Le registre du cours (4 étages, prises [1, 4]) émet sur une période la séquence \\(C(n)\\) = 111101011001000. Calculer \\(C(n) \\xor C(n+3)\\), où \\(C(n+3)\\) est la séquence lue à partir de son quatrième bit. Écrire les 15 bits sans espaces.</p>",
+      "reponses": [
+        "010110010001111",
+        "0 1 0 1 1 0 0 1 0 0 0 1 1 1 1"
+      ],
+      "indices": [
+        "<p>\\(C(n+3)\\) = 101011001000111 : les trois premiers bits passent à la fin.</p>",
+        "<p>Contrôle : le résultat doit être, lui aussi, un décalé de 111101011001000.</p>"
+      ],
+      "explication": "<p>111101011001000 ⊕ 101011001000111 = 010110010001111. C'est \\(C(n+4)\\), la séquence lue à partir de son cinquième bit : la somme d'une séquence à longueur maximale et d'un de ses décalés est bien un autre décalé.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Addition de deux décalés",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#addition-de-deux-decales"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "numerique",
+      "theme": "Codes de Gold et JPL",
+      "difficulte": 2,
+      "enonce": "<p>On forme une famille de Gold à partir d'une paire préférée de registres de 10 étages. Combien de séquences compte la famille, les deux séquences de départ comprises ?</p>",
+      "reponse": 1025,
+      "indices": [
+        "<p>Chaque décalage de l'un des deux registres avant l'addition donne un code de Gold différent.</p>"
+      ],
+      "explication": "<p>Il y a \\(2^{10} - 1 = 1023\\) décalages possibles, donc 1023 codes de Gold, plus les deux séquences de départ : \\(2^{10} + 1 = 1025\\). Toutes ont pour période 1023, et leurs intercorrélations restent faibles : une séquence par utilisateur en CDMA. Le code C/A du GPS civil appartient à une telle famille.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Codes de Gold",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#codes-de-gold"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "vrai-faux",
+      "theme": "Codes de Gold et JPL",
+      "difficulte": 1,
+      "enonce": "<p>Un code de Gold a une période plus longue que chacun des deux codes à longueur maximale qui le composent.</p>",
+      "reponse": false,
+      "explication": "<p>Faux. Les deux registres ont \\(n\\) étages et la même période \\(2^n - 1\\) ; leur somme a la même période. Le montage compte \\(2n\\) étages mais ne vise pas la longueur (c'est un code à longueur non maximale) : il vise la diversité, avec \\(2^n + 1\\) séquences peu corrélées.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Codes de Gold",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#codes-de-gold"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "numerique",
+      "theme": "Codes de Gold et JPL",
+      "difficulte": 2,
+      "enonce": "<p>Un code JPL additionne trois codes à longueur maximale produits par des registres de 3, 4 et 5 étages. Quelle est sa période ?</p>",
+      "reponse": 3255,
+      "indices": [
+        "<p>Les trois périodes sont \\(2^3 - 1\\), \\(2^4 - 1\\) et \\(2^5 - 1\\). Sont-elles premières entre elles deux à deux ?</p>"
+      ],
+      "explication": "<p>\\(L_1 = 7\\), \\(L_2 = 15\\) et \\(L_3 = 31\\) sont premiers entre eux deux à deux (3, 4 et 5 le sont) : la période vaut \\(7 \\times 15 \\times 31 = 3255\\). Le récepteur se synchronise pourtant en \\(7 + 15 + 31 = 53\\) essais, en cherchant séparément le décalage de chaque composante.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Codes JPL",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#codes-jpl"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "qcm",
+      "theme": "Codes de Gold et JPL",
+      "difficulte": 3,
+      "enonce": "<p>Un code JPL additionne trois codes à longueur maximale produits par des registres de 3, 6 et 7 étages. Quelle est sa période ?</p>",
+      "choix": [
+        "8 001",
+        "56 007",
+        "197",
+        "441"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>La somme se répète au plus petit commun multiple des trois périodes.</p>",
+        "<p>\\(\\operatorname{pgcd}(2^a - 1, 2^b - 1) = 2^{\\operatorname{pgcd}(a, b)} - 1\\) : que vaut \\(\\operatorname{pgcd}(7, 63)\\) ?</p>"
+      ],
+      "explication": "<p>Les périodes sont 7, 63 et 127. Or 7 divise 63, puisque \\(\\operatorname{pgcd}(3, 6) = 3\\) : la période vaut \\(\\operatorname{ppcm}(7, 63, 127) = 63 \\times 127 = 8\\,001\\), et non le produit \\(7 \\times 63 \\times 127 = 56\\,007\\). Les nombres d'étages doivent être premiers entre eux deux à deux. 197 est le nombre d'essais de synchronisation, \\(7 + 63 + 127\\).</p>",
+      "revoir": {
+        "texte": "Cours 4 · Codes JPL",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#codes-jpl"
+      }
+    },
+    {
+      "id": "q16",
+      "type": "reponse-courte",
+      "theme": "Codes cycliques",
+      "difficulte": 1,
+      "enonce": "<p>Avec \\(n = 7\\), quel mot représente le polynôme \\(1 + x^2 + x^5\\) ? Écrire les 7 éb sans espaces, de \\(C_0\\) à \\(C_6\\).</p>",
+      "reponses": [
+        "1010010"
+      ],
+      "explication": "<p>Le mot s'écrit par degrés croissants, de \\(C_0\\) à gauche jusqu'à \\(C_6\\) à droite : des 1 aux positions des degrés 0, 2 et 5, soit 1010010. Erreur fréquente : l'écrire comme un nombre binaire, en partant du plus haut degré (0100101).</p>",
+      "revoir": {
+        "texte": "Cours 4 · Définition",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#definition"
+      }
+    },
+    {
+      "id": "q17",
+      "type": "reponse-courte",
+      "theme": "Codes cycliques",
+      "difficulte": 2,
+      "enonce": "<p>Avec \\(n = 7\\), le mot 1100100 représente le polynôme \\(C(x)\\). Calculer \\(x^2 C(x)\\) modulo \\(x^7 - 1\\), et écrire le mot correspondant (7 éb, sans espaces).</p>",
+      "reponses": [
+        "0011001"
+      ],
+      "indices": [
+        "<p>\\(C(x) = 1 + x + x^4\\) ; modulo \\(x^7 - 1\\), \\(x^7 = 1\\).</p>"
+      ],
+      "explication": "<p>\\(x^2 C(x) = x^2 + x^3 + x^6\\), de degré inférieur à 7 : pas de réduction. Mot : 0011001. Ce sont bien deux permutations circulaires de 1100100 : 0110010, puis 0011001.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Multiplier par x, c'est permuter",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#multiplier-par-x-c-est-permuter"
+      }
+    },
+    {
+      "id": "q18",
+      "type": "qcm-multi",
+      "theme": "Codes cycliques",
+      "difficulte": 3,
+      "enonce": "<p>Parmi ces polynômes, lesquels divisent \\(x^7 - 1\\) modulo 2, et peuvent donc engendrer un code cyclique de longueur 7 ?</p>",
+      "choix": [
+        "\\(1 + x\\)",
+        "\\(1 + x + x^3\\)",
+        "\\(1 + x^2 + x^3 + x^4\\)",
+        "\\(1 + x + x^2\\)",
+        "\\(1 + x^3\\)"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "indices": [
+        "<p>\\(x^7 - 1 = (1 + x^2 + x^3)(1 + x + x^3)(1 + x)\\) : un diviseur est un produit de certains de ces facteurs.</p>"
+      ],
+      "explication": "<p>\\(1 + x\\) et \\(1 + x + x^3\\) sont des facteurs de la décomposition, et \\(1 + x^2 + x^3 + x^4 = (1 + x)(1 + x + x^3)\\) en est un produit : il engendre un code \\((7, 3)\\). En revanche, \\(1 + x + x^2\\) n'est pas un facteur, et \\(1 + x^3 = (1 + x)(1 + x + x^2)\\) le contient : aucun des deux ne divise \\(x^7 - 1\\).</p>",
+      "revoir": {
+        "texte": "Cours 4 · Les codes cycliques de longueur 7",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#les-codes-cycliques-de-longueur-7"
+      }
+    },
+    {
+      "id": "q19",
+      "type": "ouverte",
+      "theme": "Codes cycliques",
+      "difficulte": 2,
+      "enonce": "<p>Montrer que, modulo \\(x^n - 1\\), multiplier le polynôme \\(C(x)\\) d'un mot par \\(x\\) revient à faire une permutation circulaire de ses éb. Pourquoi cette propriété est-elle utile pour les codes cycliques ?</p>",
+      "reponse_modele": "<p>\\(x\\,C(x) = C_0 x + C_1 x^2 + \\cdots + C_{n-2} x^{n-1} + C_{n-1} x^n\\). Modulo \\(x^n - 1\\), \\(x^n = 1\\), d'où \\(x\\,C(x) = C_{n-1} + C_0 x + \\cdots + C_{n-2} x^{n-1}\\) : c'est le polynôme du mot \\((C_{n-1}, C_0, \\ldots, C_{n-2})\\), permuté circulairement d'un rang ; multiplier par \\(x^i\\) fait \\(i\\) permutations. Un code cyclique est stable par permutation circulaire, donc par multiplication par \\(x\\), puis, par linéarité, par tout polynôme : ses mots sont les multiples d'un générateur \\(g(x)\\) qui divise \\(x^n - 1\\), ce qui permet de coder par multiplication ou par division.</p>",
+      "criteres": [
+        "le calcul de \\(x\\,C(x)\\), avec le terme \\(C_{n-1} x^n\\)",
+        "la réduction \\(x^n = 1\\) modulo \\(x^n - 1\\), qui ramène \\(C_{n-1}\\) en tête",
+        "le mot obtenu, \\((C_{n-1}, C_0, \\ldots, C_{n-2})\\), et \\(x^i\\) pour \\(i\\) permutations",
+        "l'intérêt : les mots sont les multiples d'un générateur qui divise \\(x^n - 1\\), d'où le codage par multiplication ou par division"
+      ],
+      "revoir": {
+        "texte": "Cours 4 · Multiplier par x, c'est permuter",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#multiplier-par-x-c-est-permuter"
+      }
+    },
+    {
+      "id": "q20",
+      "type": "atelier",
+      "editeur": "table",
+      "theme": "Codage par polynôme générateur",
+      "difficulte": 2,
+      "titre": "Coder par multiplication",
+      "enonce": "<p>Le code cyclique \\((7, 4)\\) de générateur \\(g(x) = 1 + x^2 + x^3\\) code par multiplication : le message \\(m_0 m_1 m_2 m_3\\) est lu comme le polynôme \\(m_0 + m_1 x + m_2 x^2 + m_3 x^3\\), et le mot de code est son produit par \\(g(x)\\). Coder les messages du tableau.</p>",
+      "consigne": "Écrire chaque mot sur 7 éb, de C0 à C6, sans espaces.",
+      "options": {
+        "verrou": "depart",
+        "lignes": false,
+        "ordre": true,
+        "mono": true
+      },
+      "depart": [
+        "| Message | Mot de code |",
+        "|---|---|",
+        "| 1000 |  |",
+        "| 0100 |  |",
+        "| 1100 |  |",
+        "| 0011 |  |",
+        "| 1111 |  |"
+      ],
+      "solution": [
+        "| Message | Mot de code |",
+        "|---|---|",
+        "| 1000 | 1011000 |",
+        "| 0100 | 0101100 |",
+        "| 1100 | 1110100 |",
+        "| 0011 | 0011101 |",
+        "| 1111 | 1101001 |"
+      ],
+      "indices": [
+        "<p>Le mot de 1000 est \\(g(x)\\) lui-même : 1011000. Celui de 0100 s'en déduit par une permutation circulaire.</p>",
+        "<p>Par linéarité, le mot de 1100 est la somme des mots de 1000 et de 0100.</p>"
+      ],
+      "explication": "<p>1000 → \\(g(x)\\) : 1011000 ; 0100 → \\(x\\,g(x)\\) : 0101100 ; 1100 → leur somme, 1110100. 0011 → \\((x^2 + x^3)\\,g(x) = x^2 + x^3 + x^4 + x^6\\) : 0011101. 1111 → \\((1 + x + x^2 + x^3)\\,g(x) = 1 + x + x^3 + x^6\\) : 1101001. Le codage n'est pas systématique : le message ne se lit pas dans le mot.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Codage par multiplication des polynômes",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#codage-par-multiplication-des-polynomes"
+      }
+    },
+    {
+      "id": "q21",
+      "type": "reponse-courte",
+      "theme": "Codage par polynôme générateur",
+      "difficulte": 3,
+      "enonce": "<p>Avec \\(g(x) = 1 + x^2 + x^3\\), coder par division le message 1001 : calculer le reste de \\(x^3 D(x)\\) par \\(g(x)\\), puis écrire le mot de code sur 7 éb (le reste \\(r_0 r_1 r_2\\), puis le message), sans espaces.</p>",
+      "reponses": [
+        "1101001",
+        "110 1001",
+        "110:1001",
+        "110 : 1001"
+      ],
+      "indices": [
+        "<p>Modulo \\(g(x)\\), \\(x^3 = 1 + x^2\\). En déduire \\(x^4\\), \\(x^5\\) et \\(x^6\\).</p>",
+        "<p>\\(x^3 D(x) = x^3 + x^6\\).</p>"
+      ],
+      "explication": "<p>\\(x^3 = 1 + x^2\\), \\(x^4 = x + x^3 = 1 + x + x^2\\), \\(x^5 = 1 + x\\), \\(x^6 = x + x^2\\). D'où \\(x^3 + x^6 \\to (1 + x^2) + (x + x^2) = 1 + x\\) : reste 110, mot 110 : 1001, soit 1101001. Contrôle : \\(1 + x + x^3 + x^6 = (1 + x + x^2 + x^3)\\,g(x)\\) est bien un multiple de \\(g\\).</p>",
+      "revoir": {
+        "texte": "Cours 4 · Codage par division des polynômes",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#codage-par-division-des-polynomes"
+      }
+    },
+    {
+      "id": "q22",
+      "type": "vrai-faux",
+      "theme": "Codage par polynôme générateur",
+      "difficulte": 1,
+      "enonce": "<p>Le codage par multiplication des polynômes donne un code systématique.</p>",
+      "reponse": false,
+      "explication": "<p>Faux. Avec \\(g(x) = 1 + x + x^3\\), le message 1110 donne 1000110 : on ne l'y lit pas. Le codage par division, lui, est systématique : les \\(k\\) éb de contrôle (le reste) viennent en tête, et le message est recopié dans les \\(m\\) dernières positions.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Codage par multiplication des polynômes",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#codage-par-multiplication-des-polynomes"
+      }
+    },
+    {
+      "id": "q23",
+      "type": "code",
+      "langage": "c",
+      "theme": "Codage par polynôme générateur",
+      "difficulte": 3,
+      "enonce": "<p>Écrire la fonction <code>coder_division(d, g, mot)</code>, qui code par division le message <code>d</code> avec le polynôme générateur <code>g</code>. Les deux sont des chaînes de <code>'0'</code> et de <code>'1'</code> écrites par degrés croissants : <code>d</code> = \\(d_0 d_1 \\ldots d_{m-1}\\), <code>g</code> = \\(g_0 g_1 \\ldots g_k\\), avec \\(g_k = 1\\). La fonction écrit dans <code>mot</code> les \\(k + m\\) éb du mot de code : le reste \\(r_0 \\ldots r_{k-1}\\) de \\(x^k D(x)\\) par \\(g(x)\\), puis le message.</p><p>Le programme de test lit <code>d</code> puis <code>g</code>, appelle la fonction, termine la chaîne <code>mot</code> et l'affiche. Exemple du cours : <code>1110</code> et <code>1101</code> donnent <code>0101110</code>.</p>",
+      "depart": "#include <stdio.h>\n#include <string.h>\n\n/* d : message d0 d1 ... d(m-1) ; g : générateur g0 g1 ... gk.\n   mot : reçoit les k + m éb, reste puis message. */\nvoid coder_division(const char *d, const char *g, char *mot) {\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <string.h>\n\n/* d : message d0 d1 ... d(m-1) ; g : générateur g0 g1 ... gk.\n   mot : reçoit les k + m éb, reste puis message. */\nvoid coder_division(const char *d, const char *g, char *mot) {\n    int m = strlen(d), k = strlen(g) - 1, n = m + k;\n    int p[512];\n    for (int i = 0; i < k; i++) p[i] = 0;                 /* x^k D(x) */\n    for (int i = 0; i < m; i++) p[k + i] = d[i] - '0';\n    for (int i = n - 1; i >= k; i--)                        /* division modulo 2 */\n        if (p[i])\n            for (int j = 0; j <= k; j++)\n                p[i - k + j] ^= g[j] - '0';\n    for (int i = 0; i < k; i++) mot[i] = '0' + p[i];        /* reste */\n    for (int i = 0; i < m; i++) mot[k + i] = d[i];          /* message */\n}\n",
+      "harnais": "\nint main(void) {\n    static char d[256], g[64], mot[320];\n    if (scanf(\"%255s %63s\", d, g) != 2) return 0;\n    coder_division(d, g, mot);\n    mot[strlen(d) + strlen(g) - 1] = '\\0';\n    printf(\"%s\\n\", mot);\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "exemple du cours",
+          "entree": "1110\n1101\n",
+          "sortie": "0101110\n"
+        },
+        {
+          "nom": "reste nul",
+          "entree": "1101\n1101\n",
+          "sortie": "0001101\n"
+        },
+        {
+          "nom": "message 1001",
+          "entree": "1001\n1101\n",
+          "sortie": "0111001\n"
+        },
+        {
+          "nom": "autre générateur",
+          "entree": "1001\n1011\n",
+          "sortie": "1101001\n"
+        },
+        {
+          "nom": "message nul",
+          "entree": "0000\n1101\n",
+          "sortie": "0000000\n"
+        },
+        {
+          "nom": "code (7, 3)",
+          "entree": "111\n10111\n",
+          "sortie": "0010111\n"
+        },
+        {
+          "nom": "code de parité",
+          "entree": "1011\n11\n",
+          "sortie": "11011\n"
+        },
+        {
+          "nom": "message long",
+          "entree": "11010011101100\n1011\n",
+          "sortie": "10111010011101100\n"
+        }
+      ],
+      "indices": [
+        "<p>Ranger les coefficients de \\(x^k D(x)\\) dans un tableau d'entiers : \\(k\\) zéros, puis le message. La case \\(i\\) contient le coefficient de \\(x^i\\).</p>",
+        "<p>Division modulo 2 : du plus haut degré jusqu'au degré \\(k\\), si le coefficient \\(i\\) vaut 1, ajouter (ou exclusif) \\(g\\) décalé de \\(i - k\\). Le reste se lit dans les \\(k\\) premières cases.</p>"
+      ],
+      "explication": "<p>La solution pose la division comme à la main : chaque coefficient de tête non nul est annulé en ajoutant \\(g\\) décalé, ce qui ne touche que les degrés inférieurs. Avec \\(g = 1 + x\\), le reste est la parité du message (test « code de parité »). Erreur fréquente : lire les chaînes comme des nombres binaires, en partant du plus haut degré.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Codage par division des polynômes",
+        "lien": "../generated_courses/cours-04-pseudo-aleatoires-cycliques.html#codage-par-division-des-polynomes"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

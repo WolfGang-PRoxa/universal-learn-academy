@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="gl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notion de modèle et introduction à UML · Génie logiciel L3</title>
+<meta name="description" content="Cours 4 de génie logiciel (L3) : synthèse sur l'analyse, notion de modèle et de méthode, exemples de modèles (patatoïde, UML, entité-association, OCL, B), puis le langage UML : origines, diagrammes, vues, méta-modèle ; cas d'utilisation (acteurs, include, extend, généralisation), diagrammes de séquence, diagrammes de classes (associations, multiplicités, agrégation, composition, héritage), correspondance avec le modèle entité-association.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+<link rel="quiz" href="../generated_quizzes/quiz-cours-04-modeles-uml.html" title="Quiz · Modèles et UML">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale">
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Génie logiciel 1</a>
+    <span aria-current="page">Cours 4 · Modèles et UML</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Génie logiciel 1</span> Cours 4 · L3 S5</p>
+    <h1>Notion de modèle et introduction à UML</h1>
+    <p class="chapeau">La spécification par modélisation est la manière la plus sûre de faire de l'analyse. Ce cours dit ce qu'est un modèle et une méthode, puis présente UML et ses trois diagrammes essentiels pour l'analyse : les cas d'utilisation (les fonctionnalités), les diagrammes de séquence (les interactions) et les diagrammes de classes (le domaine).</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/L3-175UD15-C4-Part1.pdf">L3-175UD15-C4-Part1.pdf</a> · 15 diapos (synthèse sur l'analyse, notion de modèle) ; <a href="../cours/L3-175UD05-C4-Part2-etu-2025.pdf">L3-175UD05-C4-Part2-etu-2025.pdf</a> · 45 diapos (UML) ; fiche <a href="../cours/MM%20UML.pdf">MM UML</a></dd></div>
+      <div><dt>Enseignante</dt><dd>C. Piau-Toffolon</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-10-17">17 oct. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Dire ce qu'est un modèle, à quoi il sert, et ce qui compose une méthode.</li>
+        <li>Situer UML : un langage, pas une méthode ; ses diagrammes et ses vues.</li>
+        <li>Lire et construire un diagramme de cas d'utilisation, avec include, extend et généralisation.</li>
+        <li>Décrire un scénario par un diagramme de séquence.</li>
+        <li>Modéliser un domaine par un diagramme de classes : associations, multiplicités, agrégation, composition, héritage.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-03-cahier-des-charges.html">Cours 3</a> : acteurs, besoins fonctionnels, processus et concepts métiers.</li>
+        <li>Les diagrammes de classes du <a href="../../bases-de-donnees-3/generated_courses/cours-01-uml-vers-relationnel.html">cours 1 de bases de données</a> et du <a href="../../programmation-objet/generated_courses/cours-01-concepts-principes.html">cours 1 de POO</a>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc note">
+    <p class="bloc-titre">Remarque <span>Une version étudiant à compléter</span></p>
+    <p>Comme au cours 3, les diapos sont la version « étudiant » : plusieurs s'arrêtent sur un intitulé (notion de modèle, avantages et inconvénients, trois composantes de modélisation, principes des cas d'utilisation, « Normalisation ? »), et les exercices n'ont pas de corrigé. Ces parties sont complétées ici, dans des blocs Complément et des solutions proposées.</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Synthèse sur l'analyse <span class="ref">partie 1, diapos 3–4</span></h2>
+    <p>Le cours 3 a posé la démarche d'analyse ; il reste à choisir les outils pour l'exprimer.</p>
+    <p>L'analyste suit une démarche rigoureuse et reproductible : définir le but général du système, puis sa frontière, puis chaque processus métier de chaque acteur, et enfin décrire les besoins et les contraintes non fonctionnels. L'analyse a deux dimensions, statique et dynamique (<a href="cours-03-cahier-des-charges.html#vision-statique-et-vision-dynamique">cours 3</a>).</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Les outils pour l'analyse</caption>
+        <thead><tr><th>Outils</th><th>Exemples <span class="badge ajout">Ajout</span></th></tr></thead>
+        <tbody>
+          <tr><td>Informels</td><td>texte libre, schémas « patatoïdes », maquettes dessinées</td></tr>
+          <tr><td>Semi-formels</td><td>UML, modèle entité-association : une notation précise, mais une sémantique en partie informelle</td></tr>
+          <tr><td>Formels</td><td>OCL, langage B, Z : une sémantique mathématique, qui permet de prouver des propriétés</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Les langages semi-formels ou formels permettent de définir des modèles, et la spécification par modélisation est la manière la plus sûre et la plus efficace de faire de l'analyse.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Modèle et modélisation <span class="ref">partie 1, diapos 5–7</span></h2>
+    <p>Tout système informatique est, par définition, un modèle : il représente une partie du monde réel (des clients, des comptes, des portes) sous une forme que la machine peut manipuler.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Qu'est-ce qu'un modèle, à quoi sert-il ?</span> <span class="ref">diapo 5, à compléter</span></p>
+      <p>Un <dfn>modèle</dfn> est une représentation simplifiée d'un système, construite pour un objectif précis : il ne retient que ce qui est utile à cet objectif et ignore le reste. Un plan d'architecte, une maquette d'avion ou une carte routière sont des modèles. On fait autant de modèles que de points de vue utiles : le plan électrique et le plan de façade d'une maison décrivent la même maison pour des corps de métier différents, d'où « tant de modèles ».</p>
+      <ul>
+        <li><strong>Pouvoir d'anticipation</strong> : étudier le système avant qu'il existe, trouver les erreurs quand elles coûtent encore peu.</li>
+        <li><strong>Pouvoir d'accélération</strong> : raisonner plus vite sur le modèle que sur le système réel, et générer une partie du code.</li>
+        <li><strong>Pouvoir de substitution</strong> : manipuler le modèle à la place du système, pour l'expliquer, le simuler ou le tester.</li>
+      </ul>
+    </div>
+    <p>La modélisation n'est pas limitée à l'analyse : il faut faire des modèles d'analyse, des modèles de conception, utiliser et affiner ces modèles en programmation et en maintenance, faire des modèles de déploiement, etc.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Avantages et inconvénients de la modélisation</span> <span class="ref">diapo 7, à compléter</span></p>
+      <div class="colonnes">
+        <div class="colonne pour">
+          <ul>
+            <li>Un langage commun entre client, analystes et développeurs.</li>
+            <li>Les erreurs et les oublis apparaissent tôt.</li>
+            <li>Une documentation qui facilite la maintenance.</li>
+            <li>Une partie du code peut être générée.</li>
+          </ul>
+        </div>
+        <div class="colonne contre">
+          <ul>
+            <li>Un coût en temps et en formation.</li>
+            <li>Les modèles doivent être tenus à jour, sinon ils mentent.</li>
+            <li>Un modèle n'est qu'une simplification : il peut omettre l'essentiel.</li>
+            <li>Le risque de modéliser pour modéliser.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exemples de modèles <span class="ref">partie 1, diapos 8–12</span></h2>
+    <p>Un même problème peut se décrire avec des formalismes plus ou moins rigoureux. Les diapos en montrent cinq.</p>
+
+    <h3>Un modèle « patatoïde »</h3>
+    <p>C'est un modèle graphique non normalisé, « mais c'est mieux que rien ». Il reprend le contrôle d'accès du cours 3 : des boîtes E1 à E11 pour les éléments (E2 porte : nom, état, durée de temporisation ; E3 personne : nom, prénom, n° de téléphone ; E4 badge : numéro ; E5 groupe de personnes : nom ; E6 groupe de portes : nom ; E7 calendrier ; E8 semaine : numéro, type, nom, description ; E9 plage horaire : jour, début, fin, accès ; E10 événement : type, n° de badge, porte, heure, date, personne ; E11 serrure électronique : numéro) et des flèches R1 à R8 pour les relations. La diapo pose la question : que représentent les flèches Ri ? Sans notation normalisée, on ne le sait pas : un lien, une appartenance, un sens de lecture ? Ni le nombre d'éléments reliés, ni le sens de la relation ne sont précisés.</p>
+
+    <h3>Un diagramme de classes UML</h3>
+    <p>UML est le langage standard de l'OMG (<a href="https://www.omg.org">omg.org</a>), standard mais non normalisé, orienté objet, avec jusqu'à 11 types de diagrammes en UML 2.0. L'exemple de la diapo 9 est la conception, en Java RMI, de l'algorithme d'exclusion mutuelle de l'anneau à jeton : des interfaces (<code>Remote</code>, <code>GestionnaireJeton</code> avec <code>recevoirJeton</code> et <code>envoyerJeton</code>, <code>Ressource</code> avec <code>utilise</code> et <code>libere</code>), leurs implémentations, qui héritent de <code>UnicastRemoteObject</code>, et un <code>Jeton</code> sérialisable.</p>
+
+    <h3>Un diagramme entité-association</h3>
+    <p>Un modèle de données, qui définit les données stockées dans les tables d'une base de données et les relations entre ces données (voir le <a href="../../bases-de-donnees-3/generated_courses/cours-01-uml-vers-relationnel.html">cours de bases de données</a>).</p>
+
+    <h3>Un modèle en OCL</h3>
+    <p>OCL (<span lang="en">Object Constraint Language</span>), standard de l'OMG, est un langage logique orienté objet, qui définit des contraintes logiques sur les relations, les attributs, les méthodes d'un modèle UML. Exemple sur un hôtel :</p>
+<pre><code class="language-plaintext">context Chambre inv:
+  client->size &lt;= _nbDeLits or
+  (client->size = _nbDeLits + 1 and
+   client->exists(p : Personne | p._âge &lt; 4))
+
+context Hôtel inv:
+  self.chambre->forAll(c : Chambre | c._étage &lt;= self._étageMax and c._étage &gt;= self._étageMin)
+
+context Chambre::repeindre(c : Couleur)
+  pre: client->isEmpty
+  post: _prix = _prix@pre * 1.1
+
+context Hôtel::calculerLoyer() : réel
+  pre:
+  post: result = self.chambre->select(client->notEmpty)._prix->sum</code></pre>
+    <p><span class="badge ajout">Ajout</span> Lecture : une chambre n'a pas plus de clients que de lits, sauf un de plus s'il a moins de 4 ans ; toutes les chambres sont entre l'étage minimal et l'étage maximal de l'hôtel ; on ne repeint qu'une chambre vide, et son prix augmente alors de 10 % ; le loyer de l'hôtel est la somme des prix des chambres occupées. <code>inv</code> est un invariant, <code>pre</code> et <code>post</code> sont les pré- et postconditions d'une opération, <code>@pre</code> désigne la valeur avant l'opération.</p>
+
+    <h3>Un modèle en langage B</h3>
+    <p>B est un langage de spécification formel, fondé sur des prédicats logiques et la théorie des ensembles. L'exemple spécifie un système de réservation de sièges :</p>
+<pre><code class="language-plaintext">MACHINE RESERVATION
+CONSTANTS nb_max, SIEGES
+PROPERTIES
+  nb_max ∈ 1..maxint ∧ SIEGES = 1..nb_max
+VARIABLES occupes, nb_libre
+INVARIANT
+  occupes ⊆ SIEGES ∧ nb_libre ∈ 0..nb_max ∧ nb_libre = nb_max − card(occupes)
+INITIALISATION occupes, nb_libre := ∅, nb_max
+OPERATIONS
+  nb ← place_libre = BEGIN nb := nb_libre END ;
+  place ← reserver = PRE nb_libre ≠ 0 THEN
+      ANY pp WHERE pp ∈ SIEGES − occupes
+      THEN place, occupes, nb_libre := pp, occupes ∪ {pp}, nb_libre − 1 END
+    END ;
+  rr ← liberer(place) = PRE place ∈ SIEGES THEN
+      IF place ∈ occupes
+      THEN rr, occupes, nb_libre := TRUE, occupes − {place}, nb_libre + 1
+      ELSE rr := FALSE END
+    END
+END</code></pre>
+    <p><span class="badge ajout">Ajout</span> L'invariant doit rester vrai après chaque opération, et un outil peut le prouver : c'est ce qui distingue un langage formel. B a servi, par exemple, à spécifier et prouver le logiciel de pilotage automatique de la ligne 14 du métro parisien.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Modèle et méthode <span class="ref">partie 1, diapos 13–15</span></h2>
+    <p>Un modèle se caractérise par son type (statique, dynamique, fonctionnel ou architectural), son niveau d'abstraction (conceptuel, organisationnel, logique, physique) et ce sur quoi il porte (données, traitements, objets) ; les données se représentent par exemple dans le formalisme entité-relation ou relationnel. Un modèle est décrit par un langage, une démarche et un outil (diapo 13).</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Méthode = démarche + formalisme</span></p>
+      <p>Une <dfn>méthode</dfn> est un processus discipliné qui génère un ensemble de modèles décrivant les différents aspects d'un système logiciel, en utilisant une notation bien définie [Booch, 94] ; un ensemble de règles bien définies qui conduisent, pour un problème, à une solution correcte. Une méthode doit être générale ; différents types de méthodes répondent à des problèmes différents.</p>
+    </div>
+    <p>Une méthode a quatre composantes : des <strong>modèles</strong>, des <strong>langages</strong>, une <strong>démarche</strong> et des <strong>outils</strong>. Une méthode de développement relève d'une typologie, fondée sur une approche et un domaine (diapo 15).</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le langage UML <span class="ref">partie 2, diapos 4–10 · fiche MM UML</span></h2>
+    <p>UML (<span class="en" lang="en">Unified Modeling Language</span>) est né de l'unification de méthodes objets concurrentes ; il est devenu le standard de la modélisation objet.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Un langage, pas une méthode</span> <span class="badge examen">QCM</span></p>
+      <p>UML n'est pas une méthode mais un langage : il fournit une notation et des diagrammes, pas la démarche pour les produire. Une méthode, comme le processus 2TUP du cours 2, peut utiliser UML.</p>
+    </div>
+
+    <h3>Origines</h3>
+    <div class="tableau compact">
+      <table>
+        <caption>Les origines d'UML (diapo 5)</caption>
+        <thead><tr><th>Date</th><th>Étape</th></tr></thead>
+        <tbody>
+          <tr><td>avant 1995</td><td>les méthodes de Booch (Booch'93 : la construction, le découpage en sous-systèmes), de Rumbaugh (OMT-2 : l'analyse et l'abstraction, les notions de classe et d'association), de Jacobson (OOSE : l'expression des besoins, les cas d'utilisation), et d'autres (Shlaer-Mellor : le cycle de vie des objets ; Harel : les diagrammes d'états)</td></tr>
+          <tr><td>1995</td><td>méthode unifiée 0.8</td></tr>
+          <tr><td>1996</td><td>UML 0.9</td></tr>
+          <tr><td>janvier 1997</td><td>UML 1.0, soumis à l'OMG avec des partenaires (DEC, HP, IBM, Microsoft, Oracle, Rational, TI, Unisys…)</td></tr>
+          <tr><td>novembre 1997</td><td>UML 1.1</td></tr>
+          <tr><td>mars 2003</td><td>UML 1.5</td></tr>
+          <tr><td>août 2011</td><td>UML 2.4.1</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Les diagrammes <span class="badge examen">QCM</span></h3>
+    <div class="tableau compact">
+      <table>
+        <caption>Les 13 diagrammes d'UML 2.0 (diapo 6)</caption>
+        <thead><tr><th>Diagrammes structurels (statiques)</th><th>Diagrammes de comportement (dynamiques)</th></tr></thead>
+        <tbody>
+          <tr><td>de classes, d'objets, de composants, de structure composite, de déploiement, de paquetages</td><td>d'activité, de cas d'utilisation, d'états-transitions ; et les diagrammes d'interaction : de séquence, global d'interaction, de communication, de temps</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>La diapo 10 parle de 11 types de diagrammes en UML 2.x, de 14 en UML 2.3 (9 en UML 1.3), répartis sur 9 points de vue et 4 domaines :</p>
+    <ul>
+      <li><strong>domaine structurel</strong>, la description statique des éléments : vue statique, vue de conception, vue des cas d'utilisation ;</li>
+      <li><strong>domaine dynamique</strong>, le comportement du système : vue de machine d'états, vue d'activité, vue des interactions ;</li>
+      <li><strong>domaine physique</strong>, les ressources et le déploiement : vue de déploiement ;</li>
+      <li><strong>domaine de gestion du modèle</strong>, l'organisation des modèles : vue de gestion du modèle.</li>
+    </ul>
+    <p>Un <dfn>profil</dfn> étend UML avec des stéréotypes, des valeurs étiquetées et des contraintes. <span class="badge a-verifier">À vérifier</span> Les diapos 6 et 10 ne comptent pas les diagrammes de la même façon (13 en UML 2.0, 11 en UML 2.x) ; on retient en général 13 diagrammes pour UML 2.0 et 14 depuis UML 2.2, avec le diagramme de profils.</p>
+    <p><span class="badge ajout">Ajout</span> Le classement des diagrammes du cas d'utilisation varie selon les sources : la diapo 6 le range dans les diagrammes de comportement, la diapo 10 dans le domaine structurel (vue des cas d'utilisation). Dans le QCM 2 (question 5), c'est le classement en diagrammes structurels qui est demandé : classes, composants, déploiement, paquetages.</p>
+
+    <h3>La chaîne de modélisation, du besoin au code</h3>
+    <p>La diapo 7 (d'après L. Audibert) montre la démarche complète : à partir des besoins, on construit le diagramme de cas d'utilisation, le modèle du domaine et une maquette de l'IHM ; puis les diagrammes de séquence système, le diagramme de classes participantes et le diagramme d'activité de navigation ; puis les diagrammes d'interaction et le diagramme de classes de conception, d'où l'on tire le code.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les trois composantes de la modélisation</span> <span class="ref">diapo 8, vide</span></p>
+      <p>On modélise un système selon trois axes, qui correspondent aux trois diagrammes vus dans la suite du cours :</p>
+      <ul>
+        <li><strong>fonctionnel</strong> : ce que fait le système pour ses acteurs (diagramme de cas d'utilisation) ;</li>
+        <li><strong>statique</strong> : de quoi le système est fait, ses concepts et leurs relations (diagramme de classes) ;</li>
+        <li><strong>dynamique</strong> : comment il se comporte dans le temps (diagrammes de séquence, d'états, d'activité).</li>
+      </ul>
+    </div>
+
+    <h3>Les 4 + 1 vues de Kruchten</h3>
+    <div class="tableau compact">
+      <table>
+        <caption>Cinq façons de voir un système (diapo 9)</caption>
+        <thead><tr><th>Vue</th><th>Aspect</th><th>Contenu</th></tr></thead>
+        <tbody>
+          <tr><th>Vue logique</th><td>statique et dynamique</td><td>classes, objets, paquetages ; interactions (séquences, collaborations), états-transitions, activités</td></tr>
+          <tr><th>Vue d'implantation</th><td>statique</td><td>paquetages, méthodes, threads</td></tr>
+          <tr><th>Vue des processus</th><td>parallélisme</td><td>threads, processus, tâches, interactions</td></tr>
+          <tr><th>Vue de déploiement</th><td>répartition</td><td>diagramme de déploiement : nœuds, modules</td></tr>
+          <tr><th>Vue des cas d'utilisation (+1)</th><td>fonctionnel</td><td>cas d'utilisation, acteurs, classes, collaborations ; au centre, elle relie les quatre autres</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>UML et le méta-modèle</h3>
+    <p>D'après la fiche MM UML, UML sert à écrire des modèles qui décrivent des applications : c'est un méta-modèle. Il est lui-même une instance du méta-méta-modèle MOF (<span lang="en">Meta-Object Facility</span>), qui est réflexif : il se décrit lui-même. Les standards de l'OMG s'organisent en quatre niveaux, chacun instance du précédent :</p>
+    <div class="tableau compact">
+      <table>
+        <caption>L'architecture à quatre niveaux de l'OMG</caption>
+        <thead><tr><th>Niveau</th><th>Contenu</th><th>Exemples</th></tr></thead>
+        <tbody>
+          <tr><td>M3 : méta-méta-modèle</td><td>le MOF</td><td>entité, relation, paquetage</td></tr>
+          <tr><td>M2 : méta-modèles</td><td>UML, UPM…</td><td>classe, attribut, opération, héritage</td></tr>
+          <tr><td>M1 : modèles</td><td>le modèle d'une application, écrit en UML</td><td>les classes Client, Fournisseur</td></tr>
+          <tr><td>M0 : monde réel</td><td>les objets en cours d'exécution</td><td>Jean Dupont, la société Gtou</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Modéliser les fonctionnalités : les cas d'utilisation <span class="ref">partie 2, diapos 13–24</span></h2>
+    <p>L'analyse des besoins veut comprendre le métier des utilisateurs et définir précisément toutes les fonctionnalités. On utilise pour cela les <dfn>cas d'utilisation</dfn> (<span class="en" lang="en">use cases</span>) d'UML : ils décrivent le comportement global et apparent du logiciel, selon un point de vue externe.</p>
+
+    <h3>Les acteurs <span class="badge examen">QCM</span></h3>
+    <p>Un acteur est soit une personne, soit une chose : il joue un rôle vis-à-vis du système et interagit avec lui. On le représente par un « stickman » nommé (un acteur humain, par exemple le comptable) ou par un rectangle stéréotypé « actor » (un acteur chose). Le nom de l'acteur doit indiquer son rôle, et l'on donne une description de chaque rôle, c'est-à-dire de ses responsabilités vis-à-vis du système.</p>
+
+    <h3>Les cas d'utilisation</h3>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les principes</span> <span class="ref">diapo 16, à compléter</span></p>
+      <p>Un cas d'utilisation est une fonctionnalité du système qui rend un service observable à un acteur : un ensemble d'interactions entre un acteur et le système, déclenché par l'acteur, qui aboutit à un résultat utile pour lui. Il se représente par une ellipse nommée par un verbe à l'infinitif (« Retirer de l'argent »), à l'intérieur d'un rectangle qui figure la frontière du système ; une ligne relie chaque acteur aux cas auxquels il participe, et représente une interaction. L'ensemble des cas d'utilisation forme les frontières du système, et favorise une bonne communication entre les demandeurs et les réalisateurs (QCM 2, questions 9 et 10).</p>
+    </div>
+    <p>Un même cas d'utilisation sert à tous : l'utilisateur l'exprime, l'analyste le comprend, l'architecte le conçoit, le programmeur l'implante, le testeur le vérifie (diapo 16).</p>
+
+    <h3>Les relations entre cas d'utilisation <span class="badge examen">QCM</span></h3>
+    <p>Trois relations relient les cas d'utilisation : la <strong>généralisation</strong>, l'<strong>inclusion</strong> « include » et l'<strong>extension</strong> « extend ». Elles n'expriment pas de relations temporelles, mais uniquement des relations fonctionnelles.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Ce que signifie chaque relation</span></p>
+      <dl class="glossaire">
+        <dt>« include »</dt>
+        <dd>Le cas de base inclut <em>obligatoirement</em> le cas inclus, à chaque exécution : « Retirer de l'argent » inclut toujours « S'authentifier ». On factorise ainsi un comportement commun à plusieurs cas. Flèche pointillée du cas de base vers le cas inclus.</dd>
+        <dt>« extend »</dt>
+        <dd>Le cas d'extension ajoute un comportement <em>facultatif</em> au cas de base, à un endroit précis de son scénario, le <dfn>point d'extension</dfn>, sous une condition : pendant un retrait, on peut consulter son solde. Flèche pointillée du cas d'extension vers le cas de base.</dd>
+        <dt>Généralisation</dt>
+        <dd>Un cas (ou un acteur) spécialisé est une sorte du cas (ou de l'acteur) général, dont il hérite : « Déposer des chèques » est une sorte de « Déposer de l'argent ». Flèche à pointe triangulaire évidée vers l'élément général ; elle s'applique aux acteurs comme aux cas, mais pas aux relations include et extend.</dd>
+      </dl>
+    </div>
+
+    <h3>Un exemple : le guichet automatique de banque</h3>
+    <p>La diapo 14 (d'après P. Roques, <cite>UML 2 par la pratique</cite>) demande : que décrit ce modèle ?</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 640 400" width="640" role="img" aria-labelledby="fig-gab-titre">
+        <title id="fig-gab-titre">Diagramme de cas d'utilisation du GAB : le porteur de carte bancaire retire de l'argent, avec le système d'autorisation Visa ; le client de la banque consulte son solde, dépose de l'argent (en chèques ou en numéraire) avec le système d'information de la banque ; retirer de l'argent, consulter le solde et déposer de l'argent incluent s'authentifier ; consulter le solde étend retirer de l'argent ; l'opérateur de maintenance recharge le distributeur, récupère les cartes avalées et retire les chèques déposés.</title>
+        <defs>
+          <marker id="fleche-gab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+          <marker id="heritage-gab" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto-start-reverse">
+            <path d="M0 0 L12 6 L0 12 z" class="boite"/>
+          </marker>
+        </defs>
+        <g class="t2">
+          <circle cx="40" cy="40" r="8" class="boite"/><path class="trait" d="M40 48 V70 M28 56 H52 M40 70 L30 86 M40 70 L50 86"/><text x="40" y="102" text-anchor="middle">Porteur CB</text>
+          <circle cx="40" cy="170" r="8" class="boite"/><path class="trait" d="M40 178 V200 M28 186 H52 M40 200 L30 216 M40 200 L50 216"/><text x="40" y="232" text-anchor="middle">Client banque</text>
+          <circle cx="40" cy="320" r="8" class="boite"/><path class="trait" d="M40 328 V350 M28 336 H52 M40 350 L30 366 M40 350 L50 366"/><text x="40" y="382" text-anchor="middle">Opérateur</text><text x="40" y="396" text-anchor="middle">maintenance</text>
+        </g>
+        <path class="trait" d="M40 160 V108" marker-end="url(#heritage-gab)"/>
+        <rect class="pointille" x="95" y="10" width="420" height="385" rx="10"/>
+        <text x="105" y="28" class="t2">GAB</text>
+        <ellipse class="boite-accent" cx="235" cy="55" rx="105" ry="25"/><text x="230" y="52" text-anchor="middle" class="gras">Retirer de l'argent</text><text x="230" y="66" text-anchor="middle" class="t2">ext. : vérification montant</text>
+        <ellipse class="boite" cx="230" cy="145" rx="72" ry="18"/><text x="230" y="150" text-anchor="middle">Consulter solde</text>
+        <ellipse class="boite" cx="420" cy="145" rx="70" ry="18"/><text x="420" y="150" text-anchor="middle">S'authentifier</text>
+        <ellipse class="boite" cx="230" cy="215" rx="72" ry="18"/><text x="230" y="220" text-anchor="middle">Déposer argent</text>
+        <ellipse class="boite" cx="160" cy="285" rx="60" ry="16"/><text x="160" y="290" text-anchor="middle">Déposer chèques</text>
+        <ellipse class="boite" cx="310" cy="285" rx="68" ry="16"/><text x="310" y="290" text-anchor="middle">Déposer numéraire</text>
+        <ellipse class="boite" cx="300" cy="325" rx="75" ry="14"/><text x="300" y="329" text-anchor="middle">Recharger distributeur</text>
+        <ellipse class="boite" cx="300" cy="355" rx="80" ry="14"/><text x="300" y="359" text-anchor="middle">Récupérer cartes avalées</text>
+        <ellipse class="boite" cx="300" cy="384" rx="80" ry="11"/><text x="300" y="388" text-anchor="middle">Retirer chèques déposés</text>
+        <path class="trait" d="M55 62 L130 55 M55 185 L160 145 M55 195 L160 215"/>
+        <path class="trait" d="M55 340 L225 325 M55 345 L220 355 M55 350 L222 384"/>
+        <path class="trait" d="M160 269 L205 232" marker-end="url(#heritage-gab)"/>
+        <path class="trait" d="M300 269 L255 232" marker-end="url(#heritage-gab)"/>
+        <path class="pointille" d="M270 74 L390 128" marker-end="url(#fleche-gab)"/><text x="345" y="92" class="t2">« include »</text>
+        <path class="pointille" d="M302 145 H348" marker-end="url(#fleche-gab)"/><text x="300" y="132" class="t2">« include »</text>
+        <path class="pointille" d="M300 210 L380 162" marker-end="url(#fleche-gab)"/><text x="345" y="205" class="t2">« include »</text>
+        <path class="pointille" d="M230 127 V79" marker-end="url(#fleche-gab)"/><text x="236" y="106" class="t2">« extend »</text>
+        <rect class="boite" x="545" y="40" width="85" height="30" rx="4"/><text x="587" y="60" text-anchor="middle">SA Visa</text>
+        <rect class="boite" x="545" y="200" width="85" height="30" rx="4"/><text x="587" y="220" text-anchor="middle">SI banque</text>
+        <path class="trait" d="M340 55 H545 M290 150 L545 210 M378 285 L545 220"/>
+      </svg>
+      <figcaption>Le cas d'utilisation du GAB (diapo 14), redessiné : les systèmes externes, SA Visa et SI banque, sont des acteurs non humains.</figcaption>
+    </figure>
+    <p>Il décrit les services d'un GAB : tout porteur de carte bancaire peut retirer de l'argent, vérifié auprès du système d'autorisation Visa ; le client de la banque, qui est une sorte de porteur de carte (généralisation entre acteurs), peut aussi consulter son solde et déposer de l'argent, en chèques ou en numéraire, avec le système d'information de la banque ; toutes ces opérations incluent l'authentification ; l'opérateur de maintenance recharge le distributeur, récupère les cartes avalées et retire les chèques déposés. Les diapos 24 et suivantes reprennent cet exemple : le GAB distribue de l'argent à tout porteur de carte (Visa ou de la banque), propose consultation du solde, dépôt de numéraire et de chèques aux clients de la banque ; toutes les transactions sont sécurisées, et il faut parfois recharger le distributeur en argent et en papier, récupérer les chèques déposés, les cartes avalées et les numéraires déposés.</p>
+
+    <h3>Exercice : la station-service <span class="badge examen">Test</span></h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exemple 1 <span>La station-service</span> <span class="ref">diapos 19–23</span></p>
+      <p>Soit un système informatique qui gère une station-service : le client peut utiliser des pompes manuelles et payer à la caisse du gérant, ou utiliser des pompes automatiques ; le gérant utilise le système pour ses opérations de gestion (particulièrement le bilan des opérations de vente d'essence) ; le gérant peut se servir de l'essence pour sa voiture ; la station a un petit atelier d'entretien de véhicules, et le gérant est aussi mécanicien.</p>
+      <p>Que pensez-vous d'un diagramme où le client est relié, dans la station-service, à la suite de cas « Décrocher le pistolet », « Appuyer sur la gâchette », « Reposer le pistolet », « Payer » ?</p>
+      <ol>
+        <li>Le client prend un pistolet accroché à une pompe et appuie sur la gâchette pour prendre de l'essence. Qui est l'acteur du système : le client, le pistolet ou la gâchette ?</li>
+        <li>Le client peut utiliser des pompes manuelles et payer à la caisse du gérant, ou des pompes automatiques. Comment le modélise-t-on ?</li>
+        <li>Jojo, dont le métier est pompiste, peut se servir de l'essence pour sa voiture. Doit-on définir un nouvel acteur ? Comment le modélise-t-on ?</li>
+        <li>Le gérant utilise le système pour ses opérations de gestion. Comment le modélise-t-on ?</li>
+        <li>La station a un petit atelier d'entretien de véhicules ; le gérant est aussi mécanicien. Comment le modélise-t-on ?</li>
+      </ol>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <div>
+          <p><strong>Le diagramme proposé</strong> est faux : il découpe une seule fonctionnalité en étapes successives. Un cas d'utilisation rend un service complet à l'acteur, et les relations entre cas ne sont jamais temporelles. Décrocher, appuyer, reposer sont les étapes du scénario d'un seul cas, « Se servir de l'essence » ; leur ordre se décrit dans un diagramme de séquence.</p>
+          <ol>
+            <li>L'acteur est le <strong>client</strong> : c'est lui qui a l'intention métier (prendre de l'essence) et qui est extérieur au système. Le pistolet et la gâchette sont des éléments physiques de la pompe, à l'intérieur de la frontière du système.</li>
+            <li>Un cas « Se servir de l'essence », spécialisé (généralisation) en « Se servir à une pompe manuelle » et « Se servir à une pompe automatique » ; un cas « Payer », relié au client et au gérant pour la pompe manuelle (paiement à la caisse), le paiement automatique faisant partie de la pompe automatique.</li>
+            <li>Non : un acteur est un rôle, pas une personne. Quand Jojo prend de l'essence, il joue le rôle de <strong>client</strong> ; il n'y a pas d'acteur « Jojo » ni « Pompiste qui se sert ». De même, le gérant qui se sert joue le rôle de client.</li>
+            <li>Un acteur <strong>Gérant</strong>, relié à un cas « Effectuer les opérations de gestion », ou plus précisément « Établir le bilan des ventes d'essence ».</li>
+            <li>Un nouvel acteur <strong>Mécanicien</strong>, puisque c'est un autre rôle, relié aux cas de l'atelier (enregistrer une intervention, facturer un entretien…) — à condition que le système informatique prenne en charge l'atelier ; sinon, l'atelier est hors de la frontière, et il n'y a rien à modéliser. Le gérant joue alors trois rôles : gérant, mécanicien et client.</li>
+          </ol>
+          <p>Le test de 2025-26 reprend ce cas, en variante « pompiste » : armement de la pompe par le pompiste, cuves surveillées par des capteurs, paiement en espèces, chèque ou carte, archivage par un système de <span lang="en">timer</span> (un acteur non humain, qui déclenche un événement temporel).</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Modéliser les interactions : les diagrammes de séquence <span class="ref">partie 2, diapos 27–32</span></h2>
+    <p>Il y a plusieurs scénarios possibles par cas d'utilisation, et l'ensemble des scénarios modélise toutes les interactions. Pour décrire un scénario, on utilise les diagrammes de séquence d'UML : un diagramme de séquence modélise une collaboration, c'est-à-dire des objets qui s'envoient des messages.</p>
+    <h3>Représentation</h3>
+    <ul>
+      <li>Chaque participant (<code>rôle:Classe</code>) a une <dfn>ligne de vie</dfn>, verticale ; le temps s'écoule de haut en bas, dans l'ordre chronologique.</li>
+      <li>Un <dfn>message</dfn> est une flèche d'une ligne de vie à l'autre ; un message peut renvoyer une valeur (<code>val_retour = un_message()</code>), ou être réflexif (envoyé à soi-même).</li>
+      <li>Une bande sur la ligne de vie montre la <dfn>durée d'activation</dfn> : le temps où l'objet traite le message.</li>
+      <li>Un objet peut être créé (<code>«create»</code>) puis détruit (<code>«destroy»</code>, une croix) pendant la collaboration ; les autres existent dès le début.</li>
+      <li>La marge gauche permet d'écrire ce que l'on veut (conditions, commentaires).</li>
+    </ul>
+    <p>Un message suit la syntaxe <code>[séquence ':'] [résultat '='] nom_message ['(' arguments ')']</code>. La séquence, optionnelle, indique le niveau d'emboîtement de l'envoi des messages : une suite de termes séparés par des points (<code>rang ::= entier ['.' rang]</code>), suivie au besoin d'une récurrence, itération (<code>*[clause]</code>) ou condition (<code>[clause]</code>).</p>
+    <p><span class="badge ajout">Ajout</span> Un <dfn>diagramme de séquence système</dfn>, en analyse, ne montre que l'acteur et le système vu comme une boîte noire : on y lit l'interaction système, sans encore décider des objets internes.</p>
+
+    <h3>Exemple : retirer de l'argent au GAB</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Le scénario nominal du retrait</span> <span class="ref">diapos 31–32</span></p>
+      <p>Préconditions : la caisse du GAB est alimentée ; aucune carte bancaire ne se trouve dans le lecteur. Scénario nominal : 1. le porteur de carte introduit sa carte dans le lecteur du GAB ; 2. le GAB vérifie que c'est bien une carte bancaire ; 3. il demande au porteur de saisir son code d'identification ; 4. le porteur saisit son code ; 5. le GAB le compare à celui de la puce ; 6. il demande une autorisation au système d'autorisation ; 7. le système d'autorisation donne son accord et indique le solde hebdomadaire ; 8. le GAB demande le montant désiré ; 9. le porteur le saisit ; 10. le GAB le contrôle par rapport au solde hebdomadaire ; 11. il demande au porteur s'il veut un ticket ; 12. le porteur demande un ticket ; 13. le GAB rend la carte ; 14. le porteur la reprend ; 15. le GAB délivre les billets et un ticket ; 16. le porteur les prend ; 17. le GAB enregistre la transaction. Ce scénario est complété par des enchaînements alternatifs ou d'erreur : A1 (code provisoirement erroné), E1 (carte non valide), E2 (code définitivement erroné). Le porteur de carte peut être remplacé par « Client de la banque ».</p>
+      <p>Modéliser cette situation à l'aide d'un diagramme de séquence.</p>
+    </div>
+    <div class="atelier" id="c4-sequence-gab" data-editeur="sequence">
+      <script type="application/json">
+{
+  "titre": "Retirer de l'argent : scénario nominal (solution proposée)",
+  "mode": "lecture",
+  "vue": "dessin",
+  "hauteur": 640,
+  "depart": [
+    "acteur Porteur",
+    "objet gab : GAB",
+    "acteur SA",
+    "Porteur -> gab : introduireCarte()",
+    "gab -> gab : verifierCarte()",
+    "gab --> Porteur : demanderCode",
+    "Porteur -> gab : saisirCode(code)",
+    "gab -> gab : comparerCode(code)",
+    "gab -> SA : demanderAutorisation(carte)",
+    "SA --> gab : accord, soldeHebdomadaire",
+    "gab --> Porteur : demanderMontant",
+    "Porteur -> gab : saisirMontant(montant)",
+    "gab -> gab : controlerMontant(montant)",
+    "gab --> Porteur : proposerTicket",
+    "Porteur -> gab : demanderTicket()",
+    "gab --> Porteur : rendreCarte",
+    "Porteur -> gab : reprendreCarte()",
+    "gab --> Porteur : billets, ticket",
+    "Porteur -> gab : prendreBilletsEtTicket()",
+    "gab -> gab : enregistrerTransaction()"
+  ]
+}
+      </script>
+    </div>
+    <p>Diagramme de séquence système proposé : le GAB est vu comme une boîte noire, les messages réflexifs montrent ses vérifications internes, et le système d'autorisation (SA) est un acteur non humain. Les enchaînements A1, E1 et E2 se dessineraient avec des fragments <code>alt</code>.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Modéliser le domaine : les diagrammes de classes <span class="ref">partie 2, diapos 34–42</span></h2>
+    <p>L'analyse des besoins implique de comprendre le métier des utilisateurs. Les processus métiers se modélisent par des diagrammes de séquence ou d'activités (ces derniers ne sont pas vus en cours), et les concepts métiers et leurs relations par les diagrammes de classes.</p>
+    <h3>Classes et associations</h3>
+    <p>Une classe est un rectangle à plusieurs compartiments : un nom, obligatoire ; une suite optionnelle d'attributs ; une suite optionnelle d'opérations. Par exemple, la classe <code>Fiche de paiement</code>, d'attributs <code>montant net</code> et <code>montant brut</code>, et d'opérations <code>editer()</code> et <code>publiposter()</code>. Les classes sont reliées par des associations simples, des agrégations et des compositions, et par l'héritage. On nomme les associations, les agrégations et les compositions, et l'on indique leurs multiplicités.</p>
+    <div class="tableau compact">
+      <table>
+        <caption>Les multiplicités d'UML</caption>
+        <thead><tr><th>Multiplicité</th><th>Sens</th></tr></thead>
+        <tbody>
+          <tr><td><code>1</code></td><td>un et un seul (multiplicité par défaut)</td></tr>
+          <tr><td><code>0..1</code></td><td>zéro ou un</td></tr>
+          <tr><td><code>N</code></td><td>exactement N (entier naturel)</td></tr>
+          <tr><td><code>M..N</code></td><td>de M à N (M &lt; N)</td></tr>
+          <tr><td><code>*</code> ou <code>0..*</code></td><td>zéro ou plus</td></tr>
+          <tr><td><code>1..*</code></td><td>au moins un</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Société et personne</span></p>
+      <p>Entre <code>Société</code> (rôle employeur) et <code>Personne</code> (rôle employé), une association de multiplicités <code>0..1</code> du côté de la société et <code>0..*</code> du côté de la personne se lit : une personne est employée par zéro ou une société ; une société emploie zéro ou plusieurs personnes. La multiplicité se lit du côté opposé à la classe dont on parle.</p>
+    </div>
+
+    <h3>Agrégation et composition <span class="badge examen">QCM</span></h3>
+    <p>Ce sont des associations qui représentent une relation tout-partie : le tout est constitué de parties, et ne peut pas exister sans elles.</p>
+    <div class="colonnes">
+      <div class="colonne">
+        <p><strong>Agrégation</strong> (losange vide du côté du tout) : l'agrégat est constitué d'agrégés, qui sont partageables ou échangeables. Un train est constitué de wagons (<code>Train "1..*" ◇— "1..*" Wagon</code>), mais ces wagons peuvent former d'autres trains à un autre moment.</p>
+      </div>
+      <div class="colonne">
+        <p><strong>Composition</strong> (losange plein du côté du tout) : le composite est constitué de composants, qui ne sont ni partageables ni échangeables. Les chambres d'un hôtel ne passent pas d'un hôtel à l'autre (<code>Hôtel "1" ◆— "1..*" Chambre</code>) ; <span class="badge ajout">Ajout</span> et si l'hôtel disparaît, ses chambres disparaissent avec lui.</p>
+      </div>
+    </div>
+    <p>Agrégation et composition sont des types d'association (QCM 2, questions 24 et 25).</p>
+
+    <h3>L'héritage</h3>
+    <p>L'héritage est une relation de classification du type « est une sorte de » entre un élément général (la classe mère) et un élément spécifique (la classe fille). Les classes filles héritent des attributs, des opérations et des relations de la classe mère ; elles peuvent redéfinir des attributs ou des opérations hérités, et en avoir de supplémentaires. L'héritage est simple (une seule classe mère : <code>Chien</code>, <code>Chat</code> et <code>Cheval</code> héritent d'<code>Animal</code>) ou multiple (plusieurs classes mères : <code>Tapis volant</code> hérite d'<code>Aérien</code>, sorte de <code>Véhicule</code>, et de <code>Tapis</code>). Il se dessine par une flèche à pointe triangulaire évidée vers la classe mère, une par fille ou regroupées. « Un cheval est un type d'animal » détermine une relation d'héritage, et non l'inverse (QCM 2, question 23).</p>
+
+    <h3>Exercices</h3>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>L'université</span> <span class="ref">diapo 41</span></p>
+      <p>Les étudiants sont membres d'université(s) ; l'université se décompose en départements ; les cours sont dispensés dans le cadre d'un ou plusieurs départements ; les étudiants sont présents aux cours, dans lesquels des enseignants interviennent ; ces enseignants peuvent être rattachés à plus d'un département ; l'un des enseignants du département en est le directeur.</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <div>
+          <div class="atelier" id="c4-classes-universite" data-editeur="classes">
+            <script type="application/json">
+{
+  "titre": "L'université (solution proposée)",
+  "mode": "lecture",
+  "vue": "dessin",
+  "hauteur": 420,
+  "depart": [
+    "classe Universite", "  nom",
+    "classe Departement", "  nom",
+    "classe Cours", "  intitule",
+    "classe Etudiant", "  nom", "  prenom",
+    "classe Enseignant", "  nom", "  prenom",
+    "Etudiant \"*\" -- \"1..*\" Universite : est membre de >",
+    "Universite \"1\" *-- \"1..*\" Departement : se décompose en >",
+    "Cours \"*\" -- \"1..*\" Departement : est dispensé dans >",
+    "Etudiant \"*\" -- \"*\" Cours : est présent à >",
+    "Enseignant \"1..*\" -- \"*\" Cours : intervient dans >",
+    "Enseignant \"*\" -- \"1..*\" Departement : est rattaché à >",
+    "Enseignant \"1 directeur\" -- \"0..1\" Departement : dirige >"
+  ]
+}
+            </script>
+          </div>
+          <p>La décomposition de l'université en départements est une composition : un département n'existe pas hors de son université. « Diriger » est une seconde association entre Enseignant et Département, distincte du rattachement : un département a exactement un directeur, et un enseignant dirige au plus un département. On pourrait ajouter la contrainte que le directeur est rattaché au département qu'il dirige (en OCL).</p>
+        </div>
+      </details>
+    </div>
+    <div class="bloc exercice">
+      <p class="bloc-titre">Exercice <span>Le cirque</span> <span class="ref">diapo 42</span></p>
+      <p>Le propriétaire d'un cirque souhaite informatiser une partie de la gestion de ses spectacles. Proposer un modèle conceptuel UML (diagramme de classes) qui réponde aux spécifications suivantes. Les membres du personnel du cirque sont caractérisés par un numéro (en général leur numéro INSEE), leur nom, leur prénom, leur date de naissance et leur salaire ; on souhaite de surcroît stocker les pseudonymes des artistes et le numéro du permis de conduire des chauffeurs de poids lourds. Les artistes sont susceptibles d'assurer plusieurs numéros, chaque numéro étant caractérisé par un code, son nom, le nombre d'artistes présents sur scène et sa durée ; de plus, on souhaite savoir l'instrument utilisé pour les numéros musicaux, l'animal concerné par les numéros de dressage et le type des acrobaties (contorsionnisme, équilibrisme, trapèze volant…). Par ailleurs, chaque numéro peut nécessiter un certain nombre d'accessoires, caractérisés par un numéro de série, une désignation, une couleur et un volume ; on souhaite également savoir, individuellement, quels artistes utilisent quels accessoires. Enfin, les accessoires sont rangés après chaque spectacle dans des camions caractérisés par leur numéro d'immatriculation, leur marque, leur modèle et leur capacité (en volume) ; selon la taille du camion, une équipe plus ou moins nombreuse de chauffeurs lui est assignée (de un à trois chauffeurs).</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <div>
+          <div class="atelier" id="c4-classes-cirque" data-editeur="classes">
+            <script type="application/json">
+{
+  "titre": "Le cirque (solution proposée)",
+  "mode": "lecture",
+  "vue": "dessin",
+  "hauteur": 560,
+  "depart": [
+    "classe abstraite Personnel", "  numero {PK}", "  nom", "  prenom", "  date_naissance", "  salaire",
+    "classe Artiste", "  pseudonyme",
+    "classe Chauffeur", "  num_permis",
+    "classe Numero", "  code {PK}", "  nom", "  nb_artistes", "  duree",
+    "classe NumeroMusical", "  instrument",
+    "classe NumeroDressage", "  animal",
+    "classe NumeroAcrobatique", "  type_acrobatie",
+    "classe Accessoire", "  num_serie {PK}", "  designation", "  couleur", "  volume",
+    "classe Camion", "  immatriculation {PK}", "  marque", "  modele", "  capacite",
+    "Artiste --|> Personnel",
+    "Chauffeur --|> Personnel",
+    "NumeroMusical --|> Numero",
+    "NumeroDressage --|> Numero",
+    "NumeroAcrobatique --|> Numero",
+    "Artiste \"1..*\" -- \"*\" Numero : assure >",
+    "Numero \"*\" -- \"*\" Accessoire : nécessite >",
+    "Artiste \"*\" -- \"*\" Accessoire : utilise >",
+    "Accessoire \"*\" -- \"0..1\" Camion : est rangé dans >",
+    "Chauffeur \"1..3\" -- \"*\" Camion : est assigné à >"
+  ]
+}
+            </script>
+          </div>
+          <p>Deux hiérarchies d'héritage : le personnel (classe abstraite) se spécialise en artistes et chauffeurs, qui ont chacun une information propre ; les numéros se spécialisent selon l'information supplémentaire qu'ils portent (instrument, animal, type d'acrobatie). « Individuellement, quels artistes utilisent quels accessoires » demande une association directe Artiste — Accessoire, en plus de Numéro — Accessoire ; pour savoir quel artiste utilise quel accessoire <em>dans quel numéro</em>, il faudrait une association ternaire. La multiplicité 1..3 du côté des chauffeurs traduit l'équipe de un à trois chauffeurs par camion.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Modèle entité-association et UML <span class="ref">partie 2, diapos 43–45</span></h2>
+    <p>Le diagramme de classes d'UML et le modèle entité-association (le MCD de Merise) décrivent les mêmes choses avec des mots différents.</p>
+    <div class="colonnes">
+      <div class="tableau compact">
+        <table>
+          <caption>Le vocabulaire</caption>
+          <thead><tr><th>Modèle E/A</th><th>UML</th></tr></thead>
+          <tbody>
+            <tr><td>Entité (occurrence)</td><td>Objet</td></tr>
+            <tr><td>Association</td><td>Association</td></tr>
+            <tr><td>Type-entité</td><td>Classe</td></tr>
+            <tr><td>Cardinalité</td><td>Multiplicité</td></tr>
+            <tr><td>MCD</td><td>Diagramme de classes</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tableau compact">
+        <table>
+          <caption>Multiplicités et cardinalités</caption>
+          <thead><tr><th>UML</th><th>Cardinalité</th></tr></thead>
+          <tbody>
+            <tr><td><code>0..1</code></td><td>0,1</td></tr>
+            <tr><td><code>1..1</code> (ou <code>1</code>)</td><td>1,1</td></tr>
+            <tr><td><code>0..*</code> (ou <code>*</code>)</td><td>0,n</td></tr>
+            <tr><td><code>1..*</code></td><td>1,n</td></tr>
+            <tr><td><code>a..b</code></td><td>a,b</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Pas du même côté</span></p>
+      <p><span class="badge ajout">Ajout</span> Les nombres sont les mêmes, mais ils ne s'écrivent pas au même endroit : en UML, la multiplicité se place du côté de la classe dont on compte les objets ; en Merise, la cardinalité se place du côté de l'entité qui participe. Une personne employée par 0 ou 1 société s'écrit <code>0..1</code> près de Société en UML, et <code>0,1</code> près de Personne en Merise.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Normalisation ?</span> <span class="ref">diapo 45, vide</span></p>
+      <p>La diapo pose seulement la question. On peut y lire deux choses. UML est un standard de l'OMG, mais pas une norme au sens strict : la diapo 9 de la partie 1 le dit « standard (≠ normalisé) », même s'il a été repris par l'ISO (ISO/IEC 19505). Et un diagramme de classes destiné à une base de données doit respecter les formes normales (1FN, 2FN, 3FN) pour éviter les redondances : chaque attribut atomique, et chaque attribut dépendant de tout l'identifiant et de lui seul (voir le <a href="../../bases-de-donnees-3/generated_courses/cours-01-uml-vers-relationnel.html#les-formes-normales">cours de bases de données</a>).</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Un modèle est une représentation simplifiée d'un système pour un objectif : il anticipe, accélère, se substitue au système.</li>
+        <li>Les outils d'analyse sont informels, semi-formels (UML, E/A) ou formels (OCL, B) ; la spécification par modélisation est la plus sûre.</li>
+        <li>Une méthode = démarche + formalisme ; quatre composantes : modèles, langages, démarche, outils.</li>
+        <li>UML est un langage, pas une méthode ; standard de l'OMG, né de Booch, OMT (Rumbaugh) et OOSE (Jacobson).</li>
+        <li>Diagrammes structurels (classes, objets, composants, déploiement, paquetages…) et de comportement (cas d'utilisation, activité, états, séquence, communication…).</li>
+        <li>4 + 1 vues de Kruchten : logique, implantation, processus, déploiement, et la vue des cas d'utilisation qui les relie.</li>
+        <li>Un acteur est un rôle ; un cas d'utilisation, un service complet rendu à un acteur ; les relations entre cas ne sont pas temporelles.</li>
+        <li>« include » : inclusion obligatoire ; « extend » : ajout facultatif à un point d'extension ; généralisation : « est une sorte de ».</li>
+        <li>Un diagramme de séquence décrit un scénario : lignes de vie, messages dans l'ordre chronologique, activations.</li>
+        <li>Agrégation : parties partageables (losange vide) ; composition : parties propres au tout (losange plein) ; toutes deux sont des associations.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>UML est-il une méthode ?</summary>
+        <div><p>Non, c'est un langage de modélisation : une notation et des diagrammes, sans démarche imposée. Une méthode (démarche + formalisme) peut s'appuyer sur UML.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle différence entre « include » et « extend » ?</summary>
+        <div><p>« include » : le cas de base exécute toujours le cas inclus (factorisation obligatoire). « extend » : le cas d'extension s'ajoute éventuellement au cas de base, à un point d'extension, sous condition. Les flèches vont en sens inverse : de la base vers l'inclus, de l'extension vers la base.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Une base de données peut-elle être un acteur ?</summary>
+        <div><p>Oui, si elle est extérieure au système modélisé et interagit avec lui : un acteur peut être une chose (un système, une base). Une erreur de programmation ou un message d'erreur, en revanche, ne sont pas des acteurs.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi « Décrocher le pistolet », « Appuyer sur la gâchette », « Payer » ne sont-ils pas de bons cas d'utilisation ?</summary>
+        <div><p>Ce sont les étapes d'un même service, présentées dans l'ordre : un cas d'utilisation doit rendre un service complet à l'acteur (« Se servir de l'essence »), et les relations entre cas ne sont pas temporelles.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Agrégation ou composition : un livre et ses chapitres ? une équipe et ses joueurs ?</summary>
+        <div><p>Livre et chapitres : composition, un chapitre n'appartient qu'à son livre et disparaît avec lui. Équipe et joueurs : agrégation, un joueur peut changer d'équipe et existe sans elle.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Peut-on relier une classe à elle-même par une association ?</summary>
+        <div><p>Oui : c'est une association réflexive, par exemple une personne « est parent de » une autre personne, ou un employé « est le chef de » d'autres employés, avec des rôles nommés à chaque extrémité.</p></div>
+      </details>
+      <details class="carte">
+        <summary>À quoi correspond la cardinalité Merise <code>1,n</code> en UML ?</summary>
+        <div><p>À la multiplicité <code>1..*</code>, mais écrite à l'autre extrémité de l'association.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-03-cahier-des-charges.html"><small>← Cours 3</small>Cahier des charges</a>
+    <a class="suivant" href="cours-05-gestion-de-projet.html"><small>Cours 5 →</small>Gestion de projet</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Génie logiciel 1 · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

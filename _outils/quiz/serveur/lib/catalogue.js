@@ -5,7 +5,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { RACINE, relatif } = require("./chemins");
+const { RACINE, relatif, espace } = require("./chemins");
 const archives = require("./archives");
 
 /* Texte d'une page HTML ------------------------------------------------------- */
@@ -115,23 +115,6 @@ function donneesQuiz(source) {
   try { return JSON.parse(m[1]); } catch (e) { return null; }
 }
 
-// Dossiers de matières : ceux qui contiennent generated_courses ou generated_quizzes
-function dossiersMatieres() {
-  const trouves = [];
-  (function parcourir(dossier, profondeur) {
-    if (profondeur > 4) return;
-    let entrees = [];
-    try { entrees = fs.readdirSync(dossier, { withFileTypes: true }); } catch (e) { return; }
-    const noms = entrees.filter((e) => e.isDirectory()).map((e) => e.name);
-    if (noms.includes("generated_courses") || noms.includes("generated_quizzes")) trouves.push(dossier);
-    for (const n of noms) {
-      if (n.startsWith(".") || n.startsWith("_") || n === "node_modules" || n.startsWith("generated_") || n === "quiz_results" || n === "td_results") continue;
-      parcourir(path.join(dossier, n), profondeur + 1);
-    }
-  })(RACINE, 0);
-  return trouves;
-}
-
 function bilanTentatives(liste) {
   const finies = liste.filter((t) => t.statut === "terminee");
   const enCours = liste.find((t) => t.statut === "en_cours") || null;
@@ -143,18 +126,43 @@ function bilanTentatives(liste) {
   };
 }
 
-function matiere(dossier) {
+function quizDe(dossierQuiz, liste) {
+  for (const n of htmlDe(dossierQuiz)) {
+    const source = lireSur(path.join(dossierQuiz, n));
+    const d = donneesQuiz(source);
+    if (!d) continue;
+    const page = relatif(path.join(dossierQuiz, n));
+    let tentatives = [];
+    try { tentatives = archives.lister("/" + page); } catch (e) { /* page invalide */ }
+    liste.push({
+      id: d.id,
+      titre: titrePage(source),
+      page,
+      nb: (d.questions || []).length,
+      types: [...new Set((d.questions || []).map((q) => q.type))],
+      tentatives: bilanTentatives(tentatives)
+    });
+  }
+}
+
+/**
+ * Un cours : ses pages (dossier de contenu, dans explore/ ou dans l'espace du profil)
+ * et ses quiz, avec les tentatives du profil actif. `travail` : dossier du cours dans
+ * l'espace du profil (quiz générés pour lui) ; `niveau` : son dossier de cursus.
+ */
+function matiere(dossier, { travail = null, niveau = null, fiche = null } = {}) {
   const rel = relatif(dossier);
   const cours = path.join(dossier, "generated_courses");
-  const quizDir = path.join(dossier, "generated_quizzes");
   const index = lireSur(path.join(cours, "index.html"));
-  const teinte = (index.match(/data-matiere="([\w-]+)"/) || [])[1] || "";
+  const teinte = (fiche && fiche.teinte) || (index.match(/data-matiere="([\w-]+)"/) || [])[1] || "";
   const res = {
     chemin: rel,
-    niveau: rel.split("/")[0],
-    nom: index ? titrePage(index) : path.basename(dossier),
+    id: fiche ? path.basename(dossier) : null,
+    niveau: niveau || (fiche && fiche.niveau) || rel.split("/")[0],
+    nom: (fiche && fiche.titre) || (index ? titrePage(index) : path.basename(dossier)),
     teinte,
     accueil: index ? rel + "/generated_courses/index.html" : null,
+    travail: travail ? relatif(travail) : null,
     cours: [],
     quiz: []
   };
@@ -162,38 +170,47 @@ function matiere(dossier) {
     if (n === "index.html") continue;
     res.cours.push({ titre: titrePage(lireSur(path.join(cours, n))), page: rel + "/generated_courses/" + n });
   }
-  for (const n of htmlDe(quizDir)) {
-    const source = lireSur(path.join(quizDir, n));
-    const d = donneesQuiz(source);
-    if (!d) continue;
-    const page = rel + "/generated_quizzes/" + n;
-    let tentatives = [];
-    try { tentatives = archives.lister("/" + page); } catch (e) { /* page invalide */ }
-    const types = [...new Set((d.questions || []).map((q) => q.type))];
-    res.quiz.push({
-      id: d.id,
-      titre: titrePage(source),
-      page,
-      nb: (d.questions || []).length,
-      types,
-      tentatives: bilanTentatives(tentatives)
-    });
+  quizDe(path.join(dossier, "generated_quizzes"), res.quiz);
+  if (travail && path.resolve(travail) !== path.resolve(dossier)) quizDe(path.join(travail, "generated_quizzes"), res.quiz);
+  return res;
+}
+
+// Cours d'un profil : ceux de son cursus (liens vers explore/), puis ses cours
+// personnels (dossiers de son espace avec generated_courses ou generated_quizzes).
+// Sans profil : tout le catalogue.
+function dossiersMatieres() {
+  const tous = espace.cours(RACINE);
+  const p = espace.profilActif(RACINE);
+  if (!p) return tous.map((c) => ({ dossier: path.join(RACINE, c.chemin), fiche: c.fiche }));
+  const res = [];
+  const vus = new Set();
+  for (const l of espace.liens(RACINE, p)) {
+    const c = tous.find((x) => x.id === l.cours);
+    if (!c || vus.has(c.id)) continue;
+    vus.add(c.id);
+    const travail = path.join(RACINE, l.chemin);
+    const segs = l.chemin.split("/");
+    res.push({ dossier: path.join(RACINE, c.chemin), fiche: c.fiche, travail, niveau: segs.length > 2 ? segs[segs.length - 2] : null });
   }
+  (function perso(n) {
+    if (n.type === "perso") res.push({ dossier: path.join(RACINE, n.chemin), travail: path.join(RACINE, n.chemin), niveau: n.chemin.split("/").slice(-2, -1)[0] });
+    for (const e of n.enfants || []) perso(e);
+  })(espace.arbre(RACINE, p) || {});
   return res;
 }
 
 function inventaire() {
   const extensions = require("./extensions").lister();
-  return dossiersMatieres().map((dossier) => {
-    const m = matiere(dossier);
-    // Les extensions (l'atelier) ajoutent ce qu'elles savent de la matière
-    for (const x of extensions) {
-      if (typeof x.travauxMatiere === "function") {
-        try { m.travaux = (m.travaux || []).concat(x.travauxMatiere(dossier, relatif)); } catch (e) { /* extension en échec : ignorée */ }
+  return dossiersMatieres().map((x) => {
+    const m = matiere(x.dossier, x);
+    // Les extensions (l'atelier) ajoutent ce qu'elles savent du cours
+    for (const e of extensions) {
+      if (typeof e.travauxMatiere === "function") {
+        try { m.travaux = (m.travaux || []).concat(e.travauxMatiere(x.dossier, relatif, x.travail || null)); } catch (err) { /* extension en échec : ignorée */ }
       }
     }
     return m;
-  }).sort((a, b) => a.chemin.localeCompare(b.chemin, "fr"));
+  });
 }
 
 // Plan des cours d'une matière, avec des liens relatifs au dossier generated_quizzes

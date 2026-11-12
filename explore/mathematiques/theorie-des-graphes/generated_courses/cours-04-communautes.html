@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Structure de communautés · Théorie des graphes L3</title>
+<meta name="description" content="Cours 4 de théorie des graphes (L3) : densité, partitions, communautés faibles et fortes, conductance, algorithme de propagation de labels, modularité, algorithme de Louvain, représentation du sens des mots avec SINr.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-04-communautes.html" title="Quiz · Cours 4">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-ct-2025-2026.html" title="Quiz · Annale CT 2025-2026">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-ct-2024-2025.html" title="Quiz · Annale CT 2024-2025">
+<link rel="quiz" href="../generated_quizzes/quiz-annale-ct-2022-2023.html" title="Quiz · Annale CT 2022-2023">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Mathématiques</a>
+    <a href="index.html">Théorie des graphes</a>
+    <span aria-current="page">Cours 4 · Structure de communautés</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Théorie des graphes</span> Cours 4 · L3 S5</p>
+    <h1>Structure de communautés</h1>
+    <p class="chapeau">Les graphes du réel s'organisent en groupes de sommets plus connectés entre eux qu'avec le reste du graphe : les communautés. Ce chapitre les définit à partir de la densité et des degrés interne et externe, puis présente deux façons de les détecter : la propagation de labels, simple et rapide, et l'algorithme de Louvain, qui maximise un critère de qualité, la modularité. Il se termine par une application : représenter le sens des mots avec l'algorithme SINr.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/_Graphes__Cours_de_graphes_A4__1_-4.pdf">Graphes et applications</a> (poly de 82 pages), chapitre 4, p. 38–53</dd></div>
+      <div><dt>Enseignant</dt><dd>Nicolas Dugué</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-01">1<sup>er</sup> nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Calculer la densité d'un graphe ou d'un sous-graphe, et vérifier qu'un ensemble de parties est une partition.</li>
+        <li>Calculer les degrés interne et externe d'un sommet ; dire si une partie est une communauté faible ou forte ; calculer sa conductance.</li>
+        <li>Dérouler l'algorithme de propagation de labels sur un petit graphe et citer ses limites.</li>
+        <li>Calculer la modularité d'une partition, l'interpréter, et comparer deux partitions.</li>
+        <li>Expliquer les deux phases de l'algorithme de Louvain, lire un dendrogramme et construire un méta-graphe.</li>
+        <li>Décrire les trois étapes de SINr et calculer un vecteur de mot et une similarité cosinus.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-01-notions-de-base.html">Cours 1</a> : graphes pondérés, voisinage, degré pondéré \(d_w(u)\), sous-graphe induit.</li>
+        <li><a href="cours-03-petit-monde.html">Cours 3</a> : coefficient de clustering et transitivité.</li>
+        <li>Probabilité d'événements indépendants, produit scalaire et norme d'un vecteur.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="bloc complement">
+    <p class="bloc-titre">Complément <span>À propos des sources</span></p>
+    <p>Cette page reprend le chapitre 4 du poly ; les notes de séance ne le couvrent pas encore. Les densités, la propagation de labels, les modularités et les vecteurs de SINr ont été recalculés avec NetworkX. Le graphe de 16 sommets de Blondel et al. (figure 4.7) a été relevé sur la figure et redessiné : l'algorithme de Louvain de NetworkX y retrouve exactement les communautés du poly. Les mots de la figure 4.11, une capture d'écran, sont recopiés dans un tableau.</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Des groupes dans les graphes <span class="ref">p. 38–39</span></h2>
+    <p>Les graphes qui modélisent le réel sont en général connexes, de diamètre et de largeur moyenne faibles, et leur coefficient de clustering élevé indique de la transitivité. Dans un réseau social, cette transitivité a un sens : l'ami·e de mon ami·e est souvent mon ami·e. Elle vient aussi de notre appartenance à des groupes et à des organisations : un club de sport, une famille, une promotion. Appartenir aux mêmes groupes pèse fortement sur la structure du réseau : il s'y forme des groupes de sommets plus connectés entre eux qu'avec le reste du graphe. On parle de <dfn>structure de communautés</dfn>.</p>
+    <p>On retrouve cette structuration dans les réseaux de co-occurrences de mots : des mots liés par le thème apparaissent souvent ensemble dans les mêmes phrases, et sont donc plus connectés entre eux qu'avec le reste du graphe.</p>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>« Communities, communities, and more communities »</span> <span class="ref">p. 39</span></p>
+      <p>Girvan et Newman ont les premiers l'intuition, en 2002, que de nombreux réseaux du réel sont organisés en communautés, qu'on peut les détecter par des moyens informatiques et qu'elles renseignent sur ces systèmes :</p>
+      <blockquote><p>« Les communautés d'un réseau social représentent probablement des groupes sociaux réels, formés par exemple autour d'intérêts communs ou d'un même parcours ; celles d'un réseau de citations, des articles sur un même sujet ; celles d'un réseau métabolique, des cycles et des groupes fonctionnels ; celles du web, des pages qui parlent du même sujet. Savoir identifier ces communautés pourrait nous aider à comprendre et à exploiter ces réseaux plus efficacement. »</p></blockquote>
+      <p>M. Girvan et M. E. J. Newman, <cite>Community structure in social and biological networks</cite>, 2002.</p>
+    </div>
+    <figure class="figure">
+      <img src="img/cours-04-communautes-1.png" width="800" height="533" alt="Un grand graphe de blogs dessiné en deux masses : à gauche, des centaines de sommets bleus densément reliés ; à droite, autant de sommets rouges ; entre les deux, beaucoup moins de liens, en orange et en violet.">
+      <figcaption>Figure 4.1 du poly : la blogosphère politique américaine lors de l'élection de 2004 (L. Adamic et N. Glance, <cite>The Political Blogosphere and the 2004 U.S. Election: Divided They Blog</cite>). En rouge, les blogs conservateurs ; en bleu, les blogs libéraux. Les liens orange vont des blogs libéraux vers les blogs conservateurs, les liens violets en sens inverse.</figcaption>
+    </figure>
+    <p>Pour détecter ces communautés, le chapitre présente deux algorithmes. La <strong>propagation de labels</strong> suit un principe simple : chaque sommet porte un label, celui de son groupe, et adopte le label majoritaire parmi ses voisins. L'<strong>algorithme de Louvain</strong> maximise la <strong>modularité</strong>, un critère qui note une structure de communautés : plus il y a de liens au sein des communautés par rapport aux liens entre communautés, plus il est élevé.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Densité, partition et communautés <span class="ref">p. 40–41</span></h2>
+    <p>Girvan et Newman définissent les communautés comme des groupes de sommets à l'intérieur desquels les connexions sont denses, alors que les connexions entre groupes le sont moins. Il faut donc d'abord mesurer la densité.</p>
+
+    <h3>La densité <span class="ref">p. 40</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 21 <span>Densité</span></p>
+      <p>La <dfn>densité</dfn> d'un graphe \(G = (V, E)\) non orienté est le rapport entre le nombre d'arêtes observées et le nombre d'arêtes possibles. Avec \(n = |V|\) et \(m = |E|\) :</p>
+      <div class="encadre">\[ \text{densite}(G) = \frac{m}{\frac{n(n-1)}{2}} = \frac{2m}{n(n-1)} \]</div>
+      <p>Elle se calcule aussi sur le sous-graphe induit par un ensemble de sommets.</p>
+    </div>
+    <p>La densité grandit avec le nombre d'arêtes, mais tient compte du nombre de sommets : elle vaut 1 pour un graphe complet et 0 sans arête. Dans la figure 4.2, il y a deux composantes connexes : \(G_C\), induit par C, D, E, et \(G_A\), induit par A, B, F, G. \(G_A\) a 4 arêtes et \(G_C\) seulement 3, et pourtant \(G_C\) est plus dense :</p>
+    <figure class="figure">
+<svg class="schema" viewBox="0 0 340 200" width="340" role="img" aria-labelledby="fig-densite-titre">
+<title id="fig-densite-titre">Figure 4.2 : deux sous-graphes sans aucune arête entre eux. À gauche, le triangle C, D, E (arêtes C–D, D–E, C–E). À droite, le cycle B, A, G, F (arêtes B–A, A–G, G–F, F–B).</title>
+<path class="trait" d="M72 49 L48 91"/>
+<path class="trait" d="M51 117 L84 153"/>
+<path class="trait" d="M82 51 L93 149"/>
+<path class="trait" d="M243 49 L287 76"/>
+<path class="trait" d="M297 101 L288 149"/>
+<path class="trait" d="M269 166 L221 169"/>
+<path class="trait" d="M208 154 L227 56"/>
+<g font-size="14">
+<circle class="boite-accent" cx="80" cy="35" r="16"/>
+<circle class="boite-accent" cx="40" cy="105" r="16"/>
+<circle class="boite-accent" cx="95" cy="165" r="16"/>
+<circle class="boite" cx="230" cy="40" r="16"/>
+<circle class="boite" cx="300" cy="85" r="16"/>
+<circle class="boite" cx="285" cy="165" r="16"/>
+<circle class="boite" cx="205" cy="170" r="16"/>
+<text x="80" y="40" text-anchor="middle" class="gras accent">C</text>
+<text x="40" y="110" text-anchor="middle" class="gras accent">D</text>
+<text x="95" y="170" text-anchor="middle" class="gras accent">E</text>
+<text x="230" y="45" text-anchor="middle" class="gras">B</text>
+<text x="300" y="90" text-anchor="middle" class="gras">A</text>
+<text x="285" y="170" text-anchor="middle" class="gras">G</text>
+<text x="205" y="175" text-anchor="middle" class="gras">F</text>
+</g>
+</svg>
+      <figcaption>Figure 4.2 du poly : deux sous-graphes sans lien entre eux.</figcaption>
+    </figure>
+    <div class="encadre">\[ \text{densite}(G_C) = \frac{2 \cdot 3}{3 \cdot 2} = 1 \qquad \text{densite}(G_A) = \frac{2 \cdot 4}{4 \cdot 3} = \frac{2}{3} \]</div>
+    <p>Au sens de Girvan et Newman, ces deux ensembles de sommets peuvent former des communautés : leurs connexions sont plus denses à l'intérieur qu'entre eux. Entre les deux, chacun des 3 sommets de \(G_C\) aurait pu se relier à chacun des 4 sommets de \(G_A\) : 12 liens possibles, aucun présent. <span class="badge ajout">Ajout</span> La densité entre les deux groupes, liens présents sur liens possibles, vaut donc \(0/12 = 0\).</p>
+    <p>Les graphes du réel sont plus compliqués, comme le montre la figure 4.1 : beaucoup plus de sommets, un graphe connexe, et des liens entre la communauté des blogs libéraux et celle des blogs conservateurs.</p>
+
+    <h3>Partition et structure de communautés <span class="ref">p. 40–41</span></h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 22 <span>Partition</span></p>
+      <p>Un ensemble \(\mathcal{P} = \{P_1, P_2, \dots, P_k\}\) est une <dfn>partition</dfn> des sommets \(V\) d'un graphe si et seulement si :</p>
+      <ul>
+        <li>\(\forall i \in \{1, \dots, k\},\ P_i \subset V\) : c'est un ensemble de sous-ensembles de \(V\) ;</li>
+        <li>\(\bigcup_{i=1}^{k} P_i = V\) : chaque sommet appartient à au moins une partie ;</li>
+        <li>\(\forall i \neq j,\ P_i \cap P_j = \emptyset\) : les parties sont deux à deux disjointes, donc chaque sommet appartient à une et une seule partie.</li>
+      </ul>
+      <p><span class="badge ajout">Ajout</span> On demande aussi d'ordinaire que chaque partie soit non vide.</p>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 23 <span>Structure de communautés</span></p>
+      <p>La <dfn>structure de communautés</dfn> d'un graphe est une partition de ses sommets dont chaque partie correspond à une communauté : la densité du sous-graphe induit par chaque partie est supérieure à la densité des liens entre les parties.</p>
+    </div>
+
+    <h3>Communautés faibles et fortes <span class="ref">p. 41</span></h3>
+    <p>Radicchi et al. précisent cette idée en 2004, dans <cite lang="en">Defining and identifying communities in networks</cite>, avec deux notions formelles. Il faut pour cela distinguer, parmi les voisins d'un sommet, ceux de sa communauté et les autres.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 24 <span>Degrés interne et externe</span></p>
+      <p>Soit \(u\) un sommet de la partie \(P\) d'une partition \(\mathcal{P}\) des sommets. Ses degrés <dfn>interne</dfn> \(d^{in}\) et <dfn>externe</dfn> \(d^{out}\) sont :</p>
+      <ul>
+        <li>\(d^{in}(u) = |\{v \in P \mid v \in N(u)\}|\), le nombre de voisins de \(u\) dans sa communauté ;</li>
+        <li>\(d^{out}(u) = |\{v \notin P \mid v \in N(u)\}|\), le nombre de voisins de \(u\) hors de sa communauté ;</li>
+        <li>\(d(u) = d^{in}(u) + d^{out}(u)\).</li>
+      </ul>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 25 <span>Communauté faible</span></p>
+      <p>Une partie \(P\) est une <dfn>communauté faible</dfn> si la somme des degrés internes de ses sommets dépasse celle de leurs degrés externes :</p>
+      <div class="encadre">\[ \sum_{u \in P} d^{in}(u) \gt \sum_{u \in P} d^{out}(u) \]</div>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 26 <span>Communauté forte</span></p>
+      <p>Une partie \(P\) est une <dfn>communauté forte</dfn> si chacun de ses sommets a plus de voisins dans la communauté qu'à l'extérieur :</p>
+      <div class="encadre">\[ \forall u \in P,\ d^{in}(u) \gt d^{out}(u) \]</div>
+    </div>
+    <p>Une communauté faible est, globalement, plus connectée en interne qu'avec le reste du graphe. Une communauté forte l'est sommet par sommet : la définition est plus exigeante, et ces communautés sont plus difficiles à trouver. <span class="badge ajout">Ajout</span> Une communauté forte est toujours faible : il suffit de sommer les inégalités sur les sommets de \(P\).</p>
+
+    <h3>La conductance <span class="ref">p. 41</span></h3>
+    <p>Près de dix ans plus tard, Yang et Leskovec montrent, dans <cite lang="en">Defining and evaluating network communities based on ground-truth</cite>, qu'on peut mesurer la qualité d'une communauté par sa conductance.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 27 <span>Conductance</span></p>
+      <p>Soit \(P\) une partie d'une partition. On note \(\Sigma^{in}_P = \frac{1}{2} \sum_{u \in P} d^{in}(u)\) le nombre de liens à l'intérieur de la communauté, et \(\Sigma^{out}_P = \sum_{u \in P} d^{out}(u)\) le nombre de liens qui en sortent. Le poly définit la <dfn>conductance</dfn> par :</p>
+      <div class="encadre">\[ \text{cond}(P) = \frac{\Sigma^{out}_P}{\Sigma^{out}_P + \Sigma^{in}_P} \]</div>
+    </div>
+    <p>On recherche une conductance faible : peu de liens sortent de la communauté, relativement à l'ensemble de ses liens.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Le dénominateur de la conductance</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>Le poly explique que le dénominateur est « la somme des liens internes et sortants, c'est-à-dire des degrés totaux des sommets de la communauté ». Or la somme des degrés des sommets de \(P\) vaut \(\sum_{u \in P} d^{in}(u) + \Sigma^{out}_P = 2\,\Sigma^{in}_P + \Sigma^{out}_P\) : chaque lien interne y compte deux fois, une par extrémité. C'est la définition de Yang et Leskovec :</p>
+      <div class="encadre">\[ \text{cond}(P) = \frac{\Sigma^{out}_P}{2\,\Sigma^{in}_P + \Sigma^{out}_P} = \frac{\Sigma^{out}_P}{\sum_{u \in P} d(u)} \]</div>
+      <p>La formule du poly, avec \(\Sigma^{in}_P\) compté une seule fois, donne une valeur plus grande, mais classe les communautés à peu près de la même façon. À l'examen, préciser la formule employée.</p>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Le graphe des figures 4.4 et 4.5, sans les poids</span> <span class="badge ajout">Ajout</span></p>
+      <p>On prend le graphe de la figure 4.4 plus bas (arêtes C–B, C–A, B–A, C–D, D–E, D–F, E–F) en ignorant les poids, et la partition \(\{A, B, C\}, \{D, E, F\}\).</p>
+      <ul>
+        <li>A : voisins B et C, tous deux dans sa partie, donc \(d^{in} = 2\), \(d^{out} = 0\). De même pour B. C : voisins A, B (dedans) et D (dehors), donc \(d^{in} = 2\), \(d^{out} = 1\). Chaque sommet a \(d^{in} \gt d^{out}\) : \(\{A, B, C\}\) est une communauté forte. Par symétrie, \(\{D, E, F\}\) aussi.</li>
+        <li>Densité de chaque partie : \(\frac{2 \cdot 3}{3 \cdot 2} = 1\). Densité entre les parties : 1 lien (C–D) sur \(3 \times 3 = 9\) possibles, soit \(1/9\).</li>
+        <li>Conductance de \(\{A, B, C\}\) : \(\Sigma^{in} = 3\), \(\Sigma^{out} = 1\). Formule du poly : \(1/(1 + 3) = 0{,}25\) ; formule de Yang et Leskovec : \(1/(2 \cdot 3 + 1) = 1/7 \approx 0{,}14\).</li>
+      </ul>
+    </div>
+    <div class="bloc exercice" id="ex-1">
+      <p class="bloc-titre">Exercice 1 <span>Une partition moins naturelle</span> <span class="badge ajout">Ajout</span></p>
+      <p>Sur le même graphe sans poids, on prend la partition \(\{A, B, E, F\}, \{C, D\}\) (figure 4.5). Calculer les degrés interne et externe de chaque sommet. Chaque partie est-elle une communauté faible ? forte ? Calculer la conductance de \(\{C, D\}\) avec les deux formules.</p>
+      <details class="indice"><summary>Indice</summary><p>Dans \(\{A, B, E, F\}\), A n'a qu'un voisin dans sa partie : B. Pour une communauté faible, l'inégalité est stricte.</p></details>
+      <details class="solution"><summary>Solution proposée</summary><p>\(\{A, B, E, F\}\) : A a \(d^{in} = 1\) (B) et \(d^{out} = 1\) (C) ; B de même (A ; C) ; E : \(d^{in} = 1\) (F), \(d^{out} = 1\) (D) ; F de même. Sommes : \(4\) contre \(4\), l'inégalité stricte n'est pas vérifiée : ce n'est ni une communauté faible ni, a fortiori, une communauté forte. \(\{C, D\}\) : C a \(d^{in} = 1\) (D) et \(d^{out} = 2\) (A, B) ; D a \(d^{in} = 1\) (C) et \(d^{out} = 2\) (E, F). Sommes : \(2\) contre \(4\), ce n'est pas non plus une communauté faible. Conductance de \(\{C, D\}\) : \(\Sigma^{in} = 1\), \(\Sigma^{out} = 4\) ; formule du poly \(4/5 = 0{,}8\), formule de Yang et Leskovec \(4/6 \approx 0{,}67\). Les deux sont bien plus élevées que pour \(\{A, B, C\}\).</p></details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>L'algorithme de propagation de labels <span class="ref">p. 42–43</span></h2>
+    <p>Pour regrouper les sommets d'un graphe en communautés, afin de mieux comprendre son organisation (par exemple, découvrir les différents courants d'un Twitter politique), on exécute un algorithme de <dfn>détection de communautés</dfn>.</p>
+
+    <h3>Un apprentissage non supervisé <span class="ref">p. 42</span></h3>
+    <p>Les algorithmes de détection de communautés relèvent de l'apprentissage automatique <strong>non supervisé</strong>. En apprentissage <strong>supervisé</strong>, on dispose de données étiquetées, par exemple des photos identifiées comme des chats ou des chiens. Ces photos sont représentées par des vecteurs (leurs pixels, par exemple), et l'algorithme apprend une fonction qui associe à un vecteur un type d'animal. En non supervisé, on veut séparer les données en groupes cohérents sans aucun exemple : une collection de photos d'animaux, sans savoir quels animaux s'y trouvent, ni combien d'espèces. La détection de communautés est de ce type : on veut partitionner un graphe sans savoir combien il y a de communautés ni ce qu'elles contiennent. Les seuls guides sont des définitions comme les définitions 25 et 26, qui décrivent ce que l'on cherche.</p>
+
+    <h3>L'algorithme <span class="ref">p. 42</span></h3>
+    <p>L'algorithme de <dfn>propagation de labels</dfn>, proposé en 2007 par Raghavan et al., s'appuie sur la définition 26 :</p>
+<pre><code class="language-pseudo"><i># Algorithme 5 : propagation de labels</i>
+1. <b>Initialisation</b> : on affecte un label différent à chaque sommet
+2. <b>Mélange</b> : on range les sommets dans un ordre aléatoire
+3. <b>Affectation</b> : dans cet ordre, chaque sommet prend le label
+   majoritaire parmi ses voisins ; en cas d'égalité entre plusieurs
+   labels, il en choisit un au hasard parmi ceux-là
+4. On répète les étapes 2 et 3 jusqu'à convergence :
+   plus aucun sommet ne change de label</code></pre>
+    <p>La règle d'affectation traduit la définition 26 : on veut des sommets plus connectés à leur communauté qu'à l'extérieur. L'algorithme, bien que non supervisé, utilise donc ce que l'on sait de l'allure d'une communauté. Il est <dfn>agglomératif</dfn> : au départ, chaque sommet a son propre label ; peu à peu, les sommets se regroupent, les communautés grossissent et leur nombre diminue.</p>
+
+    <h3>Un exemple d'exécution <span class="ref">p. 42–43</span></h3>
+    <p>Dans la figure 4.3, chaque sommet reçoit d'abord un label différent, de 1 à 6. Le mélange donne l'ordre C, D, E, F, B, A. Les affectations se font une par une, et chaque sommet voit les labels déjà mis à jour par les précédents.</p>
+    <figure class="figure">
+<svg class="schema" viewBox="0 0 540 225" width="540" role="img" aria-labelledby="fig-labels-titre">
+<title id="fig-labels-titre">Figure 4.3, début et fin de l'exécution. Graphe à six sommets : arêtes C–B, C–A, B–A, C–D, D–E, D–F, E–F. À gauche, l'initialisation : A porte le label 1, B 2, C 3, D 4, E 5, F 6. À droite, après l'affectation dans l'ordre C, D, E, F, B, A : A, B et C portent le label 1, D, E et F le label 5.</title>
+<path class="trait" d="M88 35 L142 35"/>
+<path class="trait" d="M87 42 L198 88"/>
+<path class="trait" d="M172 48 L203 82"/>
+<path class="trait" d="M61 51 L44 84"/>
+<path class="trait" d="M44 115 L66 150"/>
+<path class="trait" d="M51 108 L149 157"/>
+<path class="trait" d="M93 165 L147 165"/>
+<g font-size="13">
+<circle class="boite" cx="70" cy="35" r="18"/>
+<circle class="boite" cx="160" cy="35" r="18"/>
+<circle class="boite" cx="215" cy="95" r="18"/>
+<circle class="boite" cx="35" cy="100" r="18"/>
+<circle class="boite" cx="75" cy="165" r="18"/>
+<circle class="boite" cx="165" cy="165" r="18"/>
+<text x="70" y="40" text-anchor="middle" class="gras">C3</text>
+<text x="160" y="40" text-anchor="middle" class="gras">B2</text>
+<text x="215" y="100" text-anchor="middle" class="gras">A1</text>
+<text x="35" y="105" text-anchor="middle" class="gras">D4</text>
+<text x="75" y="170" text-anchor="middle" class="gras">E5</text>
+<text x="165" y="170" text-anchor="middle" class="gras">F6</text>
+</g>
+<path class="trait" d="M368 35 L422 35"/>
+<path class="trait" d="M367 42 L478 88"/>
+<path class="trait" d="M452 48 L483 82"/>
+<path class="trait" d="M341 51 L324 84"/>
+<path class="trait" d="M324 115 L346 150"/>
+<path class="trait" d="M331 108 L429 157"/>
+<path class="trait" d="M373 165 L427 165"/>
+<g font-size="13">
+<circle class="boite-accent" cx="350" cy="35" r="18"/>
+<circle class="boite-accent" cx="440" cy="35" r="18"/>
+<circle class="boite-accent" cx="495" cy="95" r="18"/>
+<circle class="boite" cx="315" cy="100" r="18"/>
+<circle class="boite" cx="355" cy="165" r="18"/>
+<circle class="boite" cx="445" cy="165" r="18"/>
+<text x="350" y="40" text-anchor="middle" class="gras accent">C1</text>
+<text x="440" y="40" text-anchor="middle" class="gras accent">B1</text>
+<text x="495" y="100" text-anchor="middle" class="gras accent">A1</text>
+<text x="315" y="105" text-anchor="middle" class="gras">D5</text>
+<text x="355" y="170" text-anchor="middle" class="gras">E5</text>
+<text x="445" y="170" text-anchor="middle" class="gras">F5</text>
+</g>
+<text x="125" y="215" text-anchor="middle" font-size="13" class="t2">(a) initialisation</text>
+<text x="405" y="215" text-anchor="middle" font-size="13" class="t2">(b) après un tour : C, D, E, F, B, A</text>
+</svg>
+      <figcaption>Figure 4.3 du poly, première et dernière étapes. Le nombre qui suit la lettre est le label du sommet ; à droite, les sommets de label 1 sont en couleur.</figcaption>
+    </figure>
+    <div class="tableau centre compact">
+      <table>
+        <caption>Les six affectations du premier tour</caption>
+        <thead><tr><th>Étape</th><th>Sommet</th><th>Labels des voisins</th><th>Nouveau label</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>C</td><td>B : 2, A : 1, D : 4</td><td>égalité entre 1, 2 et 4 : 1, tiré au hasard</td></tr>
+          <tr><td>2</td><td>D</td><td>C : 1, E : 5, F : 6</td><td>égalité entre 1, 5 et 6 : 5, tiré au hasard</td></tr>
+          <tr><td>3</td><td>E</td><td>D : 5, F : 6</td><td>égalité entre 5 et 6 : 5, tiré au hasard (E garde son label)</td></tr>
+          <tr><td>4</td><td>F</td><td>D : 5, E : 5</td><td>5, majoritaire</td></tr>
+          <tr><td>5</td><td>B</td><td>C : 1, A : 1</td><td>1, majoritaire</td></tr>
+          <tr><td>6</td><td>A</td><td>C : 1, B : 1</td><td>1, majoritaire (A garde son label)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>On obtient deux communautés : A, B, C de label 1, et D, E, F de label 5. <span class="badge ajout">Ajout</span> Un second tour, dans n'importe quel ordre, ne change plus rien : C voit 1, 1, 5 et garde 1 ; D voit 1, 5, 5 et garde 5 ; chacun des autres ne voit que son propre label. L'algorithme a convergé.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Le nombre de voisins dans le texte du poly</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>Le poly écrit que C a « deux voisins, un avec le label 3, un avec le label 1 », et que D n'a pas de label majoritaire « parmi ses deux voisins ». D'après la figure, C a trois voisins, B (2), A (1) et D (4), et son propre label 3 n'entre pas en compte ; D a aussi trois voisins, C (1), E (5) et F (6). Le résultat ne change pas : il y a bien égalité dans les deux cas. Les vignettes (c) et (d) de la figure portent toutes deux le titre « Étape 2 » ; la seconde correspond à l'étape 3.</p>
+    </div>
+    <div class="bloc exercice" id="ex-2">
+      <p class="bloc-titre">Exercice 2 <span>Un autre ordre</span> <span class="badge ajout">Ajout</span></p>
+      <p>Reprendre la figure 4.3 depuis l'initialisation (A1, B2, C3, D4, E5, F6) avec l'ordre F, E, D, C, B, A. Pour rendre le calcul reproductible, on départage les égalités en prenant le plus petit label. Donner les labels après le premier tour, puis vérifier la convergence.</p>
+      <details class="solution"><summary>Solution proposée</summary><p>F voit D (4) et E (5) : égalité, il prend 4. E voit D (4) et F (4) : 4. D voit C (3), E (4), F (4) : 4 est majoritaire. C voit B (2), A (1), D (4) : égalité, il prend 1. B voit C (1) et A (1) : 1. A voit C (1) et B (1) : 1. Après un tour : A, B, C ont le label 1, D, E, F le label 4. Au second tour, C voit 1, 1, 4 et D voit 1, 4, 4 : rien ne change. On retrouve les deux mêmes communautés, avec un autre nom pour la seconde.</p></details>
+    </div>
+
+    <h3>Les limites de l'algorithme <span class="ref">p. 44</span></h3>
+    <p>La propagation de labels est appréciée pour sa rapidité et sa simplicité. En revanche :</p>
+    <ul>
+      <li>ses résultats varient énormément selon le mélange, donc selon l'ordre des affectations ;</li>
+      <li>le hasard qui départage les égalités peut jouer un rôle important ;</li>
+      <li>sa convergence n'est pas garantie : il peut osciller d'un état à un autre.</li>
+    </ul>
+    <p>Ces limites sont très étudiées, et les solutions proposées se font souvent au détriment de la simplicité de l'algorithme.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Avec NetworkX</span></p>
+<pre data-fichier="labels.py"><code class="language-python">import networkx as nx
+
+G = nx.Graph([("C", "B"), ("C", "A"), ("B", "A"), ("C", "D"),
+              ("D", "E"), ("D", "F"), ("E", "F")])
+print([sorted(P) for P in nx.community.label_propagation_communities(G)])
+print([sorted(P) for P in nx.community.asyn_lpa_communities(G, seed=1)])</code></pre>
+<pre class="terminal"><code>$ python labels.py
+[['A', 'B', 'C'], ['D', 'E', 'F']]
+[['A', 'B', 'C'], ['D', 'E', 'F']]</code></pre>
+      <p><code>asyn_lpa_communities</code> suit l'algorithme du cours : les sommets sont mis à jour un par un, dans un ordre aléatoire. <code>label_propagation_communities</code> est une variante « semi-synchrone », dont le résultat ne dépend pas du hasard et qui converge toujours. Raghavan et al. arrêtent l'algorithme quand chaque sommet porte l'un des labels les plus fréquents parmi ses voisins : en cas d'égalité, un sommet qui change de label à chaque tour n'empêche ainsi pas l'arrêt. <span class="badge hors-programme">Hors programme</span></p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>La modularité <span class="ref">p. 44–46</span></h2>
+    <p>En 2008, un excellent concurrent de la propagation de labels apparaît : l'algorithme de Louvain, proposé par Blondel et al. dans <cite lang="en">Fast unfolding of communities in large networks</cite>. Lui aussi très rapide, il donne des résultats de meilleure qualité et converge toujours ; c'est probablement l'algorithme de détection de communautés le plus utilisé. Il maximise la <dfn>modularité</dfn>, introduite sous sa forme courante par Newman en 2006 : une fonction qui note la qualité d'une partition. Plus elle est élevée, meilleures semblent les communautés.</p>
+
+    <h3>Définition <span class="ref">p. 44</span></h3>
+    <p>On décrit la partition par un <dfn>vecteur d'affectation</dfn> \(C\) : pour tout sommet \(u\), \(C_u\) est son label, donc sa communauté. À la fin de la propagation de labels de la figure 4.3, par exemple, \(C = (1, 1, 1, 5, 5, 5)\) pour les sommets A, B, C, D, E, F.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 28 <span>Modularité</span></p>
+      <div class="encadre">\[ Q(G, C) = \sum_{u \in V} \sum_{v \in V} \left( \frac{W(uv)}{2m} - \frac{d_w(u)}{2m} \cdot \frac{d_w(v)}{2m} \right) \delta(C_u, C_v) \]</div>
+      <p>avec \(m\) la somme des poids des arêtes (dans un graphe non pondéré, chaque arête pèse 1, et \(m\) est le nombre d'arêtes) ; \(W(uv)\) le poids de l'arête entre \(u\) et \(v\), 0 s'il n'y en a pas ; \(d_w(u)\) le degré pondéré de \(u\) ; \(\delta(C_u, C_v)\) vaut 1 si \(C_u = C_v\), 0 sinon.</p>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 29 <span>Maximisation de la modularité</span></p>
+      <p>Étant donné un graphe \(G\), on cherche le vecteur d'affectation qui maximise la modularité : \(\displaystyle \operatorname*{argmax}_C Q(G, C)\).</p>
+    </div>
+    <p>Comme \(\delta\) vaut 0 entre deux communautés différentes, seuls comptent les couples \((u, v)\) d'une même communauté. Et comme la double somme parcourt tous les couples, chaque paire \(\{u, v\}\) y figure deux fois, \((u, v)\) et \((v, u)\), en plus des couples \((u, u)\).</p>
+
+    <h3>Comprendre la modularité <span class="ref">p. 44–45</span></h3>
+    <p>La modularité compare le poids du lien observé entre \(u\) et \(v\) au poids qu'il aurait, en moyenne, dans un graphe aléatoire où les degrés de tous les sommets seraient conservés. Si, étant donné leurs degrés, il était peu probable que \(u\) et \(v\) soient reliés par hasard, le lien observé signale une vraie proximité : on cherche à les mettre dans la même communauté.</p>
+    <p>Remplaçons une arête de poids \(W(uv)\) par \(W(uv)\) arêtes entre \(u\) et \(v\) : on a alors \(m\) arêtes, donc \(2m\) extrémités d'arêtes. Soit \(X\) le tirage au hasard, uniforme, d'une extrémité d'arête : chacune a la probabilité \(\frac{1}{2m}\).</p>
+    <ul>
+      <li>Dans le graphe aléatoire, la probabilité de tirer une extrémité rattachée à \(u\) dépend du degré de \(u\) : \(p(X = u) = \frac{d_w(u)}{2m}\), et de même \(p(X = v) = \frac{d_w(v)}{2m}\). Si les deux tirages sont indépendants, la probabilité d'obtenir une arête d'extrémités \(u\) et \(v\) est \(\frac{d_w(u)}{2m} \cdot \frac{d_w(v)}{2m}\) : c'est le second terme de la parenthèse.</li>
+      <li>Dans le graphe étudié, cette probabilité dépend du nombre d'arêtes qui relient vraiment \(u\) et \(v\) : \(\frac{W(uv)}{2m}\), le premier terme.</li>
+    </ul>
+    <p>Si le terme observé dépasse le terme aléatoire, mettre \(u\) et \(v\) dans la même communauté augmente la modularité : on donne de l'importance à un événement observé qui avait peu de chances d'arriver par hasard.</p>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Calculer la modularité communauté par communauté</span> <span class="badge ajout">Ajout</span></p>
+      <p>En regroupant les termes d'une même communauté \(c\), on obtient une formule bien plus rapide à la main. Notons \(L_c\) le poids total des arêtes internes à \(c\) et \(D_c = \sum_{u \in c} d_w(u)\) la somme des degrés de ses sommets :</p>
+      <div class="encadre">\[ Q = \sum_{c} \left( \frac{L_c}{m} - \left( \frac{D_c}{2m} \right)^2 \right) \]</div>
+      <p>En effet, dans la double somme, chaque arête interne compte deux fois, donc \(\sum_{u, v \in c} \frac{W(uv)}{2m} = \frac{2 L_c}{2m}\), et \(\sum_{u, v \in c} d_w(u)\, d_w(v) = D_c^2\). \(\frac{L_c}{m}\) est la part des liens qui tombent dans la communauté ; \(\left(\frac{D_c}{2m}\right)^2\) est cette part attendue au hasard. Quelques repères : tout le graphe en une seule communauté donne \(Q = 1 - 1 = 0\) ; une partition en singletons donne une valeur négative ; \(Q\) est toujours inférieure à 1.</p>
+    </div>
+
+    <h3>Deux exemples de calcul <span class="ref">p. 45–46</span></h3>
+    <figure class="figure">
+<svg class="schema" viewBox="0 0 540 225" width="540" role="img" aria-labelledby="fig-modularite-titre">
+<title id="fig-modularite-titre">Figures 4.4 et 4.5 : le même graphe pondéré, C–B de poids 2, C–A 1, B–A 3, C–D 1, D–E 1, D–F 1, E–F 1, découpé de deux façons. À gauche, la partition {A, B, C} et {D, E, F} ; à droite, la partition {A, B, E, F} et {C, D}.</title>
+<path class="trait" d="M86 35 L144 35"/>
+<text x="115" y="50" text-anchor="middle" font-size="12" class="accent gras">2</text>
+<path class="trait" d="M85 41 L200 89"/>
+<text x="138" y="79" text-anchor="middle" font-size="12" class="accent gras">1</text>
+<path class="trait" d="M171 47 L204 83"/>
+<text x="179" y="76" text-anchor="middle" font-size="12" class="accent gras">3</text>
+<path class="trait" d="M62 49 L43 86"/>
+<text x="43" y="66" text-anchor="middle" font-size="12" class="accent gras">1</text>
+<path class="trait" d="M43 114 L67 151"/>
+<text x="46" y="142" text-anchor="middle" font-size="12" class="accent gras">1</text>
+<path class="trait" d="M49 107 L151 158"/>
+<text x="95" y="146" text-anchor="middle" font-size="12" class="accent gras">1</text>
+<path class="trait" d="M91 165 L149 165"/>
+<text x="120" y="180" text-anchor="middle" font-size="12" class="accent gras">1</text>
+<g font-size="14">
+<circle class="boite-accent" cx="70" cy="35" r="16"/>
+<circle class="boite-accent" cx="160" cy="35" r="16"/>
+<circle class="boite-accent" cx="215" cy="95" r="16"/>
+<circle class="boite" cx="35" cy="100" r="16"/>
+<circle class="boite" cx="75" cy="165" r="16"/>
+<circle class="boite" cx="165" cy="165" r="16"/>
+<text x="70" y="40" text-anchor="middle" class="gras accent">C</text>
+<text x="160" y="40" text-anchor="middle" class="gras accent">B</text>
+<text x="215" y="100" text-anchor="middle" class="gras accent">A</text>
+<text x="35" y="105" text-anchor="middle" class="gras">D</text>
+<text x="75" y="170" text-anchor="middle" class="gras">E</text>
+<text x="165" y="170" text-anchor="middle" class="gras">F</text>
+</g>
+<path class="trait" d="M366 35 L424 35"/>
+<text x="395" y="50" text-anchor="middle" font-size="12" class="accent gras">2</text>
+<path class="trait" d="M365 41 L480 89"/>
+<text x="418" y="79" text-anchor="middle" font-size="12" class="accent gras">1</text>
+<path class="trait" d="M451 47 L484 83"/>
+<text x="459" y="76" text-anchor="middle" font-size="12" class="accent gras">3</text>
+<path class="trait" d="M342 49 L323 86"/>
+<text x="323" y="66" text-anchor="middle" font-size="12" class="accent gras">1</text>
+<path class="trait" d="M323 114 L347 151"/>
+<text x="326" y="142" text-anchor="middle" font-size="12" class="accent gras">1</text>
+<path class="trait" d="M329 107 L431 158"/>
+<text x="375" y="146" text-anchor="middle" font-size="12" class="accent gras">1</text>
+<path class="trait" d="M371 165 L429 165"/>
+<text x="400" y="180" text-anchor="middle" font-size="12" class="accent gras">1</text>
+<g font-size="14">
+<circle class="boite" cx="350" cy="35" r="16"/>
+<circle class="boite-accent" cx="440" cy="35" r="16"/>
+<circle class="boite-accent" cx="495" cy="95" r="16"/>
+<circle class="boite" cx="315" cy="100" r="16"/>
+<circle class="boite-accent" cx="355" cy="165" r="16"/>
+<circle class="boite-accent" cx="445" cy="165" r="16"/>
+<text x="350" y="40" text-anchor="middle" class="gras">C</text>
+<text x="440" y="40" text-anchor="middle" class="gras accent">B</text>
+<text x="495" y="100" text-anchor="middle" class="gras accent">A</text>
+<text x="315" y="105" text-anchor="middle" class="gras">D</text>
+<text x="355" y="170" text-anchor="middle" class="gras accent">E</text>
+<text x="445" y="170" text-anchor="middle" class="gras accent">F</text>
+</g>
+<text x="125" y="215" text-anchor="middle" font-size="13" class="t2">(a) figure 4.4 : {A, B, C} | {D, E, F}</text>
+<text x="405" y="215" text-anchor="middle" font-size="13" class="t2">(b) figure 4.5 : {A, B, E, F} | {C, D}</text>
+</svg>
+      <figcaption>Figures 4.4 et 4.5 du poly : deux partitions du même graphe pondéré ; les sommets de la première partie sont en couleur.</figcaption>
+    </figure>
+    <p>La somme des poids vaut \(m = 2 + 1 + 3 + 1 + 1 + 1 + 1 = 10\), donc \(2m = 20\). Les degrés pondérés sont \(d_w(A) = 4\), \(d_w(B) = 5\), \(d_w(C) = 4\), \(d_w(D) = 3\), \(d_w(E) = 2\), \(d_w(F) = 2\) (leur somme fait bien 20). Dans le graphe, la probabilité de tirer une arête entre A et B est \(\frac{W(AB)}{m} = \frac{3}{10}\).</p>
+    <p><strong>Partition de la figure 4.4</strong>, \(\{A, B, C\}\) et \(\{D, E, F\}\). Le poly ne garde que les couples de sommets <em>distincts</em> d'une même communauté, chaque paire comptant deux fois :</p>
+    <div class="tableau centre compact">
+      <table>
+        <caption>Les termes du calcul du poly pour la figure 4.4</caption>
+        <thead><tr><th>Paire</th><th>\(\frac{W(uv)}{2m}\)</th><th>\(\frac{d_w(u)}{2m} \cdot \frac{d_w(v)}{2m}\)</th><th>Différence</th></tr></thead>
+        <tbody>
+          <tr><td>A, B</td><td>\(\frac{3}{20} = \frac{60}{400}\)</td><td>\(\frac{4 \cdot 5}{400} = \frac{20}{400}\)</td><td>\(\frac{40}{400}\)</td></tr>
+          <tr><td>A, C</td><td>\(\frac{1}{20} = \frac{20}{400}\)</td><td>\(\frac{4 \cdot 4}{400} = \frac{16}{400}\)</td><td>\(\frac{4}{400}\)</td></tr>
+          <tr><td>B, C</td><td>\(\frac{2}{20} = \frac{40}{400}\)</td><td>\(\frac{5 \cdot 4}{400} = \frac{20}{400}\)</td><td>\(\frac{20}{400}\)</td></tr>
+          <tr><td>D, E</td><td>\(\frac{1}{20} = \frac{20}{400}\)</td><td>\(\frac{3 \cdot 2}{400} = \frac{6}{400}\)</td><td>\(\frac{14}{400}\)</td></tr>
+          <tr><td>E, F</td><td>\(\frac{1}{20} = \frac{20}{400}\)</td><td>\(\frac{2 \cdot 2}{400} = \frac{4}{400}\)</td><td>\(\frac{16}{400}\)</td></tr>
+          <tr><td>D, F</td><td>\(\frac{1}{20} = \frac{20}{400}\)</td><td>\(\frac{3 \cdot 2}{400} = \frac{6}{400}\)</td><td>\(\frac{14}{400}\)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Chaque paire compte deux fois, \((u, v)\) et \((v, u)\) : \(Q = 2 \cdot \frac{40 + 4 + 20 + 14 + 16 + 14}{400} = \frac{216}{400} = 0{,}54\).</p>
+    <p><strong>Partition de la figure 4.5</strong>, \(\{A, B, E, F\}\) et \(\{C, D\}\) : paires AB, EF, AE, AF, BE, BF et CD.</p>
+    <div class="encadre">\[ 2 \cdot \frac{40 + 16 - 8 - 8 - 10 - 10 + 8}{400} = \frac{56}{400} = 0{,}14 \]</div>
+    <p>La partition de la figure 4.4 a la modularité la plus élevée : elle est de meilleure qualité, ce qui correspond à l'intuition.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Les termes oubliés et quelques coquilles</span> <span class="badge a-verifier">À vérifier</span></p>
+      <ul>
+        <li>La double somme de la définition 28 contient aussi les couples \((u, u)\), qui valent \(0 - \left(\frac{d_w(u)}{2m}\right)^2\) sans boucle. Le poly les omet. Avec eux, la formule par communauté donne pour la figure 4.4 : \(\left(\frac{6}{10} - \frac{13^2}{400}\right) + \left(\frac{3}{10} - \frac{7^2}{400}\right) = \frac{142}{400} = 0{,}355\), et pour la figure 4.5 : \(\left(\frac{4}{10} - \frac{13^2}{400}\right) + \left(\frac{1}{10} - \frac{7^2}{400}\right) = -\frac{18}{400} = -0{,}045\). Ce sont les valeurs que renvoie NetworkX. Les termes omis valent \(\frac{74}{400}\) quelle que soit la partition (tout sommet est dans sa propre communauté) : la comparaison des deux partitions n'en est pas changée.</li>
+        <li>Le calcul de la figure 4.5 aboutit à \(\frac{58}{400}\) dans le poly ; le détail donne \(\frac{56}{400}\), qui s'arrondit aussi à 0,14.</li>
+        <li>La légende de la figure 4.4 calcule les probabilités du graphe aléatoire avec \(m\) au dénominateur, \(\frac{4}{10} \cdot \frac{5}{10} = \frac{20}{100}\), alors que la définition et le calcul qui suit utilisent \(2m\) : \(\frac{4}{20} \cdot \frac{5}{20} = \frac{20}{400}\).</li>
+      </ul>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>La modularité en Python</span></p>
+<pre data-fichier="modularite.py"><code class="language-python">import networkx as nx
+
+G = nx.Graph()
+G.add_weighted_edges_from([("C", "B", 2), ("C", "A", 1), ("B", "A", 3),
+                           ("C", "D", 1), ("D", "E", 1), ("D", "F", 1), ("E", "F", 1)])
+
+def modularite(G, partition):
+    m = G.size(weight="weight")              # somme des poids
+    Q = 0
+    for P in partition:
+        L = G.subgraph(P).size(weight="weight")              # poids interne
+        D = sum(d for _, d in G.degree(P, weight="weight"))  # somme des degrés
+        Q += L / m - (D / (2 * m)) ** 2
+    return Q
+
+for partition in ([{"A", "B", "C"}, {"D", "E", "F"}], [{"A", "B", "E", "F"}, {"C", "D"}]):
+    print(round(modularite(G, partition), 3),
+          round(nx.community.modularity(G, partition, weight="weight"), 3))</code></pre>
+<pre class="terminal"><code>$ python modularite.py
+0.355 0.355
+-0.045 -0.045</code></pre>
+    </div>
+    <div class="bloc exercice" id="ex-3">
+      <p class="bloc-titre">Exercice 3 <span>D'autres partitions du même graphe</span> <span class="badge ajout">Ajout</span></p>
+      <p>Avec la formule par communauté (couples \((u, u)\) compris), calculer la modularité des partitions suivantes du graphe pondéré des figures 4.4 et 4.5 : (a) \(\{A, B\}, \{C\}, \{D, E, F\}\) ; (b) six singletons ; (c) une seule communauté avec tous les sommets.</p>
+      <details class="indice"><summary>Indice</summary><p>Pour \(\{A, B\}\) : \(L = 3\), \(D = 4 + 5 = 9\). Pour un singleton \(\{u\}\) : \(L = 0\).</p></details>
+      <details class="solution"><summary>Solution proposée</summary><p>(a) \(\left(\frac{3}{10} - \frac{81}{400}\right) + \left(0 - \frac{16}{400}\right) + \left(\frac{3}{10} - \frac{49}{400}\right) = \frac{240 - 146}{400} = \frac{94}{400} = 0{,}235\), moins que 0,355 : isoler C fait perdre ses liens forts vers A et B. (b) \(-\frac{16 + 25 + 16 + 9 + 4 + 4}{400} = -\frac{74}{400} = -0{,}185\). (c) \(\frac{10}{10} - \left(\frac{20}{20}\right)^2 = 0\). Valeurs vérifiées avec NetworkX.</p></details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>L'algorithme de Louvain <span class="ref">p. 47–48</span></h2>
+    <p>Comme la propagation de labels, l'algorithme de Louvain est agglomératif : au départ, chaque sommet forme sa propre communauté, il y a donc autant de communautés que de sommets. On calcule la modularité de cette partition, puis on déplace des sommets d'une communauté à l'autre pour l'augmenter.</p>
+
+    <h3>Phase 1 : optimiser la modularité <span class="ref">p. 47</span></h3>
+<pre><code class="language-pseudo"><i># Algorithme 6 : algorithme de Louvain, phase 1</i>
+1. <b>Initialisation</b> : chaque sommet est une communauté singleton
+2. <b>Mélange</b> : on range les sommets dans un ordre aléatoire
+3. <b>Affectation</b> : dans cet ordre, pour chaque sommet u, on parcourt
+   ses voisins v et l'on calcule le gain de modularité obtenu en retirant u
+   de sa communauté pour le placer dans celle de v ; on place u dans la
+   communauté du gain le plus élevé ; si aucun gain n'est possible,
+   u reste dans sa communauté
+4. On répète les étapes 2 et 3 jusqu'à convergence :
+   plus aucun sommet ne change de communauté</code></pre>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Le gain de modularité</span> <span class="badge ajout">Ajout</span></p>
+      <p>Retirons \(u\) de sa communauté : il est seul. Le placer dans une communauté \(c\) fait varier la modularité de :</p>
+      <div class="encadre">\[ \Delta Q(u \to c) = \frac{k_{u,c}}{m} - \frac{D_c \cdot d_w(u)}{2m^2} \]</div>
+      <p>où \(k_{u,c}\) est la somme des poids des arêtes entre \(u\) et les sommets de \(c\), et \(D_c\) la somme des degrés des sommets de \(c\), \(u\) non compris. Cela se déduit de la formule par communauté : \(L_c\) gagne \(k_{u,c}\) et \(D_c\) gagne \(d_w(u)\). On compare ce gain pour chaque communauté voisine, y compris celle d'où vient \(u\) : on garde le plus grand, et \(u\) reste seul si tous sont négatifs.</p>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>La phase 1 sur le graphe des figures 4.4 et 4.5</span> <span class="badge ajout">Ajout</span></p>
+      <p>\(m = 10\), donc \(2m^2 = 200\). On prend l'ordre A, B, C, D, E, F et, en cas d'égalité, la première communauté rencontrée.</p>
+      <ul>
+        <li>A (\(d_w = 4\)) : vers B, \(\frac{3}{10} - \frac{5 \cdot 4}{200} = 0{,}20\) ; vers C, \(\frac{1}{10} - \frac{4 \cdot 4}{200} = 0{,}02\). A rejoint B.</li>
+        <li>B (\(d_w = 5\)) : rester avec A, \(\frac{3}{10} - \frac{4 \cdot 5}{200} = 0{,}20\) ; vers C, \(\frac{2}{10} - \frac{4 \cdot 5}{200} = 0{,}10\). B reste.</li>
+        <li>C (\(d_w = 4\)) : vers \(\{A, B\}\), \(\frac{3}{10} - \frac{9 \cdot 4}{200} = 0{,}12\) ; vers D, \(\frac{1}{10} - \frac{3 \cdot 4}{200} = 0{,}04\). C rejoint \(\{A, B\}\).</li>
+        <li>D (\(d_w = 3\)) : vers \(\{A, B, C\}\), \(\frac{1}{10} - \frac{13 \cdot 3}{200} = -0{,}095\) ; vers E ou vers F, \(\frac{1}{10} - \frac{2 \cdot 3}{200} = 0{,}07\). D rejoint E.</li>
+        <li>E (\(d_w = 2\)) : rester avec D, \(\frac{1}{10} - \frac{3 \cdot 2}{200} = 0{,}07\) ; vers F, \(\frac{1}{10} - \frac{2 \cdot 2}{200} = 0{,}08\). E quitte D pour F !</li>
+        <li>F : rester avec E, 0,08 ; vers D, 0,07. F reste.</li>
+      </ul>
+      <p>Après un tour : \(\{A, B, C\}\), \(\{D\}\), \(\{E, F\}\). Au deuxième tour, D gagne \(\frac{2}{10} - \frac{4 \cdot 3}{200} = 0{,}14\) en rejoignant \(\{E, F\}\) ; les autres ne bougent pas. Au troisième, plus rien ne change : la phase 1 rend \(\{A, B, C\}, \{D, E, F\}\), de modularité 0,355. Il a fallu plusieurs tours, d'où l'étape 4.</p>
+    </div>
+
+    <h3>Phase 2 : construire le méta-graphe <span class="ref">p. 47</span></h3>
+    <p>Dans la seconde phase, on construit un nouveau graphe, le <dfn>méta-graphe</dfn> : chaque communauté du graphe initial y devient un sommet, et ces sommets sont reliés par des liens pondérés selon le nombre de liens entre les communautés du graphe initial. Les liens internes à une communauté deviennent une boucle sur son sommet.</p>
+    <p>L'algorithme enchaîne les phases 1 et 2, en une ou plusieurs <dfn>passes</dfn>, jusqu'à ce que plus rien ne change : la phase 1 de la passe suivante travaille sur le méta-graphe. L'algorithme est <dfn>hiérarchique</dfn> : chaque passe donne une structure de communautés d'une granularité différente, avec d'abord de nombreuses petites communautés, puis moins de communautés, mais plus grandes.</p>
+    <p><span class="badge ajout">Ajout</span> Sur l'exemple précédent, le méta-graphe a deux sommets, \(X = \{A, B, C\}\) et \(Y = \{D, E, F\}\), reliés par un lien de poids 1 (l'arête C–D). Réunir \(X\) et \(Y\) ferait passer la modularité de 0,355 à 0 : la deuxième passe ne change rien, l'algorithme s'arrête.</p>
+
+    <h3>Un exemple en deux passes <span class="ref">p. 47–48</span></h3>
+    <figure class="figure">
+<svg class="schema" viewBox="0 0 800 345" width="800" role="img" aria-labelledby="fig-louvain-titre">
+<title id="fig-louvain-titre">Figure 4.7 redessinée : à gauche, le graphe de 16 sommets de Blondel et al., coloré selon les quatre communautés de la première passe (Verte 0, 1, 2, 4, 5 ; Bleue 3, 6, 7 ; Rouge 8, 9, 10, 12, 14, 15 ; Grise 11, 13). Au milieu, le méta-graphe : quatre sommets, boucles de poids 14, 4, 16 et 2, liens Verte–Bleue 4, Verte–Rouge 1, Verte–Grise 1, Bleue–Grise 1, Rouge–Grise 3. À droite, après la seconde passe, deux sommets avec des boucles de poids 26 et 24, reliés par un lien de poids 3.</title>
+<path class="trait" d="M103 29 L47 66"/>
+<path class="trait" d="M106 32 L59 128"/>
+<path class="trait" d="M118 28 L292 92"/>
+<path class="trait" d="M48 70 L152 70"/>
+<path class="trait" d="M42 78 L53 127"/>
+<path class="trait" d="M47 74 L138 131"/>
+<path class="trait" d="M48 72 L312 148"/>
+<path class="trait" d="M168 68 L247 47"/>
+<path class="trait" d="M153 74 L62 131"/>
+<path class="trait" d="M158 78 L147 127"/>
+<path class="trait" d="M260 51 L295 89"/>
+<path class="trait" d="M153 133 L292 97"/>
+<path class="trait" d="M303 103 L317 142"/>
+<path class="trait" d="M152 139 L253 206"/>
+<path class="trait" d="M61 141 L179 264"/>
+<path class="trait" d="M314 156 L266 204"/>
+<path class="trait" d="M122 182 L68 198"/>
+<path class="trait" d="M125 186 L60 254"/>
+<path class="trait" d="M137 184 L178 211"/>
+<path class="trait" d="M134 187 L181 263"/>
+<path class="trait" d="M138 182 L252 208"/>
+<path class="trait" d="M177 218 L63 257"/>
+<path class="trait" d="M180 221 L115 289"/>
+<path class="trait" d="M63 261 L177 269"/>
+<path class="trait" d="M118 292 L177 273"/>
+<path class="trait" d="M191 265 L254 215"/>
+<path class="trait" d="M193 271 L252 274"/>
+<path class="trait" d="M260 218 L260 267"/>
+<g font-size="12">
+<circle class="boite-accent" cx="110" cy="25" r="8"/>
+<circle class="boite-accent" cx="40" cy="70" r="8"/>
+<circle class="boite-accent" cx="160" cy="70" r="8"/>
+<circle class="plein-accent" cx="255" cy="45" r="8"/>
+<circle class="plein-accent" cx="300" cy="95" r="8"/>
+<circle class="boite-accent" cx="55" cy="135" r="8"/>
+<circle class="boite-accent" cx="145" cy="135" r="8"/>
+<circle class="plein-accent" cx="320" cy="150" r="8"/>
+<circle class="plein" cx="130" cy="180" r="8"/>
+<circle class="plein" cx="60" cy="200" r="8"/>
+<circle class="plein" cx="185" cy="215" r="8"/>
+<circle class="boite" cx="260" cy="210" r="8"/>
+<circle class="plein" cx="55" cy="260" r="8"/>
+<circle class="plein" cx="185" cy="270" r="8"/>
+<circle class="boite" cx="260" cy="275" r="8"/>
+<circle class="plein" cx="110" cy="295" r="8"/>
+<text x="110" y="15" text-anchor="middle" class="gras">1</text>
+<text x="40" y="60" text-anchor="middle" class="gras">2</text>
+<text x="160" y="60" text-anchor="middle" class="gras">0</text>
+<text x="268" y="50" text-anchor="start" class="gras">3</text>
+<text x="300" y="85" text-anchor="middle" class="gras">7</text>
+<text x="42" y="142" text-anchor="end" class="gras">4</text>
+<text x="157" y="152" text-anchor="start" class="gras">5</text>
+<text x="333" y="157" text-anchor="start" class="gras">6</text>
+<text x="130" y="170" text-anchor="middle" class="gras">8</text>
+<text x="60" y="226" text-anchor="middle" class="gras">15</text>
+<text x="185" y="241" text-anchor="middle" class="gras">9</text>
+<text x="273" y="217" text-anchor="start" class="gras">11</text>
+<text x="55" y="286" text-anchor="middle" class="gras">14</text>
+<text x="185" y="296" text-anchor="middle" class="gras">10</text>
+<text x="260" y="301" text-anchor="middle" class="gras">13</text>
+<text x="97" y="304" text-anchor="end" class="gras">12</text>
+</g>
+<path class="trait" d="M450 70 L560 70"/>
+<text x="505" y="62" text-anchor="middle" font-size="12" class="accent gras">4</text>
+<path class="trait" d="M450 70 L450 200"/>
+<text x="438" y="139" text-anchor="middle" font-size="12" class="accent gras">1</text>
+<path class="trait" d="M450 70 L560 200"/>
+<text x="513" y="127" text-anchor="middle" font-size="12" class="accent gras">1</text>
+<path class="trait" d="M560 70 L560 200"/>
+<text x="572" y="139" text-anchor="middle" font-size="12" class="accent gras">1</text>
+<path class="trait" d="M450 200 L560 200"/>
+<text x="505" y="192" text-anchor="middle" font-size="12" class="accent gras">3</text>
+<path class="trait" d="M442 58 C420 20 480 20 458 58"/>
+<text x="450" y="16" text-anchor="middle" font-size="12" class="accent gras">14</text>
+<path class="trait" d="M552 58 C530 20 590 20 568 58"/>
+<text x="560" y="16" text-anchor="middle" font-size="12" class="accent gras">4</text>
+<path class="trait" d="M442 212 C420 250 480 250 458 212"/>
+<text x="450" y="264" text-anchor="middle" font-size="12" class="accent gras">16</text>
+<path class="trait" d="M552 212 C530 250 590 250 568 212"/>
+<text x="560" y="264" text-anchor="middle" font-size="12" class="accent gras">2</text>
+<circle class="boite-accent" cx="450" cy="70" r="14"/>
+<circle class="plein-accent" cx="560" cy="70" r="14"/>
+<circle class="plein" cx="450" cy="200" r="14"/>
+<circle class="boite" cx="560" cy="200" r="14"/>
+<text x="505" y="290" text-anchor="middle" font-size="13" class="t2">méta-graphe après la passe 1</text>
+<path class="trait" d="M675 140 L745 140"/>
+<text x="710" y="132" text-anchor="middle" font-size="12" class="accent gras">3</text>
+<path class="trait" d="M652 128 C630 90 690 90 668 128"/>
+<text x="660" y="92" text-anchor="middle" font-size="12" class="accent gras">26</text>
+<circle class="boite-accent" cx="660" cy="140" r="14"/>
+<path class="trait" d="M752 128 C730 90 790 90 768 128"/>
+<text x="760" y="92" text-anchor="middle" font-size="12" class="accent gras">24</text>
+<circle class="plein" cx="760" cy="140" r="14"/>
+<text x="710" y="290" text-anchor="middle" font-size="13" class="t2">après la passe 2</text>
+<text x="185" y="335" text-anchor="middle" font-size="13" class="t2">graphe et communautés de la passe 1</text>
+</svg>
+      <figcaption>Figure 4.7 du poly, d'après Blondel et al. : à chaque passe, on détecte les communautés en améliorant la modularité (phase 1), puis on construit le méta-graphe qui sert à la passe suivante (phase 2). Deux passes suffisent ici.</figcaption>
+    </figure>
+    <ul>
+      <li>À la fin de la phase 1 de la première passe, on obtient quatre communautés : \(\{0, 1, 2, 4, 5\}\) (Verte), \(\{3, 6, 7\}\) (Bleue), \(\{8, 9, 10, 12, 14, 15\}\) (Rouge) et \(\{11, 13\}\) (Grise). C'est le premier niveau de la hiérarchie.</li>
+      <li>La phase 2 construit un méta-graphe de quatre sommets. Ses liens pondérés comptent les liens d'une communauté vers une autre dans le graphe initial, et ses boucles les liens d'une communauté vers elle-même.</li>
+      <li>La phase 1 de la seconde passe regroupe Verte avec Bleue (les deux sommets du haut du méta-graphe), Rouge avec Grise (ceux du bas). La phase 2 rend un méta-graphe de deux sommets : \(\{0, \dots, 7\}\) et \(\{8, \dots, 15\}\). C'est le second niveau de la hiérarchie.</li>
+    </ul>
+    <p>Cette hiérarchie se dessine dans un <dfn>dendrogramme</dfn> (« dendogramme » dans le poly) : les sommets en bas, puis un étage par niveau de la hiérarchie.</p>
+    <figure class="figure">
+<svg class="schema" viewBox="0 0 620 245" width="620" role="img" aria-labelledby="fig-dendrogramme-titre">
+<title id="fig-dendrogramme-titre">Figure 4.6 : dendrogramme de l'exécution de Louvain. En bas, les sommets 0 à 15. Au niveau 1, quatre communautés : Verte {0, 1, 2, 4, 5}, Bleue {3, 6, 7}, Rouge {8, 9, 10, 12, 14, 15}, Grise {11, 13}. Au niveau 2, deux : Verte et Bleue réunies {0 à 7}, Rouge et Grise réunies {8 à 15}.</title>
+<path class="trait" d="M30 218 L30 150 L98 150"/>
+<path class="trait" d="M64 218 L64 150 L98 150"/>
+<path class="trait" d="M98 218 L98 150 L98 150"/>
+<path class="trait" d="M132 218 L132 150 L98 150"/>
+<path class="trait" d="M166 218 L166 150 L98 150"/>
+<path class="trait" d="M98 150 L98 75"/>
+<text x="98" y="142" text-anchor="middle" font-size="13" class="gras">Verte</text>
+<path class="trait" d="M200 218 L200 150 L234 150"/>
+<path class="trait" d="M234 218 L234 150 L234 150"/>
+<path class="trait" d="M268 218 L268 150 L234 150"/>
+<path class="trait" d="M234 150 L234 75"/>
+<text x="234" y="142" text-anchor="middle" font-size="13" class="gras">Bleue</text>
+<path class="trait" d="M302 218 L302 150 L387 150"/>
+<path class="trait" d="M336 218 L336 150 L387 150"/>
+<path class="trait" d="M370 218 L370 150 L387 150"/>
+<path class="trait" d="M404 218 L404 150 L387 150"/>
+<path class="trait" d="M438 218 L438 150 L387 150"/>
+<path class="trait" d="M472 218 L472 150 L387 150"/>
+<path class="trait" d="M387 150 L387 75"/>
+<text x="387" y="142" text-anchor="middle" font-size="13" class="gras">Rouge</text>
+<path class="trait" d="M506 218 L506 150 L523 150"/>
+<path class="trait" d="M540 218 L540 150 L523 150"/>
+<path class="trait" d="M523 150 L523 75"/>
+<text x="523" y="142" text-anchor="middle" font-size="13" class="gras">Grise</text>
+<path class="accent" d="M98 75 L234 75 M166 75 L166 30"/>
+<text x="166" y="22" text-anchor="middle" font-size="13" class="gras accent">Verte</text>
+<path class="accent" d="M387 75 L523 75 M455 75 L455 30"/>
+<text x="455" y="22" text-anchor="middle" font-size="13" class="gras accent">Grise</text>
+<text x="30" y="235" text-anchor="middle" font-size="13" class="mono">0</text>
+<text x="64" y="235" text-anchor="middle" font-size="13" class="mono">1</text>
+<text x="98" y="235" text-anchor="middle" font-size="13" class="mono">2</text>
+<text x="132" y="235" text-anchor="middle" font-size="13" class="mono">4</text>
+<text x="166" y="235" text-anchor="middle" font-size="13" class="mono">5</text>
+<text x="200" y="235" text-anchor="middle" font-size="13" class="mono">3</text>
+<text x="234" y="235" text-anchor="middle" font-size="13" class="mono">7</text>
+<text x="268" y="235" text-anchor="middle" font-size="13" class="mono">6</text>
+<text x="302" y="235" text-anchor="middle" font-size="13" class="mono">8</text>
+<text x="336" y="235" text-anchor="middle" font-size="13" class="mono">9</text>
+<text x="370" y="235" text-anchor="middle" font-size="13" class="mono">10</text>
+<text x="404" y="235" text-anchor="middle" font-size="13" class="mono">12</text>
+<text x="438" y="235" text-anchor="middle" font-size="13" class="mono">14</text>
+<text x="472" y="235" text-anchor="middle" font-size="13" class="mono">15</text>
+<text x="506" y="235" text-anchor="middle" font-size="13" class="mono">11</text>
+<text x="540" y="235" text-anchor="middle" font-size="13" class="mono">13</text>
+<text x="560" y="154" font-size="12" class="t2">niveau 1</text>
+<text x="560" y="79" font-size="12" class="t2">niveau 2</text>
+</svg>
+      <figcaption>Figure 4.6 du poly : le dendrogramme de l'exécution de la figure 4.7.</figcaption>
+    </figure>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>La communauté bleue</span> <span class="badge a-verifier">À vérifier</span></p>
+      <p>Les légendes des figures 4.6 et 4.7 donnent la Bleue comme \(\{3, 5, 7\}\), avec un 5 aussi dans la Verte, ce qui est impossible dans une partition. Sur la figure de Blondel et al. et dans le dendrogramme, les sommets bleus sont 3, 6 et 7 : la Bleue est \(\{3, 6, 7\}\). C'est aussi ce que trouve l'algorithme de Louvain de NetworkX sur le graphe relevé.</p>
+    </div>
+    <div class="bloc note">
+      <p class="bloc-titre">Remarque <span>Les poids du méta-graphe</span> <span class="badge ajout">Ajout</span></p>
+      <p>Sur le graphe relevé, la communauté verte a 7 arêtes internes (0–2, 0–4, 0–5, 1–2, 1–4, 2–4, 2–5) et sa boucle porte 14 : chaque arête interne y compte deux fois, une par extrémité, comme dans la somme des degrés internes. De même, la Bleue a 2 arêtes internes (boucle 4), la Rouge 8 (boucle 16) et la Grise 1 (boucle 2). Entre Verte et Bleue, il y a bien 4 arêtes (0–3, 1–7, 2–6, 5–7), et 3 entre Rouge et Grise (8–11, 10–11, 10–13). Au second niveau, \(26 = 14 + 4 + 2 \times 4\) et \(24 = 16 + 2 + 2 \times 3\) ; le lien de poids 3 réunit les arêtes Verte–Rouge, Verte–Grise et Bleue–Grise. La modularité passe de 0,346 au premier niveau à 0,392 au second.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Louvain avec NetworkX</span></p>
+<pre data-fichier="louvain.py"><code class="language-python">import networkx as nx
+
+aretes = [(1, 2), (1, 4), (1, 7), (2, 0), (2, 4), (2, 5), (2, 6), (0, 3), (0, 4), (0, 5),
+          (3, 7), (5, 7), (7, 6), (5, 11), (4, 10), (6, 11), (8, 15), (8, 14), (8, 9),
+          (8, 10), (8, 11), (9, 14), (9, 12), (14, 10), (12, 10), (10, 11), (10, 13), (11, 13)]
+G = nx.Graph(aretes)
+
+for niveau, partition in enumerate(nx.community.louvain_partitions(G, seed=0), start=1):
+    Q = nx.community.modularity(G, partition)
+    print(niveau, [sorted(P) for P in partition], round(Q, 3))</code></pre>
+<pre class="terminal"><code>$ python louvain.py
+1 [[0, 1, 2, 4, 5], [3, 6, 7], [8, 9, 10, 12, 14, 15], [11, 13]] 0.346
+2 [[0, 1, 2, 3, 4, 5, 6, 7], [8, 9, 10, 11, 12, 13, 14, 15]] 0.392</code></pre>
+      <p><code>louvain_partitions</code> renvoie un niveau de la hiérarchie par passe ; <code>louvain_communities</code> ne renvoie que le dernier. Le paramètre <code>seed</code> fixe l'ordre de mélange.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le sens des mots avec SINr <span class="ref">p. 49–52</span></h2>
+    <p>En extrayant d'un corpus un graphe de co-occurrences de mots, puis en y détectant les communautés, on peut obtenir une représentation informatique du sens des mots. C'est la méthode <dfn>SINr</dfn>, développée au LIUM (Laboratoire d'informatique de l'Université du Mans) et présentée en 2021 dans <cite lang="en">SINr: Fast Computing of Sparse Interpretable Node Representations is not a Sin!</cite></p>
+    <p>Elle s'appuie sur deux linguistes. Pour John R. Firth (1957), « <span lang="en">you shall know a word by the company it keeps</span> » : on connaît le sens d'un mot par les contextes où il est employé, d'où le graphe de co-occurrences, qui relie les mots à leurs contextes. Pour Zellig S. Harris (1954), « <span lang="en">linguistic items with similar distributions have similar meanings</span> » : des mots qui ont les mêmes contextes, dans les mêmes proportions, ont des sens proches. SINr va plus loin et remplace les mots contextes par des <strong>groupes</strong> de mots contextes, que l'on veut proches par le thème : ce sont les communautés.</p>
+
+    <h3>Étape 1 : extraire le graphe de co-occurrences <span class="ref">p. 49</span></h3>
+    <p>On prétraite d'abord le corpus pour normaliser le vocabulaire et ne garder que les mots significatifs (ce prétraitement est vu en M2). On extrait ensuite le graphe de co-occurrences : un sommet par mot, et un lien entre deux mots qui apparaissent dans une même phrase, pondéré par le nombre de phrases où ils apparaissent ensemble. Pour ne pas surcharger le graphe, on supprime les liens non significatifs, ceux pour lesquels \(\log \frac{\text{coocc}(mot_1, mot_2)}{\text{occ}(mot_1) \cdot \text{occ}(mot_2)} \lt 0\), où \(\text{coocc}\) est la fréquence de co-occurrence des deux mots dans une même phrase et \(\text{occ}\) la fréquence d'un mot dans le corpus.</p>
+    <p>Le corpus <span lang="en">« My cat eats mice. Your owl eats mice. This owl flies. A crow flies slower than an eagle. »</span> devient, après prétraitement : <span lang="en">« cat eats mouse. owl eats mouse. owl flies. crow flies slower eagle. »</span></p>
+    <figure class="figure">
+<svg class="schema" viewBox="0 0 500 195" width="500" role="img" aria-labelledby="fig-cooccurrences-titre">
+<title id="fig-cooccurrences-titre">Figures 4.8 et 4.9 : le graphe de co-occurrences du corpus, avec ses deux communautés. Arêtes : cat–eats, cat–mouse, eats–mouse (poids 2), eats–owl, mouse–owl, owl–flies, flies–crow, flies–slower, slower–eagle. Communauté C0 : cat, eats, mouse, owl ; communauté C1 : flies, crow, slower, eagle.</title>
+<path class="trait" d="M50 58 L130 37"/>
+<path class="trait" d="M46 68 L89 122"/>
+<path class="trait" d="M136 44 L99 121"/>
+<text x="108" y="82" text-anchor="middle" font-size="12" class="accent gras">2</text>
+<path class="trait" d="M146 43 L199 122"/>
+<path class="trait" d="M105 130 L195 130"/>
+<path class="trait" d="M215 127 L290 108"/>
+<path class="trait" d="M306 97 L344 43"/>
+<path class="trait" d="M310 107 L390 128"/>
+<path class="trait" d="M406 122 L454 63"/>
+<g font-size="14">
+<circle class="boite-accent" cx="40" cy="60" r="10"/>
+<circle class="boite-accent" cx="140" cy="35" r="10"/>
+<circle class="boite-accent" cx="95" cy="130" r="10"/>
+<circle class="boite-accent" cx="205" cy="130" r="10"/>
+<circle class="plein" cx="300" cy="105" r="10"/>
+<circle class="plein" cx="350" cy="35" r="10"/>
+<circle class="plein" cx="400" cy="130" r="10"/>
+<circle class="plein" cx="460" cy="55" r="10"/>
+<text x="40" y="45" text-anchor="middle" class="gras">cat</text>
+<text x="140" y="20" text-anchor="middle" class="gras">eats</text>
+<text x="95" y="159" text-anchor="middle" class="gras">mouse</text>
+<text x="205" y="159" text-anchor="middle" class="gras">owl</text>
+<text x="300" y="134" text-anchor="middle" class="gras">flies</text>
+<text x="350" y="20" text-anchor="middle" class="gras">crow</text>
+<text x="400" y="159" text-anchor="middle" class="gras">slower</text>
+<text x="460" y="40" text-anchor="middle" class="gras">eagle</text>
+</g>
+<text x="60" y="185" font-size="13" class="accent gras">C0</text>
+<text x="420" y="185" font-size="13" class="t2 gras">C1</text>
+</svg>
+      <figcaption>Figures 4.8 et 4.9 du poly : le graphe de co-occurrences du corpus prétraité (le lien eats–mouse pèse 2, les autres 1), et ses deux communautés, C0 en couleur et C1 en gris foncé.</figcaption>
+    </figure>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Le filtre et le graphe de la figure</span> <span class="badge a-verifier">À vérifier</span></p>
+      <ul>
+        <li>Avec des nombres d'occurrences bruts, \(\text{coocc}(mot_1, mot_2) \le \text{occ}(mot_1)\) et \(\text{occ}(mot_2) \ge 1\), donc le rapport ne dépasse jamais 1 et son logarithme n'est jamais positif. Le filtre n'a de sens qu'avec des <em>probabilités</em> : c'est l'information mutuelle ponctuelle (PMI), \(\log \frac{p(mot_1, mot_2)}{p(mot_1)\, p(mot_2)}\), négative quand deux mots apparaissent ensemble moins souvent que le hasard ne le voudrait.</li>
+        <li>La phrase « crow flies slower eagle » devrait relier ses quatre mots deux à deux. La figure ne garde que crow–flies, flies–slower et slower–eagle ; manquent crow–slower, crow–eagle et flies–eagle, que le filtre PMI ne supprime pas sur ce corpus. Les calculs ci-dessous suivent la figure, avec laquelle la table 4.1 est cohérente.</li>
+      </ul>
+    </div>
+
+    <h3>Étape 2 : détecter les communautés <span class="ref">p. 49–50</span></h3>
+    <p>On cherche ensuite des groupes de mots cohérents par le thème. SINr vise un grand nombre de <strong>petites</strong> communautés : sans les laisser trop grossir, on espère qu'elles réunissent des mots très liés par le thème, comme une communauté « cuivre, laiton, or ». L'équipe utilise une version modifiée de la modularité et de l'algorithme de Louvain, mais la propagation de labels fonctionne aussi très bien. Sur le corpus d'exemple, on obtient deux communautés : \(C_0 = \{\text{cat}, \text{eats}, \text{mouse}, \text{owl}\}\) et \(C_1 = \{\text{flies}, \text{crow}, \text{slower}, \text{eagle}\}\).</p>
+
+    <h3>Étape 3 : extraire les vecteurs <span class="ref">p. 50–51</span></h3>
+    <p>D'après Harris, deux mots qui se relient de la même façon aux communautés ont des sens proches. On calcule donc, pour chaque sommet, la proportion de ses liens qui aboutissent dans chaque communauté.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 30 <span>Proportion des liens vers une communauté</span></p>
+      <div class="encadre">\[ Pr(u, C_i) = \frac{\sum_{v \in C_i} W(uv)}{d_w(u)} \]</div>
+      <p>Avec \(k\) communautés, le vecteur du sommet \(u\) est \(\langle Pr(u, C_1), Pr(u, C_2), \dots, Pr(u, C_k) \rangle\).</p>
+    </div>
+    <div class="colonnes">
+      <div class="tableau centre compact">
+        <table>
+          <caption>Table 4.1 du poly : les vecteurs du corpus d'exemple</caption>
+          <thead><tr><th>Mot</th><th>\(C_0\)</th><th>\(C_1\)</th></tr></thead>
+          <tbody>
+            <tr><td lang="en">cat</td><td>1</td><td>0</td></tr>
+            <tr><td lang="en">eats</td><td>1</td><td>0</td></tr>
+            <tr><td lang="en">mouse</td><td>1</td><td>0</td></tr>
+            <tr><td lang="en">owl</td><td>\(2/3 \approx 0{,}67\)</td><td>\(1/3 \approx 0{,}33\)</td></tr>
+            <tr><td lang="en">flies</td><td>\(1/3 \approx 0{,}33\)</td><td>\(2/3 \approx 0{,}67\)</td></tr>
+            <tr><td lang="en">crow</td><td>0</td><td>1</td></tr>
+            <tr><td lang="en">eagle</td><td>0</td><td>1</td></tr>
+            <tr><td lang="en">slower</td><td>0</td><td>1</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <p>Par exemple, <span lang="en">owl</span> est relié à <span lang="en">eats</span> et <span lang="en">mouse</span>, dans \(C_0\), et à <span lang="en">flies</span>, dans \(C_1\) : deux tiers de ses liens vont vers \(C_0\), un tiers vers \(C_1\), d'où le vecteur \(\langle 2/3, 1/3 \rangle\). <span lang="en">mouse</span> a un degré pondéré de 4 (cat, eats deux fois, owl), tout entier vers \(C_0\) : \(\langle 1, 0 \rangle\).</p>
+        <p>La figure 4.10 du poly représente la même chose en remplaçant chaque communauté par un sommet, relié à chaque mot par un lien de poids \(Pr(u, C_i)\). Le poly arrondit \(2/3\) à 0,66 ; l'arrondi correct est 0,67.</p>
+      </div>
+    </div>
+
+    <h3>Utiliser les vecteurs <span class="ref">p. 51–52</span></h3>
+    <p>Ces vecteurs encapsulent le sens des mots du vocabulaire : deux mots de vecteurs proches (respectivement éloignés) ont des sens proches (respectivement éloignés). Pour comparer deux vecteurs, on utilise en général la similarité cosinus.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition 31 <span>Similarité cosinus</span></p>
+      <div class="encadre">\[ \cos(\vec{u}, \vec{v}) = \frac{\vec{u} \cdot \vec{v}}{\|\vec{u}\| \cdot \|\vec{v}\|} \]</div>
+      <p>Elle prend ses valeurs dans \([-1, 1]\) ; plus elle est proche de 1, plus les mots ont des sens proches.</p>
+    </div>
+    <p><span class="badge ajout">Ajout</span> Les vecteurs de SINr n'ont que des coordonnées positives ou nulles : leur cosinus est donc entre 0 et 1. Il vaut 1 pour deux vecteurs proportionnels, 0 pour deux mots qui ne partagent aucune communauté.</p>
+    <div class="bloc exercice" id="ex-4">
+      <p class="bloc-titre">Exercice 4 <span>Similarités du corpus d'exemple</span> <span class="badge ajout">Ajout</span></p>
+      <p>Avec les vecteurs de la table 4.1, calculer \(\cos(\text{owl}, \text{flies})\), \(\cos(\text{cat}, \text{owl})\) et \(\cos(\text{cat}, \text{crow})\). Que penser de \(\cos(\text{cat}, \text{eats})\) ?</p>
+      <details class="solution"><summary>Solution proposée</summary><p>\(\text{owl} \cdot \text{flies} = \frac{2}{9} + \frac{2}{9} = \frac{4}{9}\) et \(\|\text{owl}\| = \|\text{flies}\| = \frac{\sqrt{5}}{3}\), donc \(\cos = \frac{4/9}{5/9} = 0{,}8\). \(\cos(\text{cat}, \text{owl}) = \frac{2/3}{1 \cdot \sqrt{5}/3} = \frac{2}{\sqrt{5}} \approx 0{,}89\). \(\cos(\text{cat}, \text{crow}) = 0\) : aucune communauté en commun. \(\cos(\text{cat}, \text{eats}) = 1\) : les deux vecteurs sont identiques, alors qu'un nom et un verbe n'ont pas le même sens. Avec deux communautés seulement, les vecteurs sont trop grossiers pour distinguer ces mots : c'est pourquoi SINr cherche beaucoup de petites communautés sur de grands corpus.</p></details>
+    </div>
+    <div class="tableau centre compact">
+        <table>
+          <caption>Figure 4.11 du poly : les mots les plus similaires à « vaccin »</caption>
+          <thead><tr><th>Mot</th><th>Similarité</th><th>Mot</th><th>Similarité</th></tr></thead>
+          <tbody>
+            <tr><td>contre</td><td>0,724</td><td>corruption</td><td>0,620</td></tr>
+            <tr><td>sida</td><td>0,705</td><td>médicament</td><td>0,610</td></tr>
+            <tr><td>lutter</td><td>0,703</td><td>efficacité</td><td>0,609</td></tr>
+            <tr><td>lutte</td><td>0,701</td><td>antisémitisme</td><td>0,609</td></tr>
+            <tr><td>efficace</td><td>0,682</td><td>extrémisme</td><td>0,601</td></tr>
+            <tr><td>protester</td><td>0,674</td><td>paludisme</td><td>0,597</td></tr>
+            <tr><td>terrorisme</td><td>0,665</td><td>racisme</td><td>0,592</td></tr>
+            <tr><td>efficacement</td><td>0,661</td><td>combat</td><td>0,584</td></tr>
+            <tr><td>fléau</td><td>0,656</td><td>grippe</td><td>0,568</td></tr>
+            <tr><td>désinformation</td><td>0,650</td><td>remède</td><td>0,567</td></tr>
+            <tr><td>criminalité</td><td>0,626</td><td>dose</td><td>0,567</td></tr>
+            <tr><td></td><td></td><td>expérimental</td><td>0,564</td></tr>
+            <tr><td></td><td></td><td>discrimination</td><td>0,561</td></tr>
+          </tbody>
+        </table>
+    </div>
+        <p>SINr part donc d'un corpus de textes pour obtenir des vecteurs qui décrivent le sens de ses mots ; l'algorithme sera implémenté en TP. La figure 4.11 donne les mots les plus similaires à « vaccin » (définition 31), d'après des vecteurs extraits par Simon Guillot avec SINr sur un corpus de presse, pour sa thèse. On y trouve des noms de maladies (sida, paludisme, grippe), des mots du domaine médical (médicament, remède, dose, expérimental) et beaucoup de mots liés aux controverses sur la vaccination.</p>
+<pre><code class="language-pseudo"><i># Algorithme 7 : SINr</i>
+<i># Prend un corpus textuel, rend un vecteur pour chaque mot</i>
+<b>procedure</b> SINr(Corpus Cor)
+    Extraire le graphe de co-occurrences G de Cor
+    Détecter les communautés C de G
+    Extraire les vecteurs : distribution des liens
+        de chaque sommet de G vers les communautés de C
+<b>end procedure</b></code></pre>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>Structure de communautés : partition des sommets telle que chaque partie est plus densément connectée en interne qu'avec le reste. Densité : \(\frac{2m}{n(n-1)}\).</li>
+        <li>Degrés interne \(d^{in}\) et externe \(d^{out}\). Communauté faible : \(\sum d^{in} \gt \sum d^{out}\) sur la partie. Communauté forte : \(d^{in}(u) \gt d^{out}(u)\) pour chaque sommet. Forte implique faible.</li>
+        <li>Conductance : liens sortants rapportés aux liens de la communauté ; on la veut faible. Yang et Leskovec divisent par la somme des degrés, \(2\Sigma^{in} + \Sigma^{out}\).</li>
+        <li>Propagation de labels : un label par sommet, puis, dans un ordre aléatoire, chacun prend le label majoritaire de ses voisins (égalité tirée au hasard), jusqu'à stabilité. Rapide et simple, mais instable et sans garantie de convergence.</li>
+        <li>Modularité : \(Q = \sum_c \left( \frac{L_c}{m} - \left(\frac{D_c}{2m}\right)^2 \right)\), liens observés dans les communautés moins liens attendus au hasard à degrés égaux. Plus elle est élevée, meilleure est la partition ; 0 pour une seule communauté.</li>
+        <li>Louvain : phase 1, déplacer chaque sommet vers la communauté voisine du plus grand gain de modularité, jusqu'à stabilité ; phase 2, fusionner chaque communauté en un sommet du méta-graphe. Les passes successives donnent une hiérarchie, que résume un dendrogramme.</li>
+        <li>SINr : graphe de co-occurrences, communautés, puis pour chaque mot le vecteur des proportions de ses liens vers chaque communauté ; on compare deux mots par la similarité cosinus.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Un sous-graphe de 5 sommets a 6 arêtes. Sa densité ?</summary>
+        <div><p>\(\frac{2 \cdot 6}{5 \cdot 4} = 0{,}6\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Une communauté faible est-elle forcément forte ?</summary>
+        <div><p>Non : un sommet peut avoir plus de voisins dehors que dedans, tant que la somme sur la partie reste favorable. L'inverse est vrai : une communauté forte est faible.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi la propagation de labels donne-t-elle des résultats différents d'une exécution à l'autre ?</summary>
+        <div><p>Parce que l'ordre des sommets est tiré au hasard à chaque tour, et que les égalités entre labels sont départagées au hasard.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que compare la modularité ?</summary>
+        <div><p>La part des liens qui tombent à l'intérieur des communautés avec celle que l'on attendrait dans un graphe aléatoire ayant les mêmes degrés.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quelle est la modularité d'une partition en une seule communauté ?</summary>
+        <div><p>0 : tous les liens sont internes (\(L/m = 1\)), et c'est aussi ce qu'on attend au hasard (\((2m/2m)^2 = 1\)).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Que devient une communauté dans le méta-graphe de Louvain ?</summary>
+        <div><p>Un sommet. Ses liens internes deviennent une boucle, et les liens vers une autre communauté un seul lien, pondéré par leur nombre.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Un mot a 3 liens vers \(C_0\) et 1 vers \(C_1\). Son vecteur SINr ?</summary>
+        <div><p>\(\langle 3/4, 1/4 \rangle = \langle 0{,}75 ; 0{,}25 \rangle\).</p></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Références</h2>
+    <ul>
+      <li>N. Dugué, <cite>Graphes et applications</cite>, poly du cours, Le Mans Université, 2026-2027 : <a href="../cours/_Graphes__Cours_de_graphes_A4__1_-4.pdf">chapitre 4</a>.</li>
+      <li>M. Girvan et M. E. J. Newman, <cite>Community structure in social and biological networks</cite>, PNAS, 2002.</li>
+      <li>F. Radicchi et al., <cite>Defining and identifying communities in networks</cite>, PNAS, 2004.</li>
+      <li>J. Yang et J. Leskovec, <cite>Defining and evaluating network communities based on ground-truth</cite>, 2012.</li>
+      <li>U. N. Raghavan, R. Albert et S. Kumara, <cite>Near linear time algorithm to detect community structures in large-scale networks</cite>, Physical Review E, 2007.</li>
+      <li>M. E. J. Newman, <cite>Modularity and community structure in networks</cite>, PNAS, 2006.</li>
+      <li>V. D. Blondel, J.-L. Guillaume, R. Lambiotte et E. Lefebvre, <cite>Fast unfolding of communities in large networks</cite>, Journal of Statistical Mechanics, 2008.</li>
+      <li>T. Prouteau et al., <cite>SINr: Fast Computing of Sparse Interpretable Node Representations is not a Sin!</cite>, 2021.</li>
+      <li>Documentation NetworkX : <a href="https://networkx.org/documentation/stable/reference/algorithms/community.html">détection de communautés</a>.</li>
+    </ul>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-03-petit-monde.html"><small>← Cours 3</small>Le monde est petit</a>
+    <a class="suivant" href="cours-05-centralite-diffusion.html"><small>Cours 5 →</small>Centralité et diffusion</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Théorie des graphes · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

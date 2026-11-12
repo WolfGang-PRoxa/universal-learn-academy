@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="se">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Les verrous · Programmation système L3</title>
+<meta name="description" content="Quiz interactif sur le cours 2 de programmation système (L3) : lecteurs et écrivains, verrous externes, verrous consultatifs et impératifs, fcntl et lockf.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/quiz/assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="../generated_courses/index.html">Programmation système</a>
+    <span aria-current="page">Quiz · Les verrous</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Programmation système</span> Quiz · L3 S5</p>
+    <h1>Les verrous sur les fichiers</h1>
+    <p class="chapeau">Vingt-deux questions sur le cours 2 : règle des lecteurs et des écrivains, vocabulaire des verrous, verrous externes, verrous consultatifs et impératifs, primitives <code>fcntl</code> et <code>lockf</code>. Une fonction C qui détecte le conflit entre deux verrous est exécutée et corrigée automatiquement.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-02-verrous.html">Cours 2 · Les verrous sur les fichiers</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-28">28 sept. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Programmation système · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "se-cours-02-verrous",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 2 · Les verrous sur les fichiers",
+      "lien": "../generated_courses/cours-02-verrous.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "qcm",
+      "theme": "Accès concurrents",
+      "difficulte": 1,
+      "enonce": "<p>Selon la règle des lecteurs et des écrivains, laquelle de ces situations est permise sur un même fichier ?</p>",
+      "choix": [
+        "Trois processus le lisent en même temps",
+        "Un processus l'écrit pendant qu'un autre le lit",
+        "Deux processus l'écrivent en même temps",
+        "Un processus l'écrit pendant que trois autres le lisent"
+      ],
+      "reponse": 0,
+      "explication": "<p>À tout instant, un fichier peut être utilisé soit par autant de lecteurs qu'on veut, soit par un seul écrivain. Trois lectures ne modifient rien et ne se gênent pas. Dès qu'une écriture est en cours, aucun autre accès n'est permis, pas même une lecture, qui risquerait de voir un état à moitié écrit.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La règle des lecteurs et des écrivains",
+        "lien": "../generated_courses/cours-02-verrous.html#la-regle-des-lecteurs-et-des-ecrivains"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "trous",
+      "theme": "Accès concurrents",
+      "difficulte": 1,
+      "enonce": "<p>Le système de gestion de fichiers applique la règle des lecteurs et des écrivains avec un booléen d'écriture et un compteur de lectures, rangés dans le descripteur commun du fichier. Compléter les règles :</p>",
+      "texte": "Une ouverture en lecture est possible si et seulement si aucune {{0}} n'est en cours. Une ouverture en écriture est possible si et seulement si aucune {{1}} n'est en cours. À la fermeture d'une lecture, le compteur de lectures est {{2}} ; à la fermeture d'une écriture, le booléen repasse à {{3}}.",
+      "trous": [
+        {
+          "choix": [
+            "lecture",
+            "écriture",
+            "lecture ni écriture"
+          ],
+          "reponse": 1
+        },
+        {
+          "choix": [
+            "écriture",
+            "lecture",
+            "lecture ni écriture"
+          ],
+          "reponse": 2
+        },
+        {
+          "choix": [
+            "incrémenté",
+            "décrémenté",
+            "remis à zéro"
+          ],
+          "reponse": 1
+        },
+        {
+          "choix": [
+            "VRAI",
+            "FAUX"
+          ],
+          "reponse": 1
+        }
+      ],
+      "explication": "<p>Un lecteur n'est gêné que par une écriture ; un écrivain est gêné par tout accès en cours, lecture comme écriture. Le compteur dénombre les lectures en cours : il diminue de 1 à chaque fermeture en lecture. Le booléen signale une écriture en cours : il repasse à FAUX quand l'écrivain ferme le fichier.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Une solution dans le système de gestion de fichiers",
+        "lien": "../generated_courses/cours-02-verrous.html#une-solution-dans-le-systeme-de-gestion-de-fichiers"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "qcm",
+      "theme": "Accès concurrents",
+      "difficulte": 2,
+      "enonce": "<p>Deux exemplaires de <code>ecrivain.c</code> écrivent en même temps dans le même fichier, sans verrou. Chacun ouvre le fichier avec <code>open(fichier, O_RDWR|O_CREAT, 0666)</code>, puis écrit 10 lignes de 13 octets. Le fichier final contient des lignes de A et des lignes de B, mais 10 lignes seulement. Pourquoi ?</p>",
+      "choix": [
+        "Chaque <code>open</code> a sa propre position courante, qui part de 0 : les deux écrivains écrivent aux mêmes positions et s'écrasent",
+        "Le système entrelace les caractères des deux écrivains, qui se mélangent à l'intérieur des lignes",
+        "Le second <code>open</code> vide le fichier, ce qui efface les lignes déjà écrites par le premier",
+        "Les deux écrivains partagent la même position courante, et chacun fait avancer celle de l'autre"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Chaque processus a appelé <code>open</code> lui-même : que vaut sa position courante juste après l'ouverture ?</p>"
+      ],
+      "explication": "<p>Sans <code>O_APPEND</code>, chaque <code>open</code> crée une position courante qui part du début du fichier. La ligne <var>i</var> de A et celle de B occupent donc les mêmes octets, et chaque ligne du fichier est celle qui a été écrite en dernier. <code>open</code> ne vide pas le fichier sans <code>O_TRUNC</code>, et deux <code>open</code> indépendants ne partagent pas de position.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Deux écrivains sans verrou",
+        "lien": "../generated_courses/cours-02-verrous.html#deux-ecrivains-sans-verrou"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "association",
+      "theme": "Vocabulaire des verrous",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque terme à sa définition :</p>",
+      "paires": [
+        [
+          "Verrou partagé",
+          "Autorise plusieurs lectures en même temps"
+        ],
+        [
+          "Verrou exclusif",
+          "Garantit un accès total à son détenteur"
+        ],
+        [
+          "Verrou bloquant",
+          "Le processus est endormi jusqu'à la libération"
+        ],
+        [
+          "Verrou non bloquant",
+          "Une erreur est renvoyée tout de suite si la zone est occupée"
+        ],
+        [
+          "Portée",
+          "Zone d'octets couverte par le verrou"
+        ],
+        [
+          "Interblocage",
+          "Cycle de processus qui attendent chacun une ressource tenue par un autre"
+        ]
+      ],
+      "intrus": [
+        "Le système bloque aussi <code>read</code> et <code>write</code> sur la zone"
+      ],
+      "explication": "<p>Partagé et exclusif disent quel accès le verrou protège, lecture ou écriture ; bloquant et non bloquant, ce qui arrive quand il n'est pas disponible ; la portée, la partie du fichier qu'il couvre. L'intrus décrit un verrou impératif, qui n'est pas dans la liste.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le vocabulaire des verrous",
+        "lien": "../generated_courses/cours-02-verrous.html#le-vocabulaire-des-verrous"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "qcm-multi",
+      "theme": "Vocabulaire des verrous",
+      "difficulte": 3,
+      "enonce": "<p>Dans chaque cas, deux processus <strong>différents</strong> posent un verrou sur le même fichier. La portée est notée <code>(l_start, l_len)</code>, comptée depuis le début du fichier. Quels couples de verrous sont en conflit ?</p>",
+      "choix": [
+        "Partagé (0, 10) et partagé (5, 10)",
+        "Exclusif (0, 10) et partagé (10, 10)",
+        "Partagé (0, 10) et exclusif (9, 4)",
+        "Exclusif (100, 0) et partagé (5000, 10)"
+      ],
+      "reponses": [
+        2,
+        3
+      ],
+      "indices": [
+        "<p>Deux verrous de processus différents sont en conflit si leurs zones se chevauchent <em>et</em> si l'un des deux au moins est exclusif.</p>",
+        "<p>La zone (<var>s</var>, <var>n</var>) couvre les octets <var>s</var> à <var>s</var> + <var>n</var> − 1 ; une longueur nulle va jusqu'à la fin du fichier, et au-delà.</p>"
+      ],
+      "explication": "<p>Deux verrous partagés ne sont jamais en conflit. (0, 10) couvre les octets 0 à 9 et (10, 10) les octets 10 à 19 : les zones se touchent sans se chevaucher. (9, 4) couvre les octets 9 à 12, dont l'octet 9, commun avec (0, 10), et l'un des deux verrous est exclusif : conflit. Enfin, <code>l_len = 0</code> étend le verrou exclusif de l'octet 100 à l'infini : il couvre l'octet 5000.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La portée d'un verrou",
+        "lien": "../generated_courses/cours-02-verrous.html#la-portee-d-un-verrou"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "qcm",
+      "theme": "Vocabulaire des verrous",
+      "difficulte": 2,
+      "enonce": "<p>Laquelle de ces situations est un <strong>interblocage</strong> ?</p>",
+      "choix": [
+        "P1 tient l'enregistrement 0 et attend le 1 ; P2 tient le 1 et attend le 0",
+        "Des lecteurs se relaient sans arrêt sur un fichier, et un écrivain attend qu'ils aient tous fini",
+        "Un processus attend un verrou externe laissé par un processus qui s'est terminé",
+        "Un processus pose deux fois de suite un verrou exclusif sur la même zone"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Un interblocage est un <em>cycle</em> d'attentes : chaque processus attend une ressource tenue par un autre processus du cycle.</p>"
+      ],
+      "explication": "<p>Seule la première situation forme un cycle : ni P1 ni P2 ne peut avancer, puisque chacun attend l'autre. L'écrivain qui attend des lecteurs peut attendre longtemps (c'est une famine), mais sans cycle. Le verrou externe orphelin bloque les autres, sans cycle non plus. Et les verrous d'un processus ne le gênent jamais : la seconde pose remplace la première.</p>",
+      "revoir": {
+        "texte": "Cours 2 · L'interblocage",
+        "lien": "../generated_courses/cours-02-verrous.html#l-interblocage"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "qcm",
+      "theme": "Verrous externes",
+      "difficulte": 1,
+      "enonce": "<p>Avec quelles options <code>open</code> crée-t-il un fichier verrou externe de façon sûre, c'est-à-dire en échouant si le fichier existe déjà ?</p>",
+      "choix": [
+        "<code>O_CREAT|O_EXCL</code>",
+        "<code>O_CREAT|O_TRUNC</code>",
+        "<code>O_RDWR|O_CREAT</code>",
+        "<code>O_CREAT|O_APPEND</code>"
+      ],
+      "reponse": 0,
+      "explication": "<p>Avec <code>O_CREAT|O_EXCL</code>, <code>open</code> échoue avec <code>EEXIST</code> si le fichier existe : le test d'existence et la création sont faits par un seul appel système. Sans <code>O_EXCL</code>, <code>open</code> ouvre un fichier existant sans échouer (et <code>O_TRUNC</code> le vide) : deux processus croiraient tous deux avoir posé le verrou.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Poser et lever un verrou externe",
+        "lien": "../generated_courses/cours-02-verrous.html#poser-et-lever-un-verrou-externe"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "qcm-multi",
+      "theme": "Verrous externes",
+      "difficulte": 2,
+      "enonce": "<p>Quelles sont les limites des verrous externes, faits d'un fichier annexe créé par <code>open(…, O_CREAT|O_EXCL, 0)</code> et supprimé par <code>unlink</code> ?</p>",
+      "choix": [
+        "Le processus qui attend consomme du temps processeur",
+        "Le verrou porte toujours sur le fichier entier",
+        "Le fichier verrou reste si le processus meurt avant son <code>unlink</code>",
+        "Ils demandent de monter le système de fichiers avec l'option <code>mand</code>",
+        "Ils ne fonctionnent qu'entre un processus et ses fils"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "indices": [
+        "<p>Comment attend un processus dans la boucle <code>while</code> de <code>ecrivain_externe.c</code> ? Et qui supprime le fichier verrou ?</p>"
+      ],
+      "explication": "<p>Le processus qui attend reboucle sur <code>open</code> sans s'endormir : 99 % du processeur dans la trace du cours. Le verrou n'a pas de portée : l'existence d'un fichier ne dit rien d'une zone. Et seul le processus qui a posé le verrou le supprime : s'il meurt avant, le verrou reste orphelin. L'option <code>mand</code> concerne les verrous impératifs, et un fichier verrou fonctionne entre tous les processus qui connaissent son nom.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Avantages et limites",
+        "lien": "../generated_courses/cours-02-verrous.html#avantages-et-limites"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "qcm",
+      "theme": "Verrous externes",
+      "difficulte": 3,
+      "enonce": "<p><code>ecrivain_externe.c</code> attend son verrou avec cette boucle :</p><pre><code class='language-c'>while( ( ( d_verrou = open(ref_verrou, O_CREAT|O_EXCL,0)) == -1 ) &amp;&amp;\n       ( errno == EEXIST ) ) ;\nclose(d_verrou);</code></pre><p>Le fichier verrou n'existe pas, mais le processus n'a pas le droit d'écrire dans le répertoire. Que se passe-t-il ?</p>",
+      "choix": [
+        "<code>open</code> échoue avec <code>EACCES</code> : la boucle s'arrête, et le programme continue comme s'il avait posé le verrou",
+        "<code>open</code> échoue avec <code>EACCES</code> : le programme boucle indéfiniment",
+        "<code>open</code> réussit, car <code>O_EXCL</code> ne tient pas compte des droits du répertoire",
+        "Le programme s'arrête avec un message d'erreur"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>La boucle ne continue que tant que les <em>deux</em> conditions sont vraies.</p>",
+        "<p>Créer un fichier dans un répertoire demande le droit d'écriture sur ce répertoire.</p>"
+      ],
+      "explication": "<p>La création échoue avec <code>EACCES</code>, pas avec <code>EEXIST</code> : la seconde condition est fausse, et la boucle s'arrête. <code>close(-1)</code> échoue sans bruit, et le programme affiche « pose du verrou externe » puis écrit dans le fichier, sans aucun verrou. Sous Linux, dans un répertoire en lecture seule, c'est bien ce qui se passe. Il faut tester le résultat de <code>open</code> après la boucle.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Avantages et limites",
+        "lien": "../generated_courses/cours-02-verrous.html#avantages-et-limites"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "vrai-faux",
+      "theme": "Consultatifs et impératifs",
+      "difficulte": 1,
+      "enonce": "<p>Le processus A tient un verrou exclusif, posé avec <code>fcntl</code>, sur l'enregistrement 1 d'un fichier. Un programme qui ne demande aucun verrou peut quand même lire cet enregistrement avec <code>read</code>.</p>",
+      "reponse": true,
+      "explication": "<p>Vrai : les verrous de <code>fcntl</code> sont consultatifs. Le système arbitre les demandes de verrous, mais ne contrôle ni <code>read</code> ni <code>write</code>. Dans la trace du cours, <code>lecteur</code> lit <code>AAAAAAAAAA01</code> pendant qu'A tient l'enregistrement, alors que <code>lecteur_interne</code>, qui demande un verrou partagé, reste bloqué.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les verrous consultatifs",
+        "lien": "../generated_courses/cours-02-verrous.html#les-verrous-consultatifs"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "qcm",
+      "theme": "Consultatifs et impératifs",
+      "difficulte": 2,
+      "enonce": "<p>Dans l'exemple du cours, comment un verrou posé avec <code>fcntl</code> devient-il <strong>impératif</strong> ?</p>",
+      "choix": [
+        "Le fichier reçoit le bit set-gid sans droit d'exécution pour le groupe (<code>chmod g+s,g-x</code>), sur un système de fichiers monté avec <code>mand</code>",
+        "Le verrou est posé avec <code>F_SETLKW</code> au lieu de <code>F_SETLK</code>",
+        "Le fichier est ouvert avec <code>O_CREAT|O_EXCL</code>",
+        "Le champ <code>l_type</code> vaut <code>F_WRLCK</code> au lieu de <code>F_RDLCK</code>"
+      ],
+      "reponse": 0,
+      "explication": "<p>Le verrou se pose comme un verrou consultatif ; c'est le fichier qui est marqué, par le bit set-gid sans x de groupe (<code>ls -l</code> affiche un <code>S</code> majuscule), et le système de fichiers doit être monté avec l'option <code>mand</code>. <code>F_SETLKW</code> rend la pose bloquante et <code>F_WRLCK</code> la rend exclusive, mais aucun des deux ne la rend impérative. Linux a supprimé les verrous impératifs dans sa version 5.15.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les verrous impératifs",
+        "lien": "../generated_courses/cours-02-verrous.html#les-verrous-imperatifs"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "ouverte",
+      "theme": "Consultatifs et impératifs",
+      "difficulte": 2,
+      "enonce": "<p>Expliquer la différence entre un verrou consultatif et un verrou impératif. Lequel est le plus courant, et qu'exige-t-il des programmes qui partagent le fichier ?</p>",
+      "reponse_modele": "<p>Avec un verrou <strong>consultatif</strong>, le système n'arbitre que les demandes de verrous : un programme doit demander le verrou avant d'accéder au fichier, et un programme qui ne le demande pas lit et écrit librement. Avec un verrou <strong>impératif</strong>, le système bloque lui-même les <code>read</code> et <code>write</code> des autres processus sur la zone verrouillée. Le verrou consultatif est le plus courant (c'est le seul qui reste sous Linux depuis la version 5.15) ; il suppose une discipline stricte : tous les programmes qui accèdent au fichier doivent demander les verrous.</p>",
+      "criteres": [
+        "consultatif : seuls les processus qui demandent un verrou sont arbitrés ; <code>read</code> et <code>write</code> ne sont pas contrôlés",
+        "impératif : le système bloque <code>read</code> et <code>write</code> sur la zone verrouillée",
+        "le verrou consultatif est le plus courant",
+        "il exige que tous les programmes demandent les verrous avant d'accéder au fichier"
+      ],
+      "revoir": {
+        "texte": "Cours 2 · Les verrous internes : consultatifs et impératifs",
+        "lien": "../generated_courses/cours-02-verrous.html#les-verrous-internes-consultatifs-et-imperatifs"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "association",
+      "theme": "fcntl",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque constante de <code>fcntl</code> à son rôle :</p>",
+      "paires": [
+        [
+          "<code>F_GETLK</code>",
+          "Tester si un verrou pourrait être posé"
+        ],
+        [
+          "<code>F_SETLK</code>",
+          "Poser un verrou sans attendre"
+        ],
+        [
+          "<code>F_SETLKW</code>",
+          "Poser un verrou en attendant qu'il soit libre"
+        ],
+        [
+          "<code>F_RDLCK</code>",
+          "Verrou partagé, en lecture"
+        ],
+        [
+          "<code>F_WRLCK</code>",
+          "Verrou exclusif, en écriture"
+        ],
+        [
+          "<code>F_UNLCK</code>",
+          "Verrou à lever"
+        ]
+      ],
+      "intrus": [
+        "Verrou impératif"
+      ],
+      "explication": "<p>Les trois premières constantes sont des <em>opérations</em>, deuxième argument de <code>fcntl</code> ; le W de <code>F_SETLKW</code> signifie <em>wait</em>. Les trois autres sont des <em>types</em>, valeurs du champ <code>l_type</code> de <code>struct flock</code>. Aucune constante ne rend un verrou impératif.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La primitive fcntl",
+        "lien": "../generated_courses/cours-02-verrous.html#la-primitive-fcntl"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "numerique",
+      "theme": "fcntl",
+      "difficulte": 1,
+      "enonce": "<p>Un fichier contient des enregistrements de 13 octets, numérotés à partir de 0. Pour verrouiller l'enregistrement 6 avec <code>l_whence = SEEK_SET</code> et <code>l_len = 13</code>, quelle valeur faut-il donner à <code>l_start</code> ?</p>",
+      "reponse": 78,
+      "explication": "<p>L'enregistrement \\(k\\) commence à l'octet \\(k \\times T\\) : \\(6 \\times 13 = 78\\). Il occupe les octets 78 à 90, et <code>/proc/locks</code> afficherait la zone <code>78 90</code>. Répondre 91, c'est numéroter les enregistrements à partir de 1.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La portée d'un verrou (fcntl)",
+        "lien": "../generated_courses/cours-02-verrous.html#la-portee-d-un-verrou-2"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "trous",
+      "theme": "fcntl",
+      "difficulte": 2,
+      "enonce": "<p>Compléter ce fragment, qui pose un verrou <strong>exclusif bloquant</strong> sur l'enregistrement <code>id_enreg</code> d'un fichier d'enregistrements de <code>SIZE_ENREG</code> octets, numérotés à partir de 0 :</p>",
+      "code": true,
+      "texte": "verrou.l_type   = {{0}} ;\nverrou.l_whence = {{1}} ;\nverrou.l_start  = {{2}} ;\nverrou.l_len    = SIZE_ENREG ;\n\nif( fcntl( d_fich , {{3}} , &amp;verrou ) == -1 )\n{\n     fcntl_error(errno);\n     exit(-2);\n}",
+      "trous": [
+        {
+          "choix": [
+            "F_RDLCK",
+            "F_WRLCK",
+            "F_UNLCK"
+          ],
+          "reponse": 1
+        },
+        {
+          "reponses": [
+            "SEEK_SET",
+            "0",
+            "(short)0"
+          ]
+        },
+        {
+          "choix": [
+            "id_enreg",
+            "SIZE_ENREG*id_enreg",
+            "SIZE_ENREG*(id_enreg+1)",
+            "SIZE_ENREG"
+          ],
+          "reponse": 1
+        },
+        {
+          "choix": [
+            "F_SETLK",
+            "F_GETLK",
+            "F_SETLKW"
+          ],
+          "reponse": 2
+        }
+      ],
+      "indices": [
+        "<p>Exclusif : le verrou d'un écrivain. Bloquant : l'opération dont le nom se termine par W, pour <em>wait</em>.</p>"
+      ],
+      "explication": "<p><code>F_WRLCK</code> demande un verrou exclusif, et <code>F_SETLKW</code> attend qu'il soit disponible (<code>F_SETLK</code> échouerait tout de suite). La zone se compte depuis le début du fichier (<code>SEEK_SET</code>, qui vaut 0) et commence à l'octet <code>SIZE_ENREG*id_enreg</code>, puisque les enregistrements sont numérotés à partir de 0. C'est le code de <code>ecrivain_interne.c</code>.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Exemple : un écrivain et un lecteur d'enregistrements",
+        "lien": "../generated_courses/cours-02-verrous.html#exemple-un-ecrivain-et-un-lecteur-d-enregistrements"
+      }
+    },
+    {
+      "id": "q16",
+      "type": "ordre",
+      "theme": "fcntl",
+      "difficulte": 1,
+      "enonce": "<p>Remettre dans l'ordre les étapes d'un écrivain qui modifie un enregistrement sous la protection d'un verrou <code>fcntl</code> :</p>",
+      "elements": [
+        "Ouvrir le fichier en lecture-écriture avec <code>open</code>",
+        "Remplir une <code>struct flock</code> : <code>F_WRLCK</code>, <code>SEEK_SET</code>, début et longueur de l'enregistrement",
+        "Appeler <code>fcntl(fd, F_SETLKW, &amp;verrou)</code>",
+        "Se placer au début de l'enregistrement avec <code>lseek</code>, puis écrire avec <code>write</code>",
+        "Mettre <code>l_type</code> à <code>F_UNLCK</code> et rappeler <code>fcntl</code>",
+        "Fermer le fichier avec <code>close</code>"
+      ],
+      "explication": "<p>Il faut un descripteur pour appeler <code>fcntl</code>, d'où l'ouverture en premier. Le verrou se demande avant tout accès et se lève après le dernier, avec la même portée. <code>close</code> lèverait aussi les verrous du processus, mais les exemples du cours lèvent explicitement le verrou avant de fermer.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Exemple : un écrivain et un lecteur d'enregistrements",
+        "lien": "../generated_courses/cours-02-verrous.html#exemple-un-ecrivain-et-un-lecteur-d-enregistrements"
+      }
+    },
+    {
+      "id": "q17",
+      "type": "qcm",
+      "theme": "fcntl",
+      "difficulte": 2,
+      "enonce": "<p>Un processus appelle <code>fcntl(fd, F_GETLK, &amp;verrou)</code> avec la description d'un verrou exclusif sur les octets 0 à 9. Aucun autre processus ne tient de verrou sur ces octets. Que contient <code>verrou</code> au retour ?</p>",
+      "choix": [
+        "<code>l_type</code> vaut <code>F_UNLCK</code>, les autres champs sont inchangés",
+        "La description du verrou, que <code>F_GETLK</code> vient de poser",
+        "<code>l_pid</code> vaut le pid du processus appelant",
+        "Rien : <code>fcntl</code> renvoie −1 avec <code>errno</code> égal à <code>ENOLCK</code>"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p><code>F_GETLK</code> ne pose jamais de verrou : il dit seulement si la pose demandée serait gênée, et par qui.</p>"
+      ],
+      "explication": "<p>Sans verrou gênant, <code>F_GETLK</code> met <code>l_type</code> à <code>F_UNLCK</code> et laisse le reste. S'il existe un verrou gênant, il en décrit un, avec le pid de son propriétaire dans <code>l_pid</code>. Il ne pose rien : pour poser un verrou seulement s'il est libre, on appelle directement <code>F_SETLK</code>.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Tester : F_GETLK",
+        "lien": "../generated_courses/cours-02-verrous.html#tester-f-getlk"
+      }
+    },
+    {
+      "id": "q18",
+      "type": "qcm-multi",
+      "theme": "fcntl",
+      "difficulte": 2,
+      "enonce": "<p>Lesquels de ces appels échouent avec l'erreur <code>EBADF</code>, le descripteur étant valide ?</p>",
+      "choix": [
+        "Un verrou <code>F_WRLCK</code> sur un fichier ouvert avec <code>O_RDONLY</code>",
+        "Un verrou <code>F_RDLCK</code> sur un fichier ouvert avec <code>O_WRONLY</code>",
+        "Un verrou <code>F_RDLCK</code> sur un fichier ouvert avec <code>O_RDONLY</code>",
+        "Un verrou <code>F_WRLCK</code> sur un fichier ouvert avec <code>O_RDWR</code>",
+        "<code>lockf(fd, F_LOCK, 13)</code> sur un fichier ouvert avec <code>O_RDONLY</code>"
+      ],
+      "reponses": [
+        0,
+        1,
+        4
+      ],
+      "indices": [
+        "<p>Un verrou partagé protège une lecture, un verrou exclusif une écriture : le mode d'ouverture doit permettre l'accès correspondant.</p>"
+      ],
+      "explication": "<p><code>F_RDLCK</code> demande un fichier ouvert en lecture, <code>F_WRLCK</code> un fichier ouvert en écriture ; <code>O_RDWR</code> convient aux deux. <code>lockf</code> ne pose que des verrous exclusifs : il lui faut un fichier ouvert en écriture, même pour lire. C'est pourquoi <code>lecteur_interne.c</code> ouvre son fichier en lecture seule, et <code>lecteur_posix.c</code> en lecture-écriture.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les erreurs de fcntl",
+        "lien": "../generated_courses/cours-02-verrous.html#les-erreurs-de-fcntl"
+      }
+    },
+    {
+      "id": "q19",
+      "type": "qcm",
+      "theme": "fcntl",
+      "difficulte": 3,
+      "enonce": "<p>Un processus pose, par le descripteur <code>d</code>, un verrou exclusif sur un enregistrement du fichier <code>comptes</code>. Avant de modifier l'enregistrement, il appelle une fonction qui ouvre <code>comptes</code> une seconde fois, lit sa taille et <strong>ferme</strong> ce second descripteur. Que devient le verrou ?</p>",
+      "choix": [
+        "Il est levé : fermer n'importe quel descripteur du fichier lève tous les verrous du processus sur ce fichier",
+        "Il est conservé, car il a été posé par <code>d</code>, qui reste ouvert",
+        "Il est conservé, mais devient partagé",
+        "Le <code>close</code> échoue tant que le verrou est posé"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Les verrous de <code>fcntl</code> appartiennent au processus et au fichier, pas au descripteur qui a servi à les poser.</p>"
+      ],
+      "explication": "<p>Le <code>close</code> du second descripteur lève tous les verrous que le processus tient sur <code>comptes</code>, y compris celui posé par <code>d</code> : pendant la modification, l'enregistrement n'est plus protégé. On évite donc de rouvrir un fichier dont on tient un verrou ; ici, <code>fstat(d, …)</code> suffit pour lire la taille.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Les règles à connaître",
+        "lien": "../generated_courses/cours-02-verrous.html#les-regles-a-connaitre"
+      }
+    },
+    {
+      "id": "q20",
+      "type": "code",
+      "langage": "c",
+      "theme": "fcntl",
+      "difficulte": 3,
+      "enonce": "<p>Deux processus différents posent chacun un verrou sur le même fichier. Un verrou est décrit par son type, <code>'R'</code> (partagé) ou <code>'W'</code> (exclusif), et par sa portée <code>(l_start, l_len)</code>, comptée depuis le début du fichier ; une longueur nulle va jusqu'à la fin du fichier, et au-delà.</p><p>Écrire la fonction <code>conflit</code>, qui renvoie 1 si les deux verrous sont en conflit et 0 sinon. Le programme de test lit des lignes de la forme <code>W 0 10 R 5 5</code> (premier verrou, puis second) et affiche le résultat de chacune.</p>",
+      "depart": "#include <stdio.h>\n\n/* t1, t2 : 'R' (partagé) ou 'W' (exclusif)\n   s1, s2 : l_start ; n1, n2 : l_len (0 = jusqu'à la fin, et au-delà) */\nint conflit(char t1, long s1, long n1, char t2, long s2, long n2)\n{\n\n}\n",
+      "solution": "#include <stdio.h>\n\n/* t1, t2 : 'R' (partagé) ou 'W' (exclusif)\n   s1, s2 : l_start ; n1, n2 : l_len (0 = jusqu'à la fin, et au-delà) */\nint conflit(char t1, long s1, long n1, char t2, long s2, long n2)\n{\n    if (t1 == 'R' && t2 == 'R')\n        return 0;                   /* deux verrous partagés */\n    if (n1 != 0 && s1 + n1 <= s2)\n        return 0;                   /* zone 1 entièrement avant la zone 2 */\n    if (n2 != 0 && s2 + n2 <= s1)\n        return 0;                   /* zone 2 entièrement avant la zone 1 */\n    return 1;\n}\n",
+      "harnais": "\nint main(void)\n{\n    char t1, t2;\n    long s1, n1, s2, n2;\n    while (scanf(\" %c %ld %ld %c %ld %ld\", &t1, &s1, &n1, &t2, &s2, &n2) == 6)\n        printf(\"%d\\n\", conflit(t1, s1, n1, t2, s2, n2));\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "chevauchement, un exclusif",
+          "entree": "W 0 10 R 5 5\n",
+          "sortie": "1\n"
+        },
+        {
+          "nom": "deux partagés",
+          "entree": "R 0 10 R 5 5\n",
+          "sortie": "0\n"
+        },
+        {
+          "nom": "zones qui se touchent",
+          "entree": "W 0 10 W 10 5\n",
+          "sortie": "0\n"
+        },
+        {
+          "nom": "un seul octet commun",
+          "entree": "R 0 10 W 9 1\n",
+          "sortie": "1\n"
+        },
+        {
+          "nom": "longueur nulle : jusqu'à l'infini",
+          "entree": "W 100 0 R 5000 10\n",
+          "sortie": "1\n"
+        },
+        {
+          "nom": "longueur nulle, autre zone avant",
+          "entree": "W 100 0 R 0 100\n",
+          "sortie": "0\n"
+        },
+        {
+          "nom": "deux longueurs nulles",
+          "entree": "R 0 0 W 50 0\n",
+          "sortie": "1\n"
+        },
+        {
+          "nom": "enregistrements voisins",
+          "entree": "W 26 13 W 13 13\n",
+          "sortie": "0\n"
+        },
+        {
+          "nom": "zone incluse dans l'autre",
+          "entree": "R 0 39 W 13 13\n",
+          "sortie": "1\n"
+        }
+      ],
+      "indices": [
+        "<p>Traiter d'abord le cas de deux verrous partagés. Pour les zones, il est plus simple de tester quand elles ne se chevauchent <em>pas</em> : l'une se termine avant que l'autre commence.</p>",
+        "<p>La zone (<var>s</var>, <var>n</var>) couvre les octets <var>s</var> à <var>s</var> + <var>n</var> − 1 : elle se termine avant l'octet <var>t</var> si <var>s</var> + <var>n</var> ≤ <var>t</var>, ce qui n'arrive jamais quand <var>n</var> vaut 0.</p>"
+      ],
+      "explication": "<p>Deux verrous sont en conflit si l'un au moins est exclusif et si leurs zones se chevauchent. Deux zones ne se chevauchent pas quand l'une se termine avant le début de l'autre : <code>s1 + n1 &lt;= s2</code> ou <code>s2 + n2 &lt;= s1</code>, la fin étant exclue. Une zone de longueur nulle ne se termine jamais : sa condition ne peut pas être vraie. Le test des zones qui se touchent (octets 0 à 9 et 10 à 14) piège un <code>&lt;</code> écrit à la place de <code>&lt;=</code>.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La portée d'un verrou",
+        "lien": "../generated_courses/cours-02-verrous.html#la-portee-d-un-verrou"
+      }
+    },
+    {
+      "id": "q21",
+      "type": "qcm",
+      "theme": "lockf",
+      "difficulte": 1,
+      "enonce": "<p>Où commence la zone verrouillée par <code>lockf(fd, F_LOCK, 13)</code> ?</p>",
+      "choix": [
+        "À la position courante du descripteur <code>fd</code>",
+        "Au début du fichier",
+        "À l'octet 13",
+        "À la fin du fichier"
+      ],
+      "reponse": 0,
+      "explication": "<p><code>lockf</code> n'a pas de <code>struct flock</code> : la zone part de la position courante et couvre <code>len</code> octets, ici 13. C'est pourquoi <code>ecrivain_posix.c</code> appelle <code>lseek</code> juste avant chaque <code>lockf</code>, pour la pose comme pour la levée.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Une autre interface : lockf",
+        "lien": "../generated_courses/cours-02-verrous.html#une-autre-interface-lockf"
+      }
+    },
+    {
+      "id": "q22",
+      "type": "qcm",
+      "theme": "lockf",
+      "difficulte": 2,
+      "enonce": "<p>Deux exemplaires de <code>lecteur_posix</code> demandent en même temps le même enregistrement avec <code>lockf(fd, F_LOCK, SIZE_ENREG)</code>. Que se passe-t-il ?</p>",
+      "choix": [
+        "Le second attend que le premier lève son verrou : <code>lockf</code> ne pose que des verrous exclusifs",
+        "Les deux lisent en même temps, comme deux <code>lecteur_interne</code>",
+        "Le second échoue aussitôt avec <code>EAGAIN</code>",
+        "Le second échoue avec <code>EBADF</code>, car un lecteur ouvre le fichier en lecture seule"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Quels types de verrous <code>lockf</code> sait-il poser ? Et quelle est la différence entre <code>F_LOCK</code> et <code>F_TLOCK</code> ?</p>"
+      ],
+      "explication": "<p><code>lockf</code> ne connaît que le verrou exclusif, et <code>F_LOCK</code> est bloquant : le second lecteur attend, comme dans la trace du cours. <code>F_TLOCK</code> échouerait tout de suite. Et <code>lecteur_posix.c</code> ouvre son fichier en <code>O_RDWR</code> précisément pour éviter <code>EBADF</code>.</p>",
+      "revoir": {
+        "texte": "Cours 2 · lockf, exécution",
+        "lien": "../generated_courses/cours-02-verrous.html#execution-2"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

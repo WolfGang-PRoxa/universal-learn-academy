@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="codage">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Codage de source · Codage L3</title>
+<meta name="description" content="Quiz interactif sur le cours 2 de codage de l'information (L3) : codes préfixes et arbres, code Morse, codes de Shannon-Fano et de Huffman, chaîne JPEG, codage arithmétique et codes à dictionnaire LZW, avec deux tables à remplir et un codeur LZW en C.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/quiz/assets/quiz.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/quiz/assets/quiz.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="../generated_courses/index.html">Codage</a>
+    <span aria-current="page">Quiz · Codage de source</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Codage</span> Quiz · L3 S5</p>
+    <h1>Codage de source</h1>
+    <p class="chapeau">Vingt-deux questions sur le cours 2 : codes uniquement déchiffrables et codes préfixes, code Morse, codes de Shannon-Fano et de Huffman, chaîne de compression JPEG, codage arithmétique et codes à dictionnaire. Un code de Shannon-Fano et un codage LZW à remplir dans des tables, et un codeur LZW à écrire en C, exécuté et corrigé automatiquement.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-02-codage-source.html">Cours 2 · Codage de source</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-09-26">26 sept. 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Codage · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "codage-cours-02-codage-source",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 2 · Codage de source",
+      "lien": "../generated_courses/cours-02-codage-source.html"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q01",
+      "type": "qcm",
+      "theme": "Généralités sur les codes",
+      "difficulte": 1,
+      "enonce": "<p>Lequel de ces codes binaires est un <strong>code préfixe</strong> ?</p>",
+      "choix": [
+        "{0, 10, 110, 111}",
+        "{0, 11, 110, 111}",
+        "{0, 11, 010}",
+        "{0, 1, 101}"
+      ],
+      "reponse": 0,
+      "explication": "<p>Dans {0, 10, 110, 111}, aucun mot n'est le début d'un autre : sur l'arbre du code, tous les mots sont des feuilles. Dans {0, 11, 110, 111}, 11 est le début de 110 et de 111 ; dans {0, 11, 010}, 0 est le début de 010 ; dans {0, 1, 101}, 1 est le début de 101.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Code préfixe",
+        "lien": "../generated_courses/cours-02-codage-source.html#code-prefixe"
+      }
+    },
+    {
+      "id": "q02",
+      "type": "vrai-faux",
+      "theme": "Généralités sur les codes",
+      "difficulte": 1,
+      "enonce": "<p>Tout code uniquement déchiffrable est un code préfixe.</p>",
+      "reponse": false,
+      "explication": "<p>Faux. Seule l'implication inverse est vraie : un code préfixe est uniquement déchiffrable. Le code {0, 11, 010} est uniquement déchiffrable sans être préfixe, puisque 0 est le début de 010 : après un 0, le décodeur doit lire les bits suivants avant de trancher. Un code préfixe, lui, se décode au fil de l'eau.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Code préfixe",
+        "lien": "../generated_courses/cours-02-codage-source.html#code-prefixe"
+      }
+    },
+    {
+      "id": "q03",
+      "type": "qcm-multi",
+      "theme": "Généralités sur les codes",
+      "difficulte": 2,
+      "enonce": "<p>Parmi ces codes, lesquels sont <strong>uniquement déchiffrables</strong> ?</p>",
+      "choix": [
+        "{00, 01, 10, 11}",
+        "{0, 10, 110, 111}",
+        "{0, 11, 010}",
+        "{0, 1, 101}",
+        "{0, 01, 10}"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "indices": [
+        "<p>Pour montrer qu'un code n'est pas uniquement déchiffrable, il suffit d'une suite de bits qui se découpe de deux façons.</p>"
+      ],
+      "explication": "<p>Un code à longueur fixe à mots distincts se découpe tous les deux bits ; {0, 10, 110, 111} est préfixe ; {0, 11, 010} n'est pas préfixe mais reste déchiffrable (011 ne peut être que 0 | 11, et aucun mot ne commence par 10). En revanche, 101 se lit 1 | 0 | 1 ou 101 dans {0, 1, 101}, et 010 se lit 0 | 10 ou 01 | 0 dans {0, 01, 10}.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Code uniquement déchiffrable",
+        "lien": "../generated_courses/cours-02-codage-source.html#code-uniquement-dechiffrable"
+      }
+    },
+    {
+      "id": "q04",
+      "type": "reponse-courte",
+      "theme": "Généralités sur les codes",
+      "difficulte": 1,
+      "enonce": "<p>Le code préfixe A = 0, B = 10, C = 110, D = 111 a servi à coder un message. Décoder la suite <code>1100111010</code>. Écrire les lettres sans séparateur.</p>",
+      "reponses": [
+        "CADAB"
+      ],
+      "explication": "<p>On lit les bits de gauche à droite et on coupe dès qu'un mot est reconnu : 110 | 0 | 111 | 0 | 10, soit C A D A B. Le code étant préfixe, chaque coupure est forcée : on n'a jamais besoin de lire plus loin pour trancher.</p>",
+      "revoir": {
+        "texte": "Cours 2 · L'arbre d'un code",
+        "lien": "../generated_courses/cours-02-codage-source.html#l-arbre-d-un-code"
+      }
+    },
+    {
+      "id": "q05",
+      "type": "numerique",
+      "theme": "Généralités sur les codes",
+      "difficulte": 1,
+      "enonce": "<p>Un symbole a la probabilité \\(1/16\\). Quelle est la longueur idéale, en bits, de son mot de code ?</p>",
+      "reponse": 4,
+      "unite": "bits",
+      "explication": "<p>La longueur idéale est l'incertitude du symbole : \\(-\\log_2 (1/16) = 4\\) bits. Un code à longueur variable s'en approche en donnant des mots courts aux symboles fréquents et des mots longs aux symboles rares.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Longueur fixe ou longueur variable",
+        "lien": "../generated_courses/cours-02-codage-source.html#longueur-fixe-ou-longueur-variable"
+      }
+    },
+    {
+      "id": "q06",
+      "type": "qcm",
+      "theme": "Généralités sur les codes",
+      "difficulte": 1,
+      "enonce": "<p>Pourquoi dit-on que le code Morse est un code <strong>ternaire</strong> ?</p>",
+      "choix": [
+        "Le silence entre les lettres est indispensable : c'est un troisième symbole, à côté du point et du trait",
+        "Ses mots comptent au plus trois symboles",
+        "Il code trois sortes de caractères : lettres, chiffres et ponctuation",
+        "Il n'emploie que trois longueurs de mots, selon la fréquence des lettres"
+      ],
+      "reponse": 0,
+      "explication": "<p>Le Morse n'est pas préfixe : E (·) est le début de A (· −), T (−) le début de N (− ·). Sans séparation, « · − » se lirait A ou ET. Le silence entre les lettres lève l'ambiguïté : c'est un troisième symbole. Les mots ont d'ailleurs jusqu'à quatre signes (B = − · · ·).</p>",
+      "revoir": {
+        "texte": "Cours 2 · Un code ternaire : le Morse",
+        "lien": "../generated_courses/cours-02-codage-source.html#un-code-ternaire-le-morse"
+      }
+    },
+    {
+      "id": "q07",
+      "type": "association",
+      "theme": "Généralités sur les codes",
+      "difficulte": 1,
+      "enonce": "<p>Associer chaque méthode de compression à son principe.</p>",
+      "paires": [
+        [
+          "Shannon-Fano",
+          "Coupe la liste triée en deux groupes de probabilités voisines, de haut en bas"
+        ],
+        [
+          "Huffman",
+          "Fusionne les deux nœuds les moins probables, de bas en haut"
+        ],
+        [
+          "Codage arithmétique",
+          "Code le message entier par un nombre d'un intervalle"
+        ],
+        [
+          "LZW",
+          "Remplace les chaînes déjà vues par leur numéro dans un dictionnaire"
+        ],
+        [
+          "Quantification JPEG",
+          "Divise les coefficients par un pas, puis les arrondit"
+        ]
+      ],
+      "intrus": [
+        "Ajoute des bits de contrôle pour corriger les erreurs"
+      ],
+      "explication": "<p>Shannon-Fano et Huffman construisent un arbre, dans deux sens opposés ; le codage arithmétique ne code plus symbole par symbole ; LZW ne s'appuie sur aucune probabilité. La quantification est la seule de ces étapes qui perd de l'information. La description en trop est celle du codage de canal (cours 3A), qui ajoute de la redondance au lieu d'en retirer.</p>",
+      "revoir": {
+        "texte": "Cours 2 · À retenir",
+        "lien": "../generated_courses/cours-02-codage-source.html#a-retenir"
+      }
+    },
+    {
+      "id": "q08",
+      "type": "atelier",
+      "editeur": "table",
+      "theme": "Shannon-Fano et Huffman",
+      "difficulte": 3,
+      "titre": "Code de Shannon-Fano",
+      "enonce": "<p>Une source émet six symboles avec les probabilités A : 14/40, B : 10/40, C : 6/40, D : 5/40, E : 3/40, F : 2/40. Construire son code de Shannon-Fano, en attribuant le bit 0 au premier groupe de chaque division et le bit 1 au second.</p>",
+      "consigne": "Écrire le mot de code de chaque symbole, sans espaces.",
+      "options": {
+        "verrou": "depart",
+        "lignes": false,
+        "ordre": true,
+        "mono": true
+      },
+      "depart": [
+        "| Symbole | Probabilité | Mot de code |",
+        "|---|---|---|",
+        "| A | 14/40 |  |",
+        "| B | 10/40 |  |",
+        "| C | 6/40 |  |",
+        "| D | 5/40 |  |",
+        "| E | 3/40 |  |",
+        "| F | 2/40 |  |"
+      ],
+      "solution": [
+        "| Symbole | Probabilité | Mot de code |",
+        "|---|---|---|",
+        "| A | 14/40 | 00 |",
+        "| B | 10/40 | 01 |",
+        "| C | 6/40 | 10 |",
+        "| D | 5/40 | 110 |",
+        "| E | 3/40 | 1110 |",
+        "| F | 2/40 | 1111 |"
+      ],
+      "indices": [
+        "<p>Première division : comparer les écarts obtenus en coupant la liste après A, après B et après C.</p>",
+        "<p>La première coupure sépare {A, B} (24/40) de {C, D, E, F} (16/40). Dans le second groupe, couper après C donne 6 contre 10.</p>"
+      ],
+      "explication": "<p>1re division : {A, B} (24/40) contre {C, D, E, F} (16/40), écart 8/40, meilleur qu'après A (écart 12/40) ou après C (écart 20/40). {A, B} donne A = 00 et B = 01. {C, D, E, F} se coupe en {C} (6) et {D, E, F} (10), d'où C = 10. {D, E, F} se coupe en {D} (5) et {E, F} (5), écart nul : D = 110. Enfin E = 1110 et F = 1111. Longueur moyenne : 95/40 = 2,375 bits, pour une entropie d'environ 2,312 Sh.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le code de Shannon-Fano",
+        "lien": "../generated_courses/cours-02-codage-source.html#le-code-de-shannon-fano"
+      }
+    },
+    {
+      "id": "q09",
+      "type": "numerique",
+      "theme": "Shannon-Fano et Huffman",
+      "difficulte": 2,
+      "enonce": "<p>Une source émet quatre symboles avec les probabilités 0,4 ; 0,3 ; 0,2 ; 0,1. Quelle est la longueur moyenne de son code de Huffman ?</p>",
+      "reponse": 1.9,
+      "tolerance": 0.005,
+      "unite": "bits",
+      "indices": [
+        "<p>Fusionner d'abord 0,1 et 0,2, puis recommencer avec la liste obtenue, jusqu'à la racine.</p>"
+      ],
+      "explication": "<p>0,1 + 0,2 = 0,3 ; puis 0,3 + 0,3 = 0,6 ; puis 0,4 + 0,6 = 1. Les longueurs sont 1, 2, 3 et 3, d'où \\(\\bar L = 0{,}4 \\times 1 + 0{,}3 \\times 2 + 0{,}2 \\times 3 + 0{,}1 \\times 3 = 1{,}9\\) bit. À l'égalité 0,3 contre 0,3, le choix du nœud ne change pas la longueur moyenne.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Le code de Huffman",
+        "lien": "../generated_courses/cours-02-codage-source.html#le-code-de-huffman"
+      }
+    },
+    {
+      "id": "q10",
+      "type": "numerique",
+      "theme": "Shannon-Fano et Huffman",
+      "difficulte": 2,
+      "enonce": "<p>Une source de probabilités 0,6 ; 0,2 ; 0,1 ; 0,1 a pour entropie 1,571 Sh environ. Son code de Huffman a pour longueurs 1, 2, 3 et 3. Quelle est son efficacité, en pourcentage ?</p>",
+      "reponse": 98.2,
+      "tolerance": 0.2,
+      "unite": "%",
+      "indices": [
+        "<p>\\(\\eta = H / \\bar L\\), avec \\(\\bar L = \\sum p_i \\ell_i\\).</p>"
+      ],
+      "explication": "<p>\\(\\bar L = 0{,}6 \\times 1 + 0{,}2 \\times 2 + 0{,}1 \\times 3 + 0{,}1 \\times 3 = 1{,}6\\) bit, d'où \\(\\eta = 1{,}571 / 1{,}6 \\approx 98{,}2\\ \\%\\). Un code à longueur fixe de 2 bits n'aurait qu'une efficacité de 78,5 %. L'efficacité ne peut pas dépasser 100 %, puisque \\(\\bar L \\ge H\\).</p>",
+      "revoir": {
+        "texte": "Cours 2 · Mesure de l'information",
+        "lien": "../generated_courses/cours-02-codage-source.html#mesure-de-l-information"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "vrai-faux",
+      "theme": "Shannon-Fano et Huffman",
+      "difficulte": 1,
+      "enonce": "<p>Pour une même source, un code de Huffman est toujours au moins aussi performant qu'un code de Shannon-Fano.</p>",
+      "reponse": true,
+      "explication": "<p>Vrai. Huffman est optimal parmi les codes qui codent les symboles un par un. Sur la source du cours, il donne 2,23 bits contre 2,282 pour Shannon-Fano : A, qui représente 38 % des symboles, reçoit 1 bit au lieu de 2. Les deux codes peuvent être aussi bons l'un que l'autre, mais Huffman n'est jamais moins bon.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Shannon-Fano ou Huffman ?",
+        "lien": "../generated_courses/cours-02-codage-source.html#shannon-fano-ou-huffman"
+      }
+    },
+    {
+      "id": "q12",
+      "type": "qcm",
+      "theme": "Shannon-Fano et Huffman",
+      "difficulte": 2,
+      "enonce": "<p>Dans quel cas un code de Huffman atteint-il exactement l'entropie de la source (\\(\\bar L = H\\)) ?</p>",
+      "choix": [
+        "Quand toutes les probabilités sont des puissances de 1/2",
+        "Quand tous les symboles sont équiprobables",
+        "Quand le nombre de symboles est une puissance de 2",
+        "Jamais : seul le codage arithmétique atteint l'entropie"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>La longueur idéale d'un symbole est \\(-\\log_2 p\\), et une longueur de mot est un nombre entier.</p>"
+      ],
+      "explication": "<p>Les longueurs idéales \\(-\\log_2 p_i\\) sont alors entières, et Huffman les attribue exactement : pour 1/2, 1/4, 1/8, 1/8, il donne 1, 2, 3 et 3 bits, soit \\(\\bar L = H = 1{,}75\\). Trois symboles équiprobables donnent au contraire \\(\\bar L = 5/3 \\approx 1{,}67\\) pour \\(H = \\log_2 3 \\approx 1{,}585\\). Un nombre de symboles puissance de 2 ne suffit pas, si les probabilités sont quelconques.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Shannon-Fano ou Huffman ?",
+        "lien": "../generated_courses/cours-02-codage-source.html#shannon-fano-ou-huffman"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "ordre",
+      "theme": "JPEG",
+      "difficulte": 1,
+      "enonce": "<p>Remettre dans l'ordre les étapes de la compression d'une image JPEG.</p>",
+      "elements": [
+        "Découpage de l'image en blocs de 8 × 8 pixels",
+        "Calcul de la DCT de chaque bloc",
+        "Quantification des coefficients",
+        "Parcours en zigzag",
+        "Codage par plages des coefficients AC",
+        "Codage de Huffman"
+      ],
+      "explication": "<p>La DCT transforme chaque bloc en fréquences ; la quantification supprime ce que l'œil perçoit mal ; le zigzag regroupe les zéros en fin de parcours ; le codage par plages les résume, et Huffman code les symboles obtenus. Ces deux dernières étapes sont sans perte.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Compression d'images : la norme JPEG",
+        "lien": "../generated_courses/cours-02-codage-source.html#compression-d-images-la-norme-jpeg"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "qcm-multi",
+      "theme": "JPEG",
+      "difficulte": 2,
+      "enonce": "<p>Parmi ces affirmations sur la chaîne JPEG, lesquelles sont vraies ?</p>",
+      "choix": [
+        "La DCT est inversible : elle ne perd aucune information",
+        "La quantification est la seule étape qui perd de l'information",
+        "Le coefficient DC d'un bloc est codé par sa différence avec celui du bloc précédent",
+        "La DCT réduit le nombre de bits de chaque coefficient",
+        "Le parcours en zigzag commence par les hautes fréquences"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "indices": [
+        "<p>Les termes de la matrice sont codés sur 8 éléments binaires avant la DCT, et sur 11 après.</p>"
+      ],
+      "explication": "<p>La DCT passe de 8 à 11 bits par terme : elle ne compresse pas, elle prépare la quantification, seule étape avec perte. Le zigzag part du coefficient DC, en haut à gauche, vers les hautes fréquences, pour grouper en fin de parcours les zéros de la quantification. Les DC de blocs voisins étant corrélés, on code leur différence.</p>",
+      "revoir": {
+        "texte": "Cours 2 · La DCT",
+        "lien": "../generated_courses/cours-02-codage-source.html#la-dct"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "numerique",
+      "theme": "Codage arithmétique",
+      "difficulte": 2,
+      "enonce": "<p>Tableau d'intervalles du cours (message « HANS ZIMMER ») : espace [0 ; 0,1[, A [0,1 ; 0,19[, E [0,19 ; 0,28[, I [0,28 ; 0,37[, H [0,37 ; 0,46[, M [0,46 ; 0,64[, N [0,64 ; 0,73[, R [0,73 ; 0,82[, S [0,82 ; 0,91[, Z [0,91 ; 1[.</p><p>Quelle est la borne inférieure de l'intervalle du message « ME » ?</p>",
+      "reponse": 0.4942,
+      "tolerance": 5e-05,
+      "indices": [
+        "<p>Partir de l'intervalle de M, d'écart 0,18, puis appliquer \\(b + e \\cdot a_s\\) avec l'intervalle de E.</p>"
+      ],
+      "explication": "<p>M donne \\([0{,}46\\,;\\,0{,}64[\\), d'écart 0,18. E réduit cet intervalle à \\([0{,}46 + 0{,}18 \\times 0{,}19\\,;\\,0{,}46 + 0{,}18 \\times 0{,}28[\\; = [0{,}4942\\,;\\,0{,}5104[\\), d'écart \\(0{,}18 \\times 0{,}09 = 0{,}0162\\). Erreur fréquente : ajouter 0,19 directement à 0,46, sans le multiplier par l'écart.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Déroulement",
+        "lien": "../generated_courses/cours-02-codage-source.html#deroulement"
+      }
+    },
+    {
+      "id": "q16",
+      "type": "reponse-courte",
+      "theme": "Codage arithmétique",
+      "difficulte": 3,
+      "enonce": "<p>Tableau d'intervalles du cours (message « HANS ZIMMER ») : espace [0 ; 0,1[, A [0,1 ; 0,19[, E [0,19 ; 0,28[, I [0,28 ; 0,37[, H [0,37 ; 0,46[, M [0,46 ; 0,64[, N [0,64 ; 0,73[, R [0,73 ; 0,82[, S [0,82 ; 0,91[, Z [0,91 ; 1[.</p><p>Un décodeur arithmétique qui utilise ce tableau reçoit le nombre 0,4911 et sait que le message compte 4 lettres. Quel est le message ?</p>",
+      "reponses": [
+        "MARS"
+      ],
+      "indices": [
+        "<p>Chercher l'intervalle qui contient le nombre, émettre la lettre, puis remplacer le nombre \\(x\\) par \\((x - a_s) / (b_s - a_s)\\).</p>",
+        "<p>0,4911 est dans [0,46 ; 0,64[ : la première lettre est M, et le nombre suivant vaut \\((0{,}4911 - 0{,}46) / 0{,}18 \\approx 0{,}1728\\).</p>"
+      ],
+      "explication": "<p>0,4911 → M, puis 0,1728 → A, puis \\((0{,}1728 - 0{,}1) / 0{,}09 \\approx 0{,}8086\\) → R, puis \\((0{,}8086 - 0{,}73) / 0{,}09 \\approx 0{,}8738\\) → S. Le message est MARS, dont l'intervalle vaut \\([0{,}49102156\\,;\\,0{,}49115278[\\) : 0,4911 est bien dedans. Sans le nombre de lettres, ou un symbole de fin, le décodeur ne saurait pas où s'arrêter.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Déroulement",
+        "lien": "../generated_courses/cours-02-codage-source.html#deroulement"
+      }
+    },
+    {
+      "id": "q17",
+      "type": "numerique",
+      "theme": "Codage arithmétique",
+      "difficulte": 3,
+      "enonce": "<p>Dans le tableau d'intervalles du cours (message « HANS ZIMMER »), A et N ont la probabilité 0,09 et M la probabilité 0,18. On code le message « MAMAN » par codage arithmétique. Combien de bits faut-il environ pour désigner un nombre de son dernier intervalle ? Arrondir au dixième.</p>",
+      "reponse": 15.37,
+      "tolerance": 0.06,
+      "unite": "bits",
+      "indices": [
+        "<p>L'écart du dernier intervalle est le produit des probabilités des lettres du message.</p>",
+        "<p>Il faut environ \\(-\\log_2 e\\) bits pour désigner un nombre dans un intervalle d'écart \\(e\\).</p>"
+      ],
+      "explication": "<p>\\(e = 0{,}18 \\times 0{,}09 \\times 0{,}18 \\times 0{,}09 \\times 0{,}09 \\approx 2{,}36 \\times 10^{-5}\\), et \\(-\\log_2 e \\approx 15{,}4\\) bits. C'est la somme des \\(-\\log_2 p\\) des cinq lettres : \\(2 \\times 2{,}47 + 3 \\times 3{,}47\\). Un peu plus de 3 bits par lettre, contre 4 avec un code fixe pour dix symboles.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Déroulement",
+        "lien": "../generated_courses/cours-02-codage-source.html#deroulement"
+      }
+    },
+    {
+      "id": "q18",
+      "type": "vrai-faux",
+      "theme": "Codage arithmétique",
+      "difficulte": 2,
+      "enonce": "<p>En codage arithmétique, c'est la borne supérieure du dernier intervalle qui code le message.</p>",
+      "reponse": false,
+      "explication": "<p>Faux. Le cours retient la borne inférieure \\(X\\) du dernier intervalle \\([X\\,;\\,Y[\\). Tout nombre de cet intervalle conviendrait, mais pas \\(Y\\) lui-même : l'intervalle est ouvert à droite, et \\(Y\\) appartient déjà à l'intervalle d'un autre message.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Déroulement",
+        "lien": "../generated_courses/cours-02-codage-source.html#deroulement"
+      }
+    },
+    {
+      "id": "q19",
+      "type": "atelier",
+      "editeur": "table",
+      "theme": "Codes à dictionnaire",
+      "difficulte": 2,
+      "titre": "Coder ANANAS avec LZW",
+      "enonce": "<p>Coder le mot ANANAS avec LZW. Le dictionnaire initial contient A = 1, N = 2 et S = 3 ; les nouvelles entrées prennent les numéros suivants, à partir de 4.</p>",
+      "consigne": "Une ligne par numéro émis : la chaîne reconnue w, le caractère suivant c, le numéro émis, puis le numéro et la chaîne de la nouvelle entrée. La dernière ligne est préremplie en partie : à la fin du texte, il n'y a plus d'entrée à créer.",
+      "options": {
+        "verrou": "depart",
+        "lignes": false,
+        "ordre": true,
+        "mono": true
+      },
+      "depart": [
+        "| w | c | Numéro émis | N° de l'entrée | Nouvelle entrée |",
+        "|---|---|---|---|---|",
+        "|  |  |  |  |  |",
+        "|  |  |  |  |  |",
+        "|  |  |  |  |  |",
+        "|  |  |  |  |  |",
+        "|  | fin |  | — | — |"
+      ],
+      "solution": [
+        "| w | c | Numéro émis | N° de l'entrée | Nouvelle entrée |",
+        "|---|---|---|---|---|",
+        "| A | N | 1 | 4 | AN |",
+        "| N | A | 2 | 5 | NA |",
+        "| AN | A | 4 | 6 | ANA |",
+        "| A | S | 1 | 7 | AS |",
+        "| S | fin | 3 | — | — |"
+      ],
+      "indices": [
+        "<p>À chaque caractère c, allonger la chaîne w tant que w + c est dans le dictionnaire ; sinon, émettre le numéro de w, ajouter w + c, et repartir de c.</p>"
+      ],
+      "explication": "<p>AN n'est pas connu : on émet 1 (A) et on crée 4 = AN. NA non plus : on émet 2 et on crée 5 = NA. Puis AN est reconnu, mais pas ANA : on émet 4 et on crée 6 = ANA. AS : on émet 1 et on crée 7 = AS. À la fin, on émet 3 (S). Code : 1 2 4 1 3, cinq numéros pour six lettres.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Travail personnel : LZ78 et LZW",
+        "lien": "../generated_courses/cours-02-codage-source.html#travail-personnel-lz78-et-lzw"
+      }
+    },
+    {
+      "id": "q20",
+      "type": "code",
+      "langage": "c",
+      "theme": "Codes à dictionnaire",
+      "difficulte": 3,
+      "enonce": "<p>Écrire la fonction <code>lzw(alphabet, texte, codes)</code>, qui code <code>texte</code> avec LZW et range les numéros émis dans <code>codes</code>. Elle renvoie le nombre de numéros émis. Le dictionnaire initial contient les lettres de <code>alphabet</code>, numérotées à partir de 1 dans l'ordre de la chaîne ; les nouvelles entrées prennent les numéros suivants.</p><p>Le programme de test lit l'alphabet puis le texte, appelle la fonction et affiche les numéros séparés par une espace. Exemple du cours : alphabet <code>ACHT</code>, texte <code>CHACHACHAT</code>, sortie <code>2 3 1 5 7 6 4</code>.</p>",
+      "depart": "#include <stdio.h>\n#include <string.h>\n\n/* Renvoie le nombre de numéros rangés dans codes. */\nint lzw(const char *alphabet, const char *texte, int *codes) {\n\n}\n",
+      "solution": "#include <stdio.h>\n#include <string.h>\n\n#define MAX_ENTREES 4096\n#define MAX_LONG 256\n\nstatic char dico[MAX_ENTREES][MAX_LONG];\nstatic int taille;\n\n/* Numéro d'une chaîne dans le dictionnaire, 0 si elle n'y est pas. */\nstatic int numero(const char *s) {\n    for (int k = 0; k < taille; k++)\n        if (strcmp(dico[k], s) == 0) return k + 1;\n    return 0;\n}\n\n/* Renvoie le nombre de numéros rangés dans codes. */\nint lzw(const char *alphabet, const char *texte, int *codes) {\n    int nb = 0;\n    taille = 0;\n    for (int i = 0; alphabet[i] != '\\0'; i++) {\n        dico[taille][0] = alphabet[i];\n        dico[taille][1] = '\\0';\n        taille++;\n    }\n    char w[MAX_LONG] = \"\";\n    for (int i = 0; texte[i] != '\\0'; i++) {\n        char wc[MAX_LONG];\n        int n = strlen(w);\n        memcpy(wc, w, n);\n        wc[n] = texte[i];\n        wc[n + 1] = '\\0';\n        if (numero(wc) != 0) {\n            strcpy(w, wc);                 /* on allonge la chaîne reconnue */\n        } else {\n            codes[nb++] = numero(w);\n            strcpy(dico[taille++], wc);    /* nouvelle entrée w + c */\n            w[0] = texte[i];\n            w[1] = '\\0';\n        }\n    }\n    if (w[0] != '\\0') codes[nb++] = numero(w);\n    return nb;\n}\n",
+      "harnais": "\nint main(void) {\n    static char alphabet[64], texte[1024];\n    static int codes[1024];\n    if (scanf(\"%63s %1023s\", alphabet, texte) != 2) return 0;\n    int nb = lzw(alphabet, texte, codes);\n    for (int i = 0; i < nb; i++) printf(i ? \" %d\" : \"%d\", codes[i]);\n    printf(\"\\n\");\n    return 0;\n}\n",
+      "tests": [
+        {
+          "nom": "exemple du cours",
+          "entree": "ACHT\nCHACHACHAT\n",
+          "sortie": "2 3 1 5 7 6 4\n"
+        },
+        {
+          "nom": "entrée pas encore connue",
+          "entree": "AB\nABABABA\n",
+          "sortie": "1 2 3 5\n"
+        },
+        {
+          "nom": "une seule lettre",
+          "entree": "A\nA\n",
+          "sortie": "1\n"
+        },
+        {
+          "nom": "une lettre répétée",
+          "entree": "AB\nAAAAAAA\n",
+          "sortie": "1 3 4 1\n"
+        },
+        {
+          "nom": "ABRACADABRA",
+          "entree": "ABCDR\nABRACADABRA\n",
+          "sortie": "1 2 5 1 3 1 4 6 8\n"
+        },
+        {
+          "nom": "HELLOWORLD",
+          "entree": "DEHLORW\nHELLOWORLD\n",
+          "sortie": "3 2 4 4 5 7 5 6 4 1\n"
+        },
+        {
+          "nom": "alphabet dans le désordre",
+          "entree": "BA\nABBA\n",
+          "sortie": "2 1 1 2\n"
+        }
+      ],
+      "indices": [
+        "<p>Ranger le dictionnaire dans un tableau de chaînes : l'entrée numéro k est la case k − 1. Une petite fonction qui cherche une chaîne et renvoie son numéro, ou 0, simplifie le reste.</p>",
+        "<p>Garder la chaîne courante w dans un tableau de caractères. Pour chaque caractère c, former w + c : s'il est dans le dictionnaire, il devient w ; sinon, émettre le numéro de w, ajouter w + c, et repartir de c. Après la boucle, émettre le numéro de w.</p>"
+      ],
+      "explication": "<p>La solution suit l'algorithme <code>CoderLZW</code> du cours, avec un dictionnaire en tableau et une recherche linéaire, suffisante ici. Erreurs fréquentes : oublier d'émettre le numéro de la dernière chaîne après la boucle (test « une seule lettre »), ou numéroter les entrées à partir de 0.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Travail personnel : LZ78 et LZW",
+        "lien": "../generated_courses/cours-02-codage-source.html#travail-personnel-lz78-et-lzw"
+      }
+    },
+    {
+      "id": "q21",
+      "type": "reponse-courte",
+      "theme": "Codes à dictionnaire",
+      "difficulte": 3,
+      "enonce": "<p>Un décodeur LZW part du dictionnaire A = 1, B = 2 et reçoit la suite de numéros <code>2 1 3 5</code>. Quel est le message décodé ?</p>",
+      "reponses": [
+        "BABABAB"
+      ],
+      "indices": [
+        "<p>Chaque numéro lu, sauf le premier, crée l'entrée « chaîne précédente + première lettre de la chaîne courante ».</p>",
+        "<p>Quand on lit 5, seules les entrées 3 et 4 existent : l'entrée 5 est celle qu'on est en train de créer. Elle commence par la chaîne précédente et se termine par sa propre première lettre.</p>"
+      ],
+      "explication": "<p>2 → B ; 1 → A, entrée 3 = BA ; 3 → BA, entrée 4 = AB ; 5 n'existe pas encore : c'est BA suivi de sa première lettre, BAB, et l'entrée 5 = BAB. Message : B A BA BAB = BABABAB. Oublier ce cas est l'erreur classique d'un décodeur LZW.</p>",
+      "revoir": {
+        "texte": "Cours 2 · Travail personnel : LZ78 et LZW",
+        "lien": "../generated_courses/cours-02-codage-source.html#travail-personnel-lz78-et-lzw"
+      }
+    },
+    {
+      "id": "q22",
+      "type": "ouverte",
+      "theme": "Shannon-Fano et Huffman",
+      "difficulte": 2,
+      "enonce": "<p>Comparer les codes de Shannon-Fano et de Huffman : sens de construction de l'arbre, performance, et ce qu'il faut connaître, ou transmettre, pour s'en servir.</p>",
+      "reponse_modele": "<p>Shannon-Fano construit l'arbre de haut en bas : on trie les symboles par probabilités décroissantes, on coupe la liste en deux groupes de probabilités aussi voisines que possible (bit 0, bit 1), et on recommence dans chaque groupe. Huffman le construit de bas en haut : on fusionne à chaque étape les deux nœuds les moins probables. Huffman est optimal parmi les codes symbole par symbole, donc toujours au moins aussi bon que Shannon-Fano (2,23 bits contre 2,282 sur l'exemple du cours, pour une entropie de 2,186 Sh). Les deux demandent les probabilités des symboles ; si on les estime sur le message, il faut transmettre leur table au décodeur.</p>",
+      "criteres": [
+        "Shannon-Fano : de haut en bas, par coupures en groupes de probabilités voisines",
+        "Huffman : de bas en haut, en fusionnant les deux nœuds les moins probables",
+        "Huffman est toujours au moins aussi performant (optimal parmi les codes symbole par symbole)",
+        "il faut connaître les probabilités, ou transmettre leur table au décodeur"
+      ],
+      "revoir": {
+        "texte": "Cours 2 · Shannon-Fano ou Huffman ?",
+        "lien": "../generated_courses/cours-02-codage-source.html#shannon-fano-ou-huffman"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

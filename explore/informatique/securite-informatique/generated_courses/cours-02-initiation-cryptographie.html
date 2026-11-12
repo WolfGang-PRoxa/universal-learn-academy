@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="securite">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Initiation à la cryptographie · Sécurité informatique L2</title>
+<meta name="description" content="Cours 2 de sécurité informatique (L2) : vocabulaire du chiffrement, aléa et taille des clés, chiffrements historiques (scytale, César, Vigenère, Enigma), chiffrement symétrique (DES, 3DES, AES, masque jetable de Vernam, RC4, modes CBC et CTR), chiffrement asymétrique (Diffie-Hellman, RSA, courbes elliptiques), empreintes (MD5, SHA-1, SHA-2, HMAC, AEAD, GCM) et signature numérique.">
+<link rel="quiz" href="../generated_quizzes/quiz-cours-02-initiation-cryptographie.html" title="Quiz · Cours 2 · Initiation à la cryptographie">
+<link rel="quiz" href="../generated_quizzes/quiz-chiffrements-classiques.html" title="Quiz · Chiffrements classiques">
+<link rel="quiz" href="../generated_quizzes/quiz-crypto-code.html" title="Quiz · XOR et RC4 en C">
+<link rel="quiz" href="../generated_quizzes/quiz-revision-generale.html" title="Quiz · Révision générale (annales)">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Sécurité informatique</a>
+    <span aria-current="page">Cours 2 · Cryptographie</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Sécurité informatique</span> Cours 2 · L2 S4</p>
+    <h1>Initiation à la cryptographie</h1>
+    <p class="chapeau">La cryptographie assure l'essentiel de la confidentialité, de l'authentification et de l'intégrité des données, stockées ou transmises. Ce cours en donne le vocabulaire, retrace quelques chiffrements historiques, puis présente les deux grandes familles de chiffrement (symétrique et asymétrique), les empreintes numériques et la signature. C'est le chapitre le plus présent dans les annales.</p>
+    <dl class="meta">
+      <div><dt>Source</dt><dd><a href="../cours/L2_Info-174UD06-C2.pdf">L2_Info-174UD06-C2.pdf</a> · 37 diapos</dd></div>
+      <div><dt>Enseignant</dt><dd>Thierry Lemeunier</dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-04">4 novembre 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Employer le vocabulaire exact : chiffrer, déchiffrer, décrypter, cryptogramme, cryptanalyse.</li>
+        <li>Chiffrer et déchiffrer à la main avec César et Vigenère, et reconnaître les familles de chiffrements classiques.</li>
+        <li>Comparer chiffrement symétrique et asymétrique : mode d'utilisation, principes, vitesse, exemples, usages.</li>
+        <li>Écrire les formules du masque jetable, de RC4 et des modes CBC et CTR ; dérouler RSA sur de petits nombres.</li>
+        <li>Expliquer à quoi servent une empreinte, un HMAC et une signature numérique.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">Prérequis</p>
+      <ul>
+        <li><a href="cours-01-faits-et-enjeux.html">Cours 1</a> : critères DIC, authentification, non-répudiation.</li>
+        <li>Binaire, opérations bit à bit, arithmétique modulaire (rappelées dans le cours).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Définitions <span class="ref">diapos 4–6</span></h2>
+    <p>En grande partie, la confidentialité des données, l'authentification et l'intégrité reposent sur la cryptographie. Avant d'en voir les algorithmes, il faut fixer un vocabulaire que l'examen emploie au mot près.</p>
+
+    <h3>Chiffrer, déchiffrer, décrypter</h3>
+    <dl class="glossaire">
+      <dt>Chiffrement</dt>
+      <dd>Opération qui chiffre un message clair, c'est-à-dire compréhensible.</dd>
+      <dt>Chiffrer</dt>
+      <dd>Transformer un message clair en un message incompréhensible : le message chiffré n'a aucune structure apparente ni prévisible.</dd>
+      <dt>Cryptogramme, ou chiffré</dt>
+      <dd>Le message chiffré.</dd>
+      <dt>Déchiffrer</dt>
+      <dd>Appliquer l'opération prévue pour retrouver le message clair à partir du chiffré.</dd>
+      <dt>Décrypter</dt>
+      <dd>Trouver le message clair <em>sans</em> l'aide de l'opération prévue, c'est-à-dire sans la clé.</dd>
+      <dt>Cryptographie</dt>
+      <dd>Science du chiffrement.</dd>
+      <dt>Cryptanalyse</dt>
+      <dd>Science du décryptage : deviner la clé, trouver une faille…</dd>
+    </dl>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>« Crypter » n'existe pas</span></p>
+      <p><span class="badge ajout">Ajout</span> On chiffre avec la clé, on déchiffre avec la clé, on décrypte sans la clé. Le verbe « crypter » n'a pas de sens précis : on l'évite à l'examen.</p>
+    </div>
+
+    <h3>Aléa et taille des clés</h3>
+    <p>Le chiffré semble aléatoire, alors qu'il est le résultat d'une fonction déterministe : son <dfn>entropie</dfn> doit être maximale, au sens de la théorie de l'information de Shannon. Trois notions sont à distinguer :</p>
+    <ul>
+      <li>une <dfn>fonction déterministe</dfn> donne un résultat identique si ses paramètres sont identiques ;</li>
+      <li>une <dfn>suite aléatoire</dfn> est une suite imprévisible de symboles due au hasard ; on l'obtient par un circuit électronique spécialisé qui mesure une propriété physique stochastique ;</li>
+      <li>une <dfn>suite pseudo-aléatoire</dfn> est générée par logiciel (<span class="en" lang="en">PRNG, Pseudo-Random Number Generator</span>) ou par un circuit intégré spécialisé, par exemple un LFSR (<span class="en" lang="en">Linear Feedback Shift Register</span>).</li>
+    </ul>
+    <p>L'entropie est apportée par une clé de chiffrement la plus aléatoire possible. Une clé de \(n\) bits peut prendre \(2^n\) valeurs ; il lui faut une taille minimale pour ne pas être trouvée trop vite par <dfn>force brute</dfn> (<span class="en" lang="en">brute force</span>), c'est-à-dire en essayant toutes les clés : par exemple au moins 128 bits pour un chiffrement symétrique.</p>
+    <div class="colonnes">
+      <div class="tableau mono compact">
+        <table>
+          <caption>Nombre de clés selon la taille (diapo 5)</caption>
+          <thead><tr><th>Taille n (bits)</th><th>2<sup>n</sup></th></tr></thead>
+          <tbody>
+            <tr><td>2</td><td>4</td></tr>
+            <tr><td>40</td><td>≈ 10<sup>12</sup> (1 000 milliards)</td></tr>
+            <tr><td>56</td><td>≈ 10<sup>16</sup></td></tr>
+            <tr><td>128</td><td>≈ 10<sup>38</sup></td></tr>
+            <tr><td>256</td><td>≈ 10<sup>77</sup></td></tr>
+            <tr><td>512</td><td>≈ 10<sup>154</sup></td></tr>
+            <tr><td>1024</td><td>≈ 10<sup>308</sup></td></tr>
+            <tr><td>2048</td><td>≈ 10<sup>616</sup></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tableau compact">
+        <table>
+          <caption>Repères astronomiques (diapo 5)</caption>
+          <thead><tr><th>Grandeur</th><th>Ordre</th></tr></thead>
+          <tbody>
+            <tr><td>Âge de l'univers</td><td>≈ 13,798 × 10<sup>9</sup> ans</td></tr>
+            <tr><td>Atomes dans 1 g de fer</td><td>≈ 1,078 × 10<sup>22</sup></td></tr>
+            <tr><td>Atomes dans l'univers</td><td>≈ 5 × 10<sup>80</sup></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Ce que représentent 10<sup>38</sup> clés</span></p>
+      <p>Un ordinateur qui testerait \(10^{12}\) clés par seconde essaierait les \(2^{40}\) clés en une seconde, et les \(2^{56}\) clés de DES en moins d'un jour. Pour \(2^{128} \approx 3{,}4 \times 10^{38}\) clés, il lui faudrait environ \(10^{19}\) ans, soit près d'un milliard de fois l'âge de l'univers. Ajouter un bit double le travail de l'attaquant.</p>
+    </div>
+    <div class="bloc theoreme">
+      <p class="bloc-titre">Propriété <span>Robustesse d'un système de chiffrement</span></p>
+      <p>Elle dépend de trois choses : la taille de la clé ; la puissance de l'algorithme, <strong>qui doit être public</strong> ; la capacité à garder secrètes les clés secrètes.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi un algorithme public ?</span></p>
+      <p>C'est le principe de Kerckhoffs (1883) : la sécurité doit reposer sur le seul secret de la clé, pas sur celui de l'algorithme. Un algorithme public est étudié par toute la communauté, qui en trouve les faiblesses ; un algorithme secret finit toujours par fuiter, et il faudrait alors changer tout le système, et pas seulement une clé.</p>
+    </div>
+
+    <h3>Définitions formelles</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Chiffrer et déchiffrer</span></p>
+      <p>Chiffrer, c'est transformer un message \(m\) par un algorithme de chiffrement \(E\) et un paramètre secret \(k\) : \(c = E(k, m)\). Déchiffrer, c'est restaurer le texte clair \(m\) à partir du chiffré \(c\), par un algorithme de déchiffrement \(D\) et un paramètre secret \(y\) :</p>
+      \[ D(y, c) = D\big(y, E(k, m)\big) = m \]
+      <ul>
+        <li>Dans un chiffrement <strong>symétrique</strong>, \(k = y\), et \(k\) doit rester secrète.</li>
+        <li>Dans un chiffrement <strong>asymétrique</strong>, \(k \neq y\) : \(k\) est publique et \(y\) privée.</li>
+      </ul>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 520 110" width="520" role="img" aria-labelledby="fig-ed-titre">
+        <title id="fig-ed-titre">Le message m entre dans E avec la clé k, donne le chiffré c, qui entre dans D avec la clé y et redonne m</title>
+        <defs>
+          <marker id="fleche-ed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="30" y="78" text-anchor="middle" class="mono">m</text>
+        <path class="trait" d="M45 73 H128" marker-end="url(#fleche-ed)"/>
+        <rect class="boite-accent" x="130" y="53" width="70" height="40" rx="6"/>
+        <text x="165" y="78" text-anchor="middle" class="gras accent">E</text>
+        <text x="165" y="18" text-anchor="middle" class="mono">k</text>
+        <path class="trait" d="M165 24 V51" marker-end="url(#fleche-ed)"/>
+        <path class="trait" d="M200 73 H318" marker-end="url(#fleche-ed)"/>
+        <text x="260" y="66" text-anchor="middle" class="mono">c</text>
+        <rect class="boite-accent" x="320" y="53" width="70" height="40" rx="6"/>
+        <text x="355" y="78" text-anchor="middle" class="gras accent">D</text>
+        <text x="355" y="18" text-anchor="middle" class="mono">y</text>
+        <path class="trait" d="M355 24 V51" marker-end="url(#fleche-ed)"/>
+        <path class="trait" d="M390 73 H473" marker-end="url(#fleche-ed)"/>
+        <text x="490" y="78" text-anchor="middle" class="mono">m</text>
+      </svg>
+      <figcaption>Chiffrement par \(E\) avec la clé \(k\), déchiffrement par \(D\) avec la clé \(y\) (diapo 6).</figcaption>
+    </figure>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Sécurité parfaite (Shannon)</span></p>
+      <p>Un système de chiffrement est <dfn>parfaitement sûr</dfn> (<span class="en" lang="en">perfect security</span>) si la clé \(k\) est une variable aléatoire uniformément répartie et si, pour tous messages \(m_0 \neq m_1\) :</p>
+      \[ \Pr\big[c = E(k, m_0)\big] = \Pr\big[c = E(k, m_1)\big] \]
+      <p>Autrement dit, connaissant \(c\), on ne peut rien déduire de \(m\), pas même sa taille.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Courte histoire du chiffrement <span class="ref">diapos 8–11</span></h2>
+    <p>Les chiffrements anciens se cassent facilement aujourd'hui, mais ils posent les deux opérations de base de tout chiffrement : changer l'ordre des lettres (permutation) et remplacer les lettres (substitution).</p>
+
+    <h3>La scytale : une permutation</h3>
+    <p>La <dfn>scytale</dfn>, ou bâton de Plutarque (X<sup>e</sup> au VII<sup>e</sup> siècle av. J.-C.), était utilisée par les Spartiates. L'expéditeur et le destinataire ont deux bâtons de même diamètre. L'expéditeur enroule une lanière de cuir autour du sien et écrit le message sur la longueur du bâton ; déroulée, la lanière ne permet plus de lire le message. Le destinataire l'enroule sur son bâton et lit le message.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Chiffrement par permutation</span></p>
+      <p>Dans un <dfn>chiffrement par permutation</dfn> (ou par transposition), les lettres du message restent les mêmes, seul leur ordre change.</p>
+    </div>
+
+    <h3>Le chiffre de César : une substitution mono-alphabétique</h3>
+    <p>Jules César (I<sup>er</sup> siècle av. J.-C.) décalait chaque lettre du message d'un nombre de rangs fixé à l'avance et gardé secret.</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>César avec un décalage de 3</span></p>
+      <div class="tableau mono compact">
+        <table>
+          <tbody>
+            <tr><th>Clair</th><td>WIKIPEDIA L'ENCYCLOPEDIE LIBRE</td></tr>
+            <tr><th>Chiffré</th><td>ZLNLSHGLD O'HQFBFORSHGLH OLEUH</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Substitution mono-alphabétique</span></p>
+      <p>Dans une <dfn>substitution mono-alphabétique</dfn>, chaque lettre du message est remplacée par une autre lettre du même alphabet, toujours la même.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>César en formule, et comment le casser</span> <span class="badge examen">Examen</span></p>
+      <p>En numérotant les lettres de 0 (A) à 25 (Z), avec une clé \(k\) d'une seule valeur (le décalage), on a \(c_i = (m_i + k) \bmod 26\) et \(m_i = (c_i - k) \bmod 26\). Il n'y a que 25 décalages utiles : on les essaie tous (force brute). On peut aussi faire une <dfn>analyse fréquentielle</dfn> : la lettre la plus fréquente du chiffré correspond probablement au E, la plus fréquente en français. Ces deux méthodes sont demandées dans l'examen de 2025.</p>
+    </div>
+
+    <h3>Le chiffre de Vigenère : une substitution poly-alphabétique</h3>
+    <p>Le diplomate Blaise de Vigenère (XVI<sup>e</sup> siècle) fait varier la substitution d'une lettre à l'autre, selon une clé secrète et une table de substitution, la table de Vigenère. Le code a été cassé en 1863 par le major prussien Friedrich Kasiski.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Substitution poly-alphabétique</span></p>
+      <p>Dans une <dfn>substitution poly-alphabétique</dfn>, chaque lettre du message est remplacée par une lettre d'un alphabet désigné par une lettre de la clé : la même lettre claire peut donner des lettres chiffrées différentes.</p>
+    </div>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Chiffrer et déchiffrer avec la table de Vigenère</span> <span class="ref">diapo 10</span></p>
+      <p>Dans sa version simple, la table a 26 lignes : chaque ligne est l'alphabet décalé d'un rang de plus que la précédente (ligne A : A…Z, ligne B : B…ZA, etc.). On répète la clé sous le texte clair.</p>
+      <ul>
+        <li><strong>Chiffrer</strong> : à l'intersection de la colonne de la lettre claire et de la ligne de la lettre de clé.</li>
+        <li><strong>Déchiffrer</strong> : sur la ligne de la lettre de clé, on cherche la lettre chiffrée ; sa colonne donne la lettre claire.</li>
+      </ul>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Clé MUSIQUE</span></p>
+      <div class="tableau mono compact">
+        <table>
+          <tbody>
+            <tr><th>Texte clair</th><td>J ADORE ECOUTER LA RADIO</td></tr>
+            <tr><th>Clé répétée</th><td>M USIQU EMUSIQU EM USIQU</td></tr>
+            <tr><th>Texte chiffré</th><td>V UVWHY IOIMBUL PM LSLYI</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Colonne J, ligne M : on obtient V. Colonne A, ligne U : U. Colonne D, ligne S : V. Colonne O, ligne I : W. Au déchiffrement : sur la ligne M, on cherche V et on trouve la colonne J ; sur la ligne U, on cherche U et on trouve la colonne A, etc.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Vigenère en formule</span></p>
+      <p>La table ne fait qu'additionner les rangs : \(c_i = (m_i + k_{i \bmod t}) \bmod 26\), où \(t\) est la longueur de la clé. Avec J = 9 et M = 12, on obtient \(21\), c'est-à-dire V. La faiblesse est la répétition de la clé : Kasiski repère les séquences qui se répètent dans le chiffré, en déduit la longueur \(t\), puis casse chacun des \(t\) « César » par analyse fréquentielle. Si la clé était aussi longue que le message, aléatoire et jamais réutilisée, on obtiendrait le masque jetable (plus bas).</p>
+    </div>
+
+    <h3>Les machines Enigma</h3>
+    <p>Ces machines électromécaniques configurables, utilisées dès 1920, sont surtout connues pour avoir été employées par l'Allemagne nazie et ses alliés pendant la Seconde Guerre mondiale. Quand l'utilisateur appuie sur une touche, une batterie allume un voyant, qui dépend de l'état courant de la machine et de sa configuration.</p>
+    <ol class="etapes">
+      <li>Le chiffreur saisit une lettre du message, clair ou chiffré, au clavier de 26 touches.</li>
+      <li>Le courant traverse le <strong>tableau de connexion</strong>, qui applique des substitutions fixes (sur la diapo 11, A est substitué par J, O par S).</li>
+      <li>Il traverse les <strong>rotors</strong> interchangeables (3 parmi 5, ou 4 parmi 8), qui appliquent une série de 3 ou 4 substitutions. Le premier rotor tourne à chaque frappe, les autres d'un ou deux crans sur 26 : la substitution change à chaque lettre.</li>
+      <li>Il traverse à nouveau le tableau de connexion.</li>
+      <li>Il allume le voyant de la lettre chiffrée ou déchiffrée.</li>
+    </ol>
+    <p>La clé est faite du choix, de l'ordre et de la position initiale des rotors, et des connexions du tableau. C'est encore une substitution poly-alphabétique.</p>
+
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les chiffres « à damier » des annales</span> <span class="badge examen">Examen</span></p>
+      <p>Chaque examen contient un exercice de déchiffrement à la main d'un chiffre classique absent des diapos, dont l'énoncé décrit entièrement la méthode : le damier de Collon (2024), la substitution monôme-binôme de Delastelle (2025), le chiffre de Playfair (2026). Tous sont des substitutions à base de carré, dans la lignée du carré de Polybe : on lit les coordonnées d'une lettre dans une grille construite à partir d'une clé. La méthode est toujours la même : reconstruire la grille, découper le chiffré en unités (bigrammes, monômes et binômes…), puis inverser la règle donnée. Le <a href="../generated_quizzes/quiz-chiffrements-classiques.html">quiz des chiffrements classiques</a> les fait pratiquer.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les principaux systèmes de cryptographie <span class="ref">diapo 13</span></h2>
+    <p>Deux systèmes sont couramment utilisés, et ils sont complémentaires plutôt que concurrents.</p>
+    <ul>
+      <li>Le système à clé secrète unique, dit <strong>symétrique</strong> : par flot (octet par octet) ou par bloc (par blocs de plusieurs octets).</li>
+      <li>Le système à clé publique, dit <strong>asymétrique</strong>.</li>
+    </ul>
+    <p>Les systèmes asymétriques sont 100 à 1 000 fois plus lents que les systèmes symétriques, et demandent des clés beaucoup plus longues (de l'ordre de 1 024 bits pour RSA). En conséquence, les systèmes symétriques servent à la confidentialité, et les systèmes asymétriques à l'authentification et au partage de secrets.</p>
+    <div class="bloc methode">
+      <p class="bloc-titre">Méthode <span>Une communication sécurisée utilise les deux</span></p>
+      <ol>
+        <li>Un système asymétrique sert à s'authentifier.</li>
+        <li>Un système asymétrique sert à partager un secret, d'où l'on tire la ou les clés du système symétrique, souvent appelées <dfn>clés de session</dfn>.</li>
+        <li>Le système symétrique chiffre ensuite les données échangées avec la clé de session.</li>
+      </ol>
+      <p>C'est exactement ce que fait TLS (<a href="cours-03-securite-si-reseaux.html">cours 3</a>).</p>
+    </div>
+    <p>La diapo renvoie à une liste des algorithmes cassés et des algorithmes sûrs : <a href="https://www.securiteinfo.com/cryptographie/cracked.shtml">securiteinfo.com</a>.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le chiffrement symétrique <span class="ref">diapos 14–20</span></h2>
+    <p>Dans un chiffrement symétrique, la même clé chiffre et déchiffre. C'est rapide et peu coûteux, mais il faut que les deux interlocuteurs partagent cette clé, et c'est là toute la difficulté.</p>
+
+    <h3>Mode opératoire, principe, forces et faiblesses</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Chiffrement symétrique</span></p>
+      <p>L'émetteur et le récepteur partagent une clé secrète \(k\) : Bob chiffre \(c = E(k, m)\), Alice déchiffre \(m = D(k, c)\). Il faut une clé par couple émetteur-récepteur : pour \(n\) entités, il faut au total \(\dfrac{n(n-1)}{2}\) clés.</p>
+    </div>
+    <div class="tableau mono compact">
+      <table>
+        <caption>Nombre de clés secrètes nécessaires (diapo 14)</caption>
+        <thead><tr><th>Entités</th><th>Clés</th></tr></thead>
+        <tbody>
+          <tr><td>2</td><td>1</td></tr>
+          <tr><td>3</td><td>3</td></tr>
+          <tr><td>4</td><td>6</td></tr>
+          <tr><td>25</td><td>300</td></tr>
+          <tr><td>n</td><td>n(n−1)/2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Le principe est d'appliquer des opérations simples (permutation, substitution…) « plusieurs fois », de façon à obtenir deux propriétés :</p>
+    <ul>
+      <li>la <dfn>confusion</dfn> : il est impossible d'établir un lien entre le texte clair et le texte chiffré ;</li>
+      <li>la <dfn>diffusion</dfn>, ou <dfn>effet avalanche</dfn> : un bit modifié en entrée modifie un bit sur deux en sortie.</li>
+    </ul>
+    <p>Il existe deux familles d'algorithmes symétriques : le chiffrement par flot et le chiffrement par bloc.</p>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="colonne-titre">Points forts</p>
+        <ul>
+          <li>Peu de ressources : chiffrement à la volée, primitives câblées dans le microprocesseur, algorithme souvent réversible.</li>
+          <li>Clé de petite taille : 128 bits ou plus peuvent suffire pour un transfert de données.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p class="colonne-titre">Points faibles</p>
+        <ul>
+          <li>Le nombre de clés à gérer.</li>
+          <li>La diffusion des clés : comment transmettre la clé secrète sans qu'elle soit interceptée ?</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>DES, 3DES et AES</h3>
+    <div class="tableau">
+      <table>
+        <caption>Quelques systèmes de chiffrement symétrique par bloc (diapo 15)</caption>
+        <thead><tr><th>Système</th><th>Conception</th><th>Blocs et clé</th><th>Statut</th></tr></thead>
+        <tbody>
+          <tr><th>DES<br><small>Data Encryption Standard, 1977</small></th><td>IBM, notamment Horst Feistel</td><td>blocs de 64 bits, 16 tours, clé de 56 bits</td><td>cassé : clé trop petite, fonction F trop linéaire</td></tr>
+          <tr><th>3DES<br><small>Triple DES, 1999</small></th><td>IBM (Walter Tuchman)</td><td>DES appliqué 3 fois au même bloc de 64 bits, avec 2 ou 3 clés DES (clé effective de 112 bits)</td><td>lent, non cassé (au 5 février 2026, selon la diapo)</td></tr>
+          <tr><th>AES<br><small>Advanced Encryption Standard, 2000</small></th><td>Joan Daemen et Vincent Rijmen</td><td>blocs de 128 bits, transformations linéaires et non linéaires ; clé de 128, 192 ou 256 bits ; 10, 12 ou 14 tours selon la clé</td><td>rapide, peu gourmand, primitives câblées dans les processeurs modernes, non cassé</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo date la casse de DES de 1997, par distributed.net et l'EFF. En 1997, c'est le projet DESCHALL qui a relevé le premier défi DES ; distributed.net et l'EFF ont cassé une clé ensemble en janvier 1999, en 22 heures.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>3DES n'est plus recommandé</span></p>
+      <p>Même non cassé, 3DES est lent et ses blocs de 64 bits sont trop petits pour de gros volumes. Le NIST en interdit l'usage pour chiffrer depuis fin 2023. Le choix par défaut aujourd'hui est AES, que le TP 3 met en œuvre.</p>
+    </div>
+
+    <h3>Le masque jetable de Vernam</h3>
+    <p>Le système de chiffrement symétrique parfait existe… en théorie : c'est le <dfn>masque jetable</dfn> (<span class="en" lang="en">one-time pad</span>), d'après le chiffre de Vernam (1926). C'est un chiffrement par flot, réversible.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Masque jetable</span> <span class="badge examen">Examen</span></p>
+      <p>Le chiffré s'obtient par un ou exclusif bit à bit (ou octet par octet) entre le message et la clé : \(c_i = m_i \xor k_i\). La clé doit respecter trois contraintes :</p>
+      <ul>
+        <li>elle est aussi longue que le message clair ;</li>
+        <li>elle est parfaitement aléatoire ;</li>
+        <li>elle est à usage unique, « détruite » après le chiffrement ou le déchiffrement.</li>
+      </ul>
+      <p>Le chiffré, le message clair et la clé ont donc la même taille.</p>
+    </div>
+    <div class="colonnes">
+      <div class="tableau mono compact">
+        <table>
+          <caption>Le ou exclusif (XOR)</caption>
+          <thead><tr><th>a</th><th>b</th><th>a + b</th><th>(a + b) mod 2</th><th>a ⊕ b</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+            <tr><td>0</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+            <tr><td>1</td><td>0</td><td>1</td><td>1</td><td>1</td></tr>
+            <tr><td>1</td><td>1</td><td>10</td><td>0</td><td>0</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="bloc theoreme">
+        <p class="bloc-titre">Propriété <span>Règles de calcul du XOR</span></p>
+        \[ x \xor x = 0 \qquad x \xor 0 = x \]
+        \[ x \xor y = w \;\Rightarrow\; w \xor x = y \;\text{ et }\; w \xor y = x \]
+      </div>
+    </div>
+    <p>Le gros défaut du masque jetable est qu'il n'est pas utilisable au quotidien, pour la sécurité du Web par exemple : la clé est aussi longue que le message, et il faut la transmettre à l'avance. Son principe a été beaucoup repris, mais forcément en l'affaiblissant, par exemple dans RC4.</p>
+
+    <div class="bloc exercice" id="ex-vernam">
+      <p class="bloc-titre">Exercice 1 <span>Le chiffre de Vernam (examens 2024 et 2026)</span> <span class="badge examen">Examen</span></p>
+      <p>a) Donner la fonction de chiffrement \(E(k, m)\) et la fonction de déchiffrement \(D(k, c)\) du chiffre de Vernam. b) Donner les trois conditions d'usage sécurisé. c) Démontrer que \(D(k, c) = m\).</p>
+      <details class="indice"><summary>Indice</summary><p>Le déchiffrement est la même opération que le chiffrement. Pour c), remplacer \(c\) par son expression et utiliser l'associativité du XOR, puis \(k \xor k = 0\).</p></details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>a) \(E(k, m) = k \xor m = c\) et \(D(k, c) = k \xor c\).</p>
+        <p>b) La clé est aussi longue que le message, parfaitement aléatoire, et à usage unique.</p>
+        <p>c) \(D(k, c) = k \xor c = k \xor (k \xor m) = (k \xor k) \xor m = 0 \xor m = m\), par associativité du XOR, puis \(x \xor x = 0\) et \(0 \xor x = x\).</p>
+      </details>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi une clé réutilisée est fatale</span></p>
+      <p>Si deux messages sont chiffrés avec la même clé, \(c_1 \xor c_2 = (m_1 \xor k) \xor (m_2 \xor k) = m_1 \xor m_2\) : la clé disparaît, et l'on obtient le XOR des deux clairs, d'où l'on tire beaucoup d'information. C'est la seule voie de cryptanalyse du chiffre de Vernam (question de l'examen 2025) : correctement utilisé, il est incassable, puisque tout clair de même longueur est également probable. Le TP 2 le montre avec RC4.</p>
+    </div>
+
+    <h3>RC4, un chiffrement symétrique par flot</h3>
+    <p>RC4 a été conçu par Ronald Rivest pour RSA Labs en 1987, et publié anonymement sur Internet en 1994. C'est un chiffrement par flot à clé de taille variable (jusqu'à 2 048 bits) : un générateur de bits pseudo-aléatoires, combiné au texte clair par un XOR. Le déchiffrement se fait de la même manière : l'algorithme est réversible.</p>
+    <ul>
+      <li>Il est très rapide (5 fois DES, 15 fois 3DES), mais considéré aujourd'hui comme peu sûr : plusieurs attaques sont connues.</li>
+      <li>Il a été utilisé dans WEP et WPA (Wi-Fi).</li>
+      <li>RC4-40 a été cassé en 1995.</li>
+    </ul>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo 17 ajoute « RC5-64 cassé en 2002 ». RC5 est un autre algorithme de Rivest, un chiffrement par bloc : le défi RC5-64 de distributed.net (clé de 64 bits trouvée en 2002) ne concerne pas RC4.</p>
+    <p>Le principe : on initialise un tableau \(S\), une suite pseudo-aléatoire, à partir de la clé secrète \(K\). Puis, tant que le flux d'entrée n'est pas vide, on réorganise \(S\), on lit l'octet courant \(m\) du message, et on produit l'octet chiffré \(c = S[t] \xor m\), où \(S[t]\) est un octet de \(S\).</p>
+    <p>Structures de données : un tableau d'octets \(K\) (la clé), un tableau \(S\) de 256 octets (la suite pseudo-aléatoire), un tableau \(T\) de 256 octets (tableau temporaire de l'initialisation).</p>
+<pre><code class="language-pseudo"><i>/* Initialisation de S et T */</i>
+<b>Pour</b> i <b>de</b> 0 <b>à</b> 255 <b>Faire</b>
+    S[i] = i ;
+    T[i] = K[i (mod keylen)] ;
+<b>FinPour</b>
+
+<i>/* Première permutation de S */</i>
+j = 0 ;
+<b>Pour</b> i <b>de</b> 0 <b>à</b> 255 <b>Faire</b>
+    j = (j + S[i] + T[i]) (mod 256) ;
+    Swap(S[i], S[j]) ;
+<b>FinPour</b>
+
+<i>/* Chiffrement */</i>
+i = 0 ; j = 0 ;
+<b>TantQue</b> (m = LectureOctetFluxEntrée()) <b>Faire</b>
+    i = (i + 1) (mod 256) ;
+    j = (j + S[i]) (mod 256) ;
+    Swap(S[i], S[j]) ;
+    t = (S[i] + S[j]) (mod 256) ;
+    c = m XOR S[t] ;
+    EcritureOctetFluxSortie(c) ;
+<b>FinTantQue</b></code></pre>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Des valeurs pour tester</span></p>
+      <p>Exécution de cet algorithme (vecteurs de test classiques de RC4), en hexadécimal :</p>
+      <div class="tableau mono compact">
+        <table>
+          <thead><tr><th>Clé</th><th>Clair</th><th>Chiffré</th></tr></thead>
+          <tbody>
+            <tr><td>Key</td><td>Plaintext</td><td>BBF316E8D940AF0AD3</td></tr>
+            <tr><td>Wiki</td><td>pedia</td><td>1021BF0420</td></tr>
+            <tr><td>Secret</td><td>Attack at dawn</td><td>45A01F645FC35B383552544B9BF5</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Le programme de test du TP 2 utilise la clé « Wika » (et non « Wiki ») pour « pedia » : on doit alors obtenir 55F48FBC22. Le <a href="../generated_quizzes/quiz-crypto-code.html">quiz XOR et RC4</a> fait écrire ces étapes en C.</p>
+    </div>
+
+    <h3>Les modes d'assemblage du chiffrement par bloc</h3>
+    <p>Un chiffrement par bloc ne traite qu'un bloc de taille fixe (128 bits pour AES). Pour un message plus long, il faut un <dfn>mode d'assemblage</dfn> (ou mode d'opération) des blocs chiffrés : chiffrer chaque bloc indépendamment laisserait passer des attaques simples.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Mode CBC (Cipher Block Chaining)</span> <span class="badge examen">Examen</span></p>
+      <p>Un <dfn>vecteur d'initialisation</dfn> IV (<span class="en" lang="en">Initialisation Vector</span>) de bits aléatoires est changé à chaque chiffrement, et partagé. Chaque bloc clair est combiné au bloc chiffré précédent avant d'être chiffré :</p>
+      \[ c_i = E(k,\, m_i \xor c_{i-1}) \qquad m_i = D(k,\, c_i) \xor c_{i-1} \qquad \text{avec } c_0 = \mathrm{IV} \]
+      <p>Le chiffrement ne peut pas se faire en parallèle.</p>
+    </div>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 600 230" width="600" role="img" aria-labelledby="fig-cbc-titre">
+        <title id="fig-cbc-titre">Chiffrement CBC : chaque bloc clair est combiné par XOR au chiffré précédent (l'IV pour le premier), puis passe dans le chiffrement par bloc avec la clé ; le résultat est le bloc chiffré, transmis au bloc suivant</title>
+        <defs>
+          <marker id="fleche-cbc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="40" y="76" text-anchor="middle" class="mono">IV</text>
+        <g>
+          <text x="150" y="18" text-anchor="middle" class="mono">m₁</text>
+          <path class="trait" d="M150 24 V60" marker-end="url(#fleche-cbc)"/>
+          <circle class="boite" cx="150" cy="72" r="11"/><text x="150" y="77" text-anchor="middle">⊕</text>
+          <path class="trait" d="M58 72 H137" marker-end="url(#fleche-cbc)"/>
+          <path class="trait" d="M150 83 V108" marker-end="url(#fleche-cbc)"/>
+          <rect class="boite-accent" x="100" y="110" width="100" height="40" rx="6"/>
+          <text x="150" y="135" text-anchor="middle" class="accent">E(k, ·)</text>
+          <path class="trait" d="M150 150 V193" marker-end="url(#fleche-cbc)"/>
+          <text x="150" y="212" text-anchor="middle" class="mono">c₁</text>
+        </g>
+        <g>
+          <text x="330" y="18" text-anchor="middle" class="mono">m₂</text>
+          <path class="trait" d="M330 24 V60" marker-end="url(#fleche-cbc)"/>
+          <circle class="boite" cx="330" cy="72" r="11"/><text x="330" y="77" text-anchor="middle">⊕</text>
+          <path class="trait" d="M150 172 H240 V72 H317" marker-end="url(#fleche-cbc)"/>
+          <path class="trait" d="M330 83 V108" marker-end="url(#fleche-cbc)"/>
+          <rect class="boite-accent" x="280" y="110" width="100" height="40" rx="6"/>
+          <text x="330" y="135" text-anchor="middle" class="accent">E(k, ·)</text>
+          <path class="trait" d="M330 150 V193" marker-end="url(#fleche-cbc)"/>
+          <text x="330" y="212" text-anchor="middle" class="mono">c₂</text>
+        </g>
+        <g>
+          <text x="510" y="18" text-anchor="middle" class="mono">m₃</text>
+          <path class="trait" d="M510 24 V60" marker-end="url(#fleche-cbc)"/>
+          <circle class="boite" cx="510" cy="72" r="11"/><text x="510" y="77" text-anchor="middle">⊕</text>
+          <path class="trait" d="M330 172 H420 V72 H497" marker-end="url(#fleche-cbc)"/>
+          <path class="trait" d="M510 83 V108" marker-end="url(#fleche-cbc)"/>
+          <rect class="boite-accent" x="460" y="110" width="100" height="40" rx="6"/>
+          <text x="510" y="135" text-anchor="middle" class="accent">E(k, ·)</text>
+          <path class="trait" d="M510 150 V193" marker-end="url(#fleche-cbc)"/>
+          <text x="510" y="212" text-anchor="middle" class="mono">c₃</text>
+        </g>
+      </svg>
+      <figcaption>Chiffrement en mode CBC (diapo 19, d'après Wikipédia).</figcaption>
+    </figure>
+    <p>Variante de CBC : on prend \(\mathrm{IV} = E(k, \text{nonce})\). Le chiffrement du nonce est obligatoire, car l'IV doit toujours être imprévisible. Un <dfn>nonce</dfn> (contraction de <span class="en" lang="en">number used once</span>) doit changer à chaque chiffrement : par exemple une valeur calculée à partir d'un numéro de message et d'autres informations.</p>
+
+    <div class="bloc exercice" id="ex-cbc">
+      <p class="bloc-titre">Exercice 2 <span>Le déchiffrement CBC (examen 2026)</span> <span class="badge examen">Examen</span></p>
+      <p>À partir du schéma de chiffrement en mode CBC ci-dessus, donner le schéma du mode CBC pour une fonction de <em>déchiffrement</em> par bloc.</p>
+      <details class="indice"><summary>Indice</summary><p>Partir de la formule \(m_i = D(k, c_i) \xor c_{i-1}\) : cette fois, le XOR se fait <em>après</em> le bloc de déchiffrement, et c'est le chiffré précédent, reçu tel quel, qui y entre.</p></details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Chaque bloc chiffré \(c_i\) passe dans \(D(k, \cdot)\) ; la sortie est combinée par XOR au bloc chiffré précédent \(c_{i-1}\) (l'IV pour le premier bloc) pour donner \(m_i\). Les flèches de chaînage partent donc des blocs chiffrés reçus, pas des sorties de \(D\).</p>
+        <figure class="figure">
+          <svg class="schema" viewBox="0 0 600 230" width="600" role="img" aria-labelledby="fig-cbcd-titre">
+            <title id="fig-cbcd-titre">Déchiffrement CBC : chaque bloc chiffré passe dans le déchiffrement par bloc avec la clé ; la sortie est combinée par XOR au bloc chiffré précédent (l'IV pour le premier) et donne le bloc clair</title>
+            <defs>
+              <marker id="fleche-cbcd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+              </marker>
+            </defs>
+            <text x="40" y="163" text-anchor="middle" class="mono">IV</text>
+            <text x="150" y="18" text-anchor="middle" class="mono">c₁</text>
+            <path class="trait" d="M150 24 V58" marker-end="url(#fleche-cbcd)"/>
+            <rect class="boite-accent" x="100" y="60" width="100" height="40" rx="6"/>
+            <text x="150" y="85" text-anchor="middle" class="accent">D(k, ·)</text>
+            <path class="trait" d="M150 100 V146" marker-end="url(#fleche-cbcd)"/>
+            <circle class="boite" cx="150" cy="158" r="11"/><text x="150" y="163" text-anchor="middle">⊕</text>
+            <path class="trait" d="M58 158 H137" marker-end="url(#fleche-cbcd)"/>
+            <path class="trait" d="M150 169 V193" marker-end="url(#fleche-cbcd)"/>
+            <text x="150" y="212" text-anchor="middle" class="mono">m₁</text>
+            <text x="330" y="18" text-anchor="middle" class="mono">c₂</text>
+            <path class="trait" d="M330 24 V58" marker-end="url(#fleche-cbcd)"/>
+            <rect class="boite-accent" x="280" y="60" width="100" height="40" rx="6"/>
+            <text x="330" y="85" text-anchor="middle" class="accent">D(k, ·)</text>
+            <path class="trait" d="M330 100 V146" marker-end="url(#fleche-cbcd)"/>
+            <circle class="boite" cx="330" cy="158" r="11"/><text x="330" y="163" text-anchor="middle">⊕</text>
+            <path class="accent" d="M150 40 H240 V158 H317" marker-end="url(#fleche-cbcd)"/>
+            <path class="trait" d="M330 169 V193" marker-end="url(#fleche-cbcd)"/>
+            <text x="330" y="212" text-anchor="middle" class="mono">m₂</text>
+            <text x="510" y="18" text-anchor="middle" class="mono">c₃</text>
+            <path class="trait" d="M510 24 V58" marker-end="url(#fleche-cbcd)"/>
+            <rect class="boite-accent" x="460" y="60" width="100" height="40" rx="6"/>
+            <text x="510" y="85" text-anchor="middle" class="accent">D(k, ·)</text>
+            <path class="trait" d="M510 100 V146" marker-end="url(#fleche-cbcd)"/>
+            <circle class="boite" cx="510" cy="158" r="11"/><text x="510" y="163" text-anchor="middle">⊕</text>
+            <path class="accent" d="M330 40 H420 V158 H497" marker-end="url(#fleche-cbcd)"/>
+            <path class="trait" d="M510 169 V193" marker-end="url(#fleche-cbcd)"/>
+            <text x="510" y="212" text-anchor="middle" class="mono">m₃</text>
+          </svg>
+          <figcaption>Déchiffrement en mode CBC : le chaînage (en couleur) part des blocs chiffrés reçus.</figcaption>
+        </figure>
+        <p>Conséquence utile : tous les \(c_i\) sont connus dès la réception, donc le déchiffrement CBC, lui, peut se faire en parallèle.</p>
+      </details>
+    </div>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Mode CTR (Counter)</span></p>
+      <p>L'IV est une valeur aléatoire ou un nonce, à changer pour chaque message à chiffrer. Un flux de clés est obtenu en chiffrant un compteur \(x\) ajouté à l'IV :</p>
+      \[ c_i = m_i \xor E(k,\, \mathrm{IV} + x) \qquad m_i = c_i \xor E(k,\, \mathrm{IV} + x) \qquad \text{avec } x = 0 \text{ pour le premier bloc} \]
+      <p>Le mode CTR fonctionne sans algorithme de déchiffrement (on n'utilise que \(E\)), et en parallèle.</p>
+    </div>
+    <p>D'autres modes existent, par exemple :</p>
+    <ul>
+      <li>OFB (<span class="en" lang="en">Output FeedBack</span>) : \(c_i = m_i \xor E(k, k_{i-1})\), avec \(k_{i-1} = \mathrm{IV}\) pour le premier bloc ;</li>
+      <li>CFB (<span class="en" lang="en">Cipher FeedBack</span>) : \(c_i = E(k, c_{i-1}) \xor m_i\).</li>
+    </ul>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>CTR transforme un chiffrement par bloc en chiffrement par flot</span></p>
+      <p>En mode CTR, \(E(k, \mathrm{IV} + x)\) joue exactement le rôle de la suite pseudo-aléatoire de RC4 : on la combine au message par XOR. Les mêmes règles s'appliquent donc : ne jamais réutiliser le même couple clé-IV, sinon \(c_1 \xor c_2 = m_1 \xor m_2\), comme pour un masque jetable réutilisé.</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Le chiffrement asymétrique <span class="ref">diapos 22–26</span></h2>
+    <p>Le chiffrement asymétrique résout le problème de la diffusion des clés : la clé qui chiffre peut être publiée, seule celle qui déchiffre reste secrète. Il repose sur des fonctions mathématiques faciles à calculer dans un sens et très difficiles dans l'autre.</p>
+
+    <h3>Mode opératoire</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Chiffrement asymétrique</span></p>
+      <p>Le récepteur (Alice) publie sa <dfn>clé publique</dfn> \(k\). L'émetteur (Bob) chiffre avec cette clé publique, et le récepteur déchiffre avec sa <dfn>clé privée</dfn> \(y\). Les deux clés sont liées, \(y = f(k)\), mais il est très difficile de déduire \(y\) de \(k\). Dans RSA, \(y\) est déduite de \(k\) ; dans certains systèmes asymétriques, c'est l'inverse.</p>
+    </div>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Chiffrer avec la clé privée</span></p>
+      <p>Si un message est chiffré avec la clé privée \(y\), tous les possesseurs de la clé publique \(k\) peuvent le déchiffrer. Ce n'est donc pas de la confidentialité, mais cette propriété sert aux signatures : seul le détenteur de la clé privée a pu produire ce chiffré.</p>
+    </div>
+    <div class="colonnes">
+      <div class="colonne pour">
+        <p class="colonne-titre">Points forts</p>
+        <ul>
+          <li>Pas de transfert de clé secrète, contrairement aux systèmes symétriques.</li>
+          <li>Utile pour la signature et l'authentification.</li>
+        </ul>
+      </div>
+      <div class="colonne contre">
+        <p class="colonne-titre">Points faibles</p>
+        <ul>
+          <li>Traitement mathématique long.</li>
+          <li>Taille importante des clés, en particulier pour RSA.</li>
+          <li>Authentification de la clé publique : est-ce bien celle d'Alice ? (voir les certificats, <a href="cours-03-securite-si-reseaux.html">cours 3</a>)</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Rappels de mathématiques</h3>
+    <ul>
+      <li><strong>Exponentiation</strong> : \(a^n = a \times \dots \times a\) (\(n\) facteurs), aussi appelée fonction exponentielle de base \(a\).</li>
+      <li><strong>Logarithme</strong> : le logarithme de base \(b\) d'un nombre positif est la puissance à laquelle il faut élever \(b\) pour obtenir ce nombre. Par exemple \(\log_{10}(1000) = 3\) car \(10^3 = 1000\). On a \(\log_b(x^p) = p \log_b(x)\) et \(\log_b(b) = 1\), donc \(\log_b(b^p) = p\).</li>
+      <li><strong>Arithmétique modulaire</strong> : un calcul modulo un entier \(m\) (éventuellement premier) donne un résultat \(c\) tel que \(0 \le c \lt m\). L'<dfn>exponentiation modulaire</dfn> calcule \(c = a^n \bmod m\). Deux problèmes inverses sont difficiles : le <dfn>logarithme discret</dfn> (trouver \(n\) connaissant \(c\), \(a\) et \(m\)) et le <dfn>problème RSA</dfn> (trouver \(a\) connaissant \(c\), \(n\) et \(m\)).</li>
+    </ul>
+
+    <h3>Principes et algorithmes</h3>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Fonction à sens unique, à trappe</span></p>
+      <p>Une <dfn>fonction à sens unique</dfn> (non réversible) est une fonction \(y = f(x)\) telle qu'il est facile de calculer \(y\) à partir de \(x\), mais très difficile de retrouver \(x\) à partir de \(y\). Une <dfn>trappe</dfn> est une information secrète qui permet de retrouver trivialement \(x\) à partir de \(y\). Les systèmes asymétriques sont fondés sur des fonctions à sens unique à trappe : la trappe est la clé privée.</p>
+    </div>
+    <dl class="glossaire">
+      <dt>Diffie-Hellman (DH), 1976</dt>
+      <dd>Famille de fonctions pour échanger un secret sans qu'il apparaisse publiquement, fondées sur la difficulté du logarithme discret dans un groupe fini. La diapo renvoie à une vidéo de ScienceÉtonnante : <a href="https://youtu.be/1Yv8m398Fv0">youtu.be/1Yv8m398Fv0</a>.</dd>
+      <dt>RSA, 1978</dt>
+      <dd>Conçu par Ronald Rivest, Adi Shamir et Leonard Adleman. Fondé sur la difficulté de factoriser le module en produit de deux nombres premiers, et sur le problème RSA. Très utilisé dans le commerce électronique. Un nombre RSA de 829 bits (RSA-250) a été factorisé en 2020 ; un ordinateur quantique pourrait casser RSA (un algorithme de factorisation quantique, celui de Shor, est connu depuis 1994).</dd>
+      <dt>ECC, 1985</dt>
+      <dd>Cryptographie sur les courbes elliptiques (<span class="en" lang="en">Elliptic Curve Cryptography</span>) : calculs sur des courbes de la forme \(y^2 = x^3 + ax + b \pmod p\). Elle fournit des algorithmes de chiffrement (ECIES), de signature (ECDSA) et d'échange de clé (ECDH). De plus en plus utilisée : plus rapide, avec des clés plus petites.</dd>
+    </dl>
+    <p><span class="badge a-verifier">À vérifier</span> Les diapos écrivent « Diffie-Helman », « Elliptic Curse Cryptology » et « RSA-829 (clé privée de 829 bits) » : ce qui a été factorisé est un module public de 829 bits, d'où l'on déduit la clé privée.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Diffie-Hellman sur de petits nombres</span></p>
+      <p>Alice et Bob choisissent publiquement \(p = 23\) et \(g = 5\). Alice tire un secret \(a = 6\) et envoie \(A = g^a \bmod p = 8\) ; Bob tire \(b = 15\) et envoie \(B = g^b \bmod p = 19\). Alice calcule \(B^a \bmod p = 2\), Bob calcule \(A^b \bmod p = 2\) : ils partagent le secret 2, qui n'a jamais circulé. Un espion qui voit 8 et 19 devrait résoudre un logarithme discret pour retrouver \(a\) ou \(b\). C'est le mécanisme (EC)DHE de TLS 1.3 (<a href="cours-03-securite-si-reseaux.html">cours 3</a>).</p>
+    </div>
+
+    <h3>Le système RSA</h3>
+    <div class="bloc methode">
+      <p class="bloc-titre">Algorithme <span>RSA</span> <span class="ref">diapo 25</span></p>
+      <p><strong>Création des clés par Alice :</strong></p>
+      <ol>
+        <li>choisir deux nombres premiers distincts \(p\) et \(q\), très grands ;</li>
+        <li>calculer le module de chiffrement \(n = pq\) ;</li>
+        <li>calculer l'indicatrice d'Euler \(\varphi(n) = \operatorname{card}\{w \in \N^* \mid w \le n \text{ et } w \text{ premier avec } n\}\) ; comme \(p\) et \(q\) sont premiers, \(\varphi(n) = \varphi(p)\,\varphi(q) = (p-1)(q-1)\) ;</li>
+        <li>choisir l'exposant de chiffrement \(e\), premier avec \(\varphi(n)\) et \(e \lt \varphi(n)\) ;</li>
+        <li>calculer l'exposant de déchiffrement \(d\) tel que \(ed \equiv 1 \pmod{\varphi(n)}\) (théorème de Bézout).</li>
+      </ol>
+      <p>Le couple \((n, e)\) est la clé publique ; la taille de \(n\) est la longueur de la clé. La valeur \(d\) est la clé privée, et \(p\) et \(q\) doivent aussi rester secrets.</p>
+      <p><strong>Chiffrement</strong> d'un entier naturel \(m \lt n\) par Bob : \(c \equiv m^e \pmod n\).<br><strong>Déchiffrement</strong> par Alice : \(m \equiv c^d \pmod n\).</p>
+    </div>
+    <p>En pratique, \(p\) et \(q\) sont assez grands pour avoir des clés de plus de 2 048 bits (plus de 600 chiffres).</p>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>RSA sur de petits nombres</span> <span class="ref">diapo 26</span></p>
+      <ul>
+        <li>On choisit \(p = 3\) et \(q = 11\) : \(n = 33\), \(\varphi(n) = 2 \times 10 = 20\).</li>
+        <li>Exposant de chiffrement \(e = 3\), premier avec 20 ; exposant de déchiffrement \(d = 7\), car \(3 \times 7 = 21 \equiv 1 \pmod{20}\).</li>
+        <li>Clé publique d'Alice : \((n, e) = (33, 3)\) ; clé privée : \(d = 7\).</li>
+        <li>Bob chiffre \(m = 4\) : \(c = 4^3 \bmod 33 = 64 \bmod 33 = 31\).</li>
+        <li>Alice déchiffre : \(31^7 \bmod 33 = 4\). Elle retrouve le message \(m = 4\).</li>
+      </ul>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Calculer 31<sup>7</sup> mod 33 à la main</span></p>
+      <p>On réduit modulo 33 à chaque étape, en remarquant que \(31 \equiv -2\) : \(31^7 \equiv (-2)^7 = -128\). Or \(-128 + 4 \times 33 = 4\), donc \(31^7 \bmod 33 = 4\). Sans cette astuce, on calcule par carrés successifs : \(31^2 \equiv 4\), \(31^4 \equiv 16\), puis \(31^7 = 31^4 \cdot 31^2 \cdot 31 \equiv 16 \times 4 \times 31 = 1984 \equiv 4\).</p>
+      <p>Pour trouver \(d\) quand \(\varphi(n)\) est grand, on utilise l'algorithme d'Euclide étendu, qui donne les coefficients de Bézout \(u\) et \(v\) tels que \(e\,u + \varphi(n)\,v = 1\) : \(d = u \bmod \varphi(n)\).</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>L'empreinte numérique <span class="ref">diapos 28–33</span></h2>
+    <p>Chiffrer protège la confidentialité, mais pas l'intégrité : un attaquant peut modifier un chiffré sans le lire (le TP 2 le montre). Pour vérifier qu'une donnée n'a pas été modifiée, on calcule son empreinte.</p>
+
+    <h3>Principe</h3>
+    <p>Une empreinte sert à contrôler l'intégrité d'une donnée, c'est-à-dire à s'assurer qu'elle n'a pas été modifiée. Exemples :</p>
+    <ul>
+      <li>contrôler une donnée transférée sur un réseau ;</li>
+      <li>contrôler un programme téléchargé, pour vérifier qu'aucun cheval de Troie ne l'a modifié ;</li>
+      <li>contrôler un mot de passe : c'est une empreinte du mot de passe que l'on stocke, pas le mot de passe (voir le <a href="cours-03-securite-si-reseaux.html">cours 3</a>).</li>
+    </ul>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Fonction de hachage, empreinte, HMAC</span></p>
+      <p>Une <dfn>fonction de hachage</dfn> \(H\), rapide à calculer et à sens unique, transforme un message \(m\) de longueur arbitraire en une <dfn>empreinte</dfn> (résumé, condensé, condensat ; <span class="en" lang="en">digest, hash</span>) \(h = H(m)\) de taille fixe. Avec une clé \(k\), on calcule un <dfn>HMAC</dfn> (<span class="en" lang="en">keyed-Hash Message Authentication Code</span>) : \(h = \mathrm{HMAC}(k, m)\). Un MAC (<span class="en" lang="en">Message Authentication Code</span>) est un code d'authentification de message. La fonction doit avoir trois propriétés :</p>
+      <ul>
+        <li>étant donné un message \(m\), il est facile de calculer l'empreinte \(h\) ;</li>
+        <li>étant donnée une empreinte \(h\), il est impossible en pratique de retrouver le message \(m\) ;</li>
+        <li><dfn>résistance aux collisions</dfn> : il est difficile de trouver deux messages \(m\) et \(m'\) tels que \(H(m) = H(m')\).</li>
+      </ul>
+    </div>
+    <div class="bloc exemple">
+      <p class="bloc-titre">Exemple <span>Contrôle d'intégrité avec une clé partagée</span></p>
+      <p>Alice et Bob partagent une clé \(k\). Alice envoie à Bob l'empreinte \(h\), puis le message \(m\). Bob calcule l'empreinte \(h'\) du message reçu : si \(h' \neq h\), le message \(m\) (ou \(h\)) a été modifié.</p>
+    </div>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Pourquoi une clé ?</span></p>
+      <p>Sans clé, un attaquant qui modifie \(m\) recalculerait simplement \(H(m)\) et remplacerait aussi l'empreinte. Avec un HMAC, il lui faudrait la clé. Un HMAC garantit donc l'intégrité <em>et</em> l'authenticité de l'origine (seul un détenteur de la clé a pu le produire). C'est la réponse aux questions de 2025 et 2026 sur le gestionnaire de mots de passe : pour détecter qu'un fichier a été modifié entre deux exécutions, on stocke avec lui un HMAC calculé avec une clé tirée du mot de passe principal, et on le recalcule à chaque lecture (TP 4).</p>
+    </div>
+
+    <h3>L'effet avalanche et les algorithmes</h3>
+    <p>On recherche l'<strong>effet avalanche</strong> par des manipulations de bits : une modification de plus en plus importante des données au fil des opérations de l'algorithme. Idéalement, changer un bit en entrée change un bit sur deux en sortie.</p>
+    <div class="tableau">
+      <table>
+        <caption>Quelques algorithmes de hachage cryptographique (diapo 29)</caption>
+        <thead><tr><th>Algorithme</th><th>Conception</th><th>Empreinte</th><th>Statut</th></tr></thead>
+        <tbody>
+          <tr><th>MD4, 1990</th><td>Ronald Rivest (MIT)</td><td>128 bits</td><td class="non">cassé en 1996</td></tr>
+          <tr><th>MD5, 1991</th><td>Rivest, amélioration de MD4</td><td>128 bits</td><td class="non">peu sûr dès 1996, cassé en 2004</td></tr>
+          <tr><th>SHA-0, 1993 ; SHA-1, 1995</th><td>NSA, inspirés de MD4 et MD5</td><td>160 bits</td><td class="non">SHA-0 cassé en 2004, SHA-1 en 2005 (collisions réelles en 2017 puis 2020)</td></tr>
+          <tr><th>SHA-2, 2002</th><td>SHA-256, SHA-384, SHA-512</td><td>256, 384, 512 bits</td><td class="oui">fiables à ce jour</td></tr>
+          <tr><th>SHA-3, 2015</th><td>structure complètement différente</td><td>224 à 512 bits</td><td class="oui">fiable</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>SHA-256 en détail</h3>
+    <p>SHA-256, de la famille SHA-2, est une version plus complexe de SHA-1, qui évite certaines de ses faiblesses connues. Il utilise une <dfn>construction de Merkle-Damgård</dfn> : un schéma itératif qui permet de traiter des données beaucoup plus grandes que l'empreinte, de taille fixe.</p>
+    <ol class="etapes">
+      <li><strong>Bourrage</strong> (<span class="en" lang="en">padding</span>) : on complète les données jusqu'à un multiple de 512 bits, par une suite de 0 de taille variable commençant par un 1 (<code>100…0</code>), puis par la taille des données codée sur 64 bits, ce qui limite les données à \(2^{64}\) bits.</li>
+      <li><strong>Découpage</strong> en blocs de 512 bits.</li>
+      <li><strong>Compression</strong> : chaque bloc est traité par la fonction de compression, qui a deux entrées : le résultat de la compression précédente (256 bits ; des valeurs fixes initiales pour le premier bloc) et le bloc courant (512 bits). Le dernier résultat est l'empreinte.</li>
+    </ol>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 600 150" width="600" role="img" aria-labelledby="fig-md-titre">
+        <title id="fig-md-titre">Construction de Merkle-Damgård : le message bourré est découpé en blocs de 512 bits ; partant de valeurs initiales fixes, la fonction de compression combine l'état de 256 bits avec chaque bloc ; le dernier état est l'empreinte</title>
+        <defs>
+          <marker id="fleche-md" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <rect class="boite" x="150" y="10" width="90" height="30" rx="4"/><text x="195" y="30" text-anchor="middle" class="mono">bloc 1</text>
+        <rect class="boite" x="290" y="10" width="90" height="30" rx="4"/><text x="335" y="30" text-anchor="middle" class="mono">bloc 2</text>
+        <rect class="boite" x="430" y="10" width="90" height="30" rx="4"/><text x="475" y="30" text-anchor="middle" class="mono">bloc n</text>
+        <text x="72" y="30" text-anchor="middle" class="t2">512 bits chacun</text>
+        <path class="trait" d="M195 40 V73" marker-end="url(#fleche-md)"/>
+        <path class="trait" d="M335 40 V73" marker-end="url(#fleche-md)"/>
+        <path class="trait" d="M475 40 V73" marker-end="url(#fleche-md)"/>
+        <text x="50" y="100" text-anchor="middle" class="t2">valeurs</text>
+        <text x="50" y="116" text-anchor="middle" class="t2">initiales</text>
+        <path class="trait" d="M85 100 H153" marker-end="url(#fleche-md)"/>
+        <rect class="boite-accent" x="155" y="75" width="80" height="50" rx="6"/><text x="195" y="105" text-anchor="middle" class="accent">f</text>
+        <path class="trait" d="M235 100 H293" marker-end="url(#fleche-md)"/>
+        <rect class="boite-accent" x="295" y="75" width="80" height="50" rx="6"/><text x="335" y="105" text-anchor="middle" class="accent">f</text>
+        <path class="pointille" d="M375 100 H433" marker-end="url(#fleche-md)"/>
+        <rect class="boite-accent" x="435" y="75" width="80" height="50" rx="6"/><text x="475" y="105" text-anchor="middle" class="accent">f</text>
+        <path class="trait" d="M515 100 H548" marker-end="url(#fleche-md)"/>
+        <text x="575" y="96" text-anchor="middle" class="gras">empreinte</text>
+        <text x="575" y="114" text-anchor="middle" class="t2 mono">256 bits</text>
+        <text x="264" y="92" text-anchor="middle" class="t2 mono">256</text>
+      </svg>
+      <figcaption>Construction de Merkle-Damgård de SHA-256 (diapo 30) : \(f\) est la fonction de compression.</figcaption>
+    </figure>
+    <p>La fonction de compression travaille sur huit mots de 32 bits, A à H (8 × 32 = 256 bits), pendant 64 tours. À chaque tour interviennent : \(W_t\), un mot de 32 bits tiré du bloc de 512 bits ; \(K_t\), une constante de 32 bits propre au tour ; \(\mathrm{Ch}(x, y, z)\) et \(\mathrm{Ma}(x, y, z)\), des opérations bit à bit non linéaires ; \(\Sigma_0(x)\) et \(\Sigma_1(x)\), des décalages circulaires et des XOR ; et l'addition binaire non signée sur 32 bits.</p>
+    <p><span class="badge a-verifier">À vérifier</span> La diapo 31 dit que « les blocs D et H changent à chaque tour » et que « A, B, C, E, F et G sont décalés ». Dans l'algorithme, ce sont A et E qui reçoivent une valeur nouvellement calculée ; les autres mots sont décalés d'un rang (B ← A, C ← B, D ← C, F ← E, G ← F, H ← G), et D et H sont ceux qui sont consommés dans le calcul.</p>
+
+    <h3>Empreinte et chiffrement : AE, AEAD et GCM</h3>
+    <dl class="glossaire">
+      <dt>AE <span class="en" lang="en">Authenticated Encryption</span></dt>
+      <dd>Mode qui assure à la fois la confidentialité et l'authenticité : le chiffré inclut une empreinte. Exemple de mode d'assemblage : OCB.</dd>
+      <dt>AEAD <span class="en" lang="en">Authenticated Encryption with Associated Data</span></dt>
+      <dd>Comme AE, mais inclut en plus une donnée non chiffrée et pourtant authentifiée, par exemple une adresse IP. Modes : GCM, CCM, EAX… C'est le mode utilisé par TLS 1.3.</dd>
+    </dl>
+    <p>La diapo 32 montre trois façons de combiner un chiffrement et un MAC : MAC-then-encrypt, Encrypt-then-MAC et Encrypt-and-MAC.</p>
+    <div class="bloc complement">
+      <p class="bloc-titre">Complément <span>Les trois combinaisons</span></p>
+      <ul>
+        <li><strong>MAC-then-encrypt</strong> : on calcule le MAC du clair, puis on chiffre l'ensemble clair + MAC (ancien TLS).</li>
+        <li><strong>Encrypt-then-MAC</strong> : on chiffre, puis on calcule le MAC du chiffré (IPsec ESP). C'est la combinaison recommandée : on rejette un message altéré avant même de le déchiffrer.</li>
+        <li><strong>Encrypt-and-MAC</strong> : on chiffre le clair et on calcule à côté le MAC du clair (SSH).</li>
+      </ul>
+      <p>Le TP 4 pose la même question au gestionnaire de mots de passe : calculer l'empreinte sur le texte clair ou sur le texte chiffré.</p>
+    </div>
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>GCM (Galois Counter Mode)</span></p>
+      <p>Mode d'assemblage de blocs de 128 bits de type compteur (CTR), associé à un calcul très rapide d'une empreinte par multiplication dans un corps de Galois. Les blocs chiffrés, précédés des données associées (AAD, <span class="en" lang="en">Additional Authenticated Data</span>), sont les coefficients d'un polynôme évalué en \(H\), la sous-clé de hachage (\(H = E(k, 0)\), le chiffrement d'un bloc nul) ; la dernière valeur, avec les longueurs de A et de C, donne l'étiquette d'authentification \(T\) (<span class="en" lang="en">final authentication tag</span>).</p>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>La signature numérique <span class="ref">diapos 35–37</span></h2>
+    <p>Une empreinte garantit qu'une donnée n'a pas changé ; une signature garantit en plus <em>qui</em> l'a produite. Elle combine empreinte et chiffrement asymétrique.</p>
+
+    <div class="bloc definition">
+      <p class="bloc-titre">Définition <span>Signature numérique</span></p>
+      <p>Une <dfn>signature numérique</dfn> est une valeur numérique qui garantit l'intégrité d'une donnée et authentifie le signataire, donc l'origine de la donnée. Propriétés recherchées : authentification du signataire ; falsification impossible de la signature ; réutilisation impossible de la signature ; inaltérabilité de la donnée signée ; irrévocabilité du signataire.</p>
+    </div>
+    <p>De nombreux systèmes de signature sont possibles :</p>
+    <ul>
+      <li>par clé secrète partagée : le message est chiffré entièrement ;</li>
+      <li>par clé publique du destinataire (ou clé secrète) partagée et empreinte : la signature est l'empreinte chiffrée ;</li>
+      <li>par HMAC : la signature est l'empreinte obtenue en hachant le message avec une clé unique partagée ;</li>
+      <li>par clé publique : le message est chiffré entièrement avec la clé privée de l'émetteur (pour l'authentification), puis avec la clé publique du destinataire (pour l'intégrité).</li>
+    </ul>
+
+    <h3>Le mode opératoire usuel</h3>
+    <ol class="etapes">
+      <li>Alice produit l'empreinte \(h\) de la donnée \(m\) par une fonction de hachage.</li>
+      <li>Alice chiffre l'empreinte par un système asymétrique : c'est la signature \(s\).</li>
+      <li>Alice place la donnée et la signature dans un conteneur, et l'envoie à Bob par un canal non sécurisé.</li>
+      <li>Bob calcule l'empreinte \(h'\) de la donnée reçue, déchiffre la signature pour retrouver \(h\), et compare : si \(h = h'\), la donnée est intègre et vient du détenteur de la clé.</li>
+    </ol>
+    <p>La diapo 36 précise que la clé publique est considérée comme sûre.</p>
+    <p><span class="badge a-verifier">À vérifier</span> Les diapos 35 et 36 disent que la signature est « l'empreinte chiffrée avec la clé public du destinataire ». Dans le mode opératoire standard (DSA, RSA, ECDSA), l'émetteur chiffre l'empreinte avec <strong>sa propre clé privée</strong>, et n'importe qui vérifie avec sa clé publique : c'est ce qui prouve que seul l'émetteur a pu signer. C'est d'ailleurs ce que dit le cours 3 pour les certificats : « le condensat chiffré avec la clé privée du CA = signature du certificat ». Une empreinte chiffrée avec la clé publique du destinataire ne prouverait rien sur l'émetteur, puisque tout le monde connaît cette clé publique.</p>
+    <figure class="figure">
+      <svg class="schema" viewBox="0 0 620 220" width="620" role="img" aria-labelledby="fig-sign-titre">
+        <title id="fig-sign-titre">Signature standard : Alice hache m, chiffre l'empreinte avec sa clé privée et envoie m et s ; Bob hache m reçu, déchiffre s avec la clé publique d'Alice et compare les deux empreintes</title>
+        <defs>
+          <marker id="fleche-sign" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="plein"/>
+          </marker>
+        </defs>
+        <text x="100" y="18" text-anchor="middle" class="gras">Alice (signe)</text>
+        <text x="520" y="18" text-anchor="middle" class="gras">Bob (vérifie)</text>
+        <text x="30" y="58" class="mono">m</text>
+        <path class="trait" d="M45 54 H78" marker-end="url(#fleche-sign)"/>
+        <rect class="boite" x="80" y="36" width="60" height="34" rx="6"/><text x="110" y="58" text-anchor="middle">H</text>
+        <path class="trait" d="M110 70 V98" marker-end="url(#fleche-sign)"/>
+        <text x="122" y="90" class="mono">h</text>
+        <rect class="boite-accent" x="60" y="100" width="100" height="40" rx="6"/>
+        <text x="110" y="118" text-anchor="middle" class="accent">chiffrer</text>
+        <text x="110" y="133" text-anchor="middle" class="t2">clé privée d'Alice</text>
+        <path class="trait" d="M110 140 V168" marker-end="url(#fleche-sign)"/>
+        <text x="110" y="185" text-anchor="middle" class="mono">s</text>
+        <path class="trait" d="M140 182 H400" marker-end="url(#fleche-sign)"/>
+        <text x="270" y="175" text-anchor="middle" class="t2">envoi de (m, s)</text>
+        <rect class="boite-accent" x="400" y="160" width="110" height="40" rx="6"/>
+        <text x="455" y="178" text-anchor="middle" class="accent">déchiffrer</text>
+        <text x="455" y="193" text-anchor="middle" class="t2">clé publique d'Alice</text>
+        <path class="trait" d="M455 160 V112" marker-end="url(#fleche-sign)"/>
+        <text x="440" y="136" class="mono">h</text>
+        <rect class="boite" x="530" y="36" width="60" height="34" rx="6"/><text x="560" y="58" text-anchor="middle">H</text>
+        <text x="600" y="28" class="mono">m</text>
+        <path class="trait" d="M560 70 V98" marker-end="url(#fleche-sign)"/>
+        <text x="572" y="90" class="mono">h'</text>
+        <rect class="boite" x="430" y="80" width="80" height="30" rx="6"/>
+        <text x="470" y="100" text-anchor="middle">h = h' ?</text>
+        <path class="trait" d="M548 108 H512" marker-end="url(#fleche-sign)"/>
+      </svg>
+      <figcaption>Le mode opératoire standard d'une signature numérique, avec la clé privée de l'émetteur.</figcaption>
+    </figure>
+
+    <h3>Limites et technologies</h3>
+    <p>Si quelqu'un se fait passer pour Bob, Alice ne peut pas le détecter. C'est une authentification faible, car elle ne s'appuie que sur un seul facteur, la clé publique. Le problème de la diffusion et de l'authentification des clés publiques demande une <dfn>infrastructure à clés publiques</dfn> qui les certifie : c'est l'objet du <a href="cours-03-securite-si-reseaux.html">cours 3</a>.</p>
+    <p>Quelques technologies usuelles de signature :</p>
+    <ul>
+      <li>l'algorithme DSA (<span class="en" lang="en">Digital Signature Algorithm</span>), standard du NIST (FIPS 186-2, 2002) ;</li>
+      <li>la signature des courriels : S/MIME, PGP (<span class="en" lang="en">Pretty Good Privacy</span>) ;</li>
+      <li>le protocole réseau TLS, qui utilise des messages signés.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Exercice de synthèse : symétrique ou asymétrique ? <span class="ref">examens 2024 et 2026</span></h2>
+    <p>Cette question de comparaison revient à chaque session. Elle se prépare en tableau, critère par critère.</p>
+    <div class="bloc exercice" id="ex-comparaison">
+      <p class="bloc-titre">Exercice 3 <span>Comparer les deux systèmes</span> <span class="badge examen">Examen</span></p>
+      <p>Donner les différences ou similarités entre un système de chiffrement symétrique et un système de chiffrement asymétrique sur : le mode d'utilisation, les principes de fonctionnement, la vitesse d'exécution, un exemple sûr utilisé actuellement et les cas d'usage en lien avec les concepts de la sécurité.</p>
+      <details class="indice"><summary>Indice</summary><p>Reprendre les diapos 13, 14 et 22 : nombre de clés, sur quoi repose la difficulté, facteur de vitesse, et répartition des rôles « confidentialité » contre « authentification et partage de secret ».</p></details>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <div class="tableau">
+          <table>
+            <thead><tr><th></th><th>Symétrique</th><th>Asymétrique</th></tr></thead>
+            <tbody>
+              <tr><th>Mode d'utilisation</th><td>Une même clé secrète, partagée par l'émetteur et le récepteur, chiffre et déchiffre ; une clé par couple, soit n(n−1)/2 clés.</td><td>Une paire de clés par entité : on chiffre avec la clé publique du destinataire, il déchiffre avec sa clé privée (ou l'inverse pour signer).</td></tr>
+              <tr><th>Principes</th><td>Opérations simples (permutations, substitutions, XOR) répétées sur plusieurs tours, pour la confusion et la diffusion ; par flot ou par bloc (avec un mode d'assemblage).</td><td>Fonctions mathématiques à sens unique à trappe : factorisation (RSA), logarithme discret (DH), courbes elliptiques.</td></tr>
+              <tr><th>Vitesse</th><td>Rapide, peu de ressources, câblé dans les processeurs.</td><td>100 à 1 000 fois plus lent, clés beaucoup plus longues.</td></tr>
+              <tr><th>Exemple sûr</th><td>AES (128 à 256 bits).</td><td>RSA (2 048 bits et plus), ECC (ECDH, ECDSA).</td></tr>
+              <tr><th>Cas d'usage</th><td>Confidentialité des données échangées ou stockées (chiffrement de session, de disque).</td><td>Authentification (signature, certificat), échange d'un secret pour établir les clés de session, non-répudiation.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Similarité à citer : les deux reposent sur des algorithmes publics et sur le secret d'une clé ; en pratique, on les combine (TLS).</p>
+      </details>
+    </div>
+    <div class="bloc exercice" id="ex-deterministe">
+      <p class="bloc-titre">Exercice 4 <span>Type d'une fonction de chiffrement (examen 2025)</span> <span class="badge examen">Examen</span></p>
+      <p>Soit une fonction de chiffrement \(E(k, m)\), avec \(k\) une clé parfaitement aléatoire et \(m\) un message clair de longueur quelconque. La fonction \(E\) est-elle déterministe, aléatoire, pseudo-aléatoire, ou une combinaison de ces types ?</p>
+      <details class="solution">
+        <summary>Solution proposée</summary>
+        <p>Elle est <strong>déterministe</strong> : avec la même clé et le même message, elle donne toujours le même chiffré, sinon le destinataire ne pourrait pas déchiffrer. C'est la clé qui est aléatoire, et le chiffré qui <em>semble</em> aléatoire (diapo 5 : « le chiffré semble aléatoire bien qu'il soit le résultat d'une fonction déterministe »).</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>On chiffre et on déchiffre avec la clé ; on décrypte sans la clé. La cryptanalyse est la science du décryptage.</li>
+        <li>La robustesse dépend de la taille de la clé (\(2^n\) valeurs, au moins 128 bits en symétrique), d'un algorithme public éprouvé et du secret des clés.</li>
+        <li>Permutation (scytale) et substitution, mono-alphabétique (César) ou poly-alphabétique (Vigenère, Enigma).</li>
+        <li>Symétrique : une clé partagée, rapide, pour la confidentialité ; problème de la diffusion des clés et de leur nombre, n(n−1)/2.</li>
+        <li>Masque jetable : \(c_i = m_i \xor k_i\), clé aussi longue que le message, parfaitement aléatoire, à usage unique ; \(D(k, c) = k \xor c = m\).</li>
+        <li>RC4 : générateur pseudo-aléatoire initialisé par la clé, combiné au message par XOR ; on déchiffre avec la même fonction ; ne jamais réutiliser une clé.</li>
+        <li>CBC : \(c_i = E(k, m_i \xor c_{i-1})\), \(m_i = D(k, c_i) \xor c_{i-1}\), \(c_0 = \mathrm{IV}\) ; CTR : \(c_i = m_i \xor E(k, \mathrm{IV} + x)\), parallélisable.</li>
+        <li>Asymétrique : clé publique pour chiffrer, clé privée pour déchiffrer ; lent, pour l'authentification et le partage de secret. RSA : \(c = m^e \bmod n\), \(m = c^d \bmod n\), \(ed \equiv 1 \pmod{\varphi(n)}\).</li>
+        <li>Une empreinte (SHA-256) contrôle l'intégrité ; un HMAC y ajoute une clé, donc l'authenticité. MD5 et SHA-1 sont cassés.</li>
+        <li>Une signature numérique est une empreinte chiffrée par un système asymétrique ; il faut encore authentifier la clé publique, d'où les certificats.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Quelle différence entre déchiffrer et décrypter ?</summary>
+        <div><p>Déchiffrer, c'est retrouver le clair avec l'opération prévue et la clé ; décrypter, c'est le retrouver sans la clé, par cryptanalyse.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Combien de clés faut-il pour que 10 personnes communiquent deux à deux en symétrique ? En asymétrique ?</summary>
+        <div><p>En symétrique, \(10 \times 9 / 2 = 45\) clés secrètes. En asymétrique, une paire par personne : 10 clés publiques et 10 clés privées.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Chiffrer « A » avec Vigenère et la lettre de clé « C » : que donne-t-on ?</summary>
+        <div><p>C : colonne A, ligne C ; en rangs, \(0 + 2 = 2\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi le masque jetable n'est-il pas utilisé pour le Web ?</summary>
+        <div><p>La clé doit être aussi longue que les données, parfaitement aléatoire, à usage unique, et transmise à l'avance de façon sûre : impraticable pour des échanges quotidiens.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Quel mode d'assemblage n'utilise que la fonction de chiffrement, et pourquoi ?</summary>
+        <div><p>CTR (et aussi OFB, CFB) : on chiffre le compteur pour obtenir un flux de clés, que l'on combine par XOR ; déchiffrer revient à refaire le même XOR.</p></div>
+      </details>
+      <details class="carte">
+        <summary>RSA avec \(p = 5\), \(q = 11\), \(e = 3\) : que valent \(n\), \(\varphi(n)\) et \(d\) ?</summary>
+        <div><p>\(n = 55\), \(\varphi(n) = 4 \times 10 = 40\), \(d = 27\) car \(3 \times 27 = 81 = 2 \times 40 + 1\).</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi stocker l'empreinte d'un mot de passe plutôt que le mot de passe ?</summary>
+        <div><p>Pour vérifier un mot de passe, il suffit de comparer les empreintes ; si la base est volée, la fonction à sens unique empêche de retrouver les mots de passe.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Avec quelle clé signe-t-on, avec quelle clé vérifie-t-on ?</summary>
+        <div><p>Dans le mode standard, on signe (chiffre l'empreinte) avec sa clé privée, et tout le monde vérifie avec la clé publique du signataire. La diapo 36 écrit autre chose : voir le badge « À vérifier ».</p></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Références</h2>
+    <ul>
+      <li>Solange Ghernaouti, <cite>Sécurité informatique et réseaux</cite>, Dunod, 4<sup>e</sup> édition.</li>
+      <li>Niels Ferguson et Bruce Schneier, <cite>Cryptographie en pratique</cite>.</li>
+      <li>Dan Boneh, <cite>Cryptography I</cite>, sur coursera.org.</li>
+      <li>Didier Müller, <a href="http://www.apprendre-en-ligne.net/crypto/menu/index.html">Ars Cryptographica</a> ; <a href="http://www.bibmath.net/crypto/index.php">La cryptographie expliquée</a> (bibmath.net).</li>
+    </ul>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="cours-01-faits-et-enjeux.html"><small>← Précédent</small>Faits et enjeux</a>
+    <a class="suivant" href="cours-03-securite-si-reseaux.html"><small>Suivant →</small>Sécurité des SI et des réseaux</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Sécurité informatique · L2 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

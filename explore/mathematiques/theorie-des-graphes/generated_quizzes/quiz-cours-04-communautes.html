@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="maths">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Structure de communautés · Théorie des graphes L3</title>
+<meta name="description" content="Quiz interactif sur le cours 4 de théorie des graphes (L3) : densité, communautés faibles et fortes, conductance, propagation de labels, modularité, algorithme de Louvain, vecteurs de mots de SINr.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/quiz/assets/quiz.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/quiz/assets/quiz.js"></script>
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Mathématiques</a>
+    <a href="../generated_courses/index.html">Théorie des graphes</a>
+    <span aria-current="page">Quiz · Cours 4</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="quiz">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Théorie des graphes</span> Quiz · L3</p>
+    <h1>Structure de communautés</h1>
+    <p class="chapeau">Vingt-trois questions sur le chapitre 4 : densité et partitions, communautés faibles et fortes, conductance, propagation de labels, modularité, algorithme de Louvain et vecteurs de SINr. Une propagation de labels à dérouler dans un tableau et une fonction Python qui calcule la modularité.</p>
+    <dl class="meta">
+      <div><dt>Porte sur</dt><dd><a href="../generated_courses/cours-04-communautes.html">Cours 4 · Structure de communautés</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-01">1<sup>er</sup> novembre 2026</time></dd></div>
+    </dl>
+  </header>
+
+  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+
+</main>
+</div>
+
+<footer class="pied">Théorie des graphes · L3 · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
+
+<script type="application/json" id="quiz-donnees">
+{
+  "id": "graphes-cours-04-communautes",
+  "melanger": true,
+  "cours": [
+    {
+      "titre": "Cours 4 · Structure de communautés",
+      "lien": "../generated_courses/cours-04-communautes.html"
+    }
+  ],
+  "questions": [
+    {
+      "type": "numerique",
+      "theme": "Densité et partitions",
+      "difficulte": 1,
+      "enonce": "<p>Un sous-graphe induit par 5 sommets contient 6 arêtes. Quelle est sa densité ?</p>",
+      "reponse": 0.6,
+      "tolerance": 0.001,
+      "explication": "<p>\\(\\text{densite} = \\frac{2m}{n(n-1)} = \\frac{2 \\cdot 6}{5 \\cdot 4} = 0{,}6\\) : 6 arêtes présentes sur les 10 possibles.</p>",
+      "revoir": {
+        "texte": "Cours 4 · La densité",
+        "lien": "../generated_courses/cours-04-communautes.html#la-densite"
+      },
+      "id": "q01"
+    },
+    {
+      "type": "qcm-multi",
+      "theme": "Densité et partitions",
+      "difficulte": 1,
+      "enonce": "<p>Cocher les ensembles qui sont des partitions de \\(V = \\{A, B, C, D, E\\}\\).</p>",
+      "choix": [
+        "\\(\\{\\{A, B\\}, \\{C, D, E\\}\\}\\)",
+        "\\(\\{\\{A\\}, \\{B\\}, \\{C\\}, \\{D\\}, \\{E\\}\\}\\)",
+        "\\(\\{\\{A, B, C\\}, \\{C, D, E\\}\\}\\)",
+        "\\(\\{\\{A, B\\}, \\{D, E\\}\\}\\)"
+      ],
+      "reponses": [
+        0,
+        1
+      ],
+      "explication": "<p>Une partition couvre tous les sommets, avec des parties deux à deux disjointes. Les singletons forment bien une partition. La troisième met C dans deux parties ; la quatrième oublie C.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Partition et structure de communautés",
+        "lien": "../generated_courses/cours-04-communautes.html#partition-et-structure-de-communautes"
+      },
+      "id": "q02"
+    },
+    {
+      "type": "vrai-faux",
+      "theme": "Communautés faibles et fortes",
+      "difficulte": 1,
+      "enonce": "<p>Une communauté forte est toujours une communauté faible.</p>",
+      "reponse": true,
+      "explication": "<p>Vrai : si \\(d^{in}(u) \\gt d^{out}(u)\\) pour chaque sommet de \\(P\\), on obtient \\(\\sum d^{in} \\gt \\sum d^{out}\\) en sommant ces inégalités. La réciproque est fausse.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Communautés faibles et fortes",
+        "lien": "../generated_courses/cours-04-communautes.html#communautes-faibles-et-fortes"
+      },
+      "id": "q03"
+    },
+    {
+      "type": "qcm",
+      "theme": "Communautés faibles et fortes",
+      "difficulte": 2,
+      "enonce": "<p>On considère le graphe non orienté d'arêtes C–B, C–A, B–A, C–D, D–E, D–F, E–F (celui des figures 4.3 à 4.5 du cours).</p><p>On prend la partition \\(\\{A, B\\}, \\{C, D, E, F\\}\\). Que dire de la partie \\(\\{C, D, E, F\\}\\) ?</p>",
+      "choix": [
+        "C'est une communauté faible, mais pas forte",
+        "C'est une communauté forte",
+        "Ce n'est ni une communauté faible, ni une communauté forte",
+        "C'est une communauté forte, mais pas faible"
+      ],
+      "reponse": 0,
+      "indices": [
+        "<p>Regarder les voisins de C : A et B sont hors de sa partie.</p>"
+      ],
+      "explication": "<p>Degrés internes : C 1 (D), D 3, E 2, F 2, soit 8 ; degrés externes : C 2 (A, B), les autres 0, soit 2. \\(8 \\gt 2\\) : communauté faible. Mais C a \\(d^{in} = 1 \\lt d^{out} = 2\\) : elle n'est pas forte. Une communauté forte est toujours faible, la dernière réponse est impossible.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Communautés faibles et fortes",
+        "lien": "../generated_courses/cours-04-communautes.html#communautes-faibles-et-fortes"
+      },
+      "id": "q04"
+    },
+    {
+      "type": "numerique",
+      "theme": "Communautés faibles et fortes",
+      "difficulte": 2,
+      "enonce": "<p>On considère le graphe non orienté d'arêtes C–B, C–A, B–A, C–D, D–E, D–F, E–F (celui des figures 4.3 à 4.5 du cours).</p><p>Calculer la conductance de \\(\\{C, D, E, F\\}\\) avec la formule de Yang et Leskovec : liens sortants divisés par la somme des degrés des sommets de la partie.</p>",
+      "reponse": 0.2,
+      "tolerance": 0.001,
+      "explication": "<p>Liens internes : C–D, D–E, D–F, E–F, soit \\(\\Sigma^{in} = 4\\) ; liens sortants : C–A et C–B, soit \\(\\Sigma^{out} = 2\\). Somme des degrés : \\(2 \\cdot 4 + 2 = 10\\) (C 3, D 3, E 2, F 2). Conductance : \\(2/10 = 0{,}2\\). Avec la formule du poly, \\(\\Sigma^{out}/(\\Sigma^{out} + \\Sigma^{in})\\), on trouverait \\(2/6 \\approx 0{,}33\\).</p>",
+      "revoir": {
+        "texte": "Cours 4 · La conductance",
+        "lien": "../generated_courses/cours-04-communautes.html#la-conductance"
+      },
+      "id": "q05"
+    },
+    {
+      "type": "qcm",
+      "theme": "Propagation de labels",
+      "difficulte": 1,
+      "enonce": "<p>Pourquoi la détection de communautés est-elle un problème d'apprentissage <strong>non supervisé</strong> ?</p>",
+      "choix": [
+        "On ne sait à l'avance ni combien de communautés il y a, ni ce qu'elles contiennent : aucun exemple étiqueté",
+        "Parce que l'algorithme tourne sans intervention humaine",
+        "Parce que le graphe n'a pas de poids",
+        "Parce que le résultat n'est jamais vérifié"
+      ],
+      "reponse": 0,
+      "explication": "<p>En supervisé, on apprend à partir d'exemples étiquetés (photos marquées chat ou chien). Ici, aucun sommet n'est étiqueté : on cherche des groupes cohérents, guidé seulement par ce qu'est une communauté (définitions 25 et 26).</p>",
+      "revoir": {
+        "texte": "Cours 4 · Un apprentissage non supervisé",
+        "lien": "../generated_courses/cours-04-communautes.html#un-apprentissage-non-supervise"
+      },
+      "id": "q06"
+    },
+    {
+      "type": "qcm",
+      "theme": "Propagation de labels",
+      "difficulte": 1,
+      "enonce": "<p>Lors de l'affectation, un sommet a cinq voisins, de labels 2, 7, 2, 5 et 7. Son propre label est 5. Quel label prend-il ?</p>",
+      "choix": [
+        "2 ou 7, tiré au hasard",
+        "2, le plus petit",
+        "5, il garde son label",
+        "7, le dernier vu"
+      ],
+      "reponse": 0,
+      "explication": "<p>On ne regarde que les labels des voisins : 2 et 7 apparaissent deux fois, 5 une seule. Il y a égalité entre 2 et 7, départagée au hasard. Le label propre du sommet ne compte pas.</p>",
+      "revoir": {
+        "texte": "Cours 4 · L'algorithme de propagation de labels",
+        "lien": "../generated_courses/cours-04-communautes.html#l-algorithme-de-propagation-de-labels"
+      },
+      "id": "q07"
+    },
+    {
+      "type": "atelier",
+      "editeur": "table",
+      "theme": "Propagation de labels",
+      "difficulte": 3,
+      "enonce": "<p>On considère le graphe non orienté d'arêtes C–B, C–A, B–A, C–D, D–E, D–F, E–F (celui des figures 4.3 à 4.5 du cours).</p><p>Au départ, A porte le label 1, B 2, C 3, D 4, E 5, F 6. On déroule un tour de propagation de labels dans l'ordre D, C, B, A, F, E ; chaque sommet voit les labels déjà mis à jour, et les égalités sont départagées en prenant le <strong>plus petit</strong> label. Donner le label de chaque sommet à la fin du tour.</p>",
+      "options": {
+        "verrou": "depart",
+        "lignes": false
+      },
+      "depart": [
+        "| Sommet | Label |",
+        "|---|---|",
+        "| A | |",
+        "| B | |",
+        "| C | |",
+        "| D | |",
+        "| E | |",
+        "| F | |"
+      ],
+      "solution": [
+        "| Sommet | Label |",
+        "|---|---|",
+        "| A | 1 |",
+        "| B | 1 |",
+        "| C | 1 |",
+        "| D | 3 |",
+        "| E | 3 |",
+        "| F | 3 |"
+      ],
+      "seuil": 1,
+      "indices": [
+        "<p>D voit C (3), E (5), F (6) : égalité, il prend 3.</p>",
+        "<p>C voit alors B (2), A (1), D (3) : égalité, il prend 1.</p>"
+      ],
+      "explication": "<p>D prend 3 (égalité 3, 5, 6) ; C prend 1 (égalité 2, 1, 3) ; B voit C (1) et A (1) : 1 ; A voit C (1) et B (1) : 1 ; F voit D (3) et E (5) : égalité, 3 ; E voit D (3) et F (3) : 3. Un second tour ne change plus rien : C voit 1, 1, 3 et D voit 1, 3, 3. On retrouve les communautés \\(\\{A, B, C\\}\\) et \\(\\{D, E, F\\}\\).</p>",
+      "revoir": {
+        "texte": "Cours 4 · Un exemple d'exécution",
+        "lien": "../generated_courses/cours-04-communautes.html#un-exemple-d-execution"
+      },
+      "id": "q08"
+    },
+    {
+      "type": "qcm-multi",
+      "theme": "Propagation de labels",
+      "difficulte": 2,
+      "enonce": "<p>Cocher les limites de la propagation de labels citées dans le cours.</p>",
+      "choix": [
+        "Ses résultats dépendent beaucoup de l'ordre des sommets",
+        "Le tirage au hasard des égalités peut changer le résultat",
+        "Sa convergence n'est pas garantie : elle peut osciller",
+        "Elle impose de fixer à l'avance le nombre de communautés",
+        "Elle est beaucoup plus lente que l'algorithme de Louvain"
+      ],
+      "reponses": [
+        0,
+        1,
+        2
+      ],
+      "explication": "<p>Le cours cite l'instabilité due au mélange, le rôle du hasard dans les égalités et l'absence de garantie de convergence. Le nombre de communautés n'est pas fixé : il résulte de l'exécution. Et l'algorithme est apprécié justement pour sa rapidité.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Les limites de l'algorithme",
+        "lien": "../generated_courses/cours-04-communautes.html#les-limites-de-l-algorithme"
+      },
+      "id": "q09"
+    },
+    {
+      "type": "qcm",
+      "theme": "Modularité",
+      "difficulte": 2,
+      "enonce": "<p>Dans la modularité, que représente le terme \\(\\frac{d_w(u)}{2m} \\cdot \\frac{d_w(v)}{2m}\\) ?</p>",
+      "choix": [
+        "La probabilité d'obtenir une arête entre \\(u\\) et \\(v\\) dans un graphe aléatoire où les degrés sont conservés",
+        "La probabilité observée d'une arête entre \\(u\\) et \\(v\\) dans le graphe étudié",
+        "La densité du sous-graphe induit par \\(u\\) et \\(v\\)",
+        "La part des voisins communs à \\(u\\) et \\(v\\)"
+      ],
+      "reponse": 0,
+      "explication": "<p>On tire deux extrémités d'arêtes parmi les \\(2m\\) : celle de \\(u\\) avec la probabilité \\(d_w(u)/2m\\), celle de \\(v\\) avec \\(d_w(v)/2m\\), indépendamment. Le terme observé, lui, est \\(W(uv)/2m\\). La modularité additionne, dans chaque communauté, l'écart entre l'observé et l'attendu.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Comprendre la modularité",
+        "lien": "../generated_courses/cours-04-communautes.html#comprendre-la-modularite"
+      },
+      "id": "q10"
+    },
+    {
+      "type": "numerique",
+      "theme": "Modularité",
+      "difficulte": 1,
+      "enonce": "<p>Quelle est la modularité d'une partition qui met tous les sommets d'un graphe (avec au moins une arête) dans une seule communauté ?</p>",
+      "reponse": 0,
+      "tolerance": 0,
+      "explication": "<p>Avec \\(Q = \\sum_c \\left(\\frac{L_c}{m} - \\left(\\frac{D_c}{2m}\\right)^2\\right)\\) : \\(L = m\\) et \\(D = 2m\\), donc \\(Q = 1 - 1 = 0\\). Tous les liens sont internes, mais c'est exactement ce qu'on attendrait au hasard.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Comprendre la modularité",
+        "lien": "../generated_courses/cours-04-communautes.html#comprendre-la-modularite"
+      },
+      "id": "q11"
+    },
+    {
+      "type": "numerique",
+      "theme": "Modularité",
+      "difficulte": 2,
+      "enonce": "<p>Deux triangles, \\(\\{1, 2, 3\\}\\) et \\(\\{4, 5, 6\\}\\), sont reliés par la seule arête 3–4 (graphe sans poids, 7 arêtes). Quelle est la modularité de la partition \\(\\{1, 2, 3\\}, \\{4, 5, 6\\}\\) ? Arrondir à deux décimales.</p>",
+      "reponse": 0.357,
+      "tolerance": 0.006,
+      "indices": [
+        "<p>Pour chaque triangle : \\(L_c = 3\\) et \\(D_c = 2 + 2 + 3 = 7\\).</p>"
+      ],
+      "explication": "<p>\\(m = 7\\), \\(2m = 14\\). Chaque communauté donne \\(\\frac{3}{7} - \\left(\\frac{7}{14}\\right)^2 = \\frac{3}{7} - \\frac{1}{4}\\). Total : \\(\\frac{6}{7} - \\frac{1}{2} = \\frac{5}{14} \\approx 0{,}36\\).</p>",
+      "revoir": {
+        "texte": "Cours 4 · Comprendre la modularité",
+        "lien": "../generated_courses/cours-04-communautes.html#comprendre-la-modularite"
+      },
+      "id": "q12"
+    },
+    {
+      "type": "qcm",
+      "theme": "Modularité",
+      "difficulte": 2,
+      "enonce": "<p>On considère le graphe pondéré d'arêtes C–B (2), C–A (1), B–A (3), C–D (1), D–E (1), D–F (1), E–F (1), le poids entre parenthèses (figures 4.4 et 4.5 du cours). On a \\(m = 10\\) et les degrés pondérés A 4, B 5, C 4, D 3, E 2, F 2.</p><p>Laquelle de ces partitions a la plus grande modularité ?</p>",
+      "choix": [
+        "\\(\\{A, B, C\\}, \\{D, E, F\\}\\)",
+        "\\(\\{A, B, E, F\\}, \\{C, D\\}\\)",
+        "\\(\\{A, B\\}, \\{C\\}, \\{D, E, F\\}\\)",
+        "Six singletons"
+      ],
+      "reponse": 0,
+      "explication": "<p>Avec les couples \\((u, u)\\) : 0,355 pour \\(\\{A, B, C\\}, \\{D, E, F\\}\\), -0,045 pour \\(\\{A, B, E, F\\}, \\{C, D\\}\\), 0,235 en isolant C, -0,185 pour les singletons. Le poly, qui omet les couples \\((u, u)\\), trouve 0,54 et 0,14 pour les deux premières : l'ordre est le même.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Deux exemples de calcul",
+        "lien": "../generated_courses/cours-04-communautes.html#deux-exemples-de-calcul"
+      },
+      "id": "q13"
+    },
+    {
+      "type": "code",
+      "langage": "python",
+      "theme": "Modularité",
+      "difficulte": 3,
+      "enonce": "<p>Écrire la fonction <code>modularite(aretes, partition)</code> qui renvoie la modularité d'une partition d'un graphe non orienté pondéré, couples \\((u, u)\\) compris. <code>aretes</code> est une liste de triplets <code>[u, v, poids]</code>, sans boucle ni arête en double ; <code>partition</code> est une liste de listes de sommets.</p>",
+      "depart": "def modularite(aretes, partition):\n    ",
+      "solution": "def modularite(aretes, partition):\n    communaute = {}\n    for i, P in enumerate(partition):\n        for u in P:\n            communaute[u] = i\n    m = sum(p for _, _, p in aretes)\n    interne = [0] * len(partition)\n    degres = [0] * len(partition)\n    for u, v, p in aretes:\n        degres[communaute[u]] += p\n        degres[communaute[v]] += p\n        if communaute[u] == communaute[v]:\n            interne[communaute[u]] += p\n    return sum(L / m - (D / (2 * m)) ** 2 for L, D in zip(interne, degres))",
+      "harnais": "import json\naretes, partition = json.loads(input())\nprint(round(modularite(aretes, partition), 4))",
+      "tests": [
+        {
+          "nom": "deux triangles",
+          "entree": "[[[1, 2, 1], [2, 3, 1], [1, 3, 1], [3, 4, 1], [4, 5, 1], [5, 6, 1], [4, 6, 1]], [[1, 2, 3], [4, 5, 6]]]\n",
+          "sortie": "0.3571\n"
+        },
+        {
+          "nom": "figure 4.4",
+          "entree": "[[[\"C\", \"B\", 2], [\"C\", \"A\", 1], [\"B\", \"A\", 3], [\"C\", \"D\", 1], [\"D\", \"E\", 1], [\"D\", \"F\", 1], [\"E\", \"F\", 1]], [[\"A\", \"B\", \"C\"], [\"D\", \"E\", \"F\"]]]\n",
+          "sortie": "0.355\n"
+        },
+        {
+          "nom": "figure 4.5",
+          "entree": "[[[\"C\", \"B\", 2], [\"C\", \"A\", 1], [\"B\", \"A\", 3], [\"C\", \"D\", 1], [\"D\", \"E\", 1], [\"D\", \"F\", 1], [\"E\", \"F\", 1]], [[\"A\", \"B\", \"E\", \"F\"], [\"C\", \"D\"]]]\n",
+          "sortie": "-0.045\n"
+        },
+        {
+          "nom": "singletons",
+          "entree": "[[[\"C\", \"B\", 2], [\"C\", \"A\", 1], [\"B\", \"A\", 3], [\"C\", \"D\", 1], [\"D\", \"E\", 1], [\"D\", \"F\", 1], [\"E\", \"F\", 1]], [[\"A\"], [\"B\"], [\"C\"], [\"D\"], [\"E\"], [\"F\"]]]\n",
+          "sortie": "-0.185\n"
+        },
+        {
+          "nom": "une seule communauté",
+          "entree": "[[[1, 2, 1], [2, 3, 1], [1, 3, 1], [3, 4, 1], [4, 5, 1], [5, 6, 1], [4, 6, 1]], [[1, 2, 3, 4, 5, 6]]]\n",
+          "sortie": "0.0\n"
+        }
+      ],
+      "indices": [
+        "<p>Utiliser la forme par communauté : \\(Q = \\sum_c \\left(\\frac{L_c}{m} - \\left(\\frac{D_c}{2m}\\right)^2\\right)\\).</p>",
+        "<p>Un dictionnaire sommet → numéro de communauté permet de traiter chaque arête une seule fois : elle ajoute son poids au degré des communautés de ses deux extrémités, et à \\(L_c\\) si elles sont dans la même.</p>"
+      ],
+      "explication": "<p>On calcule, en un passage sur les arêtes, le poids interne \\(L_c\\) et la somme des degrés \\(D_c\\) de chaque communauté, puis \\(\\sum_c L_c/m - (D_c/2m)^2\\). C'est la définition 28 regroupée par communauté, couples \\((u, u)\\) compris : c'est ce que calcule <code>nx.community.modularity</code>.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Comprendre la modularité",
+        "lien": "../generated_courses/cours-04-communautes.html#comprendre-la-modularite"
+      },
+      "id": "q14"
+    },
+    {
+      "type": "numerique",
+      "theme": "Louvain",
+      "difficulte": 2,
+      "enonce": "<p>On considère le graphe pondéré d'arêtes C–B (2), C–A (1), B–A (3), C–D (1), D–E (1), D–F (1), E–F (1), le poids entre parenthèses (figures 4.4 et 4.5 du cours). On a \\(m = 10\\) et les degrés pondérés A 4, B 5, C 4, D 3, E 2, F 2.</p><p>Au début de l'algorithme de Louvain, chaque sommet est seul. De combien la modularité augmente-t-elle si l'on place A dans la communauté de B ?</p>",
+      "reponse": 0.2,
+      "tolerance": 0.001,
+      "indices": [
+        "<p>\\(\\Delta Q(u \\to c) = \\frac{k_{u,c}}{m} - \\frac{D_c \\cdot d_w(u)}{2m^2}\\).</p>"
+      ],
+      "explication": "<p>\\(k_{A,\\{B\\}} = 3\\), \\(D_{\\{B\\}} = 5\\), \\(d_w(A) = 4\\) : \\(\\Delta Q = \\frac{3}{10} - \\frac{5 \\cdot 4}{200} = 0{,}3 - 0{,}1 = 0{,}2\\). Vers C, le gain ne serait que \\(\\frac{1}{10} - \\frac{16}{200} = 0{,}02\\) : A rejoint B.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Phase 1 : optimiser la modularité",
+        "lien": "../generated_courses/cours-04-communautes.html#phase-1-optimiser-la-modularite"
+      },
+      "id": "q15"
+    },
+    {
+      "type": "ordre",
+      "theme": "Louvain",
+      "difficulte": 2,
+      "enonce": "<p>Remettre dans l'ordre les étapes de l'algorithme de Louvain.</p>",
+      "elements": [
+        "Chaque sommet forme sa propre communauté",
+        "Les sommets sont rangés dans un ordre aléatoire",
+        "Chaque sommet rejoint la communauté voisine qui donne le plus grand gain de modularité",
+        "On recommence tant qu'un sommet change de communauté",
+        "Chaque communauté devient un sommet du méta-graphe",
+        "On reprend la phase 1 sur le méta-graphe"
+      ],
+      "explication": "<p>La phase 1 (initialisation, mélange, affectation, répétée jusqu'à stabilité) optimise la modularité ; la phase 2 construit le méta-graphe. On enchaîne ces deux phases, en passes, jusqu'à ce que plus rien ne change.</p>",
+      "revoir": {
+        "texte": "Cours 4 · L'algorithme de Louvain",
+        "lien": "../generated_courses/cours-04-communautes.html#l-algorithme-de-louvain"
+      },
+      "id": "q16"
+    },
+    {
+      "type": "numerique",
+      "theme": "Louvain",
+      "difficulte": 2,
+      "enonce": "<p>Dans la figure de Blondel et al. (figure 4.7), la boucle de la communauté verte porte le poids 14 dans le méta-graphe. Combien d'arêtes relient deux sommets de cette communauté dans le graphe initial ?</p>",
+      "reponse": 7,
+      "tolerance": 0,
+      "explication": "<p>La boucle porte la somme des degrés internes : chaque arête interne y compte deux fois, une par extrémité. \\(14 / 2 = 7\\) arêtes : 0–2, 0–4, 0–5, 1–2, 1–4, 2–4 et 2–5.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Un exemple en deux passes",
+        "lien": "../generated_courses/cours-04-communautes.html#un-exemple-en-deux-passes"
+      },
+      "id": "q17"
+    },
+    {
+      "type": "vrai-faux",
+      "theme": "Louvain",
+      "difficulte": 1,
+      "enonce": "<p>L'algorithme de Louvain est hiérarchique : la première passe donne de nombreuses petites communautés, les passes suivantes des communautés moins nombreuses et plus grandes.</p>",
+      "reponse": true,
+      "explication": "<p>Vrai : chaque passe fusionne les communautés de la précédente en sommets du méta-graphe, puis les regroupe. Le dendrogramme montre ces niveaux : quatre communautés puis deux dans l'exemple de Blondel et al.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Un exemple en deux passes",
+        "lien": "../generated_courses/cours-04-communautes.html#un-exemple-en-deux-passes"
+      },
+      "id": "q18"
+    },
+    {
+      "type": "association",
+      "theme": "Louvain",
+      "difficulte": 2,
+      "enonce": "<p>Associer chaque notion à sa description.</p>",
+      "paires": [
+        [
+          "Propagation de labels",
+          "Chaque sommet adopte le label majoritaire parmi ses voisins"
+        ],
+        [
+          "Algorithme de Louvain",
+          "Déplace les sommets pour maximiser la modularité, puis agrège les communautés"
+        ],
+        [
+          "Modularité",
+          "Liens internes observés moins liens internes attendus au hasard"
+        ],
+        [
+          "Conductance",
+          "Part des liens d'une communauté qui en sortent"
+        ],
+        [
+          "Dendrogramme",
+          "Dessin des niveaux d'une détection hiérarchique"
+        ]
+      ],
+      "explication": "<p>La propagation de labels et Louvain sont deux algorithmes agglomératifs ; la modularité note une partition, la conductance une seule communauté ; le dendrogramme représente la hiérarchie produite par les passes de Louvain.</p>",
+      "revoir": {
+        "texte": "Cours 4 · L'algorithme de Louvain",
+        "lien": "../generated_courses/cours-04-communautes.html#l-algorithme-de-louvain"
+      },
+      "id": "q19"
+    },
+    {
+      "type": "qcm",
+      "theme": "SINr",
+      "difficulte": 1,
+      "enonce": "<p>Sur quelle hypothèse de Harris repose SINr ?</p>",
+      "choix": [
+        "Des mots qui apparaissent dans les mêmes contextes, dans les mêmes proportions, ont des sens proches",
+        "Des mots de même longueur ont des sens proches",
+        "Les mots les plus fréquents portent le plus de sens",
+        "Deux mots d'une même phrase ont toujours le même sens"
+      ],
+      "reponse": 0,
+      "explication": "<p>« <span lang=\"en\">Linguistic items with similar distributions have similar meanings</span> » : la distribution des contextes d'un mot renseigne sur son sens. SINr remplace les mots contextes par des communautés de mots contextes.</p>",
+      "revoir": {
+        "texte": "Cours 4 · Le sens des mots avec SINr",
+        "lien": "../generated_courses/cours-04-communautes.html#le-sens-des-mots-avec-sinr"
+      },
+      "id": "q20"
+    },
+    {
+      "type": "numerique",
+      "theme": "SINr",
+      "difficulte": 2,
+      "enonce": "<p>Dans le graphe de co-occurrences du cours, <span lang=\"en\">mouse</span> est relié à <span lang=\"en\">cat</span> (poids 1), <span lang=\"en\">eats</span> (poids 2) et <span lang=\"en\">owl</span> (poids 1). Supposons qu'une autre détection donne \\(C_0 = \\{\\text{cat}, \\text{eats}, \\text{mouse}\\}\\) et \\(C_1 = \\{\\text{owl}, \\text{flies}, \\text{crow}, \\text{slower}, \\text{eagle}\\}\\). Que vaut \\(Pr(\\text{mouse}, C_0)\\) ?</p>",
+      "reponse": 0.75,
+      "tolerance": 0.001,
+      "explication": "<p>\\(d_w(\\text{mouse}) = 1 + 2 + 1 = 4\\) ; les liens vers \\(C_0\\) pèsent \\(1 + 2 = 3\\). \\(Pr = 3/4 = 0{,}75\\), et \\(Pr(\\text{mouse}, C_1) = 1/4\\). Le vecteur est \\(\\langle 0{,}75 ; 0{,}25 \\rangle\\).</p>",
+      "revoir": {
+        "texte": "Cours 4 · Étape 3 : extraire les vecteurs",
+        "lien": "../generated_courses/cours-04-communautes.html#etape-3-extraire-les-vecteurs"
+      },
+      "id": "q21"
+    },
+    {
+      "type": "numerique",
+      "theme": "SINr",
+      "difficulte": 2,
+      "enonce": "<p>Les vecteurs de SINr de <span lang=\"en\">owl</span> et de <span lang=\"en\">flies</span> sont \\(\\langle 2/3, 1/3 \\rangle\\) et \\(\\langle 1/3, 2/3 \\rangle\\). Quelle est leur similarité cosinus ?</p>",
+      "reponse": 0.8,
+      "tolerance": 0.001,
+      "explication": "<p>Produit scalaire : \\(\\frac{2}{9} + \\frac{2}{9} = \\frac{4}{9}\\). Normes : \\(\\sqrt{\\frac{4}{9} + \\frac{1}{9}} = \\frac{\\sqrt{5}}{3}\\) chacune, d'où un produit de \\(\\frac{5}{9}\\). Cosinus : \\(\\frac{4/9}{5/9} = 0{,}8\\).</p>",
+      "revoir": {
+        "texte": "Cours 4 · Utiliser les vecteurs",
+        "lien": "../generated_courses/cours-04-communautes.html#utiliser-les-vecteurs"
+      },
+      "id": "q22"
+    },
+    {
+      "type": "ouverte",
+      "theme": "Modularité",
+      "difficulte": 2,
+      "enonce": "<p>Pourquoi ne suffit-il pas de chercher la partition qui met le plus de liens possible à l'intérieur des communautés ? Expliquer comment la modularité règle ce problème.</p>",
+      "reponse_modele": "<p>Mettre tous les sommets dans une seule communauté rend tous les liens internes : ce critère serait maximal pour une partition sans intérêt. La modularité soustrait, pour chaque communauté, la part de liens internes qu'on attendrait dans un graphe aléatoire de mêmes degrés, \\((D_c/2m)^2\\). Une communauté n'est récompensée que si elle a plus de liens internes que le hasard ne le voudrait : une seule communauté donne \\(Q = 1 - 1 = 0\\), et une bonne partition une valeur positive nettement plus grande.</p>",
+      "criteres": [
+        "Il est dit qu'une seule communauté contenant tout le graphe rend tous les liens internes, ce qui maximiserait le critère naïf.",
+        "La modularité est présentée comme une comparaison avec un graphe aléatoire qui conserve les degrés.",
+        "Il est dit qu'une seule communauté a une modularité nulle.",
+        "La conclusion : seules les communautés plus denses que le hasard augmentent Q."
+      ],
+      "revoir": {
+        "texte": "Cours 4 · Comprendre la modularité",
+        "lien": "../generated_courses/cours-04-communautes.html#comprendre-la-modularite"
+      },
+      "id": "q23"
+    }
+  ]
+}
+</script>
+
+</body>
+</html>

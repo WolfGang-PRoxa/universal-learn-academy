@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="fr" data-matiere="bd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TP 3 · La compagnie SW7 · Bases de données L3</title>
+<meta name="description" content="TP 3 de bases de données (L3) : la compagnie de transport SW7. Consignes, modèle conceptuel et modèle relationnel, fonctionnement de la table position, les 26 questions du sujet (implémentation dans deux schémas, CTE et fonctions de fenêtrage, CTE récursive, exemple d'examen de 2020, vue, fonctions SQL et PL/pgSQL, trigger, exploitation), et une console SQL pour travailler chez soi.">
+<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
+<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
+<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+<script src="../../../../_outils/charte/assets/cours.js"></script>
+<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+<script type="application/json" id="atelier-jeux">
+{
+  "fac": {
+    "titre": "réglages du serveur de la fac",
+    "description": "<p>Base neuve, vide. Seul réglage : les dates s'écrivent jour/mois/année (<code>DateStyle</code>), comme sur le serveur de la fac ; le script SW7 le règle aussi lui-même (<code>set datestyle='dmy'</code>).</p>",
+    "script": "SET datestyle TO 'ISO, DMY';"
+  }
+}
+</script>
+</head>
+<body>
+
+<header class="barre">
+  <nav class="fil" aria-label="Fil d'Ariane">
+    <span class="pastille" aria-hidden="true"></span>
+    <a href="../../../../index.html">ULA</a>
+    <a href="../../index.html">Informatique</a>
+    <a href="index.html">Bases de données</a>
+    <span aria-current="page">TP 3 · La compagnie SW7</span>
+  </nav>
+</header>
+
+<div class="page">
+<main class="cours">
+
+  <header class="entete">
+    <p class="surtitre"><span class="badge matiere">Bases de données</span> TP 3 · L3 S5</p>
+    <h1>TP 3 : la compagnie SW7</h1>
+    <p class="chapeau">La compagnie de transport SW7, déjà modélisée en TD : on implémente sa base dans deux schémas en complétant le script fourni, on l'interroge avec des CTE, des fonctions de fenêtrage et une CTE récursive, puis on traite un sujet d'examen de 2020 et l'exploitation de la base : vue, fonctions SQL et PL/pgSQL, trigger. Pour travailler chez soi, une console SQL rejoue le script et le compte rendu sur une base PostgreSQL neuve.</p>
+    <dl class="meta">
+      <div><dt>Sources</dt><dd><a href="../TP/TP3/%5B26%5DTP3_SW7.pdf">[26]TP3_SW7.pdf</a> · 4 pages ; script fourni par les enseignants (<code>Script_SW7.sql</code> d'UMTICE) : <a href="../TP/TP3/script_sw7.sql">script_sw7.sql</a></dd></div>
+      <div><dt>Enseignants</dt><dd>T. Mariotte, N. Camelin</dd></div>
+      <div><dt>TD</dt><dd><a href="td-02-compagnie-sw7.html">TD 2 · La compagnie SW7</a></dd></div>
+      <div><dt>Mise à jour</dt><dd><time datetime="2026-11-08">8 nov. 2026</time></dd></div>
+      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
+    </dl>
+  </header>
+
+  <div class="cadre-intro">
+    <div>
+      <p class="cadre-titre">Objectifs</p>
+      <ul>
+        <li>Implémenter une base dans plusieurs schémas en complétant un script : clés, nouvelle table.</li>
+        <li>Écrire des requêtes avec des CTE, des fonctions de fenêtrage et une CTE récursive.</li>
+        <li>Traiter un sujet d'examen : modifications, jointures et sous-requêtes, vue, fonctions, trigger.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="cadre-titre">À rendre</p>
+      <ul>
+        <li>Comme aux TP précédents, un compte rendu <code>TP3_Monnom.txt</code> (pas d'odt, de rtf ou autre format, et pas de .zip), avec les requêtes de chaque question.</li>
+        <li>Le TP se termine d'une semaine sur l'autre.</li>
+        <li>Cours à revoir : <a href="cours-03-sql-avance-plpgsql.html#les-cte-with">les CTE</a>, <a href="cours-03-sql-avance-plpgsql.html#les-cte-recursives">les CTE récursives</a>, <a href="cours-03-sql-avance-plpgsql.html#les-fonctions-de-fenetrage">le fenêtrage</a>, <a href="cours-03-sql-avance-plpgsql.html#le-langage-pl-pgsql">PL/pgSQL</a> et <a href="cours-03-sql-avance-plpgsql.html#les-triggers">les triggers</a>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Consignes <span class="ref">p. 1</span></h2>
+    <p>Les TP doivent être finis d'une semaine sur l'autre. Lors d'une nouvelle séance, vous commencez le nouveau sujet et n'hésitez pas à poser des questions sur l'ancien TP si vous avez besoin d'aide MAIS le TP réalisé pendant la séance est bien le nouveau sujet.</p>
+    <p><strong>Compte rendu de TP</strong> : afin de garder une trace de votre travail, vous devez écrire dans un fichier <code>TPX_Monnom.txt</code> (pas d'odt, de rtf ou autre format… et pas de .zip !) les requêtes associées à chaque question.</p>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Modélisation de SW7 <span class="ref">p. 1–2</span></h2>
+    <p>Pour rappel, le travail en TD (à distance…) a donné lieu à la modélisation suivante.</p>
+    <div class="bloc definition">
+      <p class="bloc-titre">Présentation générale</p>
+      <p>La compagnie de transport SW7 a choisi de passer à une gestion informatisée de son activité via une base de données. L'activité couverte par la base de données concerne : le parc de véhicules, son entretien, l'administration des chauffeurs et de leur emploi du temps.</p>
+      <p>Suite à votre analyse, vous avez défini le modèle conceptuel suivant.</p>
+    </div>
+
+    <h3>Modèle conceptuel</h3>
+    <div class="atelier" id="tp3-mcd" data-editeur="classes">
+      <script type="application/json">
+{
+  "titre": "Modèle conceptuel de SW7",
+  "mode": "lecture",
+  "vue": "dessin",
+  "hauteur": 600,
+  "depart": [
+    "classe Chauffeur",
+    "  id_chauffeur {PK}",
+    "  nom",
+    "  prenom",
+    "  adr",
+    "classe Permis",
+    "  cat_permis {PK}",
+    "classe Modèle",
+    "  id_modèle {PK}",
+    "  nom_modèle",
+    "  nb_pers",
+    "  type_carbu",
+    "  type_bav",
+    "  poids",
+    "classe Véhicule",
+    "  id_véhicule {PK}",
+    "  no_chassis",
+    "  nom_vehicule",
+    "  date_mes",
+    "classe Station",
+    "  id_station {PK}",
+    "  nom_station",
+    "  nom_zone",
+    "classe Entretien",
+    "  id_entretien {PK}",
+    "  date_entretien",
+    "  desc",
+    "classe Plein",
+    "  id_plein {PK}",
+    "  date_plein",
+    "  nb_km",
+    "  qte_carbu",
+    "classe Localiser",
+    "  date",
+    "  th",
+    "  nom_zone",
+    "Chauffeur \"1..*\" -- \"1..*\" Permis : Obtenir",
+    "Permis \"1..1\" -- \"1..*\" Modèle : Requérir",
+    "Chauffeur \"1..*\" -- \"1..1\" Station : être affilié",
+    "Chauffeur \"1..*\" -- \"1..*\" Véhicule : Localiser [Localiser]",
+    "Véhicule \"1..*\" -- \"1..1\" Modèle : Posséder",
+    "Véhicule \"1..*\" -- \"1..1\" Station : Appartenir",
+    "Véhicule \"1..1\" -- \"1..*\" Entretien : Réaliser",
+    "Véhicule \"1..1\" -- \"1..*\" Plein : Effectuer"
+  ],
+  "disposition": {
+    "Chauffeur": [20, 80],
+    "Permis": [380, 20],
+    "Modèle": [780, 80],
+    "Véhicule": [460, 260],
+    "Station": [20, 440],
+    "Entretien": [360, 520],
+    "Plein": [680, 520]
+  }
+}
+      </script>
+    </div>
+    <p>Diagramme redessiné d'après le sujet. L'association « Localiser » porte les attributs <code>date</code>, <code>th</code> et <code>nom_zone</code> ; le diagramme écrit <code>type_bav</code>, <code>poids</code>, <code>date_entretien</code> et <code>date_plein</code> ce que le modèle relationnel appelle <code>type_bdv</code>, <code>pds</code>, <code>date_e</code> et <code>date_p</code> : c'est le script qui fait foi pour écrire les requêtes.</p>
+
+    <h3>Modèle relationnel</h3>
+    <div class="relations">
+      <p><b>PERMIS</b> (id_permis, cat_permis, desc_permis)</p>
+      <p><b>CHAUFFEUR</b> (<u>id_chauffeur</u>, nom, prenom, adr, #id_station)</p>
+      <p><b>ENTRETIEN</b> (<u>#id_vehicule, id_entretien</u>, date_e, desc)</p>
+      <p><b>MODELE</b> (<u>id_modele</u>, nom_modele, nb_pers, type_carbu, type_bdv, pds, #id_permis_mod)</p>
+      <p><b>HABILITATION</b> (<u>#id_chauffeur, #id_permis_chauf</u>)</p>
+      <p><b>PLEIN</b> (<u>#id_vehicule, id_plein</u>, date_p, nb_km, qte_carbu)</p>
+      <p><b>POSITION</b> (<u>#id_vehicule, date, th</u>, #id_chauffeur, nom_zone)</p>
+      <p><b>STATION</b> (<u>id_station</u>, nom_station, nom_zone)</p>
+      <p><b>VEHICULE</b> (<u>id_vehicule</u>, no_chassis, nom_v, date_mes, #id_station, #id_modele)</p>
+    </div>
+    <p><span class="badge a-verifier">À vérifier</span> Dans le sujet, <code>id_permis</code> n'est pas souligné, alors que c'est l'identifiant des permis (le diagramme souligne <code>cat_permis</code>).</p>
+
+    <h3>Compréhension de la table position</h3>
+    <p>Comment fonctionne la table <code>position</code> ? Dans cette table sont répertoriés les chauffeurs <code>id_chauffeur</code> qui travaillent actuellement (<code>date = current_date</code> et tranche horaire <code>th = 2</code>) ou ont travaillé (toutes les autres valeurs de <code>date</code>/<code>th</code>) avec une voiture <code>id_vehicule</code>. Lorsque les créneaux sont « terminés », la zone <code>nom_zone</code> est donc à <code>null</code>. Lorsque les chauffeurs sont en train de travailler (<code>date = current_date</code> et tranche horaire <code>th = 2</code>), alors :</p>
+    <ul>
+      <li>s'ils sont disponibles, on connaît leur zone de disponibilité (<code>nom_zone</code> non nul) ;</li>
+      <li>s'ils sont actuellement en course avec un client, alors la zone <code>nom_zone</code> est <code>null</code> et on attend que le chauffeur soit à nouveau disponible pour mettre à jour la valeur <code>nom_zone</code>.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Les questions <span class="ref">p. 2–4</span></h2>
+    <p>Les questions du sujet, dans son ordre et avec ses intitulés de parties.</p>
+
+    <h3>Connexion à la base de données</h3>
+    <ol start="1">
+      <li>Connectez-vous à votre base de données.</li>
+      <li>Créez un schéma <code>sw7</code> et un schéma <code>map</code>. Ces schémas seront les seuls explorés pendant ce TP.</li>
+    </ol>
+
+    <h3>Implémentation de la base de données</h3>
+    <p>Afin de gérer l'attribution des courses à un chauffeur, on souhaite disposer, en plus des tables données par le MR ci-dessus, de la table <code>DISTANCE</code> qui indique la distance (en parsec) entre chaque zone : <b>DISTANCE</b> (nom_zone1, nom_zone2, parsec).</p>
+    <ol start="3">
+      <li>Complétez le script <code>Script_SW7.sql</code> (dispo sur l'UMTICE) afin que son exécution permette de créer l'ensemble des tables correspondant au modèle relationnel dans le schéma <code>SW7</code>. Toutes les tables sont créées SAUF la table <code>distance</code> qui doit être créée dans le schéma <code>map</code>. Vous avez à compléter :
+        <ol type="a">
+          <li>les contraintes de clés dans la table <code>ENTRETIEN</code> ;</li>
+          <li>les contraintes de clés dans la table <code>HABILITATION</code> ;</li>
+          <li>la création de la table <code>DISTANCE</code> (!! dans le schéma <code>map</code> !!).</li>
+        </ol>
+        <p>Exécutez le script. Vérifiez que toutes les tables ont été créées dans le bon schéma et les données disponibles bien saisies.</p></li>
+    </ol>
+    <div class="bloc note">
+      <p class="bloc-titre">Note <span>Le script fourni</span></p>
+      <p><span class="badge ajout">Ajout</span> Le <code>Script_SW7.sql</code> d'origine, tel que les enseignants l'ont déposé sur UMTICE, est dans <a href="../TP/TP3/script_sw7.sql">TP/TP3/script_sw7.sql</a> : c'est le point de départ de la question 3, sans les clés d'<code>ENTRETIEN</code> et d'<code>HABILITATION</code> ni la table <code>DISTANCE</code>. La copie complétée se trouve dans <a href="../TP/TP3/script.sql">TP/TP3/script.sql</a>.</p>
+    </div>
+
+    <h3>Un peu de CTE et de window functions</h3>
+    <ol start="4">
+      <li>Pour chaque modèle de véhicule, calculez la consommation moyenne (litres pour 100 km) de l'ensemble de ses véhicules. Affichez uniquement les modèles dont la consommation moyenne dépasse la consommation moyenne globale, tous modèles confondus.</li>
+      <li>Pour chaque chauffeur, affichez son nombre total de sorties (lignes dans <code>POSITION</code>) ainsi que son rang parmi les chauffeurs de sa station (le plus actif = rang 1).</li>
+      <li>L'objectif affiché du système est de surveiller la consommation de carburant pour détecter un moteur qui se dérègle. Pour chaque véhicule (<code>nom_vehicule</code>), affichez, pour chaque plein (trié par date), sa consommation aux 100 km, ainsi que la variation par rapport au plein précédent du même véhicule.</li>
+      <li>Le véhicule de numéro de châssis YO2 6DA03F 26835177 (id 100002) est en service depuis le 1<sup>er</sup> janvier 2026. Affichez, pour le mois de janvier 2026, la liste des dates où ce véhicule n'apparaît dans aucune tranche horaire de la table <code>POSITION</code> (jours où il est resté au garage, sans sortie).</li>
+      <li>(Difficile) La table <code>MAP.distance</code> décrit les distances (en parsecs) entre les zones de la galaxie, comme un graphe orienté : chaque ligne est une liaison directe entre deux zones. Un vaisseau doit rejoindre la zone « Core Words » depuis la zone « Arkanis ». Il peut faire des escales, mais au maximum 3 étapes (liaisons directes) et sans repasser deux fois par la même zone. Listez tous les trajets possibles avec, pour chacun, le chemin emprunté (ex. Arkanis &gt; Cadavine &gt; Core Words), le nombre d'étapes et la distance totale en parsecs. Triez du trajet le plus court au plus long. (Indices : CTE récursives, conversion de type d'une variable : <code>variable::type</code>, conversion d'une colonne en chaîne de caractères : <code>array_to_string(attribut, separateur)</code>.)</li>
+    </ol>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>La question 7 ne suit pas le script fourni</span></p>
+      <p><span class="badge a-verifier">À vérifier</span> La question 7 parle d'un numéro de châssis de 17 caractères et d'un véhicule en service depuis le 1<sup>er</sup> janvier 2026. Le script d'origine des enseignants (<a href="../TP/TP3/script_sw7.sql">script_sw7.sql</a>, récupéré sur UMTICE le 7 novembre) a les mêmes données que la copie de travail complétée : <code>no_chassis</code> y est un entier (100002 pour « Geonosis power »), ce véhicule est en service depuis le 24 janvier 2014, et les positions sont datées par rapport au jour où l'on exécute le script (<code>current_date</code>) : aucune n'est en janvier 2026.</p>
+      <p>Il ne manque donc pas de version du script : c'est le sujet qui est en avance sur lui. La question reprend le TD 2, dont la base (le script du TP noté SW7 de L2, adapté) a des châssis de 17 caractères et un « Geonosis power » mis en service le 1<sup>er</sup> janvier 2026. Sur la base du TP, la requête s'écrit, mais renvoie les 31 jours de janvier 2026. Question à poser aux enseignants ; pour s'entraîner avec un résultat parlant, la même question se joue sur la base adaptée du TD 2 (<a href="td-02-compagnie-sw7.html#consommation-et-activite">TD 2, question 9</a>).</p>
+    </div>
+
+    <h3>Exemple d'examen : donné en 2020 à l'ENSIM 4A, à faire en 1 h 15</h3>
+    <p>Le barème est donné entre parenthèses pour information.</p>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Pas de jointure naturelle entre chauffeur et véhicule</span></p>
+      <p>La jointure naturelle entre <code>chauffeur</code> et <code>vehicule</code> est interdite ! Pourquoi ? Parce qu'elle force un chauffeur à conduire un véhicule de sa station de rattachement, et cette contrainte est fausse. C'est interdit également même s'il y a la table <code>position</code> entre les deux : <code>chauffeur natural join position natural join vehicule</code> : FAUX ! Il faut utiliser des jointures internes pour être certain des attributs comparés pour égalité.</p>
+    </div>
+    <ol start="9">
+      <li>(0,5) Supprimez le champ <code>type_bdv</code> de la table <code>MODELE</code>.</li>
+      <li>(0,5) Vous embauchez un nouveau chauffeur. Il s'agit de Tommy Shelby, qui habite à Birmingham. Il sera rattaché à la station numéro 3 et vous lui attribuez l'id 666.</li>
+      <li>(1) M. Shelby souhaite prendre son service dès maintenant, c'est-à-dire à la tranche horaire 2 d'aujourd'hui (<code>current_date</code>). Vous lui attribuez le véhicule nommé « Faucon millenium » et le mettez disponible dans la zone de sa station (identifiant 3). Attention, vous ne vous souvenez plus de son identifiant, vous vous rappelez simplement que vous n'avez qu'un seul chauffeur nommé Tommy Shelby. Utilisez le résultat d'une requête <code>select</code> pour obtenir le numéro du véhicule, le numéro du chauffeur et le nom de la zone.</li>
+      <li>(0,5) Quel succès ! Tommy a déjà un client. Il n'est donc plus disponible dans la zone indiquée. Mettez à jour votre base.</li>
+      <li>(1) En utilisant uniquement des jointures (pas de sous-requêtes), indiquez quels sont les noms des chauffeurs actuellement en service qui ont un permis 2, 3 ou 5.</li>
+      <li>(1) Sans jointures, uniquement avec des sous-requêtes, indiquez quels sont les noms de véhicules actuellement en service qui ont une capacité de plus de 10 personnes.</li>
+      <li>(1,5) Quel est le chauffeur (id) qui a le plus grand nombre de permis ?</li>
+      <li>(1) Créez une vue qui permettra d'avoir rapidement des informations sur les couples véhicule/chauffeur actuellement en service. Elle comprendra les champs : nom du véhicule, nom et prénom du chauffeur (dans une seule colonne), zone de dispo, nombre de places.</li>
+      <li>Créez la fonction <strong>SQL</strong> qui affiche la liste des chauffeurs actuellement disponibles (servez-vous de votre vue !!).</li>
+      <li>(BONUS) Créez la fonction <strong>PL/pgSQL</strong> qui permet de mettre rapidement une personne au boulot. Il suffit pour cela de donner en entrée les nom et prénom du chauffeur et le nom du véhicule, ainsi que l'id de la station où il prend service. Il faudra donc :
+        <ol type="a">
+          <li>envoyer une erreur si le chauffeur est déjà en service (se servir de la vue !) ;</li>
+          <li>envoyer une erreur si le véhicule est déjà en service (se servir de la vue !) ;</li>
+          <li>mettre en service la personne et le véhicule (question 3…).</li>
+        </ol></li>
+      <li>(BONUS) Mace Windu prend du service à la station 3 avec le véhicule Starship troopers. C'est une bonne occasion de tester votre fonction !</li>
+      <li>(1,75) Trigger ! Ne peut être fait que si toutes les questions précédentes ont une vraie réponse ! Un chauffeur ne peut pas être en service avec un véhicule s'il n'a pas le permis pour le conduire ! Créez la fonction et le trigger correspondants.</li>
+    </ol>
+
+    <h3>Exploitation</h3>
+    <ol start="21">
+      <li>Donnez la liste des chauffeurs (numéro, nom, prénom) de la station « Geonosis ».</li>
+      <li>Quels sont les noms de véhicules différents qu'a conduits « Luke Skywalker » hier ?</li>
+      <li>Combien chaque chauffeur peut-il conduire de modèles différents ?</li>
+      <li>Écrire une fonction <strong>SQL</strong> <code>f_chauf_station</code> qui prend en entrée le nom et le prénom d'un chauffeur et renvoie le nom de sa station de rattachement.</li>
+      <li>Quelle est la station de rattachement de « Phasma Trooper » ?</li>
+      <li>Écrire une fonction <strong>SQL</strong> <code>f_qui_peut_conduire</code> qui permet de connaître la liste des chauffeurs pouvant conduire un véhicule en particulier. On passera en paramètre d'entrée le nom du véhicule et on obtiendra en retour la liste des : <code>id_chauffeur</code>, <code>nom_chauffeur</code>, <code>nom_station_chauffeur</code>.</li>
+    </ol>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2>Chez soi : la console SQL du TP</h2>
+    <p>Le serveur de la fac n'est pas accessible de chez soi. La console ci-dessous exécute le compte rendu entier sur une base PostgreSQL neuve (PGlite), par le serveur local des quiz : <code>studies/lancer.bat</code>, puis cette page ouverte depuis le portail. Sans le serveur, on peut écrire, mais pas exécuter.</p>
+    <ol class="etapes">
+      <li>En tête, la question 2 (schémas et <code>search_path</code>), puis le script <code>Script_SW7.sql</code> complété (question 3) : on le colle à l'emplacement prévu.</li>
+      <li>Les réponses aux questions suivantes s'écrivent à la suite, dans l'ordre. <b>Exécuter</b> (ou <kbd>Ctrl</kbd> + <kbd>Entrée</kbd>) rejoue tout, depuis le début, sur une base neuve, et affiche le résultat de la <strong>dernière</strong> requête qui renvoie des lignes, ou la première erreur.</li>
+      <li>Le travail s'enregistre tout seul : dans le navigateur, et, avec le serveur, dans le dossier <code>td_results/</code> de ce cours, dans ton espace. Le menu ⋯ copie le texte, à coller dans <code>TP3_Monnom.txt</code>.</li>
+    </ol>
+    <div class="bloc attention">
+      <p class="bloc-titre">Attention <span>Ce qui change par rapport à la fac</span></p>
+      <ul>
+        <li>Les commandes du client <code>psql</code> (<code>\dn</code>, <code>\dt</code>, <code>\c</code>) ne sont pas du SQL : la console les refuse. Pour vérifier les tables de chaque schéma, on interroge les catalogues (<code>information_schema.tables</code>).</li>
+        <li><code>current_date</code> est la date du jour où l'on exécute : les positions du script, qui en dépendent, suivent le calendrier, et « hier » (question 22) est toujours la veille.</li>
+        <li>Un <code>RAISE NOTICE</code> ou un <code>RAISE EXCEPTION</code> attendu (questions 18 à 20) se voit dans <code>psql</code> ; dans la console, une exception arrête l'exécution et s'affiche comme une erreur.</li>
+      </ul>
+    </div>
+    <div class="atelier" id="tp3-compte-rendu" data-editeur="sql">
+      <script type="application/json">
+{
+  "titre": "Compte rendu du TP 3",
+  "consigne": "<p>La question 2 en tête, puis le script SW7 complété à l'emplacement prévu, puis les réponses à la suite, dans l'ordre des questions. <b>Exécuter</b> rejoue tout, depuis le début, sur une base neuve, et affiche le résultat de la dernière requête qui renvoie des lignes, ou la première erreur.</p>",
+  "options": {
+    "jeu": "fac",
+    "lignes": 28
+  },
+  "depart": "-- ===== Question 2 : schémas sw7 et map =====\n\n\n-- ===== Question 3 : Script_SW7.sql complété =====\n-- Coller ici le script (UMTICE), complété.\n\n\n-- ===== Questions 4 et suivantes =====\n-- 4.\n"
+}
+      </script>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <section>
+    <h2 class="sans-numero">À retenir</h2>
+    <div class="bloc retenir">
+      <p class="bloc-titre">L'essentiel</p>
+      <ul>
+        <li>La base se répartit sur deux schémas : toutes les tables dans <code>sw7</code>, sauf <code>distance</code>, dans <code>map</code> ; le <code>search_path</code> doit parcourir les deux.</li>
+        <li>Dans <code>position</code>, le service en cours est la tranche 2 du jour (<code>current_date</code>) ; une zone vide pendant le service signifie que le chauffeur est en course.</li>
+        <li>Pas de jointure naturelle entre <code>chauffeur</code> et <code>vehicule</code> : leur <code>id_station</code> commun imposerait qu'un chauffeur ne conduise que les véhicules de sa station.</li>
+        <li>Le compte rendu <code>TP3_Monnom.txt</code> garde chaque requête ; le TP se termine d'une semaine sur l'autre.</li>
+        <li>Chez soi, la console rejoue le script et le compte rendu sur une base neuve ; les commandes <code>psql</code> ne s'y exécutent pas.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sans-numero">Auto-évaluation</h2>
+    <div class="cartes">
+      <details class="carte">
+        <summary>Pourquoi la jointure naturelle entre <code>chauffeur</code> et <code>vehicule</code> est-elle fausse ?</summary>
+        <div><p>Elle joint sur toutes les colonnes de même nom, dont <code>id_station</code> : elle ne garde que les couples dont le chauffeur et le véhicule sont rattachés à la même station, alors qu'un chauffeur peut conduire un véhicule d'une autre station.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Comment reconnaît-on, dans <code>position</code>, un chauffeur actuellement en course ?</summary>
+        <div><p>Sa ligne est celle du service en cours (<code>date = current_date</code>, <code>th = 2</code>) et sa zone est vide (<code>nom_zone IS NULL</code>) : il n'est pas disponible.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi le script insère-t-il dans <code>distance</code> sans préfixe, alors que la table est dans le schéma <code>map</code> ?</summary>
+        <div><p>Le nom sans préfixe est cherché dans les schémas du <code>search_path</code>, dans l'ordre : si <code>map</code> y figure, <code>distance</code> y est trouvée. Sinon, l'insertion échoue sur <code>relation "distance" does not exist</code>.</p></div>
+      </details>
+      <details class="carte">
+        <summary>Pourquoi la console arrête-t-elle tout à la première erreur ?</summary>
+        <div><p>Elle rejoue le compte rendu d'un bloc, depuis le début : une requête fausse au milieu empêche la suite de s'exécuter. On la corrige, ou on la met en commentaire, pour avancer.</p></div>
+      </details>
+    </div>
+  </section>
+
+  <nav class="pagination" aria-label="Chapitres">
+    <a class="precedent" href="tp-02-plateforme-jeux.html"><small>← TP 2</small>Plateforme de jeux (suite)</a>
+    <a class="suivant" href="tp-04-compagnie-sw7.html"><small>TP 4 →</small>La compagnie SW7 (suite)</a>
+  </nav>
+
+</main>
+</div>
+
+<footer class="pied">Bases de données · L3 · <a href="index.html">tous les chapitres</a></footer>
+
+</body>
+</html>

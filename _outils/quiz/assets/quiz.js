@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Quiz · point d'entrée (studies/_outils/quiz)
+   Quiz · point d'entrée (_outils/quiz)
    --------------------------------------------------------------------------
    Les pages de quiz et le portail ne chargent que ce fichier (avec defer).
    Il crée l'espace de noms window.QuizApp puis charge, dans l'ordre, les
