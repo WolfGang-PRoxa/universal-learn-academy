@@ -316,6 +316,82 @@ function carteClaude() {
     h('p', { class: 'aide' }, 'Anthropic n’autorise pas une application tierce à proposer la connexion avec un compte claude.ai ni à conserver ses identifiants : la connexion par compte passe donc par Claude Code, chez Anthropic.'));
 }
 
+/* -- Modèles de Claude et exécution du code (ex-« Réglages » des quiz) ------------------- */
+
+function carteModeles() {
+  const zone = h('div', { class: 'modeles' }, etat('', 'Lecture des réglages du serveur local…'));
+  let r = null;
+
+  const chemin = h('input', { class: 'saisie', type: 'text', placeholder: 'Recherche automatique : PATH, extension VS Code…', spellcheck: false });
+
+  async function enregistrer() {
+    r.claude.executable = chemin.value.trim();
+    await api.quiz.reglages(r);
+  }
+
+  function ligneUsage(id, usage, e) {
+    const reglage = r.usages[id];
+    const connu = e.modeles.some((m) => m.id === reglage.modele);
+    const libre = h('input', { class: 'saisie', type: 'text', placeholder: 'claude-sonnet-5…', value: connu ? '' : reglage.modele,
+      onInput: (ev) => { reglage.modele = ev.target.value.trim(); } });
+    libre.hidden = connu;
+    const modele = h('select', { class: 'saisie', 'aria-label': `Modèle · ${usage.libelle}`, onChange: (ev) => {
+      libre.hidden = ev.target.value !== '__autre';
+      reglage.modele = ev.target.value === '__autre' ? libre.value.trim() : ev.target.value;
+    } },
+    e.modeles.map((m) => h('option', { value: m.id, selected: connu && m.id === reglage.modele }, m.libelle)),
+    h('option', { value: '__autre', selected: !connu }, 'Autre…'));
+    const effort = h('select', { class: 'saisie', 'aria-label': `Effort · ${usage.libelle}`, onChange: (ev) => { reglage.effort = ev.target.value; } },
+      e.efforts.map((x) => h('option', { value: x, selected: x === reglage.effort }, x ? `effort ${x}` : 'effort par défaut')));
+    const resultat = h('span', { class: 'aide' });
+    const tester = bouton('Tester', { genre: 'leger', onClick: async () => {
+      tester.disabled = true;
+      resultat.textContent = 'Enregistrement et test…';
+      try {
+        await enregistrer();
+        const x = await api.quiz.tester(id);
+        resultat.textContent = `OK · ${(x.modele || '').replace(/^claude-/, '')} · ${(x.duree / 1000).toFixed(1)} s`;
+      } catch (err) { resultat.textContent = messageErreur(err).slice(0, 160); }
+      finally { tester.disabled = false; }
+    } });
+    return h('div', { class: 'usage' },
+      h('div', {}, h('strong', {}, usage.libelle), h('br'), h('span', { class: 'aide' }, usage.description)),
+      h('div', { class: 'ligne' }, modele, libre, effort, tester),
+      resultat);
+  }
+
+  async function charger() {
+    try {
+      const e = await api.quiz.etat();
+      r = JSON.parse(JSON.stringify(e.reglages));
+      chemin.value = r.claude.executable || '';
+      const q = e.quota && e.quota.unifiedWindows;
+      const quota = q ? `Abonnement : ${q.five_hour ? Math.round(q.five_hour.utilization * 100) + ' % de la fenêtre de 5 h' : ''}${q.seven_day ? ' · ' + Math.round(q.seven_day.utilization * 100) + ' % de la semaine' : ''}` : null;
+      zone.replaceChildren(h('div', { class: 'modeles' },
+        h('h3', {}, 'Claude Code utilisé par les quiz'),
+        e.claude.disponible ? etat('ok', `Trouvé : version ${e.claude.version} (${e.claude.executable})`) : etat('alerte', e.claude.erreur),
+        h('label', { class: 'champ' }, h('span', {}, 'Chemin de l’exécutable (vide : recherche automatique)'), chemin),
+        quota ? h('p', { class: 'aide' }, quota) : null,
+        h('h3', {}, 'Modèle pour chaque usage'),
+        h('p', { class: 'aide' }, 'Avec un abonnement Pro, Sonnet, Opus et Haiku sont inclus ; Fable demande des crédits en plus. Opus donne les meilleures réponses mais consomme le quota plus vite ; l’effort règle le temps de réflexion. Avec une clé d’API, chaque appel est facturé.'),
+        h('div', { class: 'usages' }, Object.entries(e.usages).map(([id, u]) => ligneUsage(id, u, e))),
+        h('div', { class: 'ligne' },
+          bouton('Enregistrer', { genre: 'principal', onClick: async () => {
+            try { await enregistrer(); note('Réglages de Claude enregistrés.'); charger(); }
+            catch (err) { note(messageErreur(err), { erreur: true }); }
+          } }),
+          bouton('Recharger', { genre: 'leger', onClick: charger })),
+        h('h3', {}, 'Exécution du code des questions'),
+        h('ul', { class: 'langages' }, Object.entries(e.executeurs).map(([k, v]) => h('li', { class: v ? 'ok' : 'ko' }, `${{ sql: 'SQL', javascript: 'JavaScript', python: 'Python', c: 'C', 'c-posix': 'C POSIX (WSL)' }[k] || k} : ${v || 'indisponible'}`)))));
+    } catch (err) {
+      zone.replaceChildren(etat('erreur', messageErreur(err)), h('div', { class: 'ligne' }, bouton('Réessayer', { genre: 'leger', onClick: charger })));
+    }
+  }
+
+  charger();
+  return carte('claude-modeles', 'claude', 'Modèles de Claude et exécution du code', 'Modèle et effort pour l’aide, la correction, l’évaluation et la génération de quiz ; langages exécutables dans les questions de code.', zone);
+}
+
 /* -- Dossier des cours ---------------------------------------------------------------- */
 
 function carteCours() {
@@ -383,7 +459,7 @@ function proposerRedemarrage() {
 
 /* -- Page ------------------------------------------------------------------------------- */
 
-document.getElementById('cartes').append(carteMisesAJour(), carteFenetre(), carteRaccourcis(), carteClaude(), carteCours(), carteAPropos());
+document.getElementById('cartes').append(carteMisesAJour(), carteFenetre(), carteRaccourcis(), carteClaude(), carteModeles(), carteCours(), carteAPropos());
 
 const aller = (section) => { const el = section && document.getElementById(section); if (el) el.scrollIntoView(); };
 aller(location.hash.slice(1));

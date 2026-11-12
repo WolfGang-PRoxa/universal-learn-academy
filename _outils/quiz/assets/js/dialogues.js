@@ -97,6 +97,9 @@
   /* Réglages ------------------------------------------------------------------------------ */
 
   function reglages() {
+    // Application installée (studies/app) : ces réglages sont dans ses paramètres,
+    // que la fenêtre ouvre quand une page va vers /_app/parametres (_outils/app/fenetres.js)
+    if (/\bStudiesApp\//.test(navigator.userAgent)) { location.href = "/_app/parametres#claude-modeles"; return; }
     var C = A.connexion;
     if (!C.enLigne) { serveur(); return; }
     C.rafraichir().then(function (e) {

@@ -53,7 +53,7 @@ Sans serveur, une page de quiz ouverte depuis le disque fonctionne quand même, 
 - **Évaluation classique** : score, note sur 20, justes, partielles, fausses et sans réponse, bilan par thème, correction détaillée (réponse donnée, réponse attendue, réponses acceptées, explication, lien vers le cours).
 - **Évaluation détaillée par Claude** : bilan de ce qui est acquis, de ce qui coince et de ce qu'il faut réviser, avec des liens vers les sections du cours et des conseils pour la suite. On peut ensuite poser des questions sur ce bilan.
 - **Refaire les questions ratées**, **recommencer**, **générer un quiz similaire** : même sujet, centré sur ses erreurs, ou autre sujet, avec les types, le nombre et la difficulté choisis. Claude Code écrit le nouveau quiz dans le dossier de la matière en quelques minutes ; son avancement s'affiche.
-- **Réglages** (roue dentée dans la barre du haut) : modèle et effort de Claude pour chaque usage (aide, correction, évaluation, génération), chemin de Claude Code, quota de l'abonnement, langages disponibles.
+- **Réglages** (roue dentée dans la barre du haut) : modèle et effort de Claude pour chaque usage (aide, correction, évaluation, génération), chemin de Claude Code, quota de l'abonnement, langages disponibles. Dans l'application installée (`app/`), ces réglages sont réunis à ses paramètres : la roue dentée de la charte les ouvre, et le témoin « Claude » y mène aussi.
 
 ## Contenu du dossier
 

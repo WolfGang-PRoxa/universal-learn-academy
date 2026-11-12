@@ -38,6 +38,12 @@ contextBridge.exposeInMainWorld("studies", {
     lien: (nom) => appeler("claude:lien", nom)
   },
 
+  quiz: {
+    etat: () => appeler("quiz:etat"),
+    reglages: (r) => appeler("quiz:reglages", r),
+    tester: (usage) => appeler("quiz:tester", usage)
+  },
+
   maj: {
     verifier: () => appeler("maj:verifier"),
     statut: () => appeler("maj:statut"),

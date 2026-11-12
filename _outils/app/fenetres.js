@@ -65,7 +65,7 @@ function versNavigateur(url) {
 function parametres(url) {
   const hote = global.studiesHote;
   if (!hote || !interne(url) || new URL(url).pathname !== "/_app/parametres") return false;
-  hote.ouvrirParametres();
+  hote.ouvrirParametres(new URL(url).hash.slice(1) || undefined);
   return true;
 }
 

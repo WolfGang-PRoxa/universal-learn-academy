@@ -112,8 +112,8 @@
     if (!/\bStudiesApp\//.test(navigator.userAgent)) return;
     var a = creer("a", "bouton-icone bouton-parametres");
     a.href = "/_app/parametres";
-    a.title = "Paramètres de l'application (Ctrl+,)";
-    a.setAttribute("aria-label", "Paramètres de l'application");
+    a.title = "Paramètres : application, Claude, mises à jour (Ctrl+,)";
+    a.setAttribute("aria-label", "Paramètres");
     barre.appendChild(a);
   }
 

@@ -171,6 +171,26 @@ function redemarrer() {
   app.quit();
 }
 
+/** Appel à l'API du serveur local de l'outil de quiz (port de _outils/quiz/reglages.json). */
+async function apiQuiz(methode, route, corps) {
+  let port = 5178;
+  try { port = JSON.parse(fs.readFileSync(path.join(racine, "_outils", "quiz", "reglages.json"), "utf8")).port || port; } catch (e) { /* port par défaut */ }
+  let r;
+  try {
+    r = await fetch(`http://127.0.0.1:${port}/api/${route}`, {
+      method: methode,
+      headers: corps ? { "Content-Type": "application/json" } : undefined,
+      body: corps ? JSON.stringify(corps) : undefined,
+      signal: AbortSignal.timeout(route.startsWith("claude/") ? 180000 : 20000)
+    });
+  } catch (e) {
+    throw new Error("Le serveur local ne répond pas (il démarre avec la fenêtre des cours).");
+  }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.erreur || `Erreur ${r.status} du serveur local.`);
+  return d;
+}
+
 function enregistrerIpc() {
   const traiter = (canal, fn) => ipcMain.handle(canal, (evenement, ...args) => fn(...args, evenement));
 
@@ -230,6 +250,13 @@ function enregistrerIpc() {
   traiter("claude:deconnecter", () => claude.deconnecter(racine));
   traiter("claude:cle", (valeur) => claude.enregistrerCle(valeur));
   traiter("claude:lien", (nom) => claude.ouvrirLien(String(nom)));
+
+  // Réglages de l'outil de quiz (modèles de Claude par usage, chemin de Claude Code,
+  // exécution du code) : lus et modifiés par l'API du serveur local, comme le faisait
+  // la fenêtre « Réglages » des quiz, désormais réunie aux paramètres de l'application
+  traiter("quiz:etat", () => apiQuiz("GET", "etat?forcer=1"));
+  traiter("quiz:reglages", (r) => apiQuiz("PUT", "reglages", r));
+  traiter("quiz:tester", (usage) => apiQuiz("POST", "claude/test", { usage: String(usage) }));
 
   traiter("maj:verifier", () => majs.verifier());
   traiter("maj:statut", () => majs.statut());

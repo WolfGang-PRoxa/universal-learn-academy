@@ -30,7 +30,11 @@
     if (C.enLigne && !document.querySelector("main.portail")) {
       groupe.appendChild(boutonBarre("", "portail", "Portail : toutes les matières et tous les quiz", function () { location.href = "/_outils/quiz/portail.html"; }));
     }
-    groupe.appendChild(boutonBarre("", "reglages", "Réglages (modèles de Claude…)", function () { A.dialogues.reglages(); }));
+    // Dans l'application installée, la roue dentée de la charte (cours.js) ouvre ses
+    // paramètres, qui contiennent ces réglages : pas de second bouton
+    if (!/\bStudiesApp\//.test(navigator.userAgent)) {
+      groupe.appendChild(boutonBarre("", "reglages", "Réglages (modèles de Claude…)", function () { A.dialogues.reglages(); }));
+    }
     // Avant l'icône maison et le thème de la charte, qui restent côte à côte à droite
     var suivant = barre.querySelector(".bouton-accueil") || barre.querySelector(".bouton-theme");
     if (suivant) barre.insertBefore(groupe, suivant); else barre.appendChild(groupe);

@@ -15,12 +15,13 @@ Les versions suivantes s'installent d'elles-mêmes au démarrage (voir « Mises 
 
 ## Paramètres
 
-Menu **Fichier › Paramètres de l'application…** (Ctrl+,). La barre de menus apparaît avec la touche Alt.
+La roue dentée de la barre du haut, sur toutes les pages, ou Ctrl+, (menu **Fichier › Paramètres de l'application…**). Dans l'application installée, elle remplace la roue « Réglages » de l'outil de quiz, dont les réglages sont réunis ici ; dans un navigateur ou avec `lancer-app.bat`, la roue des quiz reste celle d'avant.
 
 - **Mises à jour** (activées par défaut) : au démarrage, Studies cherche une nouvelle version dans les releases GitHub, la télécharge en arrière-plan (en différentiel, grâce aux fichiers `.blockmap`) et l'installe à la fermeture. « Redémarrer et installer » l'applique tout de suite.
 - **Fenêtre au lancement** : grande fenêtre (agrandie, par défaut) ou taille et position personnalisées, réglées dans un cadre qui représente les écrans à l'échelle (souris ou clavier) ou par quatre champs. Si l'emplacement n'est plus visible (écran débranché), la fenêtre s'ouvre agrandie. Repris de CV Studio.
 - **Raccourcis** : Bureau, menu Démarrer (menu des applications sous Linux), ou n'importe quel dossier choisi. Pour chaque emplacement, Studies dit ce qu'il trouve : rien (« Créer »), un raccourci valide, un raccourci vers une ancienne copie ou cassé (« Réparer »), un fichier qui ouvre autre chose (« Remplacer », après confirmation). Les raccourcis portent le nom de ceux de l'installeur : la désinstallation retire ceux du Bureau et du menu Démarrer. Sous Linux, ce sont des fichiers `.desktop` qui lancent l'AppImage.
 - **Connexion à Claude** : voir ci-dessous.
+- **Modèles de Claude et exécution du code** (ex-« Réglages » des quiz) : chemin de Claude Code, modèle et effort pour l'aide, la correction, l'évaluation et la génération de quiz (avec un bouton « Tester »), langages exécutables. Lus et enregistrés par l'API du serveur local (`_outils/quiz/reglages.json`).
 - **Dossier des cours** : les cours livrés avec Studies, ou un dossier `studies` du poste (un clone git du dépôt).
 
 ## Connexion à Claude
