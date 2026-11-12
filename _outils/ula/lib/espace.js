@@ -82,7 +82,7 @@ function cours(racine) {
   const res = [];
   const base = path.join(racine, EXPLORE);
   let domaines = [];
-  try { domaines = fs.readdirSync(base, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith(".")); } catch (e) { return res; }
+  try { domaines = fs.readdirSync(base, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith(".") && d.name !== "packs"); } catch (e) { return res; }
   for (const d of domaines) {
     let ids = [];
     try { ids = fs.readdirSync(path.join(base, d.name), { withFileTypes: true }).filter((x) => x.isDirectory() && !x.name.startsWith(".")); } catch (e) { continue; }
@@ -279,6 +279,28 @@ function ajouterCours(racine, nomProfil, id, dossierCible, nom) {
   return rel(racine, cible);
 }
 
+/** Ajoute les cours d'un pack dans un dossier du cursus (créé au besoin à la racine de
+    l'espace) ; un cours déjà dans le cursus, où qu'il soit, n'est ni déplacé ni dupliqué. */
+function ajouterPack(racine, nomProfil, ids, nomDossier) {
+  const p = profil(racine, nomProfil);
+  if (!p) throw new Error("Aucun profil choisi.");
+  const n = nomValide(nomDossier, "nom du dossier");
+  const dossier = path.join(p.dossier, n);
+  if (fs.existsSync(path.join(dossier, FICHE_LIEN))) throw new Error(`« ${n} » est déjà un cours : choisir un autre nom de dossier.`);
+  fs.mkdirSync(dossier, { recursive: true });
+  oublierCache();
+  const deja = new Set(liens(racine, nomProfil).map((l) => l.cours));
+  const ajoutes = [], presents = [];
+  for (const id of ids) {
+    if (deja.has(id)) { presents.push(id); continue; }
+    ajouterCours(racine, nomProfil, id, rel(racine, dossier));
+    deja.add(id);
+    ajoutes.push(id);
+  }
+  oublierCache();
+  return { dossier: rel(racine, dossier), ajoutes, presents };
+}
+
 function creerDossier(racine, nomProfil, parent, nom) {
   const { abs } = dossierDuProfil(racine, nomProfil, parent);
   if (fs.existsSync(path.join(abs, FICHE_LIEN))) throw new Error("Un cours ne contient pas de dossier de cursus.");
@@ -358,6 +380,6 @@ module.exports = {
   lireJson, ecrireJson, nomValide, nomSession, slug,
   cours, coursParId, coursDuChemin,
   profils, profil, creerProfil, renommerProfil, profilActif, choisirProfil,
-  arbre, liens, lienDuCours, ajouterCours, creerDossier, renommer, deplacer, retirer,
+  arbre, liens, lienDuCours, ajouterCours, ajouterPack, creerDossier, renommer, deplacer, retirer,
   travailDePage, oublierCache
 };

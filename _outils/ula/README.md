@@ -8,6 +8,7 @@ Universal Learn Academy sépare ce qui se publie de ce que chacun produit. Ce do
 ula/                                  racine des données
 ├── index.html                        accueil statique (pages ouvertes depuis le disque)
 ├── explore/                          catalogue, en lecture seule
+│   ├── packs/<id>.json               packs par niveau d'étude (ula-pack-1)
 │   └── <domaine>/                    informatique, mathematiques, langues…
 │       ├── index.html                accueil du domaine (index_niveau.py ; dynamique s'il manque)
 │       └── <cours>/                  un cours : ula-cours.json, generated_courses/, generated_quizzes/,
@@ -36,7 +37,7 @@ Règle d'or : **rien de ce que l'utilisateur produit n'est écrit dans `explore/
 - `/index.html` est l'accueil dynamique (`accueil.html`) : profils, cursus, cours installés, catalogue en ligne, outils. Un accueil de domaine absent (cours téléchargés) l'est aussi, filtré sur le domaine.
 - Une page d'un cours non installé renvoie au catalogue.
 
-Routes de l'extension (`serveur/extension.js`) : `GET etat`, `PUT profil`, `POST profils`, `POST profils/renommer`, `GET cursus`, `POST cursus/dossier|renommer|deplacer|retirer|ajouter`, `GET catalogue`, `POST catalogue/installer|supprimer`, `POST proposer`, `POST ouvrir`.
+Routes de l'extension (`serveur/extension.js`) : `POST catalogue/installer-pack`, `POST cursus/ajouter-pack`, `GET etat`, `PUT profil`, `POST profils`, `POST profils/renommer`, `GET cursus`, `POST cursus/dossier|renommer|deplacer|retirer|ajouter`, `GET catalogue`, `POST catalogue/installer|supprimer`, `POST proposer`, `POST ouvrir`.
 
 ## Catalogue à la demande
 
@@ -45,6 +46,14 @@ Publié dans la release `catalogue` du dépôt public (en préversion, jamais «
 Accès : l'adresse publique de la release ; tant que le dépôt est privé, le jeton de la GitHub CLI du poste (`gh auth token`), gardé en mémoire le temps des requêtes. `ULA_CATALOGUE=<dossier>` lit un catalogue local (essais).
 
 Dans le dépôt git d'ula (mode « source »), `explore/` est la source du catalogue : rien ne s'y télécharge. Publier : `cd app && npm run catalogue` (aperçu dans `app/.catalogue`), puis `npm run catalogue -- --publier` ; seules les archives des cours modifiés sont renvoyées.
+
+## Packs par niveau d'étude
+
+Un pack regroupe les cours d'un niveau (« Licence 1 informatique ») : `explore/packs/<id>.json`, format `ula-pack-1` (`id`, `titre`, `origine`, `dossier` proposé dans le cursus, par exemple `L1`, `description`, liste ordonnée `cours`). Un cours peut être dans plusieurs packs. Il n'y a pas d'archive de pack : `catalogue.json` publie les packs, et l'application télécharge les archives des cours (empreintes vérifiées).
+
+Dans l'accueil, la section « Packs » est en tête du catalogue en ligne, avec le nombre de cours et la taille totale. « Télécharger le pack » installe les cours un par un, avec une progression globale ; un cours en échec n'arrête pas les autres, et relancer le pack ne reprend que ceux qui manquent. Puis « Ranger dans mon cursus » ajoute les cours dans un dossier (nom proposé modifiable, `L1`…) : un cours déjà dans le cursus reste où il est, rien n'est écrasé.
+
+Packs actuels : Licence 1, 2 et 3 informatique (toutes les matières de chaque année, y compris mathématiques, langues, communication et projet). Un cours accepté se range dans un pack avec `npm run accepter-proposition -- <zip> --pack <id>` ; `npm run catalogue` vérifie que chaque pack ne cite que des cours existants.
 
 ## Proposer un cours
 
@@ -75,3 +84,4 @@ _outils/ula/
 ## Historique
 
 - **1.0**, 12 novembre 2026 : création, avec la réorganisation de `studies` en `ula` : catalogue `explore/<domaine>/<cours>/`, profils et cursus libres, travail toujours écrit dans l'espace du profil, catalogue à la demande, « Proposer ce cours ».
+- **1.1**, 12 novembre 2026 : packs par niveau d'étude (`explore/packs/`, section « Packs » du catalogue, rangement dans le cursus), domaine Communication et projet, catalogue complet (30 cours).

@@ -1,6 +1,10 @@
 // Catalogue des cours à la demande : `npm run catalogue` (aperçu dans app/.catalogue),
 // puis `npm run catalogue -- --publier`.
 //
+// Les packs par niveau d'étude (explore/packs/<id>.json : titre, origine, dossier proposé,
+// liste ordonnée des cours) sont publiés dans catalogue.json, sans archive à part :
+// l'application télécharge les archives des cours du pack.
+//
 // Chaque cours de explore/<domaine>/<cours>/ devient une archive <cours>.zip, décrite
 // dans catalogue.json (id, domaine, titre, niveau, origine, version, taille, nombre de
 // fichiers, empreinte SHA-256 de l'archive). Le tout est publié dans la release
@@ -26,6 +30,7 @@ import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
 const regles = require('./contenu-regles.cjs');
 const zip = require('../../_outils/ula/lib/zip.js');
+const { verifierPack } = require('../../_outils/ula/lib/catalogue.js');
 const { DEPOT_PUBLIC } = require('../src/depot.js');
 
 const app = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -100,6 +105,20 @@ export function coursDuDepot() {
   });
 }
 
+/** Packs par niveau (explore/packs/<id>.json suivis par git), vérifiés contre les cours. */
+export function packsDuDepot(idsCours) {
+  const fichiers = git(['ls-files', '--', 'explore/packs/*.json']).toString('utf8').trim().split('\n').filter(Boolean);
+  const problemes = [];
+  const packs = fichiers.map((f) => {
+    const p = JSON.parse(fs.readFileSync(path.join(racine, f), 'utf8'));
+    if (path.posix.basename(f, '.json') !== p.id) problemes.push(`${f} : id « ${p.id} » différent du nom du fichier`);
+    for (const pb of verifierPack(p, idsCours)) problemes.push(`${f} : ${pb}`);
+    return { id: p.id, titre: p.titre, origine: p.origine || '', dossier: p.dossier || '', description: p.description || '', cours: p.cours };
+  });
+  if (problemes.length) throw new Error(`Packs invalides :\n- ${problemes.join('\n- ')}`);
+  return packs;
+}
+
 function catalogueEnLigne() {
   const r = spawnSync('gh', ['release', 'download', TAG, '--repo', depot, '--pattern', 'catalogue.json', '--output', '-'], { encoding: 'utf8', maxBuffer: 1 << 26 });
   if (r.status !== 0) return null;
@@ -147,11 +166,12 @@ export function construire({ publier = false } = {}) {
     genere: new Date().toISOString(),
     commit: git(['rev-parse', 'HEAD']).toString().trim(),
     cours: entrees.sort((a, b) => a.domaine.localeCompare(b.domaine) || a.id.localeCompare(b.id)),
+    packs: packsDuDepot(new Set(entrees.map((e) => e.id))),
   };
   const fichierCatalogue = path.join(sortie, 'catalogue.json');
   fs.writeFileSync(fichierCatalogue, JSON.stringify(catalogue, null, 1) + '\n');
   const total = entrees.reduce((s, e) => s + e.taille, 0);
-  console.log(`✓ ${entrees.length} cours (${(total / 1e6).toFixed(0)} Mo), ${aEnvoyer.length} archive(s) à envoyer, contrôle des données personnelles passé`);
+  console.log(`✓ ${entrees.length} cours (${(total / 1e6).toFixed(0)} Mo), ${catalogue.packs.length} pack(s), ${aEnvoyer.length} archive(s) à envoyer, contrôle des données personnelles passé`);
 
   if (!publier) { console.log('  Aperçu seulement (app/.catalogue) : relancer avec --publier pour envoyer.'); return catalogue; }
 

@@ -3,6 +3,8 @@
 //
 //   --domaine <d>    domaine du catalogue (sinon celui de la fiche du cours)
 //   --id <id>        identifiant du cours (sinon celui de la fiche)
+//   --pack <id>      ajoute aussi le cours au pack explore/packs/<id>.json (par ex.
+//                    licence-1-informatique)
 //   --remplacer      remplace un cours existant du même identifiant
 //   --essai          vérifie seulement, sans rien écrire
 //
@@ -30,7 +32,7 @@ const app = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const racine = path.resolve(app, '..');
 const args = process.argv.slice(2);
 const option = (nom) => { const i = args.indexOf(nom); return i >= 0 ? args[i + 1] : null; };
-const archive = args.find((a, i) => !a.startsWith('--') && !['--domaine', '--id'].includes(args[i - 1]));
+const archive = args.find((a, i) => !a.startsWith('--') && !['--domaine', '--id', '--pack'].includes(args[i - 1]));
 function echec(m) { console.error(`\n✗ ${m}`); process.exit(1); }
 
 if (!archive || !fs.existsSync(archive)) echec('Usage : npm run accepter-proposition -- <archive.zip> [--domaine d] [--id id] [--remplacer] [--essai]');
@@ -74,6 +76,16 @@ try {
     } else fs.copyFileSync(f.fichier, dest);
   }
   fs.writeFileSync(path.join(cible, 'ula-cours.json'), JSON.stringify(Object.assign({}, fiche, { id, domaine }), null, 2) + '\n');
+  const pack = option('--pack');
+  if (pack) {
+    const f = path.join(racine, 'explore', 'packs', `${pack}.json`);
+    if (!fs.existsSync(f)) console.log(`  ! pack inconnu : ${pack} (explore/packs/${pack}.json absent), cours non ajouté à un pack`);
+    else {
+      const p = JSON.parse(fs.readFileSync(f, 'utf8'));
+      if (!p.cours.includes(id)) { p.cours.push(id); fs.writeFileSync(f, JSON.stringify(p, null, 2) + '\n'); }
+      console.log(`  + ajouté au pack ${pack}`);
+    }
+  }
 
   // 3. Vérificateurs et accueils de domaine
   const lancer = (cmd, a) => spawnSync(cmd, a, { cwd: racine, stdio: 'inherit' }).status === 0;

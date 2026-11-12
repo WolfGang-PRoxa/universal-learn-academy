@@ -421,8 +421,75 @@
 
   var LIBELLES_ETAT = { absent: "", installe: "Installé", maj: "Mise à jour disponible", source: "Source locale" };
 
+  var LIBELLES_PACK = { absent: "", installe: "Installé", maj: "Mise à jour disponible", partiel: "En partie installé" };
+
+  function taille(o) { return (o / 1e6).toFixed(1).replace(".", ",") + " Mo"; }
+
+  // Packs par niveau d'étude : en tête du catalogue
+  function rendrePacks(zone) {
+    if (!catalogue.packs || !catalogue.packs.length) return;
+    zone.appendChild(el("h3", null, "Packs"));
+    var ul = el("ul", "ula-cartes");
+    catalogue.packs.forEach(function (p) {
+      var li = el("li", "ula-carte");
+      if (LIBELLES_PACK[p.etat]) li.appendChild(el("span", "ula-etat", LIBELLES_PACK[p.etat]));
+      li.appendChild(el("h3", null, "Pack " + p.titre));
+      li.appendChild(el("p", "ula-cours-info", [p.origine, p.nombre + " cours", taille(p.taille)].filter(Boolean).join(" · ")));
+      if (p.description) li.appendChild(el("p", "ula-note", p.description));
+      var act = el("div", "ula-actions");
+      if (!catalogue.source && p.etat !== "installe") act.appendChild(bouton(p.etat === "maj" ? "Mettre à jour le pack" : "Télécharger le pack", "principal", function () { return installerPack(p, zone); }));
+      if (etat.profil) act.appendChild(bouton("Ranger dans mon cursus…", p.etat === "installe" ? "principal" : "discret", function () { return rangerPack(p); }));
+      li.appendChild(act);
+      ul.appendChild(li);
+    });
+    zone.appendChild(ul);
+    zone.appendChild(el("h3", null, "Cours"));
+  }
+
+  // Télécharge les cours du pack un par un (progression globale) ; un cours en échec
+  // n'arrête pas les autres, et relancer le pack ne reprend que ceux qui manquent
+  function installerPack(p, zone) {
+    var aFaire = catalogue.cours.filter(function (c) { return p.cours.indexOf(c.id) >= 0 && (c.etat === "absent" || c.etat === "maj"); });
+    var suivi = el("p", "ula-attente");
+    zone.insertBefore(suivi, zone.firstChild);
+    var erreurs = [];
+    var chaine = Promise.resolve();
+    aFaire.forEach(function (c, i) {
+      chaine = chaine.then(function () {
+        suivi.textContent = "Pack " + p.titre + " : " + (i + 1) + "/" + aFaire.length + " · " + c.titre + " (" + taille(c.taille) + ")…";
+        return api("POST", "ula/catalogue/installer", { id: c.id }).catch(function (e) { erreurs.push(c.titre + " : " + e.message); });
+      });
+    });
+    return chaine.then(function () {
+      suivi.remove();
+      return api("GET", "ula/catalogue").then(function (c) { catalogue = c; return charger(); });
+    }).then(function () {
+      if (erreurs.length) return demander({ titre: "Pack incomplet", texte: erreurs.length + " cours n'ont pas pu être installés :\n- " + erreurs.join("\n- ") + "\n\nRelancer « Télécharger le pack » reprend seulement ceux-là.", seulementOk: true });
+      if (etat.profil) return rangerPack(p);
+    });
+  }
+
+  // Range les cours du pack dans un dossier du cursus (nom proposé : L1, L2…), sans
+  // déplacer ni dupliquer ceux qui y sont déjà
+  function rangerPack(p) {
+    return demander({
+      titre: "Ranger le pack " + p.titre + " dans mon cursus",
+      texte: "Les cours du pack (" + p.cours.length + ") sont ajoutés dans ce dossier ; ceux qui sont déjà dans ton cursus restent où ils sont.",
+      champs: [{ nom: "dossier", libelle: "Dossier", valeur: p.court || p.titre }],
+      ok: "Ranger"
+    }).then(function (r) {
+      if (!r) return;
+      return api("POST", "ula/cursus/ajouter-pack", { cours: p.cours, dossier: r.dossier }).then(function (x) {
+        return charger().then(function () {
+          return demander({ titre: "Pack rangé", texte: x.ajoutes.length + " cours ajoutés dans « " + r.dossier + " »" + (x.presents.length ? ", " + x.presents.length + " déjà dans ton cursus." : "."), seulementOk: true });
+        });
+      });
+    });
+  }
+
   function rendreCatalogue(zone) {
     zone.innerHTML = "";
+    rendrePacks(zone);
     var ul = el("ul", "ula-cartes");
     catalogue.cours.forEach(function (c) {
       var li = el("li", "ula-carte");

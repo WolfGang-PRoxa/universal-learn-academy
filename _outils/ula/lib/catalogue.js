@@ -103,7 +103,67 @@ async function lister(racine) {
     }
     return Object.assign({}, c, { etat });
   });
-  return { genere: cat.genere, source, cours };
+  const packs = (Array.isArray(cat.packs) ? cat.packs : packsDuCatalogue(cat.cours)).map((p) => {
+    const membres = cours.filter((c) => p.cours.includes(c.id));
+    const etats = membres.map((c) => c.etat);
+    const etat = etats.every((e) => e === "installe" || e === "source") ? "installe"
+      : etats.some((e) => e === "maj") ? "maj" : etats.some((e) => e !== "absent") ? "partiel" : "absent";
+    return Object.assign({}, p, { court: p.dossier || p.court || niveauCourt(p.niveau || p.titre), etat, taille: membres.reduce((t, c) => t + (c.taille || 0), 0), nombre: membres.length });
+  });
+  return { genere: cat.genere, source, cours, packs };
+}
+
+/** « Licence 1 informatique » -> « L1 » ; sinon le niveau tel quel. */
+function niveauCourt(niveau) {
+  const m = /^Licence (\d)/.exec(String(niveau || ""));
+  return m ? "L" + m[1] : String(niveau || "").trim();
+}
+
+/** Packs par niveau d'étude : tous les cours d'un même niveau (« Pack Licence 1 informatique »). */
+function packsDuCatalogue(cours) {
+  const parNiveau = new Map();
+  for (const c of cours) {
+    const n = String(c.niveau || "").trim();
+    if (!n) continue;
+    if (!parNiveau.has(n)) parNiveau.set(n, []);
+    parNiveau.get(n).push(c.id);
+  }
+  return [...parNiveau].filter(([, ids]) => ids.length > 1).map(([n, ids]) => ({
+    id: n.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
+    titre: "Pack " + n, niveau: n, court: niveauCourt(n), cours: ids.sort()
+  })).sort((a, b) => a.niveau.localeCompare(b.niveau, "fr"));
+}
+
+/** Vérifie un manifeste de pack (explore/packs/<id>.json) ; renvoie la liste des problèmes. */
+function verifierPack(p, idsConnus) {
+  const pb = [];
+  if (!p || p.format !== "ula-pack-1") pb.push("format ula-pack-1 attendu");
+  if (!p || !/^[a-z0-9][a-z0-9-]{0,80}$/.test(String(p.id || ""))) pb.push("id invalide");
+  if (!p || !p.titre) pb.push("titre manquant");
+  if (!p || !Array.isArray(p.cours) || !p.cours.length) pb.push("liste de cours vide");
+  else {
+    if (new Set(p.cours).size !== p.cours.length) pb.push("cours en double");
+    for (const id of p.cours) if (idsConnus && !idsConnus.has(id)) pb.push(`cours inconnu : ${id}`);
+  }
+  if (p && p.dossier && /[\\/:*?"<>|]/.test(p.dossier)) pb.push("nom de dossier proposé invalide");
+  return pb;
+}
+
+/** Installe (ou met à jour) tous les cours d'un pack ; un cours en échec n'arrête pas les autres
+    (relancer le pack reprend les seuls cours manquants). */
+async function installerPack(racine, id, journal = () => {}) {
+  if (estSource(racine)) throw new Error("Ce dossier est la source du catalogue (dépôt git) : ses cours se modifient dans explore/, pas par téléchargement.");
+  const { packs, cours } = await lister(racine);
+  const p = packs.find((x) => x.id === id);
+  if (!p) throw new Error(`Pack inconnu du catalogue : ${id}`);
+  const faits = [], erreurs = [];
+  const aFaire = cours.filter((x) => p.cours.includes(x.id) && (x.etat === "absent" || x.etat === "maj"));
+  for (const [i, c] of aFaire.entries()) {
+    journal(`${i + 1}/${aFaire.length} · ${c.titre}…`);
+    try { faits.push((await installer(racine, c.id, journal)).id); }
+    catch (e) { erreurs.push({ id: c.id, erreur: e.message }); }
+  }
+  return { pack: p.id, court: p.court, cours: p.cours, installes: faits, erreurs };
 }
 
 function verifierId(c) {
@@ -165,4 +225,4 @@ function supprimer(racine, id) {
   return { id };
 }
 
-module.exports = { DEPOT, TAG, VERSION_INSTALLEE, telecharger, lister, installer, supprimer, estSource };
+module.exports = { DEPOT, TAG, VERSION_INSTALLEE, telecharger, lister, installer, installerPack, supprimer, estSource, packsDuCatalogue, niveauCourt, verifierPack };

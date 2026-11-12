@@ -9,7 +9,7 @@ Des cours mis en forme en pages HTML, des quiz et des TD interactifs, avec un se
 | Windows 10 ou 11 (x64) | `Universal-Learn-Academy-Setup-<version>.exe` : installation pour l'utilisateur courant, sans droits administrateur. L'application n'est pas signée : SmartScreen demande « Informations complémentaires », puis « Exécuter quand même ». |
 | Linux (x64) | `Universal-Learn-Academy-<version>.AppImage` : le rendre exécutable (`chmod +x`), puis le lancer. |
 
-L'installeur ne contient que l'application et ses outils (une centaine de mégaoctets). Les cours se téléchargent ensuite à la demande, un par un, depuis l'accueil (« Catalogue en ligne ») : ils viennent de la release [`catalogue`](https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/catalogue) de ce dépôt, et leur empreinte est vérifiée avant l'installation.
+L'installeur ne contient que l'application et ses outils (environ 130 Mo). Les cours se téléchargent ensuite à la demande, un par un ou par pack de niveau (par exemple tout le pack « Licence 1 informatique » d'un coup), depuis l'accueil (« Catalogue en ligne ») : ils viennent de la release [`catalogue`](https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/catalogue) de ce dépôt, et leur empreinte est vérifiée avant l'installation.
 
 L'application se met à jour d'elle-même au démarrage (option dans ses paramètres). Ses paramètres permettent aussi de choisir son profil et le dossier des données, de régler la fenêtre au lancement, de créer des raccourcis et de connecter Claude.
 

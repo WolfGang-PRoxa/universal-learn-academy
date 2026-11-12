@@ -14,6 +14,8 @@
      POST cursus/ajouter { cours, dossier, nom } ajoute un cours du catalogue (lien)
      GET  catalogue                    catalogue distant (release « catalogue ») et état local
      POST catalogue/installer { id }   télécharge (ou met à jour) un cours
+     POST catalogue/installer-pack { id }  tous les cours d'un pack (reprend les manquants)
+     POST cursus/ajouter-pack { cours: [ids], dossier }  range un pack dans un dossier du cursus
      POST catalogue/supprimer { id }   supprime un cours téléchargé (le travail reste)
      POST proposer { chemin, infos }   archive d'un cours de l'espace + adresse de l'issue
      POST ouvrir { chemin }            ouvre un dossier de la racine dans l'explorateur
@@ -91,6 +93,10 @@ async function api(route, req, res, o) {
       else if (route === "cursus/deplacer") chemin = espace.deplacer(RACINE, p, b.chemin, b.vers || p);
       else if (route === "cursus/retirer") espace.retirer(RACINE, p, b.chemin);
       else if (route === "cursus/ajouter") chemin = espace.ajouterCours(RACINE, p, String(b.cours), b.dossier || p, b.nom || null);
+      else if (route === "cursus/ajouter-pack") {
+        const r = espace.ajouterPack(RACINE, p, (Array.isArray(b.cours) ? b.cours : []).map(String), b.dossier);
+        return ok(Object.assign(r, { arbre: espace.arbre(RACINE, p) }));
+      }
       else return false;
       return ok({ chemin, arbre: espace.arbre(RACINE, p) });
     }
@@ -108,6 +114,10 @@ async function api(route, req, res, o) {
       const r = await catalogue.installer(RACINE, id, (l) => suivi.journal.push(l)).catch((e) => { suivi.etat = "erreur"; suivi.erreur = e.message; throw e; });
       suivi.etat = "terminee";
       return ok(r);
+    }
+    if (route === "catalogue/installer-pack" && m === "POST") {
+      const b = await corps();
+      return ok(await catalogue.installerPack(RACINE, String(b.id)));
     }
     if (route === "catalogue/supprimer" && m === "POST") {
       const b = await corps();

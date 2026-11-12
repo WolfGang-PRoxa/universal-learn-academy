@@ -248,6 +248,31 @@ const zip = require('../../_outils/ula/lib/zip.js');
   }
 }
 
+/* -- Packs par niveau ----------------------------------------------------------------------- */
+{
+  const cat = require('../../_outils/ula/lib/catalogue.js');
+  const ids = new Set(execFileSync('git', ['ls-files', '--', 'explore/*/*/ula-cours.json'], { cwd: racine }).toString('utf8').trim().split('\n').filter(Boolean).map((f) => f.split('/')[2]));
+  const packs = fs.readdirSync(path.join(racine, 'explore', 'packs')).filter((n) => n.endsWith('.json'));
+  verifier(packs.length >= 3, 'Packs L1, L2, L3 absents de explore/packs.');
+  for (const n of packs) {
+    const p = JSON.parse(fs.readFileSync(path.join(racine, 'explore', 'packs', n), 'utf8'));
+    const pb = cat.verifierPack(p, ids);
+    verifier(!pb.length && n === p.id + '.json', `explore/packs/${n} invalide : ${pb.join(', ')}`);
+  }
+  verifier(cat.verifierPack({ format: 'ula-pack-1', id: 'x', titre: 'X', cours: ['inconnu', 'inconnu'] }, ids).length >= 2, 'Pack avec cours inconnu ou en double accepté.');
+  // Ranger un pack dans le cursus : dossier créé, cours déjà présents laissés à leur place
+  const r = path.join(temp, 'ula-packs');
+  const ecrire = (c, t) => { const f = path.join(r, ...c.split('/')); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, t); };
+  for (const id of ['a', 'b', 'c']) ecrire(`explore/informatique/${id}/ula-cours.json`, JSON.stringify({ format: 'ula-cours-1', id, titre: id.toUpperCase(), domaine: 'informatique' }));
+  ecrire('zoe/ula-profil.json', JSON.stringify({ format: 'ula-profil-1', nom: 'zoe' }));
+  espace.ajouterCours(r, 'zoe', 'b', 'zoe', 'Mon B');
+  const x = espace.ajouterPack(r, 'zoe', ['a', 'b', 'c'], 'L1');
+  verifier(x.ajoutes.join() === 'a,c' && x.presents.join() === 'b', `Pack rangé incorrectement : ${JSON.stringify(x)}`);
+  verifier(fs.existsSync(path.join(r, 'zoe', 'Mon B', 'ula-lien.json')) && fs.readdirSync(path.join(r, 'zoe', 'L1')).length === 2, 'Cours déjà au cursus déplacé ou dupliqué.');
+  const y = espace.ajouterPack(r, 'zoe', ['a', 'b', 'c'], 'L1');
+  verifier(!y.ajoutes.length, 'Pack rangé deux fois en double.');
+}
+
 /* -- Mise à jour de la copie locale des outils ---------------------------------------- */
 const donnees = require('../src/donnees.js');
 {
