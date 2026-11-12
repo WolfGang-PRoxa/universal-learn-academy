@@ -100,7 +100,21 @@
     installerHistorique(barre);
     installerQuiz(barre);
     installerAccueil(barre);
+    installerParametres(barre);
     barre.appendChild(bouton);
+  }
+
+  // Paramètres de l'application installée (studies/app), sur toutes les pages : elle
+  // se signale dans l'agent utilisateur (« StudiesApp/ ») et ouvre sa fenêtre de
+  // paramètres quand une page va vers /_app/parametres (_outils/app/fenetres.js).
+  // Ni dans un navigateur, ni avec lancer-app.bat, qui n'ont pas ces paramètres.
+  function installerParametres(barre) {
+    if (!/\bStudiesApp\//.test(navigator.userAgent)) return;
+    var a = creer("a", "bouton-icone bouton-parametres");
+    a.href = "/_app/parametres";
+    a.title = "Paramètres de l'application (Ctrl+,)";
+    a.setAttribute("aria-label", "Paramètres de l'application");
+    barre.appendChild(a);
   }
 
   // Précédent et suivant, à gauche du fil : l'application de bureau (_outils/app)

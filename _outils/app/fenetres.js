@@ -60,15 +60,26 @@ function versNavigateur(url) {
   if (/^(https?|mailto):/i.test(url)) shell.openExternal(url);
 }
 
+// Bouton « Paramètres » de la barre des pages (charte/assets/cours.js), dans
+// l'application installée seulement : il ouvre la fenêtre des paramètres de l'hôte
+function parametres(url) {
+  const hote = global.studiesHote;
+  if (!hote || !interne(url) || new URL(url).pathname !== "/_app/parametres") return false;
+  hote.ouvrirParametres();
+  return true;
+}
+
 function brancherLiens(f) {
   const page = f.webContents;
   page.on("will-navigate", (e, url) => {
+    if (parametres(url)) return e.preventDefault();
     if (interne(url) && !estPdf(url)) return;
     e.preventDefault();
     if (interne(url)) ouvrir(url);
     else versNavigateur(url);
   });
   page.setWindowOpenHandler(({ url }) => {
+    if (parametres(url)) return { action: "deny" };
     if (interne(url)) ouvrir(url);
     else versNavigateur(url);
     return { action: "deny" };

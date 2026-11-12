@@ -18,7 +18,7 @@
    5. il recherche une mise à jour si le paramètre est activé.
    ========================================================================== */
 
-const { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, nativeTheme, session, shell } = require("electron");
 const fs = require("fs");
 const path = require("path");
 
@@ -251,6 +251,10 @@ async function demarrer() {
 
   installerPglite();
   claude.appliquer();
+
+  // Les pages reconnaissent l'application installée à son agent utilisateur et ajoutent
+  // alors le bouton « Paramètres » à leur barre (_outils/charte/assets/cours.js)
+  session.defaultSession.setUserAgent(session.defaultSession.getUserAgent() + " StudiesApp/" + app.getVersion());
 
   global.studiesHote = {
     version: app.getVersion(),
