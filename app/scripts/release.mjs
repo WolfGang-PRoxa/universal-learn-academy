@@ -91,7 +91,7 @@ const notes = [
   `- **Windows** : \`Universal-Learn-Academy-Setup-${version}.exe\`. Installation pour l’utilisateur courant, sans droits administrateur. L’application n’est pas signée : SmartScreen demande « Informations complémentaires », puis « Exécuter quand même ».`,
   `- **Linux** : \`Universal-Learn-Academy-${version}.AppImage\`. Le rendre exécutable (\`chmod +x\`), puis le lancer.`,
   '',
-  'Les versions suivantes s’installent automatiquement au démarrage (désactivable dans les paramètres). Les fichiers `.blockmap` et `latest*.yml` servent à ces mises à jour.',
+  'Les versions suivantes se téléchargent d’elles-mêmes (au démarrage, puis toutes les 6 heures, même fenêtre fermée : l’application reste dans la zone de notification) et s’installent en quittant l’application ; désactivable dans les paramètres. Les fichiers `.blockmap` et `latest*.yml` servent à ces mises à jour.',
 ].join('\n');
 
 if (reparation) {

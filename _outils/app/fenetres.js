@@ -87,6 +87,7 @@ function brancherLiens(f) {
   });
   const noter = (e, url) => { if (interne(url) && !estPdf(url)) f.pageCourante = url; };
   page.on("did-navigate", noter);
+  page.on("did-start-navigation", (d) => { if (d && d.isMainFrame && !d.isSameDocument) fermerRecherche(f); });
   page.on("did-navigate-in-page", noter);
 }
 
@@ -159,6 +160,8 @@ function placerRecherche(f) {
   });
 }
 
+// Fermée, la vue est retirée de la fenêtre (et non plus seulement masquée) : rien ne
+// reste posé sur la page pour intercepter la molette, la souris ou le focus.
 function rechercher(f) {
   if (!f.recherche) {
     f.recherche = new WebContentsView({
@@ -166,13 +169,25 @@ function rechercher(f) {
     });
     f.recherche.setBackgroundColor("#00000000");
     f.recherche.webContents.loadFile(path.join(__dirname, "recherche.html"));
-    f.contentView.addChildView(f.recherche);
-    placerRecherche(f);
     f.once("closed", () => { if (f.recherche) f.recherche.webContents.close(); });
   }
+  if (!f.rechercheAffichee) {
+    f.contentView.addChildView(f.recherche);
+    f.rechercheAffichee = true;
+  }
+  placerRecherche(f);
   f.recherche.setVisible(true);
   f.recherche.webContents.focus();
   f.recherche.webContents.send("recherche:ouvrir");
+}
+
+function fermerRecherche(f) {
+  if (!f.recherche || !f.rechercheAffichee) return;
+  f.webContents.stopFindInPage("keepSelection");
+  f.recherche.setVisible(false);
+  f.contentView.removeChildView(f.recherche);
+  f.rechercheAffichee = false;
+  f.webContents.focus();
 }
 
 function fenetreDeRecherche(emetteur) {
@@ -188,10 +203,7 @@ ipcMain.on("recherche:chercher", (e, texte, avant) => {
 
 ipcMain.on("recherche:fermer", (e) => {
   const f = fenetreDeRecherche(e.sender);
-  if (!f) return;
-  f.webContents.stopFindInPage("keepSelection");
-  f.recherche.setVisible(false);
-  f.webContents.focus();
+  if (f) fermerRecherche(f);
 });
 
 /* Impression -------------------------------------------------------------------- */
@@ -239,15 +251,35 @@ function creer(bornes) {
   f.on("close", (e) => {
     if (autres().length) return;
     enregistrerEtat(f);
+    // Application installée (2.4.0) : la croix cache la fenêtre, l'application reste
+    // en arrière-plan avec son icône dans la zone de notification ; le serveur continue
+    const hote = global.studiesHote;
+    if (hote && typeof hote.garderEnArrierePlan === "function" && hote.garderEnArrierePlan()) {
+      e.preventDefault();
+      fermerRecherche(f);
+      if (f.isFullScreen()) f.setFullScreen(false);
+      f.hide();
+      if (typeof hote.fenetreCachee === "function") hote.fenetreCachee();
+      return;
+    }
     if (f.fermetureConfirmee) return;
     e.preventDefault();
-    serveur.tachesMenacees().then((n) => {
-      const quitter = !n || dialog.showMessageBoxSync(f, {
-        type: "warning", title: "Universal Learn Academy", message: "Une génération de quiz est en cours.",
-        detail: "Fermer l’application l’arrête, et le quiz ne sera pas créé.",
-        buttons: ["Fermer quand même", "Continuer"], defaultId: 1, cancelId: 1
-      }) === 0;
-      if (!quitter) return;
+    serveur.tachesMenacees().then(async (n) => {
+      let quitter = !n;
+      if (!quitter) {
+        if (!f.isVisible()) f.show();
+        const r = await dialog.showMessageBox(f, {
+          type: "warning", title: "Universal Learn Academy", message: "Une génération de quiz est en cours.",
+          detail: "Fermer l’application l’arrête, et le quiz ne sera pas créé.",
+          buttons: ["Fermer quand même", "Continuer"], defaultId: 1, cancelId: 1, noLink: true
+        });
+        quitter = r.response === 0;
+      }
+      if (!quitter) {
+        // « Continuer » : Quitter est abandonné, la croix doit de nouveau cacher la fenêtre
+        if (hote && typeof hote.quitterAnnule === "function") hote.quitterAnnule();
+        return;
+      }
       f.fermetureConfirmee = true;
       f.close();
     });

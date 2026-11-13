@@ -411,10 +411,41 @@
     return tete;
   }
 
+  // Grilles de blocs sans trous : la grille extérieure a des colonnes de la largeur
+  // d'un bouton de cours ; chaque bloc s'étend sur autant de colonnes qu'il a de cours
+  // (toute la largeur au plus), et ses boutons se rangent sur ce même nombre de
+  // colonnes. Un gros dossier occupe une bande entière, les petits se placent côte à
+  // côte ; le dernier bloc d'une ligne s'élargit jusqu'au bord : ni trou, ni bloc
+  // court à côté d'un bloc haut, et l'ordre est gardé.
+  var observateur = window.ResizeObserver ? new ResizeObserver(function (entrees) { entrees.forEach(function (e) { repartir(e.target); }); }) : null;
+  function repartir(grille) {
+    var colonnes = getComputedStyle(grille).gridTemplateColumns.split(" ").filter(Boolean).length || 1;
+    var ligne = 0, dernier = null;
+    function etendre(b, place) { if (b && place > 0) b.style.gridColumn = "span " + (parseInt(b.dataset.span, 10) + place); }
+    Array.prototype.forEach.call(grille.children, function (b) {
+      var n = Math.max(1, Math.min(colonnes, parseInt(b.dataset.cours, 10) || 1));
+      // Le bloc ne tient plus sur la ligne : le précédent s'élargit jusqu'au bord,
+      // et celui-ci ouvre la ligne suivante (l'ordre du cursus est gardé)
+      if (ligne + n > colonnes) { etendre(dernier, colonnes - ligne); ligne = 0; }
+      b.dataset.span = n;
+      b.style.gridColumn = "span " + n;
+      b.style.setProperty("--colonnes", n);
+      ligne += n; dernier = b;
+      if (ligne === colonnes) { ligne = 0; dernier = null; }
+    });
+    etendre(dernier, ligne ? colonnes - ligne : 0);
+  }
+  function ajusterBlocs(grille) {
+    requestAnimationFrame(function () { repartir(grille); });
+    if (observateur) observateur.observe(grille);
+    else window.addEventListener("resize", function () { repartir(grille); });
+  }
+
   // Bloc d'un dossier du cursus : ses cours en grille de boutons, puis ses sous-dossiers
   function blocDossier(n, sous) {
     var bloc = el(sous ? "div" : "li", sous ? "ula-sous-bloc" : "ula-bloc");
     var k = nombreCours(n);
+    if (!sous) bloc.dataset.cours = k;
     bloc.appendChild(teteBloc(sous ? "h4" : "h3", n.nom, k + " cours", menuActions(actionsNoeud(n), "Actions sur le dossier « " + n.nom + " »")));
     var enfants = n.enfants || [];
     var cours = enfants.filter(function (e) { return e.type !== "dossier"; });
@@ -435,7 +466,7 @@
     if (!a || !a.enfants.length) {
       s.appendChild(el("p", null, "Ton cursus est vide. Crée des dossiers (L1, L2, Prépa, Perso…) et ajoute-y des cours du catalogue : chaque cours y est un lien, sa progression est rangée à côté."));
     } else {
-      var blocs = el("ul", "ula-blocs");
+      var blocs = el("ul", "ula-blocs ula-adaptatif");
       // Les cours rangés à la racine de l'espace forment leur propre bloc, en tête
       var aLaRacine = a.enfants.filter(function (e) { return e.type !== "dossier"; });
       if (aLaRacine.length) {
@@ -444,10 +475,23 @@
         var ul = el("ul", "ula-boutons");
         aLaRacine.forEach(function (e) { ul.appendChild(itemCursus(e)); });
         r.appendChild(ul);
+        r.dataset.cours = aLaRacine.length;
         blocs.appendChild(r);
       }
-      a.enfants.filter(function (e) { return e.type === "dossier"; }).forEach(function (d) { blocs.appendChild(blocDossier(d, false)); });
-      s.appendChild(blocs);
+      // Un dossier sans aucun cours mais qui contient des fichiers (papiers, logiciel…)
+      // n'est pas une partie du cursus : il ne prend pas de bloc, juste un bouton discret
+      var autres = [];
+      a.enfants.filter(function (e) { return e.type === "dossier"; }).forEach(function (d) {
+        if (!nombreCours(d) && (d.fichiers || d.sousDossiers || (d.enfants || []).length)) autres.push(d);
+        else blocs.appendChild(blocDossier(d, false));
+      });
+      if (blocs.childNodes.length) { s.appendChild(blocs); ajusterBlocs(blocs); }
+      if (autres.length) {
+        var ligne = el("div", "ula-actions ula-autres");
+        ligne.appendChild(el("span", "ula-cours-info", "Autres dossiers de ton espace :"));
+        autres.forEach(function (d) { ligne.appendChild(bouton(d.nom, "discret", function () { return api("POST", "ula/ouvrir", { chemin: d.chemin }); })); });
+        s.appendChild(ligne);
+      }
     }
     var act = el("div", "ula-actions");
     var manquants = [];
@@ -603,9 +647,10 @@
     // télécharge au clic
     var parId = {};
     catalogue.cours.forEach(function (c) { parId[c.id] = c; });
-    var ul = el("ul", "ula-blocs ula-packs");
+    var ul = el("ul", "ula-blocs ula-packs ula-adaptatif");
     catalogue.packs.forEach(function (p) {
       var li = el("li", "ula-bloc");
+      li.dataset.cours = p.cours.length;
       var tete = el("div", "ula-bloc-tete");
       var titres = el("div", "ula-bloc-titres");
       if (LIBELLES_PACK[p.etat]) titres.appendChild(el("span", "ula-etat", LIBELLES_PACK[p.etat]));
@@ -643,6 +688,7 @@
       ul.appendChild(li);
     });
     zone.appendChild(ul);
+    ajusterBlocs(ul);
     zone.appendChild(el("h3", null, "Cours"));
   }
 

@@ -64,18 +64,46 @@ code { font-family: "Cascadia Mono", Consolas, monospace; font-size: 0.9em; over
 .discret { color: var(--texte-2); }
 [hidden] { display: none !important; }
 
-.entete { display: flex; gap: 14px; align-items: center; padding: 22px 28px 10px; max-width: 860px; margin: 0 auto; }
+/* Mise en page (2.4.0) : une colonne et la navigation en haut sous 900 px ; au-delà,
+   navigation sur le côté et cartes en 2 ou 3 colonnes (rangées par parametres.js) */
+.entete { display: flex; gap: 14px; align-items: center; padding: 22px 24px 10px; }
 .sommaire {
   position: sticky; top: 0; z-index: 2;
   display: flex; flex-wrap: wrap; gap: 4px;
-  padding: 8px 24px; margin: 0 auto 8px; max-width: 860px;
+  padding: 8px 24px; margin: 0 0 8px;
   background: color-mix(in srgb, var(--fond) 92%, transparent);
   backdrop-filter: blur(6px);
 }
 .sommaire a { padding: 5px 12px; border-radius: 999px; color: var(--texte-2); text-decoration: none; font-size: 0.9rem; }
 .sommaire a:hover { background: var(--surface-2); color: var(--texte); }
+.sommaire a.actif { background: var(--accent-doux); color: var(--accent-fort); font-weight: 600; }
 
-main { display: grid; gap: 16px; max-width: 860px; margin: 0 auto; padding: 0 24px 48px; }
+main {
+  display: grid; gap: 16px; align-items: stretch;
+  grid-template-columns: repeat(var(--colonnes, 1), minmax(0, 1fr));
+  padding: 0 24px 48px;
+}
+.carte { align-content: start; min-width: 0; }
+
+@media (min-width: 900px) {
+  html { scroll-padding-top: 20px; }
+  body {
+    display: grid;
+    grid-template-columns: 210px minmax(0, 1fr);
+    grid-template-areas: "entete entete" "sommaire cartes";
+    align-items: start;
+  }
+  .entete { grid-area: entete; padding: 22px 28px 14px; }
+  .sommaire {
+    grid-area: sommaire;
+    flex-direction: column; flex-wrap: nowrap; gap: 2px;
+    margin: 0; padding: 4px 10px 24px 18px;
+    max-height: 100vh; overflow-y: auto;
+    background: none; backdrop-filter: none;
+  }
+  .sommaire a { border-radius: 8px; padding: 7px 12px; font-size: 0.93rem; }
+  main { grid-area: cartes; padding: 4px 28px 48px 8px; }
+}
 
 .carte {
   display: grid; gap: 14px;
@@ -193,3 +221,12 @@ dialog .ligne { justify-content: flex-end; margin-top: 16px; }
 
 /* Échelle de l'interface : liste de la largeur de son contenu */
 #affichage select.saisie { width: auto; min-width: 12rem; justify-self: start; }
+
+/* Cartes étroites (2 ou 3 colonnes) : les lignes des raccourcis passent leurs
+   boutons dessous, et les longs chemins se coupent */
+.carte { container-type: inline-size; }
+.raccourci .texte { overflow-wrap: anywhere; }
+@container (max-width: 620px) {
+  .raccourci { grid-template-columns: auto minmax(0, 1fr); }
+  .raccourci > .ligne { grid-column: 2; }
+}

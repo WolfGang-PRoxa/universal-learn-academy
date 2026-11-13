@@ -11,7 +11,7 @@
    utilisateurs, la mise à jour ne fonctionnera qu'une fois le dépôt public. */
 
 const { app } = require("electron");
-const { spawnSync } = require("child_process");
+const { execFile } = require("child_process");
 const { autoUpdater } = require("electron-updater");
 const { DEPOT } = require("./depot");
 
@@ -48,19 +48,36 @@ function configurer() {
   autoUpdater.on("error", (e) => emettre({ etat: "erreur", message: messageCourt(e) }));
 }
 
-/** Jeton de GitHub CLI connectée sur ce poste, ou null. */
+/** Jeton de GitHub CLI connectée sur ce poste, ou null. Sans bloquer le processus
+    principal : il achemine aussi la molette et le clavier vers les fenêtres. */
 function jetonGh() {
-  try {
-    const r = spawnSync("gh", ["auth", "token", "--hostname", "github.com"], { encoding: "utf8", timeout: 10000, windowsHide: true });
-    const jeton = (r.stdout || "").trim();
-    return r.status === 0 && /^[\w-]{20,}$/.test(jeton) ? jeton : null;
-  } catch (e) { return null; }
+  return new Promise((resolve) => {
+    try {
+      execFile("gh", ["auth", "token", "--hostname", "github.com"], { encoding: "utf8", timeout: 10000, windowsHide: true }, (err, stdout) => {
+        const jeton = String(stdout || "").trim();
+        resolve(!err && /^[\w-]{20,}$/.test(jeton) ? jeton : null);
+      });
+    } catch (e) { resolve(null); }
+  });
 }
 
 function init(rappel) { envoyer = rappel; }
 function statut() { return dernier; }
 
-async function verifier() {
+let verificationEnCours = null;
+
+// Une seule recherche à la fois (démarrage, recherche périodique, paramètres, icône)
+function verifier() {
+  if (!verificationEnCours) verificationEnCours = verifierUneFois().finally(() => { verificationEnCours = null; });
+  return verificationEnCours;
+}
+
+async function verifierUneFois() {
+  if (process.env.ULA_MAJ_ESSAI === "1") {
+    // Essais de la recherche périodique hors application installée
+    emettre({ etat: "a-jour", essai: true });
+    return dernier;
+  }
   if (!app.isPackaged) {
     emettre({ etat: "indisponible", message: "Les mises à jour ne concernent que la version installée de l'application." });
     return dernier;
@@ -74,7 +91,7 @@ async function verifier() {
     await autoUpdater.checkForUpdates();
   } catch (e) {
     // Dépôt privé : nouvel essai avec le jeton de GitHub CLI, s'il y en a un
-    const jeton = !viaGh && /\b404\b/.test(String(e && e.message)) ? jetonGh() : null;
+    const jeton = !viaGh && /\b404\b/.test(String(e && e.message)) ? await jetonGh() : null;
     if (!jeton) { emettre({ etat: "erreur", message: messageCourt(e) }); return dernier; }
     viaGh = true;
     autoUpdater.setFeedURL({ provider: "github", owner: DEPOT.proprietaire, repo: DEPOT.nom, private: true, token: jeton });
@@ -84,10 +101,68 @@ async function verifier() {
   return dernier;
 }
 
+/* -- Recherche périodique ------------------------------------------------------
+   Comme Modding Manager : fermer la fenêtre laisse l'application en arrière-plan,
+   elle ne se relancerait donc plus et ne verrait jamais de nouvelle version. Toutes
+   les 6 heures (examen tous les quarts d'heure), au réveil du PC et peu après que la
+   fenêtre se cache, elle relit les releases si le réglage « mises à jour
+   automatiques » est actif. La version trouvée se télécharge en arrière-plan et
+   s'installe en quittant l'application (Quitter dans le menu de l'icône) ou par
+   « Redémarrer et installer » ; une notification le dit, une seule fois par version.
+   ULA_MAJ_INTERVALLE_MS (essais) raccourcit l'intervalle et l'examen. */
+
+const INTERVALLE_MS = Number(process.env.ULA_MAJ_INTERVALLE_MS) || 6 * 60 * 60000;
+const EXAMEN_MS = Math.min(15 * 60000, Math.max(1000, Math.round(INTERVALLE_MS / 4)));
+const BIENTOT_MS = Math.min(60000, EXAMEN_MS);
+
+let periodique = null;
+
+/** Ce qu'un examen décide : rien, ou relire les releases. */
+function etapeSuivante({ derniere, maintenant, pret }) {
+  if (pret) return "attendre";   // déjà téléchargée : elle s'installe en quittant
+  return maintenant - derniere >= INTERVALLE_MS ? "verifier" : "attendre";
+}
+
+function demarrerPeriodique({ actif, journal = () => {} }) {
+  if (periodique) return periodique;
+  // Le lancement vient de vérifier (ou va le faire, quelques secondes après)
+  let derniere = Date.now();
+  let encours = false;
+  let minuterie = null;
+  async function examiner() {
+    if (encours) return;
+    encours = true;
+    try {
+      if (!actif()) return;
+      if (etapeSuivante({ derniere, maintenant: Date.now(), pret: dernier.etat === "pret" }) !== "verifier") return;
+      derniere = Date.now();
+      journal("recherche périodique de mise à jour");
+      await verifier();
+    } catch (e) { journal("recherche périodique impossible : " + messageCourt(e)); }
+    finally { encours = false; }
+  }
+  const t = setInterval(() => { examiner(); }, EXAMEN_MS);
+  if (t.unref) t.unref();
+  // PC réveillé : il a pu dormir toute la nuit, la relecture est due
+  try {
+    require("electron").powerMonitor.on("resume", () => { derniere = 0; periodique.bientot(); });
+  } catch (e) { /* pas de powerMonitor : l'examen régulier suffit */ }
+  periodique = {
+    bientot() {
+      if (minuterie) clearTimeout(minuterie);
+      minuterie = setTimeout(() => { minuterie = null; examiner(); }, BIENTOT_MS);
+    },
+    intervalle: INTERVALLE_MS
+  };
+  return periodique;
+}
+
+function bientot() { if (periodique) periodique.bientot(); }
+
 function installerMaintenant() {
   if (dernier.etat !== "pret") return false;
   setImmediate(() => autoUpdater.quitAndInstall(false, true));
   return true;
 }
 
-module.exports = { init, statut, verifier, installerMaintenant };
+module.exports = { init, statut, verifier, installerMaintenant, demarrerPeriodique, bientot, etapeSuivante, INTERVALLE_MS };

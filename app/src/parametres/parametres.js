@@ -25,12 +25,20 @@ export function decrireMaj(s) {
     case 'recherche': return ['', 'Recherche d’une mise à jour…'];
     case 'disponible': return ['', `Version ${s.version} disponible : téléchargement en cours…`];
     case 'telechargement': return ['', `Téléchargement de la mise à jour : ${s.pourcent ?? 0} %`];
-    case 'pret': return ['ok', `Version ${s.version} prête : elle s’installera à la fermeture de Universal Learn Academy.`];
+    case 'pret': return ['ok', `Version ${s.version} prête : elle s’installera quand tu quitteras Universal Learn Academy (icône de la zone de notification › Quitter), ou tout de suite avec « Redémarrer et installer ».`];
     case 'a-jour': return ['ok', `Universal Learn Academy est à jour${s.viaGh ? ' (dépôt privé, lu avec GitHub CLI)' : ''}.`];
     case 'indisponible': return ['', s.message];
     case 'erreur': return ['erreur', `Échec de la recherche : ${s.message}`];
     default: return ['', 'Aucune recherche depuis le lancement.'];
   }
+}
+
+// « 6 heures », « 20 minutes »
+function duree(ms) {
+  const heures = ms / 3600000;
+  if (heures >= 1) return `${Math.round(heures)} heure${Math.round(heures) > 1 ? 's' : ''}`;
+  const minutes = Math.max(1, Math.round(ms / 60000));
+  return `${minutes} minute${minutes > 1 ? 's' : ''}`;
 }
 
 function carteMisesAJour() {
@@ -51,8 +59,8 @@ function carteMisesAJour() {
 
   return carte('mises-a-jour', 'maj', 'Mises à jour', `Version installée : ${info.version}`,
     h('label', { class: 'interrupteur' }, auto,
-      h('span', {}, h('strong', {}, 'Rechercher et installer les mises à jour au démarrage'),
-        h('br'), h('span', { class: 'aide' }, 'La nouvelle version se télécharge en arrière-plan et s’installe à la fermeture de Universal Learn Academy.'))),
+      h('span', {}, h('strong', {}, 'Rechercher et installer les mises à jour automatiquement'),
+        h('br'), h('span', { class: 'aide' }, `Au démarrage, puis toutes les ${duree(info.intervalleMaj || 21600000)} et au réveil du PC, même fenêtre fermée. La nouvelle version se télécharge en arrière-plan, une notification le dit, et elle s’installe quand tu quittes Universal Learn Academy (ou tout de suite avec « Redémarrer et installer »).`))),
     h('div', { class: 'ligne' },
       bouton('Rechercher maintenant', { onClick: () => api.maj.verifier() }),
       installer,
@@ -119,6 +127,21 @@ function carteFenetre() {
     perso);
 }
 
+/* -- Arrière-plan (fermeture de la fenêtre) -------------------------------------- */
+
+function carteArrierePlan() {
+  const actif = !reglages.arrierePlan || reglages.arrierePlan.fermeture !== false;
+  const caseFermeture = h('input', { type: 'checkbox', checked: actif, disabled: !info.zoneNotification, onChange: async (e) => {
+    await enregistrer({ arrierePlan: { fermeture: e.target.checked } });
+    note(e.target.checked ? 'La croix gardera Universal Learn Academy en arrière-plan' : 'La croix quittera Universal Learn Academy');
+  } });
+  return carte('arriere-plan', 'arriere', 'Arrière-plan', 'Ce que fait la croix de la fenêtre.',
+    h('label', { class: 'interrupteur' }, caseFermeture,
+      h('span', {}, h('strong', {}, 'Garder Universal Learn Academy en arrière-plan quand je ferme la fenêtre'),
+        h('br'), h('span', { class: 'aide' }, 'La fenêtre se cache et se rouvre aussitôt, à la même page, par l’icône de la zone de notification (en bas à droite de l’écran) ou en relançant l’application. Le serveur local continue : une génération de quiz va à son terme. Pour quitter : clic droit sur l’icône, puis Quitter (ou Ctrl+Q).'))),
+    info.zoneNotification ? null : etat('alerte', 'Ce bureau n’a pas de zone de notification : la croix ferme l’application.'));
+}
+
 /* -- Échelle de l'interface ------------------------------------------------------ */
 
 function carteAffichage() {
@@ -131,7 +154,7 @@ function carteAffichage() {
     note(v ? `Échelle de l’interface : ${v} %` : 'Échelle automatique (100 %)');
   } }, ...options);
   choix.value = String(actuelle);
-  return carte('affichage', 'ecran', 'Échelle de l’interface', 'Taille des textes, des boutons et des fiches dans toutes les fenêtres de cours.',
+  return carte('affichage', 'echelle', 'Échelle de l’interface', 'Taille des textes, des boutons et des fiches dans toutes les fenêtres, paramètres compris.',
     h('label', { class: 'champ' }, h('span', {}, 'Échelle'), choix),
     h('p', { class: 'aide' }, 'En automatique, les pages s’adaptent seules à la largeur de la fenêtre : les accueils occupent toute la largeur et tout grandit sur un grand écran. Un pourcentage agrandit ou réduit tout en plus, tout de suite et à chaque lancement. Ctrl + et Ctrl − (ou Ctrl et la molette) ajustent en plus, jusqu’à la fermeture ; Ctrl 0 revient à l’échelle choisie ici.'));
 }
@@ -491,8 +514,10 @@ function carteAPropos() {
   return carte('a-propos', 'info', 'À propos', null,
     h('p', {}, `Universal Learn Academy ${info.version}, Electron ${info.electron}, ${info.installee ? 'version installée' : 'version de développement'}.`),
     h('p', { class: 'aide' }, 'Paramètres : ', h('code', {}, info.donnees)),
+    info.journaux ? h('p', { class: 'aide' }, 'Journaux (dont gels.log, les blocages de l’application) : ', h('code', {}, info.journaux)) : null,
     h('div', { class: 'ligne' },
       bouton('Ouvrir le dossier des paramètres', { genre: 'leger', onClick: () => api.ouvrirDossier('parametres') }),
+      info.journaux ? bouton('Ouvrir le dossier des journaux', { genre: 'leger', onClick: () => api.ouvrirDossier('journaux') }) : null,
       bouton('Redémarrer Universal Learn Academy', { genre: 'leger', onClick: () => api.redemarrer() })));
 }
 
@@ -501,17 +526,91 @@ function carteAPropos() {
 let proposition = null;
 function proposerRedemarrage() {
   if (proposition) return;
-  proposition = h('div', { class: 'carte' },
+  proposition = h('div', { class: 'carte large' },
     etat('alerte', 'Ce changement s’applique au prochain démarrage de Universal Learn Academy.'),
     h('div', { class: 'ligne' }, bouton('Redémarrer maintenant', { genre: 'principal', onClick: () => api.redemarrer() }), bouton('Plus tard', { genre: 'leger', onClick: () => { proposition.remove(); proposition = null; } })));
   document.getElementById('cartes').prepend(proposition);
+  ranger();
   window.scrollTo({ top: 0 });
 }
 
 /* -- Page ------------------------------------------------------------------------------- */
 
-document.getElementById('cartes').append(carteMisesAJour(), carteAffichage(), carteFenetre(), carteRaccourcis(), carteClaude(), carteModeles(), carteProfils(), carteDonnees(), carteAPropos());
+const cartes = document.getElementById('cartes');
+cartes.append(carteMisesAJour(), carteAffichage(), carteArrierePlan(), carteFenetre(), carteRaccourcis(), carteClaude(), carteModeles(), carteProfils(), carteDonnees(), carteAPropos());
+// Cartes qui gardent toute la largeur (cadre des écrans, modèles par usage)
+for (const id of ['fenetre', 'claude-modeles']) document.getElementById(id)?.classList.add('large');
 
-const aller = (section) => { const el = section && document.getElementById(section); if (el) el.scrollIntoView(); };
+/* Rangement en colonnes, sans trous (même logique que les blocs de l'accueil) :
+   1 colonne sous 900 px de fenêtre, puis autant de colonnes d'au moins 420 px que
+   la largeur en permet (3 au plus). L'ordre est gardé ; une carte large prend toute
+   la ligne, et la dernière petite carte d'une ligne incomplète s'élargit jusqu'au
+   bord. Toutes les cartes d'une ligne ont la même hauteur. */
+const LARGEUR_MIN_CARTE = 420;
+function colonnes() {
+  if (window.innerWidth < 900) return 1;
+  const ecart = parseFloat(getComputedStyle(cartes).columnGap) || 16;
+  return Math.max(1, Math.min(3, Math.floor((cartes.clientWidth + ecart) / (LARGEUR_MIN_CARTE + ecart))));
+}
+export function plan(larges, n) {
+  // larges : [bool…] dans l'ordre ; renvoie la largeur (en colonnes) de chaque carte
+  const tailles = larges.map((l) => (l ? n : 1));
+  let pris = 0;
+  const finirLigne = (fin) => {
+    if (pris > 0 && pris < n) tailles[fin] += n - pris;
+    pris = 0;
+  };
+  larges.forEach((large, i) => {
+    if (large) { finirLigne(i - 1); return; }
+    if (pris === n) pris = 0;
+    pris += 1;
+    if (i === larges.length - 1 || larges[i + 1]) finirLigne(i);
+  });
+  return tailles;
+}
+let dernierPlan = '';
+function ranger() {
+  const liste = [...cartes.children].filter((c) => c.classList.contains('carte'));
+  const n = colonnes();
+  const tailles = plan(liste.map((c) => c.classList.contains('large')), n);
+  const cle = n + ':' + tailles.join(',');
+  if (cle === dernierPlan) return;
+  dernierPlan = cle;
+  cartes.style.setProperty('--colonnes', String(n));
+  liste.forEach((c, i) => { c.style.gridColumn = `span ${tailles[i]}`; });
+}
+ranger();
+new ResizeObserver(() => ranger()).observe(cartes);
+
+/* Navigation : sur le côté dès 900 px, section courante surlignée */
+const liens = [...document.querySelectorAll('.sommaire a')];
+function sectionCourante() {
+  const seuil = 90;
+  // La carte passée sous le haut de la fenêtre la plus basse ; sur une même ligne
+  // de cartes, la première
+  let courant = liens[0], haut = -Infinity;
+  for (const a of liens) {
+    const el = document.getElementById(a.getAttribute('href').slice(1));
+    const top = el ? el.getBoundingClientRect().top : Infinity;
+    if (top <= seuil && top > haut + 1) { courant = a; haut = top; }
+  }
+  // En bas de page : la dernière section
+  if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) courant = liens[liens.length - 1];
+  for (const a of liens) {
+    const actif = a === courant;
+    a.classList.toggle('actif', actif);
+    if (actif) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current');
+  }
+}
+let attenteSection = false;
+window.addEventListener('scroll', () => {
+  if (attenteSection) return;
+  attenteSection = true;
+  requestAnimationFrame(() => { attenteSection = false; sectionCourante(); });
+}, { passive: true });
+window.addEventListener('resize', sectionCourante);
+
+const aller = (section) => { const el = section && document.getElementById(section); if (el) el.scrollIntoView(); sectionCourante(); };
 aller(location.hash.slice(1));
 api.surSection(aller);
+sectionCourante();

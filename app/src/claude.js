@@ -21,7 +21,7 @@
    _outils/quiz/serveur/lib/claude.js) : il doit être installé. */
 
 const { safeStorage, shell } = require("electron");
-const { spawn, spawnSync } = require("child_process");
+const { spawn, execFile } = require("child_process");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -62,24 +62,47 @@ function candidats(racine) {
   return [...new Set(liste)];
 }
 
+// Aucun appel bloquant ici : ces fonctions tournent dans le processus principal, qui
+// achemine aussi la molette et le clavier vers les fenêtres ; un spawnSync de quelques
+// secondes y gelait le défilement de toutes les pages (corrigé en 2.4.0).
+function executer(fichier, args, options = {}) {
+  return new Promise((resolve) => {
+    execFile(fichier, args, Object.assign({ encoding: "utf8", windowsHide: true, timeout: 20000 }, options), (err, stdout, stderr) => {
+      resolve({ status: err ? (typeof err.code === "number" ? err.code : 1) : 0, stdout: stdout || "", stderr: stderr || "" });
+    });
+  });
+}
+
+async function existe(f) {
+  try { await fs.promises.access(f); return true; } catch (e) { return false; }
+}
+
+// Dernière recherche, gardée une minute pour connecter et déconnecter ; l'état
+// affiché dans les paramètres refait toujours la recherche
+const CACHE_MS = 60000;
+let cache = null;
+
 /** { executable, version } de la version la plus récente trouvée, ou null. */
-function trouver(racine) {
+async function trouver(racine, { forcer = false } = {}) {
+  if (!forcer && cache && cache.racine === racine && Date.now() - cache.a < CACHE_MS) return cache.code;
+  const presents = [];
+  for (const c of candidats(racine)) if (c && await existe(c)) presents.push(c);
+  const reponses = await Promise.all(presents.map((c) => executer(c, ["--version"]).then((r) => ({ c, r }))));
   let meilleur = null;
-  for (const c of candidats(racine)) {
-    if (!c || !fs.existsSync(c)) continue;
-    const r = spawnSync(c, ["--version"], { encoding: "utf8", timeout: 20000, windowsHide: true });
+  for (const { c, r } of reponses) {
     if (r.status !== 0 || !/Claude Code/i.test(r.stdout)) continue;
     const version = r.stdout.trim().split(/\s+/)[0];
     if (!meilleur || comparerVersions(version, meilleur.version) > 0) meilleur = { executable: c, version };
   }
+  cache = { racine, a: Date.now(), code: meilleur };
   return meilleur;
 }
 
 /** Compte connecté dans Claude Code (`claude auth status`), sans aucun secret. */
-function compte(executable) {
+async function compte(executable) {
   const env = Object.assign({}, process.env);
   delete env.ANTHROPIC_API_KEY;   // l'état du compte, pas celui de la clé
-  const r = spawnSync(executable, ["auth", "status"], { encoding: "utf8", timeout: 20000, windowsHide: true, env });
+  const r = await executer(executable, ["auth", "status"], { env });
   try {
     const d = JSON.parse(r.stdout);
     return { connecte: Boolean(d.loggedIn), methode: d.authMethod || null, email: d.email || null, abonnement: d.subscriptionType || null };
@@ -137,11 +160,11 @@ async function enregistrerCle(valeur) {
 
 async function statut(racine) {
   const r = reglages.lire().claude;
-  const code = trouver(racine);
+  const code = await trouver(racine, { forcer: true });
   return {
     mode: r.mode,
     claudeCode: code ? { executable: code.executable, version: code.version } : null,
-    compte: code ? compte(code.executable) : null,
+    compte: code ? await compte(code.executable) : null,
     cleEnregistree: Boolean(r.cle),
     cleLisible: Boolean(r.cle) && Boolean(cle()),
     chiffrementDisponible: chiffrementDisponible(),
@@ -152,8 +175,8 @@ async function statut(racine) {
 }
 
 /** Ouvre un terminal sur `claude auth login` : la connexion se fait chez Anthropic. */
-function connecter(racine) {
-  const code = trouver(racine);
+async function connecter(racine) {
+  const code = await trouver(racine);
   if (!code) throw new Error("Claude Code n'est pas installé sur ce poste.");
   const env = Object.assign({}, process.env);
   delete env.ANTHROPIC_API_KEY;
@@ -173,7 +196,7 @@ function connecter(racine) {
     ["xterm", ["-e", "bash", "-c", commande]]
   ];
   for (const [t, args] of terminaux) {
-    if (spawnSync("sh", ["-c", "command -v " + t]).status === 0) {
+    if ((await executer("sh", ["-c", "command -v " + t], { timeout: 5000 })).status === 0) {
       spawn(t, args, { env, detached: true, stdio: "ignore" }).unref();
       return { ok: true };
     }
@@ -181,10 +204,10 @@ function connecter(racine) {
   throw new Error("Aucun terminal trouvé : lancer « claude auth login » dans un terminal.");
 }
 
-function deconnecter(racine) {
-  const code = trouver(racine);
+async function deconnecter(racine) {
+  const code = await trouver(racine);
   if (!code) throw new Error("Claude Code n'est pas installé sur ce poste.");
-  const r = spawnSync(code.executable, ["auth", "logout"], { encoding: "utf8", timeout: 20000, windowsHide: true });
+  const r = await executer(code.executable, ["auth", "logout"]);
   if (r.status !== 0) throw new Error((r.stderr || r.stdout || "La déconnexion a échoué.").trim().slice(0, 300));
   return { ok: true };
 }

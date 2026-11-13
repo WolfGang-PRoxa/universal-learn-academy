@@ -28,6 +28,8 @@ const ICONES = {
   claude: '<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8Z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8Z"/>',
   livre: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5Z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
+  arriere: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 20h10"/><circle cx="17.5" cy="16.5" r="3.5" fill="currentColor" stroke="none" opacity=".25"/><path d="M17.5 15v1.5l1 1"/>',
+  echelle: '<path d="M4 20 20 4"/><path d="M14 4h6v6M10 20H4v-6"/>',
   ok: '<path d="M20 6 9 17l-5-5"/>',
   x: '<path d="M18 6 6 18M6 6l12 12"/>',
   attention: '<path d="M12 3 2 21h20Z"/><path d="M12 10v5M12 18v.5"/>',

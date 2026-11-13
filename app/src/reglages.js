@@ -19,6 +19,11 @@ const DEFAUT = {
   // Échelle de l'interface, en % : 0 pour « Automatique » (100 %, la page s'adapte
   // seule à la largeur de la fenêtre), sinon de 50 à 200 par pas de 10
   affichage: { echelle: 0 },
+  // Fermer la fenêtre la cache et garde l'application en arrière-plan (icône de la
+  // zone de notification, comme Modding Manager) ; bulle d'explication déjà montrée ?
+  arrierePlan: { fermeture: true, bulleMontree: false },
+  // Taille et position de la fenêtre des paramètres, mémorisées (null : selon l'écran)
+  fenetreParametres: null,
   // Dossier des données (catalogue explore/ et espaces des profils) : vide pour
   // Documents/ULA ; un dépôt git d'ula (mode de l'auteur du catalogue) est reconnu
   donnees: { dossier: "" },

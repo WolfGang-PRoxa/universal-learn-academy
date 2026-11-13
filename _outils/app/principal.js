@@ -75,6 +75,8 @@ app.on("second-instance", () => {
   const f = BrowserWindow.getAllWindows().find((w) => !w.studiesAnnexe);
   if (!f) return;
   if (f.isMinimized()) f.restore();
+  // Cachée en arrière-plan (application installée) : elle revient
+  if (!f.isVisible()) f.show();
   f.focus();
 });
 

@@ -19,7 +19,7 @@
    5. il recherche une mise à jour si le paramètre est activé.
    ========================================================================== */
 
-const { app, BrowserWindow, dialog, ipcMain, nativeTheme, session, shell } = require("electron");
+const { app, BrowserWindow, Notification, dialog, ipcMain, nativeTheme, screen, session, shell } = require("electron");
 const fs = require("fs");
 const path = require("path");
 
@@ -29,6 +29,8 @@ const majs = require("./mises-a-jour");
 const raccourcis = require("./raccourcis");
 const claude = require("./claude");
 const donnees = require("./donnees");
+const diagnostic = require("./diagnostic");
+const arrierePlan = require("./arriere-plan");
 const { ID_APP, URL_RELEASES } = require("./depot");
 
 const NOM = "Universal Learn Academy";
@@ -51,6 +53,12 @@ function migrerParametres() {
     }
   } catch (e) { /* paramètres par défaut */ }
 }
+
+// Calcul des fenêtres masquées de Windows (Chromium) désactivé, comme le fait VS Code :
+// quand il se trompe, ou tarde à voir que la fenêtre est de nouveau visible, la page
+// se croit cachée, ne se dessine plus et ne défile plus jusqu'au prochain clic. C'est
+// le gel de la molette observé jusqu'à la 2.3.0 (voir diagnostic.js).
+app.commandLine.appendSwitch("disable-features", "CalculateNativeWinOcclusion");
 
 // Lancé depuis un terminal de VS Code : Electron se prendrait pour Node dans le serveur
 delete process.env.ELECTRON_RUN_AS_NODE;
@@ -79,6 +87,7 @@ function facteurEchelle() {
 function annoncerEchelle() {
   const e = facteurEchelle();
   for (const fn of auditeursEchelle) { try { fn(e); } catch (err) { /* fenêtre fermée entre-temps */ } }
+  if (fenetreParametres && !fenetreParametres.isDestroyed()) fenetreParametres.webContents.setZoomFactor(e);
 }
 
 let racine = null;
@@ -196,16 +205,46 @@ function nettoyerAnciensRaccourcis() {
 
 /* -- Paramètres ------------------------------------------------------------------- */
 
+// Fenêtre des paramètres (2.4.0) : environ 80 % x 85 % de la zone de travail de
+// l'écran de la fenêtre principale (plafond 1600 x 1100, plancher 640 x 480), centrée
+// sur elle ; taille et position mémorisées dans parametres.json (fenetreParametres),
+// oubliées si elles ne tombent plus sur un écran.
+const PARAMETRES_MAX = { width: 1600, height: 1100 };
+
+function fenetrePrincipale() {
+  return BrowserWindow.getAllWindows().find((w) => !w.isDestroyed() && !w.studiesAnnexe && w.isVisible()) || null;
+}
+
+function bornesParametres() {
+  const memo = lancement.bornesValides(reglages.lire().fenetreParametres);
+  if (memo) return memo;
+  const principale = fenetrePrincipale();
+  const ref = principale && !principale.isMinimized() ? principale.getBounds() : null;
+  const ecran = ref ? screen.getDisplayMatching(ref) : screen.getPrimaryDisplay();
+  const z = ecran.workArea;
+  const width = Math.min(z.width, Math.max(lancement.MIN_LARGEUR, Math.min(PARAMETRES_MAX.width, Math.round(z.width * 0.8))));
+  const height = Math.min(z.height, Math.max(lancement.MIN_HAUTEUR, Math.min(PARAMETRES_MAX.height, Math.round(z.height * 0.85))));
+  const centre = ref
+    ? { x: ref.x + ref.width / 2, y: ref.y + ref.height / 2 }
+    : { x: z.x + z.width / 2, y: z.y + z.height / 2 };
+  // Centrée sur la fenêtre principale, sans déborder de la zone de travail
+  const x = Math.min(Math.max(Math.round(centre.x - width / 2), z.x), z.x + z.width - width);
+  const y = Math.min(Math.max(Math.round(centre.y - height / 2), z.y), z.y + z.height - height);
+  return { x, y, width, height };
+}
+
 function ouvrirParametres(section) {
   if (fenetreParametres && !fenetreParametres.isDestroyed()) {
     if (fenetreParametres.isMinimized()) fenetreParametres.restore();
+    fenetreParametres.show();
     fenetreParametres.focus();
     if (section) fenetreParametres.webContents.send("parametres:section", section);
     return;
   }
-  const parent = BrowserWindow.getFocusedWindow() || undefined;
+  const active = BrowserWindow.getFocusedWindow();
+  const parent = (active && !active.studiesAnnexe ? active : fenetrePrincipale()) || undefined;
   fenetreParametres = new BrowserWindow({
-    width: 900, height: 820, minWidth: 640, minHeight: 480, show: false, parent,
+    ...bornesParametres(), minWidth: lancement.MIN_LARGEUR, minHeight: lancement.MIN_HAUTEUR, show: false, parent,
     title: "Paramètres de " + NOM, autoHideMenuBar: true,
     backgroundColor: nativeTheme.shouldUseDarkColors ? "#131417" : "#fafaf8",
     icon: path.join(__dirname, "assets", "icone.png"),
@@ -220,6 +259,19 @@ function ouvrirParametres(section) {
   });
   fenetreParametres.webContents.on("will-navigate", (e) => e.preventDefault());
   fenetreParametres.once("ready-to-show", () => fenetreParametres.show());
+  // L'échelle de l'interface s'applique aussi aux paramètres (même lisibilité partout)
+  fenetreParametres.webContents.on("did-finish-load", () => {
+    if (fenetreParametres && !fenetreParametres.isDestroyed()) fenetreParametres.webContents.setZoomFactor(facteurEchelle());
+  });
+  const memoriser = () => {
+    if (!fenetreParametres || fenetreParametres.isDestroyed() || fenetreParametres.isMinimized()) return;
+    try { reglages.modifier({ fenetreParametres: fenetreParametres.getNormalBounds() }); } catch (e) { /* tant pis */ }
+  };
+  let attente = null;
+  const plusTard = () => { clearTimeout(attente); attente = setTimeout(memoriser, 600); };
+  fenetreParametres.on("resize", plusTard);
+  fenetreParametres.on("move", plusTard);
+  fenetreParametres.on("close", () => { clearTimeout(attente); memoriser(); });
   fenetreParametres.on("closed", () => { fenetreParametres = null; });
   fenetreParametres.loadFile(path.join(__dirname, "parametres", "index.html"), { hash: section || "" });
 }
@@ -250,7 +302,7 @@ async function apiQuiz(methode, route, corps) {
 }
 
 function enregistrerIpc() {
-  const traiter = (canal, fn) => ipcMain.handle(canal, (evenement, ...args) => fn(...args, evenement));
+  const traiter = (canal, fn) => ipcMain.handle(canal, (evenement, ...args) => diagnostic.suivre(canal, () => fn(...args, evenement)));
 
   traiter("app:info", () => ({
     nom: NOM,
@@ -265,11 +317,14 @@ function enregistrerIpc() {
     releases: URL_RELEASES,
     versionsOutils: donnees.versions(),
     dossierLocal: donnees.dossierOutilsLocal(),
-    dossierParDefaut: donnees.dossierParDefaut()
+    dossierParDefaut: donnees.dossierParDefaut(),
+    journaux: diagnostic.dossier(),
+    zoneNotification: arrierePlan.zone(),
+    intervalleMaj: majs.INTERVALLE_MS
   }));
   traiter("app:redemarrer", () => redemarrer());
   traiter("app:ouvrir-dossier", (quoi) => {
-    const dossier = { parametres: app.getPath("userData"), donnees: racine, outils, local: donnees.dossierOutilsLocal() }[quoi];
+    const dossier = { parametres: app.getPath("userData"), donnees: racine, outils, local: donnees.dossierOutilsLocal(), journaux: diagnostic.dossier() }[quoi];
     return dossier ? shell.openPath(dossier) : false;
   });
   traiter("app:ouvrir-releases", () => shell.openExternal(URL_RELEASES));
@@ -284,6 +339,8 @@ function enregistrerIpc() {
     delete sur.cours;
     delete sur.donnees;
     if (sur.affichage) sur.affichage = { echelle: echelleValide(sur.affichage.echelle) };
+    if (sur.arrierePlan) sur.arrierePlan = { fermeture: sur.arrierePlan.fermeture !== false };
+    delete sur.fenetreParametres;
     const r = reglages.publics(reglages.modifier(sur));
     if (sur.affichage) annoncerEchelle();
     return r;
@@ -338,11 +395,47 @@ function enregistrerIpc() {
 
 /* -- Démarrage --------------------------------------------------------------------- */
 
-async function demarrer() {
-  enregistrerIpc();
-  majs.init((statut) => {
-    for (const f of BrowserWindow.getAllWindows()) if (!f.isDestroyed()) f.webContents.send("maj:statut", statut);
+/* -- Arrière-plan et mises à jour ---------------------------------------------------- */
+
+// Montre la fenêtre des cours (icône de la zone de notification, nouveau lancement)
+function montrerFenetre() {
+  const f = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed() && !w.studiesAnnexe);
+  if (!f) return;
+  if (f.isMinimized()) f.restore();
+  f.show();
+  f.focus();
+}
+
+// Fenêtre cachée par la croix : les paramètres se ferment avec elle, la bulle
+// s'affiche la première fois, et la recherche de mise à jour est examinée peu après
+function fenetreCachee() {
+  if (fenetreParametres && !fenetreParametres.isDestroyed()) fenetreParametres.close();
+  majs.bientot();
+  if ((reglages.lire().arrierePlan || {}).bulleMontree) return;
+  arrierePlan.annoncer();
+  try { reglages.modifier({ arrierePlan: { bulleMontree: true } }); } catch (e) { /* elle reviendra */ }
+}
+
+// Une seule notification par version prête
+let versionAnnoncee = null;
+function surStatutMaj(statut) {
+  for (const f of BrowserWindow.getAllWindows()) if (!f.isDestroyed()) f.webContents.send("maj:statut", statut);
+  arrierePlan.rafraichir();
+  if (statut.etat !== "pret" || !statut.version || versionAnnoncee === statut.version) return;
+  versionAnnoncee = statut.version;
+  if (!Notification.isSupported()) return;
+  const n = new Notification({
+    title: `${NOM} ${statut.version} est prête`,
+    body: "Elle s'installera en quittant l'application (icône de la zone de notification › Quitter), ou tout de suite : Paramètres › Mises à jour › Redémarrer et installer."
   });
+  n.on("click", () => { montrerFenetre(); ouvrirParametres("mises-a-jour"); });
+  n.show();
+}
+
+async function demarrer() {
+  diagnostic.demarrer();
+  enregistrerIpc();
+  majs.init(surStatutMaj);
 
   const choix = await dossierDesDonnees();
   if (!choix) return app.quit();
@@ -377,7 +470,13 @@ async function demarrer() {
     echelle: facteurEchelle,
     surEchelle: (fn) => { if (typeof fn === "function") auditeursEchelle.add(fn); },
     ouvrirParametres,
-    verifierMiseAJour: () => { ouvrirParametres("mises-a-jour"); majs.verifier(); }
+    verifierMiseAJour: () => { ouvrirParametres("mises-a-jour"); majs.verifier(); },
+    // Arrière-plan (2.4.0) : la croix de la dernière fenêtre la cache seulement
+    // (fenetres.js), tant que l'application n'est pas en train de quitter
+    garderEnArrierePlan: () => arrierePlan.garder(),
+    fenetreCachee,
+    quitterAnnule: () => arrierePlan.quitterAnnule(),
+    montrerFenetre
   };
 
   try {
@@ -387,7 +486,16 @@ async function demarrer() {
     return app.quit();
   }
 
+  arrierePlan.demarrer({
+    ouvrir: montrerFenetre,
+    verifierMiseAJour: () => { montrerFenetre(); global.studiesHote.verifierMiseAJour(); },
+    installer: () => majs.installerMaintenant(),
+    majStatut: () => majs.statut(),
+    actif: () => (reglages.lire().arrierePlan || {}).fermeture !== false
+  }).catch((e) => diagnostic.noter("icône de la zone de notification impossible : " + e.message));
+
   if (reglages.lire().miseAJourAuto) setTimeout(() => majs.verifier(), 4000);
+  majs.demarrerPeriodique({ actif: () => reglages.lire().miseAJourAuto !== false, journal: diagnostic.noter });
 }
 
 if (!app.requestSingleInstanceLock()) {

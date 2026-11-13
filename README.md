@@ -11,7 +11,7 @@ Des cours mis en forme en pages HTML, des quiz et des TD interactifs, avec un se
 
 L'installeur ne contient que l'application et ses outils (environ 130 Mo). Les cours se téléchargent ensuite à la demande, un par un ou par pack de niveau (par exemple tout le pack « Licence 1 informatique » d'un coup), depuis l'accueil (« Catalogue en ligne ») : ils viennent de la release [`catalogue`](https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/catalogue) de ce dépôt, et leur empreinte est vérifiée avant l'installation.
 
-L'application se met à jour d'elle-même au démarrage (option dans ses paramètres). Ses paramètres permettent aussi de choisir son profil et le dossier des données, de régler la fenêtre au lancement, de créer des raccourcis et de connecter Claude.
+Fermer la fenêtre garde l'application en arrière-plan, avec son icône dans la zone de notification (clic pour la rouvrir, clic droit › Quitter pour la quitter ; réglable). Elle se met à jour d'elle-même : nouvelle version cherchée au démarrage puis toutes les 6 heures, téléchargée en arrière-plan et installée en quittant l'application (option dans ses paramètres). Ses paramètres permettent aussi de choisir son profil et le dossier des données, de régler la fenêtre au lancement, de créer des raccourcis et de connecter Claude.
 
 ## Profils et cursus
 

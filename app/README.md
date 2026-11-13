@@ -27,8 +27,11 @@ Documents/ULA/                    dossier des données (par défaut)
 
 La roue dentée de la barre du haut, sur toutes les pages, ou Ctrl+, (menu **Fichier › Paramètres de l'application…**). Dans l'application installée, elle remplace la roue « Réglages » de l'outil de quiz, dont les réglages sont réunis ici ; dans un navigateur ou avec `lancer-app.bat`, la roue des quiz reste celle d'avant.
 
-- **Mises à jour** (activées par défaut) : au démarrage, l'application cherche une nouvelle version dans les releases GitHub, la télécharge en arrière-plan (en différentiel, grâce aux fichiers `.blockmap`) et l'installe à la fermeture. « Redémarrer et installer » l'applique tout de suite.
-- **Échelle de l'interface** : « Automatique » (100 %, par défaut : les accueils occupent toute la largeur de la fenêtre et le texte grandit un peu sur un grand écran) ou de 50 à 200 %. Elle s'applique tout de suite à toutes les fenêtres de cours et à chaque lancement ; Ctrl+Plus, Ctrl+Moins et Ctrl+molette ajustent en plus jusqu'à la fermeture, Ctrl+0 revient à l'échelle choisie.
+La fenêtre des paramètres s'ouvre à environ 80 % de la largeur et 85 % de la hauteur de la zone de travail de l'écran où se trouve la fenêtre des cours (au plus 1600 × 1100, au moins 640 × 480), centrée sur elle ; sa taille et sa position sont ensuite mémorisées (`fenetreParametres` dans `parametres.json`), et oubliées si elles ne tombent plus sur un écran. Dès 900 px de large, la navigation des sections passe sur le côté (section courante surlignée) et les cartes se rangent en 2 ou 3 colonnes d'au moins 420 px, sans trous : l'ordre est gardé, une carte large (fenêtre au lancement, modèles de Claude) prend toute la ligne, la dernière carte d'une ligne incomplète s'élargit jusqu'au bord, et les cartes d'une ligne ont la même hauteur. En dessous, une seule colonne et la navigation en haut.
+
+- **Mises à jour** (activées par défaut) : au démarrage, puis toutes les 6 heures (examen tous les quarts d'heure), au réveil du PC et peu après que la fenêtre se cache, l'application cherche une nouvelle version dans les releases GitHub, comme Modding Manager. Elle la télécharge en arrière-plan (en différentiel, grâce aux fichiers `.blockmap`), le signale par une notification (une fois par version ; un clic ouvre cette section) et par l'entrée « Redémarrer et installer la version… » du menu de l'icône, et l'installe quand on quitte l'application. « Redémarrer et installer » l'applique tout de suite. Le réglage désactive aussi la recherche périodique.
+- **Échelle de l'interface** : « Automatique » (100 %, par défaut : les accueils occupent toute la largeur de la fenêtre et le texte grandit un peu sur un grand écran) ou de 50 à 200 %. Elle s'applique tout de suite à toutes les fenêtres de cours, à la fenêtre des paramètres (même lisibilité partout) et à chaque lancement ; Ctrl+Plus, Ctrl+Moins et Ctrl+molette ajustent en plus jusqu'à la fermeture, Ctrl+0 revient à l'échelle choisie.
+- **Arrière-plan** (activé par défaut) : voir « Arrière-plan » ci-dessous.
 - **Fenêtre au lancement** : grande fenêtre (agrandie, par défaut) ou taille et position personnalisées, réglées dans un cadre qui représente les écrans à l'échelle (souris ou clavier) ou par quatre champs. Si l'emplacement n'est plus visible (écran débranché), la fenêtre s'ouvre agrandie. Repris de CV Studio.
 - **Raccourcis** : Bureau, menu Démarrer (menu des applications sous Linux), ou n'importe quel dossier choisi. Pour chaque emplacement, l'application dit ce qu'elle trouve : rien (« Créer »), un raccourci valide, un raccourci vers une ancienne copie ou cassé (« Réparer »), un fichier qui ouvre autre chose (« Remplacer », après confirmation). Les raccourcis portent le nom de ceux de l'installeur (« Universal Learn Academy ») : la désinstallation retire ceux du Bureau et du menu Démarrer. Sous Linux, ce sont des fichiers `.desktop` qui lancent l'AppImage.
 - **Connexion à Claude** : voir ci-dessous.
@@ -80,6 +83,7 @@ Ce qui n'est **jamais** publié (ni dans un installeur, ni dans le catalogue, ni
 - **Outils** : copiés au premier lancement, puis à chaque nouvelle version, dans `%LOCALAPPDATA%\Universal Learn Academy\outils` (`~/.local/share/Universal Learn Academy/outils` sous Linux), d'après le manifeste : un fichier modifié depuis sa copie (les réglages du quiz…) n'est jamais écrasé.
 - **Dépôt git d'ula** (mode de l'étudiant) : le dépôt est utilisé tel quel, outils, catalogue et travail compris, et `git pull` / `git push` les synchronisent comme avant.
 - **Paramètres** : `%APPDATA%\Universal Learn Academy\parametres.json` (`~/.config/Universal Learn Academy`). La désinstallation les conserve.
+- **Journal des gels** : `%APPDATA%\Universal Learn Academy\logs\gels.log` (moins de 512 Ko, l'ancien passe en `gels.1.log`), voir « Défilement et journal des gels ».
 - **Profil actif** : `%LOCALAPPDATA%\studies-quiz\ula-profil-actif.json`, partagé avec `lancer.bat`.
 - PGlite (questions SQL) est livré avec l'application et copié au besoin dans `%LOCALAPPDATA%\studies-quiz` : Node n'est pas nécessaire sur le poste.
 
@@ -97,6 +101,27 @@ Les supports d'origine (polycopiés, diapositives, sujets, annales) sont publié
 ## Propositions de cours
 
 « Proposer ce cours » (accueil, sur un cours de son espace) prépare une archive des seules pages générées, contrôlée, et ouvre une issue préremplie du dépôt public ; l'utilisateur y joint l'archive. Pour l'accepter : `npm run accepter-proposition -- <archive.zip> [--domaine d] [--id id] [--essai]` (mêmes contrôles, liens rendus relatifs, vérificateurs, accueils de domaine), puis committer et `npm run catalogue -- --publier`. Détails : `_outils/ula/README.md`.
+
+## Arrière-plan
+
+Repris de Modding Manager (version 2.4.0). Fermer la fenêtre (la croix, Ctrl+W) ne quitte plus l'application : la fenêtre se cache, l'icône de l'application reste dans la zone de notification (en bas à droite de la barre des tâches), et le serveur local continue de tourner (une génération de quiz va à son terme). La première fois, une bulle le rappelle (`arrierePlan.bulleMontree`).
+
+- **Rouvrir** : clic ou double-clic sur l'icône, entrée « Ouvrir Universal Learn Academy » de son menu, ou relancer l'application (raccourci, menu Démarrer) : une seule instance tourne, et un nouveau lancement réaffiche la fenêtre existante, à la même page.
+- **Menu de l'icône** (clic droit) : Ouvrir, Rechercher les mises à jour (ou « Redémarrer et installer la version… » quand une version est prête), Quitter.
+- **Quitter** : l'entrée Quitter de l'icône ou Ctrl+Q. Si une génération de quiz est en cours, l'application le demande d'abord ; « Continuer » annule et la croix recache la fenêtre. Une mise à jour téléchargée s'installe à ce moment-là.
+- **Réglage** « Garder Universal Learn Academy en arrière-plan quand je ferme la fenêtre » (carte Arrière-plan des paramètres, `arrierePlan.fermeture`, activé par défaut) : décoché, la croix de la dernière fenêtre quitte l'application comme avant. Modding Manager n'a pas ce réglage ; il est ajouté ici pour qui préfère l'ancien comportement.
+- **Linux (AppImage)** : même comportement si le bureau a une zone de notification (StatusNotifierItem : KDE, Cinnamon, XFCE, GNOME avec l'extension AppIndicator, détectée par D-Bus au lancement) ; sinon la croix ferme l'application.
+- Le lancement avec Windows de Modding Manager n'est pas repris.
+
+## Défilement et journal des gels
+
+Jusqu'à la 2.3.0, le défilement à la molette s'interrompait parfois, sur n'importe quelle page, et reprenait après un clic. Mesures faites (molette envoyée par le protocole de débogage pendant que les paramètres, l'état de Claude, la recherche de mise à jour et Ctrl+F s'enchaînaient) :
+
+- le seul gel long reproduit (6 à 52 s) vient du calcul des fenêtres masquées de Chromium sous Windows : quand il juge la fenêtre couverte, la page passe « cachée », ne se dessine plus et ne défile plus jusqu'à ce qu'un clic ou un changement de focus le refasse. Ce calcul est désactivé (`--disable-features=CalculateNativeWinOcclusion`, dans `src/main.js`), comme le fait VS Code ; plus aucun gel ensuite ;
+- le processus principal, par où passent la molette et le clavier sous Windows, était bloqué environ 0,3 s à chaque ouverture des paramètres (recherche de Claude Code par `spawnSync`), jusqu'à 20 s par exécutable si l'un ne répondait pas, et par `gh auth token` lors d'une recherche de mise à jour. Tous ces appels sont désormais asynchrones (`src/claude.js`, `src/mises-a-jour.js`) ;
+- la barre de recherche (Ctrl+F) est retirée de la fenêtre à sa fermeture au lieu d'être seulement masquée, et se ferme quand on change de page.
+
+`src/diagnostic.js` tient un journal court, `gels.log`, dans le dossier des journaux de l'application (`%APPDATA%\Universal Learn Academy\logs`, `~/.config/Universal Learn Academy/logs` ; bouton dans Paramètres › À propos) : chaque blocage du processus principal de plus de 150 ms, avec l'appel en cours, et chaque page encore cachée une seconde après alors que sa fenêtre est affichée. Si le défilement se fige encore, ce journal dit lequel des deux se produit.
 
 ## Mises à jour
 
