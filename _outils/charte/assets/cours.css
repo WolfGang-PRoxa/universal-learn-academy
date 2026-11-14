@@ -413,6 +413,72 @@ img, svg, video { max-width: 100%; height: auto; }
 /* Précédent et suivant : application de bureau seulement (_outils/app), ajoutés par cours.js */
 .bouton-precedent { --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 18l-6-6 6-6'/%3E%3C/svg%3E"); }
 .bouton-suivant { --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18l6-6-6-6'/%3E%3C/svg%3E"); margin-left: -0.4rem; }
+/* « Offrir un café » (Buy Me a Coffee, ajouté par cours.js dans l'application de
+   bureau) : pastille jaune de la marque, tasse dont la vapeur monte en boucle, reflet
+   qui balaie le bouton toutes les 7 s ; au survol, le bouton se soulève et la tasse
+   s'incline. Rien ne bouge si le système demande de réduire les animations. */
+.bouton-soutien {
+  --bmc: #ffdd00;
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 2.25rem;
+  padding: 0 0.85rem 0 0.6rem;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 999px;
+  background: var(--bmc);
+  color: #1b1b1b;
+  font-size: 0.86rem;
+  font-weight: 650;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.08), 0 0 0 1px rgb(0 0 0 / 0.06) inset;
+  transition: transform 0.2s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.2s;
+}
+a.bouton-soutien::after { content: none; }
+.bouton-soutien::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.75) 50%, transparent 65%);
+  transform: translateX(-120%);
+}
+.bouton-soutien:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px -6px color-mix(in oklab, var(--bmc) 80%, #000), 0 0 0 1px rgb(0 0 0 / 0.08) inset;
+}
+.bouton-soutien:active { transform: translateY(0) scale(0.97); }
+.bouton-soutien:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.soutien-tasse { width: 1.35rem; height: 1.35rem; overflow: visible; transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1); transform-origin: 50% 80%; }
+.soutien-corps { fill: currentColor; }
+.soutien-anse { stroke: currentColor; }
+.bouton-soutien:hover .soutien-tasse { transform: rotate(-10deg); }
+.soutien-vapeur path { opacity: 0.85; }
+@media (max-width: 52rem) {
+  .bouton-soutien { padding: 0; width: 2.25rem; justify-content: center; }
+  .soutien-texte { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+}
+@media screen and (prefers-reduced-motion: no-preference) {
+  .bouton-soutien::before { animation: soutien-reflet 7s ease-in-out 1.5s infinite; }
+  .soutien-vapeur path { animation: soutien-vapeur 2.4s ease-in-out infinite; }
+  .soutien-vapeur path:nth-child(2) { animation-delay: 0.4s; }
+  .soutien-vapeur path:nth-child(3) { animation-delay: 0.8s; }
+}
+@keyframes soutien-reflet {
+  0%, 82% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+@keyframes soutien-vapeur {
+  0% { opacity: 0; transform: translateY(3px); }
+  35% { opacity: 0.8; }
+  100% { opacity: 0; transform: translateY(-4px); }
+}
+
 .bouton-icone:disabled { color: var(--texte-3); border-color: var(--bordure); cursor: default; }
 
 /* Lien vers le ou les quiz de la page (<link rel="quiz">, ajouté par cours.js) */

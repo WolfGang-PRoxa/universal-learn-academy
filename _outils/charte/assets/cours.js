@@ -99,9 +99,34 @@
     libelle();
     installerHistorique(barre);
     installerQuiz(barre);
+    installerSoutien(barre);
     installerAccueil(barre);
     installerParametres(barre);
     barre.appendChild(bouton);
+  }
+
+  // « Offrir un café » (Buy Me a Coffee), dans l'application de bureau seulement
+  // (installée ou lancer-app.bat) ; le lien s'ouvre dans le navigateur du système
+  // (_outils/app/fenetres.js). Tasse animée : vapeur qui monte, reflet périodique.
+  var LIEN_SOUTIEN = "https://buymeacoffee.com/wolfgang_proxa";
+  function installerSoutien(barre) {
+    if (!/\bElectron\//.test(navigator.userAgent)) return;
+    var a = creer("a", "bouton-soutien");
+    a.href = LIEN_SOUTIEN;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.title = "Soutenir Universal Learn Academy : m'offrir un café (Buy Me a Coffee)";
+    a.setAttribute("aria-label", "Offrir un café sur Buy Me a Coffee");
+    a.innerHTML =
+      '<svg class="soutien-tasse" viewBox="0 0 32 32" aria-hidden="true">' +
+        '<g class="soutien-vapeur" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
+          '<path d="M11 9c-1.5-1.6 1.5-3.2 0-4.8"/><path d="M15.5 9c-1.5-1.6 1.5-3.2 0-4.8"/><path d="M20 9c-1.5-1.6 1.5-3.2 0-4.8"/>' +
+        '</g>' +
+        '<path class="soutien-corps" d="M6 12h19v6.5a7.5 7.5 0 0 1-7.5 7.5h-4A7.5 7.5 0 0 1 6 18.5z"/>' +
+        '<path class="soutien-anse" d="M25 14h1.5a3.5 3.5 0 0 1 0 7H24.6" fill="none" stroke-width="2.2" stroke-linecap="round"/>' +
+      '</svg>' +
+      '<span class="soutien-texte">Offrir un café</span>';
+    barre.appendChild(a);
   }
 
   // Paramètres de l'application installée (studies/app), sur toutes les pages : elle
