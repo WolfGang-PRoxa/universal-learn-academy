@@ -45,10 +45,18 @@ function image() {
   return png.resize({ width: process.platform === "win32" ? 32 : 24, height: process.platform === "win32" ? 32 : 24 });
 }
 
+/* Windows : l'icône vient du fichier .ico empaqueté (build/icon.ico, 16 à 256 px), dont
+   Windows prend la taille qui convient à l'échelle de l'écran. Jusqu'à la 2.4.1, elle était
+   extraite de l'exécutable installé (app.getFileIcon) et ne s'affichait pas dans le menu
+   des icônes cachées ; cette extraction ne sert plus que de secours. */
 async function imageIcone() {
-  if (app.isPackaged && process.platform === "win32") {
-    const i = await app.getFileIcon(process.execPath, { size: "normal" }).catch(() => null);
-    if (i && !i.isEmpty()) return i;
+  if (process.platform === "win32") {
+    const ico = nativeImage.createFromPath(path.join(__dirname, "..", "build", "icon.ico"));
+    if (!ico.isEmpty()) return ico;
+    if (app.isPackaged) {
+      const i = await app.getFileIcon(process.execPath, { size: "normal" }).catch(() => null);
+      if (i && !i.isEmpty()) return i;
+    }
   }
   return image();
 }

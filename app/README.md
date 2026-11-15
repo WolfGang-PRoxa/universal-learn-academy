@@ -104,7 +104,7 @@ Les supports d'origine (polycopiés, diapositives, sujets, annales) sont publié
 
 ## Arrière-plan
 
-Repris de Modding Manager (version 2.4.0). Fermer la fenêtre (la croix, Ctrl+W) ne quitte plus l'application : la fenêtre se cache, l'icône de l'application reste dans la zone de notification (en bas à droite de la barre des tâches), et le serveur local continue de tourner (une génération de quiz va à son terme). La première fois, une bulle le rappelle (`arrierePlan.bulleMontree`).
+Repris de Modding Manager (version 2.4.0). Fermer la fenêtre (la croix, Ctrl+W) ne quitte plus l'application : la fenêtre se cache, l'icône de l'application reste dans la zone de notification (en bas à droite de la barre des tâches), et le serveur local continue de tourner (une génération de quiz va à son terme). La première fois, une bulle le rappelle (`arrierePlan.bulleMontree`). Sous Windows, l'icône est le fichier `build/icon.ico`, empaqueté exprès (`build.files`) : Windows y prend la taille qui convient à l'écran.
 
 - **Rouvrir** : clic ou double-clic sur l'icône, entrée « Ouvrir Universal Learn Academy » de son menu, ou relancer l'application (raccourci, menu Démarrer) : une seule instance tourne, et un nouveau lancement réaffiche la fenêtre existante, à la même page.
 - **Menu de l'icône** (clic droit) : Ouvrir, Rechercher les mises à jour (ou « Redémarrer et installer la version… » quand une version est prête), Quitter.

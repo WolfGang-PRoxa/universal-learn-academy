@@ -435,15 +435,15 @@ function carteModeles() {
 /* -- Profil ---------------------------------------------------------------------------- */
 
 function carteProfils() {
-  const zone = h('div', {});
+  const zone = h('div', { class: 'pile' });
 
   async function charger() {
     zone.replaceChildren(h('p', { class: 'aide' }, 'Chargement…'));
     let e;
     try { e = await api.profils.etat(); }
     catch (err) { zone.replaceChildren(etat('erreur', messageErreur(err)), h('div', { class: 'ligne' }, bouton('Réessayer', { genre: 'leger', onClick: charger }))); return; }
-    const nouveau = h('input', { type: 'text', value: e.profils.length ? '' : e.session, placeholder: e.session, spellcheck: 'false' });
-    const choixCursus = h('select', {}, h('option', { value: '' }, 'Aucun : je compose mon cursus'));
+    const nouveau = h('input', { class: 'saisie', type: 'text', value: e.profils.length ? '' : e.session, placeholder: e.session, spellcheck: 'false' });
+    const choixCursus = h('select', { class: 'saisie' }, h('option', { value: '' }, 'Aucun : je compose mon cursus'));
     const telecharger = h('input', { type: 'checkbox', checked: true });
     api.profils.cursus().then((liste) => {
       for (const c of liste) choixCursus.append(h('option', { value: c.id }, `${c.titre} (${c.nombre} cours)`));
@@ -462,15 +462,15 @@ function carteProfils() {
         catch (err) { note(messageErreur(err), { erreur: true }); }
       } }),
       h('span', {}, h('strong', {}, p.nom), h('span', {}, p.nom === e.profil ? 'Profil actif : la progression s’écrit dans son dossier.' : `Créé le ${p.cree || '—'}.`))));
-    const renommer = h('input', { type: 'text', value: e.profil || '', spellcheck: 'false' });
+    const renommer = h('input', { class: 'saisie', type: 'text', value: e.profil || '', spellcheck: 'false' });
     zone.replaceChildren(
       e.profils.length ? h('div', { class: 'choix' }, ...liste) : etat('alerte', 'Aucun profil : en créer un pour enregistrer ta progression.'),
-      h('div', { class: 'ligne' },
+      h('div', { class: 'champs' },
         h('label', { class: 'champ' }, h('span', {}, 'Nouveau profil (nom d’utilisateur)'), nouveau),
-        h('label', { class: 'champ' }, h('span', {}, 'Cursus exemple'), choixCursus),
-        h('label', {}, telecharger, ' Télécharger les cours maintenant'),
-        bouton('Ajouter', { genre: e.profils.length ? '' : 'principal', onClick: creer })),
-      e.profil ? h('div', { class: 'ligne' },
+        h('label', { class: 'champ' }, h('span', {}, 'Cursus exemple'), choixCursus)),
+      h('label', { class: 'interrupteur' }, telecharger, h('span', {}, 'Télécharger les cours maintenant')),
+      h('div', { class: 'ligne' }, bouton('Ajouter', { genre: e.profils.length ? '' : 'principal', onClick: creer })),
+      e.profil ? h('div', { class: 'champs avec-bouton' },
         h('label', { class: 'champ' }, h('span', {}, `Renommer « ${e.profil} »`), renommer),
         bouton('Renommer', { genre: 'leger', onClick: async () => {
           try { await api.profils.renommer(e.profil, renommer.value); note('Profil renommé.'); charger(); }
