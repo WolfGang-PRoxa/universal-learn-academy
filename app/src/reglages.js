@@ -32,6 +32,9 @@ const DEFAUT = {
   // Connexion à Claude : « compte » (Claude Code, connecté par l'utilisateur) ou
   // « cle » (clé d'API personnelle, chiffrée : « enc:… »)
   claude: { mode: "compte", cle: "" },
+  // Synchronisation automatique du dossier des données quand c'est un dépôt Git suivi
+  // (synchro.js) : null tant que l'utilisateur n'a pas répondu à la proposition
+  synchro: { auto: null },
   // Dossiers où l'utilisateur a demandé un raccourci, en plus du Bureau et du menu
   raccourcis: { dossiers: [] }
 };

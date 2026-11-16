@@ -30,6 +30,7 @@ const ICONES = {
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
   arriere: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 20h10"/><circle cx="17.5" cy="16.5" r="3.5" fill="currentColor" stroke="none" opacity=".25"/><path d="M17.5 15v1.5l1 1"/>',
   echelle: '<path d="M4 20 20 4"/><path d="M14 4h6v6M10 20H4v-6"/>',
+  nuage: '<path d="M17.5 19H7a5 5 0 1 1 1.1-9.9A6 6 0 0 1 19.6 11 4 4 0 0 1 17.5 19z"/>',
   ok: '<path d="M20 6 9 17l-5-5"/>',
   x: '<path d="M18 6 6 18M6 6l12 12"/>',
   attention: '<path d="M12 3 2 21h20Z"/><path d="M12 10v5M12 18v.5"/>',

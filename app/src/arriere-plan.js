@@ -63,9 +63,11 @@ async function imageIcone() {
 
 function menu() {
   const maj = options.majStatut ? options.majStatut() : {};
+  const synchro = options.synchro ? options.synchro() : {};
   return Menu.buildFromTemplate([
     { label: `Ouvrir ${NOM}`, click: () => options.ouvrir() },
     { type: "separator" },
+    ...(synchro.visible ? [{ label: synchro.enCours ? "Synchronisation en cours…" : "Synchroniser maintenant", enabled: !synchro.enCours, click: () => options.synchroniser() }] : []),
     maj.etat === "pret"
       ? { label: `Redémarrer et installer la version ${maj.version || ""}`.trim(), click: () => options.installer() }
       : { label: "Rechercher les mises à jour", click: () => options.verifierMiseAJour() },
@@ -75,7 +77,7 @@ function menu() {
 }
 
 /**
- * Installe l'icône. options : { ouvrir(), verifierMiseAJour(), installer(), majStatut(), actif() }
+ * Installe l'icône. options : { ouvrir(), verifierMiseAJour(), installer(), majStatut(), synchro(), synchroniser(), actif() }
  * actif() : le réglage « garder en arrière-plan » est-il activé ?
  */
 async function demarrer(opts) {

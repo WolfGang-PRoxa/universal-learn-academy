@@ -508,6 +508,80 @@ function carteDonnees() {
     h('p', { class: 'aide' }, `Par défaut : ${info.dossierParDefaut}. Les cours se téléchargent depuis le catalogue de l’accueil ; une mise à jour d’un cours ne touche jamais au travail rangé dans le dossier d’un profil.`));
 }
 
+/* -- Synchronisation ------------------------------------------------------------------ */
+
+export function decrireSynchro(s) {
+  if (!s) return ['', 'Chargement…'];
+  if (s.enCours) return ['', 'Synchronisation en cours…'];
+  const d = s.dernier;
+  if (!d) return ['', s.auto ? 'Première synchronisation dans quelques secondes.' : 'Aucune synchronisation depuis le lancement.'];
+  const quand = d.a ? new Date(d.a).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '';
+  const bilan = [];
+  if (d.commits) bilan.push('progression committée');
+  if (d.recus && d.recus.length) bilan.push(`${d.recus.length} fichier${d.recus.length > 1 ? 's' : ''} reçu${d.recus.length > 1 ? 's' : ''}`);
+  if (d.envoyes) bilan.push(`${d.envoyes} commit${d.envoyes > 1 ? 's' : ''} envoyé${d.envoyes > 1 ? 's' : ''}`);
+  switch (d.etat) {
+    case 'synchronise': return ['ok', `Synchronisé le ${quand} : ${bilan.join(', ')}.`];
+    case 'a-jour': return ['ok', `À jour le ${quand}.`];
+    case 'hors-ligne': return ['alerte', `${d.message} (${quand}) Nouvel essai au prochain cycle.`];
+    case 'bloque': return ['alerte', `${d.message} (${quand})`];
+    default: return ['erreur', `${d.message} (${quand})`];
+  }
+}
+
+function carteSynchro() {
+  const zone = h('div', {});
+  const caseAuto = h('input', { type: 'checkbox', onChange: async (e) => {
+    peindre(await api.synchro.auto(e.target.checked));
+    note(e.target.checked ? 'Synchronisation automatique activée' : 'Synchronisation automatique désactivée');
+  } });
+  const maintenant = bouton('Synchroniser maintenant', { genre: 'principal', onClick: () => api.synchro.maintenant() });
+
+  function peindre(s) {
+    if (!s.visible) {
+      caseAuto.checked = false;
+      caseAuto.disabled = true;
+      maintenant.disabled = true;
+      zone.replaceChildren(
+        etat('', s.raison || 'Le dossier des données n’est pas un dépôt Git suivi.'),
+        h('p', { class: 'aide' }, s.git
+          ? 'Pour synchroniser les cours entre plusieurs PC, le dossier des données doit être un dépôt Git relié à un dépôt distant (GitHub…). Le lier depuis l’application arrive dans une prochaine version ; en attendant : git init dans le dossier des données, un fichier .gitignore avec la ligne explore/ (le catalogue se retélécharge), git remote add origin <adresse>, un premier commit et git push -u origin main ; l’application le reconnaît au prochain lancement.'
+          : 'Git n’est pas installé sur ce poste (git-scm.com) : la synchronisation par un dépôt Git n’est pas disponible.'));
+      return;
+    }
+    caseAuto.checked = s.auto === true;
+    caseAuto.disabled = false;
+    maintenant.disabled = s.enCours;
+    const [genre, texte] = decrireSynchro(s);
+    const d = s.dernier;
+    const conflits = d && d.conflits && d.conflits.length
+      ? h('ul', { class: 'aide' }, ...d.conflits.map((c) => h('li', {}, h('code', {}, c.chemin), ` : ${c.regle}`, c.copie ? h('span', {}, ' (copie : ', h('code', {}, c.copie.split('/').pop()), ')') : null)))
+      : null;
+    const ignores = d && d.ignores && d.ignores.length
+      ? etat('alerte', `Fichier${d.ignores.length > 1 ? 's' : ''} de plus de 50 Mo laissé${d.ignores.length > 1 ? 's' : ''} de côté : ${d.ignores.join(', ')}.`)
+      : null;
+    const avertissement = d && d.avertissement ? etat('alerte', d.avertissement) : null;
+    zone.replaceChildren(...[
+      h('p', {}, 'Dépôt : ', h('code', {}, s.adresse || s.distant), ` (branche ${s.branche} → ${s.distant}, Git ${s.git}).`),
+      etat(genre, texte), avertissement, conflits, ignores,
+      h('p', { class: 'aide' }, s.mode === 'progression'
+        ? 'Dépôt d’ula : seule la progression faite dans l’application (quiz_results, td_results, liens du cursus) est committée automatiquement ; les autres modifications attendent un commit fait à la main. Les commits déjà faits sont envoyés avec elle. Un conflit sur un autre fichier arrête la fusion : elle est à faire à la main (git pull).'
+        : 'Tout ce qui est dans les dossiers des profils est committé, jamais le catalogue (explore). Un fichier modifié sur deux postes entre deux synchros garde ses deux versions (« nom (conflit …) »), sauf la progression, fusionnée.')
+    ].filter(Boolean));
+  }
+
+  api.synchro.statut().then(peindre);
+  api.synchro.surStatut(peindre);
+
+  return carte('synchro', 'nuage', 'Synchronisation', 'Retrouver ses cours et sa progression d’un PC à l’autre.',
+    h('label', { class: 'interrupteur' }, caseAuto,
+      h('span', {}, h('strong', {}, 'Synchroniser automatiquement'),
+        h('br'), h('span', { class: 'aide' }, 'Au lancement, toutes les 30 minutes (même fenêtre fermée), au réveil du PC et en quittant Universal Learn Academy.'))),
+    h('div', { class: 'ligne' }, maintenant, bouton('Ouvrir le dossier des données', { genre: 'leger', onClick: () => api.ouvrirDossier('donnees') })),
+    zone,
+    h('p', { class: 'aide' }, 'Git utilise les identifiants déjà enregistrés sur ce poste (Git Credential Manager, GitHub CLI, clé SSH) : l’application n’en demande ni n’en garde aucun. Un git pull fait à la main pendant que l’application tourne est repéré, et l’accueil se recharge.'));
+}
+
 /* -- À propos ------------------------------------------------------------------------- */
 
 function carteAPropos() {
@@ -537,7 +611,7 @@ function proposerRedemarrage() {
 /* -- Page ------------------------------------------------------------------------------- */
 
 const cartes = document.getElementById('cartes');
-cartes.append(carteMisesAJour(), carteAffichage(), carteArrierePlan(), carteFenetre(), carteRaccourcis(), carteClaude(), carteModeles(), carteProfils(), carteDonnees(), carteAPropos());
+cartes.append(carteMisesAJour(), carteAffichage(), carteArrierePlan(), carteFenetre(), carteRaccourcis(), carteClaude(), carteModeles(), carteProfils(), carteDonnees(), carteSynchro(), carteAPropos());
 // Cartes qui gardent toute la largeur (cadre des écrans, modèles par usage)
 for (const id of ['fenetre', 'claude-modeles']) document.getElementById(id)?.classList.add('large');
 

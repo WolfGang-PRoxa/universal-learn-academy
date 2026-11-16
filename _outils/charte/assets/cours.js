@@ -103,6 +103,7 @@
     installerAccueil(barre);
     installerParametres(barre);
     barre.appendChild(bouton);
+    afficherSynchro();
   }
 
   // « Offrir un café » (Buy Me a Coffee), dans l'application de bureau seulement
@@ -140,6 +141,47 @@
     a.title = "Paramètres : application, Claude, mises à jour (Ctrl+,)";
     a.setAttribute("aria-label", "Paramètres");
     barre.appendChild(a);
+  }
+
+  // Synchronisation du dossier des données (application installée, synchro.js de
+  // l'hôte) : l'hôte appelle window.ulaSynchro(etat) une fois la page chargée et à
+  // chaque changement ; le bouton nuage apparaît alors avant la roue des paramètres.
+  // Clic : synchroniser maintenant (/_app/synchro, _outils/app/fenetres.js), ou la
+  // carte Synchronisation des paramètres quand un problème attend. Sans l'hôte
+  // (navigateur, lancer-app.bat), personne n'appelle ulaSynchro : pas de bouton.
+  var synchroBouton = null, synchroEtat = null;
+  window.ulaSynchro = function (etat) {
+    synchroEtat = etat || null;
+    afficherSynchro();
+  };
+  function heureCourte(iso) {
+    var d = iso ? new Date(iso) : null;
+    if (!d || isNaN(d)) return "";
+    var p = function (n) { return (n < 10 ? "0" : "") + n; };
+    var jour = d.toDateString() === new Date().toDateString() ? "" : " le " + p(d.getDate()) + "/" + p(d.getMonth() + 1);
+    return p(d.getHours()) + ":" + p(d.getMinutes()) + jour;
+  }
+  function afficherSynchro() {
+    var barre = document.querySelector(".barre");
+    if (!barre || !synchroEtat) return;
+    if (!synchroBouton) {
+      synchroBouton = creer("a", "bouton-icone bouton-synchro");
+      barre.insertBefore(synchroBouton, barre.querySelector(".bouton-parametres"));
+    }
+    var e = synchroEtat, quand = heureCourte(e.a), probleme = false, texte;
+    switch (e.etat) {
+      case "en-cours": texte = "Synchronisation en cours…"; break;
+      case "synchronise":
+      case "a-jour": texte = "Synchronisé" + (quand ? " à " + quand : "") + ". Cliquer pour synchroniser maintenant."; break;
+      case "hors-ligne": texte = "Hors ligne" + (quand ? " (" + quand + ")" : "") + " : nouvel essai plus tard, ou cliquer pour réessayer."; break;
+      case "jamais": texte = "Synchroniser maintenant"; break;
+      default: probleme = true; texte = (e.message || "Synchronisation impossible.") + " Cliquer pour les détails.";
+    }
+    if (!e.auto && !probleme) texte += " (synchro automatique désactivée)";
+    synchroBouton.href = probleme ? "/_app/parametres#synchro" : "/_app/synchro";
+    synchroBouton.dataset.etat = probleme ? "probleme" : e.etat;
+    synchroBouton.title = texte;
+    synchroBouton.setAttribute("aria-label", texte);
   }
 
   // Précédent et suivant, à gauche du fil : l'application de bureau (_outils/app)

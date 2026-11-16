@@ -410,6 +410,33 @@ img, svg, video { max-width: 100%; height: auto; }
   text-decoration: none;
 }
 
+/* Synchronisation du dossier des données (application installée, ajouté par cours.js
+   quand l'hôte appelle window.ulaSynchro) : nuage, pastille d'état en bas à droite */
+.bouton-synchro {
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17.5 19H7a5 5 0 1 1 1.1-9.9A6 6 0 0 1 19.6 11 4 4 0 0 1 17.5 19z'/%3E%3C/svg%3E");
+  position: relative;
+  text-decoration: none;
+}
+.bouton-synchro::after {
+  content: "";
+  position: absolute;
+  right: 0.3rem;
+  bottom: 0.3rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--surface);
+  background: var(--texte-3);
+}
+.bouton-synchro[data-etat="synchronise"]::after,
+.bouton-synchro[data-etat="a-jour"]::after { background: oklch(0.66 0.15 150); }
+.bouton-synchro[data-etat="en-cours"]::after { background: var(--accent); }
+.bouton-synchro[data-etat="probleme"]::after { background: oklch(0.62 0.2 28); }
+@media screen and (prefers-reduced-motion: no-preference) {
+  .bouton-synchro[data-etat="en-cours"]::after { animation: synchro-pulsation 1s ease-in-out infinite alternate; }
+}
+@keyframes synchro-pulsation { from { opacity: 1; } to { opacity: 0.25; } }
+
 /* Précédent et suivant : application de bureau seulement (_outils/app), ajoutés par cours.js */
 .bouton-precedent { --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 18l-6-6 6-6'/%3E%3C/svg%3E"); }
 .bouton-suivant { --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18l6-6-6-6'/%3E%3C/svg%3E"); margin-left: -0.4rem; }

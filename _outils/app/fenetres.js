@@ -61,13 +61,22 @@ function versNavigateur(url) {
   if (/^(https?|mailto):/i.test(url)) shell.openExternal(url);
 }
 
-// Bouton « Paramètres » de la barre des pages (charte/assets/cours.js), dans
-// l'application installée seulement : il ouvre la fenêtre des paramètres de l'hôte
+// Boutons « Paramètres » et nuage (synchronisation) de la barre des pages
+// (charte/assets/cours.js), dans l'application installée seulement : ils ouvrent la
+// fenêtre des paramètres de l'hôte, ou lui demandent de synchroniser maintenant
 function parametres(url) {
   const hote = global.studiesHote;
-  if (!hote || !interne(url) || new URL(url).pathname !== "/_app/parametres") return false;
-  hote.ouvrirParametres(new URL(url).hash.slice(1) || undefined);
-  return true;
+  if (!hote || !interne(url)) return false;
+  const u = new URL(url);
+  if (u.pathname === "/_app/parametres") {
+    hote.ouvrirParametres(u.hash.slice(1) || undefined);
+    return true;
+  }
+  if (u.pathname === "/_app/synchro" && typeof hote.synchroniserMaintenant === "function") {
+    hote.synchroniserMaintenant();
+    return true;
+  }
+  return false;
 }
 
 function brancherLiens(f) {

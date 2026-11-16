@@ -37,6 +37,7 @@ La fenêtre des paramètres s'ouvre à environ 80 % de la largeur et 85 % de la 
 - **Connexion à Claude** : voir ci-dessous.
 - **Modèles de Claude et exécution du code** (ex-« Réglages » des quiz) : chemin de Claude Code, modèle et effort pour l'aide, la correction, l'évaluation et la génération de quiz (avec un bouton « Tester »), langages exécutables. Lus et enregistrés par l'API du serveur local (`_outils/quiz/reglages.json` des outils).
 - **Profil** : le profil actif (mémorisé sur le poste), l'ajout et le renommage d'un profil. L'accueil permet aussi d'en changer.
+- **Synchronisation** : voir « Synchronisation entre plusieurs PC » ci-dessous.
 - **Dossier des données** : `Documents/ULA` par défaut, ou un autre dossier. Un dépôt git d'ula (il contient `_outils/app` et `explore/`) est reconnu : c'est le « mode dépôt » de l'auteur du catalogue, où outils et catalogue sont ceux du dépôt et où `git pull` / `git push` synchronisent tout.
 
 ## Connexion à Claude
@@ -57,6 +58,32 @@ L'application propose donc deux modes :
 | **Une clé d'API Anthropic** | La clé est vérifiée auprès d'Anthropic, chiffrée par le système (`safeStorage` : DPAPI sous Windows, trousseau sous Linux ; refusée s'il n'y a pas de trousseau), jamais renvoyée à l'interface. Au démarrage, elle est passée au serveur local dans `ANTHROPIC_API_KEY`, que Claude Code utilise. | Qui n'a pas d'abonnement : l'usage est facturé à la clé. |
 
 Dans les deux cas, Claude Code doit être installé ; sans lui, les cours et les quiz s'affichent, mais sans l'aide de Claude. L'application ne s'appelle ni ne se présente comme un produit d'Anthropic.
+
+## Synchronisation entre plusieurs PC
+
+Depuis la version 2.5.0, quand le dossier des données est un dépôt Git dont la branche suit une branche d'un dépôt distant, l'application propose une fois, dans une petite fenêtre à son style centrée sur la fenêtre des cours (`src/proposition/`), de le synchroniser automatiquement (« Activer », « Plus tard » : redemandé au prochain lancement, comme la croix ou Échap, « Non merci ») (`synchro.auto` dans `parametres.json`). Activée, la synchro tourne au lancement (une dizaine de secondes après), toutes les 30 minutes (même fenêtre fermée, puisque l'application reste en arrière-plan), au réveil du PC et en quittant (10 secondes au plus). « Synchroniser maintenant » : bouton nuage de la barre des pages (pastille verte : à jour, bleue : en cours, rouge : problème, un clic ouvre alors les paramètres), menu de l'icône de la zone de notification, carte « Synchronisation » des paramètres.
+
+Un cycle (`src/synchro-git.js`, vérifié par `npm run check` sur deux clones d'un même dépôt) :
+
+1. rien si une commande Git est en cours (`index.lock`, fusion ou rebase à terminer) : nouvel essai au cycle suivant ;
+2. commit de ce qui a changé dans le périmètre, message « Progression du 16/11/2026 à 15:50 (<nom du PC>) », avec l'identité Git du poste ;
+3. `git fetch`, puis fusion avec la branche suivie (`--autostash` : les fichiers modifiés hors périmètre ne gênent pas) ;
+4. `git push`, recommencé une fois si l'autre PC vient de pousser ; jamais de `--force`.
+
+| Dossier des données | Ce qui est committé tout seul |
+|---|---|
+| Dépôt d'ula (mode de l'auteur du catalogue) | Seulement la progression écrite par l'application dans l'espace d'un profil : `quiz_results/`, `td_results/`, `ula-lien.json`, `ula-profil.json`. Le reste (TP, cours en rédaction) attend ses commits ; les commits locaux déjà faits partent avec la progression. |
+| Autre dossier devenu dépôt | Tout, sauf `explore/`, `_outils/` et les fichiers temporaires. |
+
+Conflits (même fichier modifié sur deux PC entre deux synchros) : `td_results/<page>.json` est fusionné atelier par atelier (le plus récent d'après `maj`), une tentative de quiz garde la version enregistrée le plus récemment, les fiches `ula-lien.json` et `ula-profil.json` la version locale. Pour un autre fichier, dans le dépôt d'ula la fusion est annulée et reste à faire à la main (`git pull`) ; dans un autre dossier, la version locale reste et l'autre est enregistrée à côté (`nom (conflit 16-11-2026 15h50).ext`), avec une notification. Un fichier supprimé d'un côté et modifié de l'autre est gardé. Un fichier de plus de 50 Mo n'est pas committé (signalé dans la carte).
+
+Identifiants : Git doit être installé et déjà connecté au dépôt distant (Git Credential Manager, GitHub CLI, clé SSH). L'application n'en demande ni n'en garde aucun, et Git ne peut rien lui demander (`GIT_TERMINAL_PROMPT=0`, `GCM_INTERACTIVE=never`, SSH en `BatchMode`) : un accès refusé est signalé (« lancer une fois git pull à la main »).
+
+`git pull` à la main : il reste possible à tout moment (à l'université, sans l'application). Si l'application tourne, elle le voit (commit de HEAD surveillé toutes les 5 secondes) et recharge l'accueil.
+
+Sans l'hôte (`lancer.bat`, `lancer-app.bat`, navigateur), rien ne change : pas de bouton nuage, synchronisation par `git pull` et `git push` comme avant. `ULA_SYNCHRO_INTERVALLE_MS` raccourcit l'intervalle pour les essais.
+
+Suite prévue (proposition validée le 16 novembre 2026) : lier un dépôt GitHub depuis l'application (application GitHub limitée au dépôt choisi, connexion par code, Git téléchargé à la demande), puis un miroir de l'espace du profil vers un dossier OneDrive, Google Drive, pCloud ou Dropbox.
 
 ## Catalogue, outils et données personnelles
 

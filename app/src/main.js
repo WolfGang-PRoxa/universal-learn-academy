@@ -16,7 +16,9 @@
       manque, à partir de la copie livrée : pas besoin de Node sur le poste ;
    3. il applique la clé d'API Anthropic s'il y en a une (claude.js) ;
    4. il publie global.studiesHote et ULA_RACINE, puis charge le programme des outils ;
-   5. il recherche une mise à jour si le paramètre est activé.
+   5. il recherche une mise à jour si le paramètre est activé ;
+   6. si le dossier des données est un dépôt Git suivi, il le synchronise
+      (synchro.js : au lancement, toutes les 30 minutes, au réveil, en quittant).
    ========================================================================== */
 
 const { app, BrowserWindow, Notification, dialog, ipcMain, nativeTheme, screen, session, shell } = require("electron");
@@ -31,6 +33,7 @@ const claude = require("./claude");
 const donnees = require("./donnees");
 const diagnostic = require("./diagnostic");
 const arrierePlan = require("./arriere-plan");
+const synchro = require("./synchro");
 const { ID_APP, URL_RELEASES } = require("./depot");
 
 const NOM = "Universal Learn Academy";
@@ -341,6 +344,7 @@ function enregistrerIpc() {
     if (sur.affichage) sur.affichage = { echelle: echelleValide(sur.affichage.echelle) };
     if (sur.arrierePlan) sur.arrierePlan = { fermeture: sur.arrierePlan.fermeture !== false };
     delete sur.fenetreParametres;
+    delete sur.synchro;
     const r = reglages.publics(reglages.modifier(sur));
     if (sur.affichage) annoncerEchelle();
     return r;
@@ -387,6 +391,11 @@ function enregistrerIpc() {
   traiter("quiz:etat", () => apiQuiz("GET", "etat?forcer=1"));
   traiter("quiz:reglages", (r) => apiQuiz("PUT", "reglages", r));
   traiter("quiz:tester", (usage) => apiQuiz("POST", "claude/test", { usage: String(usage) }));
+
+  // Synchronisation du dossier des données (dépôt Git suivi)
+  traiter("synchro:statut", () => synchro.statut());
+  traiter("synchro:maintenant", () => synchro.synchroniser());
+  traiter("synchro:auto", (valeur) => synchro.definirAuto(valeur === true));
 
   traiter("maj:verifier", () => majs.verifier());
   traiter("maj:statut", () => majs.statut());
@@ -476,7 +485,9 @@ async function demarrer() {
     garderEnArrierePlan: () => arrierePlan.garder(),
     fenetreCachee,
     quitterAnnule: () => arrierePlan.quitterAnnule(),
-    montrerFenetre
+    montrerFenetre,
+    // Bouton nuage de la barre des pages (/_app/synchro, fenetres.js)
+    synchroniserMaintenant: () => { synchro.synchroniser(); }
   };
 
   try {
@@ -491,11 +502,21 @@ async function demarrer() {
     verifierMiseAJour: () => { montrerFenetre(); global.studiesHote.verifierMiseAJour(); },
     installer: () => majs.installerMaintenant(),
     majStatut: () => majs.statut(),
+    synchro: () => synchro.statut(),
+    synchroniser: () => synchro.synchroniser(),
     actif: () => (reglages.lire().arrierePlan || {}).fermeture !== false
   }).catch((e) => diagnostic.noter("icône de la zone de notification impossible : " + e.message));
 
   if (reglages.lire().miseAJourAuto) setTimeout(() => majs.verifier(), 4000);
   majs.demarrerPeriodique({ actif: () => reglages.lire().miseAJourAuto !== false, journal: diagnostic.noter });
+
+  // Dépôt d'ula de l'auteur du catalogue : seule la progression est committée seule ;
+  // dossier des données devenu dépôt : tout, sauf le catalogue
+  synchro.demarrer({
+    racine, mode: modeDonnees === "depot" ? "progression" : "tout", nom: NOM, reglages,
+    journal: diagnostic.noter, ouvrirParametres: (section) => { montrerFenetre(); ouvrirParametres(section); },
+    surStatut: () => arrierePlan.rafraichir()
+  }).catch((e) => diagnostic.noter("synchronisation impossible : " + e.message));
 }
 
 if (!app.requestSingleInstanceLock()) {

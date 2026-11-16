@@ -8,6 +8,7 @@
 //   nom du profil) est refusée, une propre est acceptée ;
 // - espaces des profils : le travail s'écrit dans l'espace du profil, jamais dans explore/ ;
 // - mise à jour de la copie locale des outils (fichiers modifiés préservés) ;
+// - synchronisation Git (deux clones d'un même dépôt : progression, fusion, conflits) ;
 // - règles des raccourcis (Windows et .desktop de Linux).
 //
 // Options :
@@ -331,6 +332,74 @@ const donnees = require('../src/donnees.js');
   verifier(r.racine === path.join(prog, 'ula') && r.mode === 'depot', `Dépôt renommé non retrouvé : ${JSON.stringify(r)}`);
 }
 
+/* -- Synchronisation Git (synchro-git.js) ----------------------------------------------- */
+// Deux clones d'un même dépôt distant : la progression part seule, les ateliers d'un TD
+// modifié sur les deux postes sont fusionnés, le travail en cours est préservé, un conflit
+// hors progression arrête la fusion (mode « progression ») ou garde les deux versions
+// (mode « tout »), une opération Git en cours ou un dépôt injoignable sont signalés.
+const sg = require('../src/synchro-git.js');
+if (await sg.versionGit()) {
+  const t = path.join(temp, 'synchro');
+  fs.mkdirSync(t, { recursive: true });
+  const g = (cwd, ...a) => execFileSync('git', a, { cwd, stdio: 'pipe' }).toString();
+  const w = (r, c, x) => { const f = path.join(r, ...c.split('/')); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, typeof x === 'string' ? x : JSON.stringify(x, null, 2)); };
+  // Fins de ligne ramenées à \n : Git for Windows (core.autocrlf=true) réécrit en \r\n les fichiers qu'il remet en place
+  const lis = (r, c) => { try { return fs.readFileSync(path.join(r, ...c.split('/')), 'utf8').replace(/\r\n/g, '\n'); } catch { return null; } };
+  const td = (q1, q2) => ({ format: 'studies-atelier/travail-1', ateliers: { q1: { v: q1[0], maj: q1[1] }, q2: { v: q2[0], maj: q2[1] } }, maj: q1[1] > q2[1] ? q1[1] : q2[1] });
+  const TD = 'moi/L3/BDD/td_results/td1.json';
+  const A = path.join(t, 'A'), B = path.join(t, 'B');
+  g(t, 'init', '-q', '--bare', '--initial-branch=main', 'distant.git');
+  g(t, 'clone', '-q', 'distant.git', 'A');
+  for (const [k, v] of [['user.name', 'Essai'], ['user.email', 'essai@example.org']]) g(A, 'config', k, v);
+  g(A, 'checkout', '-q', '-B', 'main');
+  w(A, '_outils/app/principal.js', ''); w(A, 'explore/x/ula-cours.json', '{}');
+  w(A, TD, td(['a0', '2026-11-16T10:00:00Z'], ['b0', '2026-11-16T10:00:00Z']));
+  w(A, 'moi/TODO.md', 'v0\n');
+  g(A, 'add', '-A'); g(A, 'commit', '-qm', 'départ'); g(A, 'push', '-q', '-u', 'origin', 'main');
+  g(t, 'clone', '-q', 'distant.git', 'B');
+  for (const [k, v] of [['user.name', 'Essai'], ['user.email', 'essai@example.org']]) g(B, 'config', k, v);
+
+  w(A, TD, td(['a1', '2026-11-16T11:00:00Z'], ['b0', '2026-11-16T10:00:00Z']));
+  w(A, 'moi/L3/BDD/quiz_results/qz/t1.json', { id: 't1', enregistre: '2026-11-16T11:00:00Z' });
+  w(A, 'moi/TODO.md', 'travail en cours A\n');
+  w(A, 'explore/x/nouveau.html', '');
+  let r = await sg.cycle(A, { poste: 'PC-A' });
+  verifier(r.etat === 'synchronise' && r.commits === 1 && r.envoyes === 1, `Synchro : progression non envoyée (${JSON.stringify(r)}).`);
+  const restant = g(A, 'status', '--porcelain').split('\n').filter(Boolean).sort().join('|');
+  verifier(restant === ' M moi/TODO.md|?? explore/x/nouveau.html', `Synchro : fichier hors progression committé (${restant}).`);
+
+  w(B, TD, td(['a0', '2026-11-16T10:00:00Z'], ['b2', '2026-11-16T12:00:00Z']));
+  w(B, 'moi/TODO.md', 'travail en cours B\n');
+  r = await sg.cycle(B, { poste: 'PC-B' });
+  const fusion = JSON.parse(lis(B, TD) || '{}').ateliers || {};
+  verifier(r.etat === 'synchronise' && r.conflits.length === 1 && fusion.q1?.v === 'a1' && fusion.q2?.v === 'b2', `Synchro : ateliers mal fusionnés (${JSON.stringify(r.conflits)}, ${JSON.stringify(fusion)}).`);
+  verifier(lis(B, 'moi/TODO.md') === 'travail en cours B\n' && lis(B, 'moi/L3/BDD/quiz_results/qz/t1.json'), 'Synchro : travail en cours perdu ou tentative non reçue.');
+  r = await sg.cycle(A, { poste: 'PC-A' });
+  verifier(r.recus.includes(TD) && JSON.parse(lis(A, TD)).ateliers.q2.v === 'b2', 'Synchro : fusion non reçue par l’autre poste.');
+
+  g(A, 'commit', '-qam', 'TODO A'); g(B, 'commit', '-qam', 'TODO B');
+  await sg.cycle(A, {});
+  r = await sg.cycle(B, {});
+  verifier(r.etat === 'manuel' && !fs.existsSync(path.join(B, '.git', 'MERGE_HEAD')), `Synchro : conflit hors progression non arrêté (${r.etat}).`);
+  r = await sg.cycle(B, { mode: 'tout' });
+  const copie = r.conflits[0] && r.conflits[0].copie;
+  verifier(r.etat === 'synchronise' && copie && lis(B, copie) === 'travail en cours A\n' && lis(B, 'moi/TODO.md') === 'travail en cours B\n', `Synchro : conflit sans copie des deux versions (${JSON.stringify(r.conflits)}).`);
+  verifier((await sg.cycle(B, {})).etat === 'a-jour', 'Synchro : dépôt à jour mal reconnu.');
+
+  fs.writeFileSync(path.join(B, '.git', 'index.lock'), '');
+  verifier((await sg.cycle(B, {})).etat === 'bloque', 'Synchro : opération Git en cours ignorée.');
+  fs.rmSync(path.join(B, '.git', 'index.lock'));
+  g(B, 'remote', 'set-url', 'origin', path.join(t, 'absent.git'));
+  verifier(['hors-ligne', 'erreur'].includes((await sg.cycle(B, {})).etat), 'Synchro : dépôt injoignable non signalé.');
+  verifier((await sg.cycle(path.join(t, 'distant.git'), {})).etat === 'indisponible', 'Synchro : dossier sans dépôt suivi non reconnu.');
+
+  verifier(sg.dansPerimetre('moi/L1/Algo/quiz_results/q/1.json', 'progression') && !sg.dansPerimetre('moi/L1/Algo/TP/main.c', 'progression')
+    && !sg.dansPerimetre('explore/a/td_results/x.json', 'tout') && sg.dansPerimetre('moi/TP/main.c', 'tout') && !sg.dansPerimetre('moi/x.json.tmp', 'tout'), 'Synchro : périmètre incorrect.');
+  verifier(sg.adresseSure('https://ghu_secret@github.com/a/b.git') === 'https://github.com/a/b.git', 'Synchro : identifiants de l’adresse du dépôt affichés.');
+} else {
+  console.warn('Git introuvable : synchronisation non vérifiée.');
+}
+
 /* -- Raccourcis ------------------------------------------------------------------------ */
 const sc = require('../src/raccourcis-regles.js');
 {
@@ -364,4 +433,4 @@ if (echecs.length) {
   console.error(`✗ ${echecs.length} problème(s) :\n- ${echecs.join('\n- ')}`);
   process.exit(1);
 }
-console.log(`✓ ${fichiersJs.length} fichiers JavaScript, règles de contenu, paquet, catalogue et proposition piégés refusés, espaces des profils, copie des outils et raccourcis vérifiés.`);
+console.log(`✓ ${fichiersJs.length} fichiers JavaScript, règles de contenu, paquet, catalogue et proposition piégés refusés, espaces des profils, copie des outils, synchronisation Git et raccourcis vérifiés.`);

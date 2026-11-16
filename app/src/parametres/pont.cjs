@@ -62,5 +62,12 @@ contextBridge.exposeInMainWorld("studies", {
     surStatut: ecouter("maj:statut")
   },
 
+  synchro: {
+    statut: () => appeler("synchro:statut"),
+    maintenant: () => appeler("synchro:maintenant"),
+    auto: (valeur) => appeler("synchro:auto", valeur),
+    surStatut: ecouter("synchro:statut")
+  },
+
   surSection: ecouter("parametres:section")
 });
