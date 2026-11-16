@@ -36,7 +36,10 @@ const DEFAUT = {
   // (synchro.js) : null tant que l'utilisateur n'a pas répondu à la proposition
   synchro: { auto: null },
   // Dossiers où l'utilisateur a demandé un raccourci, en plus du Bureau et du menu
-  raccourcis: { dossiers: [] }
+  raccourcis: { dossiers: [] },
+  // Langue de l'application (« fr », « en ») : null tant qu'elle n'est pas choisie
+  // (la fenêtre de choix s'ouvre alors au démarrage, voir choix-langue.js)
+  langue: null
 };
 
 function fichier() {

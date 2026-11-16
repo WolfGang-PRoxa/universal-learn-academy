@@ -69,5 +69,29 @@ contextBridge.exposeInMainWorld("studies", {
     surStatut: ecouter("synchro:statut")
   },
 
+  // Langue de l'interface (src/i18n) : dictionnaire de la langue en usage, choix
+  i18n: {
+    textes: () => appeler("i18n:textes"),
+    definir: (code) => appeler("i18n:definir", code),
+    surChangement: ecouter("i18n:changee")
+  },
+
+  // Documentation et paramétrage guidé (src/doc, src/guide)
+  aide: {
+    documentation: (page) => appeler("aide:documentation", page),
+    guide: () => appeler("aide:guide"),
+    parametres: (section) => appeler("aide:parametres", section),
+    fermer: () => appeler("aide:fermer")
+  },
+
+  // Pages de la documentation (documentation.js)
+  doc: {
+    sommaire: () => appeler("doc:sommaire"),
+    page: (id) => appeler("doc:page", id),
+    chercher: (texte) => appeler("doc:chercher", texte),
+    lien: (url) => appeler("doc:lien", url),
+    surAller: ecouter("doc:aller")
+  },
+
   surSection: ecouter("parametres:section")
 });

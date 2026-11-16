@@ -19,6 +19,10 @@
    5. il recherche une mise à jour si le paramètre est activé ;
    6. si le dossier des données est un dépôt Git suivi, il le synchronise
       (synchro.js : au lancement, toutes les 30 minutes, au réveil, en quittant).
+
+   Avant tout cela, tant que la langue n'est pas choisie, la fenêtre de choix
+   de la langue s'ouvre (choix-langue.js) : c'est le premier écran après
+   l'installation. Textes de l'hôte : src/i18n (français et anglais).
    ========================================================================== */
 
 const { app, BrowserWindow, Notification, dialog, ipcMain, nativeTheme, screen, session, shell } = require("electron");
@@ -34,6 +38,10 @@ const donnees = require("./donnees");
 const diagnostic = require("./diagnostic");
 const arrierePlan = require("./arriere-plan");
 const synchro = require("./synchro");
+const i18n = require("./i18n");
+const choixLangue = require("./choix-langue");
+const annexe = require("./annexe");
+const doc = require("./documentation");
 const { ID_APP, URL_RELEASES } = require("./depot");
 
 const NOM = "Universal Learn Academy";
@@ -72,7 +80,12 @@ app.setAppUserModelId(ID_APP);
 // une fenêtre ne doit pas quitter l'application ; principal.js gère ensuite la fin.
 app.on("window-all-closed", () => {});
 
+i18n.brancher(reglages);
+const { t } = i18n;
+
 let fenetreParametres = null;
+let fenetreDoc = null;
+let fenetreGuide = null;
 
 /* -- Échelle de l'interface ------------------------------------------------------- */
 
@@ -111,7 +124,7 @@ function fenetrePreparation() {
     h1{font-size:17px;margin:0 0 6px}p{margin:0 0 16px;opacity:.75}
     .barre{height:8px;border-radius:4px;background:${sombre ? "#2a2c31" : "#e6e3dc"};overflow:hidden}
     .barre i{display:block;height:100%;width:0;background:#3d6fb6;transition:width .2s}</style>
-    <h1>Préparation des outils…</h1><p id="t">Copie des outils de cette version dans le dossier local.</p>
+    <h1>${t("m.preparation.titre")}</h1><p id="t">${t("m.preparation.texte")}</p>
     <div class="barre"><i id="b"></i></div>`;
   f.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html));
   f.once("ready-to-show", () => f.show());
@@ -127,14 +140,14 @@ async function synchroniserOutils(cible) {
   try {
     resultat = donnees.synchroniser(donnees.outilsLivres(), cible, (fait, total) => {
       const p = Math.round((fait / total) * 100);
-      if (!f.isDestroyed()) f.webContents.executeJavaScript(`b.style.width="${p}%";t.textContent="${fait} fichiers sur ${total}"`).catch(() => {});
+      if (!f.isDestroyed()) f.webContents.executeJavaScript(`b.style.width="${p}%";t.textContent=${JSON.stringify(t("m.preparation.fichiers", { fait, total }))}`).catch(() => {});
     });
   } finally {
     if (!f.isDestroyed()) f.destroy();
   }
   if (resultat.conserves.length) {
     fs.writeFileSync(path.join(cible, ".ula-conserves.txt"),
-      "Fichiers modifiés dans ce dossier, gardés tels quels lors de la mise à jour des outils :\n" + resultat.conserves.join("\n") + "\n");
+      "Fichiers modifiés dans ce dossier, gardés tels quels lors de la mise à jour des outils / Files modified in this folder, kept as they are when the tools were updated:\n" + resultat.conserves.join("\n") + "\n");
   }
   return resultat;
 }
@@ -148,7 +161,7 @@ async function dossierDesDonnees() {
       if (r.aSynchroniser) {
         try { await synchroniserOutils(donnees.dossierOutilsLocal()); }
         catch (e) {
-          dialog.showErrorBox(NOM, "La copie des outils a échoué : " + e.message);
+          dialog.showErrorBox(NOM, t("m.preparation.echec", { message: e.message }));
           return null;
         }
       }
@@ -156,12 +169,12 @@ async function dossierDesDonnees() {
     }
     const choix = dialog.showMessageBoxSync({
       type: "warning", title: NOM, message: r.erreur,
-      detail: "Choisir le dossier des données (celui qui contient explore et les dossiers des profils), ou revenir au dossier par défaut (" + donnees.dossierParDefaut() + ").",
-      buttons: ["Choisir un dossier…", "Dossier par défaut", "Quitter"], defaultId: 0, cancelId: 2
+      detail: t("m.donnees.detail", { dossier: donnees.dossierParDefaut() }),
+      buttons: [t("m.donnees.choisir"), t("m.donnees.defaut"), t("m.donnees.quitter")], defaultId: 0, cancelId: 2
     });
     if (choix === 2) return null;
     if (choix === 1) { reglages.modifier({ donnees: { dossier: "" }, cours: { mode: "integre", dossier: "" } }); continue; }
-    const d = dialog.showOpenDialogSync({ title: "Dossier des données", properties: ["openDirectory", "createDirectory"] });
+    const d = dialog.showOpenDialogSync({ title: t("m.donnees.titre"), properties: ["openDirectory", "createDirectory"] });
     if (d && d[0]) reglages.modifier({ donnees: { dossier: d[0] }, cours: { mode: "integre", dossier: "" } });
   }
 }
@@ -248,7 +261,7 @@ function ouvrirParametres(section) {
   const parent = (active && !active.studiesAnnexe ? active : fenetrePrincipale()) || undefined;
   fenetreParametres = new BrowserWindow({
     ...bornesParametres(), minWidth: lancement.MIN_LARGEUR, minHeight: lancement.MIN_HAUTEUR, show: false, parent,
-    title: "Paramètres de " + NOM, autoHideMenuBar: true,
+    title: t("p.titreFenetre"), autoHideMenuBar: true,
     backgroundColor: nativeTheme.shouldUseDarkColors ? "#131417" : "#fafaf8",
     icon: path.join(__dirname, "assets", "icone.png"),
     webPreferences: { preload: path.join(__dirname, "parametres", "pont.cjs"), contextIsolation: true, sandbox: true, nodeIntegration: false }
@@ -260,7 +273,7 @@ function ouvrirParametres(section) {
     if (/^https:\/\//i.test(url)) shell.openExternal(url);
     return { action: "deny" };
   });
-  fenetreParametres.webContents.on("will-navigate", (e) => e.preventDefault());
+  annexe.bloquerNavigation(fenetreParametres);
   fenetreParametres.once("ready-to-show", () => fenetreParametres.show());
   // L'échelle de l'interface s'applique aussi aux paramètres (même lisibilité partout)
   fenetreParametres.webContents.on("did-finish-load", () => {
@@ -277,6 +290,89 @@ function ouvrirParametres(section) {
   fenetreParametres.on("close", () => { clearTimeout(attente); memoriser(); });
   fenetreParametres.on("closed", () => { fenetreParametres = null; });
   fenetreParametres.loadFile(path.join(__dirname, "parametres", "index.html"), { hash: section || "" });
+}
+
+/* -- Documentation et paramétrage guidé (2.6.0) ------------------------------------- */
+
+// Documentation (doc/) : grande fenêtre annexe, environ 70 % x 85 % de l'écran de la
+// fenêtre des cours, centrée sur elle ; une seule à la fois, ramenée devant si elle
+// est déjà ouverte (et menée à la page demandée).
+function ouvrirDocumentation(page) {
+  if (fenetreDoc && !fenetreDoc.isDestroyed()) {
+    if (fenetreDoc.isMinimized()) fenetreDoc.restore();
+    fenetreDoc.show();
+    fenetreDoc.focus();
+    if (page) fenetreDoc.webContents.send("doc:aller", page);
+    return;
+  }
+  fenetreDoc = annexe.creer({
+    page: path.join(__dirname, "doc", "index.html"), hash: page || "",
+    preload: path.join(__dirname, "parametres", "pont.cjs"),
+    titre: t("d.titreFenetre"), largeur: 0.7, hauteur: 0.85,
+    min: { width: lancement.MIN_LARGEUR, height: lancement.MIN_HAUTEUR }, zoom: facteurEchelle
+  });
+  fenetreDoc.on("closed", () => { fenetreDoc = null; });
+}
+
+// Paramétrage guidé (guide/) : fenêtre moyenne, une étape à la fois. Les réglages
+// s'appliquent au fil des étapes, par les mêmes canaux que les paramètres.
+function ouvrirGuide() {
+  if (fenetreGuide && !fenetreGuide.isDestroyed()) {
+    if (fenetreGuide.isMinimized()) fenetreGuide.restore();
+    fenetreGuide.show();
+    fenetreGuide.focus();
+    return;
+  }
+  fenetreGuide = annexe.creer({
+    page: path.join(__dirname, "guide", "index.html"),
+    preload: path.join(__dirname, "parametres", "pont.cjs"),
+    titre: t("g.titreFenetre"), largeur: 720, hauteur: 640,
+    min: { width: 520, height: 480 }, zoom: facteurEchelle
+  });
+  fenetreGuide.on("closed", () => { fenetreGuide = null; });
+}
+
+/* -- Langue de l'interface ------------------------------------------------------------ */
+
+// Les pages servies par le serveur local lisent la langue dans l'agent utilisateur
+// (« ULA-langue/en ») : cours.js (barre du haut) et l'accueil.
+let agentDeBase = null;
+function agentUtilisateur() {
+  return `${agentDeBase} StudiesApp/${app.getVersion()} ULA-langue/${i18n.langue()}`;
+}
+
+// Changement de langue : agent utilisateur de toutes les pages, barre du haut et
+// accueil prévenus (window.ulaLangue de cours.js), fenêtres de l'hôte prévenues
+// (« i18n:changee »), menu de l'application refait par le programme des outils,
+// menu de l'icône de la zone de notification refait.
+const auditeursLangue = new Set();
+function surLangueChangee(code) {
+  if (agentDeBase) session.defaultSession.setUserAgent(agentUtilisateur());
+  for (const f of BrowserWindow.getAllWindows()) {
+    if (f.isDestroyed()) continue;
+    if (agentDeBase) f.webContents.setUserAgent(agentUtilisateur());
+    if (f.studiesAnnexe) {
+      f.webContents.send("i18n:changee", code);
+      if (f === fenetreParametres) f.setTitle(t("p.titreFenetre"));
+      if (f === fenetreDoc) f.setTitle(t("d.titreFenetre"));
+      if (f === fenetreGuide) f.setTitle(t("g.titreFenetre"));
+    } else {
+      f.webContents.executeJavaScript(`window.ulaLangue && window.ulaLangue(${JSON.stringify(code)})`, false).catch(() => {});
+    }
+  }
+  for (const fn of auditeursLangue) { try { fn(code); } catch (e) { /* tant pis */ } }
+  arrierePlan.rafraichir();
+}
+i18n.surChangement(surLangueChangee);
+
+/** Recharge les fenêtres de cours qui affichent l'accueil général ou un accueil de domaine. */
+function rechargerAccueils() {
+  for (const f of BrowserWindow.getAllWindows()) {
+    if (f.isDestroyed() || f.studiesAnnexe) continue;
+    let chemin = "";
+    try { chemin = new URL(f.webContents.getURL()).pathname; } catch (e) { continue; }
+    if (chemin === "/" || chemin === "/index.html" || /^\/explore\/[^/]+\/index\.html$/.test(chemin)) f.webContents.reload();
+  }
 }
 
 function redemarrer() {
@@ -297,7 +393,7 @@ async function apiQuiz(methode, route, corps) {
       signal: AbortSignal.timeout(route.startsWith("claude/") ? 180000 : 20000)
     });
   } catch (e) {
-    throw new Error("Le serveur local ne répond pas (il démarre avec la fenêtre des cours).");
+    throw new Error(t("m.serveurMuet"));
   }
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(d.erreur || `Erreur ${r.status} du serveur local.`);
@@ -345,6 +441,7 @@ function enregistrerIpc() {
     if (sur.arrierePlan) sur.arrierePlan = { fermeture: sur.arrierePlan.fermeture !== false };
     delete sur.fenetreParametres;
     delete sur.synchro;
+    delete sur.langue;
     const r = reglages.publics(reglages.modifier(sur));
     if (sur.affichage) annoncerEchelle();
     return r;
@@ -356,7 +453,7 @@ function enregistrerIpc() {
   });
 
   traiter("donnees:choisir", async (evenement) => {
-    const r = await dialog.showOpenDialog(BrowserWindow.fromWebContents(evenement.sender), { title: "Dossier des données", properties: ["openDirectory", "createDirectory"] });
+    const r = await dialog.showOpenDialog(BrowserWindow.fromWebContents(evenement.sender), { title: t("m.donnees.titre"), properties: ["openDirectory", "createDirectory"] });
     if (r.canceled || !r.filePaths[0]) return { ok: false, annule: true };
     reglages.modifier({ donnees: { dossier: r.filePaths[0] }, cours: { mode: "integre", dossier: "" } });
     return { ok: true, dossier: r.filePaths[0], depot: donnees.estDepot(r.filePaths[0]) };
@@ -368,10 +465,13 @@ function enregistrerIpc() {
 
   // Profils : par l'API du serveur local (extension ula), comme l'accueil
   traiter("profils:etat", () => apiQuiz("GET", "ula/etat"));
-  traiter("profils:choisir", (nom) => apiQuiz("PUT", "ula/profil", { nom: String(nom) }));
-  traiter("profils:creer", (nom, cursus, telecharger) => apiQuiz("POST", "ula/profils", { nom: String(nom), cursus: cursus ? String(cursus) : null, telecharger: telecharger !== false }));
+  // Un profil créé, choisi ou renommé depuis les paramètres ou le guide : les accueils
+  // ouverts se rechargent pour le montrer (sinon l'accueil demanderait encore un nom)
+  const puisAccueils = (promesse) => promesse.then((r) => { rechargerAccueils(); return r; });
+  traiter("profils:choisir", (nom) => puisAccueils(apiQuiz("PUT", "ula/profil", { nom: String(nom) })));
+  traiter("profils:creer", (nom, cursus, telecharger) => puisAccueils(apiQuiz("POST", "ula/profils", { nom: String(nom), cursus: cursus ? String(cursus) : null, telecharger: telecharger !== false })));
   traiter("profils:cursus", () => apiQuiz("GET", "ula/catalogue").then((c) => c.cursus || []).catch(() => []));
-  traiter("profils:renommer", (ancien, nouveau) => apiQuiz("POST", "ula/profils/renommer", { ancien: String(ancien), nouveau: String(nouveau) }));
+  traiter("profils:renommer", (ancien, nouveau) => puisAccueils(apiQuiz("POST", "ula/profils/renommer", { ancien: String(ancien), nouveau: String(nouveau) })));
 
   traiter("raccourcis:statut", () => raccourcis.statut());
   traiter("raccourcis:creer", (id, options) => raccourcis.creer(String(id), { confirmReplace: Boolean(options && options.confirmReplace) }));
@@ -396,6 +496,20 @@ function enregistrerIpc() {
   traiter("synchro:statut", () => synchro.statut());
   traiter("synchro:maintenant", () => synchro.synchroniser());
   traiter("synchro:auto", (valeur) => synchro.definirAuto(valeur === true));
+
+  // Langue de l'interface (src/i18n)
+  traiter("i18n:textes", () => ({ langue: i18n.langue(), locale: i18n.locale(), langues: i18n.LANGUES.map(({ code, nom }) => ({ code, nom })), textes: i18n.dictionnaire() }));
+  traiter("i18n:definir", (code) => i18n.definir(String(code)));
+
+  // Documentation et paramétrage guidé
+  traiter("aide:documentation", (page) => ouvrirDocumentation(page ? String(page) : undefined));
+  traiter("aide:guide", () => ouvrirGuide());
+  traiter("aide:parametres", (section) => ouvrirParametres(section ? String(section) : undefined));
+  traiter("aide:fermer", (evenement) => { const f = BrowserWindow.fromWebContents(evenement.sender); if (f && f.studiesAnnexe) f.close(); });
+  traiter("doc:sommaire", () => doc.sommaire(i18n.langue()));
+  traiter("doc:page", (id) => doc.page(i18n.langue(), String(id)));
+  traiter("doc:chercher", (texte) => doc.chercher(i18n.langue(), String(texte || "")));
+  traiter("doc:lien", (url) => { if (/^https:\/\//i.test(String(url))) shell.openExternal(String(url)); });
 
   traiter("maj:verifier", () => majs.verifier());
   traiter("maj:statut", () => majs.statut());
@@ -434,8 +548,8 @@ function surStatutMaj(statut) {
   versionAnnoncee = statut.version;
   if (!Notification.isSupported()) return;
   const n = new Notification({
-    title: `${NOM} ${statut.version} est prête`,
-    body: "Elle s'installera en quittant l'application (icône de la zone de notification › Quitter), ou tout de suite : Paramètres › Mises à jour › Redémarrer et installer."
+    title: t("m.maj.titre", { version: statut.version }),
+    body: t("m.maj.texte")
   });
   n.on("click", () => { montrerFenetre(); ouvrirParametres("mises-a-jour"); });
   n.show();
@@ -445,6 +559,9 @@ async function demarrer() {
   diagnostic.demarrer();
   enregistrerIpc();
   majs.init(surStatutMaj);
+
+  // Premier écran après l'installation : le choix de la langue
+  if (!i18n.choisie()) await choixLangue.demander();
 
   const choix = await dossierDesDonnees();
   if (!choix) return app.quit();
@@ -466,7 +583,9 @@ async function demarrer() {
 
   // Les pages reconnaissent l'application installée à son agent utilisateur et ajoutent
   // alors le bouton « Paramètres » à leur barre (_outils/charte/assets/cours.js)
-  session.defaultSession.setUserAgent(session.defaultSession.getUserAgent() + " StudiesApp/" + app.getVersion());
+  // La langue y figure aussi (« ULA-langue/fr »), pour la barre du haut et l'accueil
+  agentDeBase = session.defaultSession.getUserAgent();
+  session.defaultSession.setUserAgent(agentUtilisateur());
 
   global.studiesHote = {
     version: app.getVersion(),
@@ -487,7 +606,14 @@ async function demarrer() {
     quitterAnnule: () => arrierePlan.quitterAnnule(),
     montrerFenetre,
     // Bouton nuage de la barre des pages (/_app/synchro, fenetres.js)
-    synchroniserMaintenant: () => { synchro.synchroniser(); }
+    synchroniserMaintenant: () => { synchro.synchroniser(); },
+    // Langue de l'interface (2.6.0) : code (« fr », « en »), abonnement aux changements
+    langue: () => i18n.langue(),
+    surLangue: (fn) => { if (typeof fn === "function") auditeursLangue.add(fn); },
+    // Documentation (F1, bouton « ? » de la barre des pages : /_app/aide) et
+    // paramétrage guidé (/_app/guide)
+    ouvrirDocumentation: (page) => { ouvrirDocumentation(page); },
+    ouvrirGuide: () => { ouvrirGuide(); }
   };
 
   try {
@@ -499,6 +625,7 @@ async function demarrer() {
 
   arrierePlan.demarrer({
     ouvrir: montrerFenetre,
+    documentation: () => ouvrirDocumentation(),
     verifierMiseAJour: () => { montrerFenetre(); global.studiesHote.verifierMiseAJour(); },
     installer: () => majs.installerMaintenant(),
     majStatut: () => majs.statut(),

@@ -11,6 +11,7 @@
    utilisateurs, la mise à jour ne fonctionnera qu'une fois le dépôt public. */
 
 const { app } = require("electron");
+const { t } = require("./i18n");
 const { execFile } = require("child_process");
 const { autoUpdater } = require("electron-updater");
 const { DEPOT } = require("./depot");
@@ -22,9 +23,9 @@ let viaGh = false;
 
 function messageCourt(erreur) {
   const texte = String((erreur && erreur.message) || erreur || "erreur inconnue");
-  if (/\b404\b/.test(texte)) return "aucune version publiée n'a été trouvée sur GitHub (dépôt privé ou aucune release).";
-  if (/\b401\b|\b403\b/.test(texte)) return "GitHub refuse l'accès aux releases (jeton invalide ou sans droit de lecture).";
-  if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|net::ERR_/i.test(texte)) return "connexion à GitHub impossible.";
+  if (/\b404\b/.test(texte)) return t("u.aucuneVersion");
+  if (/\b401\b|\b403\b/.test(texte)) return t("u.refus");
+  if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|net::ERR_/i.test(texte)) return t("u.connexion");
   const ligne = texte.split("\n")[0].trim();
   return ligne.length > 160 ? ligne.slice(0, 157) + "…" : ligne;
 }
@@ -79,11 +80,11 @@ async function verifierUneFois() {
     return dernier;
   }
   if (!app.isPackaged) {
-    emettre({ etat: "indisponible", message: "Les mises à jour ne concernent que la version installée de l'application." });
+    emettre({ etat: "indisponible", message: t("u.seulementInstallee") });
     return dernier;
   }
   if (process.platform === "linux" && !process.env.APPIMAGE) {
-    emettre({ etat: "indisponible", message: "Les mises à jour automatiques sous Linux demandent la version AppImage." });
+    emettre({ etat: "indisponible", message: t("u.appImage") });
     return dernier;
   }
   configurer();

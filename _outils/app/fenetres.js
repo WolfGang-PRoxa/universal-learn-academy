@@ -12,6 +12,7 @@ const { app, BrowserWindow, Menu, WebContentsView, clipboard, dialog, ipcMain, n
 const fs = require("fs");
 const path = require("path");
 const serveur = require("./serveur");
+const { t } = require("./textes");
 
 const ICONE = path.join(__dirname, "assets", "icone.png");
 const ETAT = path.join(app.getPath("userData"), "fenetre.json");
@@ -72,6 +73,15 @@ function parametres(url) {
     hote.ouvrirParametres(u.hash.slice(1) || undefined);
     return true;
   }
+  // Bouton « ? » de la barre des pages : documentation (2.6.0), ou paramétrage guidé
+  if (u.pathname === "/_app/aide" && typeof hote.ouvrirDocumentation === "function") {
+    hote.ouvrirDocumentation(u.hash.slice(1) || undefined);
+    return true;
+  }
+  if (u.pathname === "/_app/guide" && typeof hote.ouvrirGuide === "function") {
+    hote.ouvrirGuide();
+    return true;
+  }
   if (u.pathname === "/_app/synchro" && typeof hote.synchroniserMaintenant === "function") {
     hote.synchroniserMaintenant();
     return true;
@@ -110,8 +120,8 @@ function brancherPage(f) {
   // Page avec un enregistrement en cours (suivi) : Electron bloquerait la fermeture sans rien dire
   page.on("will-prevent-unload", (e) => {
     const choix = dialog.showMessageBoxSync(f, {
-      type: "warning", title: "Universal Learn Academy", message: "Des modifications ne sont pas encore enregistrées.",
-      buttons: ["Quitter la page quand même", "Rester"], defaultId: 1, cancelId: 1
+      type: "warning", title: "Universal Learn Academy", message: t("dialogue.nonEnregistre"),
+      buttons: [t("dialogue.quitterPage"), t("dialogue.rester")], defaultId: 1, cancelId: 1
     });
     if (choix === 0) e.preventDefault();
   });
@@ -135,22 +145,22 @@ function menuContextuel(page, p) {
   for (const mot of p.dictionarySuggestions) m.push({ label: mot, click: () => page.replaceMisspelling(mot) });
   if (m.length) m.push({ type: "separator" });
   if (p.linkURL) {
-    if (interne(p.linkURL)) m.push({ label: "Ouvrir dans une nouvelle fenêtre", click: () => ouvrir(p.linkURL) });
-    else m.push({ label: "Ouvrir dans le navigateur", click: () => versNavigateur(p.linkURL) });
-    m.push({ label: "Copier l'adresse du lien", click: () => clipboard.writeText(p.linkURL) }, { type: "separator" });
+    if (interne(p.linkURL)) m.push({ label: t("contexte.nouvelleFenetre"), click: () => ouvrir(p.linkURL) });
+    else m.push({ label: t("contexte.navigateur"), click: () => versNavigateur(p.linkURL) });
+    m.push({ label: t("contexte.copierLien"), click: () => clipboard.writeText(p.linkURL) }, { type: "separator" });
   }
-  if (p.mediaType === "image") m.push({ label: "Copier l'image", click: () => page.copyImageAt(p.x, p.y) }, { type: "separator" });
+  if (p.mediaType === "image") m.push({ label: t("contexte.copierImage"), click: () => page.copyImageAt(p.x, p.y) }, { type: "separator" });
   if (p.isEditable) {
-    m.push({ label: "Couper", role: "cut", enabled: p.editFlags.canCut });
-    m.push({ label: "Copier", role: "copy", enabled: p.editFlags.canCopy });
-    m.push({ label: "Coller", role: "paste", enabled: p.editFlags.canPaste });
-    m.push({ label: "Tout sélectionner", role: "selectAll" });
+    m.push({ label: t("menu.couper"), role: "cut", enabled: p.editFlags.canCut });
+    m.push({ label: t("menu.copier"), role: "copy", enabled: p.editFlags.canCopy });
+    m.push({ label: t("menu.coller"), role: "paste", enabled: p.editFlags.canPaste });
+    m.push({ label: t("menu.toutSelectionner"), role: "selectAll" });
   } else if (p.selectionText) {
-    m.push({ label: "Copier", role: "copy" });
+    m.push({ label: t("menu.copier"), role: "copy" });
   } else if (!m.length) {
-    m.push({ label: "Précédent", enabled: page.navigationHistory.canGoBack(), click: () => page.navigationHistory.goBack() });
-    m.push({ label: "Suivant", enabled: page.navigationHistory.canGoForward(), click: () => page.navigationHistory.goForward() });
-    m.push({ label: "Recharger", click: () => page.reload() });
+    m.push({ label: t("menu.precedent"), enabled: page.navigationHistory.canGoBack(), click: () => page.navigationHistory.goBack() });
+    m.push({ label: t("menu.suivant"), enabled: page.navigationHistory.canGoForward(), click: () => page.navigationHistory.goForward() });
+    m.push({ label: t("menu.recharger"), click: () => page.reload() });
   }
   if (m[m.length - 1].type === "separator") m.pop();
   return m;
@@ -219,14 +229,14 @@ ipcMain.on("recherche:fermer", (e) => {
 
 function imprimer(f) {
   f.webContents.print({}, (ok, raison) => {
-    if (!ok && raison !== "Print job canceled") dialog.showErrorBox("Universal Learn Academy", "Impression impossible : " + raison);
+    if (!ok && raison !== "Print job canceled") dialog.showErrorBox("Universal Learn Academy", t("dialogue.impression", { raison }));
   });
 }
 
 async function enregistrerPdf(f) {
   const nom = f.getTitle().replace(/[\\/:*?"<>|]+/g, "-").trim() || "page";
   const r = await dialog.showSaveDialog(f, {
-    title: "Enregistrer en PDF", defaultPath: path.join(app.getPath("documents"), nom + ".pdf"),
+    title: t("dialogue.pdfTitre"), defaultPath: path.join(app.getPath("documents"), nom + ".pdf"),
     filters: [{ name: "PDF", extensions: ["pdf"] }]
   });
   if (r.canceled) return;
@@ -234,7 +244,7 @@ async function enregistrerPdf(f) {
     fs.writeFileSync(r.filePath, await f.webContents.printToPDF({ printBackground: true, preferCSSPageSize: true }));
     shell.openPath(r.filePath);
   } catch (e) {
-    dialog.showErrorBox("Universal Learn Academy", "Enregistrement impossible : " + e.message);
+    dialog.showErrorBox("Universal Learn Academy", t("dialogue.pdfEchec", { message: e.message }));
   }
 }
 
@@ -278,9 +288,9 @@ function creer(bornes) {
       if (!quitter) {
         if (!f.isVisible()) f.show();
         const r = await dialog.showMessageBox(f, {
-          type: "warning", title: "Universal Learn Academy", message: "Une génération de quiz est en cours.",
-          detail: "Fermer l’application l’arrête, et le quiz ne sera pas créé.",
-          buttons: ["Fermer quand même", "Continuer"], defaultId: 1, cancelId: 1, noLink: true
+          type: "warning", title: "Universal Learn Academy", message: t("dialogue.generation"),
+          detail: t("dialogue.generationDetail"),
+          buttons: [t("dialogue.fermerQuandMeme"), t("dialogue.continuer")], defaultId: 1, cancelId: 1, noLink: true
         });
         quitter = r.response === 0;
       }
@@ -312,6 +322,8 @@ function ecranAttente() {
   const f = creer(lancement ? lancement.bornes : bornesValides(etat.bornes));
   if (lancement ? lancement.agrandie : etat.maximisee) f.maximize();
   f.loadFile(path.join(__dirname, "demarrage.html"));
+  // Texte d'attente dans la langue de l'application installée
+  if (hote) f.webContents.once("did-finish-load", () => noter(f, t("demarrage")));
   return f;
 }
 

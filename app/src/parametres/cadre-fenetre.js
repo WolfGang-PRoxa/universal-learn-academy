@@ -3,7 +3,7 @@
 // redimensionne à la souris ou au clavier (flèches ; Maj : pas de 50 px ; Alt :
 // redimensionner).
 
-import { h } from './outils.js';
+import { h, t } from './outils.js';
 
 const POIGNEES = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
 
@@ -21,12 +21,12 @@ export function creerCadre({ ecrans, bornes, min, surChangement, surFin }) {
 
   const surface = h('div', { class: 'cadre-surface' });
   const etiquette = h('span', { class: 'etiquette' });
-  const fenetre = h('div', { class: 'cadre-fenetre', tabindex: '0', 'aria-label': 'Fenêtre de l’application (déplacer ou redimensionner)' },
+  const fenetre = h('div', { class: 'cadre-fenetre', tabindex: '0', 'aria-label': t('p.fenetre.cadreAria') },
     etiquette,
     POIGNEES.map((d) => h('span', { class: `poignee ${d}`, dataset: { dir: d } })),
   );
   const blocs = ecrans.map((e) => h('div', { class: `cadre-ecran${e.primary ? ' principal' : ''}` },
-    h('span', {}, `Écran ${e.index}${e.primary ? ' (principal)' : ''} · ${e.bounds.width}×${e.bounds.height}`)));
+    h('span', {}, `${t(e.primary ? 'p.fenetre.ecranPrincipal' : 'p.fenetre.ecran', { n: e.index })} · ${e.bounds.width}×${e.bounds.height}`)));
   surface.append(...blocs, fenetre);
   const element = h('div', { class: 'cadre' }, surface);
 

@@ -15,6 +15,7 @@ const path = require("path");
 const serveur = require("./serveur");
 const fenetres = require("./fenetres");
 const { construireMenu } = require("./menu");
+const { t } = require("./textes");
 
 const ID_APP = "fr.studies.app";
 
@@ -30,20 +31,20 @@ function creerRaccourcis() {
 }
 
 // Prévient quand une génération de quiz se termine alors que Studies n'a pas la main
-function prevenirFinDeTache(t) {
+function prevenirFinDeTache(tache) {
   if (BrowserWindow.getFocusedWindow()) return;
-  if (t.etat !== "terminee" && t.etat !== "erreur") return;
-  const n = new Notification(t.etat === "terminee"
-    ? { title: "Nouveau quiz prêt", body: path.basename(t.fichier) }
-    : { title: "Génération du quiz interrompue", body: "Le détail est dans le portail." });
-  if (t.etat === "terminee") n.on("click", () => fenetres.ouvrir(serveur.adresse() + t.fichier));
+  if (tache.etat !== "terminee" && tache.etat !== "erreur") return;
+  const n = new Notification(tache.etat === "terminee"
+    ? { title: t("notif.quizPret"), body: path.basename(tache.fichier) }
+    : { title: t("notif.quizInterrompu"), body: t("notif.quizDetail") });
+  if (tache.etat === "terminee") n.on("click", () => fenetres.ouvrir(serveur.adresse() + tache.fichier));
   n.show();
 }
 
 function surArretServeur(code) {
   const choix = dialog.showMessageBoxSync({
-    type: "error", title: "Universal Learn Academy", message: "Le serveur local s'est arrêté (code " + code + ").",
-    detail: "Le détail est dans le journal.", buttons: ["Relancer", "Voir le journal", "Quitter"], defaultId: 0, cancelId: 2
+    type: "error", title: "Universal Learn Academy", message: t("dialogue.serveurArrete", { code }),
+    detail: t("dialogue.serveurDetail"), buttons: [t("dialogue.relancer"), t("dialogue.voirJournal"), t("menu.quitter")], defaultId: 0, cancelId: 2
   });
   if (choix === 1) shell.openPath(serveur.JOURNAL);
   if (choix === 2) return app.quit();
@@ -58,7 +59,7 @@ async function demarrerServeur(fenetre) {
     await fenetres.afficherPageDeDepart(fenetre);
     serveur.surveillerTaches(prevenirFinDeTache);
   } catch (e) {
-    dialog.showErrorBox("Universal Learn Academy", "Le serveur local n'a pas démarré : " + e.message + "\n\nJournal : " + serveur.JOURNAL);
+    dialog.showErrorBox("Universal Learn Academy", t("dialogue.serveurEchec", { message: e.message, journal: serveur.JOURNAL }));
     app.quit();
   }
 }
@@ -92,5 +93,7 @@ app.on("will-quit", (e) => {
 });
 
 Menu.setApplicationMenu(construireMenu());
+// Langue changée dans l'application installée : menu refait dans la nouvelle langue
+if (hote && typeof hote.surLangue === "function") hote.surLangue(() => Menu.setApplicationMenu(construireMenu()));
 fenetres.preparerSession();
 demarrerServeur(fenetres.ecranAttente());

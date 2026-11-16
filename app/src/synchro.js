@@ -25,6 +25,7 @@ const { app, BrowserWindow, Notification, ipcMain, nativeTheme, powerMonitor, sc
 const os = require("os");
 const path = require("path");
 const moteur = require("./synchro-git");
+const { t, tn } = require("./i18n");
 
 const INTERVALLE_MS = Number(process.env.ULA_SYNCHRO_INTERVALLE_MS) || 30 * 60000;
 const EXAMEN_MS = Math.min(60000, Math.max(1000, Math.round(INTERVALLE_MS / 10)));
@@ -123,7 +124,7 @@ function synchroniser(raison = "manuel") {
     annoncer();
     if (!infos || raison === "manuel" || raison === "lancement") await rafraichirInfos();
     if (!infos.distant) {
-      dernier = { etat: "indisponible", message: infos.raison || "Pas de dépôt distant.", a: new Date().toISOString(), recus: [], conflits: [] };
+      dernier = { etat: "indisponible", message: infos.raison || t("s.pasDistant"), a: new Date().toISOString(), recus: [], conflits: [] };
       return dernier;
     }
     derniere = Date.now();
@@ -137,13 +138,13 @@ function synchroniser(raison = "manuel") {
     if (r.recus.length) rechargerAccueil();
     if (r.conflits.some((c) => c.copie)) {
       const copies = r.conflits.filter((c) => c.copie);
-      notifier(`copies:${r.a}`, "Synchronisation : conflit résolu",
-        `${copies.length} fichier(s) modifié(s) sur deux postes : les deux versions sont gardées (${copies.map((c) => c.copie.split("/").pop()).join(", ")}).`);
+      notifier(`copies:${r.a}`, t("s.notif.conflitTitre"),
+        tn("s.notif.conflitTexte", copies.length, { liste: copies.map((c) => c.copie.split("/").pop()).join(", ") }));
     }
     if (r.etat === "connexion" || r.etat === "manuel" || r.etat === "erreur") {
-      notifier(`${r.etat}:${r.message}`, "Synchronisation impossible", r.message);
+      notifier(`${r.etat}:${r.message}`, t("s.notif.impossible"), r.message);
     }
-    if (r.avertissement) notifier(`stash:${r.a}`, "Synchronisation", r.avertissement);
+    if (r.avertissement) notifier(`stash:${r.a}`, t("p.synchro.titre"), r.avertissement);
     return dernier;
   })().catch((e) => {
     dernier = { etat: "erreur", message: String(e.message || e), a: new Date().toISOString(), recus: [], conflits: [] };
@@ -176,7 +177,7 @@ function proposer() {
   const { parent, bornes } = bornesProposition(440);
   const f = new BrowserWindow({
     ...bornes, parent, modal: Boolean(parent), show: false, resizable: false, minimizable: false, maximizable: false, fullscreenable: false,
-    title: "Synchronisation", autoHideMenuBar: true, useContentSize: true,
+    title: t("p.synchro.titre"), autoHideMenuBar: true, useContentSize: true,
     backgroundColor: nativeTheme.shouldUseDarkColors ? "#1b1c20" : "#ffffff",
     icon: path.join(__dirname, "assets", "icone.png"),
     webPreferences: { preload: path.join(__dirname, "proposition", "pont.cjs"), contextIsolation: true, sandbox: true, nodeIntegration: false }
@@ -204,7 +205,9 @@ function proposer() {
 function brancherProposition() {
   const depuisProposition = (e) => proposition && e.sender === proposition.fenetre.webContents;
   ipcMain.handle("proposition:infos", (e) => (depuisProposition(e) && infos ? {
-    adresse: infos.adresse, distant: `${infos.distant}/${infos.brancheDistante}`, branche: infos.brancheDistante, mode: o.mode
+    adresse: infos.adresse, distant: `${infos.distant}/${infos.brancheDistante}`, branche: infos.brancheDistante, mode: o.mode,
+    langue: require("./i18n").langue(),
+    textes: Object.fromEntries(["titre", "sousTitre", "depot", "lancement", "intervalle", "reveil", "fermeture", "perimetreProgression", "perimetreTout", "aide", "non", "plusTard", "activer"].map((k) => [k, t("s.proposition." + k)]))
   } : null));
   ipcMain.handle("proposition:repondre", (e, c) => {
     if (depuisProposition(e)) proposition.fermer(["activer", "non", "plus-tard"].includes(c) ? c : "plus-tard");

@@ -1,4 +1,37 @@
-// Petits utilitaires de la page des paramètres.
+// Petits utilitaires des pages de l'hôte (paramètres, paramétrage guidé,
+// documentation) : éléments, icônes, cartes, notes, dialogues et textes traduits.
+
+/* -- Textes traduits (src/i18n) ------------------------------------------------- */
+
+let textes = {};
+let langueCourante = 'fr';
+let localeCourante = 'fr-FR';
+
+/** Charge le dictionnaire de la langue en usage (window.studies.i18n). */
+export async function chargerTextes() {
+  const d = await window.studies.i18n.textes();
+  textes = d.textes || {};
+  langueCourante = d.langue || 'fr';
+  localeCourante = d.locale || 'fr-FR';
+  document.documentElement.lang = langueCourante;
+  return d;
+}
+
+/** Texte de la clé, variables {nom} remplacées. */
+export function t(cle, vars) {
+  const texte = textes[cle] !== undefined ? textes[cle] : cle;
+  if (!vars) return texte;
+  return texte.replace(/\{(\w+)\}/g, (m, k) => (vars[k] === undefined || vars[k] === null ? m : String(vars[k])));
+}
+
+/** Singulier ou pluriel selon n (0 est singulier en français). */
+export function tn(cle, n, vars) {
+  const un = n === 1 || (langueCourante === 'fr' && n === 0);
+  return t(`${cle}.${un ? 'un' : 'plusieurs'}`, Object.assign({ n }, vars));
+}
+
+export const langue = () => langueCourante;
+export const locale = () => localeCourante;
 
 /** h('button', { class: 'bouton', onClick: f }, 'Libellé') */
 export function h(balise, props = {}, ...enfants) {
@@ -30,6 +63,9 @@ const ICONES = {
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
   arriere: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 20h10"/><circle cx="17.5" cy="16.5" r="3.5" fill="currentColor" stroke="none" opacity=".25"/><path d="M17.5 15v1.5l1 1"/>',
   echelle: '<path d="M4 20 20 4"/><path d="M14 4h6v6M10 20H4v-6"/>',
+  langue: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  aide: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.2-2.5 3.9M12 17v.5"/>',
+  guide: '<path d="M4 20 20 4"/><path d="M14.5 4H20v5.5"/><circle cx="6" cy="6" r="2"/><circle cx="18" cy="18" r="2"/>',
   nuage: '<path d="M17.5 19H7a5 5 0 1 1 1.1-9.9A6 6 0 0 1 19.6 11 4 4 0 0 1 17.5 19z"/>',
   ok: '<path d="M20 6 9 17l-5-5"/>',
   x: '<path d="M18 6 6 18M6 6l12 12"/>',
@@ -68,12 +104,12 @@ export function note(message, { erreur = false, duree = 3500 } = {}) {
   setTimeout(() => { n.classList.remove('visible'); setTimeout(() => n.remove(), 300); }, duree);
 }
 
-export function confirmer({ titre, message, valider = 'Confirmer', danger = false }) {
+export function confirmer({ titre, message, valider = t('commun.confirmer'), danger = false }) {
   return new Promise((resolve) => {
     const d = h('dialog', {});
     const fermer = (v) => { d.close(); d.remove(); resolve(v); };
     d.append(h('h2', {}, titre), message ? h('p', {}, message) : null,
-      h('div', { class: 'ligne' }, bouton('Annuler', { onClick: () => fermer(false) }),
+      h('div', { class: 'ligne' }, bouton(t('commun.annuler'), { onClick: () => fermer(false) }),
         bouton(valider, { genre: danger ? 'discret-danger' : 'principal', onClick: () => fermer(true) })));
     d.addEventListener('cancel', (e) => { e.preventDefault(); fermer(false); });
     document.body.append(d);
@@ -88,5 +124,22 @@ export function antiRebond(fn, delai) {
 
 /** Message d'une erreur du processus principal, sans le préfixe d'Electron. */
 export function messageErreur(e) {
-  return String((e && e.message) || e || 'erreur inconnue').replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/, '');
+  return String((e && e.message) || e || t('commun.erreurInconnue')).replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/, '');
+}
+
+/* -- Textes partagés par les paramètres et le paramétrage guidé ------------------- */
+
+/** Libellé d'un emplacement de raccourci connu, dans la langue de l'interface. */
+export function libelleLieu(l, info) {
+  if (l.id === 'bureau') return t('p.racc.bureau');
+  if (l.id === 'menu') return t(info && info.plateforme === 'win32' ? 'p.racc.menuDemarrer' : 'p.racc.menuApplications');
+  return l.label;
+}
+
+/** Message après la création d'un profil (avec ou sans cursus exemple). */
+export function messageCreation(r) {
+  const x = r && r.cursusExemple;
+  if (x && x.erreur) return x.erreur;
+  if (!x) return t('p.profil.noteCree');
+  return t(x.telechargement ? 'p.profil.noteCreeCursusTelechargement' : 'p.profil.noteCreeCursus', { titre: x.titre, n: x.cours });
 }

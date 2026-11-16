@@ -9,6 +9,7 @@
    transmet qu'un identifiant d'emplacement, jamais un chemin de fichier. */
 
 const { app, dialog, shell } = require("electron");
+const { t } = require("./i18n");
 const crypto = require("crypto");
 const fs = require("fs/promises");
 const path = require("path");
@@ -136,12 +137,12 @@ async function inspecter(lieu) {
 
 function trouver(id) {
   const lieu = emplacements().find((l) => l.id === id);
-  if (!lieu) throw new Error("Emplacement de raccourci inconnu.");
+  if (!lieu) throw new Error(t("r.inconnu"));
   return lieu;
 }
 
 function verifierPriseEnCharge() {
-  if (!prisEnCharge()) throw new Error("Les raccourcis ne sont disponibles que sous Windows et Linux.");
+  if (!prisEnCharge()) throw new Error(t("p.racc.nonPris"));
 }
 
 /* -- API utilisée par main.js --------------------------------------------- */
@@ -172,10 +173,10 @@ async function creer(id, { confirmReplace = false } = {}) {
   await fs.mkdir(avant.dir, { recursive: true });
   const operation = avant.action === "create" ? "create" : "replace";
   const ecrit = await io.ecrire(f, optionsRaccourci(), operation);
-  if (!ecrit) throw new Error("Le raccourci n'a pas pu être écrit dans " + avant.dir + ".");
+  if (!ecrit) throw new Error(t("r.ecriture", { dossier: avant.dir }));
 
   const apres = await inspecter(lieu);
-  if (apres.status !== "ok") throw new Error("Le raccourci a été écrit, mais il n'ouvre pas l'application.");
+  if (apres.status !== "ok") throw new Error(t("r.verification"));
   const outcome = { create: "created", repair: "repaired", replace: "replaced" }[avant.action];
   return { outcome, before: avant, location: apres };
 }
@@ -204,7 +205,7 @@ async function afficher(id) {
 async function choisirDossier(fenetre) {
   verifierPriseEnCharge();
   const r = await dialog.showOpenDialog(fenetre, {
-    title: "Dossier où créer le raccourci Universal Learn Academy",
+    title: t("r.choisirTitre"),
     defaultPath: app.getPath("home"),
     properties: ["openDirectory", "createDirectory", "promptToCreate"]
   });

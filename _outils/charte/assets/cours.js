@@ -71,6 +71,53 @@
     try { fn(); } catch (e) { console.error("[charte] " + nom + " :", e); }
   }
 
+  /* Langue de la barre du haut ---------------------------------------------- */
+
+  // L'application installée annonce sa langue dans l'agent utilisateur
+  // (« ULA-langue/en ») et appelle window.ulaLangue(code) quand elle change ; sans
+  // elle (navigateur, lancer-app.bat), la barre reste en français. Seule la barre
+  // est traduite : le contenu des cours reste dans sa langue.
+  var langue = (navigator.userAgent.match(/\bULA-langue\/(\w+)/) || [])[1] || "fr";
+  var TEXTES_BARRE = {
+    fr: {
+      themeClair: "Passer en thème clair", themeSombre: "Passer en thème sombre",
+      soutienTitre: "Soutenir Universal Learn Academy : m'offrir un café (Buy Me a Coffee)", soutienAria: "Offrir un café sur Buy Me a Coffee", soutien: "Offrir un café",
+      parametresTitre: "Paramètres : application, Claude, mises à jour (Ctrl+,)", parametres: "Paramètres",
+      aideTitre: "Aide : documentation et paramétrage guidé (F1)", aide: "Aide",
+      precedent: "Précédent (Alt+←)", suivant: "Suivant (Alt+→)",
+      accueilTitre: "Accueil général : toutes les années et toutes les matières", accueil: "Accueil général",
+      quizTitre: "S'entraîner avec le quiz de ce cours",
+      synchroEnCours: "Synchronisation en cours…", synchronise: "Synchronisé", synchroA: " à ", synchroLe: " le ",
+      synchroCliquer: ". Cliquer pour synchroniser maintenant.", horsLigne: "Hors ligne", horsLigneSuite: " : nouvel essai plus tard, ou cliquer pour réessayer.",
+      synchroMaintenant: "Synchroniser maintenant", synchroImpossible: "Synchronisation impossible.", synchroDetails: " Cliquer pour les détails.",
+      synchroManuelle: " (synchro automatique désactivée)"
+    },
+    en: {
+      themeClair: "Switch to light theme", themeSombre: "Switch to dark theme",
+      soutienTitre: "Support Universal Learn Academy: buy me a coffee (Buy Me a Coffee)", soutienAria: "Buy me a coffee on Buy Me a Coffee", soutien: "Buy me a coffee",
+      parametresTitre: "Settings: application, Claude, updates (Ctrl+,)", parametres: "Settings",
+      aideTitre: "Help: documentation and guided setup (F1)", aide: "Help",
+      precedent: "Back (Alt+←)", suivant: "Forward (Alt+→)",
+      accueilTitre: "Main home page: every year and every subject", accueil: "Main home page",
+      quizTitre: "Practise with this course’s quiz",
+      synchroEnCours: "Syncing…", synchronise: "Synced", synchroA: " at ", synchroLe: " on ",
+      synchroCliquer: ". Click to sync now.", horsLigne: "Offline", horsLigneSuite: ": new attempt later, or click to try again.",
+      synchroMaintenant: "Sync now", synchroImpossible: "Sync not possible.", synchroDetails: " Click for details.",
+      synchroManuelle: " (automatic sync off)"
+    }
+  };
+  function tb(cle) { return (TEXTES_BARRE[langue] || TEXTES_BARRE.fr)[cle] || TEXTES_BARRE.fr[cle]; }
+  // Libellés à refaire quand la langue change
+  var relibeller = [];
+  window.ulaLangue = function (code) {
+    if (!code || code === langue) return;
+    langue = code;
+    relibeller.forEach(function (fn) { try { fn(); } catch (e) { /* bouton retiré */ } });
+    afficherSynchro();
+    document.dispatchEvent(new CustomEvent("ula:langue", { detail: code }));
+  };
+  window.ulaLangueCourante = function () { return langue; };
+
   /* Barre du haut ---------------------------------------------------------- */
 
   function installerBarre() {
@@ -83,7 +130,7 @@
     var bouton = creer("button", "bouton-icone bouton-theme");
     bouton.type = "button";
     function libelle() {
-      var texte = themeEffectif() === "sombre" ? "Passer en thème clair" : "Passer en thème sombre";
+      var texte = themeEffectif() === "sombre" ? tb("themeClair") : tb("themeSombre");
       bouton.setAttribute("aria-label", texte);
       bouton.title = texte;
     }
@@ -97,10 +144,12 @@
       basculer(bouton, appliquer);
     });
     libelle();
+    relibeller.push(libelle);
     installerHistorique(barre);
     installerQuiz(barre);
     installerSoutien(barre);
     installerAccueil(barre);
+    installerAide(barre);
     installerParametres(barre);
     barre.appendChild(bouton);
     afficherSynchro();
@@ -116,8 +165,7 @@
     a.href = LIEN_SOUTIEN;
     a.target = "_blank";
     a.rel = "noopener";
-    a.title = "Soutenir Universal Learn Academy : m'offrir un café (Buy Me a Coffee)";
-    a.setAttribute("aria-label", "Offrir un café sur Buy Me a Coffee");
+
     a.innerHTML =
       '<svg class="soutien-tasse" viewBox="0 0 32 32" aria-hidden="true">' +
         '<g class="soutien-vapeur" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
@@ -126,7 +174,14 @@
         '<path class="soutien-corps" d="M6 12h19v6.5a7.5 7.5 0 0 1-7.5 7.5h-4A7.5 7.5 0 0 1 6 18.5z"/>' +
         '<path class="soutien-anse" d="M25 14h1.5a3.5 3.5 0 0 1 0 7H24.6" fill="none" stroke-width="2.2" stroke-linecap="round"/>' +
       '</svg>' +
-      '<span class="soutien-texte">Offrir un café</span>';
+      '<span class="soutien-texte"></span>';
+    function libelle() {
+      a.title = tb("soutienTitre");
+      a.setAttribute("aria-label", tb("soutienAria"));
+      a.querySelector(".soutien-texte").textContent = tb("soutien");
+    }
+    libelle();
+    relibeller.push(libelle);
     barre.appendChild(a);
   }
 
@@ -138,8 +193,21 @@
     if (!/\bStudiesApp\//.test(navigator.userAgent)) return;
     var a = creer("a", "bouton-icone bouton-parametres");
     a.href = "/_app/parametres";
-    a.title = "Paramètres : application, Claude, mises à jour (Ctrl+,)";
-    a.setAttribute("aria-label", "Paramètres");
+    function libelle() { a.title = tb("parametresTitre"); a.setAttribute("aria-label", tb("parametres")); }
+    libelle();
+    relibeller.push(libelle);
+    barre.appendChild(a);
+  }
+
+  // Aide de l'application installée (2.6.0) : documentation et paramétrage guidé,
+  // ouverts par l'hôte quand une page va vers /_app/aide (_outils/app/fenetres.js)
+  function installerAide(barre) {
+    if (!/\bStudiesApp\//.test(navigator.userAgent) || !/\bULA-langue\//.test(navigator.userAgent)) return;
+    var a = creer("a", "bouton-icone bouton-aide");
+    a.href = "/_app/aide";
+    function libelle() { a.title = tb("aideTitre"); a.setAttribute("aria-label", tb("aide")); }
+    libelle();
+    relibeller.push(libelle);
     barre.appendChild(a);
   }
 
@@ -158,7 +226,7 @@
     var d = iso ? new Date(iso) : null;
     if (!d || isNaN(d)) return "";
     var p = function (n) { return (n < 10 ? "0" : "") + n; };
-    var jour = d.toDateString() === new Date().toDateString() ? "" : " le " + p(d.getDate()) + "/" + p(d.getMonth() + 1);
+    var jour = d.toDateString() === new Date().toDateString() ? "" : tb("synchroLe") + p(d.getDate()) + "/" + p(d.getMonth() + 1);
     return p(d.getHours()) + ":" + p(d.getMinutes()) + jour;
   }
   function afficherSynchro() {
@@ -170,14 +238,14 @@
     }
     var e = synchroEtat, quand = heureCourte(e.a), probleme = false, texte;
     switch (e.etat) {
-      case "en-cours": texte = "Synchronisation en cours…"; break;
+      case "en-cours": texte = tb("synchroEnCours"); break;
       case "synchronise":
-      case "a-jour": texte = "Synchronisé" + (quand ? " à " + quand : "") + ". Cliquer pour synchroniser maintenant."; break;
-      case "hors-ligne": texte = "Hors ligne" + (quand ? " (" + quand + ")" : "") + " : nouvel essai plus tard, ou cliquer pour réessayer."; break;
-      case "jamais": texte = "Synchroniser maintenant"; break;
-      default: probleme = true; texte = (e.message || "Synchronisation impossible.") + " Cliquer pour les détails.";
+      case "a-jour": texte = tb("synchronise") + (quand ? tb("synchroA") + quand : "") + tb("synchroCliquer"); break;
+      case "hors-ligne": texte = tb("horsLigne") + (quand ? " (" + quand + ")" : "") + tb("horsLigneSuite"); break;
+      case "jamais": texte = tb("synchroMaintenant"); break;
+      default: probleme = true; texte = (e.message || tb("synchroImpossible")) + tb("synchroDetails");
     }
-    if (!e.auto && !probleme) texte += " (synchro automatique désactivée)";
+    if (!e.auto && !probleme) texte += tb("synchroManuelle");
     synchroBouton.href = probleme ? "/_app/parametres#synchro" : "/_app/synchro";
     synchroBouton.dataset.etat = probleme ? "probleme" : e.etat;
     synchroBouton.title = texte;
@@ -188,16 +256,17 @@
   // n'a pas les boutons d'un navigateur
   function installerHistorique(barre) {
     if (!/\bElectron\//.test(navigator.userAgent)) return;
-    function bouton(classe, titre, sens) {
+    function bouton(classe, cle, sens) {
       var b = creer("button", "bouton-icone " + classe);
       b.type = "button";
-      b.title = titre;
-      b.setAttribute("aria-label", titre);
+      function libelle() { b.title = tb(cle); b.setAttribute("aria-label", tb(cle)); }
+      libelle();
+      relibeller.push(libelle);
       b.addEventListener("click", function () { history.go(sens); });
       return b;
     }
-    var precedent = bouton("bouton-precedent", "Précédent (Alt+←)", -1);
-    var suivant = bouton("bouton-suivant", "Suivant (Alt+→)", 1);
+    var precedent = bouton("bouton-precedent", "precedent", -1);
+    var suivant = bouton("bouton-suivant", "suivant", 1);
     function actualiser() {
       precedent.disabled = !navigation.canGoBack;
       suivant.disabled = !navigation.canGoForward;
@@ -235,8 +304,9 @@
     if (!premier || premier.tagName !== "A") return;
     var a = creer("a", "bouton-icone bouton-accueil");
     a.href = premier.getAttribute("href");
-    a.title = "Accueil général : toutes les années et toutes les matières";
-    a.setAttribute("aria-label", "Accueil général");
+    function libelle() { a.title = tb("accueilTitre"); a.setAttribute("aria-label", tb("accueil")); }
+    libelle();
+    relibeller.push(libelle);
     barre.appendChild(a);
   }
 
@@ -252,7 +322,7 @@
     }
     if (liens.length === 1) {
       var a = lien(liens[0], "bouton-quiz", "Quiz");
-      a.title = liens[0].title || "S'entraîner avec le quiz de ce cours";
+      a.title = liens[0].title || tb("quizTitre");
       barre.appendChild(a);
       return;
     }

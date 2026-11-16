@@ -19,6 +19,7 @@
 const { app, Menu, Notification, Tray, nativeImage } = require("electron");
 const { execFile } = require("child_process");
 const path = require("path");
+const { t } = require("./i18n");
 
 const NOM = "Universal Learn Academy";
 
@@ -65,14 +66,15 @@ function menu() {
   const maj = options.majStatut ? options.majStatut() : {};
   const synchro = options.synchro ? options.synchro() : {};
   return Menu.buildFromTemplate([
-    { label: `Ouvrir ${NOM}`, click: () => options.ouvrir() },
+    { label: t("m.icone.ouvrir", { nom: NOM }), click: () => options.ouvrir() },
     { type: "separator" },
-    ...(synchro.visible ? [{ label: synchro.enCours ? "Synchronisation en cours…" : "Synchroniser maintenant", enabled: !synchro.enCours, click: () => options.synchroniser() }] : []),
+    ...(synchro.visible ? [{ label: t(synchro.enCours ? "p.synchro.enCours" : "p.synchro.maintenant"), enabled: !synchro.enCours, click: () => options.synchroniser() }] : []),
     maj.etat === "pret"
-      ? { label: `Redémarrer et installer la version ${maj.version || ""}`.trim(), click: () => options.installer() }
-      : { label: "Rechercher les mises à jour", click: () => options.verifierMiseAJour() },
+      ? { label: t("m.icone.installer", { version: maj.version || "" }).trim(), click: () => options.installer() }
+      : { label: t("m.icone.maj"), click: () => options.verifierMiseAJour() },
+    ...(options.documentation ? [{ label: t("m.icone.documentation"), click: () => options.documentation() }] : []),
     { type: "separator" },
-    { label: `Quitter ${NOM}`, click: () => app.quit() }
+    { label: t("m.icone.quitter", { nom: NOM }), click: () => app.quit() }
   ]);
 }
 
@@ -117,8 +119,8 @@ function quitte() { return quitter; }
 
 /** Bulle (Windows) ou notification, la première fois que la fenêtre se cache. */
 function annoncer() {
-  const titre = `${NOM} reste ouvert en arrière-plan`;
-  const texte = "Il se rouvre aussitôt depuis son icône, en bas à droite de l'écran. Pour le quitter : clic droit sur l'icône, puis Quitter.";
+  const titre = t("m.bulle.titre", { nom: NOM });
+  const texte = t("m.bulle.texte");
   if (icone && process.platform === "win32") {
     icone.displayBalloon({ title: titre, content: texte, iconType: "info", respectQuietTime: true });
   } else if (Notification.isSupported()) {

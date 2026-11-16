@@ -15,13 +15,23 @@ Les versions suivantes s'installent d'elles-mêmes au démarrage (voir « Mises 
 
 ## Premier lancement
 
-L'accueil demande le nom d'utilisateur, prérempli avec celui de la session Windows ou Linux : c'est le nom du dossier de son espace. Il propose aussi un cursus exemple (« Informatique » : dossiers L1, L2, L3 avec tous leurs cours) et de télécharger ses cours tout de suite, en arrière-plan. Puis le « Catalogue en ligne » de l'accueil propose les cours ; chaque cours téléchargé se range dans un dossier de son cursus (voir `_outils/ula/README.md`).
+Une petite fenêtre au style de l'application (`src/langue/`) demande d'abord la **langue** : français ou anglais, celle du système proposée (flèches et Entrée suffisent). Fermée sans choix, la langue du système sert pour cette fois et la question revient au lancement suivant. Ensuite, l'accueil demande le nom d'utilisateur, prérempli avec celui de la session Windows ou Linux : c'est le nom du dossier de son espace. Il propose aussi un cursus exemple (« Informatique » : dossiers L1, L2, L3 avec tous leurs cours) et de télécharger ses cours tout de suite, en arrière-plan. Puis le « Catalogue en ligne » de l'accueil propose les cours ; chaque cours téléchargé se range dans un dossier de son cursus (voir `_outils/ula/README.md`).
 
 ```
 Documents/ULA/                    dossier des données (par défaut)
 ├── explore/<domaine>/<cours>/    cours téléchargés, en lecture seule
 └── <profil>/<cursus>/<cours>/    lien vers le cours (ula-lien.json) et progression
 ```
+
+## Langue, documentation et paramétrage guidé
+
+Depuis la version 2.6.0 :
+
+- **Langue** (`langue` dans `parametres.json`, carte « Langue » des paramètres) : français ou anglais pour les menus, les paramètres, les notifications, la barre du haut des pages, l'accueil, la documentation et le guide. Le changement s'applique tout de suite à toutes les fenêtres. Les cours, les quiz et les TD restent en français pour le moment. Textes : `src/i18n/fr.js` (référence) et `en.js` ; `_outils/app/textes.js` (menu, dialogues) ; `TEXTES_BARRE` de `_outils/charte/assets/cours.js` (barre du haut) ; `_outils/ula/assets/textes.js` (accueil). La langue est annoncée aux pages dans l'agent utilisateur (`ULA-langue/<code>`) et `window.ulaLangue(code)` les prévient d'un changement. Sans hôte (`lancer.bat`, `lancer-app.bat`), tout reste en français.
+- **Documentation intégrée** (`src/doc/`, `src/documentation.js`) : F1, bouton « ? » de la barre des pages, menu **Aide › Documentation**, menu de l'icône ou carte « Aide » des paramètres. Un guide d'utilisation et une documentation technique, en pages Markdown par langue (`src/doc/contenu/<langue>/<id>.md`, ordre dans `sommaire.json`), avec recherche (Ctrl+F) et liens vers les paramètres (`parametres:<section>`) ou le guide (`guide:`).
+- **Paramétrage guidé** (`src/guide/`) : bouton de la documentation, menu **Aide › Paramétrage guidé…** ou carte « Aide ». Les réglages un par un, avec une courte explication et le lien vers la carte des paramètres correspondante : langue, profil (et cursus exemple s'il n'y en a pas encore), Claude, échelle, fenêtre au lancement, fermeture de la fenêtre, mises à jour, raccourcis, dossier des données, synchronisation (si le dossier est un dépôt suivi), puis un récapitulatif. Chaque choix s'applique tout de suite.
+
+`npm run check` vérifie que chaque dictionnaire a les mêmes clés et les mêmes variables dans les deux langues, que toute clé utilisée existe, et que chaque page du sommaire existe dans chaque langue avec des liens valides.
 
 ## Paramètres
 
@@ -212,6 +222,12 @@ app/
     claude.js             Claude Code (détection, compte), clé d'API chiffrée
     depot.js              dépôt GitHub et identifiant de l'application
     parametres/           page des paramètres (pont.cjs, index.html, parametres.js, cadre-fenetre.js…)
+    i18n/                 textes de l'hôte, des paramètres, de la documentation et du guide (fr.js, en.js)
+    annexe.js             fenêtres annexes au style de l'application, centrées sur la fenêtre des cours
+    choix-langue.js       choix de la langue au premier lancement (page langue/)
+    documentation.js      lecture des pages de la documentation (sommaire, page, recherche)
+    doc/                  fenêtre de la documentation (markdown.js, doc.js) et ses pages (contenu/<langue>/)
+    guide/                paramétrage guidé
     assets/icone.png
   scripts/
     contenu-regles.cjs    reprend _outils/ula/lib/regles.js (données personnelles)

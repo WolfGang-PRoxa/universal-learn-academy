@@ -1,5 +1,7 @@
 // Vérifications de l'application sans la lancer : `npm run check`.
 // - syntaxe de tous les fichiers JavaScript (app/, _outils/app/, _outils/ula/) ;
+// - langues : mêmes clés et mêmes variables en français et en anglais, aucune clé
+//   utilisée manquante ; documentation : pages du sommaire dans chaque langue, liens valides ;
 // - règles de contenu : les données personnelles sont écartées, le catalogue et les outils gardés ;
 // - contrôle du paquet : un paquet qui contient un cours ou une donnée personnelle est refusé ;
 // - contrôle du catalogue : une archive de cours piégée (tentatives, TP hors liste ou
@@ -63,7 +65,8 @@ for (const d of ['src', 'scripts']) parcourir(path.join(app, d));
 parcourir(path.join(racine, '_outils', 'app'));
 parcourir(path.join(racine, '_outils', 'ula'));
 for (const f of fichiersJs) {
-  const module = f.endsWith('.mjs') || f.includes(`${path.sep}parametres${path.sep}`) && f.endsWith('.js');
+  // Pages des fenêtres annexes écrites en modules ES (paramètres, documentation, guide)
+  const module = f.endsWith('.mjs') || /[\\/](parametres|doc|guide)[\\/][^\\/]+\.js$/.test(f);
   try {
     if (module) execFileSync(process.execPath, ['--input-type=module', '--check'], { input: fs.readFileSync(f), stdio: ['pipe', 'pipe', 'pipe'] });
     else execFileSync(process.execPath, ['--check', f], { stdio: 'pipe' });
@@ -427,10 +430,111 @@ const sc = require('../src/raccourcis-regles.js');
   verifier(sc.lireDesktop('pas un raccourci').error, 'Fichier .desktop invalide non signalé.');
 }
 
+/* -- Langues et documentation ----------------------------------------------------------- */
+// Chaque dictionnaire a les mêmes clés et les mêmes {variables} en français et en
+// anglais ; toute clé utilisée existe ; chaque page du sommaire de la documentation
+// existe dans les deux langues, et ses liens (page:, parametres:) mènent quelque part.
+{
+  const vm = await import('node:vm');
+  const variables = (x) => (String(x).match(/\{\w+\}/g) || []).sort().join(',');
+  const comparer = (nom, dicos) => {
+    const fr = dicos.fr;
+    for (const [langue, d] of Object.entries(dicos)) {
+      if (langue === 'fr') continue;
+      for (const k of Object.keys(fr)) {
+        if (!(k in d)) echecs.push(`${nom} : clé « ${k} » absente en ${langue}`);
+        else if (variables(fr[k]) !== variables(d[k])) echecs.push(`${nom} : variables différentes pour « ${k} » (${langue})`);
+      }
+      for (const k of Object.keys(d)) if (!(k in fr)) echecs.push(`${nom} : clé « ${k} » absente en français`);
+    }
+  };
+  const lire = (rel) => fs.readFileSync(path.join(racine, rel), 'utf8');
+  const tousLesJs = (dossier, exclure) => {
+    const r = [];
+    (function p(d) {
+      for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+        const c = path.join(d, e.name);
+        if (e.isDirectory()) { if (!exclure || !exclure.test(c)) p(c); } else if (/\.c?js$/.test(e.name)) r.push(c);
+      }
+    })(dossier);
+    return r;
+  };
+
+  // Hôte : app/src/i18n
+  const { DICTIONNAIRES } = require('../src/i18n/index.js');
+  comparer('app/src/i18n', DICTIONNAIRES);
+  const utilisees = new Set();
+  for (const f of tousLesJs(path.join(app, 'src'), /[\\/]i18n$/)) {
+    const x = fs.readFileSync(f, 'utf8');
+    for (const m of x.matchAll(/["'`]((?:commun|p|g|d|l|m|s|c|r|u)\.[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*)["'`]/g)) utilisees.add(m[1]);
+    for (const m of x.matchAll(/\btn\(\s*["']([\w.]+)["']/g)) { utilisees.delete(m[1]); utilisees.add(m[1] + '.un'); utilisees.add(m[1] + '.plusieurs'); }
+  }
+  for (const k of utilisees) if (!(k in DICTIONNAIRES.fr)) echecs.push(`app/src : clé « ${k} » utilisée mais absente de i18n/fr.js`);
+
+  // Programme des outils : _outils/app/textes.js
+  const textesApp = require('../../_outils/app/textes.js').TEXTES;
+  comparer('_outils/app/textes.js', textesApp);
+  for (const f of tousLesJs(path.join(racine, '_outils', 'app'))) {
+    for (const m of fs.readFileSync(f, 'utf8').matchAll(/\bt\(\s*"([\w.]+)"/g)) if (!(m[1] in textesApp.fr)) echecs.push(`${path.relative(racine, f)} : clé « ${m[1]} » absente de textes.js`);
+  }
+
+  // Barre du haut : TEXTES_BARRE de cours.js
+  const coursJs = lire('_outils/charte/assets/cours.js');
+  const barre = coursJs.match(/var TEXTES_BARRE = (\{[\s\S]*?\n  \});/);
+  if (!barre) echecs.push('cours.js : TEXTES_BARRE introuvable');
+  else {
+    const dicos = vm.runInNewContext('(' + barre[1] + ')');
+    comparer('TEXTES_BARRE (cours.js)', dicos);
+    for (const m of coursJs.matchAll(/\btb\(\s*"(\w+)"/g)) if (!(m[1] in dicos.fr)) echecs.push(`cours.js : clé « ${m[1]} » absente de TEXTES_BARRE`);
+  }
+
+  // Accueil : _outils/ula/assets/textes.js
+  const bac = { window: {} };
+  vm.runInNewContext(lire('_outils/ula/assets/textes.js'), bac);
+  const accueil = bac.window.ULA_TEXTES;
+  comparer('_outils/ula/assets/textes.js', accueil);
+  const accueilJs = lire('_outils/ula/assets/accueil.js');
+  for (const m of accueilJs.matchAll(/\bTn?\(\s*"([\w.]*\w)"/g)) if (!(m[1] in accueil.fr)) echecs.push(`accueil.js : clé « ${m[1]} » absente de textes.js`);
+  for (const m of accueilJs.matchAll(/"(outils\.\w+)"\]/g)) for (const k of [m[1], m[1] + 'Aide']) if (!(k in accueil.fr)) echecs.push(`accueil.js : clé « ${k} » absente de textes.js`);
+  for (const d of (accueilJs.match(/var DOMAINES = \[([^\]]*)\]/) || [, ''])[1].match(/\w+/g) || []) if (!(`domaine.${d}` in accueil.fr)) echecs.push(`accueil.js : domaine « ${d} » sans nom dans textes.js`);
+
+  // Documentation
+  // markdown.js est un module ES dans un paquet CommonJS : importé depuis son texte
+  const { ancre } = await import('data:text/javascript,' + encodeURIComponent(fs.readFileSync(path.join(app, 'src', 'doc', 'markdown.js'), 'utf8')));
+  const contenu = path.join(app, 'src', 'doc', 'contenu');
+  const sommaire = JSON.parse(fs.readFileSync(path.join(contenu, 'sommaire.json'), 'utf8'));
+  const ids = sommaire.groupes.flatMap((g) => g.pages);
+  const sections = new Set([...fs.readFileSync(path.join(app, 'src', 'parametres', 'parametres.js'), 'utf8').matchAll(/\['([a-z-]+)', 'p\.nav\./g)].map((m) => m[1]));
+  for (const langue of Object.keys(DICTIONNAIRES)) {
+    for (const g of sommaire.groupes) if (!g.titre[langue]) echecs.push(`Documentation : groupe « ${g.id} » sans titre en ${langue}`);
+    const ancres = {};
+    const textes = {};
+    for (const id of ids) {
+      const f = path.join(contenu, langue, id + '.md');
+      if (!fs.existsSync(f)) { echecs.push(`Documentation : page ${langue}/${id}.md absente`); continue; }
+      textes[id] = fs.readFileSync(f, 'utf8');
+      if (!/^#\s+\S/m.test(textes[id])) echecs.push(`Documentation : ${langue}/${id}.md sans titre « # »`);
+      ancres[id] = new Set([...textes[id].matchAll(/^#{1,4}\s+(.+)$/gm)].map((m) => ancre(m[1])));
+    }
+    for (const [id, md] of Object.entries(textes)) {
+      for (const m of md.matchAll(/\]\(([a-z]+):([^)\s]*)\)/g)) {
+        const [, genre, cible] = m;
+        if (genre === 'page') {
+          const [page, a] = cible.split('#');
+          if (!ids.includes(page)) echecs.push(`Documentation : ${langue}/${id}.md renvoie à une page inconnue (${cible})`);
+          else if (a && ancres[page] && !ancres[page].has(a)) echecs.push(`Documentation : ${langue}/${id}.md renvoie à une ancre inconnue (${cible})`);
+        } else if (genre === 'parametres') {
+          if (cible && !sections.has(cible)) echecs.push(`Documentation : ${langue}/${id}.md renvoie à une section de paramètres inconnue (${cible})`);
+        } else if (genre !== 'guide' && genre !== 'https') echecs.push(`Documentation : ${langue}/${id}.md, lien non reconnu (${genre}:${cible})`);
+      }
+    }
+  }
+}
+
 fs.rmSync(temp, { recursive: true, force: true });
 
 if (echecs.length) {
   console.error(`✗ ${echecs.length} problème(s) :\n- ${echecs.join('\n- ')}`);
   process.exit(1);
 }
-console.log(`✓ ${fichiersJs.length} fichiers JavaScript, règles de contenu, paquet, catalogue et proposition piégés refusés, espaces des profils, copie des outils, synchronisation Git et raccourcis vérifiés.`);
+console.log(`✓ ${fichiersJs.length} fichiers JavaScript, langues et documentation, règles de contenu, paquet, catalogue et proposition piégés refusés, espaces des profils, copie des outils, synchronisation Git et raccourcis vérifiés.`);

@@ -21,6 +21,7 @@
    _outils/quiz/serveur/lib/claude.js) : il doit être installé. */
 
 const { safeStorage, shell } = require("electron");
+const { t } = require("./i18n");
 const { spawn, execFile } = require("child_process");
 const fs = require("fs");
 const os = require("os");
@@ -135,10 +136,10 @@ async function testerCle(valeur) {
       signal: AbortSignal.timeout(15000)
     });
     if (r.ok) return { valide: true };
-    if (r.status === 401 || r.status === 403) return { valide: false, message: "Anthropic refuse cette clé (invalide ou révoquée)." };
-    return { valide: null, message: "Vérification impossible (réponse " + r.status + " d'Anthropic)." };
+    if (r.status === 401 || r.status === 403) return { valide: false, message: t("c.cleRefusee") };
+    return { valide: null, message: t("c.verificationStatut", { statut: r.status }) };
   } catch (e) {
-    return { valide: null, message: "Vérification impossible : pas de connexion à Anthropic." };
+    return { valide: null, message: t("c.verificationReseau") };
   }
 }
 
@@ -148,8 +149,8 @@ async function enregistrerCle(valeur) {
     reglages.modifier({ claude: { cle: "" } });
     return { ok: true, supprimee: true };
   }
-  if (!/^sk-ant-[\w-]{20,}$/.test(texte)) throw new Error("Ce n'est pas une clé d'API Anthropic (elle commence par « sk-ant- »).");
-  if (!chiffrementDisponible()) throw new Error("Le système ne peut pas chiffrer la clé (aucun trousseau disponible) : elle n'est pas enregistrée.");
+  if (!/^sk-ant-[\w-]{20,}$/.test(texte)) throw new Error(t("c.pasUneCle"));
+  if (!chiffrementDisponible()) throw new Error(t("c.sansTrousseau"));
   const test = await testerCle(texte);
   if (test.valide === false) throw new Error(test.message);
   reglages.modifier({ claude: { cle: "enc:" + safeStorage.encryptString(texte).toString("base64") } });
@@ -177,7 +178,7 @@ async function statut(racine) {
 /** Ouvre un terminal sur `claude auth login` : la connexion se fait chez Anthropic. */
 async function connecter(racine) {
   const code = await trouver(racine);
-  if (!code) throw new Error("Claude Code n'est pas installé sur ce poste.");
+  if (!code) throw new Error(t("c.absent"));
   const env = Object.assign({}, process.env);
   delete env.ANTHROPIC_API_KEY;
   delete env.ELECTRON_RUN_AS_NODE;
@@ -201,14 +202,14 @@ async function connecter(racine) {
       return { ok: true };
     }
   }
-  throw new Error("Aucun terminal trouvé : lancer « claude auth login » dans un terminal.");
+  throw new Error(t("c.sansTerminal"));
 }
 
 async function deconnecter(racine) {
   const code = await trouver(racine);
-  if (!code) throw new Error("Claude Code n'est pas installé sur ce poste.");
+  if (!code) throw new Error(t("c.absent"));
   const r = await executer(code.executable, ["auth", "logout"]);
-  if (r.status !== 0) throw new Error((r.stderr || r.stdout || "La déconnexion a échoué.").trim().slice(0, 300));
+  if (r.status !== 0) throw new Error((r.stderr || r.stdout || t("c.deconnexionEchec")).trim().slice(0, 300));
   return { ok: true };
 }
 

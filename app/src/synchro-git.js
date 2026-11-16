@@ -36,6 +36,7 @@
    ========================================================================== */
 
 const { execFile } = require("child_process");
+const { t, tn } = require("./i18n");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -134,26 +135,26 @@ function memeChemin(a, b) {
  */
 async function infos(racine) {
   const v = await versionGit();
-  if (!v) return { git: null, depot: false, raison: "Git n'est pas installé sur ce poste." };
+  if (!v) return { git: null, depot: false, raison: t("s.raison.sansGit") };
   const base = { git: v.texte, version: v, depot: false };
-  if (!fs.existsSync(path.join(racine, ".git"))) return Object.assign(base, { raison: "Le dossier des données n'est pas un dépôt Git." });
+  if (!fs.existsSync(path.join(racine, ".git"))) return Object.assign(base, { raison: t("s.raison.pasDepot") });
   const haut = await git(racine, ["rev-parse", "--show-toplevel"], { delai: 15000 });
-  if (haut.code !== 0 || !memeChemin(texte(haut), racine)) return Object.assign(base, { raison: "Le dossier des données n'est pas la racine d'un dépôt Git." });
+  if (haut.code !== 0 || !memeChemin(texte(haut), racine)) return Object.assign(base, { raison: t("s.raison.pasRacine") });
   const dg = await git(racine, ["rev-parse", "--absolute-git-dir"], { delai: 15000 });
   const branche = texte(await git(racine, ["symbolic-ref", "--short", "-q", "HEAD"], { delai: 15000 }));
   const r = Object.assign(base, { depot: true, dossierGit: texte(dg), branche: branche || null });
-  if (!branche) return Object.assign(r, { raison: "Le dépôt n'est sur aucune branche (HEAD détachée)." });
+  if (!branche) return Object.assign(r, { raison: t("s.raison.detachee") });
   const distant = texte(await git(racine, ["config", "--get", `branch.${branche}.remote`], { delai: 15000 }));
   const fusion = texte(await git(racine, ["config", "--get", `branch.${branche}.merge`], { delai: 15000 }));
-  if (!distant || !fusion || distant === ".") return Object.assign(r, { raison: `La branche ${branche} ne suit aucune branche d'un dépôt distant.` });
+  if (!distant || !fusion || distant === ".") return Object.assign(r, { raison: t("s.raison.sansSuivi", { branche }) });
   const adresse = texte(await git(racine, ["remote", "get-url", distant], { delai: 15000 }));
   return Object.assign(r, { distant, brancheDistante: fusion.replace(/^refs\/heads\//, ""), adresse: adresseSure(adresse) });
 }
 
 /** Opération Git en cours (git pull à la main, fusion à finir…) : ne rien faire. */
 function operationEnCours(dossierGit) {
-  const marques = { "index.lock": "une commande Git est en cours", MERGE_HEAD: "une fusion est à terminer", "rebase-merge": "un rebase est à terminer",
-    "rebase-apply": "un rebase est à terminer", CHERRY_PICK_HEAD: "un cherry-pick est à terminer", REVERT_HEAD: "un revert est à terminer" };
+  const marques = { "index.lock": t("s.encours.commande"), MERGE_HEAD: t("s.encours.fusion"), "rebase-merge": t("s.encours.rebase"),
+    "rebase-apply": t("s.encours.rebase"), CHERRY_PICK_HEAD: t("s.encours.cherryPick"), REVERT_HEAD: t("s.encours.revert") };
   for (const [f, raison] of Object.entries(marques)) if (fs.existsSync(path.join(dossierGit, f))) return raison;
   return null;
 }
@@ -236,9 +237,9 @@ function nomCopie(chemin, maintenant = new Date(), existe = () => false) {
  * (fichier absent de ce côté). Renvoie { contenu (Buffer ou null : supprimer), copie (Buffer ou null), regle }.
  */
 function resoudre(chemin, base, nous, eux) {
-  if (!nous && !eux) return { contenu: null, copie: null, regle: "supprime des deux côtés" };
-  if (!nous) return { contenu: eux, copie: null, regle: "supprimé ici, modifié sur l'autre poste : gardé" };
-  if (!eux) return { contenu: nous, copie: null, regle: "supprimé sur l'autre poste, modifié ici : gardé" };
+  if (!nous && !eux) return { contenu: null, copie: null, regle: t("s.regle.supprimeDeuxCotes") };
+  if (!nous) return { contenu: eux, copie: null, regle: t("s.regle.supprimeIci") };
+  if (!eux) return { contenu: nous, copie: null, regle: t("s.regle.supprimeAutre") };
   if (/(^|\/)td_results\/[^/]+\.json$/.test(chemin)) {
     const a = json(nous), b = json(eux);
     if (a && b && typeof a.ateliers === "object" && typeof b.ateliers === "object") {
@@ -247,17 +248,17 @@ function resoudre(chemin, base, nous, eux) {
         if (!r.ateliers[id] || date(etat) > date(r.ateliers[id])) r.ateliers[id] = etat;
       }
       if (date(b) > date(a)) r.maj = b.maj;
-      return { contenu: ecrireJson(r), copie: null, regle: "ateliers fusionnés, le plus récent de chacun" };
+      return { contenu: ecrireJson(r), copie: null, regle: t("s.regle.ateliers") };
     }
   } else if (PROGRESSION.test(chemin) && /\.json$/.test(chemin)) {
     const a = json(nous), b = json(eux);
     if (a && b) return date(b) > date(a)
-      ? { contenu: eux, copie: null, regle: "tentative la plus récente (autre poste)" }
-      : { contenu: nous, copie: null, regle: "tentative la plus récente (ce poste)" };
+      ? { contenu: eux, copie: null, regle: t("s.regle.tentativeAutre") }
+      : { contenu: nous, copie: null, regle: t("s.regle.tentativeIci") };
   } else if (FICHES.test(chemin)) {
     return { contenu: nous, copie: null, regle: "version de ce poste" };
   }
-  return { contenu: nous, copie: eux, regle: "les deux gardées" };
+  return { contenu: nous, copie: eux, regle: t("s.regle.deuxGardees") };
 }
 
 /* -- Cycle ---------------------------------------------------------------------------- */
@@ -268,10 +269,10 @@ const RESEAU = /Could not resolve host|unable to access|Failed to connect|Connec
 function classer(r, quoi) {
   const msg = r.stderr.trim();
   const ligne = (msg.split("\n").find((l) => /fatal|error|rejected/i.test(l)) || msg.split("\n")[0] || "").replace(/^(fatal|error): /, "").trim();
-  if (r.delai) return { etat: "hors-ligne", message: `${quoi} : le dépôt distant ne répond pas.` };
-  if (AUTH.test(msg)) return { etat: "connexion", message: `${quoi} : le dépôt distant refuse l'accès. Lancer une fois « git pull » à la main pour se reconnecter (${ligne}).` };
-  if (RESEAU.test(msg)) return { etat: "hors-ligne", message: `${quoi} : pas de connexion au dépôt distant.` };
-  return { etat: "erreur", message: `${quoi} : ${ligne || "échec de git (code " + r.code + ")"}` };
+  if (r.delai) return { etat: "hors-ligne", message: t("s.erreur.delai", { quoi: t(quoi) }) };
+  if (AUTH.test(msg)) return { etat: "connexion", message: t("s.erreur.acces", { quoi: t(quoi), ligne }) };
+  if (RESEAU.test(msg)) return { etat: "hors-ligne", message: t("s.erreur.reseau", { quoi: t(quoi) }) };
+  return { etat: "erreur", message: `${t(quoi)} : ${ligne || t("s.erreur.code", { code: r.code })}` };
 }
 
 function messageCommit(poste, maintenant) {
@@ -283,7 +284,7 @@ function messageCommit(poste, maintenant) {
 /** Commit des changements du périmètre. Renvoie { commits, ignores } ou { echec }. */
 async function committer(racine, { mode, poste, maintenant }) {
   const st = await git(racine, ["status", "--porcelain=v1", "-z", "--untracked-files=all"], { delai: 120000 });
-  if (st.code !== 0) return { echec: classer(st, "Lecture de l'état du dépôt") };
+  if (st.code !== 0) return { echec: classer(st, "s.etape.lecture") };
   const ignores = [];
   const chemins = [...new Set(lireStatut(st.stdout).map((e) => e.chemin).filter((c) => dansPerimetre(c, mode)))].filter((c) => {
     try {
@@ -295,14 +296,14 @@ async function committer(racine, { mode, poste, maintenant }) {
   if (!chemins.length) return { commits: 0, ignores };
   const liste = chemins.join("\0") + "\0";
   const add = await git(racine, ["add", "-A", "--pathspec-from-file=-", "--pathspec-file-nul"], { entree: liste, delai: 120000 });
-  if (add.code !== 0) return { echec: classer(add, "Ajout des fichiers") };
+  if (add.code !== 0) return { echec: classer(add, "s.etape.ajout") };
   const ci = await git(racine, ["commit", "--no-verify", "--quiet", "-m", messageCommit(poste, maintenant), "--only", "--pathspec-from-file=-", "--pathspec-file-nul"], { entree: liste, delai: 120000 });
   if (ci.code !== 0) {
     if (/nothing to commit|no changes added/i.test(ci.stderr + texte(ci))) return { commits: 0, ignores };
     if (/Please tell me who you are|user\.(name|email)/i.test(ci.stderr)) {
-      return { echec: { etat: "erreur", message: "Git ne connaît pas l'auteur des commits sur ce poste : git config --global user.name \"…\" puis user.email \"…\", une fois." } };
+      return { echec: { etat: "erreur", message: t("s.erreur.identite") } };
     }
-    return { echec: classer(ci, "Commit de la progression") };
+    return { echec: classer(ci, "s.etape.commit") };
   }
   return { commits: 1, chemins: chemins.length, ignores };
 }
@@ -326,7 +327,7 @@ async function fusionner(racine, { mode, maintenant, autostash }) {
   const conflits = [];
   const sortie = m.stderr + m.stdout.toString("utf8");
   const avertissement = /autostash[^\n]*conflict|changes are safe in the stash/i.test(sortie)
-    ? "Les modifications en cours n'ont pas pu être réappliquées après la fusion : elles sont dans « git stash list »." : "";
+    ? t("s.erreur.stash") : "";
   if (m.code !== 0) {
     const u = await git(racine, ["diff", "--name-only", "-z", "--diff-filter=U"], { delai: 30000 });
     const enConflit = u.stdout.toString("utf8").split("\0").filter(Boolean);
@@ -337,8 +338,8 @@ async function fusionner(racine, { mode, maintenant, autostash }) {
       const hors = enConflit.filter((c) => !dansPerimetre(c, mode));
       const ligne = (m.stderr.split("\n").find((l) => /error|fatal/i.test(l)) || "").replace(/^(error|fatal): /, "").trim();
       return { echec: { etat: "manuel", message: hors.length
-        ? `Conflit sur ${hors.length} fichier(s) hors progression (${hors.slice(0, 3).join(", ")}${hors.length > 3 ? "…" : ""}) : fusion à faire à la main (git pull).`
-        : `Fusion impossible${ligne ? " : " + ligne : ""}. À faire à la main (git pull).` } };
+        ? tn("s.erreur.conflitHors", hors.length, { liste: hors.slice(0, 3).join(", ") + (hors.length > 3 ? "…" : "") })
+        : t(ligne ? "s.erreur.fusionLigne" : "s.erreur.fusion", { ligne }) } };
     }
     for (const chemin of enConflit) {
       const [base, nous, eux] = await Promise.all([1, 2, 3].map((e) => contenuEtape(racine, e, chemin)));
@@ -365,7 +366,7 @@ async function fusionner(racine, { mode, maintenant, autostash }) {
     const ci = await git(racine, ["-c", "core.editor=true", "commit", "--no-edit", "--no-verify", "--quiet"], { delai: 120000 });
     if (ci.code !== 0) {
       await git(racine, ["merge", "--abort"], { delai: 60000 });
-      return { echec: classer(ci, "Fin de la fusion") };
+      return { echec: classer(ci, "s.etape.finFusion") };
     }
   }
   const diff = await git(racine, ["diff", "--name-only", "-z", avant, "HEAD"], { delai: 60000 });
@@ -390,9 +391,9 @@ async function cycle(racine, options = {}) {
   const fin = (x) => Object.assign(r, x, { a: new Date().toISOString() });
 
   const i = await infos(racine);
-  if (!i.depot || !i.distant) return fin({ etat: "indisponible", message: i.raison || "Pas de dépôt distant." });
+  if (!i.depot || !i.distant) return fin({ etat: "indisponible", message: i.raison || t("s.pasDistant") });
   const enCours = operationEnCours(i.dossierGit);
-  if (enCours) return fin({ etat: "bloque", message: `Synchro remise à plus tard : ${enCours}.` });
+  if (enCours) return fin({ etat: "bloque", message: t("s.remise", { raison: enCours }) });
 
   const c = await committer(racine, { mode, poste, maintenant });
   if (c.echec) return fin(c.echec);
@@ -402,9 +403,9 @@ async function cycle(racine, options = {}) {
 
   for (let essai = 0; essai < 2; essai++) {
     const f = await git(racine, ["fetch", "--quiet", "--no-tags", i.distant, `+refs/heads/${i.brancheDistante}:refs/remotes/${i.distant}/${i.brancheDistante}`], { delai: delaiReseau });
-    if (f.code !== 0) return fin(classer(f, "Réception"));
+    if (f.code !== 0) return fin(classer(f, "s.etape.reception"));
     let n = await compter(racine);
-    if (!n) return fin({ etat: "erreur", message: "Comparaison avec la branche distante impossible." });
+    if (!n) return fin({ etat: "erreur", message: t("s.erreur.comparaison") });
     if (n.retard > 0) {
       const m = await fusionner(racine, { mode, maintenant, autostash: auMoins(i.version, 2, 27) });
       if (m.echec) return fin(m.echec);
@@ -419,10 +420,10 @@ async function cycle(racine, options = {}) {
     if (p.code === 0) { r.envoyes += n.avance; break; }
     // L'autre poste vient de pousser : on reçoit et on recommence, une fois
     if (essai === 0 && /rejected|non-fast-forward|fetch first|stale info/i.test(p.stderr)) { journal("synchro : envoi refusé, nouvel essai"); continue; }
-    return fin(classer(p, "Envoi"));
+    return fin(classer(p, "s.etape.envoi"));
   }
   const fait = r.commits || r.envoyes || r.recus.length;
-  return fin({ etat: fait ? "synchronise" : "a-jour", message: fait ? "" : "Déjà à jour." });
+  return fin({ etat: fait ? "synchronise" : "a-jour", message: fait ? "" : t("s.dejaAJour") });
 }
 
 module.exports = { cycle, infos, tete, operationEnCours, resoudre, nomCopie, dansPerimetre, estProgression, lireStatut, adresseSure, versionGit, messageCommit };

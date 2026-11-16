@@ -12,10 +12,38 @@
 (function () {
   "use strict";
 
-  var DOMAINES = { informatique: "Informatique", mathematiques: "Mathématiques", langues: "Langues", communication: "Communication et projet", sciences: "Sciences", lettres: "Lettres", autres: "Autres" };
+  // Identifiants des domaines ; leurs noms sont dans textes.js (domaine.<id>)
+  var DOMAINES = ["informatique", "mathematiques", "langues", "communication", "sciences", "lettres", "autres"];
   var main = document.getElementById("ula");
   var etat = null, cursus = null, progression = {}, catalogue = null;
   var domaineSeul = (location.pathname.match(/^\/explore\/([^/]+)\/index\.html$/) || [])[1] || null;
+
+  /* -- Textes (textes.js) ---------------------------------------------------- */
+
+  // Langue de l'application (cours.js la lit dans l'agent utilisateur et prévient
+  // par « ula:langue ») ; français hors de l'application
+  var TEXTES = window.ULA_TEXTES || { fr: {} };
+  function langue() {
+    var l = window.ulaLangueCourante ? window.ulaLangueCourante() : "fr";
+    return TEXTES[l] ? l : "fr";
+  }
+  function locale() { return langue() === "en" ? "en-GB" : "fr-FR"; }
+  function T(cle, vars) {
+    var d = TEXTES[langue()];
+    var x = d[cle] != null ? d[cle] : TEXTES.fr[cle] != null ? TEXTES.fr[cle] : cle;
+    return x.replace(/\{(\w+)\}/g, function (m, k) { return vars && vars[k] != null ? String(vars[k]) : m; });
+  }
+  // Variante au singulier (clé « .un ») quand n vaut 1
+  function Tn(cle, n, vars) {
+    vars = vars || {};
+    if (vars.n == null) vars.n = n;
+    var d = TEXTES[langue()];
+    return T(n === 1 && d[cle + ".un"] != null ? cle + ".un" : cle, vars);
+  }
+  function nomDomaine(id) {
+    var x = T("domaine." + id);
+    return x === "domaine." + id ? id : x;
+  }
 
   /* -- Outils ------------------------------------------------------------- */
 
@@ -44,14 +72,14 @@
     if (corps !== undefined) { init.headers["Content-Type"] = "application/json"; init.body = JSON.stringify(corps); }
     return fetch("/api/" + route, init).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (d) {
-        if (!r.ok || (d && d.erreur)) { var e = new Error((d && d.erreur) || "Erreur " + r.status); e.problemes = d && d.problemes; throw e; }
+        if (!r.ok || (d && d.erreur)) { var e = new Error((d && d.erreur) || T("erreur.statut", { statut: r.status })); e.problemes = d && d.problemes; throw e; }
         return d;
       });
     });
   }
   function afficherErreur(e) {
     var texte = e.message + (e.problemes && e.problemes.length ? "\n\n- " + e.problemes.slice(0, 20).join("\n- ") : "");
-    return demander({ titre: "Erreur", texte: texte, seulementOk: true });
+    return demander({ titre: T("dialogue.erreur"), texte: texte, seulementOk: true });
   }
   function urlPage(chemin) { return "/" + chemin.split("/").map(encodeURIComponent).join("/"); }
 
@@ -86,6 +114,7 @@
     err.hidden = true;
     var ok = document.getElementById("dialogue-ok");
     ok.textContent = o.ok || "OK";
+    d.querySelector("[value=annuler]").textContent = T("dialogue.annuler");
     d.querySelector("[value=annuler]").hidden = Boolean(o.seulementOk);
     return new Promise(function (resolve) {
       // Réponse lue à l'envoi du formulaire (et pas à l'événement « close », que
@@ -125,7 +154,7 @@
       })
       .catch(function (e) {
         main.querySelectorAll("section, #attente").forEach(function (x) { x.remove(); });
-        var p = el("p", "ula-erreur", "Le serveur local ne répond pas (" + e.message + "). Lancer lancer.bat (ou l'application), puis recharger la page.");
+        var p = el("p", "ula-erreur", T("erreur.serveur", { message: e.message }));
         main.appendChild(p);
       });
   }
@@ -137,13 +166,12 @@
   function rendre() {
     main.querySelectorAll("section, #attente, .ula-erreur").forEach(function (x) { x.remove(); });
     if (domaineSeul) {
-      var nom = DOMAINES[domaineSeul] || domaineSeul;
+      var nom = nomDomaine(domaineSeul);
       document.getElementById("titre").textContent = nom;
       document.title = nom + " · ULA";
-      document.getElementById("chapeau").textContent = "Les cours de ce domaine installés sur ce poste. D'autres cours se téléchargent depuis le catalogue de l'accueil.";
+      document.getElementById("chapeau").textContent = T("domaine.chapeau");
       var fil = document.querySelector(".fil");
-      var a = lien("ULA", "/index.html");
-      fil.insertBefore(a, document.getElementById("fil-courant"));
+      if (!fil.querySelector("a")) fil.insertBefore(lien("ULA", "/index.html"), document.getElementById("fil-courant"));
       document.getElementById("fil-courant").textContent = nom;
       main.appendChild(sectionCours(domaineSeul));
       return;
@@ -160,24 +188,24 @@
 
   function sectionProfils() {
     var s = el("section");
-    s.appendChild(el("h2", null, "Profil"));
+    s.appendChild(el("h2", null, T("profil.titre")));
     if (!etat.profils.length) {
-      s.appendChild(el("p", null, "Bienvenue ! Choisis ton nom d'utilisateur : ton travail (quiz, TD, TP, suivi) sera rangé dans un dossier à ce nom, à côté du catalogue."));
+      s.appendChild(el("p", null, T("profil.bienvenue")));
       var form = el("form", "ula-actions");
       var champ = el("input");
-      champ.type = "text"; champ.value = etat.session; champ.setAttribute("aria-label", "Nom d'utilisateur");
+      champ.type = "text"; champ.value = etat.session; champ.setAttribute("aria-label", T("profil.nomAria"));
       champ.className = "ula-champ";
       var choix = el("select");
-      choix.className = "ula-champ"; choix.setAttribute("aria-label", "Cursus exemple");
-      var aucun = el("option", null, "Cursus exemple : aucun"); aucun.value = ""; choix.appendChild(aucun);
+      choix.className = "ula-champ"; choix.setAttribute("aria-label", T("profil.cursusAria"));
+      var aucun = el("option", null, T("profil.cursusAucun")); aucun.value = ""; choix.appendChild(aucun);
       var caseL = el("label", "ula-case");
       var caseT = el("input"); caseT.type = "checkbox"; caseT.checked = true;
-      caseL.appendChild(caseT); caseL.appendChild(document.createTextNode(" Télécharger les cours maintenant"));
-      var ok = el("button", "ula-bouton principal", "Créer mon profil");
+      caseL.appendChild(caseT); caseL.appendChild(document.createTextNode(" " + T("profil.telecharger")));
+      var ok = el("button", "ula-bouton principal", T("profil.creer"));
       ok.type = "submit";
       form.appendChild(champ); form.appendChild(choix); form.appendChild(caseL); form.appendChild(ok);
       cursusExemples().then(function (liste) {
-        liste.forEach(function (c) { var o = el("option", null, "Cursus exemple : " + c.titre + " (" + c.nombre + " cours, " + taille(c.taille) + ")"); o.value = c.id; choix.appendChild(o); });
+        liste.forEach(function (c) { var o = el("option", null, T("profil.cursusOption", { titre: c.titre, n: c.nombre, taille: taille(c.taille) })); o.value = c.id; choix.appendChild(o); });
         if (liste.length) choix.value = liste[0].id;
       });
       form.addEventListener("submit", function (e) {
@@ -186,7 +214,7 @@
         creerProfil2(champ.value, choix.value, caseT.checked).catch(afficherErreur).then(function () { ok.disabled = false; });
       });
       s.appendChild(form);
-      s.appendChild(el("p", "ula-note", "Un cursus exemple range tout de suite les cours d'une formation dans tes dossiers (L1, L2, L3) ; « aucun » pour composer ton cursus toi-même."));
+      s.appendChild(el("p", "ula-note", T("profil.cursusNote")));
       return s;
     }
     var liste = el("div", "ula-profils");
@@ -202,16 +230,16 @@
     });
     s.appendChild(liste);
     s.appendChild(el("p", "ula-note", etat.profil
-      ? "Profil actif : « " + etat.profil + " ». Ta progression s'écrit dans le dossier " + etat.profil + "/ (mémorisé sur ce poste)."
-      : "Choisis ton profil : la progression s'écrit dans son dossier."));
+      ? T("profil.actif", { nom: etat.profil })
+      : T("profil.choisir")));
     var act2 = el("div", "ula-actions");
-    act2.appendChild(bouton("Nouveau profil…", "discret", function () { return creerProfil(""); }));
-    if (etat.profil) act2.appendChild(bouton("Renommer « " + etat.profil + " »…", "discret", function () {
-      return demander({ titre: "Renommer le profil", champs: [{ nom: "nom", libelle: "Nouveau nom", valeur: etat.profil }], ok: "Renommer" }).then(function (r) {
+    act2.appendChild(bouton(T("profil.nouveau"), "discret", function () { return creerProfil(""); }));
+    if (etat.profil) act2.appendChild(bouton(T("profil.renommer", { nom: etat.profil }), "discret", function () {
+      return demander({ titre: T("profil.renommerTitre"), champs: [{ nom: "nom", libelle: T("profil.nouveauNom"), valeur: etat.profil }], ok: T("profil.renommerOk") }).then(function (r) {
         if (r) return api("POST", "ula/profils/renommer", { ancien: etat.profil, nouveau: r.nom }).then(charger);
       });
     }));
-    if (etat.profil) act2.appendChild(bouton("Ouvrir son dossier", "discret", function () { return api("POST", "ula/ouvrir", { chemin: etat.profil }); }));
+    if (etat.profil) act2.appendChild(bouton(T("profil.ouvrirDossier"), "discret", function () { return api("POST", "ula/ouvrir", { chemin: etat.profil }); }));
     s.appendChild(act2);
     return s;
   }
@@ -223,12 +251,12 @@
 
   function creerProfil(valeur) {
     return cursusExemples().then(function (liste) {
-      var options = [{ valeur: "", texte: "Aucun : je compose mon cursus" }].concat(liste.map(function (c) { return { valeur: c.id, texte: c.titre + " (" + c.nombre + " cours, " + taille(c.taille) + ")" }; }));
+      var options = [{ valeur: "", texte: T("profil.aucunCursus") }].concat(liste.map(function (c) { return { valeur: c.id, texte: T("profil.cursusChoix", { titre: c.titre, n: c.nombre, taille: taille(c.taille) }) }; }));
       return demander({
-        titre: "Nouveau profil",
-        texte: "Nom d'utilisateur (le nom du dossier de ton espace)." + (liste.length ? "" : "\nLe catalogue en ligne ne répond pas : le cursus exemple pourra être ajouté plus tard."),
-        champs: [{ nom: "nom", libelle: "Nom d'utilisateur", valeur: valeur || "" }, { nom: "cursus", libelle: "Cursus exemple", choix: options }, { nom: "telecharger", libelle: "Télécharger les cours maintenant", case: true, valeur: true }],
-        ok: "Créer"
+        titre: T("profil.nouveauTitre"),
+        texte: T("profil.nouveauTexte") + (liste.length ? "" : "\n" + T("profil.horsLigne")),
+        champs: [{ nom: "nom", libelle: T("profil.nomAria"), valeur: valeur || "" }, { nom: "cursus", libelle: T("profil.cursusAria"), choix: options }, { nom: "telecharger", libelle: T("profil.telecharger"), case: true, valeur: true }],
+        ok: T("profil.creerOk")
       }).then(function (r) { if (r) return creerProfil2(r.nom, r.cursus, r.telecharger); });
     });
   }
@@ -241,12 +269,12 @@
 
   function compteRenduCursus(x) {
     if (!x) return;
-    if (x.erreur) return demander({ titre: "Profil créé", texte: x.erreur, seulementOk: true });
+    if (x.erreur) return demander({ titre: T("profil.cree"), texte: x.erreur, seulementOk: true });
     if (x.telechargement) suivreTravail();
-    var texte = "Cursus « " + x.titre + " » : " + x.cours + " cours rangés dans " + x.dossiers.map(function (d) { return d.split("/").pop(); }).join(", ") + ".";
-    if (x.telechargement) texte += "\nTéléchargement de " + x.aTelecharger + " cours en arrière-plan : tu peux continuer pendant ce temps.";
-    else if (x.aTelecharger) texte += "\n" + x.aTelecharger + " cours restent à télécharger (« Tout télécharger » dans ton cursus).";
-    return demander({ titre: "Cursus prêt", texte: texte, seulementOk: true });
+    var texte = Tn("cursus.pret", x.cours, { titre: x.titre, dossiers: x.dossiers.map(function (d) { return d.split("/").pop(); }).join(", ") });
+    if (x.telechargement) texte += "\n" + Tn("cursus.telechargement", x.aTelecharger);
+    else if (x.aTelecharger) texte += "\n" + Tn("cursus.restants", x.aTelecharger);
+    return demander({ titre: T("cursus.pretTitre"), texte: texte, seulementOk: true });
   }
 
   // Bandeau des téléchargements en arrière-plan (cursus exemple, « Tout télécharger »)
@@ -260,10 +288,10 @@
       api("GET", "ula/catalogue/travail").then(function (t) {
         var b = document.getElementById("ula-travail") || bandeau;
         if (!b.isConnected) main.insertBefore(b, main.querySelector("section"));
-        if (t.actif) { b.textContent = "Téléchargement des cours : " + (t.faits + t.deja) + "/" + t.total + (t.enCours ? " · " + t.enCours + "…" : ""); return; }
+        if (t.actif) { b.textContent = T("travail.progression", { fait: t.faits + t.deja, total: t.total }) + (t.enCours ? " · " + t.enCours + "…" : ""); return; }
         clearInterval(suivi); suivi = null; b.remove();
         charger().then(function () {
-          if (t.erreurs && t.erreurs.length) demander({ titre: "Téléchargement incomplet", texte: t.erreurs.length + " cours n'ont pas pu être téléchargés :\n- " + t.erreurs.map(function (e) { return e.id + " : " + e.erreur; }).join("\n- ") + "\n\n« Tout télécharger » reprend seulement ceux-là.", seulementOk: true });
+          if (t.erreurs && t.erreurs.length) demander({ titre: T("travail.incompletTitre"), texte: Tn("travail.incomplet", t.erreurs.length, { liste: t.erreurs.map(function (e) { return e.id + " : " + e.erreur; }).join("\n- ") }), seulementOk: true });
         });
       }).catch(function () {});
     }, 1500);
@@ -281,7 +309,7 @@
   }
   function libelleDossier(chemin) {
     var segs = chemin.split("/");
-    return segs.length === 1 ? "(racine de mon espace)" : segs.slice(1).join(" › ");
+    return segs.length === 1 ? T("cursus.racine") : segs.slice(1).join(" › ");
   }
 
   function resumeProgression(id) {
@@ -290,8 +318,8 @@
     var faits = m.quiz.filter(function (q) { return q.tentatives && q.tentatives.nombre; }).length;
     var t = (m.travaux || []).filter(function (x) { return x.commences; }).length;
     var parts = [];
-    if (m.quiz.length) parts.push(faits + "/" + m.quiz.length + " quiz faits");
-    if ((m.travaux || []).length) parts.push(t + "/" + m.travaux.length + " TD commencés");
+    if (m.quiz.length) parts.push(T("cursus.quizFaits", { faits: faits, total: m.quiz.length }));
+    if ((m.travaux || []).length) parts.push(T("cursus.tdCommences", { faits: t, total: m.travaux.length }));
     return parts.join(" · ");
   }
 
@@ -300,8 +328,8 @@
   function menuActions(boutons, libelle) {
     var d = el("details", "ula-menu");
     var s = el("summary", "ula-menu-bouton", "⋯");
-    s.title = libelle || "Actions";
-    s.setAttribute("aria-label", libelle || "Actions");
+    s.title = libelle || T("cursus.actions");
+    s.setAttribute("aria-label", libelle || T("cursus.actions"));
     d.appendChild(s);
     var liste = el("div", "ula-menu-liste");
     boutons.forEach(function (b) { b.addEventListener("click", function () { d.open = false; }); liste.appendChild(b); });
@@ -319,29 +347,29 @@
   function actionsNoeud(n) {
     var b = [];
     if (n.type === "dossier") {
-      b.push(bouton("Ajouter un cours…", null, function () { return ajouterCours(null, n.chemin); }));
-      b.push(bouton("Nouveau sous-dossier…", null, function () { return nouveauDossier(n.chemin); }));
+      b.push(bouton(T("cursus.ajouterCours"), null, function () { return ajouterCours(null, n.chemin); }));
+      b.push(bouton(T("cursus.sousDossier"), null, function () { return nouveauDossier(n.chemin); }));
     }
-    if (n.type === "perso") b.push(bouton("Proposer ce cours…", null, function () { return proposer(n); }));
-    b.push(bouton("Renommer…", null, function () {
-      return demander({ titre: "Renommer", champs: [{ nom: "nom", libelle: "Nouveau nom", valeur: n.nom }], ok: "Renommer" }).then(function (r) {
+    if (n.type === "perso") b.push(bouton(T("cursus.proposer"), null, function () { return proposer(n); }));
+    b.push(bouton(T("cursus.renommer"), null, function () {
+      return demander({ titre: T("cursus.renommerTitre"), champs: [{ nom: "nom", libelle: T("profil.nouveauNom"), valeur: n.nom }], ok: T("profil.renommerOk") }).then(function (r) {
         if (r) return api("POST", "ula/cursus/renommer", { chemin: n.chemin, nom: r.nom }).then(charger);
       });
     }));
-    b.push(bouton("Déplacer…", null, function () {
+    b.push(bouton(T("cursus.deplacer"), null, function () {
       var choix = dossiers(cursus.arbre).filter(function (d) { return d !== n.chemin && d.indexOf(n.chemin + "/") !== 0 && d !== n.chemin.split("/").slice(0, -1).join("/"); })
         .map(function (d) { return { valeur: d, texte: libelleDossier(d) }; });
-      if (!choix.length) return demander({ titre: "Déplacer", texte: "Aucun autre dossier : en créer un d'abord.", seulementOk: true });
-      return demander({ titre: "Déplacer « " + n.nom + " »", champs: [{ nom: "vers", libelle: "Vers le dossier", choix: choix }], ok: "Déplacer" }).then(function (r) {
+      if (!choix.length) return demander({ titre: T("cursus.deplacerTitre"), texte: T("cursus.deplacerAucun"), seulementOk: true });
+      return demander({ titre: T("cursus.deplacerNom", { nom: n.nom }), champs: [{ nom: "vers", libelle: T("cursus.versDossier"), choix: choix }], ok: T("cursus.deplacerOk") }).then(function (r) {
         if (r) return api("POST", "ula/cursus/deplacer", { chemin: n.chemin, vers: r.vers }).then(charger);
       });
     }));
-    b.push(bouton("Retirer…", null, function () {
-      return demander({ titre: "Retirer « " + n.nom + " »", texte: n.type === "lien" ? "Le cours quitte ton cursus. C'est refusé s'il contient ton travail (tentatives, TD, TP) : le déplacer plutôt." : "Seul un dossier vide peut être retiré.", ok: "Retirer" }).then(function (r) {
+    b.push(bouton(T("cursus.retirer"), null, function () {
+      return demander({ titre: T("cursus.retirerTitre", { nom: n.nom }), texte: n.type === "lien" ? T("cursus.retirerCours") : T("cursus.retirerDossier"), ok: T("cursus.retirerOk") }).then(function (r) {
         if (r) return api("POST", "ula/cursus/retirer", { chemin: n.chemin }).then(charger);
       });
     }));
-    b.push(bouton("Ouvrir le dossier", null, function () { return api("POST", "ula/ouvrir", { chemin: n.chemin }); }));
+    b.push(bouton(T("cursus.ouvrirDossier"), null, function () { return api("POST", "ula/ouvrir", { chemin: n.chemin }); }));
     return b;
   }
 
@@ -376,21 +404,21 @@
       if (c) {
         var info = resumeProgression(n.cours);
         b = boutonCours({
-          titre: c.titre, teinte: c.teinte, info: info || (c.accueil ? "" : "ouvrir le dossier"),
+          titre: c.titre, teinte: c.teinte, info: info || (c.accueil ? "" : T("cursus.infoOuvrirDossier")),
           href: c.accueil ? urlPage(c.accueil) : null,
           action: c.accueil ? null : function () { return api("POST", "ula/ouvrir", { chemin: c.chemin }); }
         });
       } else {
         b = boutonCours({
-          titre: n.nom, absent: true, info: etat.source ? "absent de explore/" : "à télécharger : cliquer",
+          titre: n.nom, absent: true, info: etat.source ? T("cursus.absentExplore") : T("cursus.aTelecharger"),
           action: etat.source ? null : function () { return api("POST", "ula/catalogue/installer-tout", { ids: [n.cours] }).then(suivreTravail); }
         });
       }
     } else {
-      b = boutonCours({ titre: n.nom, info: "cours de ton espace", href: urlPage(n.chemin + "/generated_courses/index.html") });
+      b = boutonCours({ titre: n.nom, info: T("cursus.coursEspace"), href: urlPage(n.chemin + "/generated_courses/index.html") });
     }
     li.appendChild(b);
-    li.appendChild(menuActions(actionsNoeud(n), "Actions sur « " + n.nom + " »"));
+    li.appendChild(menuActions(actionsNoeud(n), T("cursus.actionsSur", { nom: n.nom })));
     return li;
   }
 
@@ -446,7 +474,7 @@
     var bloc = el(sous ? "div" : "li", sous ? "ula-sous-bloc" : "ula-bloc");
     var k = nombreCours(n);
     if (!sous) bloc.dataset.cours = k;
-    bloc.appendChild(teteBloc(sous ? "h4" : "h3", n.nom, k + " cours", menuActions(actionsNoeud(n), "Actions sur le dossier « " + n.nom + " »")));
+    bloc.appendChild(teteBloc(sous ? "h4" : "h3", n.nom, Tn("cursus.nbCours", k), menuActions(actionsNoeud(n), T("cursus.actionsDossier", { nom: n.nom }))));
     var enfants = n.enfants || [];
     var cours = enfants.filter(function (e) { return e.type !== "dossier"; });
     if (cours.length) {
@@ -455,23 +483,23 @@
       bloc.appendChild(ul);
     }
     enfants.filter(function (e) { return e.type === "dossier"; }).forEach(function (d) { bloc.appendChild(blocDossier(d, true)); });
-    if (!enfants.length) bloc.appendChild(el("p", "ula-note", "Dossier vide : « ⋯ » puis « Ajouter un cours… »."));
+    if (!enfants.length) bloc.appendChild(el("p", "ula-note", T("cursus.dossierVide")));
     return bloc;
   }
 
   function sectionCursus() {
     var s = el("section");
-    s.appendChild(el("h2", null, "Mon cursus"));
+    s.appendChild(el("h2", null, T("cursus.titre")));
     var a = cursus.arbre;
     if (!a || !a.enfants.length) {
-      s.appendChild(el("p", null, "Ton cursus est vide. Crée des dossiers (L1, L2, Prépa, Perso…) et ajoute-y des cours du catalogue : chaque cours y est un lien, sa progression est rangée à côté."));
+      s.appendChild(el("p", null, T("cursus.vide")));
     } else {
       var blocs = el("ul", "ula-blocs ula-adaptatif");
       // Les cours rangés à la racine de l'espace forment leur propre bloc, en tête
       var aLaRacine = a.enfants.filter(function (e) { return e.type !== "dossier"; });
       if (aLaRacine.length) {
         var r = el("li", "ula-bloc");
-        r.appendChild(teteBloc("h3", "Hors dossier", aLaRacine.length + " cours", null));
+        r.appendChild(teteBloc("h3", T("cursus.horsDossier"), Tn("cursus.nbCours", aLaRacine.length), null));
         var ul = el("ul", "ula-boutons");
         aLaRacine.forEach(function (e) { ul.appendChild(itemCursus(e)); });
         r.appendChild(ul);
@@ -488,7 +516,7 @@
       if (blocs.childNodes.length) { s.appendChild(blocs); ajusterBlocs(blocs); }
       if (autres.length) {
         var ligne = el("div", "ula-actions ula-autres");
-        ligne.appendChild(el("span", "ula-cours-info", "Autres dossiers de ton espace :"));
+        ligne.appendChild(el("span", "ula-cours-info", T("cursus.autresDossiers")));
         autres.forEach(function (d) { ligne.appendChild(bouton(d.nom, "discret", function () { return api("POST", "ula/ouvrir", { chemin: d.chemin }); })); });
         s.appendChild(ligne);
       }
@@ -496,52 +524,52 @@
     var act = el("div", "ula-actions");
     var manquants = [];
     (function p(n) { if (n && n.type === "lien" && !coursInstalle(n.cours)) manquants.push(n.cours); ((n && n.enfants) || []).forEach(p); })(a);
-    if (manquants.length && !etat.source) act.appendChild(bouton("Tout télécharger (" + manquants.length + " cours)", "principal", function () { return api("POST", "ula/catalogue/installer-tout", { ids: manquants }).then(suivreTravail); }));
-    act.appendChild(bouton("+ Dossier", null, function () { return nouveauDossier(etat.profil); }));
-    act.appendChild(bouton("+ Cours", null, function () { return ajouterCours(null, etat.profil); }));
+    if (manquants.length && !etat.source) act.appendChild(bouton(Tn("cursus.toutTelecharger", manquants.length), "principal", function () { return api("POST", "ula/catalogue/installer-tout", { ids: manquants }).then(suivreTravail); }));
+    act.appendChild(bouton(T("cursus.plusDossier"), null, function () { return nouveauDossier(etat.profil); }));
+    act.appendChild(bouton(T("cursus.plusCours"), null, function () { return ajouterCours(null, etat.profil); }));
     s.appendChild(act);
     return s;
   }
 
   function nouveauDossier(parent) {
-    return demander({ titre: "Nouveau dossier", texte: "Dans : " + libelleDossier(parent), champs: [{ nom: "nom", libelle: "Nom (L1, Prépa, Réorientation…)" }], ok: "Créer" }).then(function (r) {
+    return demander({ titre: T("cursus.nouveauDossier"), texte: T("cursus.dans", { dossier: libelleDossier(parent) }), champs: [{ nom: "nom", libelle: T("cursus.nomDossier") }], ok: T("cursus.creer") }).then(function (r) {
       if (r) return api("POST", "ula/cursus/dossier", { parent: parent, nom: r.nom }).then(charger);
     });
   }
 
   function ajouterCours(id, dossier) {
-    if (!etat.profil) return demander({ titre: "Ajouter un cours", texte: "Choisis d'abord ton profil.", seulementOk: true });
+    if (!etat.profil) return demander({ titre: T("cursus.ajouterTitre"), texte: T("cursus.choisirProfil"), seulementOk: true });
     var champs = [];
     if (!id) {
       var dejaLa = {};
       (function p(n) { if (n.type === "lien") dejaLa[n.cours] = true; (n.enfants || []).forEach(p); })(cursus.arbre || {});
-      var choix = etat.cours.filter(function (c) { return !dejaLa[c.id]; }).map(function (c) { return { valeur: c.id, texte: (DOMAINES[c.domaine] || c.domaine) + " · " + c.titre }; });
-      if (!choix.length) return demander({ titre: "Ajouter un cours", texte: "Tous les cours installés sont déjà dans ton cursus. D'autres se téléchargent depuis le catalogue en ligne.", seulementOk: true });
-      champs.push({ nom: "cours", libelle: "Cours installé", choix: choix });
+      var choix = etat.cours.filter(function (c) { return !dejaLa[c.id]; }).map(function (c) { return { valeur: c.id, texte: nomDomaine(c.domaine) + " · " + c.titre }; });
+      if (!choix.length) return demander({ titre: T("cursus.ajouterTitre"), texte: T("cursus.tousDeja"), seulementOk: true });
+      champs.push({ nom: "cours", libelle: T("cursus.coursInstalle"), choix: choix });
     }
-    if (!dossier) champs.push({ nom: "dossier", libelle: "Dans le dossier", choix: dossiers(cursus.arbre).map(function (d) { return { valeur: d, texte: libelleDossier(d) }; }) });
-    return demander({ titre: "Ajouter un cours à mon cursus", texte: dossier ? "Dans : " + libelleDossier(dossier) : "", champs: champs, ok: "Ajouter" }).then(function (r) {
+    if (!dossier) champs.push({ nom: "dossier", libelle: T("cursus.dansDossier"), choix: dossiers(cursus.arbre).map(function (d) { return { valeur: d, texte: libelleDossier(d) }; }) });
+    return demander({ titre: T("cursus.ajouterMonCursus"), texte: dossier ? T("cursus.dans", { dossier: libelleDossier(dossier) }) : "", champs: champs, ok: T("cursus.ajouter") }).then(function (r) {
       if (r) return api("POST", "ula/cursus/ajouter", { cours: id || r.cours, dossier: dossier || r.dossier }).then(charger);
     });
   }
 
   function proposer(n) {
     return demander({
-      titre: "Proposer « " + n.nom + " » au catalogue",
-      texte: "L'archive ne contient que les pages générées (generated_courses, generated_quizzes) : ni sources d'enseignants, ni travail personnel. Le contrôle des données personnelles est bloquant. Une page GitHub s'ouvre ensuite : y joindre l'archive.",
+      titre: T("proposer.titre", { nom: n.nom }),
+      texte: T("proposer.texte"),
       champs: [
-        { nom: "titre", libelle: "Titre du cours", valeur: n.nom },
-        { nom: "domaine", libelle: "Domaine", choix: Object.keys(DOMAINES).map(function (k) { return { valeur: k, texte: DOMAINES[k] }; }) },
-        { nom: "niveau", libelle: "Niveau (Licence 1, Terminale, Prépa…)" },
-        { nom: "origine", libelle: "Origine (établissement, formation)" },
-        { nom: "description", libelle: "Description", long: true }
+        { nom: "titre", libelle: T("proposer.titreCours"), valeur: n.nom },
+        { nom: "domaine", libelle: T("proposer.domaine"), choix: DOMAINES.map(function (k) { return { valeur: k, texte: nomDomaine(k) }; }) },
+        { nom: "niveau", libelle: T("proposer.niveau") },
+        { nom: "origine", libelle: T("proposer.origine") },
+        { nom: "description", libelle: T("proposer.description"), long: true }
       ],
-      ok: "Préparer l'archive"
+      ok: T("proposer.preparer")
     }).then(function (r) {
       if (!r) return;
       return api("POST", "ula/proposer", { chemin: n.chemin, infos: r }).then(function (p) {
-        var texte = "Archive prête : " + p.archive + " (" + p.fichiers + " fichiers)." + (p.avertissements.length ? "\n\nÀ vérifier :\n- " + p.avertissements.slice(0, 10).join("\n- ") : "") + "\n\nLa page GitHub de la proposition va s'ouvrir : y faire glisser l'archive.";
-        return demander({ titre: "Proposition prête", texte: texte, ok: "Ouvrir GitHub" }).then(function (ok) {
+        var texte = T("proposer.prete", { archive: p.archive, n: p.fichiers }) + (p.avertissements.length ? "\n\n" + T("proposer.verifier") + "\n- " + p.avertissements.slice(0, 10).join("\n- ") : "") + "\n\n" + T("proposer.github");
+        return demander({ titre: T("proposer.preteTitre"), texte: texte, ok: T("proposer.ouvrirGithub") }).then(function (ok) {
           api("POST", "ula/ouvrir", { chemin: "propositions" }).catch(function () {});
           if (ok) window.open(p.url, "_blank", "noopener");
         });
@@ -553,10 +581,10 @@
 
   function sectionCours(domaine) {
     var s = el("section");
-    s.appendChild(el("h2", null, domaine ? "Cours" : "Explorer"));
+    s.appendChild(el("h2", null, domaine ? T("explorer.cours") : T("explorer.titre")));
     var cours = etat.cours.filter(function (c) { return !domaine || c.domaine === domaine; });
     if (!cours.length) {
-      s.appendChild(el("p", null, "Aucun cours installé" + (domaine ? " dans ce domaine" : "") + ". Le catalogue en ligne, plus bas sur l'accueil, propose de les télécharger."));
+      s.appendChild(el("p", null, domaine ? T("explorer.aucunDomaine") : T("explorer.aucun")));
       return s;
     }
     var parDomaine = {};
@@ -564,7 +592,7 @@
     var dejaLa = {};
     (function p(n) { if (n && n.type === "lien") dejaLa[n.cours] = true; ((n && n.enfants) || []).forEach(p); })(cursus && cursus.arbre);
     Object.keys(parDomaine).forEach(function (d) {
-      if (!domaine) s.appendChild(el("h3", null, DOMAINES[d] || d));
+      if (!domaine) s.appendChild(el("h3", null, nomDomaine(d)));
       var ul = el("ul", "ula-cartes");
       parDomaine[d].forEach(function (c) {
         var li = el("li", "ula-carte");
@@ -576,10 +604,10 @@
         if (c.description) li.appendChild(el("p", "ula-note", c.description.length > 180 ? c.description.slice(0, 177) + "…" : c.description));
         var act = el("div", "ula-actions");
         if (etat && etat.profil) {
-          if (dejaLa[c.id]) act.appendChild(el("span", "ula-etat", "Dans mon cursus"));
-          else act.appendChild(bouton("Ajouter à mon cursus…", "petit", function () { return ajouterCours(c.id, null); }));
+          if (dejaLa[c.id]) act.appendChild(el("span", "ula-etat", T("explorer.dansCursus")));
+          else act.appendChild(bouton(T("explorer.ajouter"), "petit", function () { return ajouterCours(c.id, null); }));
         }
-        if (!c.accueil) act.appendChild(bouton("Ouvrir le dossier", "discret", function () { return api("POST", "ula/ouvrir", { chemin: c.chemin }); }));
+        if (!c.accueil) act.appendChild(bouton(T("cursus.ouvrirDossier"), "discret", function () { return api("POST", "ula/ouvrir", { chemin: c.chemin }); }));
         li.appendChild(act);
         ul.appendChild(li);
       });
@@ -593,13 +621,13 @@
   function sectionCatalogue() {
     var s = el("section");
     s.id = "catalogue";
-    s.appendChild(el("h2", null, "Catalogue en ligne"));
-    if (etat.source) s.appendChild(el("p", "ula-note", "Ce dossier est la source du catalogue (dépôt git) : ses cours se modifient dans explore/ et se publient avec npm run catalogue (app/). Le catalogue en ligne est affiché pour comparaison."));
-    else s.appendChild(el("p", null, "Les cours se téléchargent à la demande, un par un. Une mise à jour d'un cours ne touche jamais à ton travail, rangé dans ton espace."));
+    s.appendChild(el("h2", null, T("catalogue.titre")));
+    if (etat.source) s.appendChild(el("p", "ula-note", T("catalogue.source")));
+    else s.appendChild(el("p", null, T("catalogue.intro")));
     var zone = el("div");
     s.appendChild(zone);
     var act = el("div", "ula-actions");
-    act.appendChild(bouton(catalogue ? "Actualiser" : "Afficher le catalogue", "principal", function () { return chargerCatalogue(zone); }));
+    act.appendChild(bouton(catalogue ? T("catalogue.actualiser") : T("catalogue.afficher"), "principal", function () { return chargerCatalogue(zone); }));
     s.appendChild(act);
     if (catalogue) rendreCatalogue(zone);
     return s;
@@ -607,30 +635,30 @@
 
   function chargerCatalogue(zone) {
     zone.innerHTML = "";
-    zone.appendChild(el("p", "ula-attente", "Lecture du catalogue…"));
+    zone.appendChild(el("p", "ula-attente", T("catalogue.lecture")));
     return api("GET", "ula/catalogue").then(function (c) { catalogue = c; rendreCatalogue(zone); })
       .catch(function (e) { zone.innerHTML = ""; zone.appendChild(el("p", "ula-erreur", e.message)); });
   }
 
-  var LIBELLES_ETAT = { absent: "", installe: "Installé", maj: "Mise à jour disponible", source: "Source locale" };
+  // Libellé de l'état d'un cours ou d'un pack du catalogue (vide : absent)
+  var CLES_ETAT = { installe: "catalogue.installe", maj: "catalogue.maj", source: "catalogue.sourceLocale", partiel: "catalogue.partiel" };
+  function libelleEtat(e) { return CLES_ETAT[e] ? T(CLES_ETAT[e]) : ""; }
 
-  var LIBELLES_PACK = { absent: "", installe: "Installé", maj: "Mise à jour disponible", partiel: "En partie installé" };
-
-  function taille(o) { return (o / 1e6).toFixed(1).replace(".", ",") + " Mo"; }
+  function taille(o) { return T("catalogue.mo", { n: (o / 1e6).toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) }); }
 
   // Packs par niveau d'étude : en tête du catalogue
   function rendreCursus(zone) {
     if (!catalogue.cursus || !catalogue.cursus.length) return;
-    zone.appendChild(el("h3", null, "Cursus exemples"));
+    zone.appendChild(el("h3", null, T("catalogue.cursusExemples")));
     var ul = el("ul", "ula-cartes");
     catalogue.cursus.forEach(function (c) {
       var li = el("li", "ula-carte");
-      li.appendChild(el("h3", null, "Cursus " + c.titre));
-      li.appendChild(el("p", "ula-cours-info", [c.origine, c.packs.map(function (x) { return x.dossier; }).join(", "), c.nombre + " cours", taille(c.taille)].filter(Boolean).join(" · ")));
+      li.appendChild(el("h3", null, T("catalogue.cursus", { titre: c.titre })));
+      li.appendChild(el("p", "ula-cours-info", [c.origine, c.packs.map(function (x) { return x.dossier; }).join(", "), Tn("cursus.nbCours", c.nombre), taille(c.taille)].filter(Boolean).join(" · ")));
       if (c.description) li.appendChild(el("p", "ula-note", c.description));
       var act = el("div", "ula-actions");
-      if (etat.profil) act.appendChild(bouton("Ajouter à mon cursus…", "principal", function () {
-        return demander({ titre: "Cursus " + c.titre, texte: "Les dossiers " + c.packs.map(function (x) { return x.dossier; }).join(", ") + " sont créés dans ton espace avec les liens vers leurs cours ; ce qui y est déjà reste en place.", champs: [{ nom: "telecharger", libelle: "Télécharger les cours maintenant", case: true, valeur: !catalogue.source }], ok: "Ajouter" })
+      if (etat.profil) act.appendChild(bouton(T("explorer.ajouter"), "principal", function () {
+        return demander({ titre: T("catalogue.cursus", { titre: c.titre }), texte: T("catalogue.cursusTexte", { dossiers: c.packs.map(function (x) { return x.dossier; }).join(", ") }), champs: [{ nom: "telecharger", libelle: T("profil.telecharger"), case: true, valeur: !catalogue.source }], ok: T("cursus.ajouter") })
           .then(function (r) { if (r) return api("POST", "ula/cursus/appliquer", { id: c.id, telecharger: r.telecharger }).then(function (x) { return charger().then(function () { return compteRenduCursus(x); }); }); });
       }));
       li.appendChild(act);
@@ -641,7 +669,7 @@
 
   function rendrePacks(zone) {
     if (!catalogue.packs || !catalogue.packs.length) return;
-    zone.appendChild(el("h3", null, "Packs"));
+    zone.appendChild(el("h3", null, T("catalogue.packs")));
     // Un bloc par pack : en-tête (état, titre, nombre de cours, taille, actions), puis
     // ses cours en grille de boutons : un cours installé s'ouvre, un cours absent se
     // télécharge au clic
@@ -653,15 +681,15 @@
       li.dataset.cours = p.cours.length;
       var tete = el("div", "ula-bloc-tete");
       var titres = el("div", "ula-bloc-titres");
-      if (LIBELLES_PACK[p.etat]) titres.appendChild(el("span", "ula-etat", LIBELLES_PACK[p.etat]));
-      titres.appendChild(el("h3", null, "Pack " + p.titre));
-      titres.appendChild(el("p", "ula-cours-info", [p.origine, p.nombre + " cours", taille(p.taille)].filter(Boolean).join(" · ")));
+      if (libelleEtat(p.etat)) titres.appendChild(el("span", "ula-etat", libelleEtat(p.etat)));
+      titres.appendChild(el("h3", null, T("catalogue.pack", { titre: p.titre })));
+      titres.appendChild(el("p", "ula-cours-info", [p.origine, Tn("cursus.nbCours", p.nombre), taille(p.taille)].filter(Boolean).join(" · ")));
       tete.appendChild(titres);
       li.appendChild(tete);
       if (p.description) li.appendChild(el("p", "ula-note", p.description));
       var act = el("div", "ula-actions");
-      if (!catalogue.source && p.etat !== "installe") act.appendChild(bouton(p.etat === "maj" ? "Mettre à jour le pack" : "Télécharger le pack", "principal", function () { return installerPack(p, zone); }));
-      if (etat.profil) act.appendChild(bouton("Ranger dans mon cursus…", p.etat === "installe" ? "principal" : null, function () { return rangerPack(p); }));
+      if (!catalogue.source && p.etat !== "installe") act.appendChild(bouton(p.etat === "maj" ? T("catalogue.majPack") : T("catalogue.telechargerPack"), "principal", function () { return installerPack(p, zone); }));
+      if (etat.profil) act.appendChild(bouton(T("catalogue.rangerPack"), p.etat === "installe" ? "principal" : null, function () { return rangerPack(p); }));
       if (act.childNodes.length) li.appendChild(act);
       var grille = el("ul", "ula-boutons");
       p.cours.forEach(function (id) {
@@ -671,14 +699,14 @@
         if (local) {
           item.appendChild(boutonCours({
             titre: local.titre, teinte: local.teinte || c.teinte,
-            info: [c.etat === "maj" ? "mise à jour disponible" : null, resumeProgression(id) || (local.accueil ? "ouvrir" : "ouvrir le dossier")].filter(Boolean).join(" · "),
+            info: [c.etat === "maj" ? T("catalogue.infoMaj") : null, resumeProgression(id) || (local.accueil ? T("catalogue.ouvrir") : T("cursus.infoOuvrirDossier"))].filter(Boolean).join(" · "),
             href: local.accueil ? urlPage(local.accueil) : null,
             action: local.accueil ? null : function () { return api("POST", "ula/ouvrir", { chemin: local.chemin }); }
           }));
         } else {
           item.appendChild(boutonCours({
             titre: c.titre, teinte: c.teinte, absent: true,
-            info: catalogue.source ? "absent de explore/" : "à télécharger · " + taille(c.taille),
+            info: catalogue.source ? T("cursus.absentExplore") : T("catalogue.infoTelecharger", { taille: taille(c.taille) }),
             action: catalogue.source ? null : function () { return installer(c, zone); }
           }));
         }
@@ -689,7 +717,7 @@
     });
     zone.appendChild(ul);
     ajusterBlocs(ul);
-    zone.appendChild(el("h3", null, "Cours"));
+    zone.appendChild(el("h3", null, T("catalogue.cours")));
   }
 
   // Télécharge les cours du pack un par un (progression globale) ; un cours en échec
@@ -702,7 +730,7 @@
     var chaine = Promise.resolve();
     aFaire.forEach(function (c, i) {
       chaine = chaine.then(function () {
-        suivi.textContent = "Pack " + p.titre + " : " + (i + 1) + "/" + aFaire.length + " · " + c.titre + " (" + taille(c.taille) + ")…";
+        suivi.textContent = T("catalogue.packProgression", { titre: p.titre, i: i + 1, n: aFaire.length, cours: c.titre, taille: taille(c.taille) });
         return api("POST", "ula/catalogue/installer", { id: c.id }).catch(function (e) { erreurs.push(c.titre + " : " + e.message); });
       });
     });
@@ -710,7 +738,7 @@
       suivi.remove();
       return api("GET", "ula/catalogue").then(function (c) { catalogue = c; return charger(); });
     }).then(function () {
-      if (erreurs.length) return demander({ titre: "Pack incomplet", texte: erreurs.length + " cours n'ont pas pu être installés :\n- " + erreurs.join("\n- ") + "\n\nRelancer « Télécharger le pack » reprend seulement ceux-là.", seulementOk: true });
+      if (erreurs.length) return demander({ titre: T("catalogue.packIncompletTitre"), texte: Tn("catalogue.packIncomplet", erreurs.length, { liste: erreurs.join("\n- ") }), seulementOk: true });
       if (etat.profil) return rangerPack(p);
     });
   }
@@ -719,15 +747,15 @@
   // déplacer ni dupliquer ceux qui y sont déjà
   function rangerPack(p) {
     return demander({
-      titre: "Ranger le pack " + p.titre + " dans mon cursus",
-      texte: "Les cours du pack (" + p.cours.length + ") sont ajoutés dans ce dossier ; ceux qui sont déjà dans ton cursus restent où ils sont.",
-      champs: [{ nom: "dossier", libelle: "Dossier", valeur: p.court || p.titre }],
-      ok: "Ranger"
+      titre: T("catalogue.rangerTitre", { titre: p.titre }),
+      texte: T("catalogue.rangerTexte", { n: p.cours.length }),
+      champs: [{ nom: "dossier", libelle: T("catalogue.dossier"), valeur: p.court || p.titre }],
+      ok: T("catalogue.ranger")
     }).then(function (r) {
       if (!r) return;
       return api("POST", "ula/cursus/ajouter-pack", { cours: p.cours, dossier: r.dossier }).then(function (x) {
         return charger().then(function () {
-          return demander({ titre: "Pack rangé", texte: x.ajoutes.length + " cours ajoutés dans « " + r.dossier + " »" + (x.presents.length ? ", " + x.presents.length + " déjà dans ton cursus." : "."), seulementOk: true });
+          return demander({ titre: T("catalogue.rangeTitre"), texte: x.presents.length ? T("catalogue.rangeDeja", { n: x.ajoutes.length, dossier: r.dossier, deja: x.presents.length }) : Tn("catalogue.range", x.ajoutes.length, { dossier: r.dossier }), seulementOk: true });
         });
       });
     });
@@ -741,16 +769,16 @@
     catalogue.cours.forEach(function (c) {
       var li = el("li", "ula-carte");
       if (c.teinte) li.dataset.matiere = c.teinte;
-      if (LIBELLES_ETAT[c.etat]) li.appendChild(el("span", "ula-etat", LIBELLES_ETAT[c.etat]));
+      if (c.etat !== "partiel" && libelleEtat(c.etat)) li.appendChild(el("span", "ula-etat", libelleEtat(c.etat)));
       li.appendChild(el("h3", null, c.titre));
-      li.appendChild(el("p", "ula-cours-info", [DOMAINES[c.domaine] || c.domaine, c.niveau, c.origine, (c.taille / 1e6).toFixed(1).replace(".", ",") + " Mo"].filter(Boolean).join(" · ")));
+      li.appendChild(el("p", "ula-cours-info", [nomDomaine(c.domaine), c.niveau, c.origine, taille(c.taille)].filter(Boolean).join(" · ")));
       if (c.description) li.appendChild(el("p", "ula-note", c.description.length > 180 ? c.description.slice(0, 177) + "…" : c.description));
       var act = el("div", "ula-actions");
       if (!catalogue.source) {
-        if (c.etat === "absent") act.appendChild(bouton("Télécharger", "principal", function () { return installer(c, zone); }));
-        if (c.etat === "maj") act.appendChild(bouton("Mettre à jour", "principal", function () { return installer(c, zone); }));
-        if (c.etat === "installe" || c.etat === "maj") act.appendChild(bouton("Supprimer", "discret", function () {
-          return demander({ titre: "Supprimer « " + c.titre + " » de ce poste ?", texte: "Les pages du cours sont retirées ; ton travail (tentatives, TD, TP) reste dans ton espace, et le cours se retélécharge à tout moment.", ok: "Supprimer" }).then(function (r) {
+        if (c.etat === "absent") act.appendChild(bouton(T("catalogue.telecharger"), "principal", function () { return installer(c, zone); }));
+        if (c.etat === "maj") act.appendChild(bouton(T("catalogue.mettreAJour"), "principal", function () { return installer(c, zone); }));
+        if (c.etat === "installe" || c.etat === "maj") act.appendChild(bouton(T("catalogue.supprimer"), "discret", function () {
+          return demander({ titre: T("catalogue.supprimerTitre", { titre: c.titre }), texte: T("catalogue.supprimerTexte"), ok: T("catalogue.supprimer") }).then(function (r) {
             if (r) return api("POST", "ula/catalogue/supprimer", { id: c.id }).then(function () { return charger(); });
           });
         }));
@@ -759,11 +787,11 @@
       ul.appendChild(li);
     });
     zone.appendChild(ul);
-    zone.appendChild(el("p", "ula-note", "Catalogue du " + new Date(catalogue.genere).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) + "."));
+    zone.appendChild(el("p", "ula-note", T("catalogue.date", { date: new Date(catalogue.genere).toLocaleDateString(locale(), { day: "numeric", month: "long", year: "numeric" }) })));
   }
 
   function installer(c, zone) {
-    var p = el("p", "ula-attente", "Téléchargement de « " + c.titre + " »…");
+    var p = el("p", "ula-attente", T("catalogue.telechargement", { titre: c.titre }));
     zone.insertBefore(p, zone.firstChild);
     return api("POST", "ula/catalogue/installer", { id: c.id }).then(function () {
       return charger().then(function () {
@@ -778,22 +806,22 @@
 
   function sectionOutils() {
     var s = el("section");
-    s.appendChild(el("h2", null, "Outils"));
+    s.appendChild(el("h2", null, T("outils.titre")));
     var ol = el("ol", "chapitres");
     [
-      ["/_outils/quiz/portail.html", "Mes révisions", "Quiz à reprendre, résultats et TD interactifs des cours de ton cursus."],
-      ["/_outils/todo/index.html", "Mon suivi", "Le TODO.md de ton profil : cocher, ajouter, organiser."],
-      ["/_outils/environnements/c.html", "Compiler un TP en C", "Windows (MinGW, WSL) et Linux : ce qui est installé, ce qui manque."],
-      ["/_outils/environnements/python.html", "Les notebooks Python", "Un environnement Jupyter commun, ouvert par lancer-jupyter."],
-      ["/_outils/quiz/demo.html", "Quiz de démonstration", "Les types de questions de l'outil de quiz."],
-      ["/_outils/atelier/demo.html", "Atelier de démonstration", "Les éditeurs des TD interactifs."]
+      ["/_outils/quiz/portail.html", "outils.revisions"],
+      ["/_outils/todo/index.html", "outils.suivi"],
+      ["/_outils/environnements/c.html", "outils.c"],
+      ["/_outils/environnements/python.html", "outils.python"],
+      ["/_outils/quiz/demo.html", "outils.quizDemo"],
+      ["/_outils/atelier/demo.html", "outils.atelierDemo"]
     ].forEach(function (x) {
       var li = el("li");
       var a = lien("", x[0], "chapitre");
       a.appendChild(el("span", "chapitre-num"));
       var t = el("span");
-      t.appendChild(el("span", "chapitre-titre", x[1]));
-      t.appendChild(el("span", "chapitre-resume", x[2]));
+      t.appendChild(el("span", "chapitre-titre", T(x[1])));
+      t.appendChild(el("span", "chapitre-resume", T(x[1] + "Aide")));
       a.appendChild(t);
       li.appendChild(a);
       ol.appendChild(li);
@@ -802,5 +830,29 @@
     return s;
   }
 
+  /* -- Textes fixes de la page, changement de langue ------------------------------ */
+
+  function textesPage() {
+    document.documentElement.lang = langue();
+    if (!domaineSeul) {
+      document.title = T("page.titre");
+      document.getElementById("chapeau").textContent = T("page.chapeau");
+    }
+    var attente = document.getElementById("attente");
+    if (attente) attente.textContent = T("page.attente");
+    var pied = document.querySelector(".pied");
+    if (pied) {
+      var liens = pied.querySelectorAll("a");
+      if (liens[0]) liens[0].textContent = T("page.revisions");
+      if (liens[1]) liens[1].textContent = T("page.suivi");
+    }
+  }
+
+  document.addEventListener("ula:langue", function () {
+    textesPage();
+    if (etat) rendre();
+  });
+
+  textesPage();
   charger();
 })();

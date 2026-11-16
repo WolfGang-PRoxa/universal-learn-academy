@@ -103,7 +103,7 @@ Côté catalogue : `cd app && npm run accepter-proposition -- <archive.zip> [--d
 _outils/ula/
 ├── README.md
 ├── accueil.html          accueil dynamique (servi à la place de index.html)
-├── assets/               accueil.js, accueil.css
+├── assets/               accueil.js, accueil.css, textes.js (textes de l'accueil en français et en anglais)
 ├── lib/
 │   ├── espace.js         catalogue local, profils, cursus, dossier de travail d'une page
 │   ├── catalogue.js      catalogue en ligne : lecture, téléchargement, installation

@@ -59,6 +59,7 @@ _outils/app/
 ├── serveur.js            lance le serveur local ou s'y raccorde, l'arrête, suit ses tâches
 ├── fenetres.js           fenêtres, liens, clic droit, recherche, impression, état mémorisé
 ├── menu.js               menu de l'application
+├── textes.js             textes du menu, des dialogues et des notifications (français, anglais)
 ├── recherche.html        barre de recherche, et recherche-pont.js, sa passerelle
 ├── demarrage.html        écran affiché pendant le démarrage du serveur
 └── assets/               icône (icone.svg est la source de icone.ico et icone.png)

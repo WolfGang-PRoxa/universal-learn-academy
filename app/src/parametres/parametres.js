@@ -1,12 +1,15 @@
-// Page des paramètres de l'application installée : mises à jour, fenêtre au
-// lancement, raccourcis, connexion à Claude, profils, dossier des données, à propos.
+// Page des paramètres de l'application installée : langue, aide, mises à jour,
+// échelle, arrière-plan, fenêtre au lancement, raccourcis, connexion à Claude,
+// modèles, profils, dossier des données, synchronisation, à propos.
+// Textes : dictionnaires de src/i18n (clés « p. »), chargés avant tout.
 
-import { h, icone, bouton, carte, etat, note, confirmer, antiRebond, messageErreur } from './outils.js';
+import { h, icone, bouton, carte, etat, note, confirmer, antiRebond, messageErreur, chargerTextes, t, tn, locale, messageCreation, libelleLieu } from './outils.js';
 import { creerCadre } from './cadre-fenetre.js';
 
 const api = window.studies;
 const MIN = { width: 640, height: 480 };
 
+const textes = await chargerTextes();
 let info = await api.info();
 let reglages = await api.reglages();
 
@@ -15,35 +18,61 @@ async function enregistrer(partiel) {
   return reglages;
 }
 
+document.title = t('p.titreFenetre');
+document.getElementById('titre').textContent = t('p.titre');
 document.getElementById('sous-titre').textContent =
-  `Universal Learn Academy ${info.version}${info.installee ? '' : ' (développement)'} · Electron ${info.electron}`;
+  `Universal Learn Academy ${info.version}${info.installee ? '' : ' ' + t('p.developpement')} · Electron ${info.electron}`;
+// Changement de langue (ici, dans le paramétrage guidé ou ailleurs) : la page se refait
+api.i18n.surChangement(() => location.reload());
+
+/* -- Langue ------------------------------------------------------------------- */
+
+function carteLangue() {
+  const option = (l) => h('label', {},
+    h('input', { type: 'radio', name: 'langue', value: l.code, checked: l.code === textes.langue, onChange: async () => {
+      await api.i18n.definir(l.code);
+    } }),
+    h('span', {}, h('strong', { lang: l.code }, l.nom), h('span', { lang: l.code }, l.code === 'fr' ? 'Interface en français' : 'English interface')));
+  return carte('langue', 'langue', t('p.langue.titre'), t('p.langue.description'),
+    h('div', { class: 'choix' }, ...textes.langues.map(option)),
+    h('p', { class: 'aide' }, t('p.langue.aide')));
+}
+
+/* -- Aide : documentation et paramétrage guidé ----------------------------------- */
+
+function carteAide() {
+  return carte('aide', 'aide', t('p.aide.titre'), t('p.aide.description'),
+    h('div', { class: 'ligne' },
+      bouton(t('p.aide.guide'), { genre: 'principal', onClick: () => api.aide.guide() }),
+      bouton(t('p.aide.documentation'), { onClick: () => api.aide.documentation() })),
+    h('p', { class: 'aide' }, t('p.aide.raccourci')));
+}
 
 /* -- Mises à jour ------------------------------------------------------------ */
 
 export function decrireMaj(s) {
   switch (s && s.etat) {
-    case 'recherche': return ['', 'Recherche d’une mise à jour…'];
-    case 'disponible': return ['', `Version ${s.version} disponible : téléchargement en cours…`];
-    case 'telechargement': return ['', `Téléchargement de la mise à jour : ${s.pourcent ?? 0} %`];
-    case 'pret': return ['ok', `Version ${s.version} prête : elle s’installera quand tu quitteras Universal Learn Academy (icône de la zone de notification › Quitter), ou tout de suite avec « Redémarrer et installer ».`];
-    case 'a-jour': return ['ok', `Universal Learn Academy est à jour${s.viaGh ? ' (dépôt privé, lu avec GitHub CLI)' : ''}.`];
+    case 'recherche': return ['', t('p.maj.recherche')];
+    case 'disponible': return ['', t('p.maj.disponible', { version: s.version })];
+    case 'telechargement': return ['', t('p.maj.telechargement', { pourcent: s.pourcent ?? 0 })];
+    case 'pret': return ['ok', t('p.maj.pret', { version: s.version })];
+    case 'a-jour': return ['ok', t(s.viaGh ? 'p.maj.aJourGh' : 'p.maj.aJour')];
     case 'indisponible': return ['', s.message];
-    case 'erreur': return ['erreur', `Échec de la recherche : ${s.message}`];
-    default: return ['', 'Aucune recherche depuis le lancement.'];
+    case 'erreur': return ['erreur', t('p.maj.erreur', { message: s.message })];
+    default: return ['', t('p.maj.jamais')];
   }
 }
 
 // « 6 heures », « 20 minutes »
 function duree(ms) {
   const heures = ms / 3600000;
-  if (heures >= 1) return `${Math.round(heures)} heure${Math.round(heures) > 1 ? 's' : ''}`;
-  const minutes = Math.max(1, Math.round(ms / 60000));
-  return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+  if (heures >= 1) return tn('commun.heures', Math.round(heures));
+  return tn('commun.minutes', Math.max(1, Math.round(ms / 60000)));
 }
 
 function carteMisesAJour() {
   const zone = h('div', {});
-  const installer = bouton('Redémarrer et installer', { genre: 'principal', onClick: () => api.maj.installer() });
+  const installer = bouton(t('p.maj.installer'), { genre: 'principal', onClick: () => api.maj.installer() });
   const peindre = (s) => {
     const [genre, texte] = decrireMaj(s);
     zone.replaceChildren(etat(genre, texte));
@@ -54,19 +83,19 @@ function carteMisesAJour() {
 
   const auto = h('input', { type: 'checkbox', checked: reglages.miseAJourAuto, onChange: async (e) => {
     await enregistrer({ miseAJourAuto: e.target.checked });
-    note(e.target.checked ? 'Mises à jour automatiques activées' : 'Mises à jour automatiques désactivées');
+    note(t(e.target.checked ? 'p.maj.noteActive' : 'p.maj.noteDesactive'));
   } });
 
-  return carte('mises-a-jour', 'maj', 'Mises à jour', `Version installée : ${info.version}`,
+  return carte('mises-a-jour', 'maj', t('p.maj.titre'), t('p.maj.description', { version: info.version }),
     h('label', { class: 'interrupteur' }, auto,
-      h('span', {}, h('strong', {}, 'Rechercher et installer les mises à jour automatiquement'),
-        h('br'), h('span', { class: 'aide' }, `Au démarrage, puis toutes les ${duree(info.intervalleMaj || 21600000)} et au réveil du PC, même fenêtre fermée. La nouvelle version se télécharge en arrière-plan, une notification le dit, et elle s’installe quand tu quittes Universal Learn Academy (ou tout de suite avec « Redémarrer et installer »).`))),
+      h('span', {}, h('strong', {}, t('p.maj.auto')),
+        h('br'), h('span', { class: 'aide' }, t('p.maj.autoAide', { duree: duree(info.intervalleMaj || 21600000) })))),
     h('div', { class: 'ligne' },
-      bouton('Rechercher maintenant', { onClick: () => api.maj.verifier() }),
+      bouton(t('p.maj.rechercher'), { onClick: () => api.maj.verifier() }),
       installer,
-      bouton('Voir les versions publiées', { genre: 'leger', onClick: () => api.ouvrirReleases() })),
+      bouton(t('p.maj.versions'), { genre: 'leger', onClick: () => api.ouvrirReleases() })),
     zone,
-    h('p', { class: 'aide' }, 'Les versions sont publiées sur GitHub (WolfGang-PRoxa/universal-learn-academy). Tant que ce dépôt est privé, seule une session GitHub CLI connectée (gh auth login) permet de les lire. Aucun jeton n’est enregistré dans l’application.'));
+    h('p', { class: 'aide' }, t('p.maj.aide')));
 }
 
 /* -- Fenêtre au lancement ------------------------------------------------------- */
@@ -89,16 +118,16 @@ function carteFenetre() {
   };
 
   const perso = h('div', { class: 'carte-perso' },
-    h('p', { class: 'aide' }, 'Déplacer le cadre bleu pour choisir la position, tirer ses bords ou ses coins pour choisir la taille (ou les flèches du clavier : Maj pour un grand pas, Alt pour la taille). Les valeurs sont en pixels du système, mise à l’échelle comprise.'),
+    h('p', { class: 'aide' }, t('p.fenetre.cadreAide')),
     hote,
-    h('div', { class: 'grille-4' }, champ('width', 'Largeur'), champ('height', 'Hauteur'), champ('x', 'Position X'), champ('y', 'Position Y')),
-    h('div', { class: 'ligne' }, bouton('Reprendre la fenêtre actuelle', { onClick: async () => {
+    h('div', { class: 'grille-4' }, champ('width', t('p.fenetre.largeur')), champ('height', t('p.fenetre.hauteur')), champ('x', t('p.fenetre.x')), champ('y', t('p.fenetre.y'))),
+    h('div', { class: 'ligne' }, bouton(t('p.fenetre.reprendre'), { onClick: async () => {
       const b = await api.bornesActuelles();
       if (!b || !cadre) return;
       const r = cadre.fixer(b);
       synchroniser(r);
       await enregistrer({ fenetre: { mode: 'personnalisee', bornes: r } });
-      note('Taille et position de la fenêtre actuelle enregistrées');
+      note(t('p.fenetre.noteReprise'));
     } })));
 
   async function preparerCadre() {
@@ -113,17 +142,17 @@ function carteFenetre() {
       await enregistrer({ fenetre: { mode: valeur } });
       perso.hidden = valeur !== 'personnalisee';
       if (valeur === 'personnalisee') preparerCadre();
-      note('Réglage appliqué au prochain lancement');
+      note(t('p.fenetre.noteProchain'));
     } }),
     h('span', {}, h('strong', {}, titre), h('span', {}, description)));
 
   perso.hidden = reglages.fenetre.mode !== 'personnalisee';
   if (!perso.hidden) preparerCadre();
 
-  return carte('fenetre', 'ecran', 'Fenêtre au lancement', 'Taille et position de la fenêtre de Universal Learn Academy à chaque ouverture.',
+  return carte('fenetre', 'ecran', t('p.fenetre.titre'), t('p.fenetre.description'),
     h('div', { class: 'choix' },
-      option('agrandie', 'Grande fenêtre', 'Universal Learn Academy s’ouvre agrandi sur l’écran principal (réglage par défaut).'),
-      option('personnalisee', 'Taille et position personnalisées', 'Universal Learn Academy s’ouvre exactement à l’endroit choisi ci-dessous ; si cet endroit n’est plus visible (écran débranché), il s’ouvre agrandi.')),
+      option('agrandie', t('p.fenetre.agrandie'), t('p.fenetre.agrandieAide')),
+      option('personnalisee', t('p.fenetre.perso'), t('p.fenetre.persoAide'))),
     perso);
 }
 
@@ -133,82 +162,83 @@ function carteArrierePlan() {
   const actif = !reglages.arrierePlan || reglages.arrierePlan.fermeture !== false;
   const caseFermeture = h('input', { type: 'checkbox', checked: actif, disabled: !info.zoneNotification, onChange: async (e) => {
     await enregistrer({ arrierePlan: { fermeture: e.target.checked } });
-    note(e.target.checked ? 'La croix gardera Universal Learn Academy en arrière-plan' : 'La croix quittera Universal Learn Academy');
+    note(t(e.target.checked ? 'p.arriere.noteGarde' : 'p.arriere.noteQuitte'));
   } });
-  return carte('arriere-plan', 'arriere', 'Arrière-plan', 'Ce que fait la croix de la fenêtre.',
+  return carte('arriere-plan', 'arriere', t('p.arriere.titre'), t('p.arriere.description'),
     h('label', { class: 'interrupteur' }, caseFermeture,
-      h('span', {}, h('strong', {}, 'Garder Universal Learn Academy en arrière-plan quand je ferme la fenêtre'),
-        h('br'), h('span', { class: 'aide' }, 'La fenêtre se cache et se rouvre aussitôt, à la même page, par l’icône de la zone de notification (en bas à droite de l’écran) ou en relançant l’application. Le serveur local continue : une génération de quiz va à son terme. Pour quitter : clic droit sur l’icône, puis Quitter (ou Ctrl+Q).'))),
-    info.zoneNotification ? null : etat('alerte', 'Ce bureau n’a pas de zone de notification : la croix ferme l’application.'));
+      h('span', {}, h('strong', {}, t('p.arriere.garder')),
+        h('br'), h('span', { class: 'aide' }, t('p.arriere.aide')))),
+    info.zoneNotification ? null : etat('alerte', t('p.arriere.sansZone')));
 }
 
 /* -- Échelle de l'interface ------------------------------------------------------ */
 
 function carteAffichage() {
   const actuelle = (reglages.affichage && reglages.affichage.echelle) || 0;
-  const options = [h('option', { value: '0' }, 'Automatique (100 %)')];
+  const options = [h('option', { value: '0' }, t('p.echelle.auto'))];
   for (let p = 50; p <= 200; p += 10) options.push(h('option', { value: String(p) }, `${p} %`));
   const choix = h('select', { class: 'saisie', id: 'echelle', onChange: async (e) => {
     const r = await enregistrer({ affichage: { echelle: Number(e.target.value) } });
     const v = (r.affichage && r.affichage.echelle) || 0;
-    note(v ? `Échelle de l’interface : ${v} %` : 'Échelle automatique (100 %)');
+    note(v ? t('p.echelle.note', { v }) : t('p.echelle.noteAuto'));
   } }, ...options);
   choix.value = String(actuelle);
-  return carte('affichage', 'echelle', 'Échelle de l’interface', 'Taille des textes, des boutons et des fiches dans toutes les fenêtres, paramètres compris.',
-    h('label', { class: 'champ' }, h('span', {}, 'Échelle'), choix),
-    h('p', { class: 'aide' }, 'En automatique, les pages s’adaptent seules à la largeur de la fenêtre : les accueils occupent toute la largeur et tout grandit sur un grand écran. Un pourcentage agrandit ou réduit tout en plus, tout de suite et à chaque lancement. Ctrl + et Ctrl − (ou Ctrl et la molette) ajustent en plus, jusqu’à la fermeture ; Ctrl 0 revient à l’échelle choisie ici.'));
+  return carte('affichage', 'echelle', t('p.echelle.titre'), t('p.echelle.description'),
+    h('label', { class: 'champ' }, h('span', {}, t('p.echelle.libelle')), choix),
+    h('p', { class: 'aide' }, t('p.echelle.aide')));
 }
 
 /* -- Raccourcis ------------------------------------------------------------------ */
 
 export function decrireRaccourci(l) {
-  const nom = `« ${l.name || l.fichier} »`;
+  const nom = t('commun.guillemets', { texte: l.name || l.fichier });
   const cible = l.currentTarget ? ` (${l.currentTarget})` : '';
   switch (l.status) {
-    case 'ok': return ['ok', `Raccourci présent : ${nom}.`];
-    case 'other-name': return ['ok', `Un raccourci vers Universal Learn Academy existe déjà sous un autre nom : ${nom}.`];
-    case 'outdated': return ['alerte', `${nom} ouvre une autre copie de Universal Learn Academy${cible}. Il peut être réparé pour ouvrir cette installation.`];
-    case 'broken': return ['alerte', `${nom} ne fonctionne plus : le programme qu’il ouvre n’existe plus${cible}.`];
-    case 'foreign': return ['alerte', l.currentTarget ? `Un fichier ${nom} existe déjà, mais il ouvre un autre programme${cible}.` : `Un fichier ${nom} existe déjà, mais ce n’est pas un raccourci lisible.`];
-    default: return ['', l.dirExiste === false ? 'Dossier introuvable.' : 'Aucun raccourci.'];
+    case 'ok': return ['ok', t('p.racc.ok', { nom })];
+    case 'other-name': return ['ok', t('p.racc.autreNom', { nom })];
+    case 'outdated': return ['alerte', t('p.racc.ancien', { nom, cible })];
+    case 'broken': return ['alerte', t('p.racc.casse', { nom, cible })];
+    case 'foreign': return ['alerte', l.currentTarget ? t('p.racc.etranger', { nom, cible }) : t('p.racc.illisible', { nom })];
+    default: return ['', l.dirExiste === false ? t('p.racc.dossierAbsent') : t('p.racc.aucun')];
   }
 }
 
 function resultatRaccourci(r, libelle) {
   switch (r.outcome) {
-    case 'created': return `Raccourci créé (${libelle}).`;
-    case 'repaired': return `Raccourci réparé (${libelle}) : il ouvre maintenant cette installation.`;
-    case 'replaced': return `L’ancien fichier a été remplacé par un raccourci vers Universal Learn Academy (${libelle}).`;
-    case 'already': return `Un raccourci existe déjà (${libelle}, « ${r.location.name} ») : rien n’a été modifié.`;
-    case 'removed': return `Raccourci mis à la corbeille (${libelle}).`;
-    case 'missing': return `Il n’y a déjà plus de raccourci (${libelle}).`;
-    default: return `Opération impossible (${libelle}).`;
+    case 'created': return t('p.racc.cree', { libelle });
+    case 'repaired': return t('p.racc.repare', { libelle });
+    case 'replaced': return t('p.racc.remplace', { libelle });
+    case 'already': return t('p.racc.deja', { libelle, nom: r.location.name });
+    case 'removed': return t('p.racc.supprime', { libelle });
+    case 'missing': return t('p.racc.manquant', { libelle });
+    default: return t('p.racc.impossible', { libelle });
   }
 }
 
 function carteRaccourcis() {
-  const liste = h('div', { class: 'raccourcis' }, h('p', { class: 'aide' }, 'Recherche des raccourcis…'));
+  const liste = h('div', { class: 'raccourcis' }, h('p', { class: 'aide' }, t('p.racc.recherche')));
   const pied = h('p', { class: 'aide' });
   let occupe = false;
 
   async function executer(l, genre) {
     if (occupe) return;
     occupe = true;
+    const libelle = libelleLieu(l, info);
     try {
       let r;
       if (genre === 'supprimer') {
-        if (!await confirmer({ titre: 'Supprimer le raccourci ?', message: `« ${l.name} » (${l.label}) sera mis à la corbeille. Universal Learn Academy n’est pas désinstallé.`, valider: 'Supprimer', danger: true })) return;
+        if (!await confirmer({ titre: t('p.racc.supprimerTitre'), message: t('p.racc.supprimerTexte', { nom: l.name, libelle }), valider: t('commun.supprimer'), danger: true })) return;
         r = await api.raccourcis.supprimer(l.id);
       } else {
         r = await api.raccourcis.creer(l.id);
         if (r.outcome === 'conflict') {
-          if (!await confirmer({ titre: 'Remplacer le fichier existant ?', message: `${decrireRaccourci(r.location)[1]} Le remplacer par un raccourci vers Universal Learn Academy ?`, valider: 'Remplacer', danger: true })) { note('Le fichier existant a été conservé.'); return; }
+          if (!await confirmer({ titre: t('p.racc.remplacerTitre'), message: `${decrireRaccourci(r.location)[1]} ${t('p.racc.remplacerTexte')}`, valider: t('p.racc.remplacer'), danger: true })) { note(t('p.racc.conserve')); return; }
           r = await api.raccourcis.creer(l.id, { confirmReplace: true });
         }
       }
-      note(resultatRaccourci(r, l.label), { duree: 5000 });
+      note(resultatRaccourci(r, libelle), { duree: 5000 });
     } catch (e) {
-      note('Raccourci : ' + messageErreur(e), { erreur: true, duree: 6000 });
+      note(t('p.racc.erreur', { message: messageErreur(e) }), { erreur: true, duree: 6000 });
     } finally {
       occupe = false;
       actualiser();
@@ -218,50 +248,48 @@ function carteRaccourcis() {
   function ligne(l) {
     const [genre, texte] = decrireRaccourci(l);
     const actions = [];
-    if (l.action === 'create') actions.push(bouton('Créer le raccourci', { genre: 'principal', onClick: () => executer(l, 'creer') }));
-    if (l.action === 'repair') actions.push(bouton('Réparer', { genre: 'principal', onClick: () => executer(l, 'creer') }));
-    if (l.action === 'replace') actions.push(bouton('Remplacer…', { onClick: () => executer(l, 'creer') }));
-    if (l.file || l.dirExiste) actions.push(bouton('Afficher', { genre: 'leger', titre: 'Afficher dans l’explorateur de fichiers', onClick: () => api.raccourcis.afficher(l.id) }));
-    if (l.removable) actions.push(bouton('Supprimer', { genre: 'discret-danger', onClick: () => executer(l, 'supprimer') }));
-    if (l.choisi) actions.push(bouton('Retirer de la liste', { genre: 'leger', titre: 'Ne plus suivre ce dossier (le raccourci reste en place)', onClick: async () => { await api.raccourcis.oublier(l.id); actualiser(); } }));
-    const autres = l.others && l.others.length ? h('span', { class: 'aide' }, `Autres raccourcis vers Universal Learn Academy : ${l.others.map((n) => `« ${n} »`).join(', ')}.`) : null;
+    if (l.action === 'create') actions.push(bouton(t('p.racc.creer'), { genre: 'principal', onClick: () => executer(l, 'creer') }));
+    if (l.action === 'repair') actions.push(bouton(t('p.racc.reparer'), { genre: 'principal', onClick: () => executer(l, 'creer') }));
+    if (l.action === 'replace') actions.push(bouton(t('p.racc.remplacer') + '…', { onClick: () => executer(l, 'creer') }));
+    if (l.file || l.dirExiste) actions.push(bouton(t('p.racc.afficher'), { genre: 'leger', titre: t('p.racc.afficherTitre'), onClick: () => api.raccourcis.afficher(l.id) }));
+    if (l.removable) actions.push(bouton(t('commun.supprimer'), { genre: 'discret-danger', onClick: () => executer(l, 'supprimer') }));
+    if (l.choisi) actions.push(bouton(t('p.racc.oublier'), { genre: 'leger', titre: t('p.racc.oublierTitre'), onClick: async () => { await api.raccourcis.oublier(l.id); actualiser(); } }));
+    const autres = l.others && l.others.length ? h('span', { class: 'aide' }, t('p.racc.autres', { liste: l.others.map((n) => t('commun.guillemets', { texte: n })).join(', ') })) : null;
     return h('div', { class: `raccourci ${genre}`.trim() },
       icone(l.id === 'bureau' ? 'ecran' : l.id === 'menu' ? 'menu' : 'dossier', 18),
-      h('div', { class: 'texte' }, h('strong', {}, l.label), h('span', {}, texte), autres, h('span', { class: 'chemin', title: l.dir }, l.dir)),
+      h('div', { class: 'texte' }, h('strong', {}, libelleLieu(l, info)), h('span', {}, texte), autres, h('span', { class: 'chemin', title: l.dir }, l.dir)),
       h('div', { class: 'ligne' }, actions));
   }
 
   async function actualiser() {
     try {
       const s = await api.raccourcis.statut();
-      if (!s.supported) { liste.replaceChildren(h('p', { class: 'aide' }, 'Les raccourcis ne sont disponibles que sous Windows et Linux.')); return; }
+      if (!s.supported) { liste.replaceChildren(h('p', { class: 'aide' }, t('p.racc.nonPris'))); return; }
       liste.replaceChildren(...s.locations.map(ligne));
       pied.textContent = !s.packaged
-        ? 'Version de développement : le raccourci lance Electron avec ce projet.'
-        : s.plateforme === 'win32'
-          ? 'Les raccourcis du Bureau et du menu Démarrer portent le nom de ceux de l’installeur : la désinstallation les retire aussi.'
-          : s.appImage ? 'Le raccourci ouvre ce fichier AppImage : ne pas le déplacer ensuite, ou réparer le raccourci.' : '';
+        ? t('p.racc.piedDev')
+        : s.plateforme === 'win32' ? t('p.racc.piedWindows') : s.appImage ? t('p.racc.piedAppImage') : '';
     } catch (e) {
-      liste.replaceChildren(etat('erreur', 'Lecture des raccourcis impossible : ' + messageErreur(e)));
+      liste.replaceChildren(etat('erreur', t('p.racc.lecture', { message: messageErreur(e) })));
     }
   }
 
   window.addEventListener('focus', () => { if (!occupe) actualiser(); });
   actualiser();
 
-  return carte('raccourcis', 'raccourci', 'Raccourcis', 'Ouvrir Universal Learn Academy depuis le Bureau, le menu Démarrer ou un dossier de ton choix.',
+  return carte('raccourcis', 'raccourci', t('p.racc.titre'), t('p.racc.description'),
     liste,
     h('div', { class: 'ligne' },
-      bouton('Créer un raccourci dans un autre dossier…', { onClick: async () => {
+      bouton(t('p.racc.autreDossier'), { onClick: async () => {
         if (occupe) return;
         occupe = true;
         try {
           const r = await api.raccourcis.choisir();
-          if (r.outcome !== 'canceled') note(resultatRaccourci(r, r.location ? r.location.label : 'dossier choisi'), { duree: 5000 });
-        } catch (e) { note('Raccourci : ' + messageErreur(e), { erreur: true, duree: 6000 }); }
+          if (r.outcome !== 'canceled') note(resultatRaccourci(r, r.location ? r.location.label : t('p.racc.dossierChoisi')), { duree: 5000 });
+        } catch (e) { note(t('p.racc.erreur', { message: messageErreur(e) }), { erreur: true, duree: 6000 }); }
         finally { occupe = false; actualiser(); }
       } }),
-      bouton('Actualiser', { genre: 'leger', onClick: actualiser })),
+      bouton(t('commun.actualiser'), { genre: 'leger', onClick: actualiser })),
     pied);
 }
 
@@ -278,63 +306,63 @@ function carteClaude() {
     const s = statut;
     const blocs = [];
     if (!s.claudeCode) {
-      blocs.push(etat('alerte', 'Claude Code n’est pas installé sur ce poste : les quiz s’affichent, mais l’aide, la correction et la génération par Claude ne fonctionneront pas.'),
-        h('div', { class: 'ligne' }, bouton('Installer Claude Code', { genre: 'principal', onClick: () => api.claude.lien('installation') }), bouton('Vérifier à nouveau', { genre: 'leger', onClick: actualiser })));
+      blocs.push(etat('alerte', t('p.claude.absent')),
+        h('div', { class: 'ligne' }, bouton(t('p.claude.installer'), { genre: 'principal', onClick: () => api.claude.lien('installation') }), bouton(t('p.claude.reverifier'), { genre: 'leger', onClick: actualiser })));
     } else {
       blocs.push(h('p', { class: 'aide' }, 'Claude Code ', h('code', {}, s.claudeCode.version), ' : ', h('code', {}, s.claudeCode.executable)));
       if (reglages.claude.mode === 'compte') {
         const c = s.compte || {};
-        if (c.connecte && c.methode === 'claude.ai') blocs.push(etat('ok', `Connecté à Claude Code avec le compte ${c.email || ''}${c.abonnement ? ` (abonnement ${c.abonnement})` : ''}.`));
-        else if (c.connecte) blocs.push(etat('ok', `Claude Code est connecté (${c.methode || 'méthode inconnue'}${c.email ? ', ' + c.email : ''}).`));
-        else blocs.push(etat('alerte', 'Claude Code n’est connecté à aucun compte.'));
+        if (c.connecte && c.methode === 'claude.ai') blocs.push(etat('ok', t(c.abonnement ? 'p.claude.connecteAbonnement' : 'p.claude.connecteCompte', { email: c.email || '', abonnement: c.abonnement })));
+        else if (c.connecte) blocs.push(etat('ok', t('p.claude.connecteAutre', { methode: c.methode || t('p.claude.methodeInconnue'), email: c.email ? ', ' + c.email : '' })));
+        else blocs.push(etat('alerte', t('p.claude.deconnecte')));
         blocs.push(h('div', { class: 'ligne' },
-          bouton(c.connecte ? 'Changer de compte…' : 'Se connecter…', { genre: c.connecte ? '' : 'principal', onClick: async () => {
-            try { await api.claude.connecter(); note('Un terminal s’est ouvert : la connexion se fait sur le site d’Anthropic. Revenir ensuite ici et « Vérifier ».', { duree: 8000 }); }
+          bouton(t(c.connecte ? 'p.claude.changerCompte' : 'p.claude.seConnecter'), { genre: c.connecte ? '' : 'principal', onClick: async () => {
+            try { await api.claude.connecter(); note(t('p.claude.noteTerminal'), { duree: 8000 }); }
             catch (e) { note(messageErreur(e), { erreur: true }); }
           } }),
-          c.connecte ? bouton('Se déconnecter', { genre: 'discret-danger', onClick: async () => {
-            if (!await confirmer({ titre: 'Déconnecter Claude Code ?', message: 'Claude Code sera déconnecté sur ce poste, pour Universal Learn Academy comme pour tes autres usages.', valider: 'Déconnecter', danger: true })) return;
-            try { await api.claude.deconnecter(); note('Claude Code est déconnecté.'); } catch (e) { note(messageErreur(e), { erreur: true }); }
+          c.connecte ? bouton(t('p.claude.seDeconnecter'), { genre: 'discret-danger', onClick: async () => {
+            if (!await confirmer({ titre: t('p.claude.deconnecterTitre'), message: t('p.claude.deconnecterTexte'), valider: t('p.claude.deconnecter'), danger: true })) return;
+            try { await api.claude.deconnecter(); note(t('p.claude.noteDeconnecte')); } catch (e) { note(messageErreur(e), { erreur: true }); }
             actualiser();
           } }) : null,
-          bouton('Vérifier', { genre: 'leger', onClick: actualiser })));
+          bouton(t('p.claude.verifier'), { genre: 'leger', onClick: actualiser })));
       }
     }
     zoneEtat.replaceChildren(...blocs);
 
     zoneCle.hidden = reglages.claude.mode !== 'cle';
     const cle = [];
-    if (s.cleEnregistree && s.cleLisible) cle.push(etat('ok', s.cleActive ? 'Clé d’API enregistrée et utilisée.' : 'Clé d’API enregistrée : elle sera utilisée après le redémarrage de Universal Learn Academy.'));
-    else if (s.cleEnregistree) cle.push(etat('erreur', 'La clé enregistrée ne peut plus être déchiffrée sur ce poste : la saisir à nouveau.'));
-    else cle.push(etat('alerte', 'Aucune clé d’API enregistrée.'));
-    if (!s.chiffrementDisponible) cle.push(etat('erreur', 'Le système ne peut pas chiffrer de secret (aucun trousseau) : la clé ne peut pas être enregistrée.'));
+    if (s.cleEnregistree && s.cleLisible) cle.push(etat('ok', t(s.cleActive ? 'p.claude.cleActive' : 'p.claude.cleApresRedemarrage')));
+    else if (s.cleEnregistree) cle.push(etat('erreur', t('p.claude.cleIllisible')));
+    else cle.push(etat('alerte', t('p.claude.cleAucune')));
+    if (!s.chiffrementDisponible) cle.push(etat('erreur', t('p.claude.sansChiffrement')));
     zoneCle.replaceChildren(
-      h('label', { class: 'champ' }, h('span', {}, 'Clé d’API Anthropic'), saisie),
-      h('p', { class: 'aide' }, 'La clé est vérifiée auprès d’Anthropic, puis chiffrée par le système (Windows ou le trousseau de Linux) ; elle ne quitte pas ce poste et n’est jamais réaffichée. L’usage est facturé au compte de la clé. ',
-        h('a', { href: '#', onClick: (e) => { e.preventDefault(); api.claude.lien('cles'); } }, 'Créer une clé dans la console Claude'), '.'),
+      h('label', { class: 'champ' }, h('span', {}, t('p.claude.cleLibelle')), saisie),
+      h('p', { class: 'aide' }, t('p.claude.cleAide') + ' ',
+        h('a', { href: '#', onClick: (e) => { e.preventDefault(); api.claude.lien('cles'); } }, t('p.claude.creerCle')), '.'),
       h('div', { class: 'ligne' },
-        bouton('Enregistrer la clé', { genre: 'principal', desactive: !s.chiffrementDisponible, onClick: async () => {
+        bouton(t('p.claude.enregistrerCle'), { genre: 'principal', desactive: !s.chiffrementDisponible, onClick: async () => {
           const v = saisie.value.trim();
-          if (!v) { note('Coller d’abord une clé.', { erreur: true }); return; }
+          if (!v) { note(t('p.claude.collerCle'), { erreur: true }); return; }
           try {
             const r = await api.claude.enregistrerCle(v);
             saisie.value = '';
-            note(r.avertissement ? `Clé enregistrée. ${r.avertissement}` : 'Clé vérifiée et enregistrée.', { duree: 5000 });
+            note(r.avertissement ? t('p.claude.cleEnregistreeAvert', { avertissement: r.avertissement }) : t('p.claude.cleEnregistree'), { duree: 5000 });
             proposerRedemarrage();
           } catch (e) { note(messageErreur(e), { erreur: true, duree: 6000 }); }
           actualiser();
         } }),
-        s.cleEnregistree ? bouton('Supprimer la clé', { genre: 'discret-danger', onClick: async () => {
-          if (!await confirmer({ titre: 'Supprimer la clé ?', message: 'La clé est effacée de ce poste.', valider: 'Supprimer', danger: true })) return;
+        s.cleEnregistree ? bouton(t('p.claude.supprimerCle'), { genre: 'discret-danger', onClick: async () => {
+          if (!await confirmer({ titre: t('p.claude.supprimerCleTitre'), message: t('p.claude.supprimerCleTexte'), valider: t('commun.supprimer'), danger: true })) return;
           await api.claude.enregistrerCle('');
-          note('Clé supprimée.');
+          note(t('p.claude.cleSupprimee'));
           actualiser();
         } }) : null),
       ...cle);
   }
 
   async function actualiser() {
-    zoneEtat.replaceChildren(etat('', 'Vérification de Claude Code…'));
+    zoneEtat.replaceChildren(etat('', t('p.claude.verification')));
     try { statut = await api.claude.statut(); peindre(); }
     catch (e) { zoneEtat.replaceChildren(etat('erreur', messageErreur(e))); }
   }
@@ -348,21 +376,34 @@ function carteClaude() {
     h('span', {}, h('strong', {}, titre), h('span', {}, description)));
 
   actualiser();
-  return carte('claude', 'claude', 'Connexion à Claude', 'Aide pendant les quiz, correction des réponses rédigées et génération de nouveaux quiz.',
+  return carte('claude', 'claude', t('p.claude.titre'), t('p.claude.description'),
     h('div', { class: 'choix' },
-      option('compte', 'Mon compte Claude, via Claude Code', 'Tu te connectes toi-même à Claude Code avec ton abonnement Claude (Pro, Max…). Universal Learn Academy ne voit jamais tes identifiants.'),
-      option('cle', 'Une clé d’API Anthropic', 'Pour utiliser Claude sans abonnement : l’usage est facturé à la clé. Claude Code reste nécessaire.')),
+      option('compte', t('p.claude.modeCompte'), t('p.claude.modeCompteAide')),
+      option('cle', t('p.claude.modeCle'), t('p.claude.modeCleAide'))),
     zoneEtat, zoneCle,
-    h('p', { class: 'aide' }, 'Anthropic n’autorise pas une application tierce à proposer la connexion avec un compte claude.ai ni à conserver ses identifiants : la connexion par compte passe donc par Claude Code, chez Anthropic.'));
+    h('p', { class: 'aide' }, t('p.claude.aide')));
 }
 
 /* -- Modèles de Claude et exécution du code (ex-« Réglages » des quiz) ------------------- */
 
+// Libellés des usages connus dans la langue de l'interface (le serveur les donne en français)
+function libelleUsage(id, usage) {
+  const cle = `p.modeles.usage.${id}`;
+  const titre = t(cle);
+  return titre === cle ? { libelle: usage.libelle, description: usage.description } : { libelle: titre, description: t(cle + '.aide') };
+}
+
+function libelleModele(m) {
+  const cle = `p.modeles.modele.${m.id || 'defaut'}`;
+  const texte = t(cle);
+  return texte === cle ? m.libelle : texte;
+}
+
 function carteModeles() {
-  const zone = h('div', { class: 'modeles' }, etat('', 'Lecture des réglages du serveur local…'));
+  const zone = h('div', { class: 'modeles' }, etat('', t('p.modeles.lecture')));
   let r = null;
 
-  const chemin = h('input', { class: 'saisie', type: 'text', placeholder: 'Recherche automatique : PATH, extension VS Code…', spellcheck: false });
+  const chemin = h('input', { class: 'saisie', type: 'text', placeholder: t('p.modeles.cheminExemple'), spellcheck: false });
 
   async function enregistrer() {
     r.claude.executable = chemin.value.trim();
@@ -371,22 +412,23 @@ function carteModeles() {
 
   function ligneUsage(id, usage, e) {
     const reglage = r.usages[id];
+    const { libelle, description } = libelleUsage(id, usage);
     const connu = e.modeles.some((m) => m.id === reglage.modele);
     const libre = h('input', { class: 'saisie', type: 'text', placeholder: 'claude-sonnet-5…', value: connu ? '' : reglage.modele,
       onInput: (ev) => { reglage.modele = ev.target.value.trim(); } });
     libre.hidden = connu;
-    const modele = h('select', { class: 'saisie', 'aria-label': `Modèle · ${usage.libelle}`, onChange: (ev) => {
+    const modele = h('select', { class: 'saisie', 'aria-label': t('p.modeles.modeleAria', { usage: libelle }), onChange: (ev) => {
       libre.hidden = ev.target.value !== '__autre';
       reglage.modele = ev.target.value === '__autre' ? libre.value.trim() : ev.target.value;
     } },
-    e.modeles.map((m) => h('option', { value: m.id, selected: connu && m.id === reglage.modele }, m.libelle)),
-    h('option', { value: '__autre', selected: !connu }, 'Autre…'));
-    const effort = h('select', { class: 'saisie', 'aria-label': `Effort · ${usage.libelle}`, onChange: (ev) => { reglage.effort = ev.target.value; } },
-      e.efforts.map((x) => h('option', { value: x, selected: x === reglage.effort }, x ? `effort ${x}` : 'effort par défaut')));
+    e.modeles.map((m) => h('option', { value: m.id, selected: connu && m.id === reglage.modele }, libelleModele(m))),
+    h('option', { value: '__autre', selected: !connu }, t('p.modeles.autre')));
+    const effort = h('select', { class: 'saisie', 'aria-label': t('p.modeles.effortAria', { usage: libelle }), onChange: (ev) => { reglage.effort = ev.target.value; } },
+      e.efforts.map((x) => h('option', { value: x, selected: x === reglage.effort }, x ? t('p.modeles.effort', { x }) : t('p.modeles.effortDefaut'))));
     const resultat = h('span', { class: 'aide' });
-    const tester = bouton('Tester', { genre: 'leger', onClick: async () => {
+    const tester = bouton(t('p.modeles.tester'), { genre: 'leger', onClick: async () => {
       tester.disabled = true;
-      resultat.textContent = 'Enregistrement et test…';
+      resultat.textContent = t('p.modeles.test');
       try {
         await enregistrer();
         const x = await api.quiz.tester(id);
@@ -395,7 +437,7 @@ function carteModeles() {
       finally { tester.disabled = false; }
     } });
     return h('div', { class: 'usage' },
-      h('div', {}, h('strong', {}, usage.libelle), h('br'), h('span', { class: 'aide' }, usage.description)),
+      h('div', {}, h('strong', {}, libelle), h('br'), h('span', { class: 'aide' }, description)),
       h('div', { class: 'ligne' }, modele, libre, effort, tester),
       resultat);
   }
@@ -406,30 +448,33 @@ function carteModeles() {
       r = JSON.parse(JSON.stringify(e.reglages));
       chemin.value = r.claude.executable || '';
       const q = e.quota && e.quota.unifiedWindows;
-      const quota = q ? `Abonnement : ${q.five_hour ? Math.round(q.five_hour.utilization * 100) + ' % de la fenêtre de 5 h' : ''}${q.seven_day ? ' · ' + Math.round(q.seven_day.utilization * 100) + ' % de la semaine' : ''}` : null;
+      const morceaux = [];
+      if (q && q.five_hour) morceaux.push(t('p.modeles.quota5h', { p: Math.round(q.five_hour.utilization * 100) }));
+      if (q && q.seven_day) morceaux.push(t('p.modeles.quotaSemaine', { p: Math.round(q.seven_day.utilization * 100) }));
+      const quota = morceaux.length ? t('p.modeles.quota', { detail: morceaux.join(' · ') }) : null;
       zone.replaceChildren(h('div', { class: 'modeles' },
-        h('h3', {}, 'Claude Code utilisé par les quiz'),
-        e.claude.disponible ? etat('ok', `Trouvé : version ${e.claude.version} (${e.claude.executable})`) : etat('alerte', e.claude.erreur),
-        h('label', { class: 'champ' }, h('span', {}, 'Chemin de l’exécutable (vide : recherche automatique)'), chemin),
+        h('h3', {}, t('p.modeles.claudeCode')),
+        e.claude.disponible ? etat('ok', t('p.modeles.trouve', { version: e.claude.version, executable: e.claude.executable })) : etat('alerte', e.claude.erreur),
+        h('label', { class: 'champ' }, h('span', {}, t('p.modeles.chemin')), chemin),
         quota ? h('p', { class: 'aide' }, quota) : null,
-        h('h3', {}, 'Modèle pour chaque usage'),
-        h('p', { class: 'aide' }, 'Avec un abonnement Pro, Sonnet, Opus et Haiku sont inclus ; Fable demande des crédits en plus. Opus donne les meilleures réponses mais consomme le quota plus vite ; l’effort règle le temps de réflexion. Avec une clé d’API, chaque appel est facturé.'),
+        h('h3', {}, t('p.modeles.parUsage')),
+        h('p', { class: 'aide' }, t('p.modeles.parUsageAide')),
         h('div', { class: 'usages' }, Object.entries(e.usages).map(([id, u]) => ligneUsage(id, u, e))),
         h('div', { class: 'ligne' },
-          bouton('Enregistrer', { genre: 'principal', onClick: async () => {
-            try { await enregistrer(); note('Réglages de Claude enregistrés.'); charger(); }
+          bouton(t('commun.enregistrer'), { genre: 'principal', onClick: async () => {
+            try { await enregistrer(); note(t('p.modeles.noteEnregistre')); charger(); }
             catch (err) { note(messageErreur(err), { erreur: true }); }
           } }),
-          bouton('Recharger', { genre: 'leger', onClick: charger })),
-        h('h3', {}, 'Exécution du code des questions'),
-        h('ul', { class: 'langages' }, Object.entries(e.executeurs).map(([k, v]) => h('li', { class: v ? 'ok' : 'ko' }, `${{ sql: 'SQL', javascript: 'JavaScript', python: 'Python', c: 'C', 'c-posix': 'C POSIX (WSL)' }[k] || k} : ${v || 'indisponible'}`)))));
+          bouton(t('p.modeles.recharger'), { genre: 'leger', onClick: charger })),
+        h('h3', {}, t('p.modeles.execution')),
+        h('ul', { class: 'langages' }, Object.entries(e.executeurs).map(([k, v]) => h('li', { class: v ? 'ok' : 'ko' }, `${{ sql: 'SQL', javascript: 'JavaScript', python: 'Python', c: 'C', 'c-posix': 'C POSIX (WSL)' }[k] || k} : ${v || t('p.modeles.indisponible')}`)))));
     } catch (err) {
-      zone.replaceChildren(etat('erreur', messageErreur(err)), h('div', { class: 'ligne' }, bouton('Réessayer', { genre: 'leger', onClick: charger })));
+      zone.replaceChildren(etat('erreur', messageErreur(err)), h('div', { class: 'ligne' }, bouton(t('commun.reessayer'), { genre: 'leger', onClick: charger })));
     }
   }
 
   charger();
-  return carte('claude-modeles', 'claude', 'Modèles de Claude et exécution du code', 'Modèle et effort pour l’aide, la correction, l’évaluation et la génération de quiz ; langages exécutables dans les questions de code.', zone);
+  return carte('claude-modeles', 'claude', t('p.modeles.titre'), t('p.modeles.description'), zone);
 }
 
 /* -- Profil ---------------------------------------------------------------------------- */
@@ -438,92 +483,91 @@ function carteProfils() {
   const zone = h('div', { class: 'pile' });
 
   async function charger() {
-    zone.replaceChildren(h('p', { class: 'aide' }, 'Chargement…'));
+    zone.replaceChildren(h('p', { class: 'aide' }, t('commun.chargement')));
     let e;
     try { e = await api.profils.etat(); }
-    catch (err) { zone.replaceChildren(etat('erreur', messageErreur(err)), h('div', { class: 'ligne' }, bouton('Réessayer', { genre: 'leger', onClick: charger }))); return; }
+    catch (err) { zone.replaceChildren(etat('erreur', messageErreur(err)), h('div', { class: 'ligne' }, bouton(t('commun.reessayer'), { genre: 'leger', onClick: charger }))); return; }
     const nouveau = h('input', { class: 'saisie', type: 'text', value: e.profils.length ? '' : e.session, placeholder: e.session, spellcheck: 'false' });
-    const choixCursus = h('select', { class: 'saisie' }, h('option', { value: '' }, 'Aucun : je compose mon cursus'));
+    const choixCursus = h('select', { class: 'saisie' }, h('option', { value: '' }, t('p.profil.aucunCursus')));
     const telecharger = h('input', { type: 'checkbox', checked: true });
     api.profils.cursus().then((liste) => {
-      for (const c of liste) choixCursus.append(h('option', { value: c.id }, `${c.titre} (${c.nombre} cours)`));
+      for (const c of liste) choixCursus.append(h('option', { value: c.id }, t('p.profil.cursusOption', { titre: c.titre, n: c.nombre })));
     });
     const creer = async () => {
       try {
         const r = await api.profils.creer(nouveau.value || e.session, choixCursus.value || null, telecharger.checked);
-        const x = r.cursusExemple;
-        note(x && x.erreur ? x.erreur : x ? `Profil créé : cursus « ${x.titre} » rangé (${x.cours} cours)${x.telechargement ? ', téléchargement en cours (suivi sur l’accueil)' : ''}.` : 'Profil créé et choisi.', { duree: 8000, erreur: Boolean(x && x.erreur) });
+        note(messageCreation(r), { duree: 8000, erreur: Boolean(r.cursusExemple && r.cursusExemple.erreur) });
         charger();
       } catch (err) { note(messageErreur(err), { erreur: true, duree: 6000 }); }
     };
     const liste = e.profils.map((p) => h('label', {},
       h('input', { type: 'radio', name: 'profil', value: p.nom, checked: p.nom === e.profil, onChange: async () => {
-        try { await api.profils.choisir(p.nom); note(`Profil « ${p.nom} » choisi : recharger les pages ouvertes.`); charger(); }
+        try { await api.profils.choisir(p.nom); note(t('p.profil.noteChoisi', { nom: p.nom })); charger(); }
         catch (err) { note(messageErreur(err), { erreur: true }); }
       } }),
-      h('span', {}, h('strong', {}, p.nom), h('span', {}, p.nom === e.profil ? 'Profil actif : la progression s’écrit dans son dossier.' : `Créé le ${p.cree || '—'}.`))));
+      h('span', {}, h('strong', {}, p.nom), h('span', {}, p.nom === e.profil ? t('p.profil.actif') : t('p.profil.cree', { date: p.cree || '—' })))));
     const renommer = h('input', { class: 'saisie', type: 'text', value: e.profil || '', spellcheck: 'false' });
     zone.replaceChildren(
-      e.profils.length ? h('div', { class: 'choix' }, ...liste) : etat('alerte', 'Aucun profil : en créer un pour enregistrer ta progression.'),
+      e.profils.length ? h('div', { class: 'choix' }, ...liste) : etat('alerte', t('p.profil.aucun')),
       h('div', { class: 'champs' },
-        h('label', { class: 'champ' }, h('span', {}, 'Nouveau profil (nom d’utilisateur)'), nouveau),
-        h('label', { class: 'champ' }, h('span', {}, 'Cursus exemple'), choixCursus)),
-      h('label', { class: 'interrupteur' }, telecharger, h('span', {}, 'Télécharger les cours maintenant')),
-      h('div', { class: 'ligne' }, bouton('Ajouter', { genre: e.profils.length ? '' : 'principal', onClick: creer })),
+        h('label', { class: 'champ' }, h('span', {}, t('p.profil.nouveau')), nouveau),
+        h('label', { class: 'champ' }, h('span', {}, t('p.profil.cursusExemple')), choixCursus)),
+      h('label', { class: 'interrupteur' }, telecharger, h('span', {}, t('p.profil.telecharger'))),
+      h('div', { class: 'ligne' }, bouton(t('p.profil.ajouter'), { genre: e.profils.length ? '' : 'principal', onClick: creer })),
       e.profil ? h('div', { class: 'champs avec-bouton' },
-        h('label', { class: 'champ' }, h('span', {}, `Renommer « ${e.profil} »`), renommer),
-        bouton('Renommer', { genre: 'leger', onClick: async () => {
-          try { await api.profils.renommer(e.profil, renommer.value); note('Profil renommé.'); charger(); }
+        h('label', { class: 'champ' }, h('span', {}, t('p.profil.renommerLibelle', { nom: e.profil })), renommer),
+        bouton(t('p.profil.renommer'), { genre: 'leger', onClick: async () => {
+          try { await api.profils.renommer(e.profil, renommer.value); note(t('p.profil.noteRenomme')); charger(); }
           catch (err) { note(messageErreur(err), { erreur: true, duree: 6000 }); }
         } })) : null,
-      h('p', { class: 'aide' }, 'Chaque profil a son dossier dans le dossier des données : son cursus (dossiers libres et cours), ses tentatives, ses TD, ses TP et son suivi. Le profil choisi est mémorisé sur ce poste ; l’accueil permet aussi d’en changer.'));
+      h('p', { class: 'aide' }, t('p.profil.aide')));
   }
 
   charger();
-  return carte('profil', 'menu', 'Profil', 'Qui travaille sur ce poste : la progression s’écrit dans le dossier du profil actif.', zone);
+  return carte('profil', 'menu', t('p.profil.titre'), t('p.profil.description'), zone);
 }
 
 /* -- Dossier des données -------------------------------------------------------------- */
 
 function carteDonnees() {
   const v = info.versionsOutils || {};
-  const date = (iso) => (iso ? new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '');
+  const date = (iso) => (iso ? new Date(iso).toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' }) : '');
   const mode = {
-    depot: 'Dépôt git d’ula : outils et catalogue sont ceux du dépôt (git pull et git push synchronisent tout).',
-    installe: `Outils livrés avec l’application${v.livre ? ` (version du ${date(v.livre.cree)}, ${v.livre.fichiers} fichiers)` : ''}, copiés dans ${info.dossierLocal}.`,
-    developpement: 'Développement : outils du dépôt de l’application.'
+    depot: t('p.donnees.modeDepot'),
+    installe: v.livre ? t('p.donnees.modeInstalleVersion', { date: date(v.livre.cree), n: v.livre.fichiers, dossier: info.dossierLocal }) : t('p.donnees.modeInstalle', { dossier: info.dossierLocal }),
+    developpement: t('p.donnees.modeDev')
   }[info.modeDonnees] || '';
-  return carte('donnees', 'dossier', 'Dossier des données', 'Le catalogue téléchargé (explore) et les dossiers des profils.',
-    h('p', {}, 'En ce moment : ', h('code', {}, info.racine || '—')),
+  return carte('donnees', 'dossier', t('p.donnees.titre'), t('p.donnees.description'),
+    h('p', {}, t('p.donnees.actuel') + ' ', h('code', {}, info.racine || '—')),
     h('p', { class: 'aide' }, mode),
     h('div', { class: 'ligne' },
-      bouton('Choisir un autre dossier…', { onClick: async () => {
+      bouton(t('p.donnees.choisir'), { onClick: async () => {
         const r = await api.donnees.choisir();
         if (!r.ok) { if (r.message) note(r.message, { erreur: true, duree: 6000 }); return; }
-        note(r.depot ? 'Dépôt d’ula reconnu.' : 'Dossier choisi.');
+        note(t(r.depot ? 'p.donnees.noteDepot' : 'p.donnees.noteChoisi'));
         proposerRedemarrage();
       } }),
-      bouton('Dossier par défaut', { genre: 'leger', onClick: async () => { const r = await api.donnees.defaut(); note(`Dossier par défaut : ${r.dossier}`); proposerRedemarrage(); } }),
-      bouton('Ouvrir le dossier', { genre: 'leger', onClick: () => api.ouvrirDossier('donnees') })),
-    h('p', { class: 'aide' }, `Par défaut : ${info.dossierParDefaut}. Les cours se téléchargent depuis le catalogue de l’accueil ; une mise à jour d’un cours ne touche jamais au travail rangé dans le dossier d’un profil.`));
+      bouton(t('p.donnees.defaut'), { genre: 'leger', onClick: async () => { const r = await api.donnees.defaut(); note(t('p.donnees.noteDefaut', { dossier: r.dossier })); proposerRedemarrage(); } }),
+      bouton(t('p.donnees.ouvrir'), { genre: 'leger', onClick: () => api.ouvrirDossier('donnees') })),
+    h('p', { class: 'aide' }, t('p.donnees.aide', { dossier: info.dossierParDefaut })));
 }
 
 /* -- Synchronisation ------------------------------------------------------------------ */
 
 export function decrireSynchro(s) {
-  if (!s) return ['', 'Chargement…'];
-  if (s.enCours) return ['', 'Synchronisation en cours…'];
+  if (!s) return ['', t('commun.chargement')];
+  if (s.enCours) return ['', t('p.synchro.enCours')];
   const d = s.dernier;
-  if (!d) return ['', s.auto ? 'Première synchronisation dans quelques secondes.' : 'Aucune synchronisation depuis le lancement.'];
-  const quand = d.a ? new Date(d.a).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '';
+  if (!d) return ['', t(s.auto ? 'p.synchro.bientot' : 'p.synchro.jamais')];
+  const quand = d.a ? new Date(d.a).toLocaleString(locale(), { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '';
   const bilan = [];
-  if (d.commits) bilan.push('progression committée');
-  if (d.recus && d.recus.length) bilan.push(`${d.recus.length} fichier${d.recus.length > 1 ? 's' : ''} reçu${d.recus.length > 1 ? 's' : ''}`);
-  if (d.envoyes) bilan.push(`${d.envoyes} commit${d.envoyes > 1 ? 's' : ''} envoyé${d.envoyes > 1 ? 's' : ''}`);
+  if (d.commits) bilan.push(t('p.synchro.bilanCommit'));
+  if (d.recus && d.recus.length) bilan.push(tn('p.synchro.bilanRecus', d.recus.length));
+  if (d.envoyes) bilan.push(tn('p.synchro.bilanEnvoyes', d.envoyes));
   switch (d.etat) {
-    case 'synchronise': return ['ok', `Synchronisé le ${quand} : ${bilan.join(', ')}.`];
-    case 'a-jour': return ['ok', `À jour le ${quand}.`];
-    case 'hors-ligne': return ['alerte', `${d.message} (${quand}) Nouvel essai au prochain cycle.`];
+    case 'synchronise': return ['ok', t('p.synchro.synchronise', { quand, bilan: bilan.join(', ') })];
+    case 'a-jour': return ['ok', t('p.synchro.aJour', { quand })];
+    case 'hors-ligne': return ['alerte', t('p.synchro.horsLigne', { message: d.message, quand })];
     case 'bloque': return ['alerte', `${d.message} (${quand})`];
     default: return ['erreur', `${d.message} (${quand})`];
   }
@@ -533,9 +577,9 @@ function carteSynchro() {
   const zone = h('div', {});
   const caseAuto = h('input', { type: 'checkbox', onChange: async (e) => {
     peindre(await api.synchro.auto(e.target.checked));
-    note(e.target.checked ? 'Synchronisation automatique activée' : 'Synchronisation automatique désactivée');
+    note(t(e.target.checked ? 'p.synchro.noteActive' : 'p.synchro.noteDesactive'));
   } });
-  const maintenant = bouton('Synchroniser maintenant', { genre: 'principal', onClick: () => api.synchro.maintenant() });
+  const maintenant = bouton(t('p.synchro.maintenant'), { genre: 'principal', onClick: () => api.synchro.maintenant() });
 
   function peindre(s) {
     if (!s.visible) {
@@ -543,10 +587,8 @@ function carteSynchro() {
       caseAuto.disabled = true;
       maintenant.disabled = true;
       zone.replaceChildren(
-        etat('', s.raison || 'Le dossier des données n’est pas un dépôt Git suivi.'),
-        h('p', { class: 'aide' }, s.git
-          ? 'Pour synchroniser les cours entre plusieurs PC, le dossier des données doit être un dépôt Git relié à un dépôt distant (GitHub…). Le lier depuis l’application arrive dans une prochaine version ; en attendant : git init dans le dossier des données, un fichier .gitignore avec la ligne explore/ (le catalogue se retélécharge), git remote add origin <adresse>, un premier commit et git push -u origin main ; l’application le reconnaît au prochain lancement.'
-          : 'Git n’est pas installé sur ce poste (git-scm.com) : la synchronisation par un dépôt Git n’est pas disponible.'));
+        etat('', s.raison || t('p.synchro.pasDepot')),
+        h('p', { class: 'aide' }, t(s.git ? 'p.synchro.commentFaire' : 'p.synchro.sansGit')));
       return;
     }
     caseAuto.checked = s.auto === true;
@@ -555,44 +597,42 @@ function carteSynchro() {
     const [genre, texte] = decrireSynchro(s);
     const d = s.dernier;
     const conflits = d && d.conflits && d.conflits.length
-      ? h('ul', { class: 'aide' }, ...d.conflits.map((c) => h('li', {}, h('code', {}, c.chemin), ` : ${c.regle}`, c.copie ? h('span', {}, ' (copie : ', h('code', {}, c.copie.split('/').pop()), ')') : null)))
+      ? h('ul', { class: 'aide' }, ...d.conflits.map((c) => h('li', {}, h('code', {}, c.chemin), ` : ${c.regle}`, c.copie ? h('span', {}, ` (${t('p.synchro.copie')} `, h('code', {}, c.copie.split('/').pop()), ')') : null)))
       : null;
     const ignores = d && d.ignores && d.ignores.length
-      ? etat('alerte', `Fichier${d.ignores.length > 1 ? 's' : ''} de plus de 50 Mo laissé${d.ignores.length > 1 ? 's' : ''} de côté : ${d.ignores.join(', ')}.`)
+      ? etat('alerte', tn('p.synchro.ignores', d.ignores.length, { liste: d.ignores.join(', ') }))
       : null;
     const avertissement = d && d.avertissement ? etat('alerte', d.avertissement) : null;
     zone.replaceChildren(...[
-      h('p', {}, 'Dépôt : ', h('code', {}, s.adresse || s.distant), ` (branche ${s.branche} → ${s.distant}, Git ${s.git}).`),
+      h('p', {}, t('p.synchro.depot') + ' ', h('code', {}, s.adresse || s.distant), ' ' + t('p.synchro.branche', { branche: s.branche, distant: s.distant, git: s.git })),
       etat(genre, texte), avertissement, conflits, ignores,
-      h('p', { class: 'aide' }, s.mode === 'progression'
-        ? 'Dépôt d’ula : seule la progression faite dans l’application (quiz_results, td_results, liens du cursus) est committée automatiquement ; les autres modifications attendent un commit fait à la main. Les commits déjà faits sont envoyés avec elle. Un conflit sur un autre fichier arrête la fusion : elle est à faire à la main (git pull).'
-        : 'Tout ce qui est dans les dossiers des profils est committé, jamais le catalogue (explore). Un fichier modifié sur deux postes entre deux synchros garde ses deux versions (« nom (conflit …) »), sauf la progression, fusionnée.')
+      h('p', { class: 'aide' }, t(s.mode === 'progression' ? 'p.synchro.perimetreProgression' : 'p.synchro.perimetreTout'))
     ].filter(Boolean));
   }
 
   api.synchro.statut().then(peindre);
   api.synchro.surStatut(peindre);
 
-  return carte('synchro', 'nuage', 'Synchronisation', 'Retrouver ses cours et sa progression d’un PC à l’autre.',
+  return carte('synchro', 'nuage', t('p.synchro.titre'), t('p.synchro.description'),
     h('label', { class: 'interrupteur' }, caseAuto,
-      h('span', {}, h('strong', {}, 'Synchroniser automatiquement'),
-        h('br'), h('span', { class: 'aide' }, 'Au lancement, toutes les 30 minutes (même fenêtre fermée), au réveil du PC et en quittant Universal Learn Academy.'))),
-    h('div', { class: 'ligne' }, maintenant, bouton('Ouvrir le dossier des données', { genre: 'leger', onClick: () => api.ouvrirDossier('donnees') })),
+      h('span', {}, h('strong', {}, t('p.synchro.auto')),
+        h('br'), h('span', { class: 'aide' }, t('p.synchro.autoAide')))),
+    h('div', { class: 'ligne' }, maintenant, bouton(t('p.synchro.ouvrirDonnees'), { genre: 'leger', onClick: () => api.ouvrirDossier('donnees') })),
     zone,
-    h('p', { class: 'aide' }, 'Git utilise les identifiants déjà enregistrés sur ce poste (Git Credential Manager, GitHub CLI, clé SSH) : l’application n’en demande ni n’en garde aucun. Un git pull fait à la main pendant que l’application tourne est repéré, et l’accueil se recharge.'));
+    h('p', { class: 'aide' }, t('p.synchro.aide')));
 }
 
 /* -- À propos ------------------------------------------------------------------------- */
 
 function carteAPropos() {
-  return carte('a-propos', 'info', 'À propos', null,
-    h('p', {}, `Universal Learn Academy ${info.version}, Electron ${info.electron}, ${info.installee ? 'version installée' : 'version de développement'}.`),
-    h('p', { class: 'aide' }, 'Paramètres : ', h('code', {}, info.donnees)),
-    info.journaux ? h('p', { class: 'aide' }, 'Journaux (dont gels.log, les blocages de l’application) : ', h('code', {}, info.journaux)) : null,
+  return carte('a-propos', 'info', t('p.apropos.titre'), null,
+    h('p', {}, t(info.installee ? 'p.apropos.versionInstallee' : 'p.apropos.versionDev', { version: info.version, electron: info.electron })),
+    h('p', { class: 'aide' }, t('p.apropos.parametres') + ' ', h('code', {}, info.donnees)),
+    info.journaux ? h('p', { class: 'aide' }, t('p.apropos.journaux') + ' ', h('code', {}, info.journaux)) : null,
     h('div', { class: 'ligne' },
-      bouton('Ouvrir le dossier des paramètres', { genre: 'leger', onClick: () => api.ouvrirDossier('parametres') }),
-      info.journaux ? bouton('Ouvrir le dossier des journaux', { genre: 'leger', onClick: () => api.ouvrirDossier('journaux') }) : null,
-      bouton('Redémarrer Universal Learn Academy', { genre: 'leger', onClick: () => api.redemarrer() })));
+      bouton(t('p.apropos.ouvrirParametres'), { genre: 'leger', onClick: () => api.ouvrirDossier('parametres') }),
+      info.journaux ? bouton(t('p.apropos.ouvrirJournaux'), { genre: 'leger', onClick: () => api.ouvrirDossier('journaux') }) : null,
+      bouton(t('p.apropos.redemarrer'), { genre: 'leger', onClick: () => api.redemarrer() })));
 }
 
 /* -- Redémarrage ---------------------------------------------------------------------- */
@@ -601,8 +641,8 @@ let proposition = null;
 function proposerRedemarrage() {
   if (proposition) return;
   proposition = h('div', { class: 'carte large' },
-    etat('alerte', 'Ce changement s’applique au prochain démarrage de Universal Learn Academy.'),
-    h('div', { class: 'ligne' }, bouton('Redémarrer maintenant', { genre: 'principal', onClick: () => api.redemarrer() }), bouton('Plus tard', { genre: 'leger', onClick: () => { proposition.remove(); proposition = null; } })));
+    etat('alerte', t('p.redemarrage.texte')),
+    h('div', { class: 'ligne' }, bouton(t('p.redemarrage.maintenant'), { genre: 'principal', onClick: () => api.redemarrer() }), bouton(t('commun.plusTard'), { genre: 'leger', onClick: () => { proposition.remove(); proposition = null; } })));
   document.getElementById('cartes').prepend(proposition);
   ranger();
   window.scrollTo({ top: 0 });
@@ -610,8 +650,29 @@ function proposerRedemarrage() {
 
 /* -- Page ------------------------------------------------------------------------------- */
 
+// Sections, dans l'ordre des cartes : id de la carte et clé de son lien de navigation
+const SECTIONS = [
+  ['langue', 'p.nav.langue', carteLangue],
+  ['aide', 'p.nav.aide', carteAide],
+  ['mises-a-jour', 'p.nav.maj', carteMisesAJour],
+  ['affichage', 'p.nav.echelle', carteAffichage],
+  ['arriere-plan', 'p.nav.arriere', carteArrierePlan],
+  ['fenetre', 'p.nav.fenetre', carteFenetre],
+  ['raccourcis', 'p.nav.raccourcis', carteRaccourcis],
+  ['claude', 'p.nav.claude', carteClaude],
+  ['claude-modeles', 'p.nav.modeles', carteModeles],
+  ['profil', 'p.nav.profil', carteProfils],
+  ['donnees', 'p.nav.donnees', carteDonnees],
+  ['synchro', 'p.nav.synchro', carteSynchro],
+  ['a-propos', 'p.nav.apropos', carteAPropos]
+];
+
+const sommaire = document.querySelector('.sommaire');
+sommaire.setAttribute('aria-label', t('p.nav.aria'));
+sommaire.replaceChildren(...SECTIONS.map(([id, cle]) => h('a', { href: '#' + id }, t(cle))));
+
 const cartes = document.getElementById('cartes');
-cartes.append(carteMisesAJour(), carteAffichage(), carteArrierePlan(), carteFenetre(), carteRaccourcis(), carteClaude(), carteModeles(), carteProfils(), carteDonnees(), carteSynchro(), carteAPropos());
+cartes.append(...SECTIONS.map(([, , fabriquer]) => fabriquer()));
 // Cartes qui gardent toute la largeur (cadre des écrans, modèles par usage)
 for (const id of ['fenetre', 'claude-modeles']) document.getElementById(id)?.classList.add('large');
 
