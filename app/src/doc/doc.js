@@ -17,7 +17,7 @@ document.title = t('d.titreFenetre');
 document.getElementById('titre').textContent = t('d.titre');
 document.getElementById('sommaire').setAttribute('aria-label', t('d.sommaire'));
 const recherche = document.getElementById('recherche');
-recherche.placeholder = t('d.rechercher');
+recherche.placeholder = t('d.rechercherIndice');
 recherche.setAttribute('aria-label', t('d.rechercher'));
 const boutonGuide = document.getElementById('guide');
 boutonGuide.append(icone('guide', 16), t('d.guide'));

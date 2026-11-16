@@ -407,6 +407,7 @@ module.exports = {
   "d.titre": "Documentation",
   "d.sommaire": "Sommaire",
   "d.rechercher": "Rechercher dans la documentation",
+  "d.rechercherIndice": "Rechercher… (Ctrl+F)",
   "d.guide": "Paramétrage guidé",
   "d.appelTitre": "Régler l’application en deux minutes",
   "d.appelTexte": "Le paramétrage guidé présente les choix un par un : langue, profil, Claude, affichage, raccourcis…",

@@ -402,6 +402,7 @@ module.exports = {
   "d.titre": "Documentation",
   "d.sommaire": "Contents",
   "d.rechercher": "Search the documentation",
+  "d.rechercherIndice": "Search… (Ctrl+F)",
   "d.guide": "Guided setup",
   "d.appelTitre": "Set up the application in two minutes",
   "d.appelTexte": "The guided setup presents the choices one at a time: language, profile, Claude, display, shortcuts…",
