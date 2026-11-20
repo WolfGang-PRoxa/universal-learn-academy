@@ -804,19 +804,38 @@
 
   /* -- Outils ------------------------------------------------------------------------- */
 
+  // « Mon suivi » (page du TODO.md) sert au développement de l'application : l'outil
+  // n'est que dans le dépôt ula, ni dans l'application installée ni dans le dépôt
+  // public. Ses liens n'apparaissent que si la page existe.
+  var SUIVI = "/_outils/todo/index.html";
+  var suiviConnu = null;
+  function suiviPresent() {
+    if (!suiviConnu) {
+      suiviConnu = fetch(SUIVI, { method: "HEAD", cache: "no-store" })
+        .then(function (r) { return r.ok; })
+        .catch(function () { return false; });
+    }
+    return suiviConnu;
+  }
+
   function sectionOutils() {
     var s = el("section");
     s.appendChild(el("h2", null, T("outils.titre")));
     var ol = el("ol", "chapitres");
     [
       ["/_outils/quiz/portail.html", "outils.revisions"],
-      ["/_outils/todo/index.html", "outils.suivi"],
+      [SUIVI, "outils.suivi"],
       ["/_outils/environnements/c.html", "outils.c"],
       ["/_outils/environnements/python.html", "outils.python"],
       ["/_outils/quiz/demo.html", "outils.quizDemo"],
       ["/_outils/atelier/demo.html", "outils.atelierDemo"]
     ].forEach(function (x) {
       var li = el("li");
+      // « Mon suivi » : seulement là où l'outil existe (dépôt ula)
+      if (x[0] === SUIVI) {
+        li.hidden = true;
+        suiviPresent().then(function (oui) { li.hidden = !oui; });
+      }
       var a = lien("", x[0], "chapitre");
       a.appendChild(el("span", "chapitre-num"));
       var t = el("span");
@@ -845,6 +864,8 @@
       var liens = pied.querySelectorAll("a");
       if (liens[0]) liens[0].textContent = T("page.revisions");
       if (liens[1]) liens[1].textContent = T("page.suivi");
+      var piedSuivi = pied.querySelector(".pied-suivi");
+      if (piedSuivi) suiviPresent().then(function (oui) { piedSuivi.hidden = !oui; });
     }
   }
 

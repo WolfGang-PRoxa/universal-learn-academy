@@ -26,6 +26,7 @@ const os = require("os");
 const path = require("path");
 const moteur = require("./synchro-git");
 const { t, tn } = require("./i18n");
+const integres = require("./parametres-integres");
 
 const INTERVALLE_MS = Number(process.env.ULA_SYNCHRO_INTERVALLE_MS) || 30 * 60000;
 const EXAMEN_MS = Math.min(60000, Math.max(1000, Math.round(INTERVALLE_MS / 10)));
@@ -73,6 +74,8 @@ function annoncer() {
     if (f.studiesAnnexe) f.webContents.send("synchro:statut", s);
     else pousserVersPage(f.webContents, s);
   }
+  // Paramètres ouverts par-dessus une fenêtre des cours (parametres-integres.js)
+  integres.envoyer("synchro:statut", s);
   if (o && o.surStatut) o.surStatut(s);
 }
 

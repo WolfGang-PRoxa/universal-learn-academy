@@ -27,6 +27,7 @@ module.exports = {
   /* -- Settings ----------------------------------------------------------------- */
   "p.titreFenetre": "Universal Learn Academy settings",
   "p.titre": "Settings",
+  "p.fermerAide": "Close (Esc)",
   "p.developpement": "(development)",
 
   "p.nav.aria": "Sections",

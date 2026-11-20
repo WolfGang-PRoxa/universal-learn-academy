@@ -10,7 +10,7 @@ The home page (**Alt+Home**, or the house button of the top bar) gathers, from t
 | My curriculum | The curriculum’s folders and their courses, with each one’s progress |
 | Explore | The courses installed on this computer, by domain |
 | Online catalogue | Sample curricula, packs and every course to download |
-| Tools | Revisions, tracking, C compilation, Python notebooks, demos |
+| Tools | Revisions, C compilation, Python notebooks, demos |
 
 ## The curriculum
 
@@ -37,7 +37,7 @@ A curriculum course that is not installed yet shows “to download”: one click
 - **Interactive tutorials**: exercises are done right in the page (code editors, tables, diagrams). The work is saved as it goes in the profile’s folder.
 - **Labs**: provided files are in the course; the work is done in the course’s folder of the profile’s space.
 
-**My revisions** (**Go** menu) gathers the quizzes to resume, the results and the tutorials of the curriculum’s courses. **My tracking** is the profile’s task list (`TODO.md`).
+**My revisions** (**Go** menu) gathers the quizzes to resume, the results and the tutorials of the curriculum’s courses.
 
 ## Proposing a course
 

@@ -1,6 +1,6 @@
 # Settings
 
-The settings open with the gear of the top bar, with **Ctrl+,** or with **File › Application settings…**. Each change applies as soon as it is made; a few require a restart, which the application then offers.
+The settings open with the gear of the top bar, with **Ctrl+,** or with **File › Application settings…**. They appear in the courses window, over the page; the cross, **Esc** or a click outside the panel closes them. Each change applies as soon as it is made; a few require a restart, which the application then offers.
 
 > **Tip** The [guided setup](guide:) presents the same settings one by one, with a short explanation.
 

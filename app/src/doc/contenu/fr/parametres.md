@@ -1,6 +1,6 @@
 # Paramètres
 
-Les paramètres s’ouvrent par la roue dentée de la barre du haut, par **Ctrl+,** ou par **Fichier › Paramètres de l’application…**. Chaque changement s’applique dès qu’il est fait ; quelques-uns demandent un redémarrage, proposé alors par l’application.
+Les paramètres s’ouvrent par la roue dentée de la barre du haut, par **Ctrl+,** ou par **Fichier › Paramètres de l’application…**. Ils s’affichent dans la fenêtre des cours, par-dessus la page ; la croix, **Échap** ou un clic à côté du panneau les referment. Chaque changement s’applique dès qu’il est fait ; quelques-uns demandent un redémarrage, proposé alors par l’application.
 
 > **Astuce** Le [paramétrage guidé](guide:) présente les mêmes réglages un par un, avec une courte explication.
 

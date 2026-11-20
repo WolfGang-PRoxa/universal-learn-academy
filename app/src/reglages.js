@@ -22,8 +22,6 @@ const DEFAUT = {
   // Fermer la fenêtre la cache et garde l'application en arrière-plan (icône de la
   // zone de notification, comme Modding Manager) ; bulle d'explication déjà montrée ?
   arrierePlan: { fermeture: true, bulleMontree: false },
-  // Taille et position de la fenêtre des paramètres, mémorisées (null : selon l'écran)
-  fenetreParametres: null,
   // Dossier des données (catalogue explore/ et espaces des profils) : vide pour
   // Documents/ULA ; un dépôt git d'ula (mode de l'auteur du catalogue) est reconnu
   donnees: { dossier: "" },

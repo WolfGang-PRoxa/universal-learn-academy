@@ -19,7 +19,6 @@ Uninstalling keeps the settings and the data folder.
 ├── explore/                     downloaded catalogue, read-only
 │   └── <domain>/<course>/       ula-cours.json, pages, quizzes, .ula-version.json
 ├── <profile>/                   a profile’s space (ula-profil.json)
-│   ├── TODO.md                  tracking
 │   └── <folders>/<course>/      link to a course (ula-lien.json)
 │       ├── quiz_results/        attempts
 │       ├── td_results/          interactive tutorial work
@@ -40,7 +39,6 @@ A missing key takes its default value.
 | `fenetre.mode` | `agrandie` | `agrandie` (maximised) or `personnalisee` (with `fenetre.bornes`) |
 | `affichage.echelle` | `0` | Scale in % (0: automatic) |
 | `arrierePlan.fermeture` | `true` | The close button hides the window instead of quitting |
-| `fenetreParametres` | `null` | Remembered size and position of the settings window |
 | `donnees.dossier` | empty | Data folder (empty: default folder) |
 | `claude.mode` | `compte` | `compte` (account) or `cle` (key); the key is encrypted by the system |
 | `synchro.auto` | `null` | Automatic sync; `null` until the question has been answered |

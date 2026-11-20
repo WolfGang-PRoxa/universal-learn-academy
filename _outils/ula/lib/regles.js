@@ -25,6 +25,9 @@ const PERSONNELS = [
   { motif: /(^|\/)quiz_results\//, raison: "tentatives aux quiz" },
   { motif: /(^|\/)td_results\//, raison: "travail enregistré dans les TD interactifs" },
   { motif: /(^|\/)TODO\.md$/, raison: "suivi personnel" },
+  // Outil « Mon suivi » (page du TODO.md) : sert au développement de l'application,
+  // réservé au dépôt ula ; ni dans l'application installée, ni dans le dépôt public
+  { motif: /^_outils\/todo\//, raison: "outil de suivi du développement (TODO), réservé au dépôt ula" },
   { motif: /(^|\/)ula-(profil|lien)\.json$/, raison: "fiche de profil ou lien du cursus d'un utilisateur" },
   // Les dossiers de TP du catalogue ne contiennent que les fichiers fournis de la liste
   // blanche (app/tp-fournis.json), dans leur version d'origine : le contrôle les vérifie

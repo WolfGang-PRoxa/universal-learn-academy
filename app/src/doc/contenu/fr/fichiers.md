@@ -19,7 +19,6 @@ La désinstallation conserve les paramètres et le dossier des données.
 ├── explore/                     catalogue téléchargé, en lecture seule
 │   └── <domaine>/<cours>/       ula-cours.json, pages, quiz, .ula-version.json
 ├── <profil>/                    espace d’un profil (ula-profil.json)
-│   ├── TODO.md                  suivi
 │   └── <dossiers>/<cours>/      lien vers un cours (ula-lien.json)
 │       ├── quiz_results/        tentatives
 │       ├── td_results/          travail des TD interactifs
@@ -40,7 +39,6 @@ Une clé absente prend sa valeur par défaut.
 | `fenetre.mode` | `agrandie` | `agrandie` ou `personnalisee` (avec `fenetre.bornes`) |
 | `affichage.echelle` | `0` | Échelle en % (0 : automatique) |
 | `arrierePlan.fermeture` | `true` | La croix cache la fenêtre au lieu de quitter |
-| `fenetreParametres` | `null` | Taille et position mémorisées de la fenêtre des paramètres |
 | `donnees.dossier` | vide | Dossier des données (vide : dossier par défaut) |
 | `claude.mode` | `compte` | `compte` ou `cle` ; la clé est chiffrée par le système |
 | `synchro.auto` | `null` | Synchronisation automatique ; `null` tant que la question n’a pas reçu de réponse |

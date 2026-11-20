@@ -238,3 +238,90 @@ dialog .ligne { justify-content: flex-end; margin-top: 16px; }
   .raccourci { grid-template-columns: auto minmax(0, 1fr); }
   .raccourci > .ligne { grid-column: 2; }
 }
+
+/* -- Paramètres dans la fenêtre des cours (2.6.2) ---------------------------------
+   Page des paramètres seulement (<html class="integre">) : elle est posée par-dessus
+   la page des cours dans une vue transparente (parametres-integres.js), comme les
+   paramètres de Modding Manager. Seuls le voile et le panneau se dessinent ; le
+   contenu du panneau défile, pas la page. Ces règles remplacent la grille de page
+   ci-dessus, que la documentation garde. */
+
+.integre, .integre body { height: 100%; overflow: hidden; background: transparent; }
+.integre body { display: block; margin: 0; }
+
+/* Voile sur la page des cours ; un clic dessus referme les paramètres */
+.integre .voile {
+  position: fixed; inset: 0;
+  background: rgb(18 20 26 / 0.42);
+  animation: apparition .16s ease-out both;
+}
+@media (prefers-color-scheme: dark) { .integre .voile { background: rgb(0 0 0 / 0.58); } }
+
+/* Panneau centré : toute la fenêtre moins une marge de 24 px (12 px sur une petite
+   fenêtre), au plus 1500 x 1100 */
+.integre .panneau {
+  position: fixed; inset: 0; margin: auto;
+  width: min(calc(100vw - 48px), 1500px);
+  height: min(calc(100vh - 48px), 1100px);
+  display: flex; flex-direction: column;
+  background: var(--fond);
+  border: 1px solid var(--bordure);
+  border-radius: 18px;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 0.28), 0 2px 8px rgb(0 0 0 / 0.12);
+  overflow: hidden;
+  container: panneau / inline-size;
+  animation: montee .2s cubic-bezier(.2, .8, .3, 1) both;
+}
+@media (max-width: 640px), (max-height: 520px) {
+  .integre .panneau { width: calc(100vw - 24px); height: calc(100vh - 24px); border-radius: 14px; }
+}
+.integre body.fermeture .voile { animation: disparition .13s ease-in both; }
+.integre body.fermeture .panneau { animation: descente .13s ease-in both; }
+@keyframes apparition { from { opacity: 0; } }
+@keyframes disparition { to { opacity: 0; } }
+@keyframes montee { from { opacity: 0; transform: translateY(10px) scale(.985); } }
+@keyframes descente { to { opacity: 0; transform: translateY(6px) scale(.99); } }
+@media (prefers-reduced-motion: reduce) {
+  .integre .voile, .integre .panneau { animation: none; }
+}
+
+.integre .entete { flex: none; grid-area: auto; padding: 20px 18px 10px 24px; }
+.integre .entete-texte { flex: 1; min-width: 0; }
+.bouton-fermer {
+  flex: none; align-self: flex-start;
+  display: grid; place-items: center; width: 38px; height: 38px; padding: 0;
+  border: 0; border-radius: 10px; background: transparent; color: var(--texte-2); cursor: pointer;
+}
+.bouton-fermer:hover { background: var(--surface-2); color: var(--texte); }
+
+/* Une colonne et la navigation en haut sous 860 px de panneau ; au-delà, navigation
+   sur le côté et cartes en 2 ou 3 colonnes (rangées par parametres.js) */
+.integre .corps { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.integre .sommaire {
+  position: static; flex: none; grid-area: auto;
+  flex-direction: row; flex-wrap: wrap; gap: 4px;
+  margin: 0; padding: 2px 24px 10px; max-height: none;
+  background: none; backdrop-filter: none;
+  border-bottom: 1px solid var(--bordure);
+}
+/* La barre de défilement reste loin de l'angle arrondi du panneau */
+.integre .defilement {
+  flex: 1; min-height: 0; overflow-y: auto; margin: 0 6px 10px 0;
+  scroll-behavior: smooth; scroll-padding-top: 16px;
+  padding-top: 16px;
+}
+.integre main { grid-area: auto; padding: 0 18px 24px 24px; }
+.integre .notes { position: absolute; right: 18px; bottom: 18px; }
+
+@container panneau (min-width: 860px) {
+  .integre .entete { padding: 22px 18px 14px 28px; }
+  .integre .corps { display: grid; grid-template-columns: 210px minmax(0, 1fr); }
+  .integre .sommaire {
+    flex-direction: column; flex-wrap: nowrap; gap: 2px;
+    padding: 4px 10px 24px 18px; overflow-y: auto;
+    border-bottom: 0;
+  }
+  .integre .sommaire a { border-radius: 8px; padding: 7px 12px; font-size: 0.93rem; }
+  .integre .defilement { padding-top: 4px; scroll-padding-top: 4px; }
+  .integre main { padding: 0 22px 30px 8px; }
+}

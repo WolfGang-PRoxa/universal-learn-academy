@@ -96,6 +96,8 @@ const personnels = [
   'CLAUDE.md',
   '.claude/settings.json',
   '_outils/numerisation/scans/explore/x.pdf',
+  '_outils/todo/index.html',
+  '_outils/todo/serveur/extension.js',
 ];
 for (const c of personnels) verifier(regles.personnel(c) && regles.exclusion(c), `Donnée personnelle non écartée : ${c}`);
 const gardes = [
@@ -109,7 +111,6 @@ const gardes = [
   '_outils/quiz/serveur/serveur.js',
   '_outils/app/principal.js',
   '_outils/ula/lib/espace.js',
-  '_outils/todo/index.html',
 ];
 for (const c of gardes) verifier(!regles.exclusion(c), `Fichier écarté à tort : ${c} (${regles.exclusion(c)?.raison})`);
 for (const c of ['app/src/main.js', '.gitignore', 'lancer.bat', 'explore/x/.DS_Store', 'explore/informatique/codage/.ula-version.json']) verifier(regles.exclusion(c) && !regles.personnel(c), `Règle « inutile » attendue : ${c}`);
@@ -134,7 +135,7 @@ function fauxPaquet(nom, fichiers, { asar = [] } = {}) {
 }
 const propre = verifierPaquet(fauxPaquet('propre', outilsGardes));
 verifier(propre.problemes.length === 0, `Paquet propre refusé : ${propre.problemes.join(' ; ')}`);
-for (const c of ['_outils/quiz/reglages.json', '_outils/numerisation/scans/x.pdf', '_outils/quiz/quiz_results/demo/1.json', 'explore/informatique/codage/generated_courses/cours-01.html', 'romain/L3/Codage/td_results/td-01.json', 'TODO.md']) {
+for (const c of ['_outils/quiz/reglages.json', '_outils/numerisation/scans/x.pdf', '_outils/quiz/quiz_results/demo/1.json', 'explore/informatique/codage/generated_courses/cours-01.html', 'romain/L3/Codage/td_results/td-01.json', 'TODO.md', '_outils/todo/index.html']) {
   const sale = verifierPaquet(fauxPaquet('sale-' + c.replace(/\W/g, '_'), [...outilsGardes, c]));
   verifier(sale.problemes.some((p) => p.includes(c)), `Paquet piégé avec ${c} accepté par le contrôle.`);
 }

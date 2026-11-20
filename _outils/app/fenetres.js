@@ -63,8 +63,9 @@ function versNavigateur(url) {
 }
 
 // Boutons « Paramètres » et nuage (synchronisation) de la barre des pages
-// (charte/assets/cours.js), dans l'application installée seulement : ils ouvrent la
-// fenêtre des paramètres de l'hôte, ou lui demandent de synchroniser maintenant
+// (charte/assets/cours.js), dans l'application installée seulement : ils ouvrent les
+// paramètres de l'hôte (posés par-dessus la page depuis la 2.6.2), ou lui demandent
+// de synchroniser maintenant
 function parametres(url) {
   const hote = global.studiesHote;
   if (!hote || !interne(url)) return false;

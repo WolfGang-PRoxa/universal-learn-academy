@@ -25,6 +25,32 @@ document.getElementById('sous-titre').textContent =
 // Changement de langue (ici, dans le paramétrage guidé ou ailleurs) : la page se refait
 api.i18n.surChangement(() => location.reload());
 
+/* -- Ouverture dans la fenêtre des cours (2.6.2) ------------------------------------ */
+
+// Les paramètres sont posés par-dessus la page des cours : la croix, Échap (sauf
+// pendant une confirmation, qui se ferme d'abord) et un clic sur le voile les referment.
+const defilement = document.getElementById('defilement');
+let fermeture = false;
+function fermer() {
+  if (fermeture) return;
+  fermeture = true;
+  document.body.classList.add('fermeture');
+  const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setTimeout(() => api.aide.fermer(), reduit ? 0 : 130);
+}
+const boutonFermer = document.getElementById('fermer');
+boutonFermer.append(icone('x', 20));
+boutonFermer.setAttribute('aria-label', t('commun.fermer'));
+boutonFermer.title = t('p.fermerAide');
+boutonFermer.addEventListener('click', fermer);
+document.getElementById('voile').addEventListener('click', fermer);
+document.getElementById('panneau').setAttribute('aria-label', t('p.titre'));
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape' || e.defaultPrevented || document.querySelector('dialog[open]')) return;
+  e.preventDefault();
+  fermer();
+});
+
 /* -- Langue ------------------------------------------------------------------- */
 
 function carteLangue() {
@@ -645,7 +671,7 @@ function proposerRedemarrage() {
     h('div', { class: 'ligne' }, bouton(t('p.redemarrage.maintenant'), { genre: 'principal', onClick: () => api.redemarrer() }), bouton(t('commun.plusTard'), { genre: 'leger', onClick: () => { proposition.remove(); proposition = null; } })));
   document.getElementById('cartes').prepend(proposition);
   ranger();
-  window.scrollTo({ top: 0 });
+  defilement.scrollTo({ top: 0 });
 }
 
 /* -- Page ------------------------------------------------------------------------------- */
@@ -677,13 +703,13 @@ cartes.append(...SECTIONS.map(([, , fabriquer]) => fabriquer()));
 for (const id of ['fenetre', 'claude-modeles']) document.getElementById(id)?.classList.add('large');
 
 /* Rangement en colonnes, sans trous (même logique que les blocs de l'accueil) :
-   1 colonne sous 900 px de fenêtre, puis autant de colonnes d'au moins 420 px que
+   1 colonne sous 860 px de panneau, puis autant de colonnes d'au moins 420 px que
    la largeur en permet (3 au plus). L'ordre est gardé ; une carte large prend toute
    la ligne, et la dernière petite carte d'une ligne incomplète s'élargit jusqu'au
    bord. Toutes les cartes d'une ligne ont la même hauteur. */
 const LARGEUR_MIN_CARTE = 420;
 function colonnes() {
-  if (window.innerWidth < 900) return 1;
+  if (document.getElementById('panneau').clientWidth < 860) return 1;
   const ecart = parseFloat(getComputedStyle(cartes).columnGap) || 16;
   return Math.max(1, Math.min(3, Math.floor((cartes.clientWidth + ecart) / (LARGEUR_MIN_CARTE + ecart))));
 }
@@ -717,10 +743,10 @@ function ranger() {
 ranger();
 new ResizeObserver(() => ranger()).observe(cartes);
 
-/* Navigation : sur le côté dès 900 px, section courante surlignée */
+/* Navigation : sur le côté dès 860 px de panneau, section courante surlignée */
 const liens = [...document.querySelectorAll('.sommaire a')];
 function sectionCourante() {
-  const seuil = 90;
+  const seuil = defilement.getBoundingClientRect().top + 60;
   // La carte passée sous le haut de la fenêtre la plus basse ; sur une même ligne
   // de cartes, la première
   let courant = liens[0], haut = -Infinity;
@@ -730,7 +756,7 @@ function sectionCourante() {
     if (top <= seuil && top > haut + 1) { courant = a; haut = top; }
   }
   // En bas de page : la dernière section
-  if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) courant = liens[liens.length - 1];
+  if (defilement.clientHeight + defilement.scrollTop >= defilement.scrollHeight - 4) courant = liens[liens.length - 1];
   for (const a of liens) {
     const actif = a === courant;
     a.classList.toggle('actif', actif);
@@ -738,14 +764,25 @@ function sectionCourante() {
   }
 }
 let attenteSection = false;
-window.addEventListener('scroll', () => {
+defilement.addEventListener('scroll', () => {
   if (attenteSection) return;
   attenteSection = true;
   requestAnimationFrame(() => { attenteSection = false; sectionCourante(); });
 }, { passive: true });
 window.addEventListener('resize', sectionCourante);
 
-const aller = (section) => { const el = section && document.getElementById(section); if (el) el.scrollIntoView(); sectionCourante(); };
+// Section demandée (lien de la documentation, notification…) : les cartes se
+// remplissent après coup (profils, synchronisation…), elle est donc gardée en haut
+// pendant un instant, sauf si l'utilisateur fait défiler lui-même
+let cible = null, finCible = 0;
+const montrer = () => cible && cible.scrollIntoView({ behavior: 'instant', block: 'start' });
+const aller = (section) => {
+  const el = section && document.getElementById(section);
+  if (el) { cible = el; finCible = Date.now() + 2000; montrer(); }
+  sectionCourante();
+};
+new ResizeObserver(() => { if (cible && Date.now() < finCible) montrer(); else cible = null; }).observe(cartes);
+for (const ev of ['wheel', 'keydown', 'pointerdown']) window.addEventListener(ev, () => { cible = null; }, { passive: true });
 aller(location.hash.slice(1));
 api.surSection(aller);
 sectionCourante();

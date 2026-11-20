@@ -25,7 +25,7 @@
    l'installation. Textes de l'hôte : src/i18n (français et anglais).
    ========================================================================== */
 
-const { app, BrowserWindow, Notification, dialog, ipcMain, nativeTheme, screen, session, shell } = require("electron");
+const { app, BrowserWindow, Notification, dialog, ipcMain, nativeTheme, session, shell } = require("electron");
 const fs = require("fs");
 const path = require("path");
 
@@ -41,6 +41,7 @@ const synchro = require("./synchro");
 const i18n = require("./i18n");
 const choixLangue = require("./choix-langue");
 const annexe = require("./annexe");
+const integres = require("./parametres-integres");
 const doc = require("./documentation");
 const { ID_APP, URL_RELEASES } = require("./depot");
 
@@ -83,7 +84,6 @@ app.on("window-all-closed", () => {});
 i18n.brancher(reglages);
 const { t } = i18n;
 
-let fenetreParametres = null;
 let fenetreDoc = null;
 let fenetreGuide = null;
 
@@ -103,7 +103,7 @@ function facteurEchelle() {
 function annoncerEchelle() {
   const e = facteurEchelle();
   for (const fn of auditeursEchelle) { try { fn(e); } catch (err) { /* fenêtre fermée entre-temps */ } }
-  if (fenetreParametres && !fenetreParametres.isDestroyed()) fenetreParametres.webContents.setZoomFactor(e);
+  integres.zoomer(e);
 }
 
 let racine = null;
@@ -221,75 +221,22 @@ function nettoyerAnciensRaccourcis() {
 
 /* -- Paramètres ------------------------------------------------------------------- */
 
-// Fenêtre des paramètres (2.4.0) : environ 80 % x 85 % de la zone de travail de
-// l'écran de la fenêtre principale (plafond 1600 x 1100, plancher 640 x 480), centrée
-// sur elle ; taille et position mémorisées dans parametres.json (fenetreParametres),
-// oubliées si elles ne tombent plus sur un écran.
-const PARAMETRES_MAX = { width: 1600, height: 1100 };
-
-function fenetrePrincipale() {
-  return BrowserWindow.getAllWindows().find((w) => !w.isDestroyed() && !w.studiesAnnexe && w.isVisible()) || null;
-}
-
-function bornesParametres() {
-  const memo = lancement.bornesValides(reglages.lire().fenetreParametres);
-  if (memo) return memo;
-  const principale = fenetrePrincipale();
-  const ref = principale && !principale.isMinimized() ? principale.getBounds() : null;
-  const ecran = ref ? screen.getDisplayMatching(ref) : screen.getPrimaryDisplay();
-  const z = ecran.workArea;
-  const width = Math.min(z.width, Math.max(lancement.MIN_LARGEUR, Math.min(PARAMETRES_MAX.width, Math.round(z.width * 0.8))));
-  const height = Math.min(z.height, Math.max(lancement.MIN_HAUTEUR, Math.min(PARAMETRES_MAX.height, Math.round(z.height * 0.85))));
-  const centre = ref
-    ? { x: ref.x + ref.width / 2, y: ref.y + ref.height / 2 }
-    : { x: z.x + z.width / 2, y: z.y + z.height / 2 };
-  // Centrée sur la fenêtre principale, sans déborder de la zone de travail
-  const x = Math.min(Math.max(Math.round(centre.x - width / 2), z.x), z.x + z.width - width);
-  const y = Math.min(Math.max(Math.round(centre.y - height / 2), z.y), z.y + z.height - height);
-  return { x, y, width, height };
-}
+// Depuis la version 2.6.2, les paramètres s'ouvrent dans la fenêtre des cours, par-dessus
+// la page (voile et panneau centré, comme Modding Manager) : parametres-integres.js.
+// La fenêtre des cours est d'abord montrée si elle était cachée (zone de notification).
+integres.configurer({ zoom: () => facteurEchelle() });
 
 function ouvrirParametres(section) {
-  if (fenetreParametres && !fenetreParametres.isDestroyed()) {
-    if (fenetreParametres.isMinimized()) fenetreParametres.restore();
-    fenetreParametres.show();
-    fenetreParametres.focus();
-    if (section) fenetreParametres.webContents.send("parametres:section", section);
-    return;
+  if (!integres.ouvrir(section)) {
+    montrerFenetre();
+    integres.ouvrir(section);
   }
-  const active = BrowserWindow.getFocusedWindow();
-  const parent = (active && !active.studiesAnnexe ? active : fenetrePrincipale()) || undefined;
-  fenetreParametres = new BrowserWindow({
-    ...bornesParametres(), minWidth: lancement.MIN_LARGEUR, minHeight: lancement.MIN_HAUTEUR, show: false, parent,
-    title: t("p.titreFenetre"), autoHideMenuBar: true,
-    backgroundColor: nativeTheme.shouldUseDarkColors ? "#131417" : "#fafaf8",
-    icon: path.join(__dirname, "assets", "icone.png"),
-    webPreferences: { preload: path.join(__dirname, "parametres", "pont.cjs"), contextIsolation: true, sandbox: true, nodeIntegration: false }
-  });
-  fenetreParametres.setMenu(null);
-  // Fenêtre annexe : fenetres.js ne la compte pas parmi les fenêtres de cours
-  fenetreParametres.studiesAnnexe = true;
-  fenetreParametres.webContents.setWindowOpenHandler(({ url }) => {
-    if (/^https:\/\//i.test(url)) shell.openExternal(url);
-    return { action: "deny" };
-  });
-  annexe.bloquerNavigation(fenetreParametres);
-  fenetreParametres.once("ready-to-show", () => fenetreParametres.show());
-  // L'échelle de l'interface s'applique aussi aux paramètres (même lisibilité partout)
-  fenetreParametres.webContents.on("did-finish-load", () => {
-    if (fenetreParametres && !fenetreParametres.isDestroyed()) fenetreParametres.webContents.setZoomFactor(facteurEchelle());
-  });
-  const memoriser = () => {
-    if (!fenetreParametres || fenetreParametres.isDestroyed() || fenetreParametres.isMinimized()) return;
-    try { reglages.modifier({ fenetreParametres: fenetreParametres.getNormalBounds() }); } catch (e) { /* tant pis */ }
-  };
-  let attente = null;
-  const plusTard = () => { clearTimeout(attente); attente = setTimeout(memoriser, 600); };
-  fenetreParametres.on("resize", plusTard);
-  fenetreParametres.on("move", plusTard);
-  fenetreParametres.on("close", () => { clearTimeout(attente); memoriser(); });
-  fenetreParametres.on("closed", () => { fenetreParametres = null; });
-  fenetreParametres.loadFile(path.join(__dirname, "parametres", "index.html"), { hash: section || "" });
+}
+
+/** Fenêtre d'un appel : celle de la page, ou celle qui porte les paramètres. */
+function fenetreDe(emetteur) {
+  if (emetteur && emetteur === integres.contenu()) return integres.fenetre();
+  return BrowserWindow.fromWebContents(emetteur);
 }
 
 /* -- Documentation et paramétrage guidé (2.6.0) ------------------------------------- */
@@ -353,13 +300,13 @@ function surLangueChangee(code) {
     if (agentDeBase) f.webContents.setUserAgent(agentUtilisateur());
     if (f.studiesAnnexe) {
       f.webContents.send("i18n:changee", code);
-      if (f === fenetreParametres) f.setTitle(t("p.titreFenetre"));
       if (f === fenetreDoc) f.setTitle(t("d.titreFenetre"));
       if (f === fenetreGuide) f.setTitle(t("g.titreFenetre"));
     } else {
       f.webContents.executeJavaScript(`window.ulaLangue && window.ulaLangue(${JSON.stringify(code)})`, false).catch(() => {});
     }
   }
+  integres.envoyer("i18n:changee", code);
   for (const fn of auditeursLangue) { try { fn(code); } catch (e) { /* tant pis */ } }
   arrierePlan.rafraichir();
 }
@@ -439,7 +386,6 @@ function enregistrerIpc() {
     delete sur.donnees;
     if (sur.affichage) sur.affichage = { echelle: echelleValide(sur.affichage.echelle) };
     if (sur.arrierePlan) sur.arrierePlan = { fermeture: sur.arrierePlan.fermeture !== false };
-    delete sur.fenetreParametres;
     delete sur.synchro;
     delete sur.langue;
     const r = reglages.publics(reglages.modifier(sur));
@@ -448,12 +394,12 @@ function enregistrerIpc() {
   });
   traiter("fenetre:ecrans", () => lancement.ecrans());
   traiter("fenetre:bornes", () => {
-    const f = BrowserWindow.getAllWindows().find((w) => w !== fenetreParametres && !w.isDestroyed());
+    const f = BrowserWindow.getAllWindows().find((w) => !w.studiesAnnexe && !w.isDestroyed());
     return f ? f.getNormalBounds() : null;
   });
 
   traiter("donnees:choisir", async (evenement) => {
-    const r = await dialog.showOpenDialog(BrowserWindow.fromWebContents(evenement.sender), { title: t("m.donnees.titre"), properties: ["openDirectory", "createDirectory"] });
+    const r = await dialog.showOpenDialog(fenetreDe(evenement.sender), { title: t("m.donnees.titre"), properties: ["openDirectory", "createDirectory"] });
     if (r.canceled || !r.filePaths[0]) return { ok: false, annule: true };
     reglages.modifier({ donnees: { dossier: r.filePaths[0] }, cours: { mode: "integre", dossier: "" } });
     return { ok: true, dossier: r.filePaths[0], depot: donnees.estDepot(r.filePaths[0]) };
@@ -477,7 +423,7 @@ function enregistrerIpc() {
   traiter("raccourcis:creer", (id, options) => raccourcis.creer(String(id), { confirmReplace: Boolean(options && options.confirmReplace) }));
   traiter("raccourcis:supprimer", (id) => raccourcis.supprimer(String(id)));
   traiter("raccourcis:afficher", (id) => raccourcis.afficher(String(id)));
-  traiter("raccourcis:choisir", (evenement) => raccourcis.choisirDossier(BrowserWindow.fromWebContents(evenement.sender)));
+  traiter("raccourcis:choisir", (evenement) => raccourcis.choisirDossier(fenetreDe(evenement.sender)));
   traiter("raccourcis:oublier", (id) => raccourcis.oublierDossier(String(id)));
 
   traiter("claude:statut", () => claude.statut(outils));
@@ -505,7 +451,11 @@ function enregistrerIpc() {
   traiter("aide:documentation", (page) => ouvrirDocumentation(page ? String(page) : undefined));
   traiter("aide:guide", () => ouvrirGuide());
   traiter("aide:parametres", (section) => ouvrirParametres(section ? String(section) : undefined));
-  traiter("aide:fermer", (evenement) => { const f = BrowserWindow.fromWebContents(evenement.sender); if (f && f.studiesAnnexe) f.close(); });
+  traiter("aide:fermer", (evenement) => {
+    if (evenement.sender === integres.contenu()) return integres.fermer();
+    const f = BrowserWindow.fromWebContents(evenement.sender);
+    if (f && f.studiesAnnexe) f.close();
+  });
   traiter("doc:sommaire", () => doc.sommaire(i18n.langue()));
   traiter("doc:page", (id) => doc.page(i18n.langue(), String(id)));
   traiter("doc:chercher", (texte) => doc.chercher(i18n.langue(), String(texte || "")));
@@ -532,7 +482,7 @@ function montrerFenetre() {
 // Fenêtre cachée par la croix : les paramètres se ferment avec elle, la bulle
 // s'affiche la première fois, et la recherche de mise à jour est examinée peu après
 function fenetreCachee() {
-  if (fenetreParametres && !fenetreParametres.isDestroyed()) fenetreParametres.close();
+  integres.fermer();
   majs.bientot();
   if ((reglages.lire().arrierePlan || {}).bulleMontree) return;
   arrierePlan.annoncer();
@@ -543,6 +493,7 @@ function fenetreCachee() {
 let versionAnnoncee = null;
 function surStatutMaj(statut) {
   for (const f of BrowserWindow.getAllWindows()) if (!f.isDestroyed()) f.webContents.send("maj:statut", statut);
+  integres.envoyer("maj:statut", statut);
   arrierePlan.rafraichir();
   if (statut.etat !== "pret" || !statut.version || versionAnnoncee === statut.version) return;
   versionAnnoncee = statut.version;

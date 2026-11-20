@@ -10,7 +10,7 @@ L’accueil (**Alt+Origine**, ou bouton maison de la barre du haut) réunit, de 
 | Mon cursus | Les dossiers du cursus et leurs cours, avec la progression de chacun |
 | Explorer | Les cours installés sur ce poste, par domaine |
 | Catalogue en ligne | Les cursus exemples, les packs et tous les cours à télécharger |
-| Outils | Révisions, suivi, compilation C, notebooks Python, démonstrations |
+| Outils | Révisions, compilation C, notebooks Python, démonstrations |
 
 ## Le cursus
 
@@ -37,7 +37,7 @@ Un cours du cursus qui n’est pas encore installé affiche « à télécharger 
 - **TD interactifs** : les exercices se font directement dans la page (éditeurs de code, tableaux, schémas). Le travail est enregistré au fur et à mesure dans le dossier du profil.
 - **TP** : les fichiers fournis sont dans le cours ; le travail se fait dans le dossier du cours de l’espace du profil.
 
-**Mes révisions** (menu **Aller**) regroupe les quiz à reprendre, les résultats et les TD des cours du cursus. **Mon suivi** est une liste de tâches du profil (`TODO.md`).
+**Mes révisions** (menu **Aller**) regroupe les quiz à reprendre, les résultats et les TD des cours du cursus.
 
 ## Proposer un cours
 

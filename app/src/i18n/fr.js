@@ -32,6 +32,7 @@ module.exports = {
   /* -- Paramètres -------------------------------------------------------------- */
   "p.titreFenetre": "Paramètres de Universal Learn Academy",
   "p.titre": "Paramètres",
+  "p.fermerAide": "Fermer (Échap)",
   "p.developpement": "(développement)",
 
   "p.nav.aria": "Sections",

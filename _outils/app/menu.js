@@ -3,6 +3,8 @@
    la barre du haut des pages sert à la navigation, le menu aux raccourcis. */
 
 const { app, Menu, shell } = require("electron");
+const fs = require("fs");
+const path = require("path");
 const { RACINE } = require("../quiz/serveur/lib/chemins");
 const paquet = require("./package.json");
 const serveur = require("./serveur");
@@ -17,6 +19,11 @@ const hote = global.studiesHote || null;
 function surFenetre(action) {
   return (element, f) => { if (f) action(f); };
 }
+
+// « Mon suivi » (page du TODO.md) : outil du développement, présent dans le dépôt ula
+// seulement ; ni l'application installée ni le dépôt public ne l'ont
+const SUIVI = "_outils/todo/index.html";
+const suiviPresent = () => fs.existsSync(path.join(__dirname, "..", "todo", "index.html"));
 
 function aller(label, chemin, accelerator) {
   return { label, accelerator, click: surFenetre((f) => fenetres.allerA(f, chemin)) };
@@ -61,7 +68,7 @@ function construireMenu() {
         { type: "separator" },
         aller(t("menu.accueil"), fenetres.PORTAIL, "Alt+Home"),
         aller(t("menu.revisions"), "_outils/quiz/portail.html"),
-        aller(t("menu.suivi"), "_outils/todo/index.html")
+        ...(suiviPresent() ? [aller(t("menu.suivi"), SUIVI)] : [])
       ]
     },
     {
