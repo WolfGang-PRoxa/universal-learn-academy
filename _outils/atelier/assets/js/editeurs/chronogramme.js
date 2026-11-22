@@ -21,24 +21,69 @@
    à coder, « 1 0 0 1 » ou « 1001 »).
    ========================================================================== */
 (function (A) {
-  "use strict";
+  'use strict';
 
-  var N = A.noyau, S = A.syntaxe, msg = N.message, ecart = N.ecart;
-  var ETATS = [{ code: "x", libelle: "Exécution" }, { code: "p", libelle: "Prêt" }, { code: "b", libelle: "Bloqué" }];
+  var N = A.noyau,
+    S = A.syntaxe,
+    msg = N.message,
+    ecart = N.ecart,
+    tr = A.tr;
+  var ETATS = [
+    { code: 'x', libelle: 'Exécution' },
+    { code: 'p', libelle: 'Prêt' },
+    { code: 'b', libelle: 'Bloqué' },
+  ];
 
   // Durée d'une case : 1 pour un modèle enregistré avant l'arrivée du pas
-  function pasDe(m) { return m && m.pas > 0 ? m.pas : 1; }
+  function pasDe(m) {
+    return m && m.pas > 0 ? m.pas : 1;
+  }
 
   function lire(texte, options) {
-    var erreurs = [], debut = 0, fin = 10, pas = 1, etats = null, brutes = [];
+    var erreurs = [],
+      debut = 0,
+      fin = 10,
+      pas = 1,
+      etats = null,
+      brutes = [];
     S.lignes(texte).forEach(function (l) {
-      var t = l.texte, x;
+      var t = l.texte,
+        x;
       if ((x = t.match(/^temps\s+(-?\d+)\s*(?:\.\.|-|\s)\s*(-?\d+)(?:\s+pas\s+(\d+))?$/i))) {
-        debut = Number(x[1]); fin = Number(x[2]); pas = x[3] ? Number(x[3]) : 1;
-        if (fin <= debut) erreurs.push(S.erreur(l.num, "L'intervalle de temps doit aller croissant : « temps 0..12 »."));
-        else if (pas < 1) { erreurs.push(S.erreur(l.num, "Le pas doit valoir au moins 1 : « temps 0..3000 pas 50 ».")); pas = 1; }
-        else if ((fin - debut) % pas) {
-          erreurs.push(S.erreur(l.num, "L'intervalle " + debut + ".." + fin + " n'est pas un multiple du pas " + pas + "."));
+        debut = Number(x[1]);
+        fin = Number(x[2]);
+        pas = x[3] ? Number(x[3]) : 1;
+        if (fin <= debut)
+          erreurs.push(
+            S.erreur(
+              l.num,
+              tr(
+                "L'intervalle de temps doit aller croissant : « temps 0..12 ».",
+                'The time interval must be increasing: “temps 0..12”.',
+              ),
+            ),
+          );
+        else if (pas < 1) {
+          erreurs.push(
+            S.erreur(
+              l.num,
+              tr(
+                'Le pas doit valoir au moins 1 : « temps 0..3000 pas 50 ».',
+                'The step must be at least 1: “temps 0..3000 pas 50”.',
+              ),
+            ),
+          );
+          pas = 1;
+        } else if ((fin - debut) % pas) {
+          erreurs.push(
+            S.erreur(
+              l.num,
+              tr(
+                "L'intervalle " + debut + '..' + fin + " n'est pas un multiple du pas " + pas + '.',
+                'The interval ' + debut + '..' + fin + ' is not a multiple of the step ' + pas + '.',
+              ),
+            ),
+          );
           fin = debut + Math.ceil((fin - debut) / pas) * pas;
         }
         return;
@@ -48,39 +93,130 @@
         etats.push({ code: x[1], libelle: x[2].trim() });
         return;
       }
-      var i = t.indexOf(":");
-      if (i < 0) { erreurs.push(S.erreur(l.num, "Ligne illisible : « " + t + " ». Exemple : P1 : x 0-3, p 3-5")); return; }
+      var i = t.indexOf(':');
+      if (i < 0) {
+        erreurs.push(
+          S.erreur(
+            l.num,
+            tr(
+              'Ligne illisible : « ' + t + ' ». Exemple : P1 : x 0-3, p 3-5',
+              'Unreadable line: “' + t + '”. Example: P1 : x 0-3, p 3-5',
+            ),
+          ),
+        );
+        return;
+      }
       brutes.push({ num: l.num, nom: t.slice(0, i).trim(), valeur: t.slice(i + 1).trim() });
     });
     if (fin <= debut) fin = debut + pas;
     etats = etats || (options && options.etats) || ETATS;
-    var codes = etats.map(function (e) { return e.code; });
-    var n = (fin - debut) / pas, lignes = [];
+    var codes = etats.map(function (e) {
+      return e.code;
+    });
+    var n = (fin - debut) / pas,
+      lignes = [];
     brutes.forEach(function (b) {
       // Plusieurs lignes au même nom : elles complètent la même ligne du chronogramme
-      var deja = lignes.find(function (l) { return N.cle(l.nom) === N.cle(b.nom); });
+      var deja = lignes.find(function (l) {
+        return N.cle(l.nom) === N.cle(b.nom);
+      });
       var cases = deja ? deja.cases : [];
       if (!deja) for (var k = 0; k < n; k++) cases.push(null);
       if (b.valeur && /^[^\s,\d-]+$/.test(b.valeur) && !/\s/.test(b.valeur)) {
         // Un caractère par case
-        b.valeur.split("").forEach(function (c, k) {
+        b.valeur.split('').forEach(function (c, k) {
           if (k >= n) return;
-          if (c === "." || c === "_") return;
-          if (codes.indexOf(c) < 0) { erreurs.push(S.erreur(b.num, "État inconnu « " + c + " » (états : " + codes.join(", ") + ").")); return; }
+          if (c === '.' || c === '_') return;
+          if (codes.indexOf(c) < 0) {
+            erreurs.push(
+              S.erreur(
+                b.num,
+                tr(
+                  'État inconnu « ' + c + ' » (états : ' + codes.join(', ') + ').',
+                  'Unknown state “' + c + '” (states: ' + codes.join(', ') + ').',
+                ),
+              ),
+            );
+            return;
+          }
           cases[k] = c;
         });
-        if (b.valeur.length > n) erreurs.push(S.erreur(b.num, "« " + b.nom + " » dépasse l'intervalle de temps (" + N.pluriel(n, pas === 1 ? "unité" : "case") + ")."));
+        if (b.valeur.length > n)
+          erreurs.push(
+            S.erreur(
+              b.num,
+              tr(
+                '« ' + b.nom + " » dépasse l'intervalle de temps (" + N.pluriel(n, pas === 1 ? 'unité' : 'case') + ').',
+                '“' + b.nom + '” goes beyond the time interval (' + N.pluriel(n, pas === 1 ? 'unit' : 'cell') + ').',
+              ),
+            ),
+          );
       } else if (b.valeur) {
-        S.decouper(b.valeur, ",").forEach(function (seg) {
+        S.decouper(b.valeur, ',').forEach(function (seg) {
           var s = seg.match(/^(\S)\s+(-?\d+)\s*-\s*(-?\d+)$/);
-          if (!s) { erreurs.push(S.erreur(b.num, "Segment illisible : « " + seg + " ». Exemple : x 0-3")); return; }
-          if (codes.indexOf(s[1]) < 0) { erreurs.push(S.erreur(b.num, "État inconnu « " + s[1] + " » (états : " + codes.join(", ") + ").")); return; }
-          var a = Number(s[2]), z = Number(s[3]);
-          if (z <= a) { erreurs.push(S.erreur(b.num, "Segment vide ou à l'envers : « " + seg + " »."));
-            return; }
-          if (a < debut || z > fin) erreurs.push(S.erreur(b.num, "Le segment « " + seg + " » sort de l'intervalle " + debut + ".." + fin + "."));
-          if ((a - debut) % pas || (z - debut) % pas) erreurs.push(S.erreur(b.num, "Le segment « " + seg + " » ne tombe pas sur une case : les instants vont de " + pas + " en " + pas + "."));
-          var k0 = Math.floor((Math.max(a, debut) - debut) / pas), k1 = Math.ceil((Math.min(z, fin) - debut) / pas);
+          if (!s) {
+            erreurs.push(
+              S.erreur(
+                b.num,
+                tr(
+                  'Segment illisible : « ' + seg + ' ». Exemple : x 0-3',
+                  'Unreadable segment: “' + seg + '”. Example: x 0-3',
+                ),
+              ),
+            );
+            return;
+          }
+          if (codes.indexOf(s[1]) < 0) {
+            erreurs.push(
+              S.erreur(
+                b.num,
+                tr(
+                  'État inconnu « ' + s[1] + ' » (états : ' + codes.join(', ') + ').',
+                  'Unknown state “' + s[1] + '” (states: ' + codes.join(', ') + ').',
+                ),
+              ),
+            );
+            return;
+          }
+          var a = Number(s[2]),
+            z = Number(s[3]);
+          if (z <= a) {
+            erreurs.push(
+              S.erreur(
+                b.num,
+                tr("Segment vide ou à l'envers : « " + seg + ' ».', 'Empty or reversed segment: “' + seg + '”.'),
+              ),
+            );
+            return;
+          }
+          if (a < debut || z > fin)
+            erreurs.push(
+              S.erreur(
+                b.num,
+                tr(
+                  'Le segment « ' + seg + " » sort de l'intervalle " + debut + '..' + fin + '.',
+                  'The segment “' + seg + '” goes outside the interval ' + debut + '..' + fin + '.',
+                ),
+              ),
+            );
+          if ((a - debut) % pas || (z - debut) % pas)
+            erreurs.push(
+              S.erreur(
+                b.num,
+                tr(
+                  'Le segment « ' +
+                    seg +
+                    ' » ne tombe pas sur une case : les instants vont de ' +
+                    pas +
+                    ' en ' +
+                    pas +
+                    '.',
+                  'The segment “' + seg + '” does not fall on a cell: instants go in steps of ' + pas + '.',
+                ),
+              ),
+            );
+          var k0 = Math.floor((Math.max(a, debut) - debut) / pas),
+            k1 = Math.ceil((Math.min(z, fin) - debut) / pas);
           for (var k = k0; k < k1; k++) cases[k] = s[1];
         });
       }
@@ -90,10 +226,14 @@
   }
 
   function segments(ligne, debut, pas) {
-    var res = [], cour = null;
+    var res = [],
+      cour = null;
     pas = pas || 1;
     ligne.cases.forEach(function (c, k) {
-      if (cour && cour.code === c) { cour.fin = debut + (k + 1) * pas; return; }
+      if (cour && cour.code === c) {
+        cour.fin = debut + (k + 1) * pas;
+        return;
+      }
       if (cour) res.push(cour);
       cour = c ? { code: c, debut: debut + k * pas, fin: debut + (k + 1) * pas } : null;
     });
@@ -102,34 +242,105 @@
   }
 
   function ecrire(m) {
-    if (!m) return "";
+    if (!m) return '';
     var pas = pasDe(m);
-    var t = ["temps " + m.debut + ".." + m.fin + (pas !== 1 ? " pas " + pas : "")];
+    var t = ['temps ' + m.debut + '..' + m.fin + (pas !== 1 ? ' pas ' + pas : '')];
     var defaut = JSON.stringify(m.etats) === JSON.stringify(ETATS);
-    if (!defaut) m.etats.forEach(function (e) { t.push("etat " + e.code + " " + e.libelle); });
+    if (!defaut)
+      m.etats.forEach(function (e) {
+        t.push('etat ' + e.code + ' ' + e.libelle);
+      });
     m.lignes.forEach(function (l) {
-      t.push(l.nom + " : " + segments(l, m.debut, pas).map(function (s) { return s.code + " " + s.debut + "-" + s.fin; }).join(", "));
+      t.push(
+        l.nom +
+          ' : ' +
+          segments(l, m.debut, pas)
+            .map(function (s) {
+              return s.code + ' ' + s.debut + '-' + s.fin;
+            })
+            .join(', '),
+      );
     });
-    return t.join("\n");
+    return t.join('\n');
   }
 
   function controler(m, options) {
     options = options || {};
-    if (!m || !m.lignes.length) return [msg("info", "Le chronogramme est vide pour l'instant.")];
-    var res = [], actif = options.actif || "x", pas = pasDe(m);
+    if (!m || !m.lignes.length)
+      return [msg('info', tr("Le chronogramme est vide pour l'instant.", 'The timing diagram is empty for now.'))];
+    var res = [],
+      actif = options.actif || 'x',
+      pas = pasDe(m);
     if (options.processeurs) {
       for (var k = 0; k < (m.fin - m.debut) / pas; k++) {
-        var en = m.lignes.filter(function (l) { return l.cases[k] === actif; });
+        var en = m.lignes.filter(function (l) {
+          return l.cases[k] === actif;
+        });
         if (en.length > options.processeurs) {
-          res.push(msg("erreur", "Entre t = " + (m.debut + k * pas) + " et t = " + (m.debut + (k + 1) * pas) + ", " + en.length + " processus sont en exécution (" + en.map(function (l) { return l.nom; }).join(", ") + ") pour " + N.pluriel(options.processeurs, "processeur") + ".", en[0].nom));
+          res.push(
+            msg(
+              'erreur',
+              tr(
+                'Entre t = ' +
+                  (m.debut + k * pas) +
+                  ' et t = ' +
+                  (m.debut + (k + 1) * pas) +
+                  ', ' +
+                  en.length +
+                  ' processus sont en exécution (' +
+                  en
+                    .map(function (l) {
+                      return l.nom;
+                    })
+                    .join(', ') +
+                  ') pour ' +
+                  N.pluriel(options.processeurs, 'processeur') +
+                  '.',
+                'Between t = ' +
+                  (m.debut + k * pas) +
+                  ' and t = ' +
+                  (m.debut + (k + 1) * pas) +
+                  ', ' +
+                  en.length +
+                  ' processes are running (' +
+                  en
+                    .map(function (l) {
+                      return l.nom;
+                    })
+                    .join(', ') +
+                  ') for ' +
+                  N.pluriel(options.processeurs, 'processor') +
+                  '.',
+              ),
+              en[0].nom,
+            ),
+          );
         }
       }
     }
     Object.keys(options.durees || {}).forEach(function (nom) {
-      var l = m.lignes.find(function (x) { return x.nom.toLowerCase() === nom.toLowerCase(); });
-      if (!l) { res.push(msg("attention", "Il manque la ligne « " + nom + " ».")); return; }
-      var d = l.cases.filter(function (c) { return c === actif; }).length * pas;
-      if (d !== options.durees[nom]) res.push(msg("attention", "« " + l.nom + " » s'exécute " + d + " unité(s) de temps, " + options.durees[nom] + " attendue(s).", l.nom));
+      var l = m.lignes.find(function (x) {
+        return x.nom.toLowerCase() === nom.toLowerCase();
+      });
+      if (!l) {
+        res.push(msg('attention', tr('Il manque la ligne « ' + nom + ' ».', 'The line “' + nom + '” is missing.')));
+        return;
+      }
+      var d =
+        l.cases.filter(function (c) {
+          return c === actif;
+        }).length * pas;
+      if (d !== options.durees[nom])
+        res.push(
+          msg(
+            'attention',
+            tr(
+              '« ' + l.nom + " » s'exécute " + d + ' unité(s) de temps, ' + options.durees[nom] + ' attendue(s).',
+              '“' + l.nom + '” runs for ' + d + ' time unit(s), ' + options.durees[nom] + ' expected.',
+            ),
+            l.nom,
+          ),
+        );
     });
     return res;
   }
@@ -142,35 +353,97 @@
 
   function comparer(m, sol) {
     if (!sol) return null;
-    var ecarts = [], justes = 0, total = 0, pas = pasDe(sol);
+    var ecarts = [],
+      justes = 0,
+      total = 0,
+      pas = pasDe(sol);
     sol.lignes.forEach(function (ls) {
-      var le = m.lignes.find(function (x) { return N.cle(x.nom) === N.cle(ls.nom); });
-      if (!le) { ecarts.push(ecart("manque", "Il manque la ligne « " + ls.nom + " ».")); total += ls.cases.length; return; }
+      var le = m.lignes.find(function (x) {
+        return N.cle(x.nom) === N.cle(ls.nom);
+      });
+      if (!le) {
+        ecarts.push(
+          ecart('manque', tr('Il manque la ligne « ' + ls.nom + ' ».', 'The line “' + ls.nom + '” is missing.')),
+        );
+        total += ls.cases.length;
+        return;
+      }
       var fausses = [];
       for (var t = sol.debut; t < sol.fin; t += pas) {
         total++;
-        if (etatA(sol, ls, t) === etatA(m, le, t)) justes++; else fausses.push(t);
+        if (etatA(sol, ls, t) === etatA(m, le, t)) justes++;
+        else fausses.push(t);
       }
       if (fausses.length) {
-        ecarts.push(ecart("different", "« " + le.nom + " » : " + N.pluriel(fausses.length, "case différente", "cases différentes") + " de la solution (t = " + plages(fausses, pas) + ").", le.nom));
+        ecarts.push(
+          ecart(
+            'different',
+            tr(
+              '« ' +
+                le.nom +
+                ' » : ' +
+                N.pluriel(fausses.length, 'case différente', 'cases différentes') +
+                ' de la solution (t = ' +
+                plages(fausses, pas) +
+                ').',
+              '“' +
+                le.nom +
+                '”: ' +
+                N.pluriel(fausses.length, 'cell differs', 'cells differ') +
+                ' from the solution (t = ' +
+                plages(fausses, pas) +
+                ').',
+            ),
+            le.nom,
+          ),
+        );
       }
     });
     m.lignes.forEach(function (le) {
-      if (!sol.lignes.some(function (x) { return N.cle(x.nom) === N.cle(le.nom); })) ecarts.push(ecart("exces", "La ligne « " + le.nom + " » n'apparaît pas dans la solution.", le.nom));
+      if (
+        !sol.lignes.some(function (x) {
+          return N.cle(x.nom) === N.cle(le.nom);
+        })
+      )
+        ecarts.push(
+          ecart(
+            'exces',
+            tr(
+              'La ligne « ' + le.nom + " » n'apparaît pas dans la solution.",
+              'The line “' + le.nom + '” does not appear in the solution.',
+            ),
+            le.nom,
+          ),
+        );
     });
     var score = total ? justes / total : 1;
-    return { score: score, ecarts: ecarts, resume: score === 1 && !ecarts.length ? "Identique à la solution proposée." : Math.round(score * 100) + " % des cases justes · " + N.pluriel(ecarts.length, "écart") };
+    return {
+      score: score,
+      ecarts: ecarts,
+      resume:
+        score === 1 && !ecarts.length
+          ? tr('Identique à la solution proposée.', 'Identical to the proposed solution.')
+          : tr(
+              Math.round(score * 100) + ' % des cases justes · ' + N.pluriel(ecarts.length, 'écart'),
+              Math.round(score * 100) + '% of cells correct · ' + N.pluriel(ecarts.length, 'difference'),
+            ),
+    };
   }
 
   // Débuts des cases fausses : [3, 4, 5, 9] -> « 3 à 5, 9 » (avec un pas de 50 : [500, 550, 700] -> « 500 à 550, 700 »)
   function plages(liste, pas) {
-    var res = [], d = null, p = null;
+    var res = [],
+      d = null,
+      p = null;
     liste.concat([null]).forEach(function (t) {
-      if (d !== null && t === p + pas) { p = t; return; }
-      if (d !== null) res.push(d === p ? String(d) : d + " à " + p);
+      if (d !== null && t === p + pas) {
+        p = t;
+        return;
+      }
+      if (d !== null) res.push(d === p ? String(d) : tr(d + ' à ' + p, d + ' to ' + p));
       d = p = t;
     });
-    return res.join(", ");
+    return res.join(', ');
   }
 
   /* Tracé de signal ------------------------------------------------------------ */
@@ -188,34 +461,48 @@
   function graduationsDe(options, n) {
     var g = options && options.graduations;
     if (g == null) return null;
-    var l = Array.isArray(g) ? g.map(String) : /\s/.test(String(g).trim()) ? String(g).trim().split(/\s+/) : String(g).split("");
+    var l = Array.isArray(g)
+      ? g.map(String)
+      : /\s/.test(String(g).trim())
+        ? String(g).trim().split(/\s+/)
+        : String(g).split('');
     var res = [];
-    for (var k = 0; k < n; k++) res.push(l[k] != null ? l[k] : "");
+    for (var k = 0; k < n; k++) res.push(l[k] != null ? l[k] : '');
     return res;
   }
 
   A.editeurs.chronogramme = {
-    nom: "chronogramme",
+    nom: 'chronogramme',
     // Options reconnues (champ « options » d'un atelier), vérifiées par outils/verifier.js
     options: {
-      debut: "premier instant (défaut 0)",
-      fin: "dernier instant (défaut 10)",
+      debut: 'premier instant (défaut 0)',
+      fin: 'dernier instant (défaut 10)',
       pas: "durée d'une case (défaut 1) ; dans le texte : « temps 0..3000 pas 50 »",
-      etats: "états : [{ \"code\": \"x\", \"libelle\": \"Exécution\" }, …]",
-      processeurs: "nombre de processeurs : au plus autant de processus en exécution à la fois",
+      etats: 'états : [{ "code": "x", "libelle": "Exécution" }, …]',
+      processeurs: 'nombre de processeurs : au plus autant de processus en exécution à la fois',
       actif: "code de l'état d'exécution (défaut x)",
       durees: "durée d'exécution attendue par processus, dans l'unité de l'axe : { \"P1\": 3, … }",
-      niveaux: "tracé de signal : niveau de chaque état, entre -1 et 1 ({ \"p\": 1, \"n\": -1 })",
+      niveaux: 'tracé de signal : niveau de chaque état, entre -1 et 1 ({ "p": 1, "n": -1 })',
       repos: "tracé de signal : niveau d'une case vide (0 par défaut ; false : rien de tracé)",
-      marques: "tracé de signal : repère écrit sur l'impulsion d'un état ({ \"B\": \"B+\" })",
-      graduations: "étiquettes des colonnes à la place des instants (les bits à coder : \"1 0 0 1\")"
+      marques: 'tracé de signal : repère écrit sur l\'impulsion d\'un état ({ "B": "B+" })',
+      graduations: 'étiquettes des colonnes à la place des instants (les bits à coder : "1 0 0 1")',
     },
-    libelle: "Chronogramme",
-    description: "Chronogramme : une ligne par processus, chaque case de temps dans un état (segments « état début-fin », fin exclue ; « temps 0..3000 pas 50 » quand une case dure 50).",
-    aide: "<ul><li><code>temps 0..12</code> fixe l'intervalle ; <code>temps 0..3000 pas 50</code> quand une case dure 50 ; <code>etat x Exécution</code> déclare un état (défaut : x Exécution, p Prêt, b Bloqué).</li>" +
-      "<li>Une ligne par processus : <code>P1 : x 0-3, p 3-5</code> (fin exclue), ou un caractère par case : <code>P2 : ..xxpp.x</code>.</li></ul>",
+    get libelle() {
+      return tr('Chronogramme', 'Timing diagram');
+    },
+    description:
+      'Chronogramme : une ligne par processus, chaque case de temps dans un état (segments « état début-fin », fin exclue ; « temps 0..3000 pas 50 » quand une case dure 50).',
+    get aide() {
+      return tr(
+        "<ul><li><code>temps 0..12</code> fixe l'intervalle ; <code>temps 0..3000 pas 50</code> quand une case dure 50 ; <code>etat x Exécution</code> déclare un état (défaut : x Exécution, p Prêt, b Bloqué).</li>" +
+          '<li>Une ligne par processus : <code>P1 : x 0-3, p 3-5</code> (fin exclue), ou un caractère par case : <code>P2 : ..xxpp.x</code>.</li></ul>',
+        '<ul><li><code>temps 0..12</code> sets the interval; <code>temps 0..3000 pas 50</code> when a cell lasts 50; <code>etat x Exécution</code> declares a state (default: x Exécution (running), p Prêt (ready), b Bloqué (blocked)).</li>' +
+          '<li>One line per process: <code>P1 : x 0-3, p 3-5</code> (end excluded), or one character per cell: <code>P2 : ..xxpp.x</code>.</li></ul>',
+      );
+    },
     vide: function (options) {
-      var d = options && options.debut != null ? options.debut : 0, p = options && options.pas > 0 ? options.pas : 1;
+      var d = options && options.debut != null ? options.debut : 0,
+        p = options && options.pas > 0 ? options.pas : 1;
       var f = options && options.fin != null ? options.fin : d + 10 * p;
       if (f <= d || (f - d) % p) f = d + Math.max(1, Math.ceil((f - d) / p)) * p;
       return { debut: d, fin: f, pas: p, etats: (options && options.etats) || ETATS.slice(), lignes: [] };
@@ -229,7 +516,18 @@
     niveauDe: niveauDe,
     graduationsDe: graduationsDe,
     ETATS: ETATS,
-    cibles: function (m) { return (m && m.lignes || []).map(function (l) { return l.nom; }); },
-    estVide: function (m) { return !m || !m.lignes.some(function (l) { return l.cases.some(Boolean); }); }
+    cibles: function (m) {
+      return ((m && m.lignes) || []).map(function (l) {
+        return l.nom;
+      });
+    },
+    estVide: function (m) {
+      return (
+        !m ||
+        !m.lignes.some(function (l) {
+          return l.cases.some(Boolean);
+        })
+      );
+    },
   };
 })(window.Atelier);

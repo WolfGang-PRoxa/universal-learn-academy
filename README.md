@@ -1,54 +1,77 @@
+[Français](README.fr.md) · **English**
+
 # Universal Learn Academy
 
-Des cours mis en forme en pages HTML, des quiz et des TD interactifs, avec un serveur local qui fait tourner les quiz, exécute le code des questions (SQL, Python, C, JavaScript) et fait appel à Claude pour l'aide, la correction et la génération de nouveaux quiz. Le catalogue de départ vient d'une licence informatique (Le Mans Université) : informatique, mathématiques, langues.
+Courses formatted as HTML pages, quizzes and interactive exercise sheets (TD), with a local server that runs the quizzes, executes the code in questions (SQL, Python, C, JavaScript) and calls Claude for hints, grading and new quizzes. The starting catalogue comes from a computer science bachelor's degree (Le Mans Université): computer science, mathematics, languages. The app is available in French or English.
 
-## Télécharger l'application
+## Download the app
 
-| Système | Fichier de la [dernière version](https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/latest) |
-|---|---|
-| Windows 10 ou 11 (x64) | `Universal-Learn-Academy-Setup-<version>.exe` : installation pour l'utilisateur courant, sans droits administrateur. L'application n'est pas signée : SmartScreen demande « Informations complémentaires », puis « Exécuter quand même ». |
-| Linux (x64) | `Universal-Learn-Academy-<version>.AppImage` : le rendre exécutable (`chmod +x`), puis le lancer. |
+| System                 | File from the [latest release](https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/latest)                                                                                 |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Windows 10 or 11 (x64) | `Universal-Learn-Academy-Setup-<version>.exe`: installs for the current user, no administrator rights needed. The app is not signed: SmartScreen asks for "More info", then "Run anyway". |
+| Linux (x64)            | `Universal-Learn-Academy-<version>.AppImage`: make it executable (`chmod +x`), then run it.                                                                                               |
 
-L'installeur ne contient que l'application et ses outils (environ 130 Mo). Les cours se téléchargent ensuite à la demande, un par un ou par pack de niveau (par exemple tout le pack « Licence 1 informatique » d'un coup), depuis l'accueil (« Catalogue en ligne ») : ils viennent de la release [`catalogue`](https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/catalogue) de ce dépôt, et leur empreinte est vérifiée avant l'installation.
+The installer only contains the app and its tools (about 130 MB). Courses are then downloaded on demand, one by one or as a level pack (for example the whole "Licence 1 informatique" pack at once), from the home page ("Online catalogue"): they come from this repository's [`catalogue`](https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/catalogue) release, and their checksum is verified before installation.
 
-Fermer la fenêtre garde l'application en arrière-plan, avec son icône dans la zone de notification (clic pour la rouvrir, clic droit › Quitter pour la quitter ; réglable). Elle se met à jour d'elle-même : nouvelle version cherchée au démarrage puis toutes les 6 heures, téléchargée en arrière-plan et installée en quittant l'application (option dans ses paramètres). Ses paramètres permettent aussi de choisir son profil et le dossier des données, de régler la fenêtre au lancement, de créer des raccourcis et de connecter Claude.
+Closing the window keeps the app running in the background, with its icon in the notification area (click to reopen it, right-click › Quit to quit; configurable). Its settings also let users choose the language, their profile and the data folder, set the window size at launch, create shortcuts and connect Claude. Built-in documentation (F1) and a guided setup help with the first launch.
 
-## Profils et cursus
+## Updates
 
-Au premier lancement, l'application demande un nom d'utilisateur (celui de la session est proposé) et propose un cursus exemple : « Informatique » range d'un coup les trois années de licence dans les dossiers L1, L2 et L3, et peut télécharger tous leurs cours en arrière-plan. Plusieurs profils peuvent partager un poste. Chacun range les cours du catalogue dans son cursus, avec les dossiers qu'il veut (L1, L2, Prépa, Perso…) : un cours y est un lien, et sa progression (tentatives, TD, TP, suivi) s'enregistre à côté, dans le dossier du profil. Une mise à jour d'un cours ne touche jamais au travail.
+The app updates itself: a new version is looked for at startup and then every 6 hours, downloaded in the background and installed when the app quits; "Restart and install" applies it right away. The option is in Settings › Updates. Courses do not depend on app versions: a new or corrected course appears in the home page catalogue ("Update available"). The changes in each version are listed in [CHANGELOG.md](CHANGELOG.md).
+
+## Profiles, curricula and data location
+
+On first launch, the app asks for the language, then for a user name (the session name is suggested) and offers an example curriculum: "Informatique" sorts the three years of the bachelor's degree into the L1, L2 and L3 folders at once, and can download all their courses in the background. Several profiles can share a computer. Each one sorts catalogue courses into their curriculum, with the folders they want (L1, L2, Prépa, Perso…): a course is a link there, and its progress (attempts, TD, labs, tracking) is saved next to it, in the profile folder. Updating a course never touches the work.
 
 ```
-ULA/                         (Documents/ULA par défaut)
-├── explore/<domaine>/<cours>/   cours téléchargés, en lecture seule
-└── <profil>/<cursus>/<cours>/   lien vers le cours et progression
+ULA/                         (Documents/ULA by default, can be changed in the settings)
+├── explore/<domain>/<course>/   downloaded courses, read-only
+└── <profile>/<curriculum>/<course>/   link to the course and progress
 ```
 
-Un cours fait par soi-même (pages générées dans son espace) se propose au catalogue depuis l'accueil : l'application prépare une archive des seules pages générées, sans sources d'enseignants ni données personnelles, et ouvre une issue préremplie de ce dépôt, à laquelle on joint l'archive.
+Settings are stored in `%APPDATA%\Universal Learn Academy` (`~/.config/Universal Learn Academy` on Linux) and are kept on uninstall; the local copy of the tools is in `%LOCALAPPDATA%\Universal Learn Academy\outils` (`~/.local/share/Universal Learn Academy/outils`).
 
-## Connexion à Claude
+A course made by a user (pages generated in their space) can be proposed to the catalogue from the home page: the app prepares an archive of the generated pages only, without teachers' sources or personal data, and opens a prefilled issue in this repository, to which the archive is attached.
 
-L'application n'embarque aucun compte. Chaque utilisateur choisit dans les paramètres :
+## Connecting to Claude
 
-- **son compte Claude, via Claude Code** : installer [Claude Code](https://code.claude.com/docs/en/setup), puis s'y connecter (bouton « Se connecter… ») ; la connexion se fait chez Anthropic ;
-- **sa propre clé d'API Anthropic**, chiffrée sur son poste ; l'usage est facturé à cette clé.
+The app ships with no account. Each user chooses in the settings:
 
-Sans Claude, les cours, les TD et les quiz s'affichent ; seules l'aide, la correction des réponses rédigées et la génération de quiz demandent Claude.
+- **their Claude account, through Claude Code**: install [Claude Code](https://code.claude.com/docs/en/setup), then sign in ("Sign in…" button); signing in happens on Anthropic's side;
+- **their own Anthropic API key**, encrypted on their computer; usage is billed to that key.
 
-## Sans installation
+Without Claude, courses, TD and quizzes are displayed; only hints, grading of written answers and quiz generation need Claude.
 
-Avec [Node.js](https://nodejs.org) 22 ou plus récent, depuis un clone de ce dépôt (qui contient tout le catalogue) :
+## Without installing
 
-- `lancer.bat` (Windows) ou `lancer.sh` : serveur local et accueil dans le navigateur ;
-- `lancer-app.bat` ou `lancer-app.sh` : les mêmes pages dans une fenêtre d'application.
+With [Node.js](https://nodejs.org) 22 or later, from a clone of this repository (which contains the whole catalogue):
 
-L'accueil demande alors son profil, créé à la racine du clone.
+- `lancer.bat` (Windows) or `lancer.sh`: local server and home page in the browser;
+- `lancer-app.bat` or `lancer-app.sh`: the same pages in an app window.
 
-## Contenu
+The home page then asks for a profile, created at the root of the clone.
 
-- `explore/<domaine>/<cours>/` : le catalogue ; pour chaque cours, sa fiche `ula-cours.json`, `generated_courses/` (cours, TD et TP mis en forme), `generated_quizzes/`, et les supports d'origine (`cours/`, `TD/`, `TP/`, `annales/`) ;
-- `_outils/` : charte des pages, outil de quiz et son serveur, atelier des TD interactifs, suivi, et `ula/` (profils, cursus, catalogue) ;
-- `app/` : l'application de bureau (Electron), voir `app/README.md`.
+## Development
 
-Les supports d'origine (polycopiés, diapositives, sujets de TD et de TP, annales) appartiennent à leurs auteurs, enseignants de Le Mans Université.
+The app code is in `app/` (Electron); its technical documentation is in [app/README.md](app/README.md).
 
-Ce dépôt est produit à partir d'un dépôt de travail privé : il ne contient que le contenu publiable (ni espace personnel, ni tentatives aux quiz, ni travail dans les TD et les TP), et les fichiers de TP y sont dans leur version d'origine.
+```bash
+cd app
+npm ci          # install dependencies
+npm start       # start the app
+npm run check   # Prettier and ESLint, then checks: syntax, translations and docs, content rules, sync, shortcuts
+npm test        # automated tests
+npm run dist    # build the Windows installer and the AppImage in dist/
+```
+
+This repository is generated from a private working repository by a script: it only contains the publishable content (no personal space, quiz attempts, or work in TD and labs), and lab files are in their original version. Changes are therefore not made here directly.
+
+## Contents
+
+- `explore/<domain>/<course>/`: the catalogue; for each course, its `ula-cours.json` record, `generated_courses/` (formatted courses, TD and labs), `generated_quizzes/`, and the original materials (`cours/`, `TD/`, `TP/`, `annales/`);
+- `_outils/`: page style, quiz tool and its server, interactive TD workshop, tracking, and `ula/` (profiles, curricula, catalogue);
+- `app/`: the desktop app (Electron).
+
+## License
+
+Universal Learn Academy © 2026 WolfGang-PRoxa, licensed under [CC BY-NC-ND 4.0](LICENSE) (Attribution, NonCommercial, NoDerivatives). The original course materials (lecture notes, slides, exercise and lab sheets, past exams) belong to their authors, teachers at Le Mans Université, and are not covered by this license.

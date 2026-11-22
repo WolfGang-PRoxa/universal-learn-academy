@@ -8,28 +8,28 @@ Node.js 22 ou plus récent. Pour construire l’AppImage depuis Windows : WSL av
 
 Depuis le dossier `app/` :
 
-| Commande | Effet |
-|---|---|
-| `npm install` | Dépendances |
-| `npm start` | Lance l’application avec les outils du dépôt |
-| `npm run check` | Vérifications : syntaxe, langues, documentation, règles de contenu, paquets et archives piégés, profils, synchronisation, raccourcis |
-| `npm run dist` | Construit l’installeur Windows et l’AppImage dans `dist/`, sans les publier |
-| `npm run catalogue` | Construit le catalogue dans `app/.catalogue` (`-- --publier` pour l’envoyer) |
-| `npm run public` | Aperçu du dépôt public (`-- --pousser` pour le mettre à jour) |
-| `npm run release` | Construit et publie une version (voir plus bas) |
+| Commande            | Effet                                                                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm install`       | Dépendances                                                                                                                          |
+| `npm start`         | Lance l’application avec les outils du dépôt                                                                                         |
+| `npm run check`     | Vérifications : syntaxe, langues, documentation, règles de contenu, paquets et archives piégés, profils, synchronisation, raccourcis |
+| `npm run dist`      | Construit l’installeur Windows et l’AppImage dans `dist/`, sans les publier                                                          |
+| `npm run catalogue` | Construit le catalogue dans `app/.catalogue` (`-- --publier` pour l’envoyer)                                                         |
+| `npm run public`    | Aperçu du dépôt public (`-- --pousser` pour le mettre à jour)                                                                        |
+| `npm run release`   | Construit et publie une version (voir plus bas)                                                                                      |
 
 ## Variables d’environnement
 
-| Variable | Effet |
-|---|---|
-| `ULA_USER_DATA=<dossier>` | Autre dossier de paramètres, pour les essais (la langue est alors redemandée) |
-| `ULA_CATALOGUE=<dossier>` | Lit un catalogue local, par exemple `app/.catalogue` |
-| `ULA_SYNCHRO_INTERVALLE_MS=<ms>` | Raccourcit l’intervalle de synchronisation |
+| Variable                         | Effet                                                                         |
+| -------------------------------- | ----------------------------------------------------------------------------- |
+| `ULA_USER_DATA=<dossier>`        | Autre dossier de paramètres, pour les essais (la langue est alors redemandée) |
+| `ULA_CATALOGUE=<dossier>`        | Lit un catalogue local, par exemple `app/.catalogue`                          |
+| `ULA_SYNCHRO_INTERVALLE_MS=<ms>` | Raccourcit l’intervalle de synchronisation                                    |
 
 ## Ajouter une langue
 
 1. Copier `app/src/i18n/en.js` en `<code>.js`, traduire chaque valeur sans toucher aux clés ni aux variables `{…}`, et l’ajouter à `LANGUES` et `DICTIONNAIRES` dans `app/src/i18n/index.js`.
-2. Ajouter la langue dans `_outils/app/textes.js`, dans `TEXTES_BARRE` de `_outils/charte/assets/cours.js` et dans `_outils/ula/assets/textes.js`.
+2. Ajouter la langue dans `_outils/app/textes.js`, dans `TEXTES_BARRE` de `_outils/charte/assets/cours.js`, dans `_outils/ula/assets/textes.js` et dans `_outils/quiz/assets/js/textes.js`, puis à `LANGUES` de `_outils/quiz/serveur/lib/langue.js` (messages du serveur). Les messages du serveur et des ateliers des TD (`_outils/atelier`) sont écrits en paires `tr("français", "English")` : une troisième langue demande de les passer en revue.
 3. Traduire les pages dans `app/src/doc/contenu/<code>/` et ajouter les titres de groupes dans `sommaire.json`.
 4. Lancer `npm run check` : il signale toute clé manquante, toute variable différente et toute page absente.
 

@@ -15,11 +15,11 @@ This documentation has two parts:
 
 ## Opening the help
 
-| From | How |
-|---|---|
-| Any page | **F1** key, or the **?** button of the top bar |
-| The menu | **Help › Documentation** or **Help › Guided setup…** |
-| The settings | [Help](parametres:aide) card |
+| From         | How                                                  |
+| ------------ | ---------------------------------------------------- |
+| Any page     | **F1** key, or the **?** button of the top bar       |
+| The menu     | **Help › Documentation** or **Help › Guided setup…** |
+| The settings | [Help](parametres:aide) card                         |
 
 The search box, at the top of the contents (**Ctrl+F**), looks through every page of the documentation.
 

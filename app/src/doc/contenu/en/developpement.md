@@ -8,28 +8,28 @@ Node.js 22 or later. To build the AppImage from Windows: WSL with Node.
 
 From the `app/` folder:
 
-| Command | Effect |
-|---|---|
-| `npm install` | Dependencies |
-| `npm start` | Starts the application with the repository’s tools |
-| `npm run check` | Checks: syntax, languages, documentation, content rules, trapped packages and archives, profiles, sync, shortcuts |
-| `npm run dist` | Builds the Windows installer and the AppImage in `dist/`, without publishing them |
-| `npm run catalogue` | Builds the catalogue in `app/.catalogue` (`-- --publier` to send it) |
-| `npm run public` | Preview of the public repository (`-- --pousser` to update it) |
-| `npm run release` | Builds and publishes a version (see below) |
+| Command             | Effect                                                                                                            |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `npm install`       | Dependencies                                                                                                      |
+| `npm start`         | Starts the application with the repository’s tools                                                                |
+| `npm run check`     | Checks: syntax, languages, documentation, content rules, trapped packages and archives, profiles, sync, shortcuts |
+| `npm run dist`      | Builds the Windows installer and the AppImage in `dist/`, without publishing them                                 |
+| `npm run catalogue` | Builds the catalogue in `app/.catalogue` (`-- --publier` to send it)                                              |
+| `npm run public`    | Preview of the public repository (`-- --pousser` to update it)                                                    |
+| `npm run release`   | Builds and publishes a version (see below)                                                                        |
 
 ## Environment variables
 
-| Variable | Effect |
-|---|---|
-| `ULA_USER_DATA=<folder>` | Another settings folder, for testing (the language is then asked again) |
-| `ULA_CATALOGUE=<folder>` | Reads a local catalogue, for example `app/.catalogue` |
-| `ULA_SYNCHRO_INTERVALLE_MS=<ms>` | Shortens the sync interval |
+| Variable                         | Effect                                                                  |
+| -------------------------------- | ----------------------------------------------------------------------- |
+| `ULA_USER_DATA=<folder>`         | Another settings folder, for testing (the language is then asked again) |
+| `ULA_CATALOGUE=<folder>`         | Reads a local catalogue, for example `app/.catalogue`                   |
+| `ULA_SYNCHRO_INTERVALLE_MS=<ms>` | Shortens the sync interval                                              |
 
 ## Adding a language
 
 1. Copy `app/src/i18n/en.js` to `<code>.js`, translate each value without touching the keys or the `{…}` variables, and add it to `LANGUES` and `DICTIONNAIRES` in `app/src/i18n/index.js`.
-2. Add the language to `_outils/app/textes.js`, to `TEXTES_BARRE` in `_outils/charte/assets/cours.js` and to `_outils/ula/assets/textes.js`.
+2. Add the language to `_outils/app/textes.js`, to `TEXTES_BARRE` in `_outils/charte/assets/cours.js`, to `_outils/ula/assets/textes.js` and to `_outils/quiz/assets/js/textes.js`, then to `LANGUES` in `_outils/quiz/serveur/lib/langue.js` (server messages). Server and TD workshop (`_outils/atelier`) messages are written as `tr("français", "English")` pairs: a third language means going through them.
 3. Translate the pages in `app/src/doc/contenu/<code>/` and add the group titles in `sommaire.json`.
 4. Run `npm run check`: it reports any missing key, any differing variable and any missing page.
 

@@ -64,10 +64,10 @@ L'atelier s'appuie sur l'outil de quiz, qu'il charge s'il est absent : connexion
 
 ## Où ranger les pages et le travail
 
-| Élément | Emplacement |
-|---|---|
-| TD interactif | `explore/<domaine>/<cours>/generated_courses/td-NN-<slug>.html`, par exemple `explore/informatique/bases-de-donnees-3/generated_courses/td-01-diagrammes-de-classes.html` ; `tp-NN-…` pour un TP |
-| Travail enregistré | `<profil>/<cursus>/<cours>/td_results/<nom de la page>.json` (écrit par le serveur) |
+| Élément            | Emplacement                                                                                                                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| TD interactif      | `explore/<domaine>/<cours>/generated_courses/td-NN-<slug>.html`, par exemple `explore/informatique/bases-de-donnees-3/generated_courses/td-01-diagrammes-de-classes.html` ; `tp-NN-…` pour un TP |
+| Travail enregistré | `<profil>/<cursus>/<cours>/td_results/<nom de la page>.json` (écrit par le serveur)                                                                                                              |
 
 Un TD interactif est une page de la charte comme les autres : même en-tête, même vérificateur, lien depuis l'accueil de la matière (`index.html`, section des TD, badge `TD`). Il porte le nom du TD d'origine ; si une version papier mise en forme existe déjà, la version interactive la remplace ou s'appelle `td-NN-<slug>-interactif.html`.
 
@@ -75,11 +75,11 @@ Un TD interactif est une page de la charte comme les autres : même en-tête, m�
 
 Un fichier par page, mis à jour à chaque changement :
 
-| Champ | Contenu |
-|---|---|
-| `format` | `studies-atelier/travail-1` |
-| `page`, `titre`, `maj` | page (chemin depuis `studies/`), titre, dernière modification |
-| `ateliers` | pour chaque identifiant d'atelier : `editeur`, `modele` (le travail, structuré), `texte` (vue texte quand elle diffère du modèle), `resume` (`vide` ou `commencé`), `maj`, et selon les cas `annotations` (`[{ cible, texte }]`), `reponse`, `correction` (dernière correction de Claude : `note`, `commentaire`, `remarques`, `date`, `modele`), `conversation` (session avec Claude), `solutionVue` |
+| Champ                  | Contenu                                                                                                                                                                                                                                                                                                                                                                                               |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `format`               | `studies-atelier/travail-1`                                                                                                                                                                                                                                                                                                                                                                           |
+| `page`, `titre`, `maj` | page (chemin depuis `studies/`), titre, dernière modification                                                                                                                                                                                                                                                                                                                                         |
+| `ateliers`             | pour chaque identifiant d'atelier : `editeur`, `modele` (le travail, structuré), `texte` (vue texte quand elle diffère du modèle), `resume` (`vide` ou `commencé`), `maj`, et selon les cas `annotations` (`[{ cible, texte }]`), `reponse`, `correction` (dernière correction de Claude : `note`, `commentaire`, `remarques`, `date`, `modele`), `conversation` (session avec Claude), `solutionVue` |
 
 Ces fichiers sont lisibles par Claude : pour faire le point sur les TD d'une matière, les lire dans `td_results/`.
 
@@ -109,40 +109,46 @@ Un atelier est un bloc de la page :
 ```html
 <div class="atelier" id="td1-ex2-classes" data-editeur="classes">
   <script type="application/json">
-  {
-    "options": { "bdd": true },
-    "solution": ["classe Client", "  numero : int {PK}", "Client \"1\" -- \"*\" Commande : passe >", "classe Commande", "  numero : int {PK}"],
-    "explication": "<p>…</p>"
-  }
+    {
+      "options": { "bdd": true },
+      "solution": [
+        "classe Client",
+        "  numero : int {PK}",
+        "Client \"1\" -- \"*\" Commande : passe >",
+        "classe Commande",
+        "  numero : int {PK}"
+      ],
+      "explication": "<p>…</p>"
+    }
   </script>
 </div>
 ```
 
-| Champ | Rôle |
-|---|---|
-| `id` (attribut) | identifiant unique et stable dans la page |
-| `data-editeur` (attribut) | éditeur : voir le tableau ci-dessous |
-| `mode` | `exercice` (défaut), `exemple` (manipulable, rien n'est enregistré), `lecture` (dessin seul, non modifiable), `annoter` (relever les erreurs d'un départ) |
-| `depart` | ce que l'étudiant trouve au départ, dans la syntaxe texte (texte, ou tableau de lignes) |
-| `solution` | solution de référence, même syntaxe |
-| `solution_source` | `enseignant` : le bouton devient « Correction » ; sinon « Solution » (proposée) |
-| `explication` | HTML affiché avec la solution |
-| `options` | options de l'éditeur (tableau ci-dessous) ; `hauteur` (px) pour toutes |
-| `tests` | graphe : `{ "acceptes": [mots], "rejetes": [mots] }` ; SQL en mode script : `[{ "nom", "requete", "doit": "reussir" \| "echouer" }]` ou `{ "nom", "requete", "resultat": true }` |
-| `titre`, `consigne` | titre de la barre (défaut : nom de l'éditeur) ; consigne en HTML sous la barre |
-| `enonce` | énoncé transmis à Claude, quand il n'est pas dans le bloc exercice qui précède |
-| `vue` | affichage imposé au départ : `dessin`, `les-deux`, `texte` |
-| `hauteur` | hauteur du dessin en pixels (380 par défaut) |
-| `disposition` | positions imposées : `{ "Film": [430, 70] }` (classes, nœuds), pour le départ et pour le dessin de la solution ; les autres éléments sont placés automatiquement |
-| `attendu` | mode annoter : erreurs à trouver, `[{ "cible": "Film.Genre", "texte": "…" }]` |
-| `question_reponse` | mode annoter : libellé de la zone de réponse rédigée |
-| `papier` | travail fait sur papier, saisi d'après un scan : sa syntaxe texte (texte ou tableau de lignes), ou `{ texte, source, date, note }` ; voir « Travail fait sur papier » |
+| Champ                     | Rôle                                                                                                                                                                             |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id` (attribut)           | identifiant unique et stable dans la page                                                                                                                                        |
+| `data-editeur` (attribut) | éditeur : voir le tableau ci-dessous                                                                                                                                             |
+| `mode`                    | `exercice` (défaut), `exemple` (manipulable, rien n'est enregistré), `lecture` (dessin seul, non modifiable), `annoter` (relever les erreurs d'un départ)                        |
+| `depart`                  | ce que l'étudiant trouve au départ, dans la syntaxe texte (texte, ou tableau de lignes)                                                                                          |
+| `solution`                | solution de référence, même syntaxe                                                                                                                                              |
+| `solution_source`         | `enseignant` : le bouton devient « Correction » ; sinon « Solution » (proposée)                                                                                                  |
+| `explication`             | HTML affiché avec la solution                                                                                                                                                    |
+| `options`                 | options de l'éditeur (tableau ci-dessous) ; `hauteur` (px) pour toutes                                                                                                           |
+| `tests`                   | graphe : `{ "acceptes": [mots], "rejetes": [mots] }` ; SQL en mode script : `[{ "nom", "requete", "doit": "reussir" \| "echouer" }]` ou `{ "nom", "requete", "resultat": true }` |
+| `titre`, `consigne`       | titre de la barre (défaut : nom de l'éditeur) ; consigne en HTML sous la barre                                                                                                   |
+| `enonce`                  | énoncé transmis à Claude, quand il n'est pas dans le bloc exercice qui précède                                                                                                   |
+| `vue`                     | affichage imposé au départ : `dessin`, `les-deux`, `texte`                                                                                                                       |
+| `hauteur`                 | hauteur du dessin en pixels (380 par défaut)                                                                                                                                     |
+| `disposition`             | positions imposées : `{ "Film": [430, 70] }` (classes, nœuds), pour le départ et pour le dessin de la solution ; les autres éléments sont placés automatiquement                 |
+| `attendu`                 | mode annoter : erreurs à trouver, `[{ "cible": "Film.Genre", "texte": "…" }]`                                                                                                    |
+| `question_reponse`        | mode annoter : libellé de la zone de réponse rédigée                                                                                                                             |
+| `papier`                  | travail fait sur papier, saisi d'après un scan : sa syntaxe texte (texte ou tableau de lignes), ou `{ texte, source, date, note }` ; voir « Travail fait sur papier »            |
 
 Les jeux de données SQL de la page vont dans `<head>` :
 
 ```html
 <script type="application/json" id="atelier-jeux">
-{ "dingo": { "titre": "Dingo Fringo", "description": "<p>…</p>", "script": "CREATE TABLE …; INSERT …;" } }
+  { "dingo": { "titre": "Dingo Fringo", "description": "<p>…</p>", "script": "CREATE TABLE …; INSERT …;" } }
 </script>
 ```
 
@@ -152,29 +158,29 @@ Les jeux de données SQL de la page vont dans `<head>` :
 
 Les contrôles, les écarts, les remarques de Claude et les `attendu` visent des éléments du dessin, qui sont alors surlignés :
 
-| Éditeur | Cibles |
-|---|---|
-| classes | `Classe`, `Classe.attribut`, `A--B` (lien entre deux classes) |
-| relationnel | `Relation`, `Relation.attribut` |
-| table | `ligne N`, `case L:C`, `colonne Nom` |
-| graphe | `q0` (nœud ou étape), `q0->q1` (arc) |
-| processus, chronogramme, séquence | nom du processus, de la ligne ou du participant |
-| cas | `Acteur`, `Cas`, `A--B` (lien entre deux éléments) |
+| Éditeur                           | Cibles                                                        |
+| --------------------------------- | ------------------------------------------------------------- |
+| classes                           | `Classe`, `Classe.attribut`, `A--B` (lien entre deux classes) |
+| relationnel                       | `Relation`, `Relation.attribut`                               |
+| table                             | `ligne N`, `case L:C`, `colonne Nom`                          |
+| graphe                            | `q0` (nœud ou étape), `q0->q1` (arc)                          |
+| processus, chronogramme, séquence | nom du processus, de la ligne ou du participant               |
+| cas                               | `Acteur`, `Cas`, `A--B` (lien entre deux éléments)            |
 
 ## Les éditeurs
 
-| Éditeur | Pour | Comparaison |
-|---|---|---|
-| `classes` | diagramme de classes UML (conception, BDD, POO) et diagramme d'objets | concordance des classes, attributs, identifiants, liens et multiplicités ; classes et valeurs des objets |
-| `relationnel` | modèle relationnel (schéma logique) | concordance des relations, attributs, clés ; clés étrangères appariées par leur cible, leur nom étant libre |
-| `table` | table de données, table de vérité, matrice, plan d'adressage, emploi du temps | cases justes |
-| `sql` | requête ou script SQL, exécuté (PostgreSQL) | même résultat que la solution ; tests en mode script |
-| `graphe` | graphe orienté ou non, pondéré, automate fini, PERT potentiel-étapes | automate : égalité des langages, avec un mot qui les distingue ; graphe : concordance ; PERT : tâches, précédences et dates |
-| `processus` | arbre des processus créés par `fork()`, organigramme WBS ou PBS | même forme d'arbre |
-| `chronogramme` | ordonnancement, exclusion mutuelle, signaux | cases justes |
-| `sequence` | diagramme de séquence UML | suite des messages |
-| `cas` | diagramme de cas d'utilisation UML | concordance des acteurs, des cas et des liens ; noms appariés sur leurs mots |
-| `texte` | réponse rédigée | aucune : solution affichée et correction par Claude |
+| Éditeur        | Pour                                                                          | Comparaison                                                                                                                 |
+| -------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `classes`      | diagramme de classes UML (conception, BDD, POO) et diagramme d'objets         | concordance des classes, attributs, identifiants, liens et multiplicités ; classes et valeurs des objets                    |
+| `relationnel`  | modèle relationnel (schéma logique)                                           | concordance des relations, attributs, clés ; clés étrangères appariées par leur cible, leur nom étant libre                 |
+| `table`        | table de données, table de vérité, matrice, plan d'adressage, emploi du temps | cases justes                                                                                                                |
+| `sql`          | requête ou script SQL, exécuté (PostgreSQL)                                   | même résultat que la solution ; tests en mode script                                                                        |
+| `graphe`       | graphe orienté ou non, pondéré, automate fini, PERT potentiel-étapes          | automate : égalité des langages, avec un mot qui les distingue ; graphe : concordance ; PERT : tâches, précédences et dates |
+| `processus`    | arbre des processus créés par `fork()`, organigramme WBS ou PBS               | même forme d'arbre                                                                                                          |
+| `chronogramme` | ordonnancement, exclusion mutuelle, signaux                                   | cases justes                                                                                                                |
+| `sequence`     | diagramme de séquence UML                                                     | suite des messages                                                                                                          |
+| `cas`          | diagramme de cas d'utilisation UML                                            | concordance des acteurs, des cas et des liens ; noms appariés sur leurs mots                                                |
+| `texte`        | réponse rédigée                                                               | aucune : solution affichée et correction par Claude                                                                         |
 
 La concordance est un score F1 pondéré sur les « faits » du modèle (une classe, un attribut, une clé, un lien…) ; les noms sont comparés sans casse, accents ni pluriel, et une classe au nom voisin est appariée à celle de la solution. Pour les choix de notation fins, voir `comparer` dans `assets/js/editeurs/`.
 

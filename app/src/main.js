@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 /* ==========================================================================
    Universal Learn Academy, application installée (app/) : processus principal
    --------------------------------------------------------------------------
@@ -25,52 +25,55 @@
    l'installation. Textes de l'hôte : src/i18n (français et anglais).
    ========================================================================== */
 
-const { app, BrowserWindow, Notification, dialog, ipcMain, nativeTheme, session, shell } = require("electron");
-const fs = require("fs");
-const path = require("path");
+const { app, BrowserWindow, Notification, dialog, ipcMain, nativeTheme, session, shell } = require('electron');
+const fs = require('fs');
+const path = require('path');
 
-const reglages = require("./reglages");
-const lancement = require("./fenetre-lancement");
-const majs = require("./mises-a-jour");
-const raccourcis = require("./raccourcis");
-const claude = require("./claude");
-const donnees = require("./donnees");
-const diagnostic = require("./diagnostic");
-const arrierePlan = require("./arriere-plan");
-const synchro = require("./synchro");
-const i18n = require("./i18n");
-const choixLangue = require("./choix-langue");
-const annexe = require("./annexe");
-const integres = require("./parametres-integres");
-const doc = require("./documentation");
-const { ID_APP, URL_RELEASES } = require("./depot");
+const reglages = require('./reglages');
+const lancement = require('./fenetre-lancement');
+const majs = require('./mises-a-jour');
+const raccourcis = require('./raccourcis');
+const claude = require('./claude');
+const donnees = require('./donnees');
+const diagnostic = require('./diagnostic');
+const arrierePlan = require('./arriere-plan');
+const synchro = require('./synchro');
+const i18n = require('./i18n');
+const choixLangue = require('./choix-langue');
+const annexe = require('./annexe');
+const integres = require('./parametres-integres');
+const doc = require('./documentation');
+const { ID_APP, URL_RELEASES } = require('./depot');
 
-const NOM = "Universal Learn Academy";
+const NOM = 'Universal Learn Academy';
 
 // Dossier de paramètres alternatif (essais automatiques)
 const essai = process.env.ULA_USER_DATA || process.env.STUDIES_USER_DATA;
-if (essai) app.setPath("userData", essai);
+if (essai) app.setPath('userData', essai);
 else migrerParametres();
 
 // Jusqu'à la version 1.0.3, l'application s'appelait Studies : ses paramètres étaient
 // dans %APPDATA%\Studies (~/.config/Studies). Ils sont repris une fois.
 function migrerParametres() {
   try {
-    const nouveau = app.getPath("userData");
-    const ancien = path.join(app.getPath("appData"), "Studies");
-    if (fs.existsSync(path.join(nouveau, "parametres.json")) || !fs.existsSync(path.join(ancien, "parametres.json"))) return;
+    const nouveau = app.getPath('userData');
+    const ancien = path.join(app.getPath('appData'), 'Studies');
+    if (fs.existsSync(path.join(nouveau, 'parametres.json')) || !fs.existsSync(path.join(ancien, 'parametres.json')))
+      return;
     fs.mkdirSync(nouveau, { recursive: true });
-    for (const f of ["parametres.json", "fenetre.json"]) {
+    for (const f of ['parametres.json', 'fenetre.json']) {
       if (fs.existsSync(path.join(ancien, f))) fs.copyFileSync(path.join(ancien, f), path.join(nouveau, f));
     }
-  } catch (e) { /* paramètres par défaut */ }
+  } catch (e) {
+    /* paramètres par défaut */
+  }
 }
 
 // Calcul des fenêtres masquées de Windows (Chromium) désactivé, comme le fait VS Code :
 // quand il se trompe, ou tarde à voir que la fenêtre est de nouveau visible, la page
 // se croit cachée, ne se dessine plus et ne défile plus jusqu'au prochain clic. C'est
 // le gel de la molette observé jusqu'à la 2.3.0 (voir diagnostic.js).
-app.commandLine.appendSwitch("disable-features", "CalculateNativeWinOcclusion");
+app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 
 // Lancé depuis un terminal de VS Code : Electron se prendrait pour Node dans le serveur
 delete process.env.ELECTRON_RUN_AS_NODE;
@@ -79,7 +82,7 @@ app.setAppUserModelId(ID_APP);
 
 // Tant que le programme n'est pas chargé (préparation des outils, dialogues), fermer
 // une fenêtre ne doit pas quitter l'application ; principal.js gère ensuite la fin.
-app.on("window-all-closed", () => {});
+app.on('window-all-closed', () => {});
 
 i18n.brancher(reglages);
 const { t } = i18n;
@@ -102,7 +105,13 @@ function facteurEchelle() {
 }
 function annoncerEchelle() {
   const e = facteurEchelle();
-  for (const fn of auditeursEchelle) { try { fn(e); } catch (err) { /* fenêtre fermée entre-temps */ } }
+  for (const fn of auditeursEchelle) {
+    try {
+      fn(e);
+    } catch (err) {
+      /* fenêtre fermée entre-temps */
+    }
+  }
   integres.zoomer(e);
 }
 
@@ -115,23 +124,32 @@ let modeDonnees = null;
 function fenetrePreparation() {
   const sombre = nativeTheme.shouldUseDarkColors;
   const f = new BrowserWindow({
-    width: 460, height: 170, resizable: false, minimizable: false, maximizable: false, frame: false,
-    show: false, backgroundColor: sombre ? "#131417" : "#fafaf8", icon: path.join(__dirname, "assets", "icone.png"),
-    webPreferences: { sandbox: true, contextIsolation: true }
+    width: 460,
+    height: 170,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    frame: false,
+    show: false,
+    backgroundColor: sombre ? '#131417' : '#fafaf8',
+    icon: path.join(__dirname, 'assets', 'icone.png'),
+    webPreferences: { sandbox: true, contextIsolation: true },
   });
   const html = `<!doctype html><meta charset="utf-8"><style>
-    body{margin:0;padding:28px 32px;font:15px system-ui,"Segoe UI",sans-serif;color:${sombre ? "#e8e6e1" : "#1f1d1a"};background:${sombre ? "#131417" : "#fafaf8"}}
+    body{margin:0;padding:28px 32px;font:15px system-ui,"Segoe UI",sans-serif;color:${sombre ? '#e8e6e1' : '#1f1d1a'};background:${sombre ? '#131417' : '#fafaf8'}}
     h1{font-size:17px;margin:0 0 6px}p{margin:0 0 16px;opacity:.75}
-    .barre{height:8px;border-radius:4px;background:${sombre ? "#2a2c31" : "#e6e3dc"};overflow:hidden}
+    .barre{height:8px;border-radius:4px;background:${sombre ? '#2a2c31' : '#e6e3dc'};overflow:hidden}
     .barre i{display:block;height:100%;width:0;background:#3d6fb6;transition:width .2s}</style>
-    <h1>${t("m.preparation.titre")}</h1><p id="t">${t("m.preparation.texte")}</p>
+    <h1>${t('m.preparation.titre')}</h1><p id="t">${t('m.preparation.texte')}</p>
     <div class="barre"><i id="b"></i></div>`;
-  f.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html));
-  f.once("ready-to-show", () => f.show());
+  f.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+  f.once('ready-to-show', () => f.show());
   return f;
 }
 
-function attendre(ms) { return new Promise((r) => setTimeout(r, ms)); }
+function attendre(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
 
 async function synchroniserOutils(cible) {
   const f = fenetrePreparation();
@@ -140,14 +158,23 @@ async function synchroniserOutils(cible) {
   try {
     resultat = donnees.synchroniser(donnees.outilsLivres(), cible, (fait, total) => {
       const p = Math.round((fait / total) * 100);
-      if (!f.isDestroyed()) f.webContents.executeJavaScript(`b.style.width="${p}%";t.textContent=${JSON.stringify(t("m.preparation.fichiers", { fait, total }))}`).catch(() => {});
+      if (!f.isDestroyed())
+        f.webContents
+          .executeJavaScript(
+            `b.style.width="${p}%";t.textContent=${JSON.stringify(t('m.preparation.fichiers', { fait, total }))}`,
+          )
+          .catch(() => {});
     });
   } finally {
     if (!f.isDestroyed()) f.destroy();
   }
   if (resultat.conserves.length) {
-    fs.writeFileSync(path.join(cible, ".ula-conserves.txt"),
-      "Fichiers modifiés dans ce dossier, gardés tels quels lors de la mise à jour des outils / Files modified in this folder, kept as they are when the tools were updated:\n" + resultat.conserves.join("\n") + "\n");
+    fs.writeFileSync(
+      path.join(cible, '.ula-conserves.txt'),
+      'Fichiers modifiés dans ce dossier, gardés tels quels lors de la mise à jour des outils / Files modified in this folder, kept as they are when the tools were updated:\n' +
+        resultat.conserves.join('\n') +
+        '\n',
+    );
   }
   return resultat;
 }
@@ -159,23 +186,39 @@ async function dossierDesDonnees() {
     const r = donnees.resoudre(reglages.lire());
     if (r.racine) {
       if (r.aSynchroniser) {
-        try { await synchroniserOutils(donnees.dossierOutilsLocal()); }
-        catch (e) {
-          dialog.showErrorBox(NOM, t("m.preparation.echec", { message: e.message }));
+        try {
+          await synchroniserOutils(donnees.dossierOutilsLocal());
+        } catch (e) {
+          dialog.showErrorBox(
+            NOM,
+            t('m.preparation.echec', {
+              message: e.code === 'OUTILS_INTROUVABLES' ? t('m.outilsIntrouvables', { dossier: e.dossier }) : e.message,
+            }),
+          );
           return null;
         }
       }
       return r;
     }
     const choix = dialog.showMessageBoxSync({
-      type: "warning", title: NOM, message: r.erreur,
-      detail: t("m.donnees.detail", { dossier: donnees.dossierParDefaut() }),
-      buttons: [t("m.donnees.choisir"), t("m.donnees.defaut"), t("m.donnees.quitter")], defaultId: 0, cancelId: 2
+      type: 'warning',
+      title: NOM,
+      message: r.introuvable ? t('m.donnees.introuvable', { dossier: r.introuvable }) : r.erreur,
+      detail: t('m.donnees.detail', { dossier: donnees.dossierParDefaut() }),
+      buttons: [t('m.donnees.choisir'), t('m.donnees.defaut'), t('m.donnees.quitter')],
+      defaultId: 0,
+      cancelId: 2,
     });
     if (choix === 2) return null;
-    if (choix === 1) { reglages.modifier({ donnees: { dossier: "" }, cours: { mode: "integre", dossier: "" } }); continue; }
-    const d = dialog.showOpenDialogSync({ title: t("m.donnees.titre"), properties: ["openDirectory", "createDirectory"] });
-    if (d && d[0]) reglages.modifier({ donnees: { dossier: d[0] }, cours: { mode: "integre", dossier: "" } });
+    if (choix === 1) {
+      reglages.modifier({ donnees: { dossier: '' }, cours: { mode: 'integre', dossier: '' } });
+      continue;
+    }
+    const d = dialog.showOpenDialogSync({
+      title: t('m.donnees.titre'),
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    if (d && d[0]) reglages.modifier({ donnees: { dossier: d[0] }, cours: { mode: 'integre', dossier: '' } });
   }
 }
 
@@ -183,21 +226,32 @@ async function dossierDesDonnees() {
 
 // Le serveur cherche PGlite dans son dossier local (_outils/quiz/serveur/lib/chemins.js)
 function dossierLocalQuiz() {
-  return path.join(process.env.LOCALAPPDATA || process.env.XDG_CACHE_HOME || path.join(app.getPath("home"), ".cache"), "studies-quiz");
+  return path.join(
+    process.env.LOCALAPPDATA || process.env.XDG_CACHE_HOME || path.join(app.getPath('home'), '.cache'),
+    'studies-quiz',
+  );
 }
 
 function installerPglite() {
   const local = dossierLocalQuiz();
-  const cible = path.join(local, "node_modules", "@electric-sql", "pglite");
-  if (fs.existsSync(path.join(cible, "package.json"))) return;
-  const source = path.join(app.getAppPath() + (app.isPackaged ? ".unpacked" : ""), "node_modules", "@electric-sql", "pglite");
+  const cible = path.join(local, 'node_modules', '@electric-sql', 'pglite');
+  if (fs.existsSync(path.join(cible, 'package.json'))) return;
+  const source = path.join(
+    app.getAppPath() + (app.isPackaged ? '.unpacked' : ''),
+    'node_modules',
+    '@electric-sql',
+    'pglite',
+  );
   if (!fs.existsSync(source)) return;
   try {
     fs.mkdirSync(path.dirname(cible), { recursive: true });
     fs.cpSync(source, cible, { recursive: true });
-    const pkg = path.join(local, "package.json");
-    if (!fs.existsSync(pkg)) fs.writeFileSync(pkg, JSON.stringify({ name: "studies-quiz-dependances", private: true }, null, 2));
-  } catch (e) { /* le serveur essaiera npm, comme sans l'application */ }
+    const pkg = path.join(local, 'package.json');
+    if (!fs.existsSync(pkg))
+      fs.writeFileSync(pkg, JSON.stringify({ name: 'studies-quiz-dependances', private: true }, null, 2));
+  } catch (e) {
+    /* le serveur essaiera npm, comme sans l'application */
+  }
 }
 
 /* -- Anciens raccourcis « Studies » ---------------------------------------------------- */
@@ -206,16 +260,22 @@ function installerPglite() {
 // et du menu Démarrer qui ouvrent cette installation (ou une installation disparue)
 // sont retirés : les nouveaux portent le nom de l'application.
 function nettoyerAnciensRaccourcis() {
-  if (process.platform !== "win32" || !app.isPackaged) return;
-  const dossiers = [app.getPath("desktop"), path.join(app.getPath("appData"), "Microsoft", "Windows", "Start Menu", "Programs")];
+  if (process.platform !== 'win32' || !app.isPackaged) return;
+  const dossiers = [
+    app.getPath('desktop'),
+    path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs'),
+  ];
   const ici = path.dirname(process.execPath).toLowerCase();
   for (const d of dossiers) {
-    const f = path.join(d, "Studies.lnk");
+    const f = path.join(d, 'Studies.lnk');
     if (!fs.existsSync(f)) continue;
     try {
-      const cible = String(shell.readShortcutLink(f).target || "");
-      if (path.dirname(cible).toLowerCase() === ici || (/studies\.exe$/i.test(cible) && !fs.existsSync(cible))) fs.rmSync(f, { force: true });
-    } catch (e) { /* raccourci illisible : laissé */ }
+      const cible = String(shell.readShortcutLink(f).target || '');
+      if (path.dirname(cible).toLowerCase() === ici || (/studies\.exe$/i.test(cible) && !fs.existsSync(cible)))
+        fs.rmSync(f, { force: true });
+    } catch (e) {
+      /* raccourci illisible : laissé */
+    }
   }
 }
 
@@ -249,16 +309,22 @@ function ouvrirDocumentation(page) {
     if (fenetreDoc.isMinimized()) fenetreDoc.restore();
     fenetreDoc.show();
     fenetreDoc.focus();
-    if (page) fenetreDoc.webContents.send("doc:aller", page);
+    if (page) fenetreDoc.webContents.send('doc:aller', page);
     return;
   }
   fenetreDoc = annexe.creer({
-    page: path.join(__dirname, "doc", "index.html"), hash: page || "",
-    preload: path.join(__dirname, "parametres", "pont.cjs"),
-    titre: t("d.titreFenetre"), largeur: 0.7, hauteur: 0.85,
-    min: { width: lancement.MIN_LARGEUR, height: lancement.MIN_HAUTEUR }, zoom: facteurEchelle
+    page: path.join(__dirname, 'doc', 'index.html'),
+    hash: page || '',
+    preload: path.join(__dirname, 'parametres', 'pont.cjs'),
+    titre: t('d.titreFenetre'),
+    largeur: 0.7,
+    hauteur: 0.85,
+    min: { width: lancement.MIN_LARGEUR, height: lancement.MIN_HAUTEUR },
+    zoom: facteurEchelle,
   });
-  fenetreDoc.on("closed", () => { fenetreDoc = null; });
+  fenetreDoc.on('closed', () => {
+    fenetreDoc = null;
+  });
 }
 
 // Paramétrage guidé (guide/) : fenêtre moyenne, une étape à la fois. Les réglages
@@ -271,12 +337,17 @@ function ouvrirGuide() {
     return;
   }
   fenetreGuide = annexe.creer({
-    page: path.join(__dirname, "guide", "index.html"),
-    preload: path.join(__dirname, "parametres", "pont.cjs"),
-    titre: t("g.titreFenetre"), largeur: 720, hauteur: 640,
-    min: { width: 520, height: 480 }, zoom: facteurEchelle
+    page: path.join(__dirname, 'guide', 'index.html'),
+    preload: path.join(__dirname, 'parametres', 'pont.cjs'),
+    titre: t('g.titreFenetre'),
+    largeur: 720,
+    hauteur: 640,
+    min: { width: 520, height: 480 },
+    zoom: facteurEchelle,
   });
-  fenetreGuide.on("closed", () => { fenetreGuide = null; });
+  fenetreGuide.on('closed', () => {
+    fenetreGuide = null;
+  });
 }
 
 /* -- Langue de l'interface ------------------------------------------------------------ */
@@ -299,15 +370,23 @@ function surLangueChangee(code) {
     if (f.isDestroyed()) continue;
     if (agentDeBase) f.webContents.setUserAgent(agentUtilisateur());
     if (f.studiesAnnexe) {
-      f.webContents.send("i18n:changee", code);
-      if (f === fenetreDoc) f.setTitle(t("d.titreFenetre"));
-      if (f === fenetreGuide) f.setTitle(t("g.titreFenetre"));
+      f.webContents.send('i18n:changee', code);
+      if (f === fenetreDoc) f.setTitle(t('d.titreFenetre'));
+      if (f === fenetreGuide) f.setTitle(t('g.titreFenetre'));
     } else {
-      f.webContents.executeJavaScript(`window.ulaLangue && window.ulaLangue(${JSON.stringify(code)})`, false).catch(() => {});
+      f.webContents
+        .executeJavaScript(`window.ulaLangue && window.ulaLangue(${JSON.stringify(code)})`, false)
+        .catch(() => {});
     }
   }
-  integres.envoyer("i18n:changee", code);
-  for (const fn of auditeursLangue) { try { fn(code); } catch (e) { /* tant pis */ } }
+  integres.envoyer('i18n:changee', code);
+  for (const fn of auditeursLangue) {
+    try {
+      fn(code);
+    } catch (e) {
+      /* tant pis */
+    }
+  }
   arrierePlan.rafraichir();
 }
 i18n.surChangement(surLangueChangee);
@@ -316,9 +395,14 @@ i18n.surChangement(surLangueChangee);
 function rechargerAccueils() {
   for (const f of BrowserWindow.getAllWindows()) {
     if (f.isDestroyed() || f.studiesAnnexe) continue;
-    let chemin = "";
-    try { chemin = new URL(f.webContents.getURL()).pathname; } catch (e) { continue; }
-    if (chemin === "/" || chemin === "/index.html" || /^\/explore\/[^/]+\/index\.html$/.test(chemin)) f.webContents.reload();
+    let chemin;
+    try {
+      chemin = new URL(f.webContents.getURL()).pathname;
+    } catch (e) {
+      continue;
+    }
+    if (chemin === '/' || chemin === '/index.html' || /^\/explore\/[^/]+\/index\.html$/.test(chemin))
+      f.webContents.reload();
   }
 }
 
@@ -330,33 +414,42 @@ function redemarrer() {
 /** Appel à l'API du serveur local de l'outil de quiz (port de _outils/quiz/reglages.json). */
 async function apiQuiz(methode, route, corps) {
   let port = 5178;
-  try { port = JSON.parse(fs.readFileSync(path.join(outils, "quiz", "reglages.json"), "utf8")).port || port; } catch (e) { /* port par défaut */ }
+  try {
+    port = JSON.parse(fs.readFileSync(path.join(outils, 'quiz', 'reglages.json'), 'utf8')).port || port;
+  } catch (e) {
+    /* port par défaut */
+  }
   let r;
   try {
     r = await fetch(`http://127.0.0.1:${port}/api/${route}`, {
       method: methode,
-      headers: corps ? { "Content-Type": "application/json", Origin: `http://127.0.0.1:${port}` } : undefined,
+      // La langue de l'interface, pour que le serveur réponde dans cette langue
+      headers: Object.assign(
+        { 'X-ULA-Langue': i18n.langue() },
+        corps ? { 'Content-Type': 'application/json', Origin: `http://127.0.0.1:${port}` } : {},
+      ),
       body: corps ? JSON.stringify(corps) : undefined,
-      signal: AbortSignal.timeout(route.startsWith("claude/") ? 180000 : 20000)
+      signal: AbortSignal.timeout(route.startsWith('claude/') ? 180000 : 20000),
     });
   } catch (e) {
-    throw new Error(t("m.serveurMuet"));
+    throw new Error(t('m.serveurMuet'), { cause: e });
   }
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(d.erreur || `Erreur ${r.status} du serveur local.`);
+  if (!r.ok) throw new Error(d.erreur || t('m.serveurErreur', { statut: r.status }));
   return d;
 }
 
 function enregistrerIpc() {
-  const traiter = (canal, fn) => ipcMain.handle(canal, (evenement, ...args) => diagnostic.suivre(canal, () => fn(...args, evenement)));
+  const traiter = (canal, fn) =>
+    ipcMain.handle(canal, (evenement, ...args) => diagnostic.suivre(canal, () => fn(...args, evenement)));
 
-  traiter("app:info", () => ({
+  traiter('app:info', () => ({
     nom: NOM,
     version: app.getVersion(),
     electron: process.versions.electron,
     plateforme: process.platform,
     installee: app.isPackaged,
-    donnees: app.getPath("userData"),
+    donnees: app.getPath('userData'),
     racine,
     outils,
     modeDonnees,
@@ -366,21 +459,27 @@ function enregistrerIpc() {
     dossierParDefaut: donnees.dossierParDefaut(),
     journaux: diagnostic.dossier(),
     zoneNotification: arrierePlan.zone(),
-    intervalleMaj: majs.INTERVALLE_MS
+    intervalleMaj: majs.INTERVALLE_MS,
   }));
-  traiter("app:redemarrer", () => redemarrer());
-  traiter("app:ouvrir-dossier", (quoi) => {
-    const dossier = { parametres: app.getPath("userData"), donnees: racine, outils, local: donnees.dossierOutilsLocal(), journaux: diagnostic.dossier() }[quoi];
+  traiter('app:redemarrer', () => redemarrer());
+  traiter('app:ouvrir-dossier', (quoi) => {
+    const dossier = {
+      parametres: app.getPath('userData'),
+      donnees: racine,
+      outils,
+      local: donnees.dossierOutilsLocal(),
+      journaux: diagnostic.dossier(),
+    }[quoi];
     return dossier ? shell.openPath(dossier) : false;
   });
-  traiter("app:ouvrir-releases", () => shell.openExternal(URL_RELEASES));
+  traiter('app:ouvrir-releases', () => shell.openExternal(URL_RELEASES));
 
-  traiter("reglages:lire", () => reglages.publics());
-  traiter("reglages:modifier", (partiel) => {
+  traiter('reglages:lire', () => reglages.publics());
+  traiter('reglages:modifier', (partiel) => {
     // L'interface ne touche ni à la clé d'API, ni à la liste des dossiers de raccourcis,
     // ni au dossier des données (qui passe par donnees:choisir)
     const sur = Object.assign({}, partiel);
-    if (sur.claude) sur.claude = { mode: sur.claude.mode === "cle" ? "cle" : "compte" };
+    if (sur.claude) sur.claude = { mode: sur.claude.mode === 'cle' ? 'cle' : 'compte' };
     delete sur.raccourcis;
     delete sur.cours;
     delete sur.donnees;
@@ -392,78 +491,108 @@ function enregistrerIpc() {
     if (sur.affichage) annoncerEchelle();
     return r;
   });
-  traiter("fenetre:ecrans", () => lancement.ecrans());
-  traiter("fenetre:bornes", () => {
+  traiter('fenetre:ecrans', () => lancement.ecrans());
+  traiter('fenetre:bornes', () => {
     const f = BrowserWindow.getAllWindows().find((w) => !w.studiesAnnexe && !w.isDestroyed());
     return f ? f.getNormalBounds() : null;
   });
 
-  traiter("donnees:choisir", async (evenement) => {
-    const r = await dialog.showOpenDialog(fenetreDe(evenement.sender), { title: t("m.donnees.titre"), properties: ["openDirectory", "createDirectory"] });
+  traiter('donnees:choisir', async (evenement) => {
+    const r = await dialog.showOpenDialog(fenetreDe(evenement.sender), {
+      title: t('m.donnees.titre'),
+      properties: ['openDirectory', 'createDirectory'],
+    });
     if (r.canceled || !r.filePaths[0]) return { ok: false, annule: true };
-    reglages.modifier({ donnees: { dossier: r.filePaths[0] }, cours: { mode: "integre", dossier: "" } });
+    reglages.modifier({ donnees: { dossier: r.filePaths[0] }, cours: { mode: 'integre', dossier: '' } });
     return { ok: true, dossier: r.filePaths[0], depot: donnees.estDepot(r.filePaths[0]) };
   });
-  traiter("donnees:defaut", () => {
-    reglages.modifier({ donnees: { dossier: "" }, cours: { mode: "integre", dossier: "" } });
+  traiter('donnees:defaut', () => {
+    reglages.modifier({ donnees: { dossier: '' }, cours: { mode: 'integre', dossier: '' } });
     return { ok: true, dossier: donnees.dossierParDefaut() };
   });
 
   // Profils : par l'API du serveur local (extension ula), comme l'accueil
-  traiter("profils:etat", () => apiQuiz("GET", "ula/etat"));
+  traiter('profils:etat', () => apiQuiz('GET', 'ula/etat'));
   // Un profil créé, choisi ou renommé depuis les paramètres ou le guide : les accueils
   // ouverts se rechargent pour le montrer (sinon l'accueil demanderait encore un nom)
-  const puisAccueils = (promesse) => promesse.then((r) => { rechargerAccueils(); return r; });
-  traiter("profils:choisir", (nom) => puisAccueils(apiQuiz("PUT", "ula/profil", { nom: String(nom) })));
-  traiter("profils:creer", (nom, cursus, telecharger) => puisAccueils(apiQuiz("POST", "ula/profils", { nom: String(nom), cursus: cursus ? String(cursus) : null, telecharger: telecharger !== false })));
-  traiter("profils:cursus", () => apiQuiz("GET", "ula/catalogue").then((c) => c.cursus || []).catch(() => []));
-  traiter("profils:renommer", (ancien, nouveau) => puisAccueils(apiQuiz("POST", "ula/profils/renommer", { ancien: String(ancien), nouveau: String(nouveau) })));
+  const puisAccueils = (promesse) =>
+    promesse.then((r) => {
+      rechargerAccueils();
+      return r;
+    });
+  traiter('profils:choisir', (nom) => puisAccueils(apiQuiz('PUT', 'ula/profil', { nom: String(nom) })));
+  traiter('profils:creer', (nom, cursus, telecharger) =>
+    puisAccueils(
+      apiQuiz('POST', 'ula/profils', {
+        nom: String(nom),
+        cursus: cursus ? String(cursus) : null,
+        telecharger: telecharger !== false,
+      }),
+    ),
+  );
+  traiter('profils:cursus', () =>
+    apiQuiz('GET', 'ula/catalogue')
+      .then((c) => c.cursus || [])
+      .catch(() => []),
+  );
+  traiter('profils:renommer', (ancien, nouveau) =>
+    puisAccueils(apiQuiz('POST', 'ula/profils/renommer', { ancien: String(ancien), nouveau: String(nouveau) })),
+  );
 
-  traiter("raccourcis:statut", () => raccourcis.statut());
-  traiter("raccourcis:creer", (id, options) => raccourcis.creer(String(id), { confirmReplace: Boolean(options && options.confirmReplace) }));
-  traiter("raccourcis:supprimer", (id) => raccourcis.supprimer(String(id)));
-  traiter("raccourcis:afficher", (id) => raccourcis.afficher(String(id)));
-  traiter("raccourcis:choisir", (evenement) => raccourcis.choisirDossier(fenetreDe(evenement.sender)));
-  traiter("raccourcis:oublier", (id) => raccourcis.oublierDossier(String(id)));
+  traiter('raccourcis:statut', () => raccourcis.statut());
+  traiter('raccourcis:creer', (id, options) =>
+    raccourcis.creer(String(id), { confirmReplace: Boolean(options && options.confirmReplace) }),
+  );
+  traiter('raccourcis:supprimer', (id) => raccourcis.supprimer(String(id)));
+  traiter('raccourcis:afficher', (id) => raccourcis.afficher(String(id)));
+  traiter('raccourcis:choisir', (evenement) => raccourcis.choisirDossier(fenetreDe(evenement.sender)));
+  traiter('raccourcis:oublier', (id) => raccourcis.oublierDossier(String(id)));
 
-  traiter("claude:statut", () => claude.statut(outils));
-  traiter("claude:connecter", () => claude.connecter(outils));
-  traiter("claude:deconnecter", () => claude.deconnecter(outils));
-  traiter("claude:cle", (valeur) => claude.enregistrerCle(valeur));
-  traiter("claude:lien", (nom) => claude.ouvrirLien(String(nom)));
+  traiter('claude:statut', () => claude.statut(outils));
+  traiter('claude:connecter', () => claude.connecter(outils));
+  traiter('claude:deconnecter', () => claude.deconnecter(outils));
+  traiter('claude:cle', (valeur) => claude.enregistrerCle(valeur));
+  traiter('claude:lien', (nom) => claude.ouvrirLien(String(nom)));
 
   // Réglages de l'outil de quiz (modèles de Claude par usage, chemin de Claude Code,
   // exécution du code) : lus et modifiés par l'API du serveur local
-  traiter("quiz:etat", () => apiQuiz("GET", "etat?forcer=1"));
-  traiter("quiz:reglages", (r) => apiQuiz("PUT", "reglages", r));
-  traiter("quiz:tester", (usage) => apiQuiz("POST", "claude/test", { usage: String(usage) }));
+  traiter('quiz:etat', () => apiQuiz('GET', 'etat?forcer=1'));
+  traiter('quiz:reglages', (r) => apiQuiz('PUT', 'reglages', r));
+  traiter('quiz:tester', (usage) => apiQuiz('POST', 'claude/test', { usage: String(usage) }));
 
   // Synchronisation du dossier des données (dépôt Git suivi)
-  traiter("synchro:statut", () => synchro.statut());
-  traiter("synchro:maintenant", () => synchro.synchroniser());
-  traiter("synchro:auto", (valeur) => synchro.definirAuto(valeur === true));
+  traiter('synchro:statut', () => synchro.statut());
+  traiter('synchro:maintenant', () => synchro.synchroniser());
+  traiter('synchro:auto', (valeur) => synchro.definirAuto(valeur === true));
 
   // Langue de l'interface (src/i18n)
-  traiter("i18n:textes", () => ({ langue: i18n.langue(), locale: i18n.locale(), langues: i18n.LANGUES.map(({ code, nom }) => ({ code, nom })), textes: i18n.dictionnaire() }));
-  traiter("i18n:definir", (code) => i18n.definir(String(code)));
+  traiter('i18n:textes', () => ({
+    langue: i18n.langue(),
+    locale: i18n.locale(),
+    langues: i18n.LANGUES.map(({ code, nom }) => ({ code, nom })),
+    textes: i18n.dictionnaire(),
+  }));
+  traiter('i18n:definir', (code) => i18n.definir(String(code)));
 
   // Documentation et paramétrage guidé
-  traiter("aide:documentation", (page) => ouvrirDocumentation(page ? String(page) : undefined));
-  traiter("aide:guide", () => ouvrirGuide());
-  traiter("aide:parametres", (section) => ouvrirParametres(section ? String(section) : undefined));
-  traiter("aide:fermer", (evenement) => {
+  traiter('aide:documentation', (page) => ouvrirDocumentation(page ? String(page) : undefined));
+  traiter('aide:guide', () => ouvrirGuide());
+  traiter('aide:parametres', (section) => ouvrirParametres(section ? String(section) : undefined));
+  traiter('aide:fermer', (evenement) => {
     if (evenement.sender === integres.contenu()) return integres.fermer();
     const f = BrowserWindow.fromWebContents(evenement.sender);
     if (f && f.studiesAnnexe) f.close();
   });
-  traiter("doc:sommaire", () => doc.sommaire(i18n.langue()));
-  traiter("doc:page", (id) => doc.page(i18n.langue(), String(id)));
-  traiter("doc:chercher", (texte) => doc.chercher(i18n.langue(), String(texte || "")));
-  traiter("doc:lien", (url) => { if (/^https:\/\//i.test(String(url))) shell.openExternal(String(url)); });
+  traiter('doc:sommaire', () => doc.sommaire(i18n.langue()));
+  traiter('doc:page', (id) => doc.page(i18n.langue(), String(id)));
+  traiter('doc:chercher', (texte) => doc.chercher(i18n.langue(), String(texte || '')));
+  traiter('doc:lien', (url) => {
+    if (/^https:\/\//i.test(String(url))) shell.openExternal(String(url));
+  });
 
-  traiter("maj:verifier", () => majs.verifier());
-  traiter("maj:statut", () => majs.statut());
-  traiter("maj:installer", () => majs.installerMaintenant());
+  traiter('maj:verifier', () => majs.verifier());
+  traiter('maj:statut', () => majs.statut());
+  traiter('maj:installer', () => majs.installerMaintenant());
 }
 
 /* -- Démarrage --------------------------------------------------------------------- */
@@ -486,23 +615,30 @@ function fenetreCachee() {
   majs.bientot();
   if ((reglages.lire().arrierePlan || {}).bulleMontree) return;
   arrierePlan.annoncer();
-  try { reglages.modifier({ arrierePlan: { bulleMontree: true } }); } catch (e) { /* elle reviendra */ }
+  try {
+    reglages.modifier({ arrierePlan: { bulleMontree: true } });
+  } catch (e) {
+    /* elle reviendra */
+  }
 }
 
 // Une seule notification par version prête
 let versionAnnoncee = null;
 function surStatutMaj(statut) {
-  for (const f of BrowserWindow.getAllWindows()) if (!f.isDestroyed()) f.webContents.send("maj:statut", statut);
-  integres.envoyer("maj:statut", statut);
+  for (const f of BrowserWindow.getAllWindows()) if (!f.isDestroyed()) f.webContents.send('maj:statut', statut);
+  integres.envoyer('maj:statut', statut);
   arrierePlan.rafraichir();
-  if (statut.etat !== "pret" || !statut.version || versionAnnoncee === statut.version) return;
+  if (statut.etat !== 'pret' || !statut.version || versionAnnoncee === statut.version) return;
   versionAnnoncee = statut.version;
   if (!Notification.isSupported()) return;
   const n = new Notification({
-    title: t("m.maj.titre", { version: statut.version }),
-    body: t("m.maj.texte")
+    title: t('m.maj.titre', { version: statut.version }),
+    body: t('m.maj.texte'),
   });
-  n.on("click", () => { montrerFenetre(); ouvrirParametres("mises-a-jour"); });
+  n.on('click', () => {
+    montrerFenetre();
+    ouvrirParametres('mises-a-jour');
+  });
   n.show();
 }
 
@@ -520,7 +656,7 @@ async function demarrer() {
   // noté dans le nouveau réglage, une fois pour toutes
   const r0 = reglages.lire();
   if (choix.racine !== donnees.dossierParDefaut() && (r0.donnees || {}).dossier !== choix.racine) {
-    reglages.modifier({ donnees: { dossier: choix.racine }, cours: { mode: "integre", dossier: "" } });
+    reglages.modifier({ donnees: { dossier: choix.racine }, cours: { mode: 'integre', dossier: '' } });
   }
   racine = choix.racine;
   outils = choix.outils;
@@ -547,9 +683,14 @@ async function demarrer() {
     etatFenetre: () => lancement.etatInitial(reglages.lire().fenetre),
     // Échelle de l'interface (facteur, 1 = 100 %) et abonnement à ses changements
     echelle: facteurEchelle,
-    surEchelle: (fn) => { if (typeof fn === "function") auditeursEchelle.add(fn); },
+    surEchelle: (fn) => {
+      if (typeof fn === 'function') auditeursEchelle.add(fn);
+    },
     ouvrirParametres,
-    verifierMiseAJour: () => { ouvrirParametres("mises-a-jour"); majs.verifier(); },
+    verifierMiseAJour: () => {
+      ouvrirParametres('mises-a-jour');
+      majs.verifier();
+    },
     // Arrière-plan (2.4.0) : la croix de la dernière fenêtre la cache seulement
     // (fenetres.js), tant que l'application n'est pas en train de quitter
     garderEnArrierePlan: () => arrierePlan.garder(),
@@ -557,44 +698,66 @@ async function demarrer() {
     quitterAnnule: () => arrierePlan.quitterAnnule(),
     montrerFenetre,
     // Bouton nuage de la barre des pages (/_app/synchro, fenetres.js)
-    synchroniserMaintenant: () => { synchro.synchroniser(); },
+    synchroniserMaintenant: () => {
+      synchro.synchroniser();
+    },
     // Langue de l'interface (2.6.0) : code (« fr », « en »), abonnement aux changements
     langue: () => i18n.langue(),
-    surLangue: (fn) => { if (typeof fn === "function") auditeursLangue.add(fn); },
+    surLangue: (fn) => {
+      if (typeof fn === 'function') auditeursLangue.add(fn);
+    },
     // Documentation (F1, bouton « ? » de la barre des pages : /_app/aide) et
     // paramétrage guidé (/_app/guide)
-    ouvrirDocumentation: (page) => { ouvrirDocumentation(page); },
-    ouvrirGuide: () => { ouvrirGuide(); }
+    ouvrirDocumentation: (page) => {
+      ouvrirDocumentation(page);
+    },
+    ouvrirGuide: () => {
+      ouvrirGuide();
+    },
   };
 
   try {
-    require(path.join(outils, "app", "principal.js"));
+    require(path.join(outils, 'app', 'principal.js'));
   } catch (e) {
-    dialog.showErrorBox(NOM, "Le programme des outils n'a pas pu démarrer :\n" + e.message + "\n\nDossier : " + outils);
+    dialog.showErrorBox(NOM, t('m.outilsEchec', { message: e.message, dossier: outils }));
     return app.quit();
   }
 
-  arrierePlan.demarrer({
-    ouvrir: montrerFenetre,
-    documentation: () => ouvrirDocumentation(),
-    verifierMiseAJour: () => { montrerFenetre(); global.studiesHote.verifierMiseAJour(); },
-    installer: () => majs.installerMaintenant(),
-    majStatut: () => majs.statut(),
-    synchro: () => synchro.statut(),
-    synchroniser: () => synchro.synchroniser(),
-    actif: () => (reglages.lire().arrierePlan || {}).fermeture !== false
-  }).catch((e) => diagnostic.noter("icône de la zone de notification impossible : " + e.message));
+  arrierePlan
+    .demarrer({
+      ouvrir: montrerFenetre,
+      documentation: () => ouvrirDocumentation(),
+      verifierMiseAJour: () => {
+        montrerFenetre();
+        global.studiesHote.verifierMiseAJour();
+      },
+      installer: () => majs.installerMaintenant(),
+      majStatut: () => majs.statut(),
+      synchro: () => synchro.statut(),
+      synchroniser: () => synchro.synchroniser(),
+      actif: () => (reglages.lire().arrierePlan || {}).fermeture !== false,
+    })
+    .catch((e) => diagnostic.noter('icône de la zone de notification impossible : ' + e.message));
 
   if (reglages.lire().miseAJourAuto) setTimeout(() => majs.verifier(), 4000);
   majs.demarrerPeriodique({ actif: () => reglages.lire().miseAJourAuto !== false, journal: diagnostic.noter });
 
   // Dépôt d'ula de l'auteur du catalogue : seule la progression est committée seule ;
   // dossier des données devenu dépôt : tout, sauf le catalogue
-  synchro.demarrer({
-    racine, mode: modeDonnees === "depot" ? "progression" : "tout", nom: NOM, reglages,
-    journal: diagnostic.noter, ouvrirParametres: (section) => { montrerFenetre(); ouvrirParametres(section); },
-    surStatut: () => arrierePlan.rafraichir()
-  }).catch((e) => diagnostic.noter("synchronisation impossible : " + e.message));
+  synchro
+    .demarrer({
+      racine,
+      mode: modeDonnees === 'depot' ? 'progression' : 'tout',
+      nom: NOM,
+      reglages,
+      journal: diagnostic.noter,
+      ouvrirParametres: (section) => {
+        montrerFenetre();
+        ouvrirParametres(section);
+      },
+      surStatut: () => arrierePlan.rafraichir(),
+    })
+    .catch((e) => diagnostic.noter('synchronisation impossible : ' + e.message));
 }
 
 if (!app.requestSingleInstanceLock()) {

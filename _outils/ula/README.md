@@ -68,13 +68,13 @@ Les packs et les cursus exemples sont réservés au développeur du catalogue : 
 
 Depuis `app/` :
 
-| Commande | Effet |
-|---|---|
-| `npm run catalogue -- pack-ajouter <id> "<titre>" [--dossier L1] [--origine "…"] [--description "…"]` | nouveau pack `explore/packs/<id>.json` (vide) |
-| `npm run catalogue -- pack-ajouter-cours <pack> <cours> [<cours>…]` | ajoute des cours (ids de `explore/<domaine>/<cours>/`) à un pack |
-| `npm run catalogue -- cursus-ajouter <id> "<titre>" [--origine "…"] [--description "…"]` | nouveau cursus `explore/cursus/<id>.json` (vide) |
-| `npm run catalogue -- cursus-ajouter-pack <cursus> <pack> [dossier]` | ajoute un pack à un cursus, rangé dans `dossier` (par défaut celui du pack) |
-| `npm run catalogue -- verifier` | vérifie tous les packs et cursus |
+| Commande                                                                                              | Effet                                                                       |
+| ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `npm run catalogue -- pack-ajouter <id> "<titre>" [--dossier L1] [--origine "…"] [--description "…"]` | nouveau pack `explore/packs/<id>.json` (vide)                               |
+| `npm run catalogue -- pack-ajouter-cours <pack> <cours> [<cours>…]`                                   | ajoute des cours (ids de `explore/<domaine>/<cours>/`) à un pack            |
+| `npm run catalogue -- cursus-ajouter <id> "<titre>" [--origine "…"] [--description "…"]`              | nouveau cursus `explore/cursus/<id>.json` (vide)                            |
+| `npm run catalogue -- cursus-ajouter-pack <cursus> <pack> [dossier]`                                  | ajoute un pack à un cursus, rangé dans `dossier` (par défaut celui du pack) |
+| `npm run catalogue -- verifier`                                                                       | vérifie tous les packs et cursus                                            |
 
 Chaque commande refuse un id inconnu (cours ou pack inexistant) ou un doublon, puis revérifie tout ; un pack ou un cursus encore vide est signalé et refusé à la publication. `npm run catalogue` (et `npm run check`) refont ces vérifications. Ensuite : committer, puis `npm run catalogue -- --publier`.
 

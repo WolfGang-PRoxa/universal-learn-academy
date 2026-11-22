@@ -32,7 +32,12 @@ export const COMMANDES = ['cursus-ajouter', 'pack-ajouter', 'cursus-ajouter-pack
 function lireDossier(nom) {
   const d = path.join(EXPLORE, nom);
   if (!fs.existsSync(d)) return new Map();
-  return new Map(fs.readdirSync(d).filter((n) => n.endsWith('.json')).map((n) => [n.slice(0, -5), JSON.parse(fs.readFileSync(path.join(d, n), 'utf8'))]));
+  return new Map(
+    fs
+      .readdirSync(d)
+      .filter((n) => n.endsWith('.json'))
+      .map((n) => [n.slice(0, -5), JSON.parse(fs.readFileSync(path.join(d, n), 'utf8'))]),
+  );
 }
 function ecrire(nom, objet) {
   const f = path.join(EXPLORE, nom, `${objet.id}.json`);
@@ -71,7 +76,8 @@ export function verifierTout() {
 }
 
 function options(args) {
-  const o = {}, reste = [];
+  const o = {},
+    reste = [];
   for (let i = 0; i < args.length; i++) {
     if (args[i].startsWith('--')) o[args[i].slice(2)] = args[++i];
     else reste.push(args[i]);
@@ -81,21 +87,40 @@ function options(args) {
 
 export function executer(commande, args) {
   const { o, reste } = options(args);
-  const echec = (m) => { throw new Error(m); };
+  const echec = (m) => {
+    throw new Error(m);
+  };
   let ecrit = null;
   if (commande === 'cursus-ajouter') {
     const [id, titre] = reste;
-    if (!ID.test(id || '') || !titre) echec('Usage : cursus-ajouter <id> "<titre>" [--origine "…"] [--description "…"]');
+    if (!ID.test(id || '') || !titre)
+      echec('Usage : cursus-ajouter <id> "<titre>" [--origine "…"] [--description "…"]');
     if (lireDossier('cursus').has(id)) echec(`Le cursus ${id} existe déjà.`);
     if (!lireDossier('packs').size) echec('Aucun pack : en créer un d’abord (pack-ajouter).');
     // Un cursus a au moins un pack : il est créé vide puis rempli par cursus-ajouter-pack ;
     // la vérification refuse donc un cursus sans pack à la publication.
-    ecrit = ecrire('cursus', { format: 'ula-cursus-1', id, titre, origine: o.origine || '', description: o.description || '', packs: [] });
+    ecrit = ecrire('cursus', {
+      format: 'ula-cursus-1',
+      id,
+      titre,
+      origine: o.origine || '',
+      description: o.description || '',
+      packs: [],
+    });
   } else if (commande === 'pack-ajouter') {
     const [id, titre] = reste;
-    if (!ID.test(id || '') || !titre) echec('Usage : pack-ajouter <id> "<titre>" [--dossier L1] [--origine "…"] [--description "…"]');
+    if (!ID.test(id || '') || !titre)
+      echec('Usage : pack-ajouter <id> "<titre>" [--dossier L1] [--origine "…"] [--description "…"]');
     if (lireDossier('packs').has(id)) echec(`Le pack ${id} existe déjà.`);
-    ecrit = ecrire('packs', { format: 'ula-pack-1', id, titre, origine: o.origine || '', dossier: o.dossier || '', description: o.description || '', cours: [] });
+    ecrit = ecrire('packs', {
+      format: 'ula-pack-1',
+      id,
+      titre,
+      origine: o.origine || '',
+      dossier: o.dossier || '',
+      description: o.description || '',
+      cours: [],
+    });
   } else if (commande === 'cursus-ajouter-pack') {
     const [idCursus, idPack, dossier] = reste;
     const c = lireDossier('cursus').get(idCursus);

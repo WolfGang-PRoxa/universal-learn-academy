@@ -20,12 +20,12 @@ A downloaded version installs when the application closes: use **Quit** (notific
 
 ## Sync fails
 
-| Message | What to do |
-|---|---|
-| Access refused | Run `git pull` once by hand in the data folder to save the credentials |
-| Offline | Nothing: new attempt at the next cycle |
-| Merge to do by hand | Open the data folder and run `git pull`, then resolve the conflict |
-| Git is not installed | Install it from git-scm.com |
+| Message              | What to do                                                             |
+| -------------------- | ---------------------------------------------------------------------- |
+| Access refused       | Run `git pull` once by hand in the data folder to save the credentials |
+| Offline              | Nothing: new attempt at the next cycle                                 |
+| Merge to do by hand  | Open the data folder and run `git pull`, then resolve the conflict     |
+| Git is not installed | Install it from git-scm.com                                            |
 
 ## The window opens off screen
 

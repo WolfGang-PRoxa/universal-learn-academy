@@ -20,12 +20,12 @@ Une version téléchargée s’installe à la fermeture de l’application : pas
 
 ## La synchronisation échoue
 
-| Message | Que faire |
-|---|---|
-| Accès refusé | Lancer une fois `git pull` à la main dans le dossier des données pour enregistrer les identifiants |
-| Hors ligne | Rien : nouvel essai au cycle suivant |
-| Fusion à faire à la main | Ouvrir le dossier des données et lancer `git pull`, puis résoudre le conflit |
-| Git n’est pas installé | L’installer depuis git-scm.com |
+| Message                  | Que faire                                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------------------------- |
+| Accès refusé             | Lancer une fois `git pull` à la main dans le dossier des données pour enregistrer les identifiants |
+| Hors ligne               | Rien : nouvel essai au cycle suivant                                                               |
+| Fusion à faire à la main | Ouvrir le dossier des données et lancer `git pull`, puis résoudre le conflit                       |
+| Git n’est pas installé   | L’installer depuis git-scm.com                                                                     |
 
 ## La fenêtre s’ouvre hors de l’écran
 

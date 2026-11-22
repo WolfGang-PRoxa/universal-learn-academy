@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 /* ==========================================================================
    Paramètres dans la fenêtre des cours (version 2.6.2)
    --------------------------------------------------------------------------
@@ -16,22 +16,26 @@
    être envoyé : envoyer().
    ========================================================================== */
 
-const { BrowserWindow, WebContentsView, shell } = require("electron");
-const path = require("path");
+const { BrowserWindow, WebContentsView, shell } = require('electron');
+const path = require('path');
 
-let vue = null;        // WebContentsView des paramètres, ou null
-let hote = null;       // fenêtre des cours qui la porte
-let options = {};      // { zoom: () => facteur }
+let vue = null; // WebContentsView des paramètres, ou null
+let hote = null; // fenêtre des cours qui la porte
+let options = {}; // { zoom: () => facteur }
 
 /** Réglages du module : zoom (facteur d'échelle de l'interface). */
-function configurer(o) { options = Object.assign({}, options, o); }
+function configurer(o) {
+  options = Object.assign({}, options, o);
+}
 
 /** Fenêtre des cours à utiliser : celle qui a le focus, sinon la première visible. */
 function fenetreDesCours() {
   const active = BrowserWindow.getFocusedWindow();
   if (active && !active.isDestroyed() && !active.studiesAnnexe) return active;
   const toutes = BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed() && !w.studiesAnnexe);
-  return toutes.find((w) => w.isVisible() && !w.isMinimized()) || toutes.find((w) => w.isVisible()) || toutes[0] || null;
+  return (
+    toutes.find((w) => w.isVisible() && !w.isMinimized()) || toutes.find((w) => w.isVisible()) || toutes[0] || null
+  );
 }
 
 function placer() {
@@ -44,10 +48,15 @@ function detacher() {
   if (!hote) return;
   const f = hote;
   hote = null;
-  for (const ev of ["resize", "maximize", "unmaximize", "enter-full-screen", "leave-full-screen", "restore"]) f.removeListener(ev, placer);
-  f.removeListener("closed", surFermetureHote);
+  for (const ev of ['resize', 'maximize', 'unmaximize', 'enter-full-screen', 'leave-full-screen', 'restore'])
+    f.removeListener(ev, placer);
+  f.removeListener('closed', surFermetureHote);
   if (!f.isDestroyed() && vue) {
-    try { f.contentView.removeChildView(vue); } catch (e) { /* déjà retirée */ }
+    try {
+      f.contentView.removeChildView(vue);
+    } catch (e) {
+      /* déjà retirée */
+    }
   }
 }
 
@@ -62,28 +71,38 @@ function attacher(f) {
   hote = f;
   f.contentView.addChildView(vue);
   placer();
-  for (const ev of ["resize", "maximize", "unmaximize", "enter-full-screen", "leave-full-screen", "restore"]) f.on(ev, placer);
-  f.once("closed", surFermetureHote);
+  for (const ev of ['resize', 'maximize', 'unmaximize', 'enter-full-screen', 'leave-full-screen', 'restore'])
+    f.on(ev, placer);
+  f.once('closed', surFermetureHote);
 }
 
 function creer(section) {
   vue = new WebContentsView({
-    webPreferences: { preload: path.join(__dirname, "parametres", "pont.cjs"), contextIsolation: true, sandbox: true, nodeIntegration: false }
+    webPreferences: {
+      preload: path.join(__dirname, 'parametres', 'pont.cjs'),
+      contextIsolation: true,
+      sandbox: true,
+      nodeIntegration: false,
+    },
   });
-  vue.setBackgroundColor("#00000000");
+  vue.setBackgroundColor('#00000000');
   const wc = vue.webContents;
   wc.setWindowOpenHandler(({ url }) => {
     if (/^https:\/\//i.test(url)) shell.openExternal(url);
-    return { action: "deny" };
+    return { action: 'deny' };
   });
   // La page ne quitte jamais sa page ; recharger la même page reste permis (langue)
-  const sansAncre = (u) => String(u).split("#")[0];
-  wc.on("will-navigate", (e, url) => { if (sansAncre(url) !== sansAncre(wc.getURL())) e.preventDefault(); });
+  const sansAncre = (u) => String(u).split('#')[0];
+  wc.on('will-navigate', (e, url) => {
+    if (sansAncre(url) !== sansAncre(wc.getURL())) e.preventDefault();
+  });
   // L'échelle de l'interface s'applique aussi aux paramètres (même lisibilité partout)
-  wc.on("did-finish-load", () => { if (vue && options.zoom) wc.setZoomFactor(options.zoom()); });
+  wc.on('did-finish-load', () => {
+    if (vue && options.zoom) wc.setZoomFactor(options.zoom());
+  });
   // Page plantée : la vue est retirée, la fenêtre des cours reste utilisable
-  wc.on("render-process-gone", () => fermer());
-  wc.loadFile(path.join(__dirname, "parametres", "index.html"), { hash: section || "" });
+  wc.on('render-process-gone', () => fermer());
+  wc.loadFile(path.join(__dirname, 'parametres', 'index.html'), { hash: section || '' });
 }
 
 /**
@@ -98,7 +117,7 @@ function ouvrir(section) {
   f.focus();
   if (vue) {
     attacher(f);
-    if (section) vue.webContents.send("parametres:section", section);
+    if (section) vue.webContents.send('parametres:section', section);
   } else {
     creer(section);
     attacher(f);
@@ -114,17 +133,27 @@ function fermer() {
   detacher();
   const v = vue;
   vue = null;
-  try { if (!v.webContents.isDestroyed()) v.webContents.close(); } catch (e) { /* déjà fermée */ }
+  try {
+    if (!v.webContents.isDestroyed()) v.webContents.close();
+  } catch (e) {
+    /* déjà fermée */
+  }
   if (f && !f.isDestroyed() && f.isFocused()) f.webContents.focus();
 }
 
-function ouverts() { return Boolean(vue); }
+function ouverts() {
+  return Boolean(vue);
+}
 
 /** Contenu de la vue (pour reconnaître l'émetteur d'un appel), ou null. */
-function contenu() { return vue && !vue.webContents.isDestroyed() ? vue.webContents : null; }
+function contenu() {
+  return vue && !vue.webContents.isDestroyed() ? vue.webContents : null;
+}
 
 /** Fenêtre des cours qui porte les paramètres (dialogues du système), ou null. */
-function fenetre() { return hote && !hote.isDestroyed() ? hote : null; }
+function fenetre() {
+  return hote && !hote.isDestroyed() ? hote : null;
+}
 
 /** Message à la page des paramètres, si elle est ouverte. */
 function envoyer(canal, valeur) {

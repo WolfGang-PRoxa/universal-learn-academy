@@ -1,10 +1,10 @@
-"use strict";
+'use strict';
 /* Taille et position de la fenêtre au lancement (repris de CV Studio).
    Par défaut, la fenêtre s'ouvre agrandie sur l'écran principal. En mode
    personnalisé, elle s'ouvre aux bornes choisies dans les paramètres, sauf si
    elles ne sont plus visibles (écran débranché) : elle s'ouvre alors agrandie. */
 
-const { screen } = require("electron");
+const { screen } = require('electron');
 
 const MIN_LARGEUR = 640;
 const MIN_HAUTEUR = 480;
@@ -18,7 +18,7 @@ function ecrans() {
     primary: e.id === principal,
     bounds: e.bounds,
     workArea: e.workArea,
-    scaleFactor: e.scaleFactor
+    scaleFactor: e.scaleFactor,
   }));
 }
 
@@ -35,7 +35,7 @@ function bornesValides(b) {
     x: Math.round(Number(b.x)),
     y: Math.round(Number(b.y)),
     width: Math.max(MIN_LARGEUR, Math.round(Number(b.width))),
-    height: Math.max(MIN_HAUTEUR, Math.round(Number(b.height)))
+    height: Math.max(MIN_HAUTEUR, Math.round(Number(b.height))),
   };
   if (Object.values(r).some((v) => !Number.isFinite(v))) return null;
   const visible = screen.getAllDisplays().reduce((s, e) => s + intersection(r, e.workArea), 0);
@@ -44,7 +44,7 @@ function bornesValides(b) {
 
 /** { bornes, agrandie } d'après le réglage « fenetre » des paramètres. */
 function etatInitial(reglage) {
-  if (reglage && reglage.mode === "personnalisee") {
+  if (reglage && reglage.mode === 'personnalisee') {
     const bornes = bornesValides(reglage.bornes);
     if (bornes) return { bornes, agrandie: false };
   }
@@ -56,9 +56,9 @@ function etatInitial(reglage) {
       x: workArea.x + Math.round((workArea.width - width) / 2),
       y: workArea.y + Math.round((workArea.height - height) / 2),
       width,
-      height
+      height,
     },
-    agrandie: true
+    agrandie: true,
   };
 }
 

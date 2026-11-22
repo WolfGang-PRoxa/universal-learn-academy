@@ -23,8 +23,20 @@ const require = createRequire(import.meta.url);
 
 export function fichiersAttendus(version, { win = true, linux = true } = {}) {
   return [
-    ...(win ? [`Universal-Learn-Academy-Setup-${version}.exe`, `Universal-Learn-Academy-Setup-${version}.exe.blockmap`, 'latest.yml'] : []),
-    ...(linux ? [`Universal-Learn-Academy-${version}.AppImage`, `Universal-Learn-Academy-${version}.AppImage.blockmap`, 'latest-linux.yml'] : []),
+    ...(win
+      ? [
+          `Universal-Learn-Academy-Setup-${version}.exe`,
+          `Universal-Learn-Academy-Setup-${version}.exe.blockmap`,
+          'latest.yml',
+        ]
+      : []),
+    ...(linux
+      ? [
+          `Universal-Learn-Academy-${version}.AppImage`,
+          `Universal-Learn-Academy-${version}.AppImage.blockmap`,
+          'latest-linux.yml',
+        ]
+      : []),
   ];
 }
 
@@ -56,12 +68,16 @@ export function construire({ win = true, linux = true } = {}) {
       console.log('\n▸ AppImage Linux (dans WSL)');
       const chemin = spawnSync('wsl.exe', ['-e', 'wslpath', '-a', app.replace(/\\/g, '/')], { encoding: 'utf8' });
       const appWsl = (chemin.stdout || '').trim();
-      if (chemin.status !== 0 || !appWsl) throw new Error('WSL ne répond pas : l’AppImage se construit dans WSL (wsl --install).');
+      if (chemin.status !== 0 || !appWsl)
+        throw new Error('WSL ne répond pas : l’AppImage se construit dans WSL (wsl --install).');
       lancer('wsl.exe', ['-e', 'sh', `${appWsl}/scripts/construire-linux.sh`, appWsl]);
     } else {
       throw new Error('L’AppImage se construit sous Linux ou dans WSL.');
     }
-    const carte = extraireCarte(path.join(dist, `Universal-Learn-Academy-${version}.AppImage`), path.join(dist, 'latest-linux.yml'));
+    const carte = extraireCarte(
+      path.join(dist, `Universal-Learn-Academy-${version}.AppImage`),
+      path.join(dist, 'latest-linux.yml'),
+    );
     console.log(`  • carte de blocs de l’AppImage  ${path.basename(carte.sortie)}`);
   }
 
@@ -69,7 +85,8 @@ export function construire({ win = true, linux = true } = {}) {
     if (!fs.existsSync(path.join(dist, n))) throw new Error(`Fichier attendu absent après la construction : dist/${n}`);
   }
   for (const yml of fichiers.filter((n) => n.endsWith('.yml'))) {
-    if (!fs.readFileSync(path.join(dist, yml), 'utf8').includes(`version: ${version}`)) throw new Error(`dist/${yml} ne correspond pas à la version ${version}.`);
+    if (!fs.readFileSync(path.join(dist, yml), 'utf8').includes(`version: ${version}`))
+      throw new Error(`dist/${yml} ne correspond pas à la version ${version}.`);
   }
   console.log(`\n✓ ${fichiers.length} fichiers dans app/dist :\n  ${fichiers.join('\n  ')}`);
   return { version, fichiers, chemins: fichiers.map((n) => path.join(dist, n)) };

@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 /* Dossier des données et outils de l'application installée.
 
    Racine des données (ula/) : le catalogue téléchargé (explore/) et les espaces
@@ -17,35 +17,51 @@
 
    En développement (npm start), les outils sont ceux du dépôt (app/..). */
 
-const { app } = require("electron");
-const fs = require("fs");
-const path = require("path");
+const { app } = require('electron');
+const fs = require('fs');
+const path = require('path');
 
-const MANIFESTE = ".ula-outils.json";
-const PROGRAMME = path.join("_outils", "app", "principal.js");
-const NOM_DOSSIER = "Universal Learn Academy";
+const MANIFESTE = '.ula-outils.json';
+const PROGRAMME = path.join('_outils', 'app', 'principal.js');
+const NOM_DOSSIER = 'Universal Learn Academy';
 
 function dossierLocalApp() {
-  if (process.platform === "win32") return path.join(process.env.LOCALAPPDATA || path.join(app.getPath("home"), "AppData", "Local"), NOM_DOSSIER);
-  return path.join(process.env.XDG_DATA_HOME || path.join(app.getPath("home"), ".local", "share"), NOM_DOSSIER);
+  if (process.platform === 'win32')
+    return path.join(process.env.LOCALAPPDATA || path.join(app.getPath('home'), 'AppData', 'Local'), NOM_DOSSIER);
+  return path.join(process.env.XDG_DATA_HOME || path.join(app.getPath('home'), '.local', 'share'), NOM_DOSSIER);
 }
-function dossierOutilsLocal() { return path.join(dossierLocalApp(), "outils"); }
-function outilsLivres() { return path.join(process.resourcesPath, "outils"); }
-function depotDeDeveloppement() { return path.resolve(app.getAppPath(), ".."); }
-function dossierParDefaut() { return path.join(app.getPath("documents"), "ULA"); }
+function dossierOutilsLocal() {
+  return path.join(dossierLocalApp(), 'outils');
+}
+function outilsLivres() {
+  return path.join(process.resourcesPath, 'outils');
+}
+function depotDeDeveloppement() {
+  return path.resolve(app.getAppPath(), '..');
+}
+function dossierParDefaut() {
+  return path.join(app.getPath('documents'), 'ULA');
+}
 
 /** Le dossier contient-il les outils (programme de la fenêtre et serveur) ? */
 function contientOutils(dossier) {
-  return Boolean(dossier) && fs.existsSync(path.join(dossier, PROGRAMME))
-    && fs.existsSync(path.join(dossier, "_outils", "quiz", "serveur", "serveur.js"));
+  return (
+    Boolean(dossier) &&
+    fs.existsSync(path.join(dossier, PROGRAMME)) &&
+    fs.existsSync(path.join(dossier, '_outils', 'quiz', 'serveur', 'serveur.js'))
+  );
 }
 /** Dépôt git d'ula (mode de l'auteur du catalogue) ? */
 function estDepot(dossier) {
-  return contientOutils(dossier) && fs.existsSync(path.join(dossier, "explore"));
+  return contientOutils(dossier) && fs.existsSync(path.join(dossier, 'explore'));
 }
 
 function lireJson(f) {
-  try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch (e) { return null; }
+  try {
+    return JSON.parse(fs.readFileSync(f, 'utf8'));
+  } catch (e) {
+    return null;
+  }
 }
 
 /** Versions des outils livrés et de la copie locale, pour les paramètres. */
@@ -63,7 +79,9 @@ function inchange(f, trace) {
   try {
     const s = fs.statSync(f);
     return s.size === trace.taille && Math.round(s.mtimeMs) === trace.mtime;
-  } catch (e) { return false; }
+  } catch (e) {
+    return false;
+  }
 }
 
 function tracer(f, empreinte) {
@@ -77,26 +95,32 @@ function tracer(f, empreinte) {
  */
 function synchroniser(source, cible, progression = () => {}) {
   const nouveau = lireJson(path.join(source, MANIFESTE));
-  if (!nouveau) throw new Error("Les outils livrés avec l'application sont introuvables (" + source + ").");
+  if (!nouveau)
+    throw Object.assign(new Error("Les outils livrés avec l'application sont introuvables (" + source + ').'), {
+      code: 'OUTILS_INTROUVABLES',
+      dossier: source,
+    });
   const etatFichier = path.join(cible, MANIFESTE);
   const ancien = lireJson(etatFichier) || { version: null, fichiers: {}, traces: {} };
   if (ancien.version === nouveau.version) return { copies: 0, supprimes: 0, conserves: [], aJour: true };
 
   const traces = Object.assign({}, ancien.traces || {});
   const conserves = [];
-  let copies = 0, supprimes = 0, fait = 0;
+  let copies = 0,
+    supprimes = 0,
+    fait = 0;
   const chemins = Object.keys(nouveau.fichiers);
   const total = chemins.length;
   for (const chemin of chemins) {
     const n = nouveau.fichiers[chemin];
-    const f = path.join(cible, ...chemin.split("/"));
+    const f = path.join(cible, ...chemin.split('/'));
     const trace = traces[chemin];
     const present = fs.existsSync(f);
     if (present && trace && trace.empreinte === n.empreinte && inchange(f, trace)) {
       // déjà la bonne version
     } else if (!present || inchange(f, trace)) {
       fs.mkdirSync(path.dirname(f), { recursive: true });
-      fs.copyFileSync(path.join(source, ...chemin.split("/")), f);
+      fs.copyFileSync(path.join(source, ...chemin.split('/')), f);
       traces[chemin] = tracer(f, n.empreinte);
       copies++;
     } else {
@@ -106,11 +130,23 @@ function synchroniser(source, cible, progression = () => {}) {
   }
   for (const chemin of Object.keys(ancien.fichiers || {})) {
     if (nouveau.fichiers[chemin]) continue;
-    const f = path.join(cible, ...chemin.split("/"));
-    if (inchange(f, traces[chemin])) { fs.rmSync(f, { force: true }); supprimes++; }
+    const f = path.join(cible, ...chemin.split('/'));
+    if (inchange(f, traces[chemin])) {
+      fs.rmSync(f, { force: true });
+      supprimes++;
+    }
     delete traces[chemin];
   }
-  fs.writeFileSync(etatFichier, JSON.stringify({ version: nouveau.version, commit: nouveau.commit, cree: nouveau.cree, fichiers: nouveau.fichiers, traces }));
+  fs.writeFileSync(
+    etatFichier,
+    JSON.stringify({
+      version: nouveau.version,
+      commit: nouveau.commit,
+      cree: nouveau.cree,
+      fichiers: nouveau.fichiers,
+      traces,
+    }),
+  );
   return { copies, supprimes, conserves, aJour: false };
 }
 
@@ -120,11 +156,11 @@ function synchroniser(source, cible, progression = () => {}) {
 function racineChoisie(reglages) {
   let d = reglages.donnees && reglages.donnees.dossier;
   const ancien = reglages.cours;
-  if (!d && ancien && ancien.mode === "dossier" && ancien.dossier) d = ancien.dossier;
+  if (!d && ancien && ancien.mode === 'dossier' && ancien.dossier) d = ancien.dossier;
   if (d && !fs.existsSync(d)) {
     // Le dépôt « studies » est devenu « ula » (12 novembre 2026) : un dossier noté qui
     // n'existe plus est remplacé par le dépôt ula voisin, s'il y en a un
-    const voisin = path.join(path.dirname(d), "ula");
+    const voisin = path.join(path.dirname(d), 'ula');
     if (estDepot(voisin)) d = voisin;
   }
   return d || dossierParDefaut();
@@ -139,22 +175,41 @@ function racineChoisie(reglages) {
 function resoudre(reglages) {
   const racine = racineChoisie(reglages);
   if (!fs.existsSync(racine)) {
-    if (reglages.donnees && reglages.donnees.dossier || (reglages.cours && reglages.cours.mode === "dossier")) {
-      return { racine: null, erreur: "Le dossier des données est introuvable : " + racine };
+    if ((reglages.donnees && reglages.donnees.dossier) || (reglages.cours && reglages.cours.mode === 'dossier')) {
+      return { racine: null, erreur: 'Le dossier des données est introuvable : ' + racine, introuvable: racine };
     }
     fs.mkdirSync(racine, { recursive: true });
   }
-  if (contientOutils(racine)) return { racine, outils: path.join(racine, "_outils"), mode: "depot", aSynchroniser: false };
-  if (!app.isPackaged) return { racine, outils: path.join(depotDeDeveloppement(), "_outils"), mode: "developpement", aSynchroniser: false };
+  if (contientOutils(racine))
+    return { racine, outils: path.join(racine, '_outils'), mode: 'depot', aSynchroniser: false };
+  if (!app.isPackaged)
+    return {
+      racine,
+      outils: path.join(depotDeDeveloppement(), '_outils'),
+      mode: 'developpement',
+      aSynchroniser: false,
+    };
   const local = lireJson(path.join(dossierOutilsLocal(), MANIFESTE));
   const livre = lireJson(path.join(outilsLivres(), MANIFESTE));
   return {
-    racine, outils: path.join(dossierOutilsLocal(), "_outils"), mode: "installe",
-    aSynchroniser: !local || !livre || local.version !== livre.version
+    racine,
+    outils: path.join(dossierOutilsLocal(), '_outils'),
+    mode: 'installe',
+    aSynchroniser: !local || !livre || local.version !== livre.version,
   };
 }
 
 module.exports = {
-  MANIFESTE, PROGRAMME, NOM_DOSSIER, dossierLocalApp, dossierOutilsLocal, outilsLivres, dossierParDefaut,
-  contientOutils, estDepot, resoudre, synchroniser, versions
+  MANIFESTE,
+  PROGRAMME,
+  NOM_DOSSIER,
+  dossierLocalApp,
+  dossierOutilsLocal,
+  outilsLivres,
+  dossierParDefaut,
+  contientOutils,
+  estDepot,
+  resoudre,
+  synchroniser,
+  versions,
 };

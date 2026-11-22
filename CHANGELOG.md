@@ -1,0 +1,179 @@
+[Français](CHANGELOG.fr.md) · **English**
+
+# Changelog
+
+All notable changes to Universal Learn Academy are documented in this file. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow `X.Y.Z` (single source: `app/package.json`, tag `vX.Y.Z` for each release). Courses are published separately in the catalogue and are not listed here.
+
+## [Unreleased]
+
+### Added
+
+- License: CC BY-NC-ND 4.0 (`LICENSE`), declared in `app/package.json` and copied to the public repository; original course materials remain their authors' property.
+- README in English with a French translation (`README.fr.md`), for the working repository, the public repository and the app's technical documentation.
+- This changelog, in English and French, copied to the public repository.
+- First automated tests (`npm test`, Node's built-in test runner): personal data rules and catalogue pack and curriculum manifests.
+- Prettier and ESLint (`npm run format`, `npm run lint`), run first by `npm run check`; the code of the app (`app/`) and of the tools (`_outils/`) is formatted.
+- Continuous integration on every push and pull request (`npm ci`, `npm run check`, `npm test`), in the working repository and in the public repository.
+- The whole interface follows the language chosen in the app (French or English): home page, search, menus, error pages from the local server, course toolbar (contents, copy buttons), "My revisions" portal, quiz screens (home, questions, corrections, results, Claude panel, generation and follow-up dialogs) and TD workshops (editors, drawing tools, checks, comparison with the solution, Claude help and marking). Claude answers in English when the app is in English. Course, quiz and TD content stays in its original language for now.
+
+### Changed
+
+- `.gitignore` ignores local environment files (`.env`).
+- TD workshop messages no longer use the informal French “tu” form.
+
+## [2.6.2] - 2026-11-21
+
+### Changed
+
+- Settings open inside the course window, over the page, like Modding Manager's: dark overlay and centred panel in the app's style (only its content scrolls), closed with the cross, Esc or a click outside. No more system window (the `fenetreParametres` setting is removed).
+
+### Removed
+
+- The "Mon suivi" (TODO) tool is no longer shipped in the installed app, the catalogue or the public repository: it is kept in the working repository, and its links (home page, Go menu) only appear where the page exists.
+
+## [2.6.1] - 2026-11-16
+
+### Fixed
+
+- Documentation header adapts to the window width and to the scale: the search field stretches, the "Guided setup" button is never cut off and moves under the title when space runs out; shorter search placeholder ("Search… (Ctrl+F)").
+
+## [2.6.0] - 2026-11-16
+
+### Added
+
+- App in French and English: language chosen at first launch in a small window in the app's style (system language suggested), changeable in Settings › Language; menus, settings, notifications, page top bar, home page, documentation and guide are translated, and a change applies immediately to all windows. Courses, quizzes and TD stay in French.
+- Built-in documentation (F1, "?" button, Help menu, tray icon menu, Help card): user guide and technical documentation as Markdown pages per language, with table of contents, search and links to the settings and the guide.
+- Guided setup: the settings one by one with a short explanation (language, profile and example curriculum, Claude, scale, window, closing, updates, shortcuts, data folder, synchronisation), then a summary.
+- `npm run check` verifies the dictionaries (same keys and variables in both languages, no missing key) and the documentation (pages in each language, valid links).
+
+### Changed
+
+- Home page and settings use an impersonal tone; the home page reloads when a profile is created, chosen or renamed from the settings or the guide.
+
+## [2.5.0] - 2026-11-16
+
+### Added
+
+- Automatic synchronisation of the data folder when it is a tracked Git repository: offered once in a window in the app's style, then run at launch, every 30 minutes, when the PC wakes up and when quitting (10 s at most). Cloud button with a status dot in the page bar, tray icon menu entry, Synchronisation card in the settings.
+- In the ula repository, only the progress written by the app (quiz attempts, TD work, curriculum links, profiles) is committed automatically; TD workshops are merged one by one, the most recent quiz attempt is kept, other conflicts are left to be resolved by hand. Never `--force`, never a credentials prompt.
+- The home page reloads after a `git pull` made by hand.
+
+### Fixed
+
+- Synchronisation check (`npm run check`) compares files with normalised line endings, as Git for Windows (`core.autocrlf=true`) rewrites them in CRLF after a merge.
+
+## [2.4.2] - 2026-11-15
+
+### Fixed
+
+- Profile card of the settings in the style of the other cards (input fields, curriculum list, download switch), fields side by side that stack in a narrow card.
+- Windows notification area icon taken from the packaged `build/icon.ico` instead of being extracted from the executable (it did not show among hidden icons).
+
+## [2.4.1] - 2026-11-14
+
+### Added
+
+- "Buy me a coffee" button in the app's top bar (Buy Me a Coffee), opened in the system browser; animated cup that stays still when the system reduces animations, cup only in a narrow window. Absent in a browser.
+
+## [2.4.0] - 2026-11-13
+
+### Added
+
+- Background mode like Modding Manager: closing the window keeps the app in the notification area (single instance, Quit with a warning if quiz generations are running), with a setting to turn it off.
+- Update check every 6 hours, on wake-up and after the window is hidden, with a notification and a "Restart and install" entry in the tray icon menu.
+- Freeze log (`gels.log`) in the app's log folder.
+
+### Changed
+
+- Settings window proportional to the screen and remembered, side navigation and cards in 2 or 3 columns without gaps; interface scale also applied to the settings.
+- Home page blocks without gaps: each curriculum folder and pack spans as many columns as it has courses, the last block of a row stretches to the edge; folders without courses no longer take a block.
+
+### Fixed
+
+- Scrolling no longer freezes: Chromium's occluded-window calculation is turned off on Windows, no more blocking calls in the main process, the search bar is removed when it closes.
+- The "⋯" menu of the courses on the home page is correctly placed.
+
+## [2.3.0] - 2026-11-13
+
+### Added
+
+- "Interface scale" setting (Automatic or 50 to 200 %), applied to all windows; Ctrl+0 returns to the chosen scale.
+
+### Changed
+
+- Full-width home pages from 48rem, fluid base font size from 15 to 16 px between 768 and 1,440 px.
+- Curricula and packs shown as blocks with courses as buttons (subject dot, missing course downloaded on click, actions in a "⋯" menu).
+
+## [2.2.0] - 2026-11-12
+
+### Added
+
+- Example curricula ("Informatique": Licence 1, 2 and 3 packs in L1, L2, L3), offered when a profile is created, with a "Download the courses now" option; background downloads with progress and resume, "to download" and "Download all" in the curriculum.
+- Developer tool for packs and curricula (`npm run catalogue -- pack-ajouter | pack-ajouter-cours | cursus-ajouter | cursus-ajouter-pack | verifier`), which validates ids and duplicates, also run by `npm run check` and when publishing. The app only reads them.
+
+## [2.1.0] - 2026-11-12
+
+### Added
+
+- Level packs (Licence 1, 2 and 3 informatique, all the subjects of each year), published in `catalogue.json`; "Packs" section at the top of the home page catalogue (download of all the courses with progress and resume, sorted into a curriculum folder without overwriting anything).
+- `npm run accepter-proposition -- --pack`.
+- All the subjects of the curriculum have their course in the catalogue, even those not yet formatted; new "Communication and project" domain.
+
+## [2.0.0] - 2026-11-12
+
+### Added
+
+- Profiles and curricula: user name asked at first launch (session name suggested), several profiles per computer, courses sorted freely as links, progress always written in the active profile's space, never in the catalogue.
+- Online catalogue: courses downloaded on demand from the `catalogue` release, checksum verified; "Propose this course" for one's own courses, accepted with `npm run accepter-proposition`.
+- Data folder (`Documents/ULA` or a git repository of ula), chosen in the settings.
+- Checks of trapped packages, catalogue archives and proposals, profile spaces and the tools copy in `npm run check`.
+
+### Changed
+
+- Renamed from Studies to Universal Learn Academy. Same app id: the update from 1.0.x is automatic, settings and shortcuts are carried over.
+- The installer only contains the app and its tools (about 100 MB instead of 640); a local copy of the tools is updated from a manifest.
+
+## [1.0.3] - 2026-11-12
+
+### Changed
+
+- App settings gathered under a single gear in the installed app: the quizzes' Claude settings (models per use, Claude Code path, code execution) move to the app settings. Unchanged in a browser.
+
+## [1.0.2] - 2026-11-12
+
+### Added
+
+- "App settings" button in the bar of every page, in the installed app only.
+
+## [1.0.1] - 2026-11-12
+
+### Added
+
+- Public repository `universal-learn-academy`: export of the publishable content (`npm run public`); releases and updates are read from it.
+
+### Changed
+
+- Lab files shipped without personal work, according to a whitelist (`app/tp-fournis.json`) giving each provided file's original version; the package check refuses any lab file missing from the list or modified.
+
+## [1.0.0] - 2026-11-12
+
+### Added
+
+- First installable app, named Studies (Electron, electron-builder, electron-updater): automatic update at startup, configurable window at launch, Desktop, Start menu or chosen-folder shortcuts, connection to Claude through Claude Code or an encrypted API key. NSIS installer and AppImage with their `.blockmap` files, published with the GitHub CLI.
+- Personal data excluded from the executables, with a check that makes the build fail.
+
+[Unreleased]: https://github.com/WolfGang-PRoxa/universal-learn-academy/compare/v2.6.2...HEAD
+[2.6.2]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.6.2
+[2.6.1]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.6.1
+[2.6.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.6.0
+[2.5.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.5.0
+[2.4.2]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.4.2
+[2.4.1]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.4.1
+[2.4.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.4.0
+[2.3.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.3.0
+[2.2.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.2.0
+[2.1.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.1.0
+[2.0.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.0.0
+[1.0.3]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v1.0.3
+[1.0.2]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v1.0.2
+[1.0.1]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v1.0.1

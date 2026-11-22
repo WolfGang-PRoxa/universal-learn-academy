@@ -10,23 +10,37 @@ const POIGNEES = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
 export function creerCadre({ ecrans, bornes, min, surChangement, surFin }) {
   let rect = { ...bornes };
 
-  const bureau = ecrans.reduce((acc, e) => ({
-    gauche: Math.min(acc.gauche, e.bounds.x),
-    haut: Math.min(acc.haut, e.bounds.y),
-    droite: Math.max(acc.droite, e.bounds.x + e.bounds.width),
-    bas: Math.max(acc.bas, e.bounds.y + e.bounds.height),
-  }), { gauche: Infinity, haut: Infinity, droite: -Infinity, bas: -Infinity });
+  const bureau = ecrans.reduce(
+    (acc, e) => ({
+      gauche: Math.min(acc.gauche, e.bounds.x),
+      haut: Math.min(acc.haut, e.bounds.y),
+      droite: Math.max(acc.droite, e.bounds.x + e.bounds.width),
+      bas: Math.max(acc.bas, e.bounds.y + e.bounds.height),
+    }),
+    { gauche: Infinity, haut: Infinity, droite: -Infinity, bas: -Infinity },
+  );
   const largeurBureau = bureau.droite - bureau.gauche;
   const hauteurBureau = bureau.bas - bureau.haut;
 
   const surface = h('div', { class: 'cadre-surface' });
   const etiquette = h('span', { class: 'etiquette' });
-  const fenetre = h('div', { class: 'cadre-fenetre', tabindex: '0', 'aria-label': t('p.fenetre.cadreAria') },
+  const fenetre = h(
+    'div',
+    { class: 'cadre-fenetre', tabindex: '0', 'aria-label': t('p.fenetre.cadreAria') },
     etiquette,
     POIGNEES.map((d) => h('span', { class: `poignee ${d}`, dataset: { dir: d } })),
   );
-  const blocs = ecrans.map((e) => h('div', { class: `cadre-ecran${e.primary ? ' principal' : ''}` },
-    h('span', {}, `${t(e.primary ? 'p.fenetre.ecranPrincipal' : 'p.fenetre.ecran', { n: e.index })} · ${e.bounds.width}×${e.bounds.height}`)));
+  const blocs = ecrans.map((e) =>
+    h(
+      'div',
+      { class: `cadre-ecran${e.primary ? ' principal' : ''}` },
+      h(
+        'span',
+        {},
+        `${t(e.primary ? 'p.fenetre.ecranPrincipal' : 'p.fenetre.ecran', { n: e.index })} · ${e.bounds.width}×${e.bounds.height}`,
+      ),
+    ),
+  );
   surface.append(...blocs, fenetre);
   const element = h('div', { class: 'cadre' }, surface);
 
@@ -37,12 +51,14 @@ export function creerCadre({ ecrans, bornes, min, surChangement, surFin }) {
     echelle = Math.min(dispo / largeurBureau, 300 / hauteurBureau);
     surface.style.width = `${largeurBureau * echelle}px`;
     surface.style.height = `${hauteurBureau * echelle}px`;
-    ecrans.forEach((e, i) => Object.assign(blocs[i].style, {
-      left: `${(e.bounds.x - bureau.gauche) * echelle}px`,
-      top: `${(e.bounds.y - bureau.haut) * echelle}px`,
-      width: `${e.bounds.width * echelle}px`,
-      height: `${e.bounds.height * echelle}px`,
-    }));
+    ecrans.forEach((e, i) =>
+      Object.assign(blocs[i].style, {
+        left: `${(e.bounds.x - bureau.gauche) * echelle}px`,
+        top: `${(e.bounds.y - bureau.haut) * echelle}px`,
+        width: `${e.bounds.width * echelle}px`,
+        height: `${e.bounds.height * echelle}px`,
+      }),
+    );
     peindre();
   }
 
@@ -74,11 +90,22 @@ export function creerCadre({ ecrans, bornes, min, surChangement, surFin }) {
       const dx = (m.clientX - depart.px) / echelle;
       const dy = (m.clientY - depart.py) / echelle;
       const r = { ...depart.rect };
-      if (dir === 'deplacer') { r.x += dx; r.y += dy; } else {
+      if (dir === 'deplacer') {
+        r.x += dx;
+        r.y += dy;
+      } else {
         if (dir.includes('e')) r.width = depart.rect.width + dx;
         if (dir.includes('s')) r.height = depart.rect.height + dy;
-        if (dir.includes('w')) { const w = Math.max(min.width, depart.rect.width - dx); r.x = depart.rect.x + (depart.rect.width - w); r.width = w; }
-        if (dir.includes('n')) { const hh = Math.max(min.height, depart.rect.height - dy); r.y = depart.rect.y + (depart.rect.height - hh); r.height = hh; }
+        if (dir.includes('w')) {
+          const w = Math.max(min.width, depart.rect.width - dx);
+          r.x = depart.rect.x + (depart.rect.width - w);
+          r.width = w;
+        }
+        if (dir.includes('n')) {
+          const hh = Math.max(min.height, depart.rect.height - dy);
+          r.y = depart.rect.y + (depart.rect.height - hh);
+          r.height = hh;
+        }
       }
       rect = borner(r);
       peindre();
@@ -103,7 +130,13 @@ export function creerCadre({ ecrans, bornes, min, surChangement, surFin }) {
     const pas = ev.shiftKey ? 50 : 10;
     const [dx, dy] = touches[ev.key];
     const r = { ...rect };
-    if (ev.altKey) { r.width += dx * pas; r.height += dy * pas; } else { r.x += dx * pas; r.y += dy * pas; }
+    if (ev.altKey) {
+      r.width += dx * pas;
+      r.height += dy * pas;
+    } else {
+      r.x += dx * pas;
+      r.y += dy * pas;
+    }
     rect = borner(r);
     peindre();
     surChangement?.(rect);
@@ -115,7 +148,11 @@ export function creerCadre({ ecrans, bornes, min, surChangement, surFin }) {
 
   return {
     element,
-    fixer(suite) { rect = borner({ ...rect, ...suite }); peindre(); return rect; },
+    fixer(suite) {
+      rect = borner({ ...rect, ...suite });
+      peindre();
+      return rect;
+    },
     bornes: () => ({ ...rect }),
     detruire: () => observateur.disconnect(),
   };

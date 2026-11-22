@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <!--
   MODÈLE — TD interactif (charte : _outils/charte/README.md ; atelier : _outils/atelier/README.md)
   1. Copier vers explore/<domaine>/<cours>/generated_courses/td-<NN>-<slug>.html
@@ -15,163 +15,184 @@
      node _outils/atelier/outils/verifier.js --executer <fichier>
 -->
 <html lang="fr" data-matiere="{{matiere}}">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TD {{N}} · {{Titre}} · {{Matière}} {{Niveau}}</title>
-<meta name="description" content="TD {{N}} interactif : {{ce que l'on y fait}}.">
-<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
-<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
-<link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
-<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
-<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
-<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
-<script src="../../../../_outils/charte/assets/cours.js"></script>
-<script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
-<script type="application/json" id="atelier-jeux">
-{
-  "{{nom-du-jeu}}": {
-    "titre": "{{Titre du jeu de données}}",
-    "description": "<p>{{Tables : nom(colonnes).}}</p>",
-    "script": "CREATE TABLE {{…}};\nINSERT INTO {{…}};"
-  }
-}
-</script>
-</head>
-<body>
-
-<header class="barre">
-  <nav class="fil" aria-label="Fil d'Ariane">
-    <span class="pastille" aria-hidden="true"></span>
-    <a href="../../../../index.html">ULA</a>
-    <a href="../../index.html">{{Domaine}}</a>
-    <a href="index.html">{{Matière}}</a>
-    <span aria-current="page">TD {{N}} · {{Titre court}}</span>
-  </nav>
-</header>
-
-<div class="page">
-<main class="cours">
-
-  <header class="entete">
-    <p class="surtitre"><span class="badge matiere">{{Matière}}</span> TD {{N}} · {{Niveau}} {{Semestre}} · interactif</p>
-    <h1>{{Titre du TD}}</h1>
-    <p class="chapeau">{{Deux phrases : ce que l'on pratique dans ce TD, et le cours qu'il met en œuvre.}}</p>
-    <dl class="meta">
-      <div><dt>Source</dt><dd><a href="../TD/{{fichier}}.pdf">{{fichier}}.pdf</a></dd></div>
-      <div><dt>Cours</dt><dd><a href="{{cours-NN-slug}}.html">{{Cours N · Titre}}</a></dd></div>
-      <div><dt>Mise à jour</dt><dd><time datetime="{{AAAA-MM-JJ}}">{{JJ mois AAAA}}</time></dd></div>
-      <div><dt>Lecture</dt><dd data-duree-lecture>—</dd></div>
-    </dl>
-  </header>
-
-  <div class="cadre-intro">
-    <div>
-      <p class="cadre-titre">Objectifs</p>
-      <ul>
-        <li>{{Savoir modéliser / traduire / écrire…}}</li>
-      </ul>
-    </div>
-    <div>
-      <p class="cadre-titre">Notions utilisées</p>
-      <ul>
-        <li>{{Notion, avec un lien vers la section du cours}}</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="bloc note">
-    <p class="bloc-titre">Mode d'emploi</p>
-    <ul>
-      <li>La réponse se construit sur le dessin ou dans la vue texte (« Les deux ») ; les deux restent synchronisés.</li>
-      <li>« Vérifier » contrôle la forme sans rien dévoiler, « Comparer » mesure l'écart avec la solution, « Claude » répond aux questions et corrige.</li>
-      <li>Le travail s'enregistre tout seul. Avec le serveur local (<code>lancer.bat</code>), il va dans <code>td_results/</code>, Claude est disponible et le SQL s'exécute.</li>
-    </ul>
-  </div>
-
-  <section>
-    <h2>{{Exercice 1 · Titre}} <span class="ref">{{TD, p. 1}}</span></h2>
-
-    <div class="bloc exercice">
-      <p class="bloc-titre">Exercice 1 <span>{{Titre}}</span></p>
-      <p>{{Énoncé fidèle à la source.}}</p>
-    </div>
-    <div class="atelier" id="td{{N}}-ex1-classes" data-editeur="classes">
-      <script type="application/json">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TD {{N}} · {{Titre}} · {{Matière}} {{Niveau}}</title>
+    <meta name="description" content="TD {{N}} interactif : {{ce que l'on y fait}}." />
+    <link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css" />
+    <link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css" />
+    <link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css" />
+    <script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+    <script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+    <script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+    <script src="../../../../_outils/charte/assets/cours.js"></script>
+    <script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
+    <script type="application/json" id="atelier-jeux">
       {
-        "options": { "bdd": true },
-        "solution": [
-          "classe {{Classe}}",
-          "  {{id}} : int {PK}",
-          "  {{attribut}} : varchar",
-          "classe {{Autre}}",
-          "  {{id}} : int {PK}",
-          "{{Classe}} \"1\" -- \"*\" {{Autre}} : {{verbe}} >"
-        ],
-        "explication": "<p>{{Pourquoi cette modélisation : choix des classes, des multiplicités.}}</p>"
+        "{{nom-du-jeu}}": {
+          "titre": "{{Titre du jeu de données}}",
+          "description": "<p>{{Tables : nom(colonnes).}}</p>",
+          "script": "CREATE TABLE {{…}};\nINSERT INTO {{…}};"
+        }
       }
-      </script>
+    </script>
+  </head>
+  <body>
+    <header class="barre">
+      <nav class="fil" aria-label="Fil d'Ariane">
+        <span class="pastille" aria-hidden="true"></span>
+        <a href="../../../../index.html">ULA</a>
+        <a href="../../index.html">{{Domaine}}</a>
+        <a href="index.html">{{Matière}}</a>
+        <span aria-current="page">TD {{N}} · {{Titre court}}</span>
+      </nav>
+    </header>
+
+    <div class="page">
+      <main class="cours">
+        <header class="entete">
+          <p class="surtitre">
+            <span class="badge matiere">{{Matière}}</span> TD {{N}} · {{Niveau}} {{Semestre}} · interactif
+          </p>
+          <h1>{{Titre du TD}}</h1>
+          <p class="chapeau">{{Deux phrases : ce que l'on pratique dans ce TD, et le cours qu'il met en œuvre.}}</p>
+          <dl class="meta">
+            <div>
+              <dt>Source</dt>
+              <dd><a href="../TD/{{fichier}}.pdf">{{fichier}}.pdf</a></dd>
+            </div>
+            <div>
+              <dt>Cours</dt>
+              <dd><a href="{{cours-NN-slug}}.html">{{Cours N · Titre}}</a></dd>
+            </div>
+            <div>
+              <dt>Mise à jour</dt>
+              <dd><time datetime="{{AAAA-MM-JJ}}">{{JJ mois AAAA}}</time></dd>
+            </div>
+            <div>
+              <dt>Lecture</dt>
+              <dd data-duree-lecture>—</dd>
+            </div>
+          </dl>
+        </header>
+
+        <div class="cadre-intro">
+          <div>
+            <p class="cadre-titre">Objectifs</p>
+            <ul>
+              <li>{{Savoir modéliser / traduire / écrire…}}</li>
+            </ul>
+          </div>
+          <div>
+            <p class="cadre-titre">Notions utilisées</p>
+            <ul>
+              <li>{{Notion, avec un lien vers la section du cours}}</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="bloc note">
+          <p class="bloc-titre">Mode d'emploi</p>
+          <ul>
+            <li>
+              La réponse se construit sur le dessin ou dans la vue texte (« Les deux ») ; les deux restent synchronisés.
+            </li>
+            <li>
+              « Vérifier » contrôle la forme sans rien dévoiler, « Comparer » mesure l'écart avec la solution,
+              « Claude » répond aux questions et corrige.
+            </li>
+            <li>
+              Le travail s'enregistre tout seul. Avec le serveur local (<code>lancer.bat</code>), il va dans
+              <code>td_results/</code>, Claude est disponible et le SQL s'exécute.
+            </li>
+          </ul>
+        </div>
+
+        <section>
+          <h2>{{Exercice 1 · Titre}} <span class="ref">{{TD, p. 1}}</span></h2>
+
+          <div class="bloc exercice">
+            <p class="bloc-titre">Exercice 1 <span>{{Titre}}</span></p>
+            <p>{{Énoncé fidèle à la source.}}</p>
+          </div>
+          <div class="atelier" id="td{{N}}-ex1-classes" data-editeur="classes">
+            <script type="application/json">
+              {
+                "options": { "bdd": true },
+                "solution": [
+                  "classe {{Classe}}",
+                  "  {{id}} : int {PK}",
+                  "  {{attribut}} : varchar",
+                  "classe {{Autre}}",
+                  "  {{id}} : int {PK}",
+                  "{{Classe}} \"1\" -- \"*\" {{Autre}} : {{verbe}} >"
+                ],
+                "explication": "<p>{{Pourquoi cette modélisation : choix des classes, des multiplicités.}}</p>"
+              }
+            </script>
+          </div>
+          <details class="indice">
+            <summary>Indice</summary>
+            <div><p>{{Met sur la voie sans donner la réponse.}}</p></div>
+          </details>
+        </section>
+
+        <section>
+          <h2>{{Exercice 2 · Traduction en relationnel}}</h2>
+
+          <div class="bloc exercice">
+            <p class="bloc-titre">Exercice 2 <span>{{Titre}}</span></p>
+            <p>{{Énoncé.}}</p>
+          </div>
+          <div class="atelier" id="td{{N}}-ex2-relationnel" data-editeur="relationnel">
+            <script type="application/json">
+              {
+                "solution": [
+                  "{{Classes}}(_{{id}}_, {{attribut}})",
+                  "{{Autres}}(_{{id}}_, #{{id_classe}}({{Classes}}.{{id}}))"
+                ],
+                "explication": "<p>{{Règle de traduction appliquée.}}</p>"
+              }
+            </script>
+          </div>
+        </section>
+
+        <section>
+          <h2>{{Exercice 3 · Requêtes}}</h2>
+
+          <div class="bloc exercice">
+            <p class="bloc-titre">Exercice 3 <span>{{Titre}}</span></p>
+            <p>{{Énoncé de la requête : colonnes et ordre attendus.}}</p>
+          </div>
+          <div class="atelier" id="td{{N}}-ex3-sql" data-editeur="sql">
+            <script type="application/json">
+              {
+                "options": { "jeu": "{{nom-du-jeu}}" },
+                "depart": "SELECT ",
+                "solution": "SELECT {{…}};"
+              }
+            </script>
+          </div>
+        </section>
+
+        <section>
+          <h2 class="sans-numero">À retenir</h2>
+          <div class="bloc retenir">
+            <p class="bloc-titre">Les méthodes</p>
+            <ul>
+              <li>{{Méthode travaillée dans le TD (3 à 6 points)}}</li>
+            </ul>
+          </div>
+        </section>
+
+        <nav class="pagination" aria-label="Chapitres">
+          <a class="precedent" href="{{fichier-precedent}}.html"><small>← Précédent</small>{{Titre précédent}}</a>
+          <a class="suivant" href="{{fichier-suivant}}.html"><small>Suivant →</small>{{Titre suivant}}</a>
+        </nav>
+      </main>
     </div>
-    <details class="indice">
-      <summary>Indice</summary>
-      <div><p>{{Met sur la voie sans donner la réponse.}}</p></div>
-    </details>
-  </section>
 
-  <section>
-    <h2>{{Exercice 2 · Traduction en relationnel}}</h2>
-
-    <div class="bloc exercice">
-      <p class="bloc-titre">Exercice 2 <span>{{Titre}}</span></p>
-      <p>{{Énoncé.}}</p>
-    </div>
-    <div class="atelier" id="td{{N}}-ex2-relationnel" data-editeur="relationnel">
-      <script type="application/json">
-      {
-        "solution": ["{{Classes}}(_{{id}}_, {{attribut}})", "{{Autres}}(_{{id}}_, #{{id_classe}}({{Classes}}.{{id}}))"],
-        "explication": "<p>{{Règle de traduction appliquée.}}</p>"
-      }
-      </script>
-    </div>
-  </section>
-
-  <section>
-    <h2>{{Exercice 3 · Requêtes}}</h2>
-
-    <div class="bloc exercice">
-      <p class="bloc-titre">Exercice 3 <span>{{Titre}}</span></p>
-      <p>{{Énoncé de la requête : colonnes et ordre attendus.}}</p>
-    </div>
-    <div class="atelier" id="td{{N}}-ex3-sql" data-editeur="sql">
-      <script type="application/json">
-      {
-        "options": { "jeu": "{{nom-du-jeu}}" },
-        "depart": "SELECT ",
-        "solution": "SELECT {{…}};"
-      }
-      </script>
-    </div>
-  </section>
-
-  <section>
-    <h2 class="sans-numero">À retenir</h2>
-    <div class="bloc retenir">
-      <p class="bloc-titre">Les méthodes</p>
-      <ul>
-        <li>{{Méthode travaillée dans le TD (3 à 6 points)}}</li>
-      </ul>
-    </div>
-  </section>
-
-  <nav class="pagination" aria-label="Chapitres">
-    <a class="precedent" href="{{fichier-precedent}}.html"><small>← Précédent</small>{{Titre précédent}}</a>
-    <a class="suivant" href="{{fichier-suivant}}.html"><small>Suivant →</small>{{Titre suivant}}</a>
-  </nav>
-
-</main>
-</div>
-
-<footer class="pied">{{Matière}} · {{Niveau}} · <a href="index.html">tous les chapitres</a></footer>
-
-</body>
+    <footer class="pied">{{Matière}} · {{Niveau}} · <a href="index.html">tous les chapitres</a></footer>
+  </body>
 </html>

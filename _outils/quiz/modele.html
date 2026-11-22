@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <!--
   MODÈLE — page de quiz (outil : _outils/quiz/README.md)
   1. Copier vers explore/<domaine>/<cours>/generated_quizzes/quiz-<slug>.html
@@ -11,79 +11,84 @@
      python _outils/quiz/outils/verifier_quiz.py --executer <fichier>.
 -->
 <html lang="fr" data-matiere="{{matiere}}">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Quiz · {{Sujet}} · {{Matière}} {{Niveau}}</title>
-<meta name="description" content="Quiz interactif sur {{le sujet}} ({{Matière}}, {{Niveau}}).">
-<link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css">
-<link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css">
-<link rel="stylesheet" href="../../../../_outils/quiz/assets/quiz.css">
-<script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
-<script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
-<script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
-<script src="../../../../_outils/charte/assets/cours.js"></script>
-<script defer src="../../../../_outils/quiz/assets/quiz.js"></script>
-<!-- Questions de type « atelier » (diagrammes, schémas…) : décommenter ces deux lignes
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quiz · {{Sujet}} · {{Matière}} {{Niveau}}</title>
+    <meta name="description" content="Quiz interactif sur {{le sujet}} ({{Matière}}, {{Niveau}})." />
+    <link rel="stylesheet" href="../../../../_outils/charte/vendor/katex/katex.min.css" />
+    <link rel="stylesheet" href="../../../../_outils/charte/assets/cours.css" />
+    <link rel="stylesheet" href="../../../../_outils/quiz/assets/quiz.css" />
+    <script defer src="../../../../_outils/charte/vendor/katex/katex.min.js"></script>
+    <script defer src="../../../../_outils/charte/vendor/katex/auto-render.min.js"></script>
+    <script defer src="../../../../_outils/charte/vendor/highlight/highlight.min.js"></script>
+    <script src="../../../../_outils/charte/assets/cours.js"></script>
+    <script defer src="../../../../_outils/quiz/assets/quiz.js"></script>
+    <!-- Questions de type « atelier » (diagrammes, schémas…) : décommenter ces deux lignes
 <link rel="stylesheet" href="../../../../_outils/atelier/assets/atelier.css">
 <script defer src="../../../../_outils/atelier/assets/atelier.js"></script>
 -->
-</head>
-<body>
+  </head>
+  <body>
+    <header class="barre">
+      <nav class="fil" aria-label="Fil d'Ariane">
+        <span class="pastille" aria-hidden="true"></span>
+        <a href="../../../../index.html">ULA</a>
+        <a href="../../index.html">{{Domaine}}</a>
+        <a href="../generated_courses/index.html">{{Matière}}</a>
+        <span aria-current="page">Quiz · {{Sujet}}</span>
+      </nav>
+    </header>
 
-<header class="barre">
-  <nav class="fil" aria-label="Fil d'Ariane">
-    <span class="pastille" aria-hidden="true"></span>
-    <a href="../../../../index.html">ULA</a>
-    <a href="../../index.html">{{Domaine}}</a>
-    <a href="../generated_courses/index.html">{{Matière}}</a>
-    <span aria-current="page">Quiz · {{Sujet}}</span>
-  </nav>
-</header>
+    <div class="page">
+      <main class="quiz">
+        <header class="entete">
+          <p class="surtitre"><span class="badge matiere">{{Matière}}</span> Quiz · {{Niveau}}</p>
+          <h1>{{Sujet du quiz}}</h1>
+          <p class="chapeau">{{Une ou deux phrases : ce que couvre le quiz.}}</p>
+          <dl class="meta">
+            <div>
+              <dt>Porte sur</dt>
+              <dd><a href="../generated_courses/{{cours-NN-slug}}.html">{{Cours N · Titre}}</a></dd>
+            </div>
+            <div>
+              <dt>Mise à jour</dt>
+              <dd><time datetime="{{AAAA-MM-JJ}}">{{JJ mois AAAA}}</time></dd>
+            </div>
+          </dl>
+        </header>
 
-<div class="page">
-<main class="quiz">
+        <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
+      </main>
+    </div>
 
-  <header class="entete">
-    <p class="surtitre"><span class="badge matiere">{{Matière}}</span> Quiz · {{Niveau}}</p>
-    <h1>{{Sujet du quiz}}</h1>
-    <p class="chapeau">{{Une ou deux phrases : ce que couvre le quiz.}}</p>
-    <dl class="meta">
-      <div><dt>Porte sur</dt><dd><a href="../generated_courses/{{cours-NN-slug}}.html">{{Cours N · Titre}}</a></dd></div>
-      <div><dt>Mise à jour</dt><dd><time datetime="{{AAAA-MM-JJ}}">{{JJ mois AAAA}}</time></dd></div>
-    </dl>
-  </header>
+    <footer class="pied">
+      {{Matière}} · {{Niveau}} · <a href="../generated_courses/index.html">tous les chapitres</a>
+    </footer>
 
-  <noscript><p class="quiz-alerte">Ce quiz a besoin de JavaScript pour fonctionner.</p></noscript>
-
-</main>
-</div>
-
-<footer class="pied">{{Matière}} · {{Niveau}} · <a href="../generated_courses/index.html">tous les chapitres</a></footer>
-
-<script type="application/json" id="quiz-donnees">
-{
-  "id": "{{matiere}}-{{sujet}}",
-  "melanger": true,
-  "cours": [
-    { "titre": "{{Cours N · Titre}}", "lien": "../generated_courses/{{cours-NN-slug}}.html" }
-  ],
-  "questions": [
-    {
-      "id": "q01",
-      "type": "qcm",
-      "theme": "{{Thème}}",
-      "difficulte": 1,
-      "enonce": "<p>{{Question}}</p>",
-      "choix": ["{{Bonne réponse}}", "{{Distracteur}}", "{{Distracteur}}", "{{Distracteur}}"],
-      "reponse": 0,
-      "indices": ["<p>{{Indice qui met sur la voie sans donner la réponse}}</p>"],
-      "explication": "<p>{{Pourquoi c'est juste, et pourquoi le distracteur le plus tentant est faux.}}</p>",
-      "revoir": { "texte": "{{Cours N · Section}}", "lien": "../generated_courses/{{cours-NN-slug}}.html#{{ancre}}" }
-    }
-  ]
-}
-</script>
-
-</body>
+    <script type="application/json" id="quiz-donnees">
+      {
+        "id": "{{matiere}}-{{sujet}}",
+        "melanger": true,
+        "cours": [{ "titre": "{{Cours N · Titre}}", "lien": "../generated_courses/{{cours-NN-slug}}.html" }],
+        "questions": [
+          {
+            "id": "q01",
+            "type": "qcm",
+            "theme": "{{Thème}}",
+            "difficulte": 1,
+            "enonce": "<p>{{Question}}</p>",
+            "choix": ["{{Bonne réponse}}", "{{Distracteur}}", "{{Distracteur}}", "{{Distracteur}}"],
+            "reponse": 0,
+            "indices": ["<p>{{Indice qui met sur la voie sans donner la réponse}}</p>"],
+            "explication": "<p>{{Pourquoi c'est juste, et pourquoi le distracteur le plus tentant est faux.}}</p>",
+            "revoir": {
+              "texte": "{{Cours N · Section}}",
+              "lien": "../generated_courses/{{cours-NN-slug}}.html#{{ancre}}"
+            }
+          }
+        ]
+      }
+    </script>
+  </body>
 </html>

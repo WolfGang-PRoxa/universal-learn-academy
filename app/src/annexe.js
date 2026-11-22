@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 /* ==========================================================================
    Fenêtres annexes au style de l'application (version 2.6.0)
    --------------------------------------------------------------------------
@@ -12,12 +12,16 @@
    (fenetres.js) ne la compte pas parmi les fenêtres de cours.
    ========================================================================== */
 
-const { BrowserWindow, nativeTheme, screen, shell } = require("electron");
-const path = require("path");
+const { BrowserWindow, nativeTheme, screen, shell } = require('electron');
+const path = require('path');
 
 /** Fenêtre des cours visible, s'il y en a une. */
 function fenetreDesCours() {
-  return BrowserWindow.getAllWindows().find((w) => !w.isDestroyed() && !w.studiesAnnexe && w.isVisible() && !w.isMinimized()) || null;
+  return (
+    BrowserWindow.getAllWindows().find(
+      (w) => !w.isDestroyed() && !w.studiesAnnexe && w.isVisible() && !w.isMinimized(),
+    ) || null
+  );
 }
 
 /**
@@ -47,27 +51,42 @@ function creer(o) {
   const { parent, bornes } = bornesCentrees({ largeur: o.largeur, hauteur: o.hauteur, min: o.min });
   const redim = o.redimensionnable !== false;
   const f = new BrowserWindow({
-    ...bornes, parent: o.modale ? parent || undefined : undefined, modal: Boolean(o.modale && parent),
-    show: false, resizable: redim, minimizable: redim, maximizable: redim, fullscreenable: false,
-    minWidth: o.min ? o.min.width : undefined, minHeight: o.min ? o.min.height : undefined,
-    title: o.titre, autoHideMenuBar: true, useContentSize: !redim,
-    backgroundColor: nativeTheme.shouldUseDarkColors ? (redim ? "#131417" : "#1b1c20") : (redim ? "#fafaf8" : "#ffffff"),
-    icon: path.join(__dirname, "assets", "icone.png"),
-    webPreferences: { preload: o.preload, contextIsolation: true, sandbox: true, nodeIntegration: false }
+    ...bornes,
+    parent: o.modale ? parent || undefined : undefined,
+    modal: Boolean(o.modale && parent),
+    show: false,
+    resizable: redim,
+    minimizable: redim,
+    maximizable: redim,
+    fullscreenable: false,
+    minWidth: o.min ? o.min.width : undefined,
+    minHeight: o.min ? o.min.height : undefined,
+    title: o.titre,
+    autoHideMenuBar: true,
+    useContentSize: !redim,
+    backgroundColor: nativeTheme.shouldUseDarkColors ? (redim ? '#131417' : '#1b1c20') : redim ? '#fafaf8' : '#ffffff',
+    icon: path.join(__dirname, 'assets', 'icone.png'),
+    webPreferences: { preload: o.preload, contextIsolation: true, sandbox: true, nodeIntegration: false },
   });
   f.setMenu(null);
   f.studiesAnnexe = true;
   f.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https:\/\//i.test(url)) shell.openExternal(url);
-    return { action: "deny" };
+    return { action: 'deny' };
   });
   bloquerNavigation(f);
-  if (o.zoom) f.webContents.on("did-finish-load", () => { if (!f.isDestroyed()) f.webContents.setZoomFactor(o.zoom()); });
+  if (o.zoom)
+    f.webContents.on('did-finish-load', () => {
+      if (!f.isDestroyed()) f.webContents.setZoomFactor(o.zoom());
+    });
   // Fenêtre de taille fixe : elle s'affiche quand sa page a donné sa hauteur
   // (ajuster()), avec un secours si la page ne le fait pas
-  f.once("ready-to-show", () => {
+  f.once('ready-to-show', () => {
     if (redim) f.show();
-    else setTimeout(() => { if (!f.isDestroyed() && !f.isVisible()) f.show(); }, 1500);
+    else
+      setTimeout(() => {
+        if (!f.isDestroyed() && !f.isVisible()) f.show();
+      }, 1500);
   });
   f.loadFile(o.page, o.hash ? { hash: o.hash } : undefined);
   return f;
@@ -86,8 +105,8 @@ function ajuster(f, largeur, hauteur) {
 /** Une fenêtre annexe ne quitte jamais sa page ; recharger cette même page reste
  *  permis (changement de langue : location.reload()). */
 function bloquerNavigation(f) {
-  const sansAncre = (u) => String(u).split("#")[0];
-  f.webContents.on("will-navigate", (e, url) => {
+  const sansAncre = (u) => String(u).split('#')[0];
+  f.webContents.on('will-navigate', (e, url) => {
     if (sansAncre(url) !== sansAncre(f.webContents.getURL())) e.preventDefault();
   });
 }

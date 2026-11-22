@@ -2,10 +2,10 @@
 
 ## Installer
 
-| Système | Fichier | Installation |
-|---|---|---|
+| Système                | Fichier                                       | Installation                                                                                                                                                                  |
+| ---------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Windows 10 ou 11 (x64) | `Universal-Learn-Academy-Setup-<version>.exe` | Pour l’utilisateur courant, sans droits administrateur. L’application n’étant pas signée, SmartScreen demande « Informations complémentaires », puis « Exécuter quand même ». |
-| Linux (x64) | `Universal-Learn-Academy-<version>.AppImage` | Rendre le fichier exécutable (`chmod +x`), puis le lancer. |
+| Linux (x64)            | `Universal-Learn-Academy-<version>.AppImage`  | Rendre le fichier exécutable (`chmod +x`), puis le lancer.                                                                                                                    |
 
 Les versions suivantes s’installent d’elles-mêmes (voir [Mises à jour](page:application#mises-a-jour)).
 

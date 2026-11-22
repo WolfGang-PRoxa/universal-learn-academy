@@ -29,16 +29,16 @@ _outils/charte/
 
 ## Où ranger les pages produites
 
-| Élément | Emplacement |
-|---|---|
-| Pages d'une matière | `explore/<domaine>/<cours>/generated_courses/`, par exemple `explore/informatique/codage/generated_courses/` |
-| Accueil de la matière | `…/generated_courses/index.html`, à partir de `modeles/index-matiere.html` |
-| Fiche d'un cours | `explore/<domaine>/<cours>/ula-cours.json` : identifiant, titre, domaine, niveau, origine, teinte (voir `_outils/ula/README.md`) |
-| Accueil d'un domaine | `explore/<domaine>/index.html`, produit par `outils/index_niveau.py` à partir des accueils de cours (jamais modifié à la main) |
-| Accueil général | `index.html` à la racine (`ula/`) : les domaines et leurs cours, produit par le même outil (jamais modifié à la main) ; servi par le serveur local, il est remplacé par l'accueil dynamique (profils, cursus, catalogue : `_outils/ula/accueil.html`) |
-| Cours n° N | `cours-NN-<slug>.html`, par exemple `cours-01-hadamard.html` |
-| TD ou TP n° N | `td-NN-<slug>.html`, `tp-NN-<slug>.html` |
-| Images extraites d'une source | `…/generated_courses/img/<page>-<n>.png` |
+| Élément                       | Emplacement                                                                                                                                                                                                                                           |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pages d'une matière           | `explore/<domaine>/<cours>/generated_courses/`, par exemple `explore/informatique/codage/generated_courses/`                                                                                                                                          |
+| Accueil de la matière         | `…/generated_courses/index.html`, à partir de `modeles/index-matiere.html`                                                                                                                                                                            |
+| Fiche d'un cours              | `explore/<domaine>/<cours>/ula-cours.json` : identifiant, titre, domaine, niveau, origine, teinte (voir `_outils/ula/README.md`)                                                                                                                      |
+| Accueil d'un domaine          | `explore/<domaine>/index.html`, produit par `outils/index_niveau.py` à partir des accueils de cours (jamais modifié à la main)                                                                                                                        |
+| Accueil général               | `index.html` à la racine (`ula/`) : les domaines et leurs cours, produit par le même outil (jamais modifié à la main) ; servi par le serveur local, il est remplacé par l'accueil dynamique (profils, cursus, catalogue : `_outils/ula/accueil.html`) |
+| Cours n° N                    | `cours-NN-<slug>.html`, par exemple `cours-01-hadamard.html`                                                                                                                                                                                          |
+| TD ou TP n° N                 | `td-NN-<slug>.html`, `tp-NN-<slug>.html`                                                                                                                                                                                                              |
+| Images extraites d'une source | `…/generated_courses/img/<page>-<n>.png`                                                                                                                                                                                                              |
 
 - `NN` sur deux chiffres. Le slug est court, en minuscules, sans accents, avec des tirets entre les mots.
 - Les sources (PDF, énoncés) restent où elles sont. La page y renvoie par un lien relatif, par exemple `../cours/L3_INFO_C1.pdf`.
@@ -107,36 +107,36 @@ Variantes :
 
 ### Quel composant pour quel contenu
 
-| Contenu | Composant |
-|---|---|
-| Définition d'une notion | `div.bloc.definition` |
-| Théorème, propriété, lemme, corollaire | `div.bloc.theoreme`, avec `details.preuve` |
-| Exemple, cas concret, application | `div.bloc.exemple` |
-| Méthode, algorithme décrit en mots | `div.bloc.methode` |
-| Procédure en étapes ordonnées | `ol.etapes` |
-| Piège, erreur fréquente, comportement dangereux | `div.bloc.attention` |
-| Astuce pratique, raccourci | `div.bloc.astuce` |
-| Remarque, précision secondaire | `div.bloc.note` |
-| Ajout absent de la source | `div.bloc.complement` |
-| Synthèse de fin de page | `div.bloc.retenir` |
-| Exercice : énoncé, indice, solution | `div.bloc.exercice`, avec `details.indice` et `details.solution` |
-| Comparaison, avantages et limites | `div.colonnes`, avec `div.colonne.pour` / `.contre` |
-| Vocabulaire du chapitre | `dl.glossaire` |
-| Programme, extrait de code | `<pre><code class="language-…">` |
-| Commandes et sortie d'un terminal | `<pre class="terminal"><code>` |
-| Algorithme en pseudo-code | `<pre><code class="language-pseudo">` |
-| Formule | `\( … \)` en ligne, `\[ … \]` en bloc, `div.encadre` pour un résultat central |
-| Schéma relationnel (bases de données) | `div.relations` : une relation par `<p>`, nom en `<b>`, clé primaire en `<u>`, clé étrangère préfixée par `#` |
-| Données en lignes et colonnes | `<table>` avec `<caption>` ; variantes `mono`, `centre`, `compact` sur un `div.tableau` |
-| Schéma, diagramme | `figure.figure` contenant un `svg.schema` |
-| Piste audio ou vidéo fournie (langues : écoute, TOEIC, accents) | `figure.ecoute` : `figcaption` (titre, source en `<small>`), `<audio controls preload="metadata">` (ou `<video controls>`), transcription dans un `details.depliant` ; `#t=début,fin` sur le chemin pour un passage |
-| Exercice à faire sur un dessin ou une grille (diagramme de classes, modèle relationnel, table à remplir, automate, arbre de processus, chronogramme, séquence, cas d'utilisation, SQL) ; diagramme de cours que l'on explore | `div.atelier` de l'atelier (`_outils/atelier/README.md`) |
-| Digression longue et facultative | `details.depliant` |
-| Question de révision | `details.carte` dans `div.cartes` |
-| Statut d'un passage | badges `examen`, `hors-programme`, `a-verifier`, `ajout` |
-| Renvoi à la source | `span.ref` (« diapo 12 », « p. 4 ») |
-| Matière dans une liste (accueil général) | `li` d'`ol.chapitres` avec `data-matiere` et un `span.chapitre-num` vide : pastille de la matière |
-| Case à cocher, bouton radio, liste déroulante (outils seulement : quiz, atelier) | `input` et `select` sans classe : la charte les habille |
+| Contenu                                                                                                                                                                                                                      | Composant                                                                                                                                                                                                           |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Définition d'une notion                                                                                                                                                                                                      | `div.bloc.definition`                                                                                                                                                                                               |
+| Théorème, propriété, lemme, corollaire                                                                                                                                                                                       | `div.bloc.theoreme`, avec `details.preuve`                                                                                                                                                                          |
+| Exemple, cas concret, application                                                                                                                                                                                            | `div.bloc.exemple`                                                                                                                                                                                                  |
+| Méthode, algorithme décrit en mots                                                                                                                                                                                           | `div.bloc.methode`                                                                                                                                                                                                  |
+| Procédure en étapes ordonnées                                                                                                                                                                                                | `ol.etapes`                                                                                                                                                                                                         |
+| Piège, erreur fréquente, comportement dangereux                                                                                                                                                                              | `div.bloc.attention`                                                                                                                                                                                                |
+| Astuce pratique, raccourci                                                                                                                                                                                                   | `div.bloc.astuce`                                                                                                                                                                                                   |
+| Remarque, précision secondaire                                                                                                                                                                                               | `div.bloc.note`                                                                                                                                                                                                     |
+| Ajout absent de la source                                                                                                                                                                                                    | `div.bloc.complement`                                                                                                                                                                                               |
+| Synthèse de fin de page                                                                                                                                                                                                      | `div.bloc.retenir`                                                                                                                                                                                                  |
+| Exercice : énoncé, indice, solution                                                                                                                                                                                          | `div.bloc.exercice`, avec `details.indice` et `details.solution`                                                                                                                                                    |
+| Comparaison, avantages et limites                                                                                                                                                                                            | `div.colonnes`, avec `div.colonne.pour` / `.contre`                                                                                                                                                                 |
+| Vocabulaire du chapitre                                                                                                                                                                                                      | `dl.glossaire`                                                                                                                                                                                                      |
+| Programme, extrait de code                                                                                                                                                                                                   | `<pre><code class="language-…">`                                                                                                                                                                                    |
+| Commandes et sortie d'un terminal                                                                                                                                                                                            | `<pre class="terminal"><code>`                                                                                                                                                                                      |
+| Algorithme en pseudo-code                                                                                                                                                                                                    | `<pre><code class="language-pseudo">`                                                                                                                                                                               |
+| Formule                                                                                                                                                                                                                      | `\( … \)` en ligne, `\[ … \]` en bloc, `div.encadre` pour un résultat central                                                                                                                                       |
+| Schéma relationnel (bases de données)                                                                                                                                                                                        | `div.relations` : une relation par `<p>`, nom en `<b>`, clé primaire en `<u>`, clé étrangère préfixée par `#`                                                                                                       |
+| Données en lignes et colonnes                                                                                                                                                                                                | `<table>` avec `<caption>` ; variantes `mono`, `centre`, `compact` sur un `div.tableau`                                                                                                                             |
+| Schéma, diagramme                                                                                                                                                                                                            | `figure.figure` contenant un `svg.schema`                                                                                                                                                                           |
+| Piste audio ou vidéo fournie (langues : écoute, TOEIC, accents)                                                                                                                                                              | `figure.ecoute` : `figcaption` (titre, source en `<small>`), `<audio controls preload="metadata">` (ou `<video controls>`), transcription dans un `details.depliant` ; `#t=début,fin` sur le chemin pour un passage |
+| Exercice à faire sur un dessin ou une grille (diagramme de classes, modèle relationnel, table à remplir, automate, arbre de processus, chronogramme, séquence, cas d'utilisation, SQL) ; diagramme de cours que l'on explore | `div.atelier` de l'atelier (`_outils/atelier/README.md`)                                                                                                                                                            |
+| Digression longue et facultative                                                                                                                                                                                             | `details.depliant`                                                                                                                                                                                                  |
+| Question de révision                                                                                                                                                                                                         | `details.carte` dans `div.cartes`                                                                                                                                                                                   |
+| Statut d'un passage                                                                                                                                                                                                          | badges `examen`, `hors-programme`, `a-verifier`, `ajout`                                                                                                                                                            |
+| Renvoi à la source                                                                                                                                                                                                           | `span.ref` (« diapo 12 », « p. 4 »)                                                                                                                                                                                 |
+| Matière dans une liste (accueil général)                                                                                                                                                                                     | `li` d'`ol.chapitres` avec `data-matiere` et un `span.chapitre-num` vide : pastille de la matière                                                                                                                   |
+| Case à cocher, bouton radio, liste déroulante (outils seulement : quiz, atelier)                                                                                                                                             | `input` et `select` sans classe : la charte les habille                                                                                                                                                             |
 
 Le balisage exact de chaque composant est dans `composants.html` : on le copie depuis là. Les plus courants :
 
@@ -149,14 +149,23 @@ Le balisage exact de chaque composant est dans `composants.html` : on le copie d
 <div class="bloc theoreme">
   <p class="bloc-titre">Propriété <span>Nom</span></p>
   <p>…</p>
-  <details class="preuve"><summary>Preuve</summary><p>…</p></details>
+  <details class="preuve">
+    <summary>Preuve</summary>
+    <p>…</p>
+  </details>
 </div>
 
 <div class="bloc exercice">
   <p class="bloc-titre">Exercice 2 <span>Titre court</span></p>
   <p>Énoncé fidèle à la source.</p>
-  <details class="indice"><summary>Indice</summary><p>…</p></details>
-  <details class="solution"><summary>Solution proposée</summary><p>…</p></details>
+  <details class="indice">
+    <summary>Indice</summary>
+    <p>…</p>
+  </details>
+  <details class="solution">
+    <summary>Solution proposée</summary>
+    <p>…</p>
+  </details>
 </div>
 
 <pre data-fichier="main.c"><code class="language-c">#include &lt;stdio.h&gt;
@@ -194,23 +203,23 @@ Le libellé d'un bloc est écrit dans le HTML : `theoreme` sert aussi pour « Le
 
 `data-matiere` sur `<html>` donne sa teinte à la page : numéros de sections, liens, sommaire, bloc « À retenir ».
 
-| `data-matiere` | Matière | Teinte |
-|---|---|---|
-| `codage` | Codage | indigo |
-| `bd` | Bases de données | vert |
-| `se` | Systèmes d'exploitation, programmation système | orange |
-| `poo` | Programmation orientée objet | rubis |
-| `anglais` | Anglais | magenta |
-| `c` | Langage C | bleu |
-| `reseau` | Réseau | cyan |
-| `securite` | Sécurité informatique | sarcelle |
-| `archi` | Architecture des ordinateurs | ocre |
-| `gl` | Génie logiciel | olive |
-| `unix` | Unix, shell | vert-jaune |
-| `web` | Web | violet |
-| `maths` | Mathématiques | pourpre |
-| `communication` | Communication, PPP | rose |
-| `licence` | Accueils (accueil général, accueils de domaine) | ambre |
+| `data-matiere`  | Matière                                         | Teinte     |
+| --------------- | ----------------------------------------------- | ---------- |
+| `codage`        | Codage                                          | indigo     |
+| `bd`            | Bases de données                                | vert       |
+| `se`            | Systèmes d'exploitation, programmation système  | orange     |
+| `poo`           | Programmation orientée objet                    | rubis      |
+| `anglais`       | Anglais                                         | magenta    |
+| `c`             | Langage C                                       | bleu       |
+| `reseau`        | Réseau                                          | cyan       |
+| `securite`      | Sécurité informatique                           | sarcelle   |
+| `archi`         | Architecture des ordinateurs                    | ocre       |
+| `gl`            | Génie logiciel                                  | olive      |
+| `unix`          | Unix, shell                                     | vert-jaune |
+| `web`           | Web                                             | violet     |
+| `maths`         | Mathématiques                                   | pourpre    |
+| `communication` | Communication, PPP                              | rose       |
+| `licence`       | Accueils (accueil général, accueils de domaine) | ambre      |
 
 Pour une nouvelle matière, ajouter une ligne dans la section 2 de `cours.css`, dans ce tableau et dans le nuancier de `composants.html`.
 

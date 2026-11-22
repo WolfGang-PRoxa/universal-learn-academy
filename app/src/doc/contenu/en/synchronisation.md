@@ -21,11 +21,11 @@ When enabled, syncing happens:
 
 **Sync now** is available from the cloud button of the top bar, the menu of the notification area icon and the Sync card.
 
-| Cloud dot | Meaning |
-|---|---|
-| Green | Up to date |
-| Blue | Sync in progress |
-| Red | Problem: one click opens the details |
+| Cloud dot | Meaning                              |
+| --------- | ------------------------------------ |
+| Green     | Up to date                           |
+| Blue      | Sync in progress                     |
+| Red       | Problem: one click opens the details |
 
 ### Setting up a repository
 

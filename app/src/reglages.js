@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 /* Paramètres de l'application installée, dans <userData>/parametres.json
    (%APPDATA%\Universal Learn Academy sous Windows, ~/.config/Universal Learn
    Academy sous Linux ; repris de %APPDATA%\Studies à la première ouverture).
@@ -7,15 +7,15 @@
    y est rangée chiffrée par le système (safeStorage, voir claude.js) et n'est
    jamais envoyée à l'interface des paramètres. */
 
-const { app } = require("electron");
-const fs = require("fs");
-const path = require("path");
+const { app } = require('electron');
+const fs = require('fs');
+const path = require('path');
 
 const DEFAUT = {
   // Recherche et installation des mises à jour au lancement
   miseAJourAuto: true,
   // Fenêtre au lancement : « agrandie » (par défaut) ou « personnalisee » (bornes)
-  fenetre: { mode: "agrandie", bornes: { x: 120, y: 80, width: 1400, height: 900 } },
+  fenetre: { mode: 'agrandie', bornes: { x: 120, y: 80, width: 1400, height: 900 } },
   // Échelle de l'interface, en % : 0 pour « Automatique » (100 %, la page s'adapte
   // seule à la largeur de la fenêtre), sinon de 50 à 200 par pas de 10
   affichage: { echelle: 0 },
@@ -24,12 +24,12 @@ const DEFAUT = {
   arrierePlan: { fermeture: true, bulleMontree: false },
   // Dossier des données (catalogue explore/ et espaces des profils) : vide pour
   // Documents/ULA ; un dépôt git d'ula (mode de l'auteur du catalogue) est reconnu
-  donnees: { dossier: "" },
+  donnees: { dossier: '' },
   // Ancien réglage (versions 1.x, « Studies ») : repris s'il désignait un dossier
-  cours: { mode: "integre", dossier: "" },
+  cours: { mode: 'integre', dossier: '' },
   // Connexion à Claude : « compte » (Claude Code, connecté par l'utilisateur) ou
   // « cle » (clé d'API personnelle, chiffrée : « enc:… »)
-  claude: { mode: "compte", cle: "" },
+  claude: { mode: 'compte', cle: '' },
   // Synchronisation automatique du dossier des données quand c'est un dépôt Git suivi
   // (synchro.js) : null tant que l'utilisateur n'a pas répondu à la proposition
   synchro: { auto: null },
@@ -37,16 +37,20 @@ const DEFAUT = {
   raccourcis: { dossiers: [] },
   // Langue de l'application (« fr », « en ») : null tant qu'elle n'est pas choisie
   // (la fenêtre de choix s'ouvre alors au démarrage, voir choix-langue.js)
-  langue: null
+  langue: null,
 };
 
 function fichier() {
-  return path.join(app.getPath("userData"), "parametres.json");
+  return path.join(app.getPath('userData'), 'parametres.json');
 }
 
-function copie(x) { return JSON.parse(JSON.stringify(x)); }
+function copie(x) {
+  return JSON.parse(JSON.stringify(x));
+}
 
-function estObjet(x) { return x && typeof x === "object" && !Array.isArray(x); }
+function estObjet(x) {
+  return x && typeof x === 'object' && !Array.isArray(x);
+}
 
 // Fusion récursive : les objets se complètent, le reste remplace
 function fusion(base, ajout) {
@@ -61,7 +65,11 @@ function fusion(base, ajout) {
 
 function lire() {
   let brut = null;
-  try { brut = JSON.parse(fs.readFileSync(fichier(), "utf8")); } catch (e) { /* absent ou illisible */ }
+  try {
+    brut = JSON.parse(fs.readFileSync(fichier(), 'utf8'));
+  } catch (e) {
+    /* absent ou illisible */
+  }
   return fusion(DEFAUT, brut);
 }
 
@@ -69,8 +77,8 @@ function lire() {
 function ecrire(reglages) {
   const f = fichier();
   fs.mkdirSync(path.dirname(f), { recursive: true });
-  const temporaire = f + "." + process.pid + ".tmp";
-  fs.writeFileSync(temporaire, JSON.stringify(reglages, null, 2), "utf8");
+  const temporaire = f + '.' + process.pid + '.tmp';
+  fs.writeFileSync(temporaire, JSON.stringify(reglages, null, 2), 'utf8');
   fs.renameSync(temporaire, f);
   return reglages;
 }

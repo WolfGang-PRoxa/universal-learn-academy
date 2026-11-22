@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 /* ==========================================================================
    Espace de données ula : catalogue, profils, cursus (studies/_outils/ula)
    --------------------------------------------------------------------------
@@ -17,62 +17,102 @@
    l'application installée (app/src). Les chemins relatifs sont en « / ».
    ========================================================================== */
 
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { tr } = require('../../quiz/serveur/lib/langue');
 
-const FICHE_COURS = "ula-cours.json";
-const FICHE_PROFIL = "ula-profil.json";
-const FICHE_LIEN = "ula-lien.json";
-const EXPLORE = "explore";
-const DOSSIER_PAR_DEFAUT = "Cours suivis";
+const FICHE_COURS = 'ula-cours.json';
+const FICHE_PROFIL = 'ula-profil.json';
+const FICHE_LIEN = 'ula-lien.json';
+const EXPLORE = 'explore';
+const DOSSIER_PAR_DEFAUT = 'Cours suivis';
 
 // Noms réservés à la racine (jamais des profils)
-const RESERVES = new Set(["explore", "_outils", "app", "node_modules", "propositions"]);
+const RESERVES = new Set(['explore', '_outils', 'app', 'node_modules', 'propositions']);
 // Dossiers de travail : jamais parcourus pour trouver des liens ou des sous-dossiers de cursus
-const TRAVAIL = new Set(["quiz_results", "td_results", "generated_courses", "generated_quizzes", "TP", "DM", "node_modules", "__pycache__", "__MACOSX"]);
+const TRAVAIL = new Set([
+  'quiz_results',
+  'td_results',
+  'generated_courses',
+  'generated_quizzes',
+  'TP',
+  'DM',
+  'node_modules',
+  '__pycache__',
+  '__MACOSX',
+]);
 
 /* -- Petits utilitaires ------------------------------------------------------ */
 
 function lireJson(f) {
-  try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch (e) { return null; }
+  try {
+    return JSON.parse(fs.readFileSync(f, 'utf8'));
+  } catch (e) {
+    return null;
+  }
 }
 
 function ecrireJson(f, objet) {
   fs.mkdirSync(path.dirname(f), { recursive: true });
-  const tmp = f + ".tmp";
-  fs.writeFileSync(tmp, JSON.stringify(objet, null, 2) + "\n", "utf8");
+  const tmp = f + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(objet, null, 2) + '\n', 'utf8');
   fs.renameSync(tmp, f);
 }
 
 function rel(racine, abs) {
-  return path.relative(racine, abs).split(path.sep).join("/");
+  return path.relative(racine, abs).split(path.sep).join('/');
 }
 
 function dans(parent, abs) {
   const r = path.relative(parent, abs);
-  return r === "" || (!r.startsWith("..") && !path.isAbsolute(r));
+  return r === '' || (!r.startsWith('..') && !path.isAbsolute(r));
 }
 
-function aujourdhui() { return new Date().toISOString().slice(0, 10); }
+function aujourdhui() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 /** Nom de dossier acceptable (profil, dossier de cursus) : renvoie le nom nettoyé ou lève une erreur. */
-function nomValide(nom, quoi = "nom") {
-  const n = String(nom == null ? "" : nom).normalize("NFC").replace(/\s+/g, " ").trim();
-  if (!n) throw new Error(`Le ${quoi} est vide.`);
-  if (n.length > 60) throw new Error(`Le ${quoi} est trop long (60 caractères au plus).`);
-  if (/[\\/:*?"<>|\x00-\x1f]/.test(n)) throw new Error(`Le ${quoi} ne peut pas contenir \\ / : * ? " < > |.`);
-  if (/^\.|\.$/.test(n) || n === "." || n === "..") throw new Error(`Le ${quoi} ne peut ni commencer ni finir par un point.`);
-  if (/^(con|prn|aux|nul|com\d|lpt\d)$/i.test(n)) throw new Error(`« ${n} » est un nom réservé par Windows.`);
+const QUOI_EN = { nom: 'name', "nom d'utilisateur": 'user name', 'nom du dossier': 'folder name' };
+function nomValide(nom, quoi = 'nom') {
+  const q = QUOI_EN[quoi] || quoi;
+  const n = String(nom == null ? '' : nom)
+    .normalize('NFC')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!n) throw new Error(tr(`Le ${quoi} est vide.`, `The ${q} is empty.`));
+  if (n.length > 60)
+    throw new Error(
+      tr(`Le ${quoi} est trop long (60 caractères au plus).`, `The ${q} is too long (60 characters at most).`),
+    );
+  // Caractères interdits dans un nom de dossier, caractères de contrôle compris
+  // eslint-disable-next-line no-control-regex
+  if (/[\\/:*?"<>|\x00-\x1f]/.test(n))
+    throw new Error(
+      tr(`Le ${quoi} ne peut pas contenir \\ / : * ? " < > |.`, `The ${q} cannot contain \\ / : * ? " < > |.`),
+    );
+  if (/^\.|\.$/.test(n) || n === '.' || n === '..')
+    throw new Error(
+      tr(`Le ${quoi} ne peut ni commencer ni finir par un point.`, `The ${q} cannot start or end with a dot.`),
+    );
+  if (/^(con|prn|aux|nul|com\d|lpt\d)$/i.test(n))
+    throw new Error(tr(`« ${n} » est un nom réservé par Windows.`, `“${n}” is a name reserved by Windows.`));
   return n;
 }
 
 /** Nom d'utilisateur de la session (Windows ou Linux), pour préremplir le premier profil. */
 function nomSession() {
-  let n = "";
-  try { n = os.userInfo().username; } catch (e) { n = process.env.USERNAME || process.env.USER || ""; }
-  n = String(n).replace(/[\\/:*?"<>|]/g, "").trim();
-  return n || "moi";
+  let n;
+  try {
+    n = os.userInfo().username;
+  } catch (e) {
+    n = process.env.USERNAME || process.env.USER || '';
+  }
+  n = String(n)
+    .replace(/[\\/:*?"<>|]/g, '')
+    .trim();
+  return n || 'moi';
 }
 
 /* -- Catalogue (explore/) ---------------------------------------------------- */
@@ -81,18 +121,35 @@ function nomSession() {
 function cours(racine) {
   const res = [];
   const base = path.join(racine, EXPLORE);
-  let domaines = [];
-  try { domaines = fs.readdirSync(base, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith(".") && d.name !== "packs" && d.name !== "cursus"); } catch (e) { return res; }
+  let domaines;
+  try {
+    domaines = fs
+      .readdirSync(base, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && !d.name.startsWith('.') && d.name !== 'packs' && d.name !== 'cursus');
+  } catch (e) {
+    return res;
+  }
   for (const d of domaines) {
-    let ids = [];
-    try { ids = fs.readdirSync(path.join(base, d.name), { withFileTypes: true }).filter((x) => x.isDirectory() && !x.name.startsWith(".")); } catch (e) { continue; }
+    let ids;
+    try {
+      ids = fs
+        .readdirSync(path.join(base, d.name), { withFileTypes: true })
+        .filter((x) => x.isDirectory() && !x.name.startsWith('.'));
+    } catch (e) {
+      continue;
+    }
     for (const x of ids) {
       const fiche = lireJson(path.join(base, d.name, x.name, FICHE_COURS));
       if (!fiche) continue;
       res.push({ id: x.name, domaine: d.name, chemin: `${EXPLORE}/${d.name}/${x.name}`, fiche });
     }
   }
-  return res.sort((a, b) => a.domaine.localeCompare(b.domaine, "fr") || String(a.fiche.niveau || "").localeCompare(String(b.fiche.niveau || ""), "fr") || String(a.fiche.titre).localeCompare(String(b.fiche.titre), "fr"));
+  return res.sort(
+    (a, b) =>
+      a.domaine.localeCompare(b.domaine, 'fr') ||
+      String(a.fiche.niveau || '').localeCompare(String(b.fiche.niveau || ''), 'fr') ||
+      String(a.fiche.titre).localeCompare(String(b.fiche.titre), 'fr'),
+  );
 }
 
 function coursParId(racine, id) {
@@ -101,21 +158,29 @@ function coursParId(racine, id) {
 
 /** « explore/<domaine>/<id>/reste » -> { domaine, id, reste } ou null */
 function coursDuChemin(cheminRelatif) {
-  const m = /^explore\/([^/]+)\/([^/]+)(?:\/(.*))?$/.exec(String(cheminRelatif).replace(/\\/g, "/"));
-  return m ? { domaine: m[1], id: m[2], reste: m[3] || "" } : null;
+  const m = /^explore\/([^/]+)\/([^/]+)(?:\/(.*))?$/.exec(String(cheminRelatif).replace(/\\/g, '/'));
+  return m ? { domaine: m[1], id: m[2], reste: m[3] || '' } : null;
 }
 
 /* -- Profils ------------------------------------------------------------------ */
 
 /** Profils de la racine : [{ nom, dossier, fiche }] */
 function profils(racine) {
-  let entrees = [];
-  try { entrees = fs.readdirSync(racine, { withFileTypes: true }); } catch (e) { return []; }
+  let entrees;
+  try {
+    entrees = fs.readdirSync(racine, { withFileTypes: true });
+  } catch (e) {
+    return [];
+  }
   return entrees
-    .filter((e) => e.isDirectory() && !e.name.startsWith(".") && !RESERVES.has(e.name.toLowerCase()))
-    .map((e) => ({ nom: e.name, dossier: path.join(racine, e.name), fiche: lireJson(path.join(racine, e.name, FICHE_PROFIL)) }))
+    .filter((e) => e.isDirectory() && !e.name.startsWith('.') && !RESERVES.has(e.name.toLowerCase()))
+    .map((e) => ({
+      nom: e.name,
+      dossier: path.join(racine, e.name),
+      fiche: lireJson(path.join(racine, e.name, FICHE_PROFIL)),
+    }))
     .filter((p) => p.fiche)
-    .sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+    .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
 }
 
 function profil(racine, nom) {
@@ -124,27 +189,38 @@ function profil(racine, nom) {
 
 function creerProfil(racine, nom) {
   const n = nomValide(nom, "nom d'utilisateur");
-  if (RESERVES.has(n.toLowerCase())) throw new Error(`« ${n} » est réservé.`);
+  if (RESERVES.has(n.toLowerCase())) throw new Error(tr(`« ${n} » est réservé.`, `“${n}” is reserved.`));
   const d = path.join(racine, n);
-  if (fs.existsSync(path.join(d, FICHE_PROFIL))) throw new Error(`Le profil « ${n} » existe déjà.`);
-  const existant = (() => { try { return fs.readdirSync(racine); } catch (e) { return []; } })();
-  if (existant.some((x) => x.toLowerCase() === n.toLowerCase() && x !== n)) throw new Error(`Un dossier « ${n} » existe déjà (autre casse).`);
-  ecrireJson(path.join(d, FICHE_PROFIL), { format: "ula-profil-1", nom: n, cree: aujourdhui() });
+  if (fs.existsSync(path.join(d, FICHE_PROFIL)))
+    throw new Error(tr(`Le profil « ${n} » existe déjà.`, `The profile “${n}” already exists.`));
+  const existant = (() => {
+    try {
+      return fs.readdirSync(racine);
+    } catch (e) {
+      return [];
+    }
+  })();
+  if (existant.some((x) => x.toLowerCase() === n.toLowerCase() && x !== n))
+    throw new Error(
+      tr(`Un dossier « ${n} » existe déjà (autre casse).`, `A folder “${n}” already exists (different case).`),
+    );
+  ecrireJson(path.join(d, FICHE_PROFIL), { format: 'ula-profil-1', nom: n, cree: aujourdhui() });
   oublierCache();
   return n;
 }
 
 function renommerProfil(racine, ancien, nouveau) {
   const p = profil(racine, ancien);
-  if (!p) throw new Error(`Profil introuvable : ${ancien}`);
+  if (!p) throw new Error(tr(`Profil introuvable : ${ancien}`, `Profile not found: ${ancien}`));
   const n = nomValide(nouveau, "nom d'utilisateur");
   if (n === ancien) return n;
-  if (RESERVES.has(n.toLowerCase())) throw new Error(`« ${n} » est réservé.`);
+  if (RESERVES.has(n.toLowerCase())) throw new Error(tr(`« ${n} » est réservé.`, `“${n}” is reserved.`));
   const cible = path.join(racine, n);
   const casse = n.toLowerCase() === ancien.toLowerCase();
-  if (!casse && fs.existsSync(cible)) throw new Error(`Un dossier « ${n} » existe déjà.`);
+  if (!casse && fs.existsSync(cible))
+    throw new Error(tr(`Un dossier « ${n} » existe déjà.`, `A folder “${n}” already exists.`));
   if (casse) {
-    const tmp = path.join(racine, n + ".renommage-" + process.pid);
+    const tmp = path.join(racine, n + '.renommage-' + process.pid);
     fs.renameSync(p.dossier, tmp);
     fs.renameSync(tmp, cible);
   } else {
@@ -164,11 +240,19 @@ function renommerProfil(racine, ancien, nouveau) {
    par git), par racine. Sans choix, le seul profil existant. */
 
 function fichierMemo() {
-  const local = process.env.LOCALAPPDATA || process.env.XDG_CACHE_HOME || path.join(os.homedir(), ".cache");
-  return path.join(local, "studies-quiz", "ula-profil-actif.json");
+  const local = process.env.LOCALAPPDATA || process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
+  return path.join(local, 'studies-quiz', 'ula-profil-actif.json');
 }
-function lireMemo() { return lireJson(fichierMemo()) || {}; }
-function ecrireMemo(m) { try { ecrireJson(fichierMemo(), m); } catch (e) { /* lecture seule : tant pis */ } }
+function lireMemo() {
+  return lireJson(fichierMemo()) || {};
+}
+function ecrireMemo(m) {
+  try {
+    ecrireJson(fichierMemo(), m);
+  } catch (e) {
+    /* lecture seule : tant pis */
+  }
+}
 
 function profilActif(racine) {
   const liste = profils(racine);
@@ -178,7 +262,8 @@ function profilActif(racine) {
 }
 
 function choisirProfil(racine, nom) {
-  if (nom !== null && !profil(racine, nom)) throw new Error(`Profil introuvable : ${nom}`);
+  if (nom !== null && !profil(racine, nom))
+    throw new Error(tr(`Profil introuvable : ${nom}`, `Profile not found: ${nom}`));
   const memo = lireMemo();
   if (nom === null) delete memo[path.resolve(racine)];
   else memo[path.resolve(racine)] = nom;
@@ -188,8 +273,10 @@ function choisirProfil(racine, nom) {
 
 /* -- Cursus : dossiers libres et liens vers les cours ------------------------- */
 
-let cache = null;   // { cle, date, arbre }
-function oublierCache() { cache = null; }
+let cache = null; // { cle, date, arbre }
+function oublierCache() {
+  cache = null;
+}
 
 /** Arbre du cursus d'un profil : dossiers, liens vers des cours, cours personnels. */
 function arbre(racine, nomProfil) {
@@ -198,29 +285,35 @@ function arbre(racine, nomProfil) {
   const cle = path.resolve(p.dossier);
   if (cache && cache.cle === cle && Date.now() - cache.date < 3000) return cache.arbre;
   const parcourir = (dossier, profondeur) => {
-    const noeud = { nom: path.basename(dossier), chemin: rel(racine, dossier), type: "dossier", enfants: [] };
+    const noeud = { nom: path.basename(dossier), chemin: rel(racine, dossier), type: 'dossier', enfants: [] };
     const lien = lireJson(path.join(dossier, FICHE_LIEN));
-    if (lien && lien.cours) return Object.assign(noeud, { type: "lien", cours: String(lien.cours), ajoute: lien.ajoute || null });
-    let entrees = [];
-    try { entrees = fs.readdirSync(dossier, { withFileTypes: true }); } catch (e) { return noeud; }
+    if (lien && lien.cours)
+      return Object.assign(noeud, { type: 'lien', cours: String(lien.cours), ajoute: lien.ajoute || null });
+    let entrees;
+    try {
+      entrees = fs.readdirSync(dossier, { withFileTypes: true });
+    } catch (e) {
+      return noeud;
+    }
     const noms = entrees.filter((e) => e.isDirectory()).map((e) => e.name);
-    if (profondeur > 0 && (noms.includes("generated_courses") || noms.includes("generated_quizzes"))) return Object.assign(noeud, { type: "perso" });
-    noeud.fichiers = entrees.filter((e) => e.isFile() && !e.name.startsWith(".") && e.name !== FICHE_PROFIL).length;
+    if (profondeur > 0 && (noms.includes('generated_courses') || noms.includes('generated_quizzes')))
+      return Object.assign(noeud, { type: 'perso' });
+    noeud.fichiers = entrees.filter((e) => e.isFile() && !e.name.startsWith('.') && e.name !== FICHE_PROFIL).length;
     if (profondeur >= 6) return noeud;
-    for (const n of noms.sort((a, b) => a.localeCompare(b, "fr", { numeric: true }))) {
-      if (n.startsWith(".") || n.startsWith("_") || TRAVAIL.has(n)) continue;
+    for (const n of noms.sort((a, b) => a.localeCompare(b, 'fr', { numeric: true }))) {
+      if (n.startsWith('.') || n.startsWith('_') || TRAVAIL.has(n)) continue;
       noeud.enfants.push(parcourir(path.join(dossier, n), profondeur + 1));
     }
     return noeud;
   };
   const a = parcourir(p.dossier, 0);
-  a.type = "profil";
+  a.type = 'profil';
   // Un dossier sans aucun cours dans son sous-arbre (documents, travaux…) est montré
   // replié : seuls les dossiers du cursus se déplient
   (function elaguer(n) {
-    let cours = n.type === "lien" || n.type === "perso";
+    let cours = n.type === 'lien' || n.type === 'perso';
     for (const e of n.enfants || []) if (elaguer(e)) cours = true;
-    if (n.type === "dossier" && !cours && n.enfants.length) {
+    if (n.type === 'dossier' && !cours && n.enfants.length) {
       n.sousDossiers = n.enfants.length;
       n.enfants = [];
     }
@@ -235,23 +328,31 @@ function liens(racine, nomProfil) {
   const res = [];
   const a = arbre(racine, nomProfil);
   (function p(n) {
-    if (n.type === "lien") res.push({ cours: n.cours, chemin: n.chemin });
+    if (n.type === 'lien') res.push({ cours: n.cours, chemin: n.chemin });
     for (const e of n.enfants || []) p(e);
   })(a || { enfants: [] });
-  return res.sort((x, y) => x.chemin.localeCompare(y.chemin, "fr"));
+  return res.sort((x, y) => x.chemin.localeCompare(y.chemin, 'fr'));
 }
 
 /** Chemin (absolu) d'un dossier de cursus, vérifié dans l'espace du profil. */
 function dossierDuProfil(racine, nomProfil, cheminRelatif) {
   const p = profil(racine, nomProfil);
-  if (!p) throw new Error("Aucun profil choisi.");
+  if (!p) throw new Error(tr('Aucun profil choisi.', 'No profile selected.'));
   const abs = path.resolve(racine, String(cheminRelatif || nomProfil));
-  if (!dans(p.dossier, abs)) throw new Error("Chemin hors de l'espace du profil.");
+  if (!dans(p.dossier, abs))
+    throw new Error(tr("Chemin hors de l'espace du profil.", "Path outside the profile's space."));
   return { p, abs };
 }
 
 function slug(texte) {
-  return String(texte).normalize("NFC").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 60) || "cours";
+  return (
+    String(texte)
+      .normalize('NFC')
+      .replace(/[\\/:*?"<>|]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 60) || 'cours'
+  );
 }
 
 /** Dossier de travail d'un cours pour un profil : le premier lien trouvé ; sinon, avec
@@ -268,13 +369,14 @@ function lienDuCours(racine, nomProfil, id, { creer = false } = {}) {
 
 /** Ajoute un cours du catalogue dans un dossier du cursus ; renvoie le chemin du lien. */
 function ajouterCours(racine, nomProfil, id, dossierCible, nom) {
-  if (!/^[a-z0-9][a-z0-9-]{0,80}$/.test(String(id))) throw new Error("Identifiant de cours invalide.");
+  if (!/^[a-z0-9][a-z0-9-]{0,80}$/.test(String(id)))
+    throw new Error(tr('Identifiant de cours invalide.', 'Invalid course identifier.'));
   const { abs } = dossierDuProfil(racine, nomProfil, dossierCible);
   const c = coursParId(racine, id);
-  let n = nomValide(nom || (c ? slug(c.fiche.titre) : id), "nom du dossier");
+  let n = nomValide(nom || (c ? slug(c.fiche.titre) : id), 'nom du dossier');
   let cible = path.join(abs, n);
   for (let i = 2; fs.existsSync(cible); i++) cible = path.join(abs, `${n} (${i})`);
-  ecrireJson(path.join(cible, FICHE_LIEN), { format: "ula-lien-1", cours: id, ajoute: aujourdhui() });
+  ecrireJson(path.join(cible, FICHE_LIEN), { format: 'ula-lien-1', cours: id, ajoute: aujourdhui() });
   oublierCache();
   return rel(racine, cible);
 }
@@ -283,16 +385,26 @@ function ajouterCours(racine, nomProfil, id, dossierCible, nom) {
     l'espace) ; un cours déjà dans le cursus, où qu'il soit, n'est ni déplacé ni dupliqué. */
 function ajouterPack(racine, nomProfil, ids, nomDossier, titres = {}) {
   const p = profil(racine, nomProfil);
-  if (!p) throw new Error("Aucun profil choisi.");
-  const n = nomValide(nomDossier, "nom du dossier");
+  if (!p) throw new Error(tr('Aucun profil choisi.', 'No profile selected.'));
+  const n = nomValide(nomDossier, 'nom du dossier');
   const dossier = path.join(p.dossier, n);
-  if (fs.existsSync(path.join(dossier, FICHE_LIEN))) throw new Error(`« ${n} » est déjà un cours : choisir un autre nom de dossier.`);
+  if (fs.existsSync(path.join(dossier, FICHE_LIEN)))
+    throw new Error(
+      tr(
+        `« ${n} » est déjà un cours : choisir un autre nom de dossier.`,
+        `“${n}” is already a course: choose another folder name.`,
+      ),
+    );
   fs.mkdirSync(dossier, { recursive: true });
   oublierCache();
   const deja = new Set(liens(racine, nomProfil).map((l) => l.cours));
-  const ajoutes = [], presents = [];
+  const ajoutes = [],
+    presents = [];
   for (const id of ids) {
-    if (deja.has(id)) { presents.push(id); continue; }
+    if (deja.has(id)) {
+      presents.push(id);
+      continue;
+    }
     ajouterCours(racine, nomProfil, id, rel(racine, dossier), titres[id] ? slug(titres[id]) : null);
     deja.add(id);
     ajoutes.push(id);
@@ -303,9 +415,12 @@ function ajouterPack(racine, nomProfil, ids, nomDossier, titres = {}) {
 
 function creerDossier(racine, nomProfil, parent, nom) {
   const { abs } = dossierDuProfil(racine, nomProfil, parent);
-  if (fs.existsSync(path.join(abs, FICHE_LIEN))) throw new Error("Un cours ne contient pas de dossier de cursus.");
-  const cible = path.join(abs, nomValide(nom, "nom du dossier"));
-  if (fs.existsSync(cible)) throw new Error("Ce dossier existe déjà.");
+  if (fs.existsSync(path.join(abs, FICHE_LIEN)))
+    throw new Error(
+      tr('Un cours ne contient pas de dossier de cursus.', 'A course cannot contain a curriculum folder.'),
+    );
+  const cible = path.join(abs, nomValide(nom, 'nom du dossier'));
+  if (fs.existsSync(cible)) throw new Error(tr('Ce dossier existe déjà.', 'This folder already exists.'));
   fs.mkdirSync(cible, { recursive: true });
   oublierCache();
   return rel(racine, cible);
@@ -313,10 +428,12 @@ function creerDossier(racine, nomProfil, parent, nom) {
 
 function renommer(racine, nomProfil, chemin, nom) {
   const { p, abs } = dossierDuProfil(racine, nomProfil, chemin);
-  if (path.resolve(abs) === path.resolve(p.dossier)) throw new Error("Pour renommer le profil, passer par les profils.");
-  const cible = path.join(path.dirname(abs), nomValide(nom, "nom du dossier"));
+  if (path.resolve(abs) === path.resolve(p.dossier))
+    throw new Error(tr('Pour renommer le profil, passer par les profils.', 'To rename the profile, use the profiles.'));
+  const cible = path.join(path.dirname(abs), nomValide(nom, 'nom du dossier'));
   if (cible === abs) return rel(racine, abs);
-  if (fs.existsSync(cible) && cible.toLowerCase() !== abs.toLowerCase()) throw new Error("Un dossier porte déjà ce nom.");
+  if (fs.existsSync(cible) && cible.toLowerCase() !== abs.toLowerCase())
+    throw new Error(tr('Un dossier porte déjà ce nom.', 'A folder already has this name.'));
   fs.renameSync(abs, cible);
   oublierCache();
   return rel(racine, cible);
@@ -325,11 +442,20 @@ function renommer(racine, nomProfil, chemin, nom) {
 function deplacer(racine, nomProfil, chemin, versDossier) {
   const { p, abs } = dossierDuProfil(racine, nomProfil, chemin);
   const { abs: dest } = dossierDuProfil(racine, nomProfil, versDossier);
-  if (path.resolve(abs) === path.resolve(p.dossier)) throw new Error("Le profil ne se déplace pas.");
-  if (dans(abs, dest)) throw new Error("Un dossier ne peut pas aller dans lui-même.");
-  if (fs.existsSync(path.join(dest, FICHE_LIEN))) throw new Error("On ne range rien dans un cours.");
+  if (path.resolve(abs) === path.resolve(p.dossier))
+    throw new Error(tr('Le profil ne se déplace pas.', 'The profile cannot be moved.'));
+  if (dans(abs, dest))
+    throw new Error(tr('Un dossier ne peut pas aller dans lui-même.', 'A folder cannot go inside itself.'));
+  if (fs.existsSync(path.join(dest, FICHE_LIEN)))
+    throw new Error(tr('On ne range rien dans un cours.', 'Nothing can be put inside a course.'));
   const cible = path.join(dest, path.basename(abs));
-  if (fs.existsSync(cible)) throw new Error("La destination contient déjà un élément de ce nom.");
+  if (fs.existsSync(cible))
+    throw new Error(
+      tr(
+        'La destination contient déjà un élément de ce nom.',
+        'The destination already contains an item with this name.',
+      ),
+    );
   fs.mkdirSync(dest, { recursive: true });
   fs.renameSync(abs, cible);
   oublierCache();
@@ -340,7 +466,8 @@ function deplacer(racine, nomProfil, chemin, versDossier) {
     n'est jamais effacé : un dossier qui en contient est refusé. */
 function retirer(racine, nomProfil, chemin) {
   const { p, abs } = dossierDuProfil(racine, nomProfil, chemin);
-  if (path.resolve(abs) === path.resolve(p.dossier)) throw new Error("Le profil ne se retire pas ici.");
+  if (path.resolve(abs) === path.resolve(p.dossier))
+    throw new Error(tr('Le profil ne se retire pas ici.', 'The profile cannot be removed here.'));
   const restes = [];
   (function lister(d) {
     for (const e of fs.readdirSync(d, { withFileTypes: true })) {
@@ -349,7 +476,13 @@ function retirer(racine, nomProfil, chemin) {
       else if (!(e.name === FICHE_LIEN && d === abs)) restes.push(rel(abs, f));
     }
   })(abs);
-  if (restes.length) throw new Error(`Ce dossier contient ${restes.length} fichier(s) de travail (${restes.slice(0, 3).join(", ")}${restes.length > 3 ? "…" : ""}) : le vider ou le déplacer d'abord.`);
+  if (restes.length)
+    throw new Error(
+      tr(
+        `Ce dossier contient ${restes.length} fichier(s) de travail (${restes.slice(0, 3).join(', ')}${restes.length > 3 ? '…' : ''}) : le vider ou le déplacer d'abord.`,
+        `This folder contains ${restes.length} work file(s) (${restes.slice(0, 3).join(', ')}${restes.length > 3 ? '…' : ''}): empty or move it first.`,
+      ),
+    );
   fs.rmSync(abs, { recursive: true });
   oublierCache();
 }
@@ -367,7 +500,15 @@ function travailDePage(racine, abs, { creer = false, profil: nom } = {}) {
   const c = coursDuChemin(rel(racine, abs));
   if (c && dans(racine, abs)) {
     const p = nom === undefined ? profilActif(racine) : nom;
-    if (!p) return { dossier: null, cours: c.id, raison: "Aucun profil choisi : le choisir (ou le créer) sur l'accueil." };
+    if (!p)
+      return {
+        dossier: null,
+        cours: c.id,
+        raison: tr(
+          "Aucun profil choisi : le choisir (ou le créer) sur l'accueil.",
+          'No profile selected: choose (or create) one on the home page.',
+        ),
+      };
     const d = lienDuCours(racine, p, c.id, { creer });
     return { dossier: d, cours: c.id, profil: p, aCreer: !d };
   }
@@ -376,10 +517,35 @@ function travailDePage(racine, abs, { creer = false, profil: nom } = {}) {
 }
 
 module.exports = {
-  FICHE_COURS, FICHE_PROFIL, FICHE_LIEN, EXPLORE, DOSSIER_PAR_DEFAUT, RESERVES,
-  lireJson, ecrireJson, nomValide, nomSession, slug,
-  cours, coursParId, coursDuChemin,
-  profils, profil, creerProfil, renommerProfil, profilActif, choisirProfil,
-  arbre, liens, lienDuCours, ajouterCours, ajouterPack, creerDossier, renommer, deplacer, retirer,
-  travailDePage, oublierCache
+  FICHE_COURS,
+  FICHE_PROFIL,
+  FICHE_LIEN,
+  EXPLORE,
+  DOSSIER_PAR_DEFAUT,
+  RESERVES,
+  lireJson,
+  ecrireJson,
+  nomValide,
+  nomSession,
+  slug,
+  cours,
+  coursParId,
+  coursDuChemin,
+  profils,
+  profil,
+  creerProfil,
+  renommerProfil,
+  profilActif,
+  choisirProfil,
+  arbre,
+  liens,
+  lienDuCours,
+  ajouterCours,
+  ajouterPack,
+  creerDossier,
+  renommer,
+  deplacer,
+  retirer,
+  travailDePage,
+  oublierCache,
 };

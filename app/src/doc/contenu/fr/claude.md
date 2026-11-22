@@ -6,10 +6,10 @@ Claude aide pendant les quiz, corrige les réponses rédigées, évalue les tent
 
 Le choix se fait dans [Paramètres › Claude](parametres:claude).
 
-| Mode | Fonctionnement | Pour qui |
-|---|---|---|
+| Mode                                           | Fonctionnement                                                                                                                                                                                        | Pour qui                  |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
 | Un compte Claude, via Claude Code (par défaut) | L’application détecte Claude Code et affiche le compte connecté. **Se connecter…** ouvre un terminal où la connexion se fait sur le site d’Anthropic : l’application ne voit jamais les identifiants. | Avec un abonnement Claude |
-| Une clé d’API Anthropic | La clé est vérifiée auprès d’Anthropic, puis chiffrée par le système et jamais réaffichée. L’usage est facturé à la clé. | Sans abonnement |
+| Une clé d’API Anthropic                        | La clé est vérifiée auprès d’Anthropic, puis chiffrée par le système et jamais réaffichée. L’usage est facturé à la clé.                                                                              | Sans abonnement           |
 
 > **Note** Une application tierce n’a pas le droit de proposer la connexion avec un compte claude.ai ni de conserver des identifiants. C’est pourquoi la connexion se fait toujours dans Claude Code lui-même.
 

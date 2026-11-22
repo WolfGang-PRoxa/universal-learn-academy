@@ -15,11 +15,11 @@ Cette documentation se divise en deux parties :
 
 ## Ouvrir l’aide
 
-| Depuis | Comment |
-|---|---|
-| N’importe quelle page | Touche **F1**, ou bouton **?** de la barre du haut |
-| Le menu | **Aide › Documentation** ou **Aide › Paramétrage guidé…** |
-| Les paramètres | Carte [Aide](parametres:aide) |
+| Depuis                | Comment                                                   |
+| --------------------- | --------------------------------------------------------- |
+| N’importe quelle page | Touche **F1**, ou bouton **?** de la barre du haut        |
+| Le menu               | **Aide › Documentation** ou **Aide › Paramétrage guidé…** |
+| Les paramètres        | Carte [Aide](parametres:aide)                             |
 
 La recherche, en haut du sommaire (**Ctrl+F**), parcourt toutes les pages de la documentation.
 

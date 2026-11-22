@@ -40,20 +40,66 @@ const LANCEURS = /(^|\/)run\.(sh|bat)$/;
 // En cas de doute, un fichier n'est PAS publié.
 export const REGLES = [
   { dossier: 'romain/L1/prog_shell/TP/', inclure: [/./], raison: 'énoncés et archive d’instructions' },
-  { dossier: 'romain/L2/BDD/TP/', inclure: [/\.pdf$/i, /\.sql$/i], raison: 'sujets et script de base du TP 4 (script*.txt à confirmer)' },
-  { dossier: 'romain/L2/analyse_algebre/TP/', inclure: [/\.pdf$/i, /\.png$/i, /\.ipynb$/i], raison: 'énoncés, figures, notebooks d’énoncé aux cellules vides' },
-  { dossier: 'romain/L2/probabilites_statistiques/TP/', inclure: [/\.csv$/i, /impots_Sarthe2013$/], raison: 'jeux de données (notebooks *_etu à confirmer)' },
-  { dossier: 'romain/L2/security/TP/', inclure: [/\.pdf$/i, LANCEURS], exclure: [/__MACOSX\//], raison: 'sujets, corrections de l’enseignant, lanceurs (annexes à confirmer)' },
+  {
+    dossier: 'romain/L2/BDD/TP/',
+    inclure: [/\.pdf$/i, /\.sql$/i],
+    raison: 'sujets et script de base du TP 4 (script*.txt à confirmer)',
+  },
+  {
+    dossier: 'romain/L2/analyse_algebre/TP/',
+    inclure: [/\.pdf$/i, /\.png$/i, /\.ipynb$/i],
+    raison: 'énoncés, figures, notebooks d’énoncé aux cellules vides',
+  },
+  {
+    dossier: 'romain/L2/probabilites_statistiques/TP/',
+    inclure: [/\.csv$/i, /impots_Sarthe2013$/],
+    raison: 'jeux de données (notebooks *_etu à confirmer)',
+  },
+  {
+    dossier: 'romain/L2/security/TP/',
+    inclure: [/\.pdf$/i, LANCEURS],
+    exclure: [/__MACOSX\//],
+    raison: 'sujets, corrections de l’enseignant, lanceurs (annexes à confirmer)',
+  },
   { dossier: 'romain/L2/Algo3/TP/TP5/', inclure: [/^run\.(sh|bat)$/], raison: 'lanceurs (projet à confirmer)' },
-  { dossier: 'romain/L2/Algo3/TP/TP6/', inclure: [/\.pdf$/i, /^run\.(sh|bat)$/, /\/Fichiers\//, /^classif_.*\.txt$/], raison: 'sujet, fichiers de données, lanceurs (code à confirmer)' },
-  { dossier: 'romain/L3/BDD/TP/', inclure: [/\.pdf$/i, /Script_PlateformeJeux\.sql$/, /script_sw7\.sql$/, /^TP4\/script\.sql$/], raison: 'sujets et scripts d’origine' },
-  { dossier: 'romain/L3/Codage/TP/', inclure: [/\.pdf$/i, /(^|\/)Makefile(\.\w+)?$/, LANCEURS], raison: 'énoncés, Makefile et lanceurs' },
-  { dossier: 'romain/L3/Complexity_&_data_structure/TP/', inclure: [/./], raison: 'sources des notebooks (données, corrections de l’enseignant)' },
+  {
+    dossier: 'romain/L2/Algo3/TP/TP6/',
+    inclure: [/\.pdf$/i, /^run\.(sh|bat)$/, /\/Fichiers\//, /^classif_.*\.txt$/],
+    raison: 'sujet, fichiers de données, lanceurs (code à confirmer)',
+  },
+  {
+    dossier: 'romain/L3/BDD/TP/',
+    inclure: [/\.pdf$/i, /Script_PlateformeJeux\.sql$/, /script_sw7\.sql$/, /^TP4\/script\.sql$/],
+    raison: 'sujets et scripts d’origine',
+  },
+  {
+    dossier: 'romain/L3/Codage/TP/',
+    inclure: [/\.pdf$/i, /(^|\/)Makefile(\.\w+)?$/, LANCEURS],
+    raison: 'énoncés, Makefile et lanceurs',
+  },
+  {
+    dossier: 'romain/L3/Complexity_&_data_structure/TP/',
+    inclure: [/./],
+    raison: 'sources des notebooks (données, corrections de l’enseignant)',
+  },
   { dossier: 'romain/L3/Genie_logiciel/TP/', inclure: [/./], raison: 'sujets et modèle de compte rendu' },
-  { dossier: 'romain/L3/Graph_theory/TP/', inclure: [/./], exclure: [/\.ipynb$/i], raison: 'données et environnement (notebooks : ton travail)' },
-  { dossier: 'romain/L3/POO/TP/', inclure: [/\.pdf$/i, /README\.md$/, /Monte-Carlo/], raison: 'sujets (script.txt à confirmer)' },
+  {
+    dossier: 'romain/L3/Graph_theory/TP/',
+    inclure: [/./],
+    exclure: [/\.ipynb$/i],
+    raison: 'données et environnement (notebooks : ton travail)',
+  },
+  {
+    dossier: 'romain/L3/POO/TP/',
+    inclure: [/\.pdf$/i, /README\.md$/, /Monte-Carlo/],
+    raison: 'sujets (script.txt à confirmer)',
+  },
   { dossier: 'romain/L3/POO_Java/TP/', inclure: [/./], raison: 'sujets' },
-  { dossier: 'romain/L3/SE_PS/TP/', inclure: [/^[^/]+\/Documentation\//, /^[^/]+\/(run\.(sh|bat)|Makefile(\.\w+)?)$/], raison: 'documentation de l’enseignant, Makefile et lanceurs (sources à confirmer)' },
+  {
+    dossier: 'romain/L3/SE_PS/TP/',
+    inclure: [/^[^/]+\/Documentation\//, /^[^/]+\/(run\.(sh|bat)|Makefile(\.\w+)?)$/],
+    raison: 'documentation de l’enseignant, Makefile et lanceurs (sources à confirmer)',
+  },
 ];
 
 function git(args, options = {}) {
@@ -76,9 +122,14 @@ function coursDuLien(dossierCours) {
   let res = null;
   try {
     const lien = JSON.parse(fs.readFileSync(path.join(racine, dossierCours, 'ula-lien.json'), 'utf8'));
-    const fiche = git(['ls-files', '--', `explore/*/${lien.cours}/ula-cours.json`]).toString('utf8').trim().split('\n')[0];
+    const fiche = git(['ls-files', '--', `explore/*/${lien.cours}/ula-cours.json`])
+      .toString('utf8')
+      .trim()
+      .split('\n')[0];
     if (fiche) res = path.posix.dirname(fiche);
-  } catch (e) { /* pas un lien */ }
+  } catch (e) {
+    /* pas un lien */
+  }
   cacheLiens.set(dossierCours, res);
   return res;
 }
@@ -97,7 +148,11 @@ export function cible(chemin) {
     fichiers voisins. */
 function origine(chemin) {
   const premier = (c) => {
-    const commits = git(['log', '--diff-filter=A', '--format=%H', '--', c]).toString('utf8').trim().split('\n').filter(Boolean);
+    const commits = git(['log', '--diff-filter=A', '--format=%H', '--', c])
+      .toString('utf8')
+      .trim()
+      .split('\n')
+      .filter(Boolean);
     return commits.length ? { commit: commits[commits.length - 1], source: c } : null;
   };
   const ancien = chemin.startsWith(PROFIL + '/') ? chemin.slice(PROFIL.length + 1) : null;
@@ -123,7 +178,12 @@ export function generer() {
         ? { commit: git(['log', '-1', '--format=%H', '--', chemin]).toString().trim(), source: chemin }
         : origine(chemin);
       const blob = git(['cat-file', 'blob', `${ref.commit}:${ref.source}`]);
-      o = { travail: chemin, commit: ref.commit, source: ref.source, empreinte: crypto.createHash('sha256').update(blob).digest('hex') };
+      o = {
+        travail: chemin,
+        commit: ref.commit,
+        source: ref.source,
+        empreinte: crypto.createHash('sha256').update(blob).digest('hex'),
+      };
     }
     fichiers[dest] = Object.assign({}, o, { travail: chemin });
   }
@@ -131,21 +191,31 @@ export function generer() {
   for (const [dest, o] of Object.entries(fichiers)) {
     const abs = path.join(racine, ...dest.split('/'));
     const blob = git(['cat-file', 'blob', `${o.commit}:${o.source}`]);
-    if (crypto.createHash('sha256').update(blob).digest('hex') !== o.empreinte) throw new Error(`Empreinte inattendue pour ${dest}`);
+    if (crypto.createHash('sha256').update(blob).digest('hex') !== o.empreinte)
+      throw new Error(`Empreinte inattendue pour ${dest}`);
     const actuel = fs.existsSync(abs) ? fs.readFileSync(abs) : null;
-    if (!actuel || !actuel.equals(blob)) { fs.mkdirSync(path.dirname(abs), { recursive: true }); fs.writeFileSync(abs, blob); ecrits++; }
+    if (!actuel || !actuel.equals(blob)) {
+      fs.mkdirSync(path.dirname(abs), { recursive: true });
+      fs.writeFileSync(abs, blob);
+      ecrits++;
+    }
   }
-  const publies = git(['ls-files', '-z', '--', 'explore']).toString('utf8').split('\0').filter((c) => c && regles.estTP(c));
+  const publies = git(['ls-files', '-z', '--', 'explore'])
+    .toString('utf8')
+    .split('\0')
+    .filter((c) => c && regles.estTP(c));
   const retires = publies.filter((c) => !fichiers[c]);
   if (retires.length) git(['rm', '-q', '--', ...retires]);
   const nouveaux = Object.keys(fichiers);
   for (let i = 0; i < nouveaux.length; i += 200) git(['add', '-f', '--', ...nouveaux.slice(i, i + 200)]);
   const contenu = {
-    _lisezmoi: 'Fichiers de TP publiés dans explore/, dans leur version d’origine : « travail » est le fichier du dossier de TP de l’étudiant, « commit » et « source » la version d’origine tirée de git. Généré par `node scripts/tp-fournis.mjs` d’après ses REGLES : ne pas modifier à la main.',
+    _lisezmoi:
+      'Fichiers de TP publiés dans explore/, dans leur version d’origine : « travail » est le fichier du dossier de TP de l’étudiant, « commit » et « source » la version d’origine tirée de git. Généré par `node scripts/tp-fournis.mjs` d’après ses REGLES : ne pas modifier à la main.',
     fichiers: Object.fromEntries(Object.entries(fichiers).sort(([a], [b]) => (a < b ? -1 : 1))),
   };
   fs.writeFileSync(FICHIER, JSON.stringify(contenu, null, 1) + '\n');
-  if (ecrits || retires.length) console.log(`  ${ecrits} fichier(s) écrit(s) dans explore/, ${retires.length} retiré(s)`);
+  if (ecrits || retires.length)
+    console.log(`  ${ecrits} fichier(s) écrit(s) dans explore/, ${retires.length} retiré(s)`);
   return contenu;
 }
 

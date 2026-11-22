@@ -21,11 +21,11 @@ Activée, la synchronisation a lieu :
 
 **Synchroniser maintenant** est disponible par le bouton nuage de la barre du haut, le menu de l’icône de la zone de notification et la carte Synchronisation.
 
-| Pastille du nuage | Signification |
-|---|---|
-| Verte | À jour |
-| Bleue | Synchronisation en cours |
-| Rouge | Problème : un clic ouvre les détails |
+| Pastille du nuage | Signification                        |
+| ----------------- | ------------------------------------ |
+| Verte             | À jour                               |
+| Bleue             | Synchronisation en cours             |
+| Rouge             | Problème : un clic ouvre les détails |
 
 ### Mettre en place un dépôt
 

@@ -18,11 +18,17 @@ const { chromium } = require('playwright');
   }
   let navigateur;
   if (process.platform === 'win32') {
-    try { navigateur = await chromium.launch({ channel: 'msedge' }); } catch (e) { navigateur = null; }
+    try {
+      navigateur = await chromium.launch({ channel: 'msedge' });
+    } catch (e) {
+      navigateur = null;
+    }
   }
   if (!navigateur) navigateur = await chromium.launch();
   const page = await navigateur.newPage();
   await page.goto('file://' + path.resolve(source).replace(/\\/g, '/'), { waitUntil: 'load' });
+  // Exécuté dans la page, où document existe
+  // eslint-disable-next-line no-undef
   await page.evaluate(() => document.fonts.ready);
   await page.pdf({
     path: sortie,

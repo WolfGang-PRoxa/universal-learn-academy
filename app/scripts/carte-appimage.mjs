@@ -20,7 +20,11 @@ export function extraireCarte(appImage, yml) {
   const total = fs.statSync(appImage).size;
   const tampon = Buffer.alloc(taille + 4);
   const fd = fs.openSync(appImage, 'r');
-  try { fs.readSync(fd, tampon, 0, taille + 4, total - taille - 4); } finally { fs.closeSync(fd); }
+  try {
+    fs.readSync(fd, tampon, 0, taille + 4, total - taille - 4);
+  } finally {
+    fs.closeSync(fd);
+  }
   if (tampon.readUInt32BE(taille) !== taille) throw new Error('Taille de la carte de blocs intégrée incohérente.');
   const json = zlib.inflateRawSync(tampon.subarray(0, taille));
   const carte = JSON.parse(json.toString('utf8'));

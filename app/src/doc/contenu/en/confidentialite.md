@@ -6,13 +6,13 @@ Work (attempts, tutorials, labs, tracking) and settings stay on the computer, in
 
 ## What leaves the computer, and when
 
-| Exchange | Destination | Content |
-|---|---|---|
-| Catalogue and courses | GitHub (public repository releases) | Download only |
-| Updates | GitHub (public repository releases) | Download only |
-| Claude | Anthropic, through Claude Code | The questions, answers and course extracts needed for help, correction or generation |
-| Sync | The chosen Git repository | The files within the sync scope |
-| Proposing a course | GitHub, by the user | The archive of generated pages, attached by hand |
+| Exchange              | Destination                         | Content                                                                              |
+| --------------------- | ----------------------------------- | ------------------------------------------------------------------------------------ |
+| Catalogue and courses | GitHub (public repository releases) | Download only                                                                        |
+| Updates               | GitHub (public repository releases) | Download only                                                                        |
+| Claude                | Anthropic, through Claude Code      | The questions, answers and course extracts needed for help, correction or generation |
+| Sync                  | The chosen Git repository           | The files within the sync scope                                                      |
+| Proposing a course    | GitHub, by the user                 | The archive of generated pages, attached by hand                                     |
 
 ## Credentials and keys
 

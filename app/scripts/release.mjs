@@ -40,9 +40,14 @@ function echec(message) {
 }
 
 function lancer(commande, args, { capture = false, toleree = false, cwd = app } = {}) {
-  const r = spawnSync(commande, args, { cwd, encoding: 'utf8', stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'inherit' });
+  const r = spawnSync(commande, args, {
+    cwd,
+    encoding: 'utf8',
+    stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'inherit',
+  });
   if (r.error) echec(`Impossible de lancer « ${commande} » : ${r.error.message}`);
-  if (r.status !== 0 && !toleree) echec(`« ${commande} ${args.join(' ')} » a échoué.${capture && r.stderr ? `\n${r.stderr.trim()}` : ''}`);
+  if (r.status !== 0 && !toleree)
+    echec(`« ${commande} ${args.join(' ')} » a échoué.${capture && r.stderr ? `\n${r.stderr.trim()}` : ''}`);
   return { ok: r.status === 0, sortie: (r.stdout || '').trim() };
 }
 
@@ -50,12 +55,17 @@ console.log(`Universal Learn Academy ${version} → ${depot} (${tag})`);
 
 /* 1. Vérifications ---------------------------------------------------------- */
 console.log('\n▸ Vérification du dépôt');
-if (process.platform !== 'win32') echec('La publication se fait depuis Windows (installeur NSIS, puis AppImage dans WSL).');
-if (!lancer('gh', ['auth', 'status'], { capture: true, toleree: true }).ok) echec('GitHub CLI n’est pas connectée : lancer `gh auth login`.');
+if (process.platform !== 'win32')
+  echec('La publication se fait depuis Windows (installeur NSIS, puis AppImage dans WSL).');
+if (!lancer('gh', ['auth', 'status'], { capture: true, toleree: true }).ok)
+  echec('GitHub CLI n’est pas connectée : lancer `gh auth login`.');
 const branche = lancer('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { capture: true, cwd: racine }).sortie;
 if (branche !== 'main') echec(`Branche actuelle : ${branche}. Publier depuis main.`);
 const modifs = lancer('git', ['status', '--porcelain'], { capture: true, cwd: racine }).sortie;
-if (modifs) echec(`Modifications non enregistrées :\n${modifs}\nLes committer (ou les annuler) avant de publier : les outils livrés sont ceux du dernier commit.`);
+if (modifs)
+  echec(
+    `Modifications non enregistrées :\n${modifs}\nLes committer (ou les annuler) avant de publier : les outils livrés sont ceux du dernier commit.`,
+  );
 lancer('git', ['fetch', 'origin', 'main', '--quiet'], { cwd: racine });
 const tete = lancer('git', ['rev-parse', 'HEAD'], { capture: true, cwd: racine }).sortie;
 const distante = lancer('git', ['rev-parse', 'origin/main'], { capture: true, cwd: racine }).sortie;
@@ -66,12 +76,16 @@ if (tete !== distante) {
   if (Number(avance)) echec(`main a ${avance} commit(s) non envoyé(s) sur GitHub : git push, puis relancer.`);
 }
 
-const existante = lancer('gh', ['release', 'view', tag, '--repo', depot, '--json', 'assets,isDraft'], { capture: true, toleree: true });
+const existante = lancer('gh', ['release', 'view', tag, '--repo', depot, '--json', 'assets,isDraft'], {
+  capture: true,
+  toleree: true,
+});
 let reparation = false;
 if (existante.ok) {
   const noms = JSON.parse(existante.sortie).assets.map((a) => a.name);
   const manquants = fichiers.filter((n) => !noms.includes(n));
-  if (!manquants.length) echec(`La version ${version} est déjà publiée et complète. Augmenter \`version\` dans app/package.json.`);
+  if (!manquants.length)
+    echec(`La version ${version} est déjà publiée et complète. Augmenter \`version\` dans app/package.json.`);
   reparation = true;
   console.log(`La release ${tag} existe mais il lui manque : ${manquants.join(', ')}. Elle va être réparée.`);
 }
@@ -99,14 +113,29 @@ if (reparation) {
   lancer('gh', ['release', 'upload', tag, ...chemins, '--repo', depot, '--clobber']);
 } else {
   console.log(`\n▸ Création de la release ${tag} (brouillon le temps de l’envoi)`);
-  lancer('gh', ['release', 'create', tag, '--repo', depot, '--target', 'main', '--title', `Universal Learn Academy ${version}`, '--notes', notes, '--draft']);
+  lancer('gh', [
+    'release',
+    'create',
+    tag,
+    '--repo',
+    depot,
+    '--target',
+    'main',
+    '--title',
+    `Universal Learn Academy ${version}`,
+    '--notes',
+    notes,
+    '--draft',
+  ]);
   lancer('gh', ['release', 'upload', tag, ...chemins, '--repo', depot, '--clobber']);
 }
 if (!brouillon) lancer('gh', ['release', 'edit', tag, '--repo', depot, '--draft=false', '--latest']);
 
 /* 4. Vérification ----------------------------------------------------------- */
 console.log('\n▸ Vérification de la release sur GitHub');
-const publiee = JSON.parse(lancer('gh', ['release', 'view', tag, '--repo', depot, '--json', 'assets,isDraft,url'], { capture: true }).sortie);
+const publiee = JSON.parse(
+  lancer('gh', ['release', 'view', tag, '--repo', depot, '--json', 'assets,isDraft,url'], { capture: true }).sortie,
+);
 const problemes = [];
 if (publiee.isDraft && !brouillon) problemes.push('la release est encore un brouillon');
 for (const [i, n] of fichiers.entries()) {
@@ -116,5 +145,6 @@ for (const [i, n] of fichiers.entries()) {
   else if (a.size !== taille) problemes.push(`${n} incomplet (${a.size} octets sur ${taille})`);
   else console.log(`  ✓ ${n}`);
 }
-if (problemes.length) echec(`Release incomplète : ${problemes.join(', ')}.\nRelancer \`npm run release\` : elle sera réparée.`);
+if (problemes.length)
+  echec(`Release incomplète : ${problemes.join(', ')}.\nRelancer \`npm run release\` : elle sera réparée.`);
 console.log(`\n✓ Universal Learn Academy ${version} publiée : ${publiee.url}`);

@@ -2,7 +2,7 @@
 
 Le portail, les cours, les quiz, les TD et le suivi dans leur propre fenêtre : ni navigateur, ni terminal. Les pages et le serveur sont ceux de `lancer.bat` ; l'application ajoute la fenêtre, avec son icône dans le menu Démarrer et la barre des tâches.
 
-Ce dossier est le programme de la fenêtre, lancé sans installation par `lancer-app.bat`. La copie construite par `lancer-app.bat` garde son nom technique d'origine, **Studies** (exécutable, raccourcis) ; l'application installée s'appelle **Universal Learn Academy**. La page de départ est l'accueil (profils, cursus, catalogue), servi par le serveur local à la place de `index.html`. Le même programme tourne dans **l'application installable** (`app/`, voir `app/README.md`) : installeur Windows et AppImage Linux publiés en releases GitHub, mises à jour automatiques, paramètres. Celle-ci publie `global.studiesHote` avant de charger `principal.js` ; sans cet hôte, rien ne change ici.
+Ce dossier est le programme de la fenêtre, lancé sans installation par `lancer-app.bat`. La copie construite par `lancer-app.bat` garde son nom technique d'origine, **Studies** (exécutable, raccourcis) ; l'application installée s'appelle **Universal Learn Academy**. La page de départ est l'accueil (profils, cursus, catalogue), servi par le serveur local à la place de `index.html`. Le même programme tourne dans **l'application installable** (`app/`, voir `app/README.fr.md`) : installeur Windows et AppImage Linux publiés en releases GitHub, mises à jour automatiques, paramètres. Celle-ci publie `global.studiesHote` avant de charger `principal.js` ; sans cet hôte, rien ne change ici.
 
 ## Utilisation
 
@@ -26,17 +26,17 @@ Sur ce PC, tout a été essayé sous Windows. `lancer-app.sh` et le paquet Linux
 - Quand une génération de quiz se termine, une notification Windows prévient, si Studies n'est pas au premier plan ; un clic ouvre le quiz.
 - Fermer la dernière fenêtre arrête le serveur. Si une génération de quiz est en cours, l'application demande d'abord.
 
-| Raccourci | Effet |
-|---|---|
-| Ctrl+N | nouvelle fenêtre |
-| Ctrl+F | rechercher dans la page (Entrée : suivant, Maj+Entrée : précédent, Échap : fermer) |
-| Alt+←, Alt+→, boutons latéraux de la souris | précédent, suivant |
-| Alt+Début | portail |
-| Ctrl+P, Ctrl+Maj+S | imprimer, enregistrer en PDF |
+| Raccourci                                   | Effet                                                                                               |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Ctrl+N                                      | nouvelle fenêtre                                                                                    |
+| Ctrl+F                                      | rechercher dans la page (Entrée : suivant, Maj+Entrée : précédent, Échap : fermer)                  |
+| Alt+←, Alt+→, boutons latéraux de la souris | précédent, suivant                                                                                  |
+| Alt+Début                                   | portail                                                                                             |
+| Ctrl+P, Ctrl+Maj+S                          | imprimer, enregistrer en PDF                                                                        |
 | Ctrl+Plus, Ctrl+Moins, Ctrl+0, Ctrl+molette | zoom (Ctrl+0 : taille normale, ou l'échelle choisie dans les paramètres de l'application installée) |
-| F5, Ctrl+R | recharger |
-| F11, F12 | plein écran, outils de développement |
-| Ctrl+W, Ctrl+Q | fermer la fenêtre, quitter |
+| F5, Ctrl+R                                  | recharger                                                                                           |
+| F11, F12                                    | plein écran, outils de développement                                                                |
+| Ctrl+W, Ctrl+Q                              | fermer la fenêtre, quitter                                                                          |
 
 ### Avec ou sans navigateur
 

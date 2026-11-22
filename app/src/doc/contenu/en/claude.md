@@ -6,10 +6,10 @@ Claude helps during quizzes, corrects written answers, evaluates attempts and ge
 
 The choice is made in [Settings › Claude](parametres:claude).
 
-| Mode | How it works | For whom |
-|---|---|---|
+| Mode                                            | How it works                                                                                                                                                                                    | For whom                   |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
 | A Claude account, through Claude Code (default) | The application detects Claude Code and shows the connected account. **Sign in…** opens a terminal where signing in happens on Anthropic’s website: the application never sees the credentials. | With a Claude subscription |
-| An Anthropic API key | The key is checked with Anthropic, then encrypted by the system and never shown again. Usage is billed to the key. | Without a subscription |
+| An Anthropic API key                            | The key is checked with Anthropic, then encrypted by the system and never shown again. Usage is billed to the key.                                                                              | Without a subscription     |
 
 > **Note** A third-party application is not allowed to offer signing in with a claude.ai account or to keep credentials. That is why signing in always happens in Claude Code itself.
 

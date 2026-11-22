@@ -2,9 +2,9 @@
 
 Pages communes à plusieurs matières sur les outils de travail, au PC comme à la fac : ce qui est installé, ce qui manque, les commandes de chaque système. Une page par langage ou par outil.
 
-| Page | Contenu |
-|---|---|
-| `c.html` | Compiler un TP en C sous Windows et sous Linux : MinGW, `mingw32-make` et le `sh` de Git for Windows pour le C standard ; WSL pour le C POSIX ; lanceurs `run.bat` et `run.sh` ; erreurs fréquentes. |
+| Page          | Contenu                                                                                                                                                                                                                         |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `c.html`      | Compiler un TP en C sous Windows et sous Linux : MinGW, `mingw32-make` et le `sh` de Git for Windows pour le C standard ; WSL pour le C POSIX ; lanceurs `run.bat` et `run.sh` ; erreurs fréquentes.                            |
 | `python.html` | Les notebooks Python : environnement commun décrit par `python/requirements.txt`, installé hors de Drive par `lancer-jupyter.bat` et `lancer-jupyter.sh` (racine de `studies`) ; ajouter une bibliothèque ; erreurs fréquentes. |
 
 ## Règles

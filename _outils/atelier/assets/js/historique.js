@@ -5,7 +5,7 @@
    appelle enregistrer() à la fin du geste.
    ========================================================================== */
 (function (A) {
-  "use strict";
+  'use strict';
 
   function Historique(max) {
     this.max = max || 100;
@@ -21,8 +21,12 @@
     this.position = this.etats.length - 1;
     return true;
   };
-  Historique.prototype.peutAnnuler = function () { return this.position > 0; };
-  Historique.prototype.peutRetablir = function () { return this.position < this.etats.length - 1; };
+  Historique.prototype.peutAnnuler = function () {
+    return this.position > 0;
+  };
+  Historique.prototype.peutRetablir = function () {
+    return this.position < this.etats.length - 1;
+  };
   Historique.prototype.annuler = function () {
     if (!this.peutAnnuler()) return null;
     this.position--;

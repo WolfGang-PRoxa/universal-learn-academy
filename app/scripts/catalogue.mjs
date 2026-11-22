@@ -51,7 +51,13 @@ const TEXTE = /\.(html?|md|js|cjs|mjs|json|txt|css|py|c|h|sh|bat|sql|ipynb|yml|c
 
 /** Adresses et textes qui ne doivent apparaître dans aucun fichier publié. */
 export function motifsInterdits() {
-  const courriel = (() => { try { return git(['config', 'user.email']).toString().trim(); } catch { return ''; } })();
+  const courriel = (() => {
+    try {
+      return git(['config', 'user.email']).toString().trim();
+    } catch {
+      return '';
+    }
+  })();
   return courriel ? [new RegExp(echapper(courriel), 'i')] : [];
 }
 
@@ -65,7 +71,8 @@ export function controler(fichiers, tpFournis, interdits = motifsInterdits()) {
     if (regles.estTP(chemin)) {
       const o = tpFournis[chemin];
       if (!o) problemes.push(`${chemin} : fichier de TP absent de la liste blanche`);
-      else if (sha(donnees) !== o.empreinte) problemes.push(`${chemin} : fichier de TP différent de sa version d'origine`);
+      else if (sha(donnees) !== o.empreinte)
+        problemes.push(`${chemin} : fichier de TP différent de sa version d'origine`);
     }
     const r = regles.exclusion(chemin, { tp: false });
     if (r) problemes.push(`${chemin} : ${r.raison}`);
@@ -99,13 +106,18 @@ export function fichiersDuCours(dossierCours, tpFournis) {
 
 /** Cours du catalogue (explore/<d>/<id>/ula-cours.json suivis par git). */
 export function coursDuDepot() {
-  return git(['ls-files', '--', 'explore/*/*/ula-cours.json']).toString('utf8').trim().split('\n').filter(Boolean).map((f) => {
-    const dossier = path.posix.dirname(f);
-    const [, domaine, id] = dossier.split('/');
-    const fiche = JSON.parse(fs.readFileSync(path.join(racine, f), 'utf8'));
-    if (fiche.id !== id) throw new Error(`${f} : id « ${fiche.id} » différent du dossier « ${id} ».`);
-    return { dossier, domaine, id, fiche };
-  });
+  return git(['ls-files', '--', 'explore/*/*/ula-cours.json'])
+    .toString('utf8')
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map((f) => {
+      const dossier = path.posix.dirname(f);
+      const [, domaine, id] = dossier.split('/');
+      const fiche = JSON.parse(fs.readFileSync(path.join(racine, f), 'utf8'));
+      if (fiche.id !== id) throw new Error(`${f} : id « ${fiche.id} » différent du dossier « ${id} ».`);
+      return { dossier, domaine, id, fiche };
+    });
 }
 
 /** Packs par niveau (explore/packs/<id>.json suivis par git), vérifiés contre les cours. */
@@ -116,7 +128,14 @@ export function packsDuDepot(idsCours) {
     const p = JSON.parse(fs.readFileSync(path.join(racine, f), 'utf8'));
     if (path.posix.basename(f, '.json') !== p.id) problemes.push(`${f} : id « ${p.id} » différent du nom du fichier`);
     for (const pb of verifierPack(p, idsCours)) problemes.push(`${f} : ${pb}`);
-    return { id: p.id, titre: p.titre, origine: p.origine || '', dossier: p.dossier || '', description: p.description || '', cours: p.cours };
+    return {
+      id: p.id,
+      titre: p.titre,
+      origine: p.origine || '',
+      dossier: p.dossier || '',
+      description: p.description || '',
+      cours: p.cours,
+    };
   });
   if (problemes.length) throw new Error(`Packs invalides :\n- ${problemes.join('\n- ')}`);
   return packs;
@@ -130,21 +149,38 @@ export function cursusDuDepot(idsPacks) {
     const c = JSON.parse(fs.readFileSync(path.join(racine, f), 'utf8'));
     if (path.posix.basename(f, '.json') !== c.id) problemes.push(`${f} : id « ${c.id} » différent du nom du fichier`);
     for (const pb of verifierCursus(c, idsPacks)) problemes.push(`${f} : ${pb}`);
-    return { id: c.id, titre: c.titre, origine: c.origine || '', description: c.description || '', packs: c.packs.map((x) => ({ pack: x.pack, dossier: x.dossier })) };
+    return {
+      id: c.id,
+      titre: c.titre,
+      origine: c.origine || '',
+      description: c.description || '',
+      packs: c.packs.map((x) => ({ pack: x.pack, dossier: x.dossier })),
+    };
   });
   if (problemes.length) throw new Error(`Cursus invalides :\n- ${problemes.join('\n- ')}`);
   return liste;
 }
 
 function catalogueEnLigne() {
-  const r = spawnSync('gh', ['release', 'download', TAG, '--repo', depot, '--pattern', 'catalogue.json', '--output', '-'], { encoding: 'utf8', maxBuffer: 1 << 26 });
+  const r = spawnSync(
+    'gh',
+    ['release', 'download', TAG, '--repo', depot, '--pattern', 'catalogue.json', '--output', '-'],
+    { encoding: 'utf8', maxBuffer: 1 << 26 },
+  );
   if (r.status !== 0) return null;
-  try { return JSON.parse(r.stdout); } catch { return null; }
+  try {
+    return JSON.parse(r.stdout);
+  } catch {
+    return null;
+  }
 }
 
 export function construire({ publier = false } = {}) {
   const modifs = git(['status', '--porcelain', '--', 'explore', 'app/tp-fournis.json']).toString('utf8').trim();
-  if (modifs) throw new Error(`Modifications non enregistrées dans explore/ :\n${modifs.split('\n').slice(0, 10).join('\n')}\nLes committer avant de construire le catalogue.`);
+  if (modifs)
+    throw new Error(
+      `Modifications non enregistrées dans explore/ :\n${modifs.split('\n').slice(0, 10).join('\n')}\nLes committer avant de construire le catalogue.`,
+    );
   const tpFournis = JSON.parse(fs.readFileSync(path.join(app, 'tp-fournis.json'), 'utf8')).fichiers;
   const interdits = motifsInterdits();
   const enLigne = catalogueEnLigne();
@@ -159,8 +195,16 @@ export function construire({ publier = false } = {}) {
     problemes.push(...controler(fichiers, tpFournis, interdits));
     const version = sha(JSON.stringify(fichiers.map((f) => [f.chemin, sha(f.donnees)]).sort())).slice(0, 16);
     const base = {
-      id: c.id, domaine: c.domaine, titre: c.fiche.titre, niveau: c.fiche.niveau || '', origine: c.fiche.origine || '',
-      teinte: c.fiche.teinte || '', description: c.fiche.description || '', version, fichiers: fichiers.length, archive: `${c.id}.zip`
+      id: c.id,
+      domaine: c.domaine,
+      titre: c.fiche.titre,
+      niveau: c.fiche.niveau || '',
+      origine: c.fiche.origine || '',
+      teinte: c.fiche.teinte || '',
+      description: c.fiche.description || '',
+      version,
+      fichiers: fichiers.length,
+      archive: `${c.id}.zip`,
     };
     const ancien = publies.get(c.id);
     if (ancien && ancien.version === version) {
@@ -170,13 +214,21 @@ export function construire({ publier = false } = {}) {
     }
     const fichierZip = path.join(sortie, `${c.id}.zip`);
     const prefixe = c.dossier + '/';
-    zip.ecrire(fichierZip, fichiers.map((f) => ({ nom: f.chemin.slice(prefixe.length), donnees: f.donnees })));
+    zip.ecrire(
+      fichierZip,
+      fichiers.map((f) => ({ nom: f.chemin.slice(prefixe.length), donnees: f.donnees })),
+    );
     const octets = fs.readFileSync(fichierZip);
     entrees.push(Object.assign(base, { taille: octets.length, empreinte: sha(octets) }));
     aEnvoyer.push(fichierZip);
-    console.log(`  + ${c.id} : ${fichiers.length} fichiers, ${(octets.length / 1e6).toFixed(1)} Mo${ancien ? ' (nouvelle version)' : ' (nouveau)'}`);
+    console.log(
+      `  + ${c.id} : ${fichiers.length} fichiers, ${(octets.length / 1e6).toFixed(1)} Mo${ancien ? ' (nouvelle version)' : ' (nouveau)'}`,
+    );
   }
-  if (problemes.length) throw new Error(`Catalogue refusé :\n- ${problemes.slice(0, 40).join('\n- ')}${problemes.length > 40 ? `\n… et ${problemes.length - 40} autres` : ''}`);
+  if (problemes.length)
+    throw new Error(
+      `Catalogue refusé :\n- ${problemes.slice(0, 40).join('\n- ')}${problemes.length > 40 ? `\n… et ${problemes.length - 40} autres` : ''}`,
+    );
 
   const catalogue = {
     format: 'ula-catalogue-1',
@@ -189,31 +241,66 @@ export function construire({ publier = false } = {}) {
   const fichierCatalogue = path.join(sortie, 'catalogue.json');
   fs.writeFileSync(fichierCatalogue, JSON.stringify(catalogue, null, 1) + '\n');
   const total = entrees.reduce((s, e) => s + e.taille, 0);
-  console.log(`✓ ${entrees.length} cours (${(total / 1e6).toFixed(0)} Mo), ${catalogue.packs.length} pack(s), ${catalogue.cursus.length} cursus, ${aEnvoyer.length} archive(s) à envoyer, contrôle des données personnelles passé`);
+  console.log(
+    `✓ ${entrees.length} cours (${(total / 1e6).toFixed(0)} Mo), ${catalogue.packs.length} pack(s), ${catalogue.cursus.length} cursus, ${aEnvoyer.length} archive(s) à envoyer, contrôle des données personnelles passé`,
+  );
 
-  if (!publier) { console.log('  Aperçu seulement (app/.catalogue) : relancer avec --publier pour envoyer.'); return catalogue; }
+  if (!publier) {
+    console.log('  Aperçu seulement (app/.catalogue) : relancer avec --publier pour envoyer.');
+    return catalogue;
+  }
 
-  const lancer = (args) => { const r = spawnSync('gh', args, { stdio: 'inherit' }); if (r.status !== 0) throw new Error(`gh ${args.join(' ')} a échoué.`); };
+  const lancer = (args) => {
+    const r = spawnSync('gh', args, { stdio: 'inherit' });
+    if (r.status !== 0) throw new Error(`gh ${args.join(' ')} a échoué.`);
+  };
   const existe = spawnSync('gh', ['release', 'view', TAG, '--repo', depot], { stdio: 'ignore' }).status === 0;
   if (!existe) {
     console.log(`▸ Création de la release « ${TAG} » (préversion : jamais « Latest »)`);
-    lancer(['release', 'create', TAG, '--repo', depot, '--target', 'main', '--prerelease', '--latest=false', '--title', 'Catalogue des cours',
-      '--notes', 'Catalogue des cours d’Universal Learn Academy : `catalogue.json` et une archive par cours, téléchargés à la demande par l’application (accueil › Catalogue en ligne). Mis à jour par `npm run catalogue -- --publier`.']);
+    lancer([
+      'release',
+      'create',
+      TAG,
+      '--repo',
+      depot,
+      '--target',
+      'main',
+      '--prerelease',
+      '--latest=false',
+      '--title',
+      'Catalogue des cours',
+      '--notes',
+      'Catalogue des cours d’Universal Learn Academy : `catalogue.json` et une archive par cours, téléchargés à la demande par l’application (accueil › Catalogue en ligne). Mis à jour par `npm run catalogue -- --publier`.',
+    ]);
   }
   for (let i = 0; i < aEnvoyer.length; i += 5) {
-    console.log(`▸ Envoi de ${aEnvoyer.slice(i, i + 5).map((f) => path.basename(f)).join(', ')}`);
+    console.log(
+      `▸ Envoi de ${aEnvoyer
+        .slice(i, i + 5)
+        .map((f) => path.basename(f))
+        .join(', ')}`,
+    );
     lancer(['release', 'upload', TAG, ...aEnvoyer.slice(i, i + 5), '--repo', depot, '--clobber']);
   }
   // Archives des cours retirés du catalogue
   const ids = new Set(entrees.map((e) => e.archive));
-  const assets = JSON.parse(execFileSync('gh', ['release', 'view', TAG, '--repo', depot, '--json', 'assets'], { encoding: 'utf8' })).assets;
-  for (const a of assets) if (a.name.endsWith('.zip') && !ids.has(a.name)) lancer(['release', 'delete-asset', TAG, a.name, '--repo', depot, '--yes']);
+  const assets = JSON.parse(
+    execFileSync('gh', ['release', 'view', TAG, '--repo', depot, '--json', 'assets'], { encoding: 'utf8' }),
+  ).assets;
+  for (const a of assets)
+    if (a.name.endsWith('.zip') && !ids.has(a.name))
+      lancer(['release', 'delete-asset', TAG, a.name, '--repo', depot, '--yes']);
   console.log('▸ Envoi de catalogue.json');
   lancer(['release', 'upload', TAG, fichierCatalogue, '--repo', depot, '--clobber']);
   // Vérification : chaque archive annoncée est présente, à la bonne taille
-  const final = JSON.parse(execFileSync('gh', ['release', 'view', TAG, '--repo', depot, '--json', 'assets,isPrerelease'], { encoding: 'utf8' }));
+  const final = JSON.parse(
+    execFileSync('gh', ['release', 'view', TAG, '--repo', depot, '--json', 'assets,isPrerelease'], {
+      encoding: 'utf8',
+    }),
+  );
   const manquants = entrees.filter((e) => !final.assets.some((a) => a.name === e.archive && a.size === e.taille));
-  if (manquants.length) throw new Error(`Archives absentes ou incomplètes : ${manquants.map((e) => e.archive).join(', ')}`);
+  if (manquants.length)
+    throw new Error(`Archives absentes ou incomplètes : ${manquants.map((e) => e.archive).join(', ')}`);
   if (!final.isPrerelease) lancer(['release', 'edit', TAG, '--repo', depot, '--prerelease', '--latest=false']);
   console.log(`✓ Catalogue publié : https://github.com/${depot}/releases/tag/${TAG}`);
   return catalogue;
@@ -223,9 +310,17 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   // Packs et cursus exemples : npm run catalogue -- <commande> (voir manifestes.mjs)
   const { COMMANDES, executer } = await import('./manifestes.mjs');
   if (COMMANDES.includes(process.argv[2])) {
-    try { process.exit(executer(process.argv[2], process.argv.slice(3))); }
-    catch (e) { console.error(`✗ ${e.message}`); process.exit(1); }
+    try {
+      process.exit(executer(process.argv[2], process.argv.slice(3)));
+    } catch (e) {
+      console.error(`✗ ${e.message}`);
+      process.exit(1);
+    }
   }
-  try { construire({ publier: process.argv.includes('--publier') }); }
-  catch (e) { console.error(`\n✗ ${e.message}`); process.exit(1); }
+  try {
+    construire({ publier: process.argv.includes('--publier') });
+  } catch (e) {
+    console.error(`\n✗ ${e.message}`);
+    process.exit(1);
+  }
 }

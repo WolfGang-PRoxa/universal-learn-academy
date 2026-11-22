@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 /* Journal de diagnostic des gels (version 2.4.0).
 
    Le défilement à la molette s'interrompait parfois, sur n'importe quelle page,
@@ -16,43 +16,57 @@
 
    Le journal est court (gardé sous 512 Ko, l'ancien passe en gels.1.log). */
 
-const { app, BrowserWindow } = require("electron");
-const fs = require("fs");
-const path = require("path");
+const { app, BrowserWindow } = require('electron');
+const fs = require('fs');
+const path = require('path');
 
 const PERIODE = 100;
 const SEUIL = 150;
 const TAILLE_MAX = 512 * 1024;
-const MARQUE = "__ula_visibilite__:";
+const MARQUE = '__ula_visibilite__:';
 
 let fichier = null;
 let action = null;
 
 function dossier() {
-  try { return app.getPath("logs"); } catch (e) { return path.join(app.getPath("userData"), "logs"); }
+  try {
+    return app.getPath('logs');
+  } catch (e) {
+    return path.join(app.getPath('userData'), 'logs');
+  }
 }
 
 function noter(ligne) {
   try {
     if (!fichier) {
       fs.mkdirSync(dossier(), { recursive: true });
-      fichier = path.join(dossier(), "gels.log");
+      fichier = path.join(dossier(), 'gels.log');
     }
     try {
-      if (fs.statSync(fichier).size > TAILLE_MAX) fs.renameSync(fichier, path.join(dossier(), "gels.1.log"));
-    } catch (e) { /* pas encore de journal */ }
+      if (fs.statSync(fichier).size > TAILLE_MAX) fs.renameSync(fichier, path.join(dossier(), 'gels.1.log'));
+    } catch (e) {
+      /* pas encore de journal */
+    }
     // Écriture asynchrone : le journal ne doit pas lui-même bloquer le processus principal
-    fs.appendFile(fichier, new Date().toISOString() + " " + ligne + "\n", () => {});
-  } catch (e) { /* journal impossible : tant pis */ }
+    fs.appendFile(fichier, new Date().toISOString() + ' ' + ligne + '\n', () => {});
+  } catch (e) {
+    /* journal impossible : tant pis */
+  }
 }
 
 /** Nomme l'action en cours dans le processus principal (appel IPC…), pour le journal. */
-function enCours(nom) { action = nom; }
+function enCours(nom) {
+  action = nom;
+}
 
 async function suivre(nom, fn) {
   const avant = action;
   action = nom;
-  try { return await fn(); } finally { action = avant; }
+  try {
+    return await fn();
+  } finally {
+    action = avant;
+  }
 }
 
 function surveillerBoucle() {
@@ -61,7 +75,7 @@ function surveillerBoucle() {
     const maintenant = Date.now();
     const retard = maintenant - attendu;
     attendu = maintenant + PERIODE;
-    if (retard > SEUIL) noter(`processus principal bloqué ${retard} ms` + (action ? ` (pendant : ${action})` : ""));
+    if (retard > SEUIL) noter(`processus principal bloqué ${retard} ms` + (action ? ` (pendant : ${action})` : ''));
   }, PERIODE);
   if (t.unref) t.unref();
 }
@@ -83,21 +97,23 @@ const SCRIPT_VISIBILITE = `(() => {
 
 function surveillerPage(f) {
   const page = f.webContents;
-  page.on("did-finish-load", () => { page.executeJavaScript(SCRIPT_VISIBILITE).catch(() => {}); });
-  page.on("console-message", (e, ...anciens) => {
-    const message = (e && typeof e.message === "string") ? e.message : String(anciens[1] || "");
+  page.on('did-finish-load', () => {
+    page.executeJavaScript(SCRIPT_VISIBILITE).catch(() => {});
+  });
+  page.on('console-message', (e, ...anciens) => {
+    const message = e && typeof e.message === 'string' ? e.message : String(anciens[1] || '');
     if (!message.startsWith(MARQUE)) return;
     const etat = message.slice(MARQUE.length);
     if (f.isDestroyed()) return;
-    if (etat === "hidden" && f.isVisible() && !f.isMinimized()) {
-      noter(`page cachée dans une fenêtre affichée (${f.isFocused() ? "active" : "inactive"}) : ${page.getURL()}`);
+    if (etat === 'hidden' && f.isVisible() && !f.isMinimized()) {
+      noter(`page cachée dans une fenêtre affichée (${f.isFocused() ? 'active' : 'inactive'}) : ${page.getURL()}`);
     }
   });
 }
 
 function demarrer() {
   surveillerBoucle();
-  app.on("browser-window-created", (e, f) => surveillerPage(f));
+  app.on('browser-window-created', (e, f) => surveillerPage(f));
   for (const f of BrowserWindow.getAllWindows()) surveillerPage(f);
   noter(`démarrage ${app.getName()} ${app.getVersion()} (Electron ${process.versions.electron}, ${process.platform})`);
 }

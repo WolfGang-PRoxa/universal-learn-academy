@@ -3,6 +3,7 @@
 Ce dossier produit et fait tourner des **quiz interactifs** sur les matières d’`ula/` : sur tout un cours, plusieurs cours ou un sujet précis, avec un seul type de question ou un mélange. Chaque quiz est une page HTML qui suit la charte des cours (`_outils/charte/`) : mêmes couleurs, thème clair ou sombre, teinte de la matière, code coloré, formules.
 
 Un **serveur local** ajoute ce qu'une page ouverte depuis le disque ne peut pas faire seule :
+
 - l'aide de **Claude**, par Claude Code avec l'abonnement du compte connecté : conversation sur une question, correction des questions ouvertes, évaluation détaillée d'une tentative, génération de nouveaux quiz ;
 - l'**exécution du code** des questions : SQL avec PostgreSQL (PGlite), Python, JavaScript, C, et C POSIX (`fork`, `sigaction`…) ;
 - l'**archivage des tentatives** dans le dossier de la matière, et la **reprise** d'un quiz interrompu.
@@ -23,6 +24,7 @@ Double-cliquer sur `lancer.bat`, à la racine d’`ula`, ou lancer `lancer.sh` d
 - Claude Code est trouvé automatiquement, dans le PATH et dans l'extension VS Code : la version la plus récente est retenue. Un chemin indiqué dans les réglages a la priorité.
 
 Sans serveur, une page de quiz ouverte depuis le disque fonctionne quand même, mais en **mode hors ligne** :
+
 - la progression reste dans le navigateur ;
 - le code ne s'exécute pas ;
 - « Demander à Claude » copie la demande complète, contexte compris, et ouvre claude.ai.
@@ -34,8 +36,8 @@ Sans serveur, une page de quiz ouverte depuis le disque fonctionne quand même, 
   - Viennent ensuite les réglages : mode, thèmes, types de questions (pour ne faire que les QCM d'un quiz mixte, par exemple), nombre de questions, mélange.
   - En bas, l'historique des tentatives, avec la courbe des scores.
 - **Deux modes.**
-  - *Entraînement* : correction et explication après chaque question.
-  - *Examen* : correction à la fin, chronomètre, navigation libre entre les questions.
+  - _Entraînement_ : correction et explication après chaque question.
+  - _Examen_ : correction à la fin, chronomètre, navigation libre entre les questions.
 - **Indices.** Certaines questions en ont : on les dévoile un par un. Un quiz peut retirer des points par indice (`penalite_indice`).
 - **Demander à Claude.** Le bouton ouvre un panneau de conversation sur la question. Des demandes toutes prêtes s'affichent au-dessus du champ, et elles changent une fois la question corrigée (« Pourquoi ma réponse est fausse ? »…).
   - Claude reçoit la question, ta réponse du moment, les indices vus et l'extrait du cours correspondant.
@@ -83,10 +85,10 @@ _outils/quiz/
 
 ## Où ranger les quiz et les archives
 
-| Élément | Emplacement |
-|---|---|
+| Élément            | Emplacement                                                                                                                                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Quiz d'une matière | `explore/<domaine>/<cours>/generated_quizzes/quiz-<slug>.html`, par exemple `explore/informatique/bases-de-donnees-3/generated_quizzes/quiz-cours-02-sql.html` |
-| Tentatives | `<profil>/<cursus>/<cours>/quiz_results/<id du quiz>/<AAAA-MM-JJ_HH-MM-SS>.json` (écrites par le serveur) |
+| Tentatives         | `<profil>/<cursus>/<cours>/quiz_results/<id du quiz>/<AAAA-MM-JJ_HH-MM-SS>.json` (écrites par le serveur)                                                      |
 
 - Depuis `generated_quizzes/`, la charte est à `../../../../_outils/charte/` et l'outil à `../../../_outils/quiz/`, comme dans le modèle.
 - Noms de fichiers : `quiz-cours-02-sql.html`, `quiz-formes-normales.html`, `quiz-sql-code.html`, `quiz-revision-generale.html`.
@@ -95,15 +97,15 @@ _outils/quiz/
 
 Une tentative est un fichier JSON créé dès la première question (`"statut": "en_cours"`), mis à jour à chaque changement, puis passé à `"terminee"` ; `"abandonnee"` si on l'abandonne après avoir répondu (sans réponse, elle est supprimée). Champs principaux :
 
-| Champ | Contenu |
-|---|---|
-| `format`, `id`, `statut` | `studies-quiz/tentative-1`, horodatage, état |
-| `quiz` | `id`, `titre`, `matiere`, `niveau`, `page` |
-| `debut`, `fin`, `duree_ms`, `mode`, `reglages` | déroulement |
-| `score` | `pourcent`, `note20`, `justes`, `partielles`, `fausses`, `sans_reponse`, `a_evaluer`, `nb` |
-| `questions` | pour chaque question : `enonce`, `reponse_texte`, `attendu_texte`, `acceptees`, `score`, `duree_ms`, `indices_vus`, `aide` (conversation avec Claude), `correction_claude`, `rapport` (code) |
-| `evaluation` | bilan de Claude : `texte` (Markdown), `modele`, `date`, `session` |
-| `session` | état interne complet, qui permet la reprise et la relecture |
+| Champ                                          | Contenu                                                                                                                                                                                      |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `format`, `id`, `statut`                       | `studies-quiz/tentative-1`, horodatage, état                                                                                                                                                 |
+| `quiz`                                         | `id`, `titre`, `matiere`, `niveau`, `page`                                                                                                                                                   |
+| `debut`, `fin`, `duree_ms`, `mode`, `reglages` | déroulement                                                                                                                                                                                  |
+| `score`                                        | `pourcent`, `note20`, `justes`, `partielles`, `fausses`, `sans_reponse`, `a_evaluer`, `nb`                                                                                                   |
+| `questions`                                    | pour chaque question : `enonce`, `reponse_texte`, `attendu_texte`, `acceptees`, `score`, `duree_ms`, `indices_vus`, `aide` (conversation avec Claude), `correction_claude`, `rapport` (code) |
+| `evaluation`                                   | bilan de Claude : `texte` (Markdown), `modele`, `date`, `session`                                                                                                                            |
+| `session`                                      | état interne complet, qui permet la reprise et la relecture                                                                                                                                  |
 
 Ces fichiers sont lisibles par Claude : pour faire le point sur une matière, les lire dans `quiz_results/`.
 
@@ -130,44 +132,44 @@ Ces fichiers sont lisibles par Claude : pour faire le point sur une matière, le
 
 Le bloc `<script type="application/json" id="quiz-donnees">` contient un objet :
 
-| Champ | Rôle |
-|---|---|
-| `id` | identifiant unique du quiz, en minuscules et tirets (`bd-cours-02-sql`) ; nomme le dossier des archives |
-| `melanger` | `true` par défaut : ordre des questions tiré au sort (modifiable à l'accueil) |
-| `cours` | cours couverts : `[{ "titre": "Cours 2 · Le langage SQL", "lien": "../generated_courses/cours-02-sql.html" }]` |
-| `jeux` | jeux de données des questions SQL : `{ "emp": { "titre": …, "description": "<p>…</p>", "script": "CREATE TABLE …; INSERT …;" } }` |
-| `penalite_indice` | facultatif : part des points retirée par indice utilisé (0,25 = 25 %) ; 0 par défaut |
-| `questions` | la liste des questions |
+| Champ             | Rôle                                                                                                                              |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `id`              | identifiant unique du quiz, en minuscules et tirets (`bd-cours-02-sql`) ; nomme le dossier des archives                           |
+| `melanger`        | `true` par défaut : ordre des questions tiré au sort (modifiable à l'accueil)                                                     |
+| `cours`           | cours couverts : `[{ "titre": "Cours 2 · Le langage SQL", "lien": "../generated_courses/cours-02-sql.html" }]`                    |
+| `jeux`            | jeux de données des questions SQL : `{ "emp": { "titre": …, "description": "<p>…</p>", "script": "CREATE TABLE …; INSERT …;" } }` |
+| `penalite_indice` | facultatif : part des points retirée par indice utilisé (0,25 = 25 %) ; 0 par défaut                                              |
+| `questions`       | la liste des questions                                                                                                            |
 
 Champs communs à toutes les questions :
 
-| Champ | Rôle |
-|---|---|
-| `id` | identifiant unique dans le quiz (`q01`, `q02`…) ; il sert à la reprise : ne pas renuméroter un quiz déjà utilisé |
-| `type` | un des onze types ci-dessous |
-| `theme` | thème, pour le filtrage et le bilan (« Général » sinon) |
-| `difficulte` | 1 (facile), 2 (moyenne), 3 (difficile) |
-| `enonce` | la question, en HTML |
-| `consigne` | remplace la consigne par défaut du type (facultatif) |
-| `indices` | liste d'indices en HTML, dévoilés un par un (facultatif) |
-| `explication` | affichée après la réponse, en HTML ; obligatoire sauf pour une question ouverte |
-| `revoir` | `{ "texte": "Cours 2 · La clause HAVING", "lien": "../generated_courses/cours-02-sql.html#la-clause-having" }` |
+| Champ         | Rôle                                                                                                             |
+| ------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `id`          | identifiant unique dans le quiz (`q01`, `q02`…) ; il sert à la reprise : ne pas renuméroter un quiz déjà utilisé |
+| `type`        | un des onze types ci-dessous                                                                                     |
+| `theme`       | thème, pour le filtrage et le bilan (« Général » sinon)                                                          |
+| `difficulte`  | 1 (facile), 2 (moyenne), 3 (difficile)                                                                           |
+| `enonce`      | la question, en HTML                                                                                             |
+| `consigne`    | remplace la consigne par défaut du type (facultatif)                                                             |
+| `indices`     | liste d'indices en HTML, dévoilés un par un (facultatif)                                                         |
+| `explication` | affichée après la réponse, en HTML ; obligatoire sauf pour une question ouverte                                  |
+| `revoir`      | `{ "texte": "Cours 2 · La clause HAVING", "lien": "../generated_courses/cours-02-sql.html#la-clause-having" }`   |
 
 Les types et leurs champs propres :
 
-| Type | Champs | Notation |
-|---|---|---|
-| `qcm` | `choix` (liste), `reponse` (indice à partir de 0), `melanger` | juste ou faux |
-| `qcm-multi` | `choix`, `reponses` (liste d'indices) | (bonnes cochées − mauvaises cochées) / nombre de bonnes |
-| `vrai-faux` | `reponse` (`true` ou `false`) | juste ou faux |
-| `reponse-courte` | `reponses` (toutes les formes acceptées), `casse`, `accents` | juste ou faux, sans tenir compte de la casse ni des accents par défaut |
-| `numerique` | `reponse` (nombre), `tolerance`, `unite` | juste si l'écart ≤ tolérance ; virgule ou point acceptés |
-| `trous` | `texte` avec `{{0}}`, `{{1}}`…, `trous`, `code` | part des trous justes |
-| `association` | `paires` (`[gauche, droite]`), `intrus` | part des paires justes |
-| `ordre` | `elements`, écrits dans le bon ordre | part des éléments bien placés |
-| `ouverte` | `reponse_modele`, `criteres` | auto-évaluation ou correction par Claude : 1, 0,5 ou 0 |
-| `code` | `langage`, `depart`, `solution`, et selon le langage `jeu`, `ordre`, `colonnes` (SQL) ou `tests`, `harnais` (programmes) | SQL : juste si le résultat est celui de la solution ; programmes : part des tests réussis |
-| `atelier` | `editeur`, `solution`, `depart`, `options`, `tests`, `seuil`, `mode`, `vue`, `hauteur`, `disposition`, `attendu`, `titre` | concordance avec la solution (juste à partir de `seuil`, 1 par défaut) ; SQL : comme `code` ; rédaction et annotation : auto-évaluation |
+| Type             | Champs                                                                                                                    | Notation                                                                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `qcm`            | `choix` (liste), `reponse` (indice à partir de 0), `melanger`                                                             | juste ou faux                                                                                                                           |
+| `qcm-multi`      | `choix`, `reponses` (liste d'indices)                                                                                     | (bonnes cochées − mauvaises cochées) / nombre de bonnes                                                                                 |
+| `vrai-faux`      | `reponse` (`true` ou `false`)                                                                                             | juste ou faux                                                                                                                           |
+| `reponse-courte` | `reponses` (toutes les formes acceptées), `casse`, `accents`                                                              | juste ou faux, sans tenir compte de la casse ni des accents par défaut                                                                  |
+| `numerique`      | `reponse` (nombre), `tolerance`, `unite`                                                                                  | juste si l'écart ≤ tolérance ; virgule ou point acceptés                                                                                |
+| `trous`          | `texte` avec `{{0}}`, `{{1}}`…, `trous`, `code`                                                                           | part des trous justes                                                                                                                   |
+| `association`    | `paires` (`[gauche, droite]`), `intrus`                                                                                   | part des paires justes                                                                                                                  |
+| `ordre`          | `elements`, écrits dans le bon ordre                                                                                      | part des éléments bien placés                                                                                                           |
+| `ouverte`        | `reponse_modele`, `criteres`                                                                                              | auto-évaluation ou correction par Claude : 1, 0,5 ou 0                                                                                  |
+| `code`           | `langage`, `depart`, `solution`, et selon le langage `jeu`, `ordre`, `colonnes` (SQL) ou `tests`, `harnais` (programmes)  | SQL : juste si le résultat est celui de la solution ; programmes : part des tests réussis                                               |
+| `atelier`        | `editeur`, `solution`, `depart`, `options`, `tests`, `seuil`, `mode`, `vue`, `hauteur`, `disposition`, `attendu`, `titre` | concordance avec la solution (juste à partir de `seuil`, 1 par défaut) ; SQL : comme `code` ; rédaction et annotation : auto-évaluation |
 
 Pour `trous`, chaque entrée de `trous` est soit une saisie libre, `{ "reponses": ["HAVING"] }`, soit une liste déroulante, `{ "choix": ["GROUP BY", "WHERE"], "reponse": 0 }`. Avec `"code": true`, le texte s'affiche comme du code, les sauts de ligne étant écrits `\n`.
 

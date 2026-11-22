@@ -33,11 +33,11 @@ Les sources sont écrites en [Typst](https://typst.app/docs/), un langage de com
 
 Depuis la racine (`ula/`) :
 
-| Commande | Effet |
-|---|---|
-| `uvx --with typst python _outils/numerisation/compiler.py` | compile toutes les sources ; chaque PDF va à son chemin dans le dossier du cours |
-| `uvx --with typst python _outils/numerisation/compiler.py _outils/numerisation/sources/L3/Codage` | compile les sources d'un dossier (ou une source `.typ`) |
-| `uvx --with typst python _outils/numerisation/compiler.py --verifier` | n'écrit rien : signale les PDF absents ou différents de leur source |
+| Commande                                                                                              | Effet                                                                                                                   |
+| ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `uvx --with typst python _outils/numerisation/compiler.py`                                            | compile toutes les sources ; chaque PDF va à son chemin dans le dossier du cours                                        |
+| `uvx --with typst python _outils/numerisation/compiler.py _outils/numerisation/sources/L3/Codage`     | compile les sources d'un dossier (ou une source `.typ`)                                                                 |
+| `uvx --with typst python _outils/numerisation/compiler.py --verifier`                                 | n'écrit rien : signale les PDF absents ou différents de leur source                                                     |
 | `uvx --with typst --with pymupdf python _outils/numerisation/compiler.py --apercu DOSSIER SOURCE.typ` | écrit dans DOSSIER le PDF, une image par page et une planche « scan \| PDF » par page, sans toucher au dossier du cours |
 
 Le compilateur refuse d'écraser un PDF qui ne vient pas de Typst : c'est sans doute le scan, à archiver d'abord dans `scans/`. Les PDF sont déterministes (pas de date dans les métadonnées) : `--verifier` compare les octets. Leurs métadonnées portent le titre, l'auteur et les mots-clés « recomposé d'après un scan, _outils/numerisation ».
@@ -54,14 +54,14 @@ Le compilateur refuse d'écraser un PDF qui ne vient pas de Typst : c'est sans d
 
 ## Documents numérisés
 
-| PDF | Source | Remarque |
-|---|---|---|
-| `explore/informatique/codage/TD/TD1/TD1.pdf` | `sources/L3/Codage/TD/TD1/TD1.typ` | énoncé (11 pt) et feuille des chronogrammes vierge, en paysage |
-| `explore/informatique/codage/TD/TD2/TD2.pdf` | `sources/L3/Codage/TD/TD2/TD2.typ` | 10 pt ; la copie papier était une impression réduite |
-| `explore/informatique/codage/TD/TD3/TD3_codes_cycliques.pdf` | `sources/L3/Codage/TD/TD3/TD3_codes_cycliques.typ` | sujet de 2018, matrice G redessinée |
-| `explore/informatique/codage/TD/TD4/TD4_real_time.pdf` | `sources/L3/Codage/TD/TD4/TD4_real_time.typ` | 12 pt, figure des tâches redessinée, feuille des graphes d'activités vierge |
-| `explore/informatique/programmation-objet/TD/TD1/TD1.pdf` | `sources/L3/POO/TD/TD1/TD1.typ` | livret : deux feuilles A4 paysage, deux pages réduites par face (sujets 1 à 4 ; rappels de syntaxe et extraits de `ri`) |
-| `explore/informatique/programmation-objet/TD/TD2/TD2.pdf` | `sources/L3/POO/TD/TD2/TD2.typ` | 2 pages A4 ; la première ligne d'en-tête, coupée sur la photo, est restituée |
+| PDF                                                          | Source                                             | Remarque                                                                                                                |
+| ------------------------------------------------------------ | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `explore/informatique/codage/TD/TD1/TD1.pdf`                 | `sources/L3/Codage/TD/TD1/TD1.typ`                 | énoncé (11 pt) et feuille des chronogrammes vierge, en paysage                                                          |
+| `explore/informatique/codage/TD/TD2/TD2.pdf`                 | `sources/L3/Codage/TD/TD2/TD2.typ`                 | 10 pt ; la copie papier était une impression réduite                                                                    |
+| `explore/informatique/codage/TD/TD3/TD3_codes_cycliques.pdf` | `sources/L3/Codage/TD/TD3/TD3_codes_cycliques.typ` | sujet de 2018, matrice G redessinée                                                                                     |
+| `explore/informatique/codage/TD/TD4/TD4_real_time.pdf`       | `sources/L3/Codage/TD/TD4/TD4_real_time.typ`       | 12 pt, figure des tâches redessinée, feuille des graphes d'activités vierge                                             |
+| `explore/informatique/programmation-objet/TD/TD1/TD1.pdf`    | `sources/L3/POO/TD/TD1/TD1.typ`                    | livret : deux feuilles A4 paysage, deux pages réduites par face (sujets 1 à 4 ; rappels de syntaxe et extraits de `ri`) |
+| `explore/informatique/programmation-objet/TD/TD2/TD2.pdf`    | `sources/L3/POO/TD/TD2/TD2.typ`                    | 2 pages A4 ; la première ligne d'en-tête, coupée sur la photo, est restituée                                            |
 
 Les réponses manuscrites des TD 1 et 2 de codage et des TD 1 et 2 de POO sont saisies dans leurs TD interactifs (`generated_courses/td-0N-….html`, enregistrées dans `td_results/`).
 

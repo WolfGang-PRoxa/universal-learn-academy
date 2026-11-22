@@ -2,13 +2,13 @@
 
 ## Où l’application écrit
 
-| Contenu | Windows | Linux |
-|---|---|---|
-| Dossier des données (par défaut) | `Documents\ULA` | `~/Documents/ULA` |
-| Paramètres (`parametres.json`) | `%APPDATA%\Universal Learn Academy` | `~/.config/Universal Learn Academy` |
-| Journaux (`logs/gels.log`) | `%APPDATA%\Universal Learn Academy\logs` | `~/.config/Universal Learn Academy/logs` |
-| Copie locale des outils | `%LOCALAPPDATA%\Universal Learn Academy\outils` | `~/.local/share/Universal Learn Academy/outils` |
-| Profil actif, fichiers temporaires du quiz | `%LOCALAPPDATA%\studies-quiz` | `~/.cache/studies-quiz` |
+| Contenu                                    | Windows                                         | Linux                                           |
+| ------------------------------------------ | ----------------------------------------------- | ----------------------------------------------- |
+| Dossier des données (par défaut)           | `Documents\ULA`                                 | `~/Documents/ULA`                               |
+| Paramètres (`parametres.json`)             | `%APPDATA%\Universal Learn Academy`             | `~/.config/Universal Learn Academy`             |
+| Journaux (`logs/gels.log`)                 | `%APPDATA%\Universal Learn Academy\logs`        | `~/.config/Universal Learn Academy/logs`        |
+| Copie locale des outils                    | `%LOCALAPPDATA%\Universal Learn Academy\outils` | `~/.local/share/Universal Learn Academy/outils` |
+| Profil actif, fichiers temporaires du quiz | `%LOCALAPPDATA%\studies-quiz`                   | `~/.cache/studies-quiz`                         |
 
 La désinstallation conserve les paramètres et le dossier des données.
 
@@ -32,17 +32,17 @@ Règle d’or : rien de ce que l’utilisateur produit n’est écrit dans `expl
 
 Une clé absente prend sa valeur par défaut.
 
-| Clé | Valeur par défaut | Rôle |
-|---|---|---|
-| `langue` | `null` | `fr` ou `en` ; `null` tant qu’elle n’est pas choisie (la fenêtre de choix s’ouvre alors au lancement) |
-| `miseAJourAuto` | `true` | Recherche et installation automatiques des mises à jour |
-| `fenetre.mode` | `agrandie` | `agrandie` ou `personnalisee` (avec `fenetre.bornes`) |
-| `affichage.echelle` | `0` | Échelle en % (0 : automatique) |
-| `arrierePlan.fermeture` | `true` | La croix cache la fenêtre au lieu de quitter |
-| `donnees.dossier` | vide | Dossier des données (vide : dossier par défaut) |
-| `claude.mode` | `compte` | `compte` ou `cle` ; la clé est chiffrée par le système |
-| `synchro.auto` | `null` | Synchronisation automatique ; `null` tant que la question n’a pas reçu de réponse |
-| `raccourcis.dossiers` | `[]` | Dossiers où un raccourci a été demandé |
+| Clé                     | Valeur par défaut | Rôle                                                                                                  |
+| ----------------------- | ----------------- | ----------------------------------------------------------------------------------------------------- |
+| `langue`                | `null`            | `fr` ou `en` ; `null` tant qu’elle n’est pas choisie (la fenêtre de choix s’ouvre alors au lancement) |
+| `miseAJourAuto`         | `true`            | Recherche et installation automatiques des mises à jour                                               |
+| `fenetre.mode`          | `agrandie`        | `agrandie` ou `personnalisee` (avec `fenetre.bornes`)                                                 |
+| `affichage.echelle`     | `0`               | Échelle en % (0 : automatique)                                                                        |
+| `arrierePlan.fermeture` | `true`            | La croix cache la fenêtre au lieu de quitter                                                          |
+| `donnees.dossier`       | vide              | Dossier des données (vide : dossier par défaut)                                                       |
+| `claude.mode`           | `compte`          | `compte` ou `cle` ; la clé est chiffrée par le système                                                |
+| `synchro.auto`          | `null`            | Synchronisation automatique ; `null` tant que la question n’a pas reçu de réponse                     |
+| `raccourcis.dossiers`   | `[]`              | Dossiers où un raccourci a été demandé                                                                |
 
 ## Journaux
 

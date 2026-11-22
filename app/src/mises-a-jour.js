@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 /* Mises à jour automatiques à partir des releases GitHub (electron-updater),
    sur le modèle de CV Studio. Au lancement (si le paramètre est activé), la
    nouvelle version est téléchargée en arrière-plan puis installée à la fermeture,
@@ -10,24 +10,24 @@
    en mémoire le temps de la recherche et du téléchargement. Pour les autres
    utilisateurs, la mise à jour ne fonctionnera qu'une fois le dépôt public. */
 
-const { app } = require("electron");
-const { t } = require("./i18n");
-const { execFile } = require("child_process");
-const { autoUpdater } = require("electron-updater");
-const { DEPOT } = require("./depot");
+const { app } = require('electron');
+const { t } = require('./i18n');
+const { execFile } = require('child_process');
+const { autoUpdater } = require('electron-updater');
+const { DEPOT } = require('./depot');
 
 let envoyer = () => {};
-let dernier = { etat: "repos" };
+let dernier = { etat: 'repos' };
 let configure = false;
 let viaGh = false;
 
 function messageCourt(erreur) {
-  const texte = String((erreur && erreur.message) || erreur || "erreur inconnue");
-  if (/\b404\b/.test(texte)) return t("u.aucuneVersion");
-  if (/\b401\b|\b403\b/.test(texte)) return t("u.refus");
-  if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|net::ERR_/i.test(texte)) return t("u.connexion");
-  const ligne = texte.split("\n")[0].trim();
-  return ligne.length > 160 ? ligne.slice(0, 157) + "…" : ligne;
+  const texte = String((erreur && erreur.message) || erreur || 'erreur inconnue');
+  if (/\b404\b/.test(texte)) return t('u.aucuneVersion');
+  if (/\b401\b|\b403\b/.test(texte)) return t('u.refus');
+  if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|net::ERR_/i.test(texte)) return t('u.connexion');
+  const ligne = texte.split('\n')[0].trim();
+  return ligne.length > 160 ? ligne.slice(0, 157) + '…' : ligne;
 }
 
 function emettre(statut) {
@@ -41,12 +41,12 @@ function configurer() {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.logger = null;
-  autoUpdater.on("checking-for-update", () => emettre({ etat: "recherche" }));
-  autoUpdater.on("update-available", (info) => emettre({ etat: "disponible", version: info.version }));
-  autoUpdater.on("update-not-available", () => emettre({ etat: "a-jour" }));
-  autoUpdater.on("download-progress", (p) => emettre({ etat: "telechargement", pourcent: Math.round(p.percent) }));
-  autoUpdater.on("update-downloaded", (info) => emettre({ etat: "pret", version: info.version }));
-  autoUpdater.on("error", (e) => emettre({ etat: "erreur", message: messageCourt(e) }));
+  autoUpdater.on('checking-for-update', () => emettre({ etat: 'recherche' }));
+  autoUpdater.on('update-available', (info) => emettre({ etat: 'disponible', version: info.version }));
+  autoUpdater.on('update-not-available', () => emettre({ etat: 'a-jour' }));
+  autoUpdater.on('download-progress', (p) => emettre({ etat: 'telechargement', pourcent: Math.round(p.percent) }));
+  autoUpdater.on('update-downloaded', (info) => emettre({ etat: 'pret', version: info.version }));
+  autoUpdater.on('error', (e) => emettre({ etat: 'erreur', message: messageCourt(e) }));
 }
 
 /** Jeton de GitHub CLI connectée sur ce poste, ou null. Sans bloquer le processus
@@ -54,37 +54,51 @@ function configurer() {
 function jetonGh() {
   return new Promise((resolve) => {
     try {
-      execFile("gh", ["auth", "token", "--hostname", "github.com"], { encoding: "utf8", timeout: 10000, windowsHide: true }, (err, stdout) => {
-        const jeton = String(stdout || "").trim();
-        resolve(!err && /^[\w-]{20,}$/.test(jeton) ? jeton : null);
-      });
-    } catch (e) { resolve(null); }
+      execFile(
+        'gh',
+        ['auth', 'token', '--hostname', 'github.com'],
+        { encoding: 'utf8', timeout: 10000, windowsHide: true },
+        (err, stdout) => {
+          const jeton = String(stdout || '').trim();
+          resolve(!err && /^[\w-]{20,}$/.test(jeton) ? jeton : null);
+        },
+      );
+    } catch (e) {
+      resolve(null);
+    }
   });
 }
 
-function init(rappel) { envoyer = rappel; }
-function statut() { return dernier; }
+function init(rappel) {
+  envoyer = rappel;
+}
+function statut() {
+  return dernier;
+}
 
 let verificationEnCours = null;
 
 // Une seule recherche à la fois (démarrage, recherche périodique, paramètres, icône)
 function verifier() {
-  if (!verificationEnCours) verificationEnCours = verifierUneFois().finally(() => { verificationEnCours = null; });
+  if (!verificationEnCours)
+    verificationEnCours = verifierUneFois().finally(() => {
+      verificationEnCours = null;
+    });
   return verificationEnCours;
 }
 
 async function verifierUneFois() {
-  if (process.env.ULA_MAJ_ESSAI === "1") {
+  if (process.env.ULA_MAJ_ESSAI === '1') {
     // Essais de la recherche périodique hors application installée
-    emettre({ etat: "a-jour", essai: true });
+    emettre({ etat: 'a-jour', essai: true });
     return dernier;
   }
   if (!app.isPackaged) {
-    emettre({ etat: "indisponible", message: t("u.seulementInstallee") });
+    emettre({ etat: 'indisponible', message: t('u.seulementInstallee') });
     return dernier;
   }
-  if (process.platform === "linux" && !process.env.APPIMAGE) {
-    emettre({ etat: "indisponible", message: t("u.appImage") });
+  if (process.platform === 'linux' && !process.env.APPIMAGE) {
+    emettre({ etat: 'indisponible', message: t('u.appImage') });
     return dernier;
   }
   configurer();
@@ -93,11 +107,23 @@ async function verifierUneFois() {
   } catch (e) {
     // Dépôt privé : nouvel essai avec le jeton de GitHub CLI, s'il y en a un
     const jeton = !viaGh && /\b404\b/.test(String(e && e.message)) ? await jetonGh() : null;
-    if (!jeton) { emettre({ etat: "erreur", message: messageCourt(e) }); return dernier; }
+    if (!jeton) {
+      emettre({ etat: 'erreur', message: messageCourt(e) });
+      return dernier;
+    }
     viaGh = true;
-    autoUpdater.setFeedURL({ provider: "github", owner: DEPOT.proprietaire, repo: DEPOT.nom, private: true, token: jeton });
-    try { await autoUpdater.checkForUpdates(); }
-    catch (e2) { emettre({ etat: "erreur", message: messageCourt(e2) }); }
+    autoUpdater.setFeedURL({
+      provider: 'github',
+      owner: DEPOT.proprietaire,
+      repo: DEPOT.nom,
+      private: true,
+      token: jeton,
+    });
+    try {
+      await autoUpdater.checkForUpdates();
+    } catch (e2) {
+      emettre({ etat: 'erreur', message: messageCourt(e2) });
+    }
   }
   return dernier;
 }
@@ -120,8 +146,8 @@ let periodique = null;
 
 /** Ce qu'un examen décide : rien, ou relire les releases. */
 function etapeSuivante({ derniere, maintenant, pret }) {
-  if (pret) return "attendre";   // déjà téléchargée : elle s'installe en quittant
-  return maintenant - derniere >= INTERVALLE_MS ? "verifier" : "attendre";
+  if (pret) return 'attendre'; // déjà téléchargée : elle s'installe en quittant
+  return maintenant - derniere >= INTERVALLE_MS ? 'verifier' : 'attendre';
 }
 
 function demarrerPeriodique({ actif, journal = () => {} }) {
@@ -135,35 +161,59 @@ function demarrerPeriodique({ actif, journal = () => {} }) {
     encours = true;
     try {
       if (!actif()) return;
-      if (etapeSuivante({ derniere, maintenant: Date.now(), pret: dernier.etat === "pret" }) !== "verifier") return;
+      if (etapeSuivante({ derniere, maintenant: Date.now(), pret: dernier.etat === 'pret' }) !== 'verifier') return;
       derniere = Date.now();
-      journal("recherche périodique de mise à jour");
+      journal('recherche périodique de mise à jour');
       await verifier();
-    } catch (e) { journal("recherche périodique impossible : " + messageCourt(e)); }
-    finally { encours = false; }
+    } catch (e) {
+      journal('recherche périodique impossible : ' + messageCourt(e));
+    } finally {
+      encours = false;
+    }
   }
-  const t = setInterval(() => { examiner(); }, EXAMEN_MS);
+  const t = setInterval(() => {
+    examiner();
+  }, EXAMEN_MS);
   if (t.unref) t.unref();
   // PC réveillé : il a pu dormir toute la nuit, la relecture est due
   try {
-    require("electron").powerMonitor.on("resume", () => { derniere = 0; periodique.bientot(); });
-  } catch (e) { /* pas de powerMonitor : l'examen régulier suffit */ }
+    require('electron').powerMonitor.on('resume', () => {
+      derniere = 0;
+      periodique.bientot();
+    });
+  } catch (e) {
+    /* pas de powerMonitor : l'examen régulier suffit */
+  }
   periodique = {
     bientot() {
       if (minuterie) clearTimeout(minuterie);
-      minuterie = setTimeout(() => { minuterie = null; examiner(); }, BIENTOT_MS);
+      minuterie = setTimeout(() => {
+        minuterie = null;
+        examiner();
+      }, BIENTOT_MS);
     },
-    intervalle: INTERVALLE_MS
+    intervalle: INTERVALLE_MS,
   };
   return periodique;
 }
 
-function bientot() { if (periodique) periodique.bientot(); }
+function bientot() {
+  if (periodique) periodique.bientot();
+}
 
 function installerMaintenant() {
-  if (dernier.etat !== "pret") return false;
+  if (dernier.etat !== 'pret') return false;
   setImmediate(() => autoUpdater.quitAndInstall(false, true));
   return true;
 }
 
-module.exports = { init, statut, verifier, installerMaintenant, demarrerPeriodique, bientot, etapeSuivante, INTERVALLE_MS };
+module.exports = {
+  init,
+  statut,
+  verifier,
+  installerMaintenant,
+  demarrerPeriodique,
+  bientot,
+  etapeSuivante,
+  INTERVALLE_MS,
+};

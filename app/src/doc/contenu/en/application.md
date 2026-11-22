@@ -16,22 +16,22 @@ New versions are published on GitHub. The application looks for them at startup,
 
 ## Keyboard shortcuts
 
-| Keys | Action |
-|---|---|
-| F1 | Documentation |
-| Ctrl+, | Settings |
-| Alt+Home | Home page |
-| Alt+← and Alt+→ | Previous and next page |
-| Ctrl+F | Find in the page |
-| Ctrl+N | New window |
-| Ctrl+P | Print |
-| Ctrl+Shift+S | Save the page as PDF |
-| F5 or Ctrl+R | Reload |
-| Ctrl + and Ctrl − | Zoom in and out |
-| Ctrl+0 | Return to the chosen scale |
-| F11 | Full screen |
-| Ctrl+W | Close the window |
-| Ctrl+Q | Quit |
+| Keys              | Action                     |
+| ----------------- | -------------------------- |
+| F1                | Documentation              |
+| Ctrl+,            | Settings                   |
+| Alt+Home          | Home page                  |
+| Alt+← and Alt+→   | Previous and next page     |
+| Ctrl+F            | Find in the page           |
+| Ctrl+N            | New window                 |
+| Ctrl+P            | Print                      |
+| Ctrl+Shift+S      | Save the page as PDF       |
+| F5 or Ctrl+R      | Reload                     |
+| Ctrl + and Ctrl − | Zoom in and out            |
+| Ctrl+0            | Return to the chosen scale |
+| F11               | Full screen                |
+| Ctrl+W            | Close the window           |
+| Ctrl+Q            | Quit                       |
 
 In the documentation, **Ctrl+F** moves the cursor to the search box. In the guided setup, **Enter** goes to the next step and **Escape** closes the guide.
 

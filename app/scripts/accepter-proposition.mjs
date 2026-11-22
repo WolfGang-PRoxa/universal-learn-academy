@@ -31,18 +31,27 @@ const proposition = require('../../_outils/ula/lib/proposition.js');
 const app = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const racine = path.resolve(app, '..');
 const args = process.argv.slice(2);
-const option = (nom) => { const i = args.indexOf(nom); return i >= 0 ? args[i + 1] : null; };
+const option = (nom) => {
+  const i = args.indexOf(nom);
+  return i >= 0 ? args[i + 1] : null;
+};
 const archive = args.find((a, i) => !a.startsWith('--') && !['--domaine', '--id', '--pack'].includes(args[i - 1]));
-function echec(m) { console.error(`\n✗ ${m}`); process.exit(1); }
+function echec(m) {
+  console.error(`\n✗ ${m}`);
+  process.exit(1);
+}
 
-if (!archive || !fs.existsSync(archive)) echec('Usage : npm run accepter-proposition -- <archive.zip> [--domaine d] [--id id] [--remplacer] [--essai]');
+if (!archive || !fs.existsSync(archive))
+  echec('Usage : npm run accepter-proposition -- <archive.zip> [--domaine d] [--id id] [--remplacer] [--essai]');
 
 // 1. Extraction dans un dossier temporaire, puis les contrôles de l'application
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ula-proposition-'));
 try {
   zip.extraire(archive, temp);
   const fiche = JSON.parse(fs.readFileSync(path.join(temp, 'ula-cours.json'), 'utf8'));
-  const autres = fs.readdirSync(temp).filter((n) => !['ula-cours.json', 'generated_courses', 'generated_quizzes'].includes(n));
+  const autres = fs
+    .readdirSync(temp)
+    .filter((n) => !['ula-cours.json', 'generated_courses', 'generated_quizzes'].includes(n));
   if (autres.length) echec(`L'archive contient autre chose que les pages générées : ${autres.join(', ')}`);
   const { problemes, avertissements, fichiers } = proposition.controler(temp, {});
   if (problemes.length) echec(`Proposition refusée :\n- ${problemes.join('\n- ')}`);
@@ -51,11 +60,15 @@ try {
   const id = option('--id') || fiche.id;
   const domaine = option('--domaine') || fiche.domaine;
   if (!/^[a-z0-9][a-z0-9-]{0,80}$/.test(id)) echec(`Identifiant invalide : ${id}`);
-  if (!proposition.DOMAINES.includes(domaine)) echec(`Domaine inconnu : ${domaine} (${proposition.DOMAINES.join(', ')})`);
+  if (!proposition.DOMAINES.includes(domaine))
+    echec(`Domaine inconnu : ${domaine} (${proposition.DOMAINES.join(', ')})`);
   const cible = path.join(racine, 'explore', domaine, id);
-  const ailleurs = fs.readdirSync(path.join(racine, 'explore')).find((d) => d !== domaine && fs.existsSync(path.join(racine, 'explore', d, id)));
+  const ailleurs = fs
+    .readdirSync(path.join(racine, 'explore'))
+    .find((d) => d !== domaine && fs.existsSync(path.join(racine, 'explore', d, id)));
   if (ailleurs) echec(`Un cours « ${id} » existe déjà dans le domaine ${ailleurs} : choisir un autre --id.`);
-  if (fs.existsSync(cible) && !args.includes('--remplacer')) echec(`explore/${domaine}/${id} existe déjà : --remplacer pour le remplacer, ou --id pour un autre nom.`);
+  if (fs.existsSync(cible) && !args.includes('--remplacer'))
+    echec(`explore/${domaine}/${id} existe déjà : --remplacer pour le remplacer, ou --id pour un autre nom.`);
   console.log(`✓ ${fichiers.length} fichiers contrôlés : « ${fiche.titre} » → explore/${domaine}/${id}`);
   if (args.includes('--essai')) process.exit(0);
 
@@ -71,30 +84,43 @@ try {
     const dest = path.join(cible, ...f.nom.split('/'));
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     if (/\.html?$/i.test(f.nom)) {
-      const t = fs.readFileSync(f.fichier, 'utf8').replace(/(\b(?:href|src)=")(\/(?!\/)[^"]*)(")/g, (m, a, u, b) => a + versRelatif(f.nom, u) + b);
+      const t = fs
+        .readFileSync(f.fichier, 'utf8')
+        .replace(/(\b(?:href|src)=")(\/(?!\/)[^"]*)(")/g, (m, a, u, b) => a + versRelatif(f.nom, u) + b);
       fs.writeFileSync(dest, t);
     } else fs.copyFileSync(f.fichier, dest);
   }
-  fs.writeFileSync(path.join(cible, 'ula-cours.json'), JSON.stringify(Object.assign({}, fiche, { id, domaine }), null, 2) + '\n');
+  fs.writeFileSync(
+    path.join(cible, 'ula-cours.json'),
+    JSON.stringify(Object.assign({}, fiche, { id, domaine }), null, 2) + '\n',
+  );
   const pack = option('--pack');
   if (pack) {
     const f = path.join(racine, 'explore', 'packs', `${pack}.json`);
-    if (!fs.existsSync(f)) console.log(`  ! pack inconnu : ${pack} (explore/packs/${pack}.json absent), cours non ajouté à un pack`);
+    if (!fs.existsSync(f))
+      console.log(`  ! pack inconnu : ${pack} (explore/packs/${pack}.json absent), cours non ajouté à un pack`);
     else {
       const p = JSON.parse(fs.readFileSync(f, 'utf8'));
-      if (!p.cours.includes(id)) { p.cours.push(id); fs.writeFileSync(f, JSON.stringify(p, null, 2) + '\n'); }
+      if (!p.cours.includes(id)) {
+        p.cours.push(id);
+        fs.writeFileSync(f, JSON.stringify(p, null, 2) + '\n');
+      }
       console.log(`  + ajouté au pack ${pack}`);
     }
   }
 
   // 3. Vérificateurs et accueils de domaine
   const lancer = (cmd, a) => spawnSync(cmd, a, { cwd: racine, stdio: 'inherit' }).status === 0;
-  const ok = lancer('python', ['_outils/charte/outils/verifier.py', `explore/${domaine}/${id}`])
-    & lancer('python', ['_outils/quiz/outils/verifier_quiz.py', `explore/${domaine}/${id}`])
-    & lancer(process.execPath, ['_outils/atelier/outils/verifier.js', `explore/${domaine}/${id}`]);
+  const ok =
+    lancer('python', ['_outils/charte/outils/verifier.py', `explore/${domaine}/${id}`]) &
+    lancer('python', ['_outils/quiz/outils/verifier_quiz.py', `explore/${domaine}/${id}`]) &
+    lancer(process.execPath, ['_outils/atelier/outils/verifier.js', `explore/${domaine}/${id}`]);
   lancer('python', ['_outils/charte/outils/index_niveau.py']);
-  console.log(ok ? `\n✓ Cours ajouté dans explore/${domaine}/${id}. Relire, committer, puis npm run catalogue -- --publier.`
-    : `\n! Cours ajouté dans explore/${domaine}/${id}, mais les vérificateurs signalent des erreurs : les corriger avant de committer.`);
+  console.log(
+    ok
+      ? `\n✓ Cours ajouté dans explore/${domaine}/${id}. Relire, committer, puis npm run catalogue -- --publier.`
+      : `\n! Cours ajouté dans explore/${domaine}/${id}, mais les vérificateurs signalent des erreurs : les corriger avant de committer.`,
+  );
 } finally {
   fs.rmSync(temp, { recursive: true, force: true });
 }

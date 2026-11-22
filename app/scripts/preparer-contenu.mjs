@@ -34,15 +34,24 @@ function empreinte(fichier) {
 // copie sinon.
 function placer(source, cible) {
   fs.mkdirSync(path.dirname(cible), { recursive: true });
-  try { fs.linkSync(source, cible); } catch { fs.copyFileSync(source, cible); }
+  try {
+    fs.linkSync(source, cible);
+  } catch {
+    fs.copyFileSync(source, cible);
+  }
 }
 
 export function preparer({ silencieux = false } = {}) {
-  const suivis = execFileSync('git', ['-c', 'core.quotepath=false', 'ls-files', '-z', '--', '_outils'], { cwd: racine, maxBuffer: 1 << 28 })
-    .toString('utf8').split('\0').filter(Boolean);
+  const suivis = execFileSync('git', ['-c', 'core.quotepath=false', 'ls-files', '-z', '--', '_outils'], {
+    cwd: racine,
+    maxBuffer: 1 << 28,
+  })
+    .toString('utf8')
+    .split('\0')
+    .filter(Boolean);
 
   fs.rmSync(sortie, { recursive: true, force: true });
-  fs.rmSync(path.join(app, '.contenu'), { recursive: true, force: true });   // ancien dossier (versions 1.x)
+  fs.rmSync(path.join(app, '.contenu'), { recursive: true, force: true }); // ancien dossier (versions 1.x)
   fs.mkdirSync(sortie, { recursive: true });
 
   const fichiers = {};
@@ -50,16 +59,20 @@ export function preparer({ silencieux = false } = {}) {
   let octets = 0;
   for (const chemin of suivis) {
     const regle = regles.exclusion(chemin);
-    if (regle) { ecartes[regle.raison] = (ecartes[regle.raison] || 0) + 1; continue; }
+    if (regle) {
+      ecartes[regle.raison] = (ecartes[regle.raison] || 0) + 1;
+      continue;
+    }
     const source = path.join(racine, ...chemin.split('/'));
-    if (!fs.existsSync(source)) continue;   // supprimé mais pas encore committé
+    if (!fs.existsSync(source)) continue; // supprimé mais pas encore committé
     const taille = fs.statSync(source).size;
     placer(source, path.join(sortie, ...chemin.split('/')));
     fichiers[chemin] = { taille, empreinte: empreinte(source) };
     octets += taille;
   }
 
-  const empreinteOutils = crypto.createHash('sha256')
+  const empreinteOutils = crypto
+    .createHash('sha256')
     .update(JSON.stringify(Object.entries(fichiers).sort(([a], [b]) => (a < b ? -1 : 1))))
     .digest('hex');
   const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: racine }).toString().trim();
@@ -67,7 +80,9 @@ export function preparer({ silencieux = false } = {}) {
   fs.writeFileSync(path.join(sortie, regles.MANIFESTE), JSON.stringify(manifeste));
 
   if (!silencieux) {
-    console.log(`✓ ${Object.keys(fichiers).length} fichiers d’outils (${(octets / 1e6).toFixed(1)} Mo) dans app/.outils`);
+    console.log(
+      `✓ ${Object.keys(fichiers).length} fichiers d’outils (${(octets / 1e6).toFixed(1)} Mo) dans app/.outils`,
+    );
     for (const [raison, n] of Object.entries(ecartes)) console.log(`  écartés : ${n} × ${raison}`);
   }
   return manifeste;

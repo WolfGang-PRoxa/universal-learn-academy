@@ -8,24 +8,38 @@ const echapper = (x) => x.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/
 
 /** Ancre d'un titre : minuscules sans accents, mots reliés par des tirets. */
 export function ancre(texte) {
-  return texte.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-    .replace(/`/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return texte
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/`/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 function enLigne(texte) {
   // Le code d'abord, mis de côté pour que rien ne s'applique dedans
   const codes = [];
-  let x = texte.replace(/`([^`]+)`/g, (_m, c) => { codes.push(c); return `\u0000${codes.length - 1}\u0000`; });
+  let x = texte.replace(/`([^`]+)`/g, (_m, c) => {
+    codes.push(c);
+    return `\u0000${codes.length - 1}\u0000`;
+  });
   x = echapper(x);
   x = x.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, t, href) => `<a href="${href}">${t}</a>`);
   x = x.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   x = x.replace(/(^|[^\w*])\*([^*\s][^*]*?)\*(?!\w)/g, '$1<em>$2</em>');
   x = x.replace(/(^|[^\w])_([^_\s][^_]*?)_(?!\w)/g, '$1<em>$2</em>');
+  // Les bouts de code mis de côté sont repérés par des caractères NUL (\u0000), absents du texte
+  // eslint-disable-next-line no-control-regex
   return x.replace(/\u0000(\d+)\u0000/g, (_m, i) => `<code>${echapper(codes[Number(i)])}</code>`);
 }
 
 function cellules(ligne) {
-  return ligne.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+  return ligne
+    .trim()
+    .replace(/^\||\|$/g, '')
+    .split('|')
+    .map((c) => c.trim());
 }
 
 /** Liste (puces ou numéros), imbriquée selon l'indentation. */
@@ -42,7 +56,10 @@ function liste(lignes) {
     let html = '';
     while (i < items.length && items[i].niveau >= niveau) {
       // Sous-liste : rangée dans l'élément précédent
-      if (items[i].niveau > niveau) { html = html.replace(/<\/li>$/, '') + construire(items[i].niveau) + '</li>'; continue; }
+      if (items[i].niveau > niveau) {
+        html = html.replace(/<\/li>$/, '') + construire(items[i].niveau) + '</li>';
+        continue;
+      }
       html += `<li>${enLigne(items[i].texte)}</li>`;
       i++;
     }
@@ -60,7 +77,10 @@ export function rendre(md) {
   const vide = (l) => !l || !l.trim();
   while (i < lignes.length) {
     const l = lignes[i];
-    if (vide(l)) { i++; continue; }
+    if (vide(l)) {
+      i++;
+      continue;
+    }
 
     const bloc = l.match(/^```(\w*)/);
     if (bloc) {
@@ -68,7 +88,9 @@ export function rendre(md) {
       i++;
       while (i < lignes.length && !/^```/.test(lignes[i])) code.push(lignes[i++]);
       i++;
-      sortie.push(`<pre><code${bloc[1] ? ` class="langage-${bloc[1]}"` : ''}>${echapper(code.join('\n'))}</code></pre>`);
+      sortie.push(
+        `<pre><code${bloc[1] ? ` class="langage-${bloc[1]}"` : ''}>${echapper(code.join('\n'))}</code></pre>`,
+      );
       continue;
     }
 
@@ -82,13 +104,21 @@ export function rendre(md) {
       continue;
     }
 
-    if (/^(-{3,}|\*{3,})\s*$/.test(l)) { sortie.push('<hr>'); i++; continue; }
+    if (/^(-{3,}|\*{3,})\s*$/.test(l)) {
+      sortie.push('<hr>');
+      i++;
+      continue;
+    }
 
     if (/^>/.test(l)) {
       const contenu = [];
       while (i < lignes.length && /^>/.test(lignes[i])) contenu.push(lignes[i++].replace(/^>\s?/, ''));
       const texte = contenu.join('\n');
-      const genre = /^\*\*(Attention|Warning|Important)/i.test(texte) ? 'attention' : /^\*\*(Astuce|Tip)/i.test(texte) ? 'astuce' : 'note';
+      const genre = /^\*\*(Attention|Warning|Important)/i.test(texte)
+        ? 'attention'
+        : /^\*\*(Astuce|Tip)/i.test(texte)
+          ? 'astuce'
+          : 'note';
       sortie.push(`<aside class="encadre ${genre}">${rendre(texte).html}</aside>`);
       continue;
     }
@@ -98,20 +128,31 @@ export function rendre(md) {
       i += 2;
       const corps = [];
       while (i < lignes.length && /^\|/.test(lignes[i])) corps.push(cellules(lignes[i++]));
-      sortie.push(`<div class="tableau"><table><thead><tr>${tete.map((c) => `<th>${enLigne(c)}</th>`).join('')}</tr></thead><tbody>${corps.map((r) => `<tr>${r.map((c) => `<td>${enLigne(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
+      sortie.push(
+        `<div class="tableau"><table><thead><tr>${tete.map((c) => `<th>${enLigne(c)}</th>`).join('')}</tr></thead><tbody>${corps.map((r) => `<tr>${r.map((c) => `<td>${enLigne(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`,
+      );
       continue;
     }
 
     if (/^\s*([-*]|\d+\.)\s+/.test(l)) {
       const elements = [];
-      while (i < lignes.length && !vide(lignes[i]) && (/^\s*([-*]|\d+\.)\s+/.test(lignes[i]) || /^\s{2,}\S/.test(lignes[i]))) elements.push(lignes[i++]);
+      while (
+        i < lignes.length &&
+        !vide(lignes[i]) &&
+        (/^\s*([-*]|\d+\.)\s+/.test(lignes[i]) || /^\s{2,}\S/.test(lignes[i]))
+      )
+        elements.push(lignes[i++]);
       sortie.push(liste(elements));
       continue;
     }
 
     const paragraphe = [];
-    while (i < lignes.length && !vide(lignes[i]) && !/^(#{1,4}\s|```|>|\||\s*([-*]|\d+\.)\s+)/.test(lignes[i])) paragraphe.push(lignes[i++].trim());
-    if (!paragraphe.length) { sortie.push(`<p>${enLigne(lignes[i++])}</p>`); continue; }
+    while (i < lignes.length && !vide(lignes[i]) && !/^(#{1,4}\s|```|>|\||\s*([-*]|\d+\.)\s+)/.test(lignes[i]))
+      paragraphe.push(lignes[i++].trim());
+    if (!paragraphe.length) {
+      sortie.push(`<p>${enLigne(lignes[i++])}</p>`);
+      continue;
+    }
     sortie.push(`<p>${enLigne(paragraphe.join(' '))}</p>`);
   }
   return { html: sortie.join('\n'), titres };

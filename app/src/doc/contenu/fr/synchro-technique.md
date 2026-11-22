@@ -11,22 +11,22 @@ La synchronisation automatique (`app/src/synchro.js` et `synchro-git.js`) s’ap
 
 ## Périmètre
 
-| Dossier des données | Ce qui est committé automatiquement |
-|---|---|
-| Dépôt d’ula | Seulement la progression écrite par l’application : `quiz_results/`, `td_results/`, `ula-lien.json`, `ula-profil.json` |
-| Autre dossier devenu dépôt | Tout, sauf `explore/`, `_outils/` et les fichiers temporaires |
+| Dossier des données        | Ce qui est committé automatiquement                                                                                    |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Dépôt d’ula                | Seulement la progression écrite par l’application : `quiz_results/`, `td_results/`, `ula-lien.json`, `ula-profil.json` |
+| Autre dossier devenu dépôt | Tout, sauf `explore/`, `_outils/` et les fichiers temporaires                                                          |
 
 Un fichier de plus de 50 Mo n’est jamais committé (il est signalé dans la carte Synchronisation).
 
 ## Conflits
 
-| Fichier | Résolution |
-|---|---|
-| `td_results/<page>.json` | Fusion atelier par atelier, le plus récent d’après `maj` |
-| Tentative de quiz | Version enregistrée le plus récemment |
-| `ula-lien.json`, `ula-profil.json` | Version locale |
-| Autre fichier, dépôt d’ula | Fusion annulée, à faire à la main (`git pull`) |
-| Autre fichier, autre dossier | Version locale gardée, l’autre enregistrée à côté (`nom (conflit <date>).ext`) |
+| Fichier                            | Résolution                                                                     |
+| ---------------------------------- | ------------------------------------------------------------------------------ |
+| `td_results/<page>.json`           | Fusion atelier par atelier, le plus récent d’après `maj`                       |
+| Tentative de quiz                  | Version enregistrée le plus récemment                                          |
+| `ula-lien.json`, `ula-profil.json` | Version locale                                                                 |
+| Autre fichier, dépôt d’ula         | Fusion annulée, à faire à la main (`git pull`)                                 |
+| Autre fichier, autre dossier       | Version locale gardée, l’autre enregistrée à côté (`nom (conflit <date>).ext`) |
 
 Un fichier supprimé d’un côté et modifié de l’autre est gardé.
 

@@ -16,22 +16,22 @@ Les nouvelles versions sont publiées sur GitHub. L’application les recherche 
 
 ## Raccourcis clavier
 
-| Touches | Action |
-|---|---|
-| F1 | Documentation |
-| Ctrl+, | Paramètres |
-| Alt+Origine | Accueil |
-| Alt+← et Alt+→ | Page précédente et suivante |
-| Ctrl+F | Rechercher dans la page |
-| Ctrl+N | Nouvelle fenêtre |
-| Ctrl+P | Imprimer |
-| Ctrl+Maj+S | Enregistrer la page en PDF |
-| F5 ou Ctrl+R | Recharger |
-| Ctrl + et Ctrl − | Agrandir et réduire |
-| Ctrl+0 | Revenir à l’échelle choisie |
-| F11 | Plein écran |
-| Ctrl+W | Fermer la fenêtre |
-| Ctrl+Q | Quitter |
+| Touches          | Action                      |
+| ---------------- | --------------------------- |
+| F1               | Documentation               |
+| Ctrl+,           | Paramètres                  |
+| Alt+Origine      | Accueil                     |
+| Alt+← et Alt+→   | Page précédente et suivante |
+| Ctrl+F           | Rechercher dans la page     |
+| Ctrl+N           | Nouvelle fenêtre            |
+| Ctrl+P           | Imprimer                    |
+| Ctrl+Maj+S       | Enregistrer la page en PDF  |
+| F5 ou Ctrl+R     | Recharger                   |
+| Ctrl + et Ctrl − | Agrandir et réduire         |
+| Ctrl+0           | Revenir à l’échelle choisie |
+| F11              | Plein écran                 |
+| Ctrl+W           | Fermer la fenêtre           |
+| Ctrl+Q           | Quitter                     |
 
 Dans la documentation, **Ctrl+F** place le curseur dans la recherche. Dans le paramétrage guidé, **Entrée** passe à l’étape suivante et **Échap** ferme le guide.
 

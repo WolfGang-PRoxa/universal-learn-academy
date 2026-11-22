@@ -2,13 +2,13 @@
 
 ## Where the application writes
 
-| Content | Windows | Linux |
-|---|---|---|
-| Data folder (default) | `Documents\ULA` | `~/Documents/ULA` |
-| Settings (`parametres.json`) | `%APPDATA%\Universal Learn Academy` | `~/.config/Universal Learn Academy` |
-| Logs (`logs/gels.log`) | `%APPDATA%\Universal Learn Academy\logs` | `~/.config/Universal Learn Academy/logs` |
-| Local copy of the tools | `%LOCALAPPDATA%\Universal Learn Academy\outils` | `~/.local/share/Universal Learn Academy/outils` |
-| Active profile, quiz temporary files | `%LOCALAPPDATA%\studies-quiz` | `~/.cache/studies-quiz` |
+| Content                              | Windows                                         | Linux                                           |
+| ------------------------------------ | ----------------------------------------------- | ----------------------------------------------- |
+| Data folder (default)                | `Documents\ULA`                                 | `~/Documents/ULA`                               |
+| Settings (`parametres.json`)         | `%APPDATA%\Universal Learn Academy`             | `~/.config/Universal Learn Academy`             |
+| Logs (`logs/gels.log`)               | `%APPDATA%\Universal Learn Academy\logs`        | `~/.config/Universal Learn Academy/logs`        |
+| Local copy of the tools              | `%LOCALAPPDATA%\Universal Learn Academy\outils` | `~/.local/share/Universal Learn Academy/outils` |
+| Active profile, quiz temporary files | `%LOCALAPPDATA%\studies-quiz`                   | `~/.cache/studies-quiz`                         |
 
 Uninstalling keeps the settings and the data folder.
 
@@ -32,17 +32,17 @@ Golden rule: nothing the user produces is written in `explore/`. A Git repositor
 
 A missing key takes its default value.
 
-| Key | Default | Role |
-|---|---|---|
-| `langue` | `null` | `fr` or `en`; `null` until chosen (the choice window then opens at startup) |
-| `miseAJourAuto` | `true` | Automatic search and installation of updates |
-| `fenetre.mode` | `agrandie` | `agrandie` (maximised) or `personnalisee` (with `fenetre.bornes`) |
-| `affichage.echelle` | `0` | Scale in % (0: automatic) |
-| `arrierePlan.fermeture` | `true` | The close button hides the window instead of quitting |
-| `donnees.dossier` | empty | Data folder (empty: default folder) |
-| `claude.mode` | `compte` | `compte` (account) or `cle` (key); the key is encrypted by the system |
-| `synchro.auto` | `null` | Automatic sync; `null` until the question has been answered |
-| `raccourcis.dossiers` | `[]` | Folders where a shortcut was requested |
+| Key                     | Default    | Role                                                                        |
+| ----------------------- | ---------- | --------------------------------------------------------------------------- |
+| `langue`                | `null`     | `fr` or `en`; `null` until chosen (the choice window then opens at startup) |
+| `miseAJourAuto`         | `true`     | Automatic search and installation of updates                                |
+| `fenetre.mode`          | `agrandie` | `agrandie` (maximised) or `personnalisee` (with `fenetre.bornes`)           |
+| `affichage.echelle`     | `0`        | Scale in % (0: automatic)                                                   |
+| `arrierePlan.fermeture` | `true`     | The close button hides the window instead of quitting                       |
+| `donnees.dossier`       | empty      | Data folder (empty: default folder)                                         |
+| `claude.mode`           | `compte`   | `compte` (account) or `cle` (key); the key is encrypted by the system       |
+| `synchro.auto`          | `null`     | Automatic sync; `null` until the question has been answered                 |
+| `raccourcis.dossiers`   | `[]`       | Folders where a shortcut was requested                                      |
 
 ## Logs
 

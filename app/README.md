@@ -1,192 +1,199 @@
-# Universal Learn Academy, application installable
+[Français](README.fr.md) · **English**
 
-Les cours, quiz et TD interactifs d'ula dans une application de bureau qui s'installe, se met à jour toute seule, télécharge les cours à la demande et se règle dans ses paramètres. Sur le modèle de CV Studio (Electron, electron-builder, electron-updater, publication par la GitHub CLI). Jusqu'à la version 1.0.3, elle s'appelait **Studies** et livrait tous les cours dans son installeur.
+# Universal Learn Academy, the desktop app
 
-Le fonctionnement sans installation reste le même : `lancer.bat` (serveur et navigateur), `lancer-app.bat` (fenêtre construite sur le PC à partir du dépôt) et `git pull` pour retrouver ses cours et ses progressions d'un poste à l'autre.
+The courses, quizzes and interactive TD of ula in a desktop app that installs itself, updates itself, downloads courses on demand and is configured in its settings. Modelled on CV Studio (Electron, electron-builder, electron-updater, publishing with the GitHub CLI). Up to version 1.0.3 it was called **Studies** and shipped all the courses in its installer.
 
-## Installer
+Running without installing works as before: `lancer.bat` (server and browser), `lancer-app.bat` (window built on the PC from the repository) and `git pull` to get one's courses and progress from one computer to another.
 
-| Système | Fichier de la [dernière version](https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/latest) | Installation |
-|---|---|---|
-| Windows 10 ou 11 (x64) | `Universal-Learn-Academy-Setup-<version>.exe` | Pour l'utilisateur courant, sans droits administrateur. L'application n'est pas signée : SmartScreen demande « Informations complémentaires », puis « Exécuter quand même ». |
-| Linux (x64) | `Universal-Learn-Academy-<version>.AppImage` | `chmod +x Universal-Learn-Academy-<version>.AppImage`, puis le lancer. |
+## Install
 
-Les versions suivantes s'installent d'elles-mêmes au démarrage (voir « Mises à jour »). Le passage de Studies 1.0.x à 2.0.0 se fait aussi par la mise à jour automatique : l'identifiant de l'application (`fr.wolfgangproxa.studies`) et le nom du paquet (`studies`, donc le dossier d'installation `%LOCALAPPDATA%\Programs\studies`) sont gardés ; les paramètres de `%APPDATA%\Studies` sont repris dans `%APPDATA%\Universal Learn Academy`, et les anciens raccourcis « Studies » retirés.
+| System                 | File from the [latest release](https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/latest) | Installation                                                                                                                      |
+| ---------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Windows 10 or 11 (x64) | `Universal-Learn-Academy-Setup-<version>.exe`                                                             | For the current user, no administrator rights needed. The app is not signed: SmartScreen asks for "More info", then "Run anyway". |
+| Linux (x64)            | `Universal-Learn-Academy-<version>.AppImage`                                                              | `chmod +x Universal-Learn-Academy-<version>.AppImage`, then run it.                                                               |
 
-## Premier lancement
+Later versions install themselves at startup (see "Updates"). Moving from Studies 1.0.x to 2.0.0 also goes through the automatic update: the app id (`fr.wolfgangproxa.studies`) and the package name (`studies`, hence the install folder `%LOCALAPPDATA%\Programs\studies`) are kept; the settings in `%APPDATA%\Studies` are carried over to `%APPDATA%\Universal Learn Academy`, and the old "Studies" shortcuts are removed.
 
-Une petite fenêtre au style de l'application (`src/langue/`) demande d'abord la **langue** : français ou anglais, celle du système proposée (flèches et Entrée suffisent). Fermée sans choix, la langue du système sert pour cette fois et la question revient au lancement suivant. Ensuite, l'accueil demande le nom d'utilisateur, prérempli avec celui de la session Windows ou Linux : c'est le nom du dossier de son espace. Il propose aussi un cursus exemple (« Informatique » : dossiers L1, L2, L3 avec tous leurs cours) et de télécharger ses cours tout de suite, en arrière-plan. Puis le « Catalogue en ligne » de l'accueil propose les cours ; chaque cours téléchargé se range dans un dossier de son cursus (voir `_outils/ula/README.md`).
+## First launch
+
+A small window in the app's style (`src/langue/`) first asks for the **language**: French or English, with the system language suggested (arrow keys and Enter are enough). Closed without a choice, the system language is used this time and the question comes back at the next launch. Then the home page asks for the user name, prefilled with the Windows or Linux session name: it is the name of the user's space folder. It also offers an example curriculum ("Informatique": L1, L2, L3 folders with all their courses) and to download its courses right away, in the background. Then the home page's "Online catalogue" lists the courses; each downloaded course goes into a folder of the curriculum (see `_outils/ula/README.md`).
 
 ```
-Documents/ULA/                    dossier des données (par défaut)
-├── explore/<domaine>/<cours>/    cours téléchargés, en lecture seule
-└── <profil>/<cursus>/<cours>/    lien vers le cours (ula-lien.json) et progression
+Documents/ULA/                    data folder (default)
+├── explore/<domain>/<course>/    downloaded courses, read-only
+└── <profile>/<curriculum>/<course>/   link to the course (ula-lien.json) and progress
 ```
 
-## Langue, documentation et paramétrage guidé
+## Language, documentation and guided setup
 
-Depuis la version 2.6.0 :
+Since version 2.6.0:
 
-- **Langue** (`langue` dans `parametres.json`, carte « Langue » des paramètres) : français ou anglais pour les menus, les paramètres, les notifications, la barre du haut des pages, l'accueil, la documentation et le guide. Le changement s'applique tout de suite à toutes les fenêtres. Les cours, les quiz et les TD restent en français pour le moment. Textes : `src/i18n/fr.js` (référence) et `en.js` ; `_outils/app/textes.js` (menu, dialogues) ; `TEXTES_BARRE` de `_outils/charte/assets/cours.js` (barre du haut) ; `_outils/ula/assets/textes.js` (accueil). La langue est annoncée aux pages dans l'agent utilisateur (`ULA-langue/<code>`) et `window.ulaLangue(code)` les prévient d'un changement. Sans hôte (`lancer.bat`, `lancer-app.bat`), tout reste en français.
-- **Documentation intégrée** (`src/doc/`, `src/documentation.js`) : F1, bouton « ? » de la barre des pages, menu **Aide › Documentation**, menu de l'icône ou carte « Aide » des paramètres. Un guide d'utilisation et une documentation technique, en pages Markdown par langue (`src/doc/contenu/<langue>/<id>.md`, ordre dans `sommaire.json`), avec recherche (Ctrl+F) et liens vers les paramètres (`parametres:<section>`) ou le guide (`guide:`).
-- **Paramétrage guidé** (`src/guide/`) : bouton de la documentation, menu **Aide › Paramétrage guidé…** ou carte « Aide ». Les réglages un par un, avec une courte explication et le lien vers la carte des paramètres correspondante : langue, profil (et cursus exemple s'il n'y en a pas encore), Claude, échelle, fenêtre au lancement, fermeture de la fenêtre, mises à jour, raccourcis, dossier des données, synchronisation (si le dossier est un dépôt suivi), puis un récapitulatif. Chaque choix s'applique tout de suite.
+- **Language** (`langue` in `parametres.json`, "Language" card in the settings): French or English for the menus, settings, notifications, the top bar of the pages, the home page, the documentation and the guide. The change applies immediately to all windows. Courses, quizzes and TD stay in French for now. Strings: `src/i18n/fr.js` (reference) and `en.js`; `_outils/app/textes.js` (menu, dialogs); `TEXTES_BARRE` in `_outils/charte/assets/cours.js` (top bar); `_outils/ula/assets/textes.js` (home page). The language is announced to the pages in the user agent (`ULA-langue/<code>`) and `window.ulaLangue(code)` notifies them of a change. Without the host (`lancer.bat`, `lancer-app.bat`), everything stays in French.
+- **Built-in documentation** (`src/doc/`, `src/documentation.js`): F1, the "?" button in the page bar, **Help › Documentation** menu, tray icon menu or "Help" card in the settings. A user guide and technical documentation, as Markdown pages per language (`src/doc/contenu/<language>/<id>.md`, order in `sommaire.json`), with search (Ctrl+F) and links to the settings (`parametres:<section>`) or the guide (`guide:`).
+- **Guided setup** (`src/guide/`): button in the documentation, **Help › Guided setup…** menu or "Help" card. The settings one by one, with a short explanation and a link to the matching settings card: language, profile (and example curriculum if there is none yet), Claude, scale, window at launch, closing the window, updates, shortcuts, data folder, synchronisation (if the folder is a tracked repository), then a summary. Each choice applies immediately.
 
-`npm run check` vérifie que chaque dictionnaire a les mêmes clés et les mêmes variables dans les deux langues, que toute clé utilisée existe, et que chaque page du sommaire existe dans chaque langue avec des liens valides.
+`npm run check` verifies that each dictionary has the same keys and the same variables in both languages, that every key used exists, and that every page in the table of contents exists in each language with valid links.
 
-## Paramètres
+## Settings
 
-La roue dentée de la barre du haut, sur toutes les pages, ou Ctrl+, (menu **Fichier › Paramètres de l'application…**). Dans l'application installée, elle remplace la roue « Réglages » de l'outil de quiz, dont les réglages sont réunis ici ; dans un navigateur ou avec `lancer-app.bat`, la roue des quiz reste celle d'avant.
+The gear in the top bar, on every page, or Ctrl+, (**File › App settings…** menu). In the installed app, it replaces the quiz tool's "Settings" gear, whose settings are gathered here; in a browser or with `lancer-app.bat`, the quiz gear stays as before.
 
-Depuis la version 2.6.2, les paramètres ne sont plus une fenêtre du système : comme ceux de Modding Manager, ils s'ouvrent dans la fenêtre des cours, par-dessus la page (`src/parametres-integres.js`). Une vue transparente couvre la fenêtre ; la page des paramètres y dessine un voile sombre et un panneau centré (toute la fenêtre moins 24 px de marge, au plus 1500 × 1100), dont seul le contenu défile. La croix, Échap ou un clic sur le voile les referment ; rouverts depuis une autre fenêtre de cours, ils y passent. Dès 860 px de panneau, la navigation des sections passe sur le côté (section courante surlignée) et les cartes se rangent en 2 ou 3 colonnes d'au moins 420 px, sans trous : l'ordre est gardé, une carte large (fenêtre au lancement, modèles de Claude) prend toute la ligne, la dernière carte d'une ligne incomplète s'élargit jusqu'au bord, et les cartes d'une ligne ont la même hauteur. En dessous, une seule colonne et la navigation en haut.
+Since version 2.6.2, the settings are no longer a system window: like those of Modding Manager, they open inside the course window, over the page (`src/parametres-integres.js`). A transparent view covers the window; the settings page draws a dark overlay and a centred panel on it (the whole window minus a 24 px margin, at most 1500 × 1100), of which only the content scrolls. The cross, Esc or a click on the overlay close them; reopened from another course window, they move there. From 860 px of panel width, the section navigation moves to the side (current section highlighted) and the cards are laid out in 2 or 3 columns of at least 420 px, without gaps: the order is kept, a wide card (window at launch, Claude models) takes the whole row, the last card of an incomplete row stretches to the edge, and the cards of a row have the same height. Below that, a single column with the navigation at the top.
 
-- **Mises à jour** (activées par défaut) : au démarrage, puis toutes les 6 heures (examen tous les quarts d'heure), au réveil du PC et peu après que la fenêtre se cache, l'application cherche une nouvelle version dans les releases GitHub, comme Modding Manager. Elle la télécharge en arrière-plan (en différentiel, grâce aux fichiers `.blockmap`), le signale par une notification (une fois par version ; un clic ouvre cette section) et par l'entrée « Redémarrer et installer la version… » du menu de l'icône, et l'installe quand on quitte l'application. « Redémarrer et installer » l'applique tout de suite. Le réglage désactive aussi la recherche périodique.
-- **Échelle de l'interface** : « Automatique » (100 %, par défaut : les accueils occupent toute la largeur de la fenêtre et le texte grandit un peu sur un grand écran) ou de 50 à 200 %. Elle s'applique tout de suite à toutes les fenêtres de cours, aux paramètres (même lisibilité partout) et à chaque lancement ; Ctrl+Plus, Ctrl+Moins et Ctrl+molette ajustent en plus jusqu'à la fermeture, Ctrl+0 revient à l'échelle choisie.
-- **Arrière-plan** (activé par défaut) : voir « Arrière-plan » ci-dessous.
-- **Fenêtre au lancement** : grande fenêtre (agrandie, par défaut) ou taille et position personnalisées, réglées dans un cadre qui représente les écrans à l'échelle (souris ou clavier) ou par quatre champs. Si l'emplacement n'est plus visible (écran débranché), la fenêtre s'ouvre agrandie. Repris de CV Studio.
-- **Raccourcis** : Bureau, menu Démarrer (menu des applications sous Linux), ou n'importe quel dossier choisi. Pour chaque emplacement, l'application dit ce qu'elle trouve : rien (« Créer »), un raccourci valide, un raccourci vers une ancienne copie ou cassé (« Réparer »), un fichier qui ouvre autre chose (« Remplacer », après confirmation). Les raccourcis portent le nom de ceux de l'installeur (« Universal Learn Academy ») : la désinstallation retire ceux du Bureau et du menu Démarrer. Sous Linux, ce sont des fichiers `.desktop` qui lancent l'AppImage.
-- **Connexion à Claude** : voir ci-dessous.
-- **Modèles de Claude et exécution du code** (ex-« Réglages » des quiz) : chemin de Claude Code, modèle et effort pour l'aide, la correction, l'évaluation et la génération de quiz (avec un bouton « Tester »), langages exécutables. Lus et enregistrés par l'API du serveur local (`_outils/quiz/reglages.json` des outils).
-- **Profil** : le profil actif (mémorisé sur le poste), l'ajout et le renommage d'un profil. L'accueil permet aussi d'en changer.
-- **Synchronisation** : voir « Synchronisation entre plusieurs PC » ci-dessous.
-- **Dossier des données** : `Documents/ULA` par défaut, ou un autre dossier. Un dépôt git d'ula (il contient `_outils/app` et `explore/`) est reconnu : c'est le « mode dépôt » de l'auteur du catalogue, où outils et catalogue sont ceux du dépôt et où `git pull` / `git push` synchronisent tout.
+- **Updates** (on by default): at startup, then every 6 hours (checked every quarter of an hour), when the PC wakes up and shortly after the window is hidden, the app looks for a new version in the GitHub releases, like Modding Manager. It downloads it in the background (differentially, thanks to the `.blockmap` files), announces it with a notification (once per version; a click opens this section) and with the "Restart and install version…" entry of the tray icon menu, and installs it when the app quits. "Restart and install" applies it right away. The setting also turns off the periodic check.
+- **Interface scale**: "Automatic" (100 %, default: the home pages take the whole width of the window and the text grows a little on a large screen) or from 50 to 200 %. It applies immediately to all course windows, to the settings (same readability everywhere) and at each launch; Ctrl+Plus, Ctrl+Minus and Ctrl+wheel adjust further until the window is closed, Ctrl+0 returns to the chosen scale.
+- **Background** (on by default): see "Background" below.
+- **Window at launch**: large window (maximised, default) or custom size and position, set in a frame that represents the screens to scale (mouse or keyboard) or with four fields. If the position is no longer visible (screen unplugged), the window opens maximised. Taken from CV Studio.
+- **Shortcuts**: Desktop, Start menu (applications menu on Linux), or any chosen folder. For each location, the app says what it finds: nothing ("Create"), a valid shortcut, a shortcut to an old copy or a broken one ("Repair"), a file that opens something else ("Replace", after confirmation). Shortcuts have the name of the installer's ones ("Universal Learn Academy"): uninstalling removes those on the Desktop and in the Start menu. On Linux, they are `.desktop` files that launch the AppImage.
+- **Connection to Claude**: see below.
+- **Claude models and code execution** (formerly the quizzes' "Settings"): Claude Code path, model and effort for hints, grading, evaluation and quiz generation (with a "Test" button), executable languages. Read and saved through the local server's API (`_outils/quiz/reglages.json` of the tools).
+- **Profile**: the active profile (remembered on the computer), adding and renaming a profile. The home page can also switch profiles.
+- **Synchronisation**: see "Synchronisation between several PCs" below.
+- **Data folder**: `Documents/ULA` by default, or another folder. A git repository of ula (it contains `_outils/app` and `explore/`) is recognised: it is the catalogue author's "repository mode", where tools and catalogue are the repository's and where `git pull` / `git push` synchronise everything.
 
-## Connexion à Claude
+## Connection to Claude
 
-Les quiz font appel à Claude (aide, correction des réponses rédigées, évaluation, génération de quiz) par Claude Code (`claude -p`, voir `_outils/quiz/serveur/lib/claude.js`).
+Quizzes call Claude (hints, grading of written answers, evaluation, quiz generation) through Claude Code (`claude -p`, see `_outils/quiz/serveur/lib/claude.js`).
 
-Ce qu'autorise Anthropic, d'après la documentation de Claude Code relue le 12 novembre 2026 ([Legal and compliance](https://code.claude.com/docs/en/legal-and-compliance), [Agent SDK overview](https://code.claude.com/docs/en/agent-sdk/overview)) :
+What Anthropic allows, according to the Claude Code documentation read on 12 November 2026 ([Legal and compliance](https://code.claude.com/docs/en/legal-and-compliance), [Agent SDK overview](https://code.claude.com/docs/en/agent-sdk/overview)):
 
-- une application tierce **ne peut pas** proposer la connexion avec un compte claude.ai, ni faire passer des requêtes par l'abonnement Free, Pro ou Max de ses utilisateurs, ni recueillir ou conserver leurs identifiants ou jetons de session ;
-- elle **peut** utiliser la clé d'API de l'utilisateur, facturée à son compte ;
-- rien n'empêche l'utilisateur de se connecter lui-même, avec son abonnement, au binaire de Claude Code non modifié.
+- a third-party app **may not** offer sign-in with a claude.ai account, route requests through its users' Free, Pro or Max plan, or collect or store their credentials or session tokens;
+- it **may** use the user's API key, billed to their account;
+- nothing prevents users from signing in themselves, with their plan, to the unmodified Claude Code binary.
 
-L'application propose donc deux modes :
+The app therefore offers two modes:
 
-| Mode | Ce que fait l'application | Pour qui |
-|---|---|---|
-| **Mon compte Claude, via Claude Code** (par défaut) | Détecte Claude Code et affiche le compte connecté (`claude auth status`). « Se connecter… » ouvre un terminal sur `claude auth login` : la connexion se fait sur le site d'Anthropic, l'application ne voit jamais les identifiants. | Qui a un abonnement Claude. |
-| **Une clé d'API Anthropic** | La clé est vérifiée auprès d'Anthropic, chiffrée par le système (`safeStorage` : DPAPI sous Windows, trousseau sous Linux ; refusée s'il n'y a pas de trousseau), jamais renvoyée à l'interface. Au démarrage, elle est passée au serveur local dans `ANTHROPIC_API_KEY`, que Claude Code utilise. | Qui n'a pas d'abonnement : l'usage est facturé à la clé. |
+| Mode                                                 | What the app does                                                                                                                                                                                                                                                              | For whom                                          |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| **My Claude account, through Claude Code** (default) | Detects Claude Code and shows the signed-in account (`claude auth status`). "Sign in…" opens a terminal on `claude auth login`: signing in happens on Anthropic's website, the app never sees the credentials.                                                                 | Users with a Claude plan.                         |
+| **An Anthropic API key**                             | The key is checked with Anthropic, encrypted by the system (`safeStorage`: DPAPI on Windows, keyring on Linux; refused if there is no keyring), never sent back to the interface. At startup, it is passed to the local server in `ANTHROPIC_API_KEY`, which Claude Code uses. | Users without a plan: usage is billed to the key. |
 
-Dans les deux cas, Claude Code doit être installé ; sans lui, les cours et les quiz s'affichent, mais sans l'aide de Claude. L'application ne s'appelle ni ne se présente comme un produit d'Anthropic.
+In both cases, Claude Code must be installed; without it, courses and quizzes are displayed, but without Claude's help. The app is neither named nor presented as an Anthropic product.
 
-## Synchronisation entre plusieurs PC
+## Synchronisation between several PCs
 
-Depuis la version 2.5.0, quand le dossier des données est un dépôt Git dont la branche suit une branche d'un dépôt distant, l'application propose une fois, dans une petite fenêtre à son style centrée sur la fenêtre des cours (`src/proposition/`), de le synchroniser automatiquement (« Activer », « Plus tard » : redemandé au prochain lancement, comme la croix ou Échap, « Non merci ») (`synchro.auto` dans `parametres.json`). Activée, la synchro tourne au lancement (une dizaine de secondes après), toutes les 30 minutes (même fenêtre fermée, puisque l'application reste en arrière-plan), au réveil du PC et en quittant (10 secondes au plus). « Synchroniser maintenant » : bouton nuage de la barre des pages (pastille verte : à jour, bleue : en cours, rouge : problème, un clic ouvre alors les paramètres), menu de l'icône de la zone de notification, carte « Synchronisation » des paramètres.
+Since version 2.5.0, when the data folder is a Git repository whose branch tracks a branch of a remote repository, the app offers once, in a small window in its style centred on the course window (`src/proposition/`), to synchronise it automatically ("Enable", "Later": asked again at the next launch, like the cross or Esc, "No thanks") (`synchro.auto` in `parametres.json`). Once enabled, synchronisation runs at launch (about ten seconds after), every 30 minutes (even with the window closed, since the app stays in the background), when the PC wakes up and when quitting (10 seconds at most). "Synchronise now": cloud button in the page bar (green dot: up to date, blue: in progress, red: problem, a click then opens the settings), tray icon menu, "Synchronisation" card in the settings.
 
-Un cycle (`src/synchro-git.js`, vérifié par `npm run check` sur deux clones d'un même dépôt) :
+A cycle (`src/synchro-git.js`, verified by `npm run check` on two clones of the same repository):
 
-1. rien si une commande Git est en cours (`index.lock`, fusion ou rebase à terminer) : nouvel essai au cycle suivant ;
-2. commit de ce qui a changé dans le périmètre, message « Progression du 16/11/2026 à 15:50 (<nom du PC>) », avec l'identité Git du poste ;
-3. `git fetch`, puis fusion avec la branche suivie (`--autostash` : les fichiers modifiés hors périmètre ne gênent pas) ;
-4. `git push`, recommencé une fois si l'autre PC vient de pousser ; jamais de `--force`.
+1. nothing if a Git command is in progress (`index.lock`, merge or rebase to finish): new attempt at the next cycle;
+2. commit of what changed in the scope, message "Progression du 16/11/2026 à 15:50 (<PC name>)", with the computer's Git identity;
+3. `git fetch`, then merge with the tracked branch (`--autostash`: files modified outside the scope do not get in the way);
+4. `git push`, retried once if the other PC has just pushed; never `--force`.
 
-| Dossier des données | Ce qui est committé tout seul |
-|---|---|
-| Dépôt d'ula (mode de l'auteur du catalogue) | Seulement la progression écrite par l'application dans l'espace d'un profil : `quiz_results/`, `td_results/`, `ula-lien.json`, `ula-profil.json`. Le reste (TP, cours en rédaction) attend ses commits ; les commits locaux déjà faits partent avec la progression. |
-| Autre dossier devenu dépôt | Tout, sauf `explore/`, `_outils/` et les fichiers temporaires. |
+| Data folder                              | What is committed automatically                                                                                                                                                                                                                       |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ula repository (catalogue author's mode) | Only the progress written by the app in a profile's space: `quiz_results/`, `td_results/`, `ula-lien.json`, `ula-profil.json`. The rest (labs, courses being written) waits for its own commits; local commits already made go out with the progress. |
+| Other folder turned into a repository    | Everything, except `explore/`, `_outils/` and temporary files.                                                                                                                                                                                        |
 
-Conflits (même fichier modifié sur deux PC entre deux synchros) : `td_results/<page>.json` est fusionné atelier par atelier (le plus récent d'après `maj`), une tentative de quiz garde la version enregistrée le plus récemment, les fiches `ula-lien.json` et `ula-profil.json` la version locale. Pour un autre fichier, dans le dépôt d'ula la fusion est annulée et reste à faire à la main (`git pull`) ; dans un autre dossier, la version locale reste et l'autre est enregistrée à côté (`nom (conflit 16-11-2026 15h50).ext`), avec une notification. Un fichier supprimé d'un côté et modifié de l'autre est gardé. Un fichier de plus de 50 Mo n'est pas committé (signalé dans la carte).
+Conflicts (same file modified on two PCs between two synchronisations): `td_results/<page>.json` is merged workshop by workshop (the most recent according to `maj`), a quiz attempt keeps the most recently saved version, the `ula-lien.json` and `ula-profil.json` records keep the local version. For any other file, in the ula repository the merge is cancelled and left to be done by hand (`git pull`); in another folder, the local version stays and the other one is saved next to it (`nom (conflit 16-11-2026 15h50).ext`), with a notification. A file deleted on one side and modified on the other is kept. A file larger than 50 MB is not committed (reported in the card).
 
-Identifiants : Git doit être installé et déjà connecté au dépôt distant (Git Credential Manager, GitHub CLI, clé SSH). L'application n'en demande ni n'en garde aucun, et Git ne peut rien lui demander (`GIT_TERMINAL_PROMPT=0`, `GCM_INTERACTIVE=never`, SSH en `BatchMode`) : un accès refusé est signalé (« lancer une fois git pull à la main »).
+Credentials: Git must be installed and already connected to the remote repository (Git Credential Manager, GitHub CLI, SSH key). The app neither asks for nor keeps any, and Git cannot ask it anything (`GIT_TERMINAL_PROMPT=0`, `GCM_INTERACTIVE=never`, SSH in `BatchMode`): a refused access is reported ("run git pull once by hand").
 
-`git pull` à la main : il reste possible à tout moment (à l'université, sans l'application). Si l'application tourne, elle le voit (commit de HEAD surveillé toutes les 5 secondes) et recharge l'accueil.
+`git pull` by hand: it remains possible at any time (at university, without the app). If the app is running, it notices (HEAD commit watched every 5 seconds) and reloads the home page.
 
-Sans l'hôte (`lancer.bat`, `lancer-app.bat`, navigateur), rien ne change : pas de bouton nuage, synchronisation par `git pull` et `git push` comme avant. `ULA_SYNCHRO_INTERVALLE_MS` raccourcit l'intervalle pour les essais.
+Without the host (`lancer.bat`, `lancer-app.bat`, browser), nothing changes: no cloud button, synchronisation with `git pull` and `git push` as before. `ULA_SYNCHRO_INTERVALLE_MS` shortens the interval for testing.
 
-Suite prévue (proposition validée le 16 novembre 2026) : lier un dépôt GitHub depuis l'application (application GitHub limitée au dépôt choisi, connexion par code, Git téléchargé à la demande), puis un miroir de l'espace du profil vers un dossier OneDrive, Google Drive, pCloud ou Dropbox.
+Next steps (proposal approved on 16 November 2026): link a GitHub repository from the app (GitHub app limited to the chosen repository, sign-in by code, Git downloaded on demand), then a mirror of the profile's space to a OneDrive, Google Drive, pCloud or Dropbox folder.
 
-## Catalogue, outils et données personnelles
+## Catalogue, tools and personal data
 
-### Ce qui est livré
+### What is shipped
 
-- **L'installeur** ne contient que le programme (`app.asar`) et les **outils** : les fichiers suivis par git sous `_outils/`, moins ceux qu'écartent les règles (`_outils/ula/lib/regles.js` : scans, réglages locaux…). Plus aucun cours : environ 100 Mo au lieu de 640.
-- **Les cours** se téléchargent à la demande depuis la release `catalogue` du dépôt public, un par un ou par pack de niveau (« Licence 1 informatique »…, `explore/packs/`, voir `_outils/ula/README.md`) : `catalogue.json` et une archive par cours, produits par `npm run catalogue` (`scripts/catalogue.mjs`). Une archive contient les fichiers suivis par git du cours (`explore/<domaine>/<cours>/`), moins les données personnelles ; les fichiers de TP seulement s'ils sont dans la liste blanche, dans leur version d'origine.
+- **The installer** only contains the program (`app.asar`) and the **tools**: files tracked by git under `_outils/`, minus those excluded by the rules (`_outils/ula/lib/regles.js`: scans, local settings…). No courses any more: about 100 MB instead of 640.
+- **Courses** are downloaded on demand from the public repository's `catalogue` release, one by one or as a level pack ("Licence 1 informatique"…, `explore/packs/`, see `_outils/ula/README.md`): `catalogue.json` and one archive per course, produced by `npm run catalogue` (`scripts/catalogue.mjs`). An archive contains the course's files tracked by git (`explore/<domain>/<course>/`), minus personal data; lab files only if they are in the whitelist, in their original version.
 
-Ce qui n'est **jamais** publié (ni dans un installeur, ni dans le catalogue, ni dans le dépôt public) : tout ce qui est hors de `explore/` et `_outils/` (les espaces des profils : `romain/` avec ses TP, ses tentatives, son TODO, son administratif, Hop3x…), les `quiz_results/` et `td_results/`, l'outil « Mon suivi » (`_outils/todo/`, qui sert au développement de l'application), les fichiers de TP hors liste ou modifiés, les fiches d'anglais remplies, les notebooks de devoir maison, les scans, tout chemin contenant le nom de l'étudiant, et l'adresse électronique de l'identité git dans un fichier texte.
+What is **never** published (neither in an installer, nor in the catalogue, nor in the public repository): everything outside `explore/` and `_outils/` (the profile spaces: `romain/` with its labs, attempts, TODO, admin papers, Hop3x…), `quiz_results/` and `td_results/`, the "Mon suivi" tool (`_outils/todo/`, used to develop the app), lab files not in the list or modified, filled-in English worksheets, homework notebooks, scans, any path containing the student's name, and the email address of the git identity in a text file.
 
-**Fichiers de TP.** Le dossier de TP de l'étudiant (`romain/<cursus>/<cours>/TP/`) mêle fichiers fournis et travail. Les consignes et fichiers d'origine (énoncés, données, fichiers fournis, documentation, Makefile, lanceurs) sont publiés dans `explore/<domaine>/<cours>/TP/`, dans leur **version d'origine** (premier commit ; le dernier pour `run.sh` et `run.bat`, qui ne contiennent que l'environnement), d'après les règles de `scripts/tp-fournis.mjs` ; `app/tp-fournis.json` garde pour chacun son fichier de travail, le commit d'origine et l'empreinte. Après un nouveau TP, mettre les règles à jour et relancer `node scripts/tp-fournis.mjs` : il écrit les versions d'origine dans `explore/` et met la liste à jour. Pour l'étudiant, un fichier absent d'un cours est cherché dans le dossier de ce cours de son espace (son TP).
+**Lab files.** The student's lab folder (`romain/<curriculum>/<course>/TP/`) mixes provided files and work. The instructions and original files (assignments, data, provided files, documentation, Makefile, launchers) are published in `explore/<domain>/<course>/TP/`, in their **original version** (first commit; the last one for `run.sh` and `run.bat`, which only contain the environment), according to the rules in `scripts/tp-fournis.mjs`; `app/tp-fournis.json` keeps, for each of them, its working file, the original commit and the checksum. After a new lab, update the rules and run `node scripts/tp-fournis.mjs` again: it writes the original versions to `explore/` and updates the list. For the student, a file missing from a course is looked for in that course's folder in their space (their lab).
 
-### Contrôles bloquants
+### Blocking checks
 
-1. `scripts/preparer-contenu.mjs` ne copie dans `app/.outils/` que les outils autorisés, avec un manifeste (taille et empreinte de chaque fichier) ;
-2. electron-builder les place dans `resources/outils/` ;
-3. après l'empaquetage et avant la création de l'installeur ou de l'AppImage, `scripts/apres-empaquetage.cjs` parcourt tout le paquet (outils, `app.asar`, ressources) : un fichier personnel, un fichier de cours ou un écart avec le manifeste **fait échouer la construction** ;
-4. `npm run catalogue` et `npm run public` contrôlent chaque fichier publié (règles, empreintes des fichiers de TP, adresse électronique) et refusent le tout au premier problème ;
-5. `npm run check` vérifie qu'un paquet, une archive de cours et une proposition de cours piégés sont bien refusés.
+1. `scripts/preparer-contenu.mjs` only copies the allowed tools to `app/.outils/`, with a manifest (size and checksum of each file);
+2. electron-builder puts them in `resources/outils/`;
+3. after packaging and before the installer or the AppImage is created, `scripts/apres-empaquetage.cjs` goes through the whole package (tools, `app.asar`, resources): a personal file, a course file or a difference with the manifest **makes the build fail**;
+4. `npm run catalogue` and `npm run public` check each published file (rules, checksums of lab files, email address) and refuse everything at the first problem;
+5. `npm run check` verifies that a trapped package, course archive and course proposal are indeed refused.
 
-### Où l'application écrit
+### Where the app writes
 
-- **Dossier des données** (`Documents/ULA` par défaut) : les cours téléchargés (`explore/`, versions dans `.ula-version.json`) et les espaces des profils. Rien de ce que l'utilisateur produit ne va dans `explore/` : une mise à jour ou une suppression d'un cours ne touche jamais à son travail.
-- **Outils** : copiés au premier lancement, puis à chaque nouvelle version, dans `%LOCALAPPDATA%\Universal Learn Academy\outils` (`~/.local/share/Universal Learn Academy/outils` sous Linux), d'après le manifeste : un fichier modifié depuis sa copie (les réglages du quiz…) n'est jamais écrasé.
-- **Dépôt git d'ula** (mode de l'étudiant) : le dépôt est utilisé tel quel, outils, catalogue et travail compris, et `git pull` / `git push` les synchronisent comme avant.
-- **Paramètres** : `%APPDATA%\Universal Learn Academy\parametres.json` (`~/.config/Universal Learn Academy`). La désinstallation les conserve.
-- **Journal des gels** : `%APPDATA%\Universal Learn Academy\logs\gels.log` (moins de 512 Ko, l'ancien passe en `gels.1.log`), voir « Défilement et journal des gels ».
-- **Profil actif** : `%LOCALAPPDATA%\studies-quiz\ula-profil-actif.json`, partagé avec `lancer.bat`.
-- PGlite (questions SQL) est livré avec l'application et copié au besoin dans `%LOCALAPPDATA%\studies-quiz` : Node n'est pas nécessaire sur le poste.
+- **Data folder** (`Documents/ULA` by default): downloaded courses (`explore/`, versions in `.ula-version.json`) and the profile spaces. Nothing the user produces goes into `explore/`: updating or removing a course never touches their work.
+- **Tools**: copied at first launch, then at each new version, to `%LOCALAPPDATA%\Universal Learn Academy\outils` (`~/.local/share/Universal Learn Academy/outils` on Linux), according to the manifest: a file modified since it was copied (the quiz settings…) is never overwritten.
+- **ula git repository** (student's mode): the repository is used as is, tools, catalogue and work included, and `git pull` / `git push` synchronise them as before.
+- **Settings**: `%APPDATA%\Universal Learn Academy\parametres.json` (`~/.config/Universal Learn Academy`). Uninstalling keeps them.
+- **Freeze log**: `%APPDATA%\Universal Learn Academy\logs\gels.log` (under 512 KB, the old one becomes `gels.1.log`), see "Scrolling and freeze log".
+- **Active profile**: `%LOCALAPPDATA%\studies-quiz\ula-profil-actif.json`, shared with `lancer.bat`.
+- PGlite (SQL questions) ships with the app and is copied when needed to `%LOCALAPPDATA%\studies-quiz`: Node is not needed on the computer.
 
-### Dépôt public et dépôt de travail
+### Public repository and working repository
 
-| Dépôt | Visibilité | Contenu |
-|---|---|---|
-| `WolfGang-PRoxa/ula` (celui-ci, ex-`studies`) | privé | tout : catalogue, outils, application, et l'espace de l'étudiant (`romain/` : TP, tentatives, TD, TODO, administratif). Sert au `git pull` d'un poste à l'autre. |
-| [`WolfGang-PRoxa/universal-learn-academy`](https://github.com/WolfGang-PRoxa/universal-learn-academy) | public (à terme) | seulement le contenu publiable, les releases de l'application et la release `catalogue`. Les mises à jour automatiques et le catalogue le lisent. |
+| Repository                                                                                            | Visibility | Contents                                                                                                                                                          |
+| ----------------------------------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `WolfGang-PRoxa/ula` (this one, formerly `studies`)                                                   | private    | everything: catalogue, tools, app, and the student's space (`romain/`: labs, attempts, TD, TODO, admin papers). Used for `git pull` from one computer to another. |
+| [`WolfGang-PRoxa/universal-learn-academy`](https://github.com/WolfGang-PRoxa/universal-learn-academy) | public     | only the publishable content, the app releases and the `catalogue` release. Automatic updates and the catalogue read it.                                          |
 
-Le dépôt public n'est jamais modifié à la main : `npm run public` (aperçu) puis `npm run public -- --pousser` le met à jour depuis ce dépôt (`scripts/exporter-public.mjs`) : le catalogue (les mêmes fichiers que ses archives) et ses accueils de domaine, les outils, l'accueil, les lanceurs, le code de `app/` (sans `tp-fournis.json`) et `app/public/README.md` comme page d'accueil. L'historique de ce dépôt privé ne part jamais dans le dépôt public. `npm run donnees-perso` liste les fichiers suivis que les règles tiennent pour personnels.
+The public repository is never edited by hand: `npm run public` (preview) then `npm run public -- --pousser` updates it from this repository (`scripts/exporter-public.mjs`): the catalogue (the same files as its archives) and its domain home pages, the tools, the home page, the launchers, the license (`LICENSE`), the changelog (`CHANGELOG.md`, `CHANGELOG.fr.md`), the `app/` code (without `tp-fournis.json`), `app/public/README.md` and `README.fr.md` as its front page. The history of this private repository never goes to the public repository. `npm run donnees-perso` lists the tracked files that the rules consider personal.
 
-Les supports d'origine (polycopiés, diapositives, sujets, annales) sont publiés avec le catalogue : leur redistribution reste à valider avec leurs auteurs.
+The original materials (lecture notes, slides, assignments, past exams) are published with the catalogue: their redistribution remains to be confirmed with their authors.
 
-## Propositions de cours
+## Course proposals
 
-« Proposer ce cours » (accueil, sur un cours de son espace) prépare une archive des seules pages générées, contrôlée, et ouvre une issue préremplie du dépôt public ; l'utilisateur y joint l'archive. Pour l'accepter : `npm run accepter-proposition -- <archive.zip> [--domaine d] [--id id] [--essai]` (mêmes contrôles, liens rendus relatifs, vérificateurs, accueils de domaine), puis committer et `npm run catalogue -- --publier`. Détails : `_outils/ula/README.md`.
+"Propose this course" (home page, on a course in one's space) prepares a checked archive of the generated pages only, and opens a prefilled issue in the public repository; the user attaches the archive to it. To accept it: `npm run accepter-proposition -- <archive.zip> [--domaine d] [--id id] [--essai]` (same checks, links made relative, checkers, domain home pages), then commit and `npm run catalogue -- --publier`. Details: `_outils/ula/README.md`.
 
-## Arrière-plan
+## Background
 
-Repris de Modding Manager (version 2.4.0). Fermer la fenêtre (la croix, Ctrl+W) ne quitte plus l'application : la fenêtre se cache, l'icône de l'application reste dans la zone de notification (en bas à droite de la barre des tâches), et le serveur local continue de tourner (une génération de quiz va à son terme). La première fois, une bulle le rappelle (`arrierePlan.bulleMontree`). Sous Windows, l'icône est le fichier `build/icon.ico`, empaqueté exprès (`build.files`) : Windows y prend la taille qui convient à l'écran.
+Taken from Modding Manager (version 2.4.0). Closing the window (the cross, Ctrl+W) no longer quits the app: the window is hidden, the app's icon stays in the notification area (bottom right of the taskbar), and the local server keeps running (a quiz generation runs to completion). The first time, a balloon reminds the user (`arrierePlan.bulleMontree`). On Windows, the icon is the `build/icon.ico` file, packaged on purpose (`build.files`): Windows picks the size that suits the screen.
 
-- **Rouvrir** : clic ou double-clic sur l'icône, entrée « Ouvrir Universal Learn Academy » de son menu, ou relancer l'application (raccourci, menu Démarrer) : une seule instance tourne, et un nouveau lancement réaffiche la fenêtre existante, à la même page.
-- **Menu de l'icône** (clic droit) : Ouvrir, Rechercher les mises à jour (ou « Redémarrer et installer la version… » quand une version est prête), Quitter.
-- **Quitter** : l'entrée Quitter de l'icône ou Ctrl+Q. Si une génération de quiz est en cours, l'application le demande d'abord ; « Continuer » annule et la croix recache la fenêtre. Une mise à jour téléchargée s'installe à ce moment-là.
-- **Réglage** « Garder Universal Learn Academy en arrière-plan quand je ferme la fenêtre » (carte Arrière-plan des paramètres, `arrierePlan.fermeture`, activé par défaut) : décoché, la croix de la dernière fenêtre quitte l'application comme avant. Modding Manager n'a pas ce réglage ; il est ajouté ici pour qui préfère l'ancien comportement.
-- **Linux (AppImage)** : même comportement si le bureau a une zone de notification (StatusNotifierItem : KDE, Cinnamon, XFCE, GNOME avec l'extension AppIndicator, détectée par D-Bus au lancement) ; sinon la croix ferme l'application.
-- Le lancement avec Windows de Modding Manager n'est pas repris.
+- **Reopen**: click or double-click on the icon, "Open Universal Learn Academy" entry of its menu, or launch the app again (shortcut, Start menu): a single instance runs, and a new launch shows the existing window again, on the same page.
+- **Icon menu** (right-click): Open, Check for updates (or "Restart and install version…" when a version is ready), Quit.
+- **Quit**: the icon's Quit entry or Ctrl+Q. If a quiz generation is in progress, the app asks first; "Continue" cancels and the cross hides the window again. A downloaded update is installed at that moment.
+- **Setting** "Keep Universal Learn Academy in the background when the window is closed" (Background card in the settings, `arrierePlan.fermeture`, on by default): unchecked, the cross of the last window quits the app as before. Modding Manager does not have this setting; it is added here for those who prefer the old behaviour.
+- **Linux (AppImage)**: same behaviour if the desktop has a notification area (StatusNotifierItem: KDE, Cinnamon, XFCE, GNOME with the AppIndicator extension, detected through D-Bus at launch); otherwise the cross closes the app.
+- Modding Manager's launch at Windows startup is not carried over.
 
-## Défilement et journal des gels
+## Scrolling and freeze log
 
-Jusqu'à la 2.3.0, le défilement à la molette s'interrompait parfois, sur n'importe quelle page, et reprenait après un clic. Mesures faites (molette envoyée par le protocole de débogage pendant que les paramètres, l'état de Claude, la recherche de mise à jour et Ctrl+F s'enchaînaient) :
+Up to 2.3.0, mouse-wheel scrolling sometimes stopped, on any page, and resumed after a click. Measurements made (wheel events sent through the debugging protocol while the settings, Claude's status, the update check and Ctrl+F followed one another):
 
-- le seul gel long reproduit (6 à 52 s) vient du calcul des fenêtres masquées de Chromium sous Windows : quand il juge la fenêtre couverte, la page passe « cachée », ne se dessine plus et ne défile plus jusqu'à ce qu'un clic ou un changement de focus le refasse. Ce calcul est désactivé (`--disable-features=CalculateNativeWinOcclusion`, dans `src/main.js`), comme le fait VS Code ; plus aucun gel ensuite ;
-- le processus principal, par où passent la molette et le clavier sous Windows, était bloqué environ 0,3 s à chaque ouverture des paramètres (recherche de Claude Code par `spawnSync`), jusqu'à 20 s par exécutable si l'un ne répondait pas, et par `gh auth token` lors d'une recherche de mise à jour. Tous ces appels sont désormais asynchrones (`src/claude.js`, `src/mises-a-jour.js`) ;
-- la barre de recherche (Ctrl+F) est retirée de la fenêtre à sa fermeture au lieu d'être seulement masquée, et se ferme quand on change de page.
+- the only long freeze reproduced (6 to 52 s) comes from Chromium's occluded-window calculation on Windows: when it considers the window covered, the page becomes "hidden", stops painting and stops scrolling until a click or a focus change runs it again. This calculation is turned off (`--disable-features=CalculateNativeWinOcclusion`, in `src/main.js`), as VS Code does; no more freezes after that;
+- the main process, through which the wheel and the keyboard go on Windows, was blocked about 0.3 s each time the settings opened (looking for Claude Code with `spawnSync`), up to 20 s per executable if one did not answer, and by `gh auth token` during an update check. All these calls are now asynchronous (`src/claude.js`, `src/mises-a-jour.js`);
+- the search bar (Ctrl+F) is removed from the window when it closes instead of only being hidden, and closes when the page changes.
 
-`src/diagnostic.js` tient un journal court, `gels.log`, dans le dossier des journaux de l'application (`%APPDATA%\Universal Learn Academy\logs`, `~/.config/Universal Learn Academy/logs` ; bouton dans Paramètres › À propos) : chaque blocage du processus principal de plus de 150 ms, avec l'appel en cours, et chaque page encore cachée une seconde après alors que sa fenêtre est affichée. Si le défilement se fige encore, ce journal dit lequel des deux se produit.
+`src/diagnostic.js` keeps a short log, `gels.log`, in the app's log folder (`%APPDATA%\Universal Learn Academy\logs`, `~/.config/Universal Learn Academy/logs`; button in Settings › About): each block of the main process longer than 150 ms, with the call in progress, and each page still hidden one second after its window is shown. If scrolling freezes again, this log tells which of the two happens.
 
-## Mises à jour
+## Updates
 
-electron-updater lit les releases de `universal-learn-academy`. **Aucun jeton n'est mis dans l'exécutable.** Tant que ce dépôt est privé, la lecture publique échoue (404) : l'application essaie alors le jeton de la GitHub CLI déjà connectée sur le poste (`gh auth token`), gardé en mémoire le temps de la recherche et du téléchargement. Le catalogue procède de même. Sur le PC de l'étudiant, tout fonctionne donc ; pour tout autre utilisateur, dès que le dépôt sera public.
+electron-updater reads the releases of `universal-learn-academy`, a public repository. **No token is put in the executable.** If public reading fails (404, repository made private again), the app tries the token of the GitHub CLI already signed in on the computer (`gh auth token`), kept in memory for the time of the check and the download. The catalogue does the same.
 
-La release `catalogue` est une préversion : elle n'est jamais « Latest », et l'API `releases/latest` que lit electron-updater ne la renvoie pas.
+The `catalogue` release is a pre-release: it is never "Latest", and the `releases/latest` API read by electron-updater does not return it.
 
-## Développement
+## Development
 
-Prérequis : Node.js 22 ou plus récent ; pour l'AppImage, WSL avec Node (`~/.local/node` suffit) ou un Linux.
+Requirements: Node.js 22 or later; for the AppImage, WSL with Node (`~/.local/node` is enough) or a Linux machine.
 
 ```bash
 cd app
-npm install        # dépendances (si Electron n'est pas téléchargé : node node_modules/electron/install.js)
-npm start          # lance l'application (outils du dépôt, dossier des données des paramètres)
-npm run check      # vérifications : syntaxe, règles, paquet/catalogue/proposition piégés, profils, outils, raccourcis
-npm run dist       # construit installeur Windows et AppImage dans dist/ sans les publier (-- --win ou -- --linux pour un seul)
-npm run catalogue  # construit le catalogue dans app/.catalogue (-- --publier pour l'envoyer)
+npm install        # dependencies (if Electron is not downloaded: node node_modules/electron/install.js)
+npm start          # start the app (tools from the repository, data folder from the settings)
+npm run check      # prettier --check and eslint, then checks: syntax, rules, trapped package/catalogue/proposal, profiles, tools, shortcuts
+npm run format     # format app/ and ../_outils/ with Prettier (.prettierrc.json and .prettierignore at the root of ula)
+npm run lint       # ESLint only, on app/ and ../_outils/ (eslint.config.js at the root of ula: Node for the main process, scripts, tests and tool servers, browser for the pages)
+npm test           # automated tests (test/*.test.js, run by node --test)
+npm run dist       # build the Windows installer and the AppImage in dist/ without publishing them (-- --win or -- --linux for only one)
+npm run catalogue  # build the catalogue in app/.catalogue (-- --publier to upload it)
 ```
 
-Packs et cursus exemples (catalogue, côté développeur seulement) : `npm run catalogue -- pack-ajouter | pack-ajouter-cours | cursus-ajouter | cursus-ajouter-pack | verifier`, voir `_outils/ula/README.md`.
+Continuous integration: `.github/workflows/ci.yml` at the root of ula (every push and pull request: Ubuntu, Node 22, `npm ci`, `npm run check`, `npm test` in `app/`); the public repository's workflow is `public/.github/workflows/ci.yml`, copied by `npm run public` (there, `check.mjs` skips the lab whitelist, which is not published). Pushing a workflow file with the GitHub CLI's token needs the `workflow` scope: `gh auth refresh -h github.com -s workflow`.
 
-`ULA_USER_DATA=<dossier>` lance l'application avec un autre dossier de paramètres (essais) ; `ULA_CATALOGUE=<dossier>` lui fait lire un catalogue local (par exemple `app/.catalogue`).
+Packs and example curricula (catalogue, developer side only): `npm run catalogue -- pack-ajouter | pack-ajouter-cours | cursus-ajouter | cursus-ajouter-pack | verifier`, see `_outils/ula/README.md`.
 
-### Publier une version
+`ULA_USER_DATA=<folder>` starts the app with another settings folder (testing); `ULA_CATALOGUE=<folder>` makes it read a local catalogue (for example `app/.catalogue`).
 
-1. Augmenter `version` dans `app/package.json` (les mises à jour comparent ce numéro), committer et pousser sur `main`, puis mettre à jour le dépôt public : `npm run public -- --pousser`.
-2. Depuis le PC Windows :
+### Publishing a version
+
+1. Increase `version` in `app/package.json` (updates compare this number; `X.Y.Z` format, the only place the version is written), move the `[Unreleased]` entries of `CHANGELOG.md` and `CHANGELOG.fr.md` under a new `## [X.Y.Z] - YYYY-MM-DD` heading (and add its link at the bottom), commit and push to `main`, then update the public repository: `npm run public -- --pousser`.
+2. From the Windows PC:
 
    ```bash
    cd app
@@ -194,57 +201,58 @@ Packs et cursus exemples (catalogue, côté développeur seulement) : `npm run c
    npm run release
    ```
 
-   Prérequis : GitHub CLI connectée (`gh auth login`), WSL pour l'AppImage.
+   Requirements: GitHub CLI signed in (`gh auth login`), WSL for the AppImage.
 
-Le script (`scripts/release.mjs`) :
+The script (`scripts/release.mjs`):
 
-- refuse de publier hors de `main`, avec des modifications locales (les outils livrés sont ceux du dernier commit), si `main` n'est pas à jour avec GitHub, ou si la version est déjà publiée ;
-- construit (`scripts/construire.mjs`) : outils préparés et contrôlés, installeur NSIS x64 avec `electron-builder`, puis AppImage x64 dans WSL (`scripts/construire-linux.sh` : electron-builder ne sait pas faire d'AppImage sous Windows) ;
-- extrait la carte de blocs intégrée à l'AppImage dans `Universal-Learn-Academy-<version>.AppImage.blockmap` (`scripts/carte-appimage.mjs`), au format de celle de Windows ;
-- crée la release `v<version>` en brouillon, y envoie les six fichiers (installeur, AppImage, leurs `.blockmap`, `latest.yml`, `latest-linux.yml`), puis la publie et la marque « Latest » : une application installée ne voit jamais une release incomplète ;
-- relit la release et vérifie la présence et la taille de chaque fichier. S'il en manque, relancer `npm run release` la répare.
+- refuses to publish outside `main`, with local changes (the shipped tools are those of the last commit), if `main` is not up to date with GitHub, or if the version is already published;
+- builds (`scripts/construire.mjs`): tools prepared and checked, NSIS x64 installer with `electron-builder`, then x64 AppImage in WSL (`scripts/construire-linux.sh`: electron-builder cannot make an AppImage on Windows);
+- extracts the block map embedded in the AppImage to `Universal-Learn-Academy-<version>.AppImage.blockmap` (`scripts/carte-appimage.mjs`), in the same format as the Windows one;
+- creates the `v<version>` release as a draft, uploads the six files to it (installer, AppImage, their `.blockmap`, `latest.yml`, `latest-linux.yml`), then publishes it and marks it "Latest": an installed app never sees an incomplete release;
+- reads the release back and checks that each file is there with the right size. If one is missing, running `npm run release` again repairs it.
 
-Les cours ne dépendent plus des versions de l'application : un cours nouveau ou corrigé se publie par `npm run catalogue -- --publier`, et les utilisateurs le voient dans le catalogue de l'accueil (« Mise à jour disponible »).
+Courses no longer depend on app versions: a new or corrected course is published with `npm run catalogue -- --publier`, and users see it in the home page catalogue ("Update available").
 
 ### Structure
 
 ```
 app/
-  package.json            version, dépendances, configuration d'electron-builder
+  package.json            version, dependencies, electron-builder configuration
   src/
-    main.js               hôte : dossier des données et des outils, PGlite, clé d'API, profils, puis charge _outils/app/principal.js
-    donnees.js            dossier des données (Documents/ULA ou dépôt), copie locale des outils livrés
-    reglages.js           paramètres (parametres.json)
-    mises-a-jour.js       electron-updater, jeton de gh pour un dépôt privé
-    fenetre-lancement.js  taille et position de la fenêtre au lancement
-    raccourcis.js         raccourcis Bureau, menu, dossiers choisis (Windows et Linux)
-    raccourcis-regles.js  détection d'un raccourci existant, fichiers .desktop (vérifiés par check.mjs)
-    claude.js             Claude Code (détection, compte), clé d'API chiffrée
-    depot.js              dépôt GitHub et identifiant de l'application
-    parametres/           page des paramètres (pont.cjs, index.html, parametres.js, cadre-fenetre.js…)
-    i18n/                 textes de l'hôte, des paramètres, de la documentation et du guide (fr.js, en.js)
-    annexe.js             fenêtres annexes au style de l'application, centrées sur la fenêtre des cours
-    choix-langue.js       choix de la langue au premier lancement (page langue/)
-    documentation.js      lecture des pages de la documentation (sommaire, page, recherche)
-    doc/                  fenêtre de la documentation (markdown.js, doc.js) et ses pages (contenu/<langue>/)
-    guide/                paramétrage guidé
+    main.js               host: data and tools folders, PGlite, API key, profiles, then loads _outils/app/principal.js
+    donnees.js            data folder (Documents/ULA or repository), local copy of the shipped tools
+    reglages.js           settings (parametres.json)
+    mises-a-jour.js       electron-updater, gh token for a private repository
+    fenetre-lancement.js  window size and position at launch
+    raccourcis.js         Desktop, menu and chosen-folder shortcuts (Windows and Linux)
+    raccourcis-regles.js  detection of an existing shortcut, .desktop files (checked by check.mjs)
+    claude.js             Claude Code (detection, account), encrypted API key
+    depot.js              GitHub repository and app id
+    parametres/           settings page (pont.cjs, index.html, parametres.js, cadre-fenetre.js…)
+    i18n/                 strings of the host, settings, documentation and guide (fr.js, en.js)
+    annexe.js             auxiliary windows in the app's style, centred on the course window
+    choix-langue.js       language choice at first launch (langue/ page)
+    documentation.js      reading the documentation pages (table of contents, page, search)
+    doc/                  documentation window (markdown.js, doc.js) and its pages (contenu/<language>/)
+    guide/                guided setup
     assets/icone.png
   scripts/
-    contenu-regles.cjs    reprend _outils/ula/lib/regles.js (données personnelles)
-    tp-fournis.mjs        règles des fichiers de TP publiés ; écrit leur version d'origine dans explore/ et tp-fournis.json
-    preparer-contenu.mjs  copie des outils autorisés dans .outils, avec le manifeste
-    verifier-paquet.cjs   contrôle d'un paquet construit (outils seuls)
-    apres-empaquetage.cjs crochet afterPack : fait échouer la construction
-    catalogue.mjs         archives des cours et catalogue.json (release « catalogue »)
-    accepter-proposition.mjs  ajoute au catalogue un cours proposé
-    construire.mjs        installeur Windows et AppImage (WSL), cartes de blocs
-    construire-linux.sh   AppImage sous Linux ou dans WSL
-    carte-appimage.mjs    carte de blocs de l'AppImage en fichier à part
-    release.mjs           publication par la GitHub CLI (releases du dépôt public)
-    exporter-public.mjs   mise à jour du dépôt public universal-learn-academy
-    check.mjs             vérifications
-  public/README.md        page d'accueil du dépôt public
-  build/                  icônes de l'installeur
+    contenu-regles.cjs    re-exports _outils/ula/lib/regles.js (personal data)
+    tp-fournis.mjs        rules for published lab files; writes their original version to explore/ and tp-fournis.json
+    preparer-contenu.mjs  copies the allowed tools to .outils, with the manifest
+    verifier-paquet.cjs   check of a built package (tools only)
+    apres-empaquetage.cjs afterPack hook: makes the build fail
+    catalogue.mjs         course archives and catalogue.json ("catalogue" release)
+    accepter-proposition.mjs  adds a proposed course to the catalogue
+    construire.mjs        Windows installer and AppImage (WSL), block maps
+    construire-linux.sh   AppImage on Linux or in WSL
+    carte-appimage.mjs    AppImage block map as a separate file
+    release.mjs           publishing with the GitHub CLI (public repository releases)
+    exporter-public.mjs   update of the public repository universal-learn-academy
+    check.mjs             checks
+  test/                   automated tests (node --test): content rules, catalogue manifests
+  public/                 front page of the public repository (README.md in English, README.fr.md) and its CI (.github/workflows/ci.yml)
+  build/                  installer icons
 ```
 
-L'hôte (`src/main.js`) publie `global.studiesHote` et `ULA_RACINE` avant de charger le programme des outils (`_outils/app/principal.js`, le même que `lancer-app.bat`) : la fenêtre au lancement, l'entrée « Paramètres » et « Rechercher une mise à jour » du menu, l'identifiant de l'application et la racine des données en viennent. Sans hôte, le programme se comporte exactement comme avant (racine = le dossier qui contient `_outils`).
+The host (`src/main.js`) publishes `global.studiesHote` and `ULA_RACINE` before loading the tools' program (`_outils/app/principal.js`, the same as `lancer-app.bat`): the window at launch, the "Settings" and "Check for updates" menu entries, the app id and the data root come from it. Without the host, the program behaves exactly as before (root = the folder that contains `_outils`).

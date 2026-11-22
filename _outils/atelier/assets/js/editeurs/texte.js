@@ -20,26 +20,47 @@
      sansDessin, asynchrone           pas de vue dessin ; évaluation par le serveur
    ========================================================================== */
 (function (A) {
-  "use strict";
+  'use strict';
+
+  var tr = A.tr;
 
   A.editeurs.texte = {
-    nom: "texte",
+    nom: 'texte',
     // Options reconnues (champ « options » d'un atelier), vérifiées par outils/verifier.js
     options: {
-      lignes: "hauteur de la zone de rédaction, en lignes",
-      placeholder: "texte d'invite de la zone vide"
+      lignes: 'hauteur de la zone de rédaction, en lignes',
+      placeholder: "texte d'invite de la zone vide",
     },
-    libelle: "Rédaction",
-    description: "Réponse rédigée librement.",
-    aide: "<p>Rédiger la réponse librement. La solution proposée s'affiche à la demande, et Claude peut corriger.</p>",
+    get libelle() {
+      return tr('Rédaction', 'Written answer');
+    },
+    description: 'Réponse rédigée librement.',
+    get aide() {
+      return tr(
+        "<p>Rédiger la réponse librement. La solution proposée s'affiche à la demande, et Claude peut corriger.</p>",
+        '<p>Write the answer freely. The proposed solution is shown on request, and Claude can mark it.</p>',
+      );
+    },
     sansDessin: true,
-    vide: function () { return { texte: "" }; },
-    lire: function (texte) { return { modele: { texte: String(texte == null ? "" : texte) }, erreurs: [] }; },
-    ecrire: function (m) { return m && m.texte ? m.texte : ""; },
-    controler: function (m) {
-      return m && m.texte && m.texte.trim() ? [] : [A.noyau.message("info", "La réponse est vide pour l'instant.")];
+    vide: function () {
+      return { texte: '' };
     },
-    comparer: function () { return null; },
-    estVide: function (m) { return !m || !String(m.texte || "").trim(); }
+    lire: function (texte) {
+      return { modele: { texte: String(texte == null ? '' : texte) }, erreurs: [] };
+    },
+    ecrire: function (m) {
+      return m && m.texte ? m.texte : '';
+    },
+    controler: function (m) {
+      return m && m.texte && m.texte.trim()
+        ? []
+        : [A.noyau.message('info', tr("La réponse est vide pour l'instant.", 'The answer is empty for now.'))];
+    },
+    comparer: function () {
+      return null;
+    },
+    estVide: function (m) {
+      return !m || !String(m.texte || '').trim();
+    },
   };
 })(window.Atelier);

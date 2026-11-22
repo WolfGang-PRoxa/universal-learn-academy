@@ -3,7 +3,23 @@
 // modèles, profils, dossier des données, synchronisation, à propos.
 // Textes : dictionnaires de src/i18n (clés « p. »), chargés avant tout.
 
-import { h, icone, bouton, carte, etat, note, confirmer, antiRebond, messageErreur, chargerTextes, t, tn, locale, messageCreation, libelleLieu } from './outils.js';
+import {
+  h,
+  icone,
+  bouton,
+  carte,
+  etat,
+  note,
+  confirmer,
+  antiRebond,
+  messageErreur,
+  chargerTextes,
+  t,
+  tn,
+  locale,
+  messageCreation,
+  libelleLieu,
+} from './outils.js';
 import { creerCadre } from './cadre-fenetre.js';
 
 const api = window.studies;
@@ -54,38 +70,74 @@ window.addEventListener('keydown', (e) => {
 /* -- Langue ------------------------------------------------------------------- */
 
 function carteLangue() {
-  const option = (l) => h('label', {},
-    h('input', { type: 'radio', name: 'langue', value: l.code, checked: l.code === textes.langue, onChange: async () => {
-      await api.i18n.definir(l.code);
-    } }),
-    h('span', {}, h('strong', { lang: l.code }, l.nom), h('span', { lang: l.code }, l.code === 'fr' ? 'Interface en français' : 'English interface')));
-  return carte('langue', 'langue', t('p.langue.titre'), t('p.langue.description'),
+  const option = (l) =>
+    h(
+      'label',
+      {},
+      h('input', {
+        type: 'radio',
+        name: 'langue',
+        value: l.code,
+        checked: l.code === textes.langue,
+        onChange: async () => {
+          await api.i18n.definir(l.code);
+        },
+      }),
+      h(
+        'span',
+        {},
+        h('strong', { lang: l.code }, l.nom),
+        h('span', { lang: l.code }, l.code === 'fr' ? 'Interface en français' : 'English interface'),
+      ),
+    );
+  return carte(
+    'langue',
+    'langue',
+    t('p.langue.titre'),
+    t('p.langue.description'),
     h('div', { class: 'choix' }, ...textes.langues.map(option)),
-    h('p', { class: 'aide' }, t('p.langue.aide')));
+    h('p', { class: 'aide' }, t('p.langue.aide')),
+  );
 }
 
 /* -- Aide : documentation et paramétrage guidé ----------------------------------- */
 
 function carteAide() {
-  return carte('aide', 'aide', t('p.aide.titre'), t('p.aide.description'),
-    h('div', { class: 'ligne' },
+  return carte(
+    'aide',
+    'aide',
+    t('p.aide.titre'),
+    t('p.aide.description'),
+    h(
+      'div',
+      { class: 'ligne' },
       bouton(t('p.aide.guide'), { genre: 'principal', onClick: () => api.aide.guide() }),
-      bouton(t('p.aide.documentation'), { onClick: () => api.aide.documentation() })),
-    h('p', { class: 'aide' }, t('p.aide.raccourci')));
+      bouton(t('p.aide.documentation'), { onClick: () => api.aide.documentation() }),
+    ),
+    h('p', { class: 'aide' }, t('p.aide.raccourci')),
+  );
 }
 
 /* -- Mises à jour ------------------------------------------------------------ */
 
 export function decrireMaj(s) {
   switch (s && s.etat) {
-    case 'recherche': return ['', t('p.maj.recherche')];
-    case 'disponible': return ['', t('p.maj.disponible', { version: s.version })];
-    case 'telechargement': return ['', t('p.maj.telechargement', { pourcent: s.pourcent ?? 0 })];
-    case 'pret': return ['ok', t('p.maj.pret', { version: s.version })];
-    case 'a-jour': return ['ok', t(s.viaGh ? 'p.maj.aJourGh' : 'p.maj.aJour')];
-    case 'indisponible': return ['', s.message];
-    case 'erreur': return ['erreur', t('p.maj.erreur', { message: s.message })];
-    default: return ['', t('p.maj.jamais')];
+    case 'recherche':
+      return ['', t('p.maj.recherche')];
+    case 'disponible':
+      return ['', t('p.maj.disponible', { version: s.version })];
+    case 'telechargement':
+      return ['', t('p.maj.telechargement', { pourcent: s.pourcent ?? 0 })];
+    case 'pret':
+      return ['ok', t('p.maj.pret', { version: s.version })];
+    case 'a-jour':
+      return ['ok', t(s.viaGh ? 'p.maj.aJourGh' : 'p.maj.aJour')];
+    case 'indisponible':
+      return ['', s.message];
+    case 'erreur':
+      return ['erreur', t('p.maj.erreur', { message: s.message })];
+    default:
+      return ['', t('p.maj.jamais')];
   }
 }
 
@@ -107,21 +159,42 @@ function carteMisesAJour() {
   api.maj.statut().then(peindre);
   api.maj.surStatut(peindre);
 
-  const auto = h('input', { type: 'checkbox', checked: reglages.miseAJourAuto, onChange: async (e) => {
-    await enregistrer({ miseAJourAuto: e.target.checked });
-    note(t(e.target.checked ? 'p.maj.noteActive' : 'p.maj.noteDesactive'));
-  } });
+  const auto = h('input', {
+    type: 'checkbox',
+    checked: reglages.miseAJourAuto,
+    onChange: async (e) => {
+      await enregistrer({ miseAJourAuto: e.target.checked });
+      note(t(e.target.checked ? 'p.maj.noteActive' : 'p.maj.noteDesactive'));
+    },
+  });
 
-  return carte('mises-a-jour', 'maj', t('p.maj.titre'), t('p.maj.description', { version: info.version }),
-    h('label', { class: 'interrupteur' }, auto,
-      h('span', {}, h('strong', {}, t('p.maj.auto')),
-        h('br'), h('span', { class: 'aide' }, t('p.maj.autoAide', { duree: duree(info.intervalleMaj || 21600000) })))),
-    h('div', { class: 'ligne' },
+  return carte(
+    'mises-a-jour',
+    'maj',
+    t('p.maj.titre'),
+    t('p.maj.description', { version: info.version }),
+    h(
+      'label',
+      { class: 'interrupteur' },
+      auto,
+      h(
+        'span',
+        {},
+        h('strong', {}, t('p.maj.auto')),
+        h('br'),
+        h('span', { class: 'aide' }, t('p.maj.autoAide', { duree: duree(info.intervalleMaj || 21600000) })),
+      ),
+    ),
+    h(
+      'div',
+      { class: 'ligne' },
       bouton(t('p.maj.rechercher'), { onClick: () => api.maj.verifier() }),
       installer,
-      bouton(t('p.maj.versions'), { genre: 'leger', onClick: () => api.ouvrirReleases() })),
+      bouton(t('p.maj.versions'), { genre: 'leger', onClick: () => api.ouvrirReleases() }),
+    ),
     zone,
-    h('p', { class: 'aide' }, t('p.maj.aide')));
+    h('p', { class: 'aide' }, t('p.maj.aide')),
+  );
 }
 
 /* -- Fenêtre au lancement ------------------------------------------------------- */
@@ -132,69 +205,131 @@ function carteFenetre() {
   let cadre = null;
 
   const garder = antiRebond((bornes) => enregistrer({ fenetre: { mode: 'personnalisee', bornes } }), 250);
-  const synchroniser = (b) => { for (const k of ['width', 'height', 'x', 'y']) if (document.activeElement !== champs[k]) champs[k].value = b[k]; };
+  const synchroniser = (b) => {
+    for (const k of ['width', 'height', 'x', 'y']) if (document.activeElement !== champs[k]) champs[k].value = b[k];
+  };
 
   const champ = (cle, libelle) => {
-    champs[cle] = h('input', { class: 'saisie', type: 'number', step: 1, value: reglages.fenetre.bornes[cle], onInput: (e) => {
-      const v = Number.parseInt(e.target.value, 10);
-      if (!Number.isFinite(v) || !cadre) return;
-      garder(cadre.fixer({ [cle]: v }));
-    }, onBlur: () => cadre && synchroniser(cadre.bornes()) });
+    champs[cle] = h('input', {
+      class: 'saisie',
+      type: 'number',
+      step: 1,
+      value: reglages.fenetre.bornes[cle],
+      onInput: (e) => {
+        const v = Number.parseInt(e.target.value, 10);
+        if (!Number.isFinite(v) || !cadre) return;
+        garder(cadre.fixer({ [cle]: v }));
+      },
+      onBlur: () => cadre && synchroniser(cadre.bornes()),
+    });
     return h('label', { class: 'champ' }, h('span', {}, libelle + ' (px)'), champs[cle]);
   };
 
-  const perso = h('div', { class: 'carte-perso' },
+  const perso = h(
+    'div',
+    { class: 'carte-perso' },
     h('p', { class: 'aide' }, t('p.fenetre.cadreAide')),
     hote,
-    h('div', { class: 'grille-4' }, champ('width', t('p.fenetre.largeur')), champ('height', t('p.fenetre.hauteur')), champ('x', t('p.fenetre.x')), champ('y', t('p.fenetre.y'))),
-    h('div', { class: 'ligne' }, bouton(t('p.fenetre.reprendre'), { onClick: async () => {
-      const b = await api.bornesActuelles();
-      if (!b || !cadre) return;
-      const r = cadre.fixer(b);
-      synchroniser(r);
-      await enregistrer({ fenetre: { mode: 'personnalisee', bornes: r } });
-      note(t('p.fenetre.noteReprise'));
-    } })));
+    h(
+      'div',
+      { class: 'grille-4' },
+      champ('width', t('p.fenetre.largeur')),
+      champ('height', t('p.fenetre.hauteur')),
+      champ('x', t('p.fenetre.x')),
+      champ('y', t('p.fenetre.y')),
+    ),
+    h(
+      'div',
+      { class: 'ligne' },
+      bouton(t('p.fenetre.reprendre'), {
+        onClick: async () => {
+          const b = await api.bornesActuelles();
+          if (!b || !cadre) return;
+          const r = cadre.fixer(b);
+          synchroniser(r);
+          await enregistrer({ fenetre: { mode: 'personnalisee', bornes: r } });
+          note(t('p.fenetre.noteReprise'));
+        },
+      }),
+    ),
+  );
 
   async function preparerCadre() {
     if (cadre) return;
-    cadre = creerCadre({ ecrans: await api.ecrans(), bornes: reglages.fenetre.bornes, min: MIN, surChangement: synchroniser, surFin: garder });
+    cadre = creerCadre({
+      ecrans: await api.ecrans(),
+      bornes: reglages.fenetre.bornes,
+      min: MIN,
+      surChangement: synchroniser,
+      surFin: garder,
+    });
     hote.replaceChildren(cadre.element);
     synchroniser(cadre.bornes());
   }
 
-  const option = (valeur, titre, description) => h('label', {},
-    h('input', { type: 'radio', name: 'fenetre', value: valeur, checked: reglages.fenetre.mode === valeur, onChange: async () => {
-      await enregistrer({ fenetre: { mode: valeur } });
-      perso.hidden = valeur !== 'personnalisee';
-      if (valeur === 'personnalisee') preparerCadre();
-      note(t('p.fenetre.noteProchain'));
-    } }),
-    h('span', {}, h('strong', {}, titre), h('span', {}, description)));
+  const option = (valeur, titre, description) =>
+    h(
+      'label',
+      {},
+      h('input', {
+        type: 'radio',
+        name: 'fenetre',
+        value: valeur,
+        checked: reglages.fenetre.mode === valeur,
+        onChange: async () => {
+          await enregistrer({ fenetre: { mode: valeur } });
+          perso.hidden = valeur !== 'personnalisee';
+          if (valeur === 'personnalisee') preparerCadre();
+          note(t('p.fenetre.noteProchain'));
+        },
+      }),
+      h('span', {}, h('strong', {}, titre), h('span', {}, description)),
+    );
 
   perso.hidden = reglages.fenetre.mode !== 'personnalisee';
   if (!perso.hidden) preparerCadre();
 
-  return carte('fenetre', 'ecran', t('p.fenetre.titre'), t('p.fenetre.description'),
-    h('div', { class: 'choix' },
+  return carte(
+    'fenetre',
+    'ecran',
+    t('p.fenetre.titre'),
+    t('p.fenetre.description'),
+    h(
+      'div',
+      { class: 'choix' },
       option('agrandie', t('p.fenetre.agrandie'), t('p.fenetre.agrandieAide')),
-      option('personnalisee', t('p.fenetre.perso'), t('p.fenetre.persoAide'))),
-    perso);
+      option('personnalisee', t('p.fenetre.perso'), t('p.fenetre.persoAide')),
+    ),
+    perso,
+  );
 }
 
 /* -- Arrière-plan (fermeture de la fenêtre) -------------------------------------- */
 
 function carteArrierePlan() {
   const actif = !reglages.arrierePlan || reglages.arrierePlan.fermeture !== false;
-  const caseFermeture = h('input', { type: 'checkbox', checked: actif, disabled: !info.zoneNotification, onChange: async (e) => {
-    await enregistrer({ arrierePlan: { fermeture: e.target.checked } });
-    note(t(e.target.checked ? 'p.arriere.noteGarde' : 'p.arriere.noteQuitte'));
-  } });
-  return carte('arriere-plan', 'arriere', t('p.arriere.titre'), t('p.arriere.description'),
-    h('label', { class: 'interrupteur' }, caseFermeture,
-      h('span', {}, h('strong', {}, t('p.arriere.garder')),
-        h('br'), h('span', { class: 'aide' }, t('p.arriere.aide')))),
-    info.zoneNotification ? null : etat('alerte', t('p.arriere.sansZone')));
+  const caseFermeture = h('input', {
+    type: 'checkbox',
+    checked: actif,
+    disabled: !info.zoneNotification,
+    onChange: async (e) => {
+      await enregistrer({ arrierePlan: { fermeture: e.target.checked } });
+      note(t(e.target.checked ? 'p.arriere.noteGarde' : 'p.arriere.noteQuitte'));
+    },
+  });
+  return carte(
+    'arriere-plan',
+    'arriere',
+    t('p.arriere.titre'),
+    t('p.arriere.description'),
+    h(
+      'label',
+      { class: 'interrupteur' },
+      caseFermeture,
+      h('span', {}, h('strong', {}, t('p.arriere.garder')), h('br'), h('span', { class: 'aide' }, t('p.arriere.aide'))),
+    ),
+    info.zoneNotification ? null : etat('alerte', t('p.arriere.sansZone')),
+  );
 }
 
 /* -- Échelle de l'interface ------------------------------------------------------ */
@@ -203,15 +338,28 @@ function carteAffichage() {
   const actuelle = (reglages.affichage && reglages.affichage.echelle) || 0;
   const options = [h('option', { value: '0' }, t('p.echelle.auto'))];
   for (let p = 50; p <= 200; p += 10) options.push(h('option', { value: String(p) }, `${p} %`));
-  const choix = h('select', { class: 'saisie', id: 'echelle', onChange: async (e) => {
-    const r = await enregistrer({ affichage: { echelle: Number(e.target.value) } });
-    const v = (r.affichage && r.affichage.echelle) || 0;
-    note(v ? t('p.echelle.note', { v }) : t('p.echelle.noteAuto'));
-  } }, ...options);
+  const choix = h(
+    'select',
+    {
+      class: 'saisie',
+      id: 'echelle',
+      onChange: async (e) => {
+        const r = await enregistrer({ affichage: { echelle: Number(e.target.value) } });
+        const v = (r.affichage && r.affichage.echelle) || 0;
+        note(v ? t('p.echelle.note', { v }) : t('p.echelle.noteAuto'));
+      },
+    },
+    ...options,
+  );
   choix.value = String(actuelle);
-  return carte('affichage', 'echelle', t('p.echelle.titre'), t('p.echelle.description'),
+  return carte(
+    'affichage',
+    'echelle',
+    t('p.echelle.titre'),
+    t('p.echelle.description'),
     h('label', { class: 'champ' }, h('span', {}, t('p.echelle.libelle')), choix),
-    h('p', { class: 'aide' }, t('p.echelle.aide')));
+    h('p', { class: 'aide' }, t('p.echelle.aide')),
+  );
 }
 
 /* -- Raccourcis ------------------------------------------------------------------ */
@@ -220,24 +368,37 @@ export function decrireRaccourci(l) {
   const nom = t('commun.guillemets', { texte: l.name || l.fichier });
   const cible = l.currentTarget ? ` (${l.currentTarget})` : '';
   switch (l.status) {
-    case 'ok': return ['ok', t('p.racc.ok', { nom })];
-    case 'other-name': return ['ok', t('p.racc.autreNom', { nom })];
-    case 'outdated': return ['alerte', t('p.racc.ancien', { nom, cible })];
-    case 'broken': return ['alerte', t('p.racc.casse', { nom, cible })];
-    case 'foreign': return ['alerte', l.currentTarget ? t('p.racc.etranger', { nom, cible }) : t('p.racc.illisible', { nom })];
-    default: return ['', l.dirExiste === false ? t('p.racc.dossierAbsent') : t('p.racc.aucun')];
+    case 'ok':
+      return ['ok', t('p.racc.ok', { nom })];
+    case 'other-name':
+      return ['ok', t('p.racc.autreNom', { nom })];
+    case 'outdated':
+      return ['alerte', t('p.racc.ancien', { nom, cible })];
+    case 'broken':
+      return ['alerte', t('p.racc.casse', { nom, cible })];
+    case 'foreign':
+      return ['alerte', l.currentTarget ? t('p.racc.etranger', { nom, cible }) : t('p.racc.illisible', { nom })];
+    default:
+      return ['', l.dirExiste === false ? t('p.racc.dossierAbsent') : t('p.racc.aucun')];
   }
 }
 
 function resultatRaccourci(r, libelle) {
   switch (r.outcome) {
-    case 'created': return t('p.racc.cree', { libelle });
-    case 'repaired': return t('p.racc.repare', { libelle });
-    case 'replaced': return t('p.racc.remplace', { libelle });
-    case 'already': return t('p.racc.deja', { libelle, nom: r.location.name });
-    case 'removed': return t('p.racc.supprime', { libelle });
-    case 'missing': return t('p.racc.manquant', { libelle });
-    default: return t('p.racc.impossible', { libelle });
+    case 'created':
+      return t('p.racc.cree', { libelle });
+    case 'repaired':
+      return t('p.racc.repare', { libelle });
+    case 'replaced':
+      return t('p.racc.remplace', { libelle });
+    case 'already':
+      return t('p.racc.deja', { libelle, nom: r.location.name });
+    case 'removed':
+      return t('p.racc.supprime', { libelle });
+    case 'missing':
+      return t('p.racc.manquant', { libelle });
+    default:
+      return t('p.racc.impossible', { libelle });
   }
 }
 
@@ -253,12 +414,30 @@ function carteRaccourcis() {
     try {
       let r;
       if (genre === 'supprimer') {
-        if (!await confirmer({ titre: t('p.racc.supprimerTitre'), message: t('p.racc.supprimerTexte', { nom: l.name, libelle }), valider: t('commun.supprimer'), danger: true })) return;
+        if (
+          !(await confirmer({
+            titre: t('p.racc.supprimerTitre'),
+            message: t('p.racc.supprimerTexte', { nom: l.name, libelle }),
+            valider: t('commun.supprimer'),
+            danger: true,
+          }))
+        )
+          return;
         r = await api.raccourcis.supprimer(l.id);
       } else {
         r = await api.raccourcis.creer(l.id);
         if (r.outcome === 'conflict') {
-          if (!await confirmer({ titre: t('p.racc.remplacerTitre'), message: `${decrireRaccourci(r.location)[1]} ${t('p.racc.remplacerTexte')}`, valider: t('p.racc.remplacer'), danger: true })) { note(t('p.racc.conserve')); return; }
+          if (
+            !(await confirmer({
+              titre: t('p.racc.remplacerTitre'),
+              message: `${decrireRaccourci(r.location)[1]} ${t('p.racc.remplacerTexte')}`,
+              valider: t('p.racc.remplacer'),
+              danger: true,
+            }))
+          ) {
+            note(t('p.racc.conserve'));
+            return;
+          }
           r = await api.raccourcis.creer(l.id, { confirmReplace: true });
         }
       }
@@ -274,49 +453,111 @@ function carteRaccourcis() {
   function ligne(l) {
     const [genre, texte] = decrireRaccourci(l);
     const actions = [];
-    if (l.action === 'create') actions.push(bouton(t('p.racc.creer'), { genre: 'principal', onClick: () => executer(l, 'creer') }));
-    if (l.action === 'repair') actions.push(bouton(t('p.racc.reparer'), { genre: 'principal', onClick: () => executer(l, 'creer') }));
-    if (l.action === 'replace') actions.push(bouton(t('p.racc.remplacer') + '…', { onClick: () => executer(l, 'creer') }));
-    if (l.file || l.dirExiste) actions.push(bouton(t('p.racc.afficher'), { genre: 'leger', titre: t('p.racc.afficherTitre'), onClick: () => api.raccourcis.afficher(l.id) }));
-    if (l.removable) actions.push(bouton(t('commun.supprimer'), { genre: 'discret-danger', onClick: () => executer(l, 'supprimer') }));
-    if (l.choisi) actions.push(bouton(t('p.racc.oublier'), { genre: 'leger', titre: t('p.racc.oublierTitre'), onClick: async () => { await api.raccourcis.oublier(l.id); actualiser(); } }));
-    const autres = l.others && l.others.length ? h('span', { class: 'aide' }, t('p.racc.autres', { liste: l.others.map((n) => t('commun.guillemets', { texte: n })).join(', ') })) : null;
-    return h('div', { class: `raccourci ${genre}`.trim() },
+    if (l.action === 'create')
+      actions.push(bouton(t('p.racc.creer'), { genre: 'principal', onClick: () => executer(l, 'creer') }));
+    if (l.action === 'repair')
+      actions.push(bouton(t('p.racc.reparer'), { genre: 'principal', onClick: () => executer(l, 'creer') }));
+    if (l.action === 'replace')
+      actions.push(bouton(t('p.racc.remplacer') + '…', { onClick: () => executer(l, 'creer') }));
+    if (l.file || l.dirExiste)
+      actions.push(
+        bouton(t('p.racc.afficher'), {
+          genre: 'leger',
+          titre: t('p.racc.afficherTitre'),
+          onClick: () => api.raccourcis.afficher(l.id),
+        }),
+      );
+    if (l.removable)
+      actions.push(bouton(t('commun.supprimer'), { genre: 'discret-danger', onClick: () => executer(l, 'supprimer') }));
+    if (l.choisi)
+      actions.push(
+        bouton(t('p.racc.oublier'), {
+          genre: 'leger',
+          titre: t('p.racc.oublierTitre'),
+          onClick: async () => {
+            await api.raccourcis.oublier(l.id);
+            actualiser();
+          },
+        }),
+      );
+    const autres =
+      l.others && l.others.length
+        ? h(
+            'span',
+            { class: 'aide' },
+            t('p.racc.autres', { liste: l.others.map((n) => t('commun.guillemets', { texte: n })).join(', ') }),
+          )
+        : null;
+    return h(
+      'div',
+      { class: `raccourci ${genre}`.trim() },
       icone(l.id === 'bureau' ? 'ecran' : l.id === 'menu' ? 'menu' : 'dossier', 18),
-      h('div', { class: 'texte' }, h('strong', {}, libelleLieu(l, info)), h('span', {}, texte), autres, h('span', { class: 'chemin', title: l.dir }, l.dir)),
-      h('div', { class: 'ligne' }, actions));
+      h(
+        'div',
+        { class: 'texte' },
+        h('strong', {}, libelleLieu(l, info)),
+        h('span', {}, texte),
+        autres,
+        h('span', { class: 'chemin', title: l.dir }, l.dir),
+      ),
+      h('div', { class: 'ligne' }, actions),
+    );
   }
 
   async function actualiser() {
     try {
       const s = await api.raccourcis.statut();
-      if (!s.supported) { liste.replaceChildren(h('p', { class: 'aide' }, t('p.racc.nonPris'))); return; }
+      if (!s.supported) {
+        liste.replaceChildren(h('p', { class: 'aide' }, t('p.racc.nonPris')));
+        return;
+      }
       liste.replaceChildren(...s.locations.map(ligne));
       pied.textContent = !s.packaged
         ? t('p.racc.piedDev')
-        : s.plateforme === 'win32' ? t('p.racc.piedWindows') : s.appImage ? t('p.racc.piedAppImage') : '';
+        : s.plateforme === 'win32'
+          ? t('p.racc.piedWindows')
+          : s.appImage
+            ? t('p.racc.piedAppImage')
+            : '';
     } catch (e) {
       liste.replaceChildren(etat('erreur', t('p.racc.lecture', { message: messageErreur(e) })));
     }
   }
 
-  window.addEventListener('focus', () => { if (!occupe) actualiser(); });
+  window.addEventListener('focus', () => {
+    if (!occupe) actualiser();
+  });
   actualiser();
 
-  return carte('raccourcis', 'raccourci', t('p.racc.titre'), t('p.racc.description'),
+  return carte(
+    'raccourcis',
+    'raccourci',
+    t('p.racc.titre'),
+    t('p.racc.description'),
     liste,
-    h('div', { class: 'ligne' },
-      bouton(t('p.racc.autreDossier'), { onClick: async () => {
-        if (occupe) return;
-        occupe = true;
-        try {
-          const r = await api.raccourcis.choisir();
-          if (r.outcome !== 'canceled') note(resultatRaccourci(r, r.location ? r.location.label : t('p.racc.dossierChoisi')), { duree: 5000 });
-        } catch (e) { note(t('p.racc.erreur', { message: messageErreur(e) }), { erreur: true, duree: 6000 }); }
-        finally { occupe = false; actualiser(); }
-      } }),
-      bouton(t('commun.actualiser'), { genre: 'leger', onClick: actualiser })),
-    pied);
+    h(
+      'div',
+      { class: 'ligne' },
+      bouton(t('p.racc.autreDossier'), {
+        onClick: async () => {
+          if (occupe) return;
+          occupe = true;
+          try {
+            const r = await api.raccourcis.choisir();
+            if (r.outcome !== 'canceled')
+              note(resultatRaccourci(r, r.location ? r.location.label : t('p.racc.dossierChoisi')), { duree: 5000 });
+          } catch (e) {
+            note(t('p.racc.erreur', { message: messageErreur(e) }), { erreur: true, duree: 6000 });
+          } finally {
+            occupe = false;
+            actualiser();
+          }
+        },
+      }),
+      bouton(t('commun.actualiser'), { genre: 'leger', onClick: actualiser }),
+    ),
+    pied,
+  );
 }
 
 /* -- Claude ------------------------------------------------------------------------- */
@@ -326,88 +567,228 @@ function carteClaude() {
   const zoneCle = h('div', {});
   let statut = null;
 
-  const saisie = h('input', { class: 'saisie', type: 'password', placeholder: 'sk-ant-…', autocomplete: 'off', spellcheck: false });
+  const saisie = h('input', {
+    class: 'saisie',
+    type: 'password',
+    placeholder: 'sk-ant-…',
+    autocomplete: 'off',
+    spellcheck: false,
+  });
 
   function peindre() {
     const s = statut;
     const blocs = [];
     if (!s.claudeCode) {
-      blocs.push(etat('alerte', t('p.claude.absent')),
-        h('div', { class: 'ligne' }, bouton(t('p.claude.installer'), { genre: 'principal', onClick: () => api.claude.lien('installation') }), bouton(t('p.claude.reverifier'), { genre: 'leger', onClick: actualiser })));
+      blocs.push(
+        etat('alerte', t('p.claude.absent')),
+        h(
+          'div',
+          { class: 'ligne' },
+          bouton(t('p.claude.installer'), { genre: 'principal', onClick: () => api.claude.lien('installation') }),
+          bouton(t('p.claude.reverifier'), { genre: 'leger', onClick: actualiser }),
+        ),
+      );
     } else {
-      blocs.push(h('p', { class: 'aide' }, 'Claude Code ', h('code', {}, s.claudeCode.version), ' : ', h('code', {}, s.claudeCode.executable)));
+      blocs.push(
+        h(
+          'p',
+          { class: 'aide' },
+          'Claude Code ',
+          h('code', {}, s.claudeCode.version),
+          ' : ',
+          h('code', {}, s.claudeCode.executable),
+        ),
+      );
       if (reglages.claude.mode === 'compte') {
         const c = s.compte || {};
-        if (c.connecte && c.methode === 'claude.ai') blocs.push(etat('ok', t(c.abonnement ? 'p.claude.connecteAbonnement' : 'p.claude.connecteCompte', { email: c.email || '', abonnement: c.abonnement })));
-        else if (c.connecte) blocs.push(etat('ok', t('p.claude.connecteAutre', { methode: c.methode || t('p.claude.methodeInconnue'), email: c.email ? ', ' + c.email : '' })));
+        if (c.connecte && c.methode === 'claude.ai')
+          blocs.push(
+            etat(
+              'ok',
+              t(c.abonnement ? 'p.claude.connecteAbonnement' : 'p.claude.connecteCompte', {
+                email: c.email || '',
+                abonnement: c.abonnement,
+              }),
+            ),
+          );
+        else if (c.connecte)
+          blocs.push(
+            etat(
+              'ok',
+              t('p.claude.connecteAutre', {
+                methode: c.methode || t('p.claude.methodeInconnue'),
+                email: c.email ? ', ' + c.email : '',
+              }),
+            ),
+          );
         else blocs.push(etat('alerte', t('p.claude.deconnecte')));
-        blocs.push(h('div', { class: 'ligne' },
-          bouton(t(c.connecte ? 'p.claude.changerCompte' : 'p.claude.seConnecter'), { genre: c.connecte ? '' : 'principal', onClick: async () => {
-            try { await api.claude.connecter(); note(t('p.claude.noteTerminal'), { duree: 8000 }); }
-            catch (e) { note(messageErreur(e), { erreur: true }); }
-          } }),
-          c.connecte ? bouton(t('p.claude.seDeconnecter'), { genre: 'discret-danger', onClick: async () => {
-            if (!await confirmer({ titre: t('p.claude.deconnecterTitre'), message: t('p.claude.deconnecterTexte'), valider: t('p.claude.deconnecter'), danger: true })) return;
-            try { await api.claude.deconnecter(); note(t('p.claude.noteDeconnecte')); } catch (e) { note(messageErreur(e), { erreur: true }); }
-            actualiser();
-          } }) : null,
-          bouton(t('p.claude.verifier'), { genre: 'leger', onClick: actualiser })));
+        blocs.push(
+          h(
+            'div',
+            { class: 'ligne' },
+            bouton(t(c.connecte ? 'p.claude.changerCompte' : 'p.claude.seConnecter'), {
+              genre: c.connecte ? '' : 'principal',
+              onClick: async () => {
+                try {
+                  await api.claude.connecter();
+                  note(t('p.claude.noteTerminal'), { duree: 8000 });
+                } catch (e) {
+                  note(messageErreur(e), { erreur: true });
+                }
+              },
+            }),
+            c.connecte
+              ? bouton(t('p.claude.seDeconnecter'), {
+                  genre: 'discret-danger',
+                  onClick: async () => {
+                    if (
+                      !(await confirmer({
+                        titre: t('p.claude.deconnecterTitre'),
+                        message: t('p.claude.deconnecterTexte'),
+                        valider: t('p.claude.deconnecter'),
+                        danger: true,
+                      }))
+                    )
+                      return;
+                    try {
+                      await api.claude.deconnecter();
+                      note(t('p.claude.noteDeconnecte'));
+                    } catch (e) {
+                      note(messageErreur(e), { erreur: true });
+                    }
+                    actualiser();
+                  },
+                })
+              : null,
+            bouton(t('p.claude.verifier'), { genre: 'leger', onClick: actualiser }),
+          ),
+        );
       }
     }
     zoneEtat.replaceChildren(...blocs);
 
     zoneCle.hidden = reglages.claude.mode !== 'cle';
     const cle = [];
-    if (s.cleEnregistree && s.cleLisible) cle.push(etat('ok', t(s.cleActive ? 'p.claude.cleActive' : 'p.claude.cleApresRedemarrage')));
+    if (s.cleEnregistree && s.cleLisible)
+      cle.push(etat('ok', t(s.cleActive ? 'p.claude.cleActive' : 'p.claude.cleApresRedemarrage')));
     else if (s.cleEnregistree) cle.push(etat('erreur', t('p.claude.cleIllisible')));
     else cle.push(etat('alerte', t('p.claude.cleAucune')));
     if (!s.chiffrementDisponible) cle.push(etat('erreur', t('p.claude.sansChiffrement')));
     zoneCle.replaceChildren(
       h('label', { class: 'champ' }, h('span', {}, t('p.claude.cleLibelle')), saisie),
-      h('p', { class: 'aide' }, t('p.claude.cleAide') + ' ',
-        h('a', { href: '#', onClick: (e) => { e.preventDefault(); api.claude.lien('cles'); } }, t('p.claude.creerCle')), '.'),
-      h('div', { class: 'ligne' },
-        bouton(t('p.claude.enregistrerCle'), { genre: 'principal', desactive: !s.chiffrementDisponible, onClick: async () => {
-          const v = saisie.value.trim();
-          if (!v) { note(t('p.claude.collerCle'), { erreur: true }); return; }
-          try {
-            const r = await api.claude.enregistrerCle(v);
-            saisie.value = '';
-            note(r.avertissement ? t('p.claude.cleEnregistreeAvert', { avertissement: r.avertissement }) : t('p.claude.cleEnregistree'), { duree: 5000 });
-            proposerRedemarrage();
-          } catch (e) { note(messageErreur(e), { erreur: true, duree: 6000 }); }
-          actualiser();
-        } }),
-        s.cleEnregistree ? bouton(t('p.claude.supprimerCle'), { genre: 'discret-danger', onClick: async () => {
-          if (!await confirmer({ titre: t('p.claude.supprimerCleTitre'), message: t('p.claude.supprimerCleTexte'), valider: t('commun.supprimer'), danger: true })) return;
-          await api.claude.enregistrerCle('');
-          note(t('p.claude.cleSupprimee'));
-          actualiser();
-        } }) : null),
-      ...cle);
+      h(
+        'p',
+        { class: 'aide' },
+        t('p.claude.cleAide') + ' ',
+        h(
+          'a',
+          {
+            href: '#',
+            onClick: (e) => {
+              e.preventDefault();
+              api.claude.lien('cles');
+            },
+          },
+          t('p.claude.creerCle'),
+        ),
+        '.',
+      ),
+      h(
+        'div',
+        { class: 'ligne' },
+        bouton(t('p.claude.enregistrerCle'), {
+          genre: 'principal',
+          desactive: !s.chiffrementDisponible,
+          onClick: async () => {
+            const v = saisie.value.trim();
+            if (!v) {
+              note(t('p.claude.collerCle'), { erreur: true });
+              return;
+            }
+            try {
+              const r = await api.claude.enregistrerCle(v);
+              saisie.value = '';
+              note(
+                r.avertissement
+                  ? t('p.claude.cleEnregistreeAvert', { avertissement: r.avertissement })
+                  : t('p.claude.cleEnregistree'),
+                { duree: 5000 },
+              );
+              proposerRedemarrage();
+            } catch (e) {
+              note(messageErreur(e), { erreur: true, duree: 6000 });
+            }
+            actualiser();
+          },
+        }),
+        s.cleEnregistree
+          ? bouton(t('p.claude.supprimerCle'), {
+              genre: 'discret-danger',
+              onClick: async () => {
+                if (
+                  !(await confirmer({
+                    titre: t('p.claude.supprimerCleTitre'),
+                    message: t('p.claude.supprimerCleTexte'),
+                    valider: t('commun.supprimer'),
+                    danger: true,
+                  }))
+                )
+                  return;
+                await api.claude.enregistrerCle('');
+                note(t('p.claude.cleSupprimee'));
+                actualiser();
+              },
+            })
+          : null,
+      ),
+      ...cle,
+    );
   }
 
   async function actualiser() {
     zoneEtat.replaceChildren(etat('', t('p.claude.verification')));
-    try { statut = await api.claude.statut(); peindre(); }
-    catch (e) { zoneEtat.replaceChildren(etat('erreur', messageErreur(e))); }
+    try {
+      statut = await api.claude.statut();
+      peindre();
+    } catch (e) {
+      zoneEtat.replaceChildren(etat('erreur', messageErreur(e)));
+    }
   }
 
-  const option = (valeur, titre, description) => h('label', {},
-    h('input', { type: 'radio', name: 'claude', value: valeur, checked: reglages.claude.mode === valeur, onChange: async () => {
-      await enregistrer({ claude: { mode: valeur } });
-      if (statut) peindre();
-      proposerRedemarrage();
-    } }),
-    h('span', {}, h('strong', {}, titre), h('span', {}, description)));
+  const option = (valeur, titre, description) =>
+    h(
+      'label',
+      {},
+      h('input', {
+        type: 'radio',
+        name: 'claude',
+        value: valeur,
+        checked: reglages.claude.mode === valeur,
+        onChange: async () => {
+          await enregistrer({ claude: { mode: valeur } });
+          if (statut) peindre();
+          proposerRedemarrage();
+        },
+      }),
+      h('span', {}, h('strong', {}, titre), h('span', {}, description)),
+    );
 
   actualiser();
-  return carte('claude', 'claude', t('p.claude.titre'), t('p.claude.description'),
-    h('div', { class: 'choix' },
+  return carte(
+    'claude',
+    'claude',
+    t('p.claude.titre'),
+    t('p.claude.description'),
+    h(
+      'div',
+      { class: 'choix' },
       option('compte', t('p.claude.modeCompte'), t('p.claude.modeCompteAide')),
-      option('cle', t('p.claude.modeCle'), t('p.claude.modeCleAide'))),
-    zoneEtat, zoneCle,
-    h('p', { class: 'aide' }, t('p.claude.aide')));
+      option('cle', t('p.claude.modeCle'), t('p.claude.modeCleAide')),
+    ),
+    zoneEtat,
+    zoneCle,
+    h('p', { class: 'aide' }, t('p.claude.aide')),
+  );
 }
 
 /* -- Modèles de Claude et exécution du code (ex-« Réglages » des quiz) ------------------- */
@@ -416,7 +797,9 @@ function carteClaude() {
 function libelleUsage(id, usage) {
   const cle = `p.modeles.usage.${id}`;
   const titre = t(cle);
-  return titre === cle ? { libelle: usage.libelle, description: usage.description } : { libelle: titre, description: t(cle + '.aide') };
+  return titre === cle
+    ? { libelle: usage.libelle, description: usage.description }
+    : { libelle: titre, description: t(cle + '.aide') };
 }
 
 function libelleModele(m) {
@@ -429,7 +812,12 @@ function carteModeles() {
   const zone = h('div', { class: 'modeles' }, etat('', t('p.modeles.lecture')));
   let r = null;
 
-  const chemin = h('input', { class: 'saisie', type: 'text', placeholder: t('p.modeles.cheminExemple'), spellcheck: false });
+  const chemin = h('input', {
+    class: 'saisie',
+    type: 'text',
+    placeholder: t('p.modeles.cheminExemple'),
+    spellcheck: false,
+  });
 
   async function enregistrer() {
     r.claude.executable = chemin.value.trim();
@@ -440,32 +828,70 @@ function carteModeles() {
     const reglage = r.usages[id];
     const { libelle, description } = libelleUsage(id, usage);
     const connu = e.modeles.some((m) => m.id === reglage.modele);
-    const libre = h('input', { class: 'saisie', type: 'text', placeholder: 'claude-sonnet-5…', value: connu ? '' : reglage.modele,
-      onInput: (ev) => { reglage.modele = ev.target.value.trim(); } });
+    const libre = h('input', {
+      class: 'saisie',
+      type: 'text',
+      placeholder: 'claude-sonnet-5…',
+      value: connu ? '' : reglage.modele,
+      onInput: (ev) => {
+        reglage.modele = ev.target.value.trim();
+      },
+    });
     libre.hidden = connu;
-    const modele = h('select', { class: 'saisie', 'aria-label': t('p.modeles.modeleAria', { usage: libelle }), onChange: (ev) => {
-      libre.hidden = ev.target.value !== '__autre';
-      reglage.modele = ev.target.value === '__autre' ? libre.value.trim() : ev.target.value;
-    } },
-    e.modeles.map((m) => h('option', { value: m.id, selected: connu && m.id === reglage.modele }, libelleModele(m))),
-    h('option', { value: '__autre', selected: !connu }, t('p.modeles.autre')));
-    const effort = h('select', { class: 'saisie', 'aria-label': t('p.modeles.effortAria', { usage: libelle }), onChange: (ev) => { reglage.effort = ev.target.value; } },
-      e.efforts.map((x) => h('option', { value: x, selected: x === reglage.effort }, x ? t('p.modeles.effort', { x }) : t('p.modeles.effortDefaut'))));
+    const modele = h(
+      'select',
+      {
+        class: 'saisie',
+        'aria-label': t('p.modeles.modeleAria', { usage: libelle }),
+        onChange: (ev) => {
+          libre.hidden = ev.target.value !== '__autre';
+          reglage.modele = ev.target.value === '__autre' ? libre.value.trim() : ev.target.value;
+        },
+      },
+      e.modeles.map((m) => h('option', { value: m.id, selected: connu && m.id === reglage.modele }, libelleModele(m))),
+      h('option', { value: '__autre', selected: !connu }, t('p.modeles.autre')),
+    );
+    const effort = h(
+      'select',
+      {
+        class: 'saisie',
+        'aria-label': t('p.modeles.effortAria', { usage: libelle }),
+        onChange: (ev) => {
+          reglage.effort = ev.target.value;
+        },
+      },
+      e.efforts.map((x) =>
+        h(
+          'option',
+          { value: x, selected: x === reglage.effort },
+          x ? t('p.modeles.effort', { x }) : t('p.modeles.effortDefaut'),
+        ),
+      ),
+    );
     const resultat = h('span', { class: 'aide' });
-    const tester = bouton(t('p.modeles.tester'), { genre: 'leger', onClick: async () => {
-      tester.disabled = true;
-      resultat.textContent = t('p.modeles.test');
-      try {
-        await enregistrer();
-        const x = await api.quiz.tester(id);
-        resultat.textContent = `OK · ${(x.modele || '').replace(/^claude-/, '')} · ${(x.duree / 1000).toFixed(1)} s`;
-      } catch (err) { resultat.textContent = messageErreur(err).slice(0, 160); }
-      finally { tester.disabled = false; }
-    } });
-    return h('div', { class: 'usage' },
+    const tester = bouton(t('p.modeles.tester'), {
+      genre: 'leger',
+      onClick: async () => {
+        tester.disabled = true;
+        resultat.textContent = t('p.modeles.test');
+        try {
+          await enregistrer();
+          const x = await api.quiz.tester(id);
+          resultat.textContent = `OK · ${(x.modele || '').replace(/^claude-/, '')} · ${(x.duree / 1000).toFixed(1)} s`;
+        } catch (err) {
+          resultat.textContent = messageErreur(err).slice(0, 160);
+        } finally {
+          tester.disabled = false;
+        }
+      },
+    });
+    return h(
+      'div',
+      { class: 'usage' },
       h('div', {}, h('strong', {}, libelle), h('br'), h('span', { class: 'aide' }, description)),
       h('div', { class: 'ligne' }, modele, libre, effort, tester),
-      resultat);
+      resultat,
+    );
   }
 
   async function charger() {
@@ -476,26 +902,62 @@ function carteModeles() {
       const q = e.quota && e.quota.unifiedWindows;
       const morceaux = [];
       if (q && q.five_hour) morceaux.push(t('p.modeles.quota5h', { p: Math.round(q.five_hour.utilization * 100) }));
-      if (q && q.seven_day) morceaux.push(t('p.modeles.quotaSemaine', { p: Math.round(q.seven_day.utilization * 100) }));
+      if (q && q.seven_day)
+        morceaux.push(t('p.modeles.quotaSemaine', { p: Math.round(q.seven_day.utilization * 100) }));
       const quota = morceaux.length ? t('p.modeles.quota', { detail: morceaux.join(' · ') }) : null;
-      zone.replaceChildren(h('div', { class: 'modeles' },
-        h('h3', {}, t('p.modeles.claudeCode')),
-        e.claude.disponible ? etat('ok', t('p.modeles.trouve', { version: e.claude.version, executable: e.claude.executable })) : etat('alerte', e.claude.erreur),
-        h('label', { class: 'champ' }, h('span', {}, t('p.modeles.chemin')), chemin),
-        quota ? h('p', { class: 'aide' }, quota) : null,
-        h('h3', {}, t('p.modeles.parUsage')),
-        h('p', { class: 'aide' }, t('p.modeles.parUsageAide')),
-        h('div', { class: 'usages' }, Object.entries(e.usages).map(([id, u]) => ligneUsage(id, u, e))),
-        h('div', { class: 'ligne' },
-          bouton(t('commun.enregistrer'), { genre: 'principal', onClick: async () => {
-            try { await enregistrer(); note(t('p.modeles.noteEnregistre')); charger(); }
-            catch (err) { note(messageErreur(err), { erreur: true }); }
-          } }),
-          bouton(t('p.modeles.recharger'), { genre: 'leger', onClick: charger })),
-        h('h3', {}, t('p.modeles.execution')),
-        h('ul', { class: 'langages' }, Object.entries(e.executeurs).map(([k, v]) => h('li', { class: v ? 'ok' : 'ko' }, `${{ sql: 'SQL', javascript: 'JavaScript', python: 'Python', c: 'C', 'c-posix': 'C POSIX (WSL)' }[k] || k} : ${v || t('p.modeles.indisponible')}`)))));
+      zone.replaceChildren(
+        h(
+          'div',
+          { class: 'modeles' },
+          h('h3', {}, t('p.modeles.claudeCode')),
+          e.claude.disponible
+            ? etat('ok', t('p.modeles.trouve', { version: e.claude.version, executable: e.claude.executable }))
+            : etat('alerte', e.claude.erreur),
+          h('label', { class: 'champ' }, h('span', {}, t('p.modeles.chemin')), chemin),
+          quota ? h('p', { class: 'aide' }, quota) : null,
+          h('h3', {}, t('p.modeles.parUsage')),
+          h('p', { class: 'aide' }, t('p.modeles.parUsageAide')),
+          h(
+            'div',
+            { class: 'usages' },
+            Object.entries(e.usages).map(([id, u]) => ligneUsage(id, u, e)),
+          ),
+          h(
+            'div',
+            { class: 'ligne' },
+            bouton(t('commun.enregistrer'), {
+              genre: 'principal',
+              onClick: async () => {
+                try {
+                  await enregistrer();
+                  note(t('p.modeles.noteEnregistre'));
+                  charger();
+                } catch (err) {
+                  note(messageErreur(err), { erreur: true });
+                }
+              },
+            }),
+            bouton(t('p.modeles.recharger'), { genre: 'leger', onClick: charger }),
+          ),
+          h('h3', {}, t('p.modeles.execution')),
+          h(
+            'ul',
+            { class: 'langages' },
+            Object.entries(e.executeurs).map(([k, v]) =>
+              h(
+                'li',
+                { class: v ? 'ok' : 'ko' },
+                `${{ sql: 'SQL', javascript: 'JavaScript', python: 'Python', c: 'C', 'c-posix': 'C POSIX (WSL)' }[k] || k} : ${v || t('p.modeles.indisponible')}`,
+              ),
+            ),
+          ),
+        ),
+      );
     } catch (err) {
-      zone.replaceChildren(etat('erreur', messageErreur(err)), h('div', { class: 'ligne' }, bouton(t('commun.reessayer'), { genre: 'leger', onClick: charger })));
+      zone.replaceChildren(
+        etat('erreur', messageErreur(err)),
+        h('div', { class: 'ligne' }, bouton(t('commun.reessayer'), { genre: 'leger', onClick: charger })),
+      );
     }
   }
 
@@ -511,42 +973,100 @@ function carteProfils() {
   async function charger() {
     zone.replaceChildren(h('p', { class: 'aide' }, t('commun.chargement')));
     let e;
-    try { e = await api.profils.etat(); }
-    catch (err) { zone.replaceChildren(etat('erreur', messageErreur(err)), h('div', { class: 'ligne' }, bouton(t('commun.reessayer'), { genre: 'leger', onClick: charger }))); return; }
-    const nouveau = h('input', { class: 'saisie', type: 'text', value: e.profils.length ? '' : e.session, placeholder: e.session, spellcheck: 'false' });
+    try {
+      e = await api.profils.etat();
+    } catch (err) {
+      zone.replaceChildren(
+        etat('erreur', messageErreur(err)),
+        h('div', { class: 'ligne' }, bouton(t('commun.reessayer'), { genre: 'leger', onClick: charger })),
+      );
+      return;
+    }
+    const nouveau = h('input', {
+      class: 'saisie',
+      type: 'text',
+      value: e.profils.length ? '' : e.session,
+      placeholder: e.session,
+      spellcheck: 'false',
+    });
     const choixCursus = h('select', { class: 'saisie' }, h('option', { value: '' }, t('p.profil.aucunCursus')));
     const telecharger = h('input', { type: 'checkbox', checked: true });
     api.profils.cursus().then((liste) => {
-      for (const c of liste) choixCursus.append(h('option', { value: c.id }, t('p.profil.cursusOption', { titre: c.titre, n: c.nombre })));
+      for (const c of liste)
+        choixCursus.append(h('option', { value: c.id }, t('p.profil.cursusOption', { titre: c.titre, n: c.nombre })));
     });
     const creer = async () => {
       try {
         const r = await api.profils.creer(nouveau.value || e.session, choixCursus.value || null, telecharger.checked);
         note(messageCreation(r), { duree: 8000, erreur: Boolean(r.cursusExemple && r.cursusExemple.erreur) });
         charger();
-      } catch (err) { note(messageErreur(err), { erreur: true, duree: 6000 }); }
+      } catch (err) {
+        note(messageErreur(err), { erreur: true, duree: 6000 });
+      }
     };
-    const liste = e.profils.map((p) => h('label', {},
-      h('input', { type: 'radio', name: 'profil', value: p.nom, checked: p.nom === e.profil, onChange: async () => {
-        try { await api.profils.choisir(p.nom); note(t('p.profil.noteChoisi', { nom: p.nom })); charger(); }
-        catch (err) { note(messageErreur(err), { erreur: true }); }
-      } }),
-      h('span', {}, h('strong', {}, p.nom), h('span', {}, p.nom === e.profil ? t('p.profil.actif') : t('p.profil.cree', { date: p.cree || '—' })))));
+    const liste = e.profils.map((p) =>
+      h(
+        'label',
+        {},
+        h('input', {
+          type: 'radio',
+          name: 'profil',
+          value: p.nom,
+          checked: p.nom === e.profil,
+          onChange: async () => {
+            try {
+              await api.profils.choisir(p.nom);
+              note(t('p.profil.noteChoisi', { nom: p.nom }));
+              charger();
+            } catch (err) {
+              note(messageErreur(err), { erreur: true });
+            }
+          },
+        }),
+        h(
+          'span',
+          {},
+          h('strong', {}, p.nom),
+          h('span', {}, p.nom === e.profil ? t('p.profil.actif') : t('p.profil.cree', { date: p.cree || '—' })),
+        ),
+      ),
+    );
     const renommer = h('input', { class: 'saisie', type: 'text', value: e.profil || '', spellcheck: 'false' });
     zone.replaceChildren(
       e.profils.length ? h('div', { class: 'choix' }, ...liste) : etat('alerte', t('p.profil.aucun')),
-      h('div', { class: 'champs' },
+      h(
+        'div',
+        { class: 'champs' },
         h('label', { class: 'champ' }, h('span', {}, t('p.profil.nouveau')), nouveau),
-        h('label', { class: 'champ' }, h('span', {}, t('p.profil.cursusExemple')), choixCursus)),
+        h('label', { class: 'champ' }, h('span', {}, t('p.profil.cursusExemple')), choixCursus),
+      ),
       h('label', { class: 'interrupteur' }, telecharger, h('span', {}, t('p.profil.telecharger'))),
-      h('div', { class: 'ligne' }, bouton(t('p.profil.ajouter'), { genre: e.profils.length ? '' : 'principal', onClick: creer })),
-      e.profil ? h('div', { class: 'champs avec-bouton' },
-        h('label', { class: 'champ' }, h('span', {}, t('p.profil.renommerLibelle', { nom: e.profil })), renommer),
-        bouton(t('p.profil.renommer'), { genre: 'leger', onClick: async () => {
-          try { await api.profils.renommer(e.profil, renommer.value); note(t('p.profil.noteRenomme')); charger(); }
-          catch (err) { note(messageErreur(err), { erreur: true, duree: 6000 }); }
-        } })) : null,
-      h('p', { class: 'aide' }, t('p.profil.aide')));
+      h(
+        'div',
+        { class: 'ligne' },
+        bouton(t('p.profil.ajouter'), { genre: e.profils.length ? '' : 'principal', onClick: creer }),
+      ),
+      e.profil
+        ? h(
+            'div',
+            { class: 'champs avec-bouton' },
+            h('label', { class: 'champ' }, h('span', {}, t('p.profil.renommerLibelle', { nom: e.profil })), renommer),
+            bouton(t('p.profil.renommer'), {
+              genre: 'leger',
+              onClick: async () => {
+                try {
+                  await api.profils.renommer(e.profil, renommer.value);
+                  note(t('p.profil.noteRenomme'));
+                  charger();
+                } catch (err) {
+                  note(messageErreur(err), { erreur: true, duree: 6000 });
+                }
+              },
+            }),
+          )
+        : null,
+      h('p', { class: 'aide' }, t('p.profil.aide')),
+    );
   }
 
   charger();
@@ -557,25 +1077,53 @@ function carteProfils() {
 
 function carteDonnees() {
   const v = info.versionsOutils || {};
-  const date = (iso) => (iso ? new Date(iso).toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' }) : '');
-  const mode = {
-    depot: t('p.donnees.modeDepot'),
-    installe: v.livre ? t('p.donnees.modeInstalleVersion', { date: date(v.livre.cree), n: v.livre.fichiers, dossier: info.dossierLocal }) : t('p.donnees.modeInstalle', { dossier: info.dossierLocal }),
-    developpement: t('p.donnees.modeDev')
-  }[info.modeDonnees] || '';
-  return carte('donnees', 'dossier', t('p.donnees.titre'), t('p.donnees.description'),
+  const date = (iso) =>
+    iso ? new Date(iso).toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  const mode =
+    {
+      depot: t('p.donnees.modeDepot'),
+      installe: v.livre
+        ? t('p.donnees.modeInstalleVersion', {
+            date: date(v.livre.cree),
+            n: v.livre.fichiers,
+            dossier: info.dossierLocal,
+          })
+        : t('p.donnees.modeInstalle', { dossier: info.dossierLocal }),
+      developpement: t('p.donnees.modeDev'),
+    }[info.modeDonnees] || '';
+  return carte(
+    'donnees',
+    'dossier',
+    t('p.donnees.titre'),
+    t('p.donnees.description'),
     h('p', {}, t('p.donnees.actuel') + ' ', h('code', {}, info.racine || '—')),
     h('p', { class: 'aide' }, mode),
-    h('div', { class: 'ligne' },
-      bouton(t('p.donnees.choisir'), { onClick: async () => {
-        const r = await api.donnees.choisir();
-        if (!r.ok) { if (r.message) note(r.message, { erreur: true, duree: 6000 }); return; }
-        note(t(r.depot ? 'p.donnees.noteDepot' : 'p.donnees.noteChoisi'));
-        proposerRedemarrage();
-      } }),
-      bouton(t('p.donnees.defaut'), { genre: 'leger', onClick: async () => { const r = await api.donnees.defaut(); note(t('p.donnees.noteDefaut', { dossier: r.dossier })); proposerRedemarrage(); } }),
-      bouton(t('p.donnees.ouvrir'), { genre: 'leger', onClick: () => api.ouvrirDossier('donnees') })),
-    h('p', { class: 'aide' }, t('p.donnees.aide', { dossier: info.dossierParDefaut })));
+    h(
+      'div',
+      { class: 'ligne' },
+      bouton(t('p.donnees.choisir'), {
+        onClick: async () => {
+          const r = await api.donnees.choisir();
+          if (!r.ok) {
+            if (r.message) note(r.message, { erreur: true, duree: 6000 });
+            return;
+          }
+          note(t(r.depot ? 'p.donnees.noteDepot' : 'p.donnees.noteChoisi'));
+          proposerRedemarrage();
+        },
+      }),
+      bouton(t('p.donnees.defaut'), {
+        genre: 'leger',
+        onClick: async () => {
+          const r = await api.donnees.defaut();
+          note(t('p.donnees.noteDefaut', { dossier: r.dossier }));
+          proposerRedemarrage();
+        },
+      }),
+      bouton(t('p.donnees.ouvrir'), { genre: 'leger', onClick: () => api.ouvrirDossier('donnees') }),
+    ),
+    h('p', { class: 'aide' }, t('p.donnees.aide', { dossier: info.dossierParDefaut })),
+  );
 }
 
 /* -- Synchronisation ------------------------------------------------------------------ */
@@ -585,26 +1133,36 @@ export function decrireSynchro(s) {
   if (s.enCours) return ['', t('p.synchro.enCours')];
   const d = s.dernier;
   if (!d) return ['', t(s.auto ? 'p.synchro.bientot' : 'p.synchro.jamais')];
-  const quand = d.a ? new Date(d.a).toLocaleString(locale(), { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '';
+  const quand = d.a
+    ? new Date(d.a).toLocaleString(locale(), { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
+    : '';
   const bilan = [];
   if (d.commits) bilan.push(t('p.synchro.bilanCommit'));
   if (d.recus && d.recus.length) bilan.push(tn('p.synchro.bilanRecus', d.recus.length));
   if (d.envoyes) bilan.push(tn('p.synchro.bilanEnvoyes', d.envoyes));
   switch (d.etat) {
-    case 'synchronise': return ['ok', t('p.synchro.synchronise', { quand, bilan: bilan.join(', ') })];
-    case 'a-jour': return ['ok', t('p.synchro.aJour', { quand })];
-    case 'hors-ligne': return ['alerte', t('p.synchro.horsLigne', { message: d.message, quand })];
-    case 'bloque': return ['alerte', `${d.message} (${quand})`];
-    default: return ['erreur', `${d.message} (${quand})`];
+    case 'synchronise':
+      return ['ok', t('p.synchro.synchronise', { quand, bilan: bilan.join(', ') })];
+    case 'a-jour':
+      return ['ok', t('p.synchro.aJour', { quand })];
+    case 'hors-ligne':
+      return ['alerte', t('p.synchro.horsLigne', { message: d.message, quand })];
+    case 'bloque':
+      return ['alerte', `${d.message} (${quand})`];
+    default:
+      return ['erreur', `${d.message} (${quand})`];
   }
 }
 
 function carteSynchro() {
   const zone = h('div', {});
-  const caseAuto = h('input', { type: 'checkbox', onChange: async (e) => {
-    peindre(await api.synchro.auto(e.target.checked));
-    note(t(e.target.checked ? 'p.synchro.noteActive' : 'p.synchro.noteDesactive'));
-  } });
+  const caseAuto = h('input', {
+    type: 'checkbox',
+    onChange: async (e) => {
+      peindre(await api.synchro.auto(e.target.checked));
+      note(t(e.target.checked ? 'p.synchro.noteActive' : 'p.synchro.noteDesactive'));
+    },
+  });
   const maintenant = bouton(t('p.synchro.maintenant'), { genre: 'principal', onClick: () => api.synchro.maintenant() });
 
   function peindre(s) {
@@ -614,7 +1172,8 @@ function carteSynchro() {
       maintenant.disabled = true;
       zone.replaceChildren(
         etat('', s.raison || t('p.synchro.pasDepot')),
-        h('p', { class: 'aide' }, t(s.git ? 'p.synchro.commentFaire' : 'p.synchro.sansGit')));
+        h('p', { class: 'aide' }, t(s.git ? 'p.synchro.commentFaire' : 'p.synchro.sansGit')),
+      );
       return;
     }
     caseAuto.checked = s.auto === true;
@@ -622,43 +1181,110 @@ function carteSynchro() {
     maintenant.disabled = s.enCours;
     const [genre, texte] = decrireSynchro(s);
     const d = s.dernier;
-    const conflits = d && d.conflits && d.conflits.length
-      ? h('ul', { class: 'aide' }, ...d.conflits.map((c) => h('li', {}, h('code', {}, c.chemin), ` : ${c.regle}`, c.copie ? h('span', {}, ` (${t('p.synchro.copie')} `, h('code', {}, c.copie.split('/').pop()), ')') : null)))
-      : null;
-    const ignores = d && d.ignores && d.ignores.length
-      ? etat('alerte', tn('p.synchro.ignores', d.ignores.length, { liste: d.ignores.join(', ') }))
-      : null;
+    const conflits =
+      d && d.conflits && d.conflits.length
+        ? h(
+            'ul',
+            { class: 'aide' },
+            ...d.conflits.map((c) =>
+              h(
+                'li',
+                {},
+                h('code', {}, c.chemin),
+                ` : ${c.regle}`,
+                c.copie
+                  ? h('span', {}, ` (${t('p.synchro.copie')} `, h('code', {}, c.copie.split('/').pop()), ')')
+                  : null,
+              ),
+            ),
+          )
+        : null;
+    const ignores =
+      d && d.ignores && d.ignores.length
+        ? etat('alerte', tn('p.synchro.ignores', d.ignores.length, { liste: d.ignores.join(', ') }))
+        : null;
     const avertissement = d && d.avertissement ? etat('alerte', d.avertissement) : null;
-    zone.replaceChildren(...[
-      h('p', {}, t('p.synchro.depot') + ' ', h('code', {}, s.adresse || s.distant), ' ' + t('p.synchro.branche', { branche: s.branche, distant: s.distant, git: s.git })),
-      etat(genre, texte), avertissement, conflits, ignores,
-      h('p', { class: 'aide' }, t(s.mode === 'progression' ? 'p.synchro.perimetreProgression' : 'p.synchro.perimetreTout'))
-    ].filter(Boolean));
+    zone.replaceChildren(
+      ...[
+        h(
+          'p',
+          {},
+          t('p.synchro.depot') + ' ',
+          h('code', {}, s.adresse || s.distant),
+          ' ' + t('p.synchro.branche', { branche: s.branche, distant: s.distant, git: s.git }),
+        ),
+        etat(genre, texte),
+        avertissement,
+        conflits,
+        ignores,
+        h(
+          'p',
+          { class: 'aide' },
+          t(s.mode === 'progression' ? 'p.synchro.perimetreProgression' : 'p.synchro.perimetreTout'),
+        ),
+      ].filter(Boolean),
+    );
   }
 
   api.synchro.statut().then(peindre);
   api.synchro.surStatut(peindre);
 
-  return carte('synchro', 'nuage', t('p.synchro.titre'), t('p.synchro.description'),
-    h('label', { class: 'interrupteur' }, caseAuto,
-      h('span', {}, h('strong', {}, t('p.synchro.auto')),
-        h('br'), h('span', { class: 'aide' }, t('p.synchro.autoAide')))),
-    h('div', { class: 'ligne' }, maintenant, bouton(t('p.synchro.ouvrirDonnees'), { genre: 'leger', onClick: () => api.ouvrirDossier('donnees') })),
+  return carte(
+    'synchro',
+    'nuage',
+    t('p.synchro.titre'),
+    t('p.synchro.description'),
+    h(
+      'label',
+      { class: 'interrupteur' },
+      caseAuto,
+      h(
+        'span',
+        {},
+        h('strong', {}, t('p.synchro.auto')),
+        h('br'),
+        h('span', { class: 'aide' }, t('p.synchro.autoAide')),
+      ),
+    ),
+    h(
+      'div',
+      { class: 'ligne' },
+      maintenant,
+      bouton(t('p.synchro.ouvrirDonnees'), { genre: 'leger', onClick: () => api.ouvrirDossier('donnees') }),
+    ),
     zone,
-    h('p', { class: 'aide' }, t('p.synchro.aide')));
+    h('p', { class: 'aide' }, t('p.synchro.aide')),
+  );
 }
 
 /* -- À propos ------------------------------------------------------------------------- */
 
 function carteAPropos() {
-  return carte('a-propos', 'info', t('p.apropos.titre'), null,
-    h('p', {}, t(info.installee ? 'p.apropos.versionInstallee' : 'p.apropos.versionDev', { version: info.version, electron: info.electron })),
+  return carte(
+    'a-propos',
+    'info',
+    t('p.apropos.titre'),
+    null,
+    h(
+      'p',
+      {},
+      t(info.installee ? 'p.apropos.versionInstallee' : 'p.apropos.versionDev', {
+        version: info.version,
+        electron: info.electron,
+      }),
+    ),
     h('p', { class: 'aide' }, t('p.apropos.parametres') + ' ', h('code', {}, info.donnees)),
     info.journaux ? h('p', { class: 'aide' }, t('p.apropos.journaux') + ' ', h('code', {}, info.journaux)) : null,
-    h('div', { class: 'ligne' },
+    h(
+      'div',
+      { class: 'ligne' },
       bouton(t('p.apropos.ouvrirParametres'), { genre: 'leger', onClick: () => api.ouvrirDossier('parametres') }),
-      info.journaux ? bouton(t('p.apropos.ouvrirJournaux'), { genre: 'leger', onClick: () => api.ouvrirDossier('journaux') }) : null,
-      bouton(t('p.apropos.redemarrer'), { genre: 'leger', onClick: () => api.redemarrer() })));
+      info.journaux
+        ? bouton(t('p.apropos.ouvrirJournaux'), { genre: 'leger', onClick: () => api.ouvrirDossier('journaux') })
+        : null,
+      bouton(t('p.apropos.redemarrer'), { genre: 'leger', onClick: () => api.redemarrer() }),
+    ),
+  );
 }
 
 /* -- Redémarrage ---------------------------------------------------------------------- */
@@ -666,9 +1292,23 @@ function carteAPropos() {
 let proposition = null;
 function proposerRedemarrage() {
   if (proposition) return;
-  proposition = h('div', { class: 'carte large' },
+  proposition = h(
+    'div',
+    { class: 'carte large' },
     etat('alerte', t('p.redemarrage.texte')),
-    h('div', { class: 'ligne' }, bouton(t('p.redemarrage.maintenant'), { genre: 'principal', onClick: () => api.redemarrer() }), bouton(t('commun.plusTard'), { genre: 'leger', onClick: () => { proposition.remove(); proposition = null; } })));
+    h(
+      'div',
+      { class: 'ligne' },
+      bouton(t('p.redemarrage.maintenant'), { genre: 'principal', onClick: () => api.redemarrer() }),
+      bouton(t('commun.plusTard'), {
+        genre: 'leger',
+        onClick: () => {
+          proposition.remove();
+          proposition = null;
+        },
+      }),
+    ),
+  );
   document.getElementById('cartes').prepend(proposition);
   ranger();
   defilement.scrollTo({ top: 0 });
@@ -690,7 +1330,7 @@ const SECTIONS = [
   ['profil', 'p.nav.profil', carteProfils],
   ['donnees', 'p.nav.donnees', carteDonnees],
   ['synchro', 'p.nav.synchro', carteSynchro],
-  ['a-propos', 'p.nav.apropos', carteAPropos]
+  ['a-propos', 'p.nav.apropos', carteAPropos],
 ];
 
 const sommaire = document.querySelector('.sommaire');
@@ -722,7 +1362,10 @@ export function plan(larges, n) {
     pris = 0;
   };
   larges.forEach((large, i) => {
-    if (large) { finirLigne(i - 1); return; }
+    if (large) {
+      finirLigne(i - 1);
+      return;
+    }
     if (pris === n) pris = 0;
     pris += 1;
     if (i === larges.length - 1 || larges[i + 1]) finirLigne(i);
@@ -733,12 +1376,17 @@ let dernierPlan = '';
 function ranger() {
   const liste = [...cartes.children].filter((c) => c.classList.contains('carte'));
   const n = colonnes();
-  const tailles = plan(liste.map((c) => c.classList.contains('large')), n);
+  const tailles = plan(
+    liste.map((c) => c.classList.contains('large')),
+    n,
+  );
   const cle = n + ':' + tailles.join(',');
   if (cle === dernierPlan) return;
   dernierPlan = cle;
   cartes.style.setProperty('--colonnes', String(n));
-  liste.forEach((c, i) => { c.style.gridColumn = `span ${tailles[i]}`; });
+  liste.forEach((c, i) => {
+    c.style.gridColumn = `span ${tailles[i]}`;
+  });
 }
 ranger();
 new ResizeObserver(() => ranger()).observe(cartes);
@@ -749,40 +1397,67 @@ function sectionCourante() {
   const seuil = defilement.getBoundingClientRect().top + 60;
   // La carte passée sous le haut de la fenêtre la plus basse ; sur une même ligne
   // de cartes, la première
-  let courant = liens[0], haut = -Infinity;
+  let courant = liens[0],
+    haut = -Infinity;
   for (const a of liens) {
     const el = document.getElementById(a.getAttribute('href').slice(1));
     const top = el ? el.getBoundingClientRect().top : Infinity;
-    if (top <= seuil && top > haut + 1) { courant = a; haut = top; }
+    if (top <= seuil && top > haut + 1) {
+      courant = a;
+      haut = top;
+    }
   }
   // En bas de page : la dernière section
   if (defilement.clientHeight + defilement.scrollTop >= defilement.scrollHeight - 4) courant = liens[liens.length - 1];
   for (const a of liens) {
     const actif = a === courant;
     a.classList.toggle('actif', actif);
-    if (actif) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current');
+    if (actif) a.setAttribute('aria-current', 'location');
+    else a.removeAttribute('aria-current');
   }
 }
 let attenteSection = false;
-defilement.addEventListener('scroll', () => {
-  if (attenteSection) return;
-  attenteSection = true;
-  requestAnimationFrame(() => { attenteSection = false; sectionCourante(); });
-}, { passive: true });
+defilement.addEventListener(
+  'scroll',
+  () => {
+    if (attenteSection) return;
+    attenteSection = true;
+    requestAnimationFrame(() => {
+      attenteSection = false;
+      sectionCourante();
+    });
+  },
+  { passive: true },
+);
 window.addEventListener('resize', sectionCourante);
 
 // Section demandée (lien de la documentation, notification…) : les cartes se
 // remplissent après coup (profils, synchronisation…), elle est donc gardée en haut
 // pendant un instant, sauf si l'utilisateur fait défiler lui-même
-let cible = null, finCible = 0;
+let cible = null,
+  finCible = 0;
 const montrer = () => cible && cible.scrollIntoView({ behavior: 'instant', block: 'start' });
 const aller = (section) => {
   const el = section && document.getElementById(section);
-  if (el) { cible = el; finCible = Date.now() + 2000; montrer(); }
+  if (el) {
+    cible = el;
+    finCible = Date.now() + 2000;
+    montrer();
+  }
   sectionCourante();
 };
-new ResizeObserver(() => { if (cible && Date.now() < finCible) montrer(); else cible = null; }).observe(cartes);
-for (const ev of ['wheel', 'keydown', 'pointerdown']) window.addEventListener(ev, () => { cible = null; }, { passive: true });
+new ResizeObserver(() => {
+  if (cible && Date.now() < finCible) montrer();
+  else cible = null;
+}).observe(cartes);
+for (const ev of ['wheel', 'keydown', 'pointerdown'])
+  window.addEventListener(
+    ev,
+    () => {
+      cible = null;
+    },
+    { passive: true },
+  );
 aller(location.hash.slice(1));
 api.surSection(aller);
 sectionCourante();

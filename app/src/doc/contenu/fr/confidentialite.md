@@ -6,13 +6,13 @@ Le travail (tentatives, TD, TP, suivi) et les paramètres restent sur le poste, 
 
 ## Ce qui sort du poste, et quand
 
-| Échange | Destination | Contenu |
-|---|---|---|
-| Catalogue et cours | GitHub (releases du dépôt public) | Téléchargement seulement |
-| Mises à jour | GitHub (releases du dépôt public) | Téléchargement seulement |
-| Claude | Anthropic, par Claude Code | Les questions, réponses et extraits de cours nécessaires à l’aide, la correction ou la génération |
-| Synchronisation | Le dépôt Git choisi | Les fichiers du périmètre de synchronisation |
-| Proposer un cours | GitHub, par l’utilisateur | L’archive des pages générées, jointe à la main |
+| Échange            | Destination                       | Contenu                                                                                           |
+| ------------------ | --------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Catalogue et cours | GitHub (releases du dépôt public) | Téléchargement seulement                                                                          |
+| Mises à jour       | GitHub (releases du dépôt public) | Téléchargement seulement                                                                          |
+| Claude             | Anthropic, par Claude Code        | Les questions, réponses et extraits de cours nécessaires à l’aide, la correction ou la génération |
+| Synchronisation    | Le dépôt Git choisi               | Les fichiers du périmètre de synchronisation                                                      |
+| Proposer un cours  | GitHub, par l’utilisateur         | L’archive des pages générées, jointe à la main                                                    |
 
 ## Identifiants et clés
 

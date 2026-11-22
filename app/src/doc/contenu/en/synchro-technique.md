@@ -11,22 +11,22 @@ Automatic sync (`app/src/synchro.js` and `synchro-git.js`) applies when the data
 
 ## Scope
 
-| Data folder | What is committed automatically |
-|---|---|
-| ula repository | Only the progress written by the application: `quiz_results/`, `td_results/`, `ula-lien.json`, `ula-profil.json` |
-| Other folder turned into a repository | Everything except `explore/`, `_outils/` and temporary files |
+| Data folder                           | What is committed automatically                                                                                  |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| ula repository                        | Only the progress written by the application: `quiz_results/`, `td_results/`, `ula-lien.json`, `ula-profil.json` |
+| Other folder turned into a repository | Everything except `explore/`, `_outils/` and temporary files                                                     |
 
 A file larger than 50 MB is never committed (it is reported in the Sync card).
 
 ## Conflicts
 
-| File | Resolution |
-|---|---|
-| `td_results/<page>.json` | Merged workshop by workshop, the most recent according to `maj` |
-| Quiz attempt | Most recently saved version |
-| `ula-lien.json`, `ula-profil.json` | Local version |
-| Other file, ula repository | Merge cancelled, to be done by hand (`git pull`) |
-| Other file, other folder | Local version kept, the other saved next to it (`name (conflit <date>).ext`) |
+| File                               | Resolution                                                                   |
+| ---------------------------------- | ---------------------------------------------------------------------------- |
+| `td_results/<page>.json`           | Merged workshop by workshop, the most recent according to `maj`              |
+| Quiz attempt                       | Most recently saved version                                                  |
+| `ula-lien.json`, `ula-profil.json` | Local version                                                                |
+| Other file, ula repository         | Merge cancelled, to be done by hand (`git pull`)                             |
+| Other file, other folder           | Local version kept, the other saved next to it (`name (conflit <date>).ext`) |
 
 A file deleted on one side and modified on the other is kept.
 
