@@ -29,7 +29,15 @@ const EXPLORE = 'explore';
 const DOSSIER_PAR_DEFAUT = 'Cours suivis';
 
 // Noms réservés à la racine (jamais des profils)
-const RESERVES = new Set(['explore', '_outils', 'app', 'node_modules', 'propositions']);
+const RESERVES = new Set([
+  'explore',
+  '_outils',
+  'app',
+  'node_modules',
+  'propositions',
+  'soumissions',
+  'soumissions-recues',
+]);
 // Dossiers de travail : jamais parcourus pour trouver des liens ou des sous-dossiers de cursus
 const TRAVAIL = new Set([
   'quiz_results',

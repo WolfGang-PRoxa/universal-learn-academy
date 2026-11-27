@@ -11,9 +11,10 @@
      { type: "quota", info }              utilisation de l'abonnement (fenêtres de 5 h et 7 jours)
    et se termine par un objet { texte, session, structure, duree, cout, modele }.
 
-   lancer() passe la demande à l'assistant choisi dans les réglages (« fournisseur ») :
-   Claude Code ici même, Codex CLI (lib/codex.js) ou Gemini CLI (lib/gemini.js), qui
-   prennent les mêmes options et émettent les mêmes événements. */
+   lancer() passe la demande à la première IA disponible dans l'ordre des préférences
+   (réglage « ordre ») : Claude Code ici même, Codex CLI (lib/codex.js) ou Gemini CLI
+   (lib/gemini.js), qui prennent les mêmes options et émettent les mêmes événements ;
+   si elle ne répond pas, la suivante prend le relais (événement « bascule »). */
 
 const fs = require('fs');
 const os = require('os');
@@ -306,9 +307,172 @@ function assistant(forcer) {
   };
 }
 
-function lancer(options) {
-  const m = module_(fournisseur());
-  return m ? m.lancer(options) : lancerClaude(options);
+/* IA préférées et bascule ------------------------------------------------------- */
+
+// État de connexion de Codex et de Gemini, gardé quelques secondes : `codex login
+// status` lance un processus, inutile de le refaire à chaque message.
+const DUREE_CACHE_COMPTE = 20 * 1000;
+const comptes = new Map();
+
+/** Ordre d'essai des IA : celui des réglages, l'IA imposée (options.fournisseur) en tête. */
+function ordre(impose) {
+  const r = reglages.lire();
+  const liste = (r.ordre && r.ordre.length ? r.ordre : [r.fournisseur || 'claude']).slice();
+  if (impose && NOMS[impose]) return [impose].concat(liste.filter((f) => f !== impose));
+  return liste;
 }
 
-module.exports = { trouver, lancer, lancerClaude, arreterArbre, assistant, trouverOutil, NOMS, OUTILS };
+/**
+ * Disponibilité d'une IA, vérifiée avant chaque appel : outil trouvé sur le poste et,
+ * pour Codex et Gemini, compte connecté (ou clé d'API). Renvoie { ok, raison }.
+ */
+async function disponible(f, forcer) {
+  const t = trouverOutil(f, forcer);
+  if (!t.executable) return { ok: false, raison: t.erreur || OUTILS[f] };
+  const m = module_(f);
+  if (!m) return { ok: true };
+  const cle = f === 'codex' ? process.env.CODEX_API_KEY || process.env.OPENAI_API_KEY : process.env.GEMINI_API_KEY;
+  if (cle) return { ok: true };
+  const c = comptes.get(f);
+  if (c && !forcer && Date.now() - c.date < DUREE_CACHE_COMPTE) return c.etat;
+  let etat;
+  try {
+    const compte = await m.compte();
+    etat =
+      compte && compte.connecte
+        ? { ok: true }
+        : { ok: false, raison: tr('compte non connecté', 'account not connected') };
+  } catch (e) {
+    etat = { ok: false, raison: e.message };
+  }
+  comptes.set(f, { date: Date.now(), etat });
+  return etat;
+}
+
+/** Les IA connectées sur ce poste, dans l'ordre des préférences : [{ fournisseur, nom, ok, raison }]. */
+async function connectees(forcer) {
+  const res = [];
+  for (const f of ordre())
+    res.push(Object.assign({ fournisseur: f, nom: NOMS[f], outil: OUTILS[f] }, await disponible(f, forcer)));
+  return res;
+}
+
+// Délai sans aucun signe de l'outil (même pas le modèle utilisé) au-delà duquel il est
+// tenu pour muet et l'IA suivante prend le relais
+const DELAI_SILENCE = 90 * 1000;
+
+/*
+  Lance la demande avec la première IA disponible dans l'ordre des préférences ; si elle
+  échoue avant d'avoir commencé sa réponse (outil absent, compte déconnecté, quota,
+  réseau, silence prolongé), la suivante prend le relais et un événement
+  { type: "bascule", de, vers, raison } est émis. Chaque appel repart du haut de la liste :
+  l'IA préférée reprend la main dès qu'elle répond de nouveau.
+
+  Options en plus de celles de lancerClaude :
+    fournisseur          IA à essayer en premier (choix explicite de l'utilisateur)
+    fournisseurSession   IA qui a tenu la conversation « session » jusque-là
+    messageSansReprise   message complet (contexte et historique) à envoyer à une autre
+                         IA, qui ne peut pas reprendre la session d'une autre
+    ecritureBloquante    true (génération) : pas de bascule une fois un fichier écrit
+  La promesse renvoie le résultat de l'outil, plus { fournisseur, bascules: [{ de, raison }] }.
+*/
+function lancer(options) {
+  // options.seul : l'IA choisie seulement, sans relais (analyses de l'administrateur)
+  const liste = options.seul && NOMS[options.fournisseur] ? [options.fournisseur] : ordre(options.fournisseur);
+  const emettre = (e) => options.surEvenement && options.surEvenement(e);
+  let courant = null;
+  let arrete = false;
+  const promesse = (async () => {
+    const bascules = [];
+    let precedente = null;
+    for (let i = 0; i < liste.length; i++) {
+      const f = liste[i];
+      if (arrete) throw new Error(tr('Demande annulée.', 'Request cancelled.'));
+      const d = await disponible(f);
+      if (!d.ok) {
+        bascules.push({ de: f, raison: d.raison });
+        if (!precedente) precedente = f;
+        continue;
+      }
+      if (bascules.length)
+        emettre({
+          type: 'bascule',
+          de: precedente || bascules[0].de,
+          vers: f,
+          raison: bascules[bascules.length - 1].raison,
+        });
+      const autre = options.reprendre && options.fournisseurSession && options.fournisseurSession !== f;
+      const opts = Object.assign(
+        {},
+        options,
+        autre ? { reprendre: false, message: options.messageSansReprise || options.message } : {},
+      );
+      let commence = false;
+      let silence = false;
+      let minuterie = null;
+      const surveiller = () => {
+        clearTimeout(minuterie);
+        minuterie = null;
+      };
+      opts.surEvenement = (e) => {
+        surveiller();
+        if (
+          options.ecritureBloquante
+            ? e.type === 'outil' && /^(Write|Edit|MultiEdit|write_file|replace|apply_patch)/i.test(e.nom || '')
+            : e.type === 'texte'
+        )
+          commence = true;
+        emettre(e);
+      };
+      const m = module_(f);
+      courant = m ? m.lancer(opts) : lancerClaude(opts);
+      minuterie = setTimeout(() => {
+        silence = true;
+        courant.arreter();
+      }, DELAI_SILENCE);
+      try {
+        const r = await courant.promesse;
+        surveiller();
+        return Object.assign(r, { fournisseur: f, bascules });
+      } catch (e) {
+        surveiller();
+        if (arrete || commence || i === liste.length - 1) throw e;
+        comptes.delete(f);
+        bascules.push({
+          de: f,
+          raison: silence
+            ? tr(`aucune réponse en ${DELAI_SILENCE / 1000} s`, `no response within ${DELAI_SILENCE / 1000} s`)
+            : String(e.message).slice(0, 300),
+        });
+        precedente = f;
+      }
+    }
+    const e = new Error(
+      tr('Aucune IA disponible : ', 'No AI available: ') +
+        bascules.map((b) => NOMS[b.de] + ' (' + b.raison + ')').join(' ; '),
+    );
+    e.bascules = bascules;
+    throw e;
+  })();
+  return {
+    promesse,
+    arreter() {
+      arrete = true;
+      if (courant) courant.arreter();
+    },
+  };
+}
+
+module.exports = {
+  trouver,
+  lancer,
+  lancerClaude,
+  arreterArbre,
+  assistant,
+  trouverOutil,
+  ordre,
+  disponible,
+  connectees,
+  NOMS,
+  OUTILS,
+};

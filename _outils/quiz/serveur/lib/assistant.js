@@ -88,11 +88,27 @@ function messageAide(demande) {
         m += '\n## Extrait du cours : ' + extrait.titre + ' · ' + extrait.section + '\n' + extrait.texte + '\n';
     }
     if (c.tentative) m += '\n## Tentative en cours\n' + c.tentative + '\n';
+    const h = texteHistorique(demande.historique);
+    if (h) m += '\n' + h;
     m += "\n# Demande de l'étudiant\n";
   } else if (c.question && demande.majContexte) {
     m += '(État mis à jour de la question)\n' + texteQuestion(c.question) + "\n# Demande de l'étudiant\n";
   }
   return m + String(demande.message || '').slice(0, 8000);
+}
+
+// Échanges précédents de la conversation, redonnés à une IA qui prend le relais d'une
+// autre (une session ne passe pas d'un outil à l'autre)
+function texteHistorique(historique) {
+  if (!Array.isArray(historique) || !historique.length) return '';
+  const lignes = historique
+    .filter((x) => x && (x.role === 'etudiant' || x.role === 'claude') && x.texte)
+    .slice(-20)
+    .map((x) => (x.role === 'etudiant' ? "### L'étudiant\n" : "### L'assistant\n") + String(x.texte).slice(0, 4000));
+  if (!lignes.length) return '';
+  return (
+    '## Conversation jusqu’ici (tenue par une autre IA, à poursuivre sans la répéter)\n\n' + lignes.join('\n\n') + '\n'
+  );
 }
 
 /* Aide : conversation reprenable ------------------------------------------------ */
@@ -106,6 +122,8 @@ function aide(demande, surEvenement) {
     message: messageAide(Object.assign({}, demande, { reprendre })),
     session,
     reprendre,
+    fournisseurSession: reprendre ? demande.fournisseur || null : null,
+    messageSansReprise: reprendre ? messageAide(Object.assign({}, demande, { reprendre: false })) : undefined,
     outils: 'Read,Grep,Glob',
     dossiers: [RACINE, OUTILS],
     cwd: dossierLocal('conversations'),

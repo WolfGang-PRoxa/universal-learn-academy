@@ -48,6 +48,10 @@ Où sont rangés les cours téléchargés et les espaces des profils : `%LOCALAP
 
 Synchronisation du dossier des données entre plusieurs PC, quand c’est un dépôt Git : voir [Synchronisation](page:synchronisation). [Ouvrir](parametres:synchro)
 
+## Soumissions reçues
+
+Seulement pour l’administrateur du catalogue : on y enregistre le jeton d’administration du service de soumission (gardé chiffré), puis les soumissions reçues se gèrent dans l’accueil. La carte apparaît en mode dépôt, quand un jeton est enregistré, ou après cinq clics sur la version dans À propos. Voir [Cours](page:cours). [Ouvrir](parametres:administration)
+
 ## À propos
 
 Versions, dossier des paramètres et dossier des journaux, redémarrage de l’application. [Ouvrir](parametres:a-propos)

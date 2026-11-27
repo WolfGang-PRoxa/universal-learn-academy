@@ -339,9 +339,28 @@
         session: conv.session || null,
         reprendre: Boolean(conv.session),
         majContexte: Boolean(conv.session) && conv.etatQuestion !== etatQuestion,
+        // IA qui a tenu la conversation, et ses échanges : si une autre IA prend le
+        // relais, le serveur lui redonne la conversation
+        fournisseur: conv.fournisseur || null,
+        historique: conv.session
+          ? conv.messages.slice(0, -1).map(function (x) {
+              return { role: x.role, texte: x.texte };
+            })
+          : [],
       },
       function (type, d) {
-        if (type === 'debut') modele = d.modele;
+        if (type === 'bascule') {
+          var bascule = T('claude.bascule', {
+            de: A.connexion.infosAssistant(d.de).nom,
+            vers: A.connexion.infosAssistant(d.vers).nom,
+          });
+          etat.textContent = bascule;
+          conv.messages.splice(conv.messages.length - 1, 0, {
+            role: 'note',
+            texte: bascule + ' (' + d.raison + ')',
+            date: new Date().toISOString(),
+          });
+        } else if (type === 'debut') modele = d.modele;
         else if (type === 'texte') {
           texteRecu += d.texte;
           etat.textContent = T('claude.ecrit');
@@ -355,6 +374,7 @@
     appel.promesse
       .then(function (fin) {
         conv.session = fin.session;
+        conv.fournisseur = fin.fournisseur || null;
         conv.etatQuestion = etatQuestion;
         conv.messages.push({
           role: 'claude',
@@ -387,6 +407,7 @@
     if (conv.messages.length && !window.confirm(T('claude.effacer'))) return;
     conv.messages.length = 0;
     conv.session = null;
+    conv.fournisseur = null;
     conv.etatQuestion = null;
     afficherFil();
     if (courant.surMaj) courant.surMaj();

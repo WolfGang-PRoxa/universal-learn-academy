@@ -21,6 +21,26 @@
      POST catalogue/supprimer { id }   supprime un cours téléchargé (le travail reste)
      POST proposer { chemin, infos }   archive d'un cours de l'espace + adresse de l'issue
      POST ouvrir { chemin }            ouvre un dossier de la racine dans l'explorateur
+     GET  soumissions                  soumissions du profil actif (« Mes soumissions »)
+     GET  soumissions/actives          celles que montre le cadre en bas à droite
+     GET  soumissions/apercu?chemin=   fiche et générations mesurées d'un cours (formulaire)
+     POST soumissions { chemin, infos, declare, pseudonyme, licence }  crée et vérifie
+     GET  soumissions/<id>             une soumission, avec son historique complet
+     POST soumissions/<id>/action { action }  reverifier, corriger-ia, annuler, vue, envoyer,
+                                       actualiser (état chez l'administrateur), exporter
+
+   Administration des soumissions reçues (installation de l'administrateur, avec le
+   jeton du service ; voir lib/admin.js) :
+     GET  admin/etat                   { configure, depot }
+     PUT  admin/jeton { jeton }        jeton gardé en mémoire (l'application le pose aussi
+                                       dans l'environnement au démarrage) ; jamais relu
+     GET  admin/soumissions?etat=      liste du service, avec l'état local (analyse, décision)
+     GET  admin/soumissions/<id>       détail : manifeste, historique, analyse
+     GET  admin/analyses               file des analyses en cours
+     POST admin/analyser { ids, fournisseur }   analyses par l'IA choisie, une à une
+     POST admin/soumissions/<id>/decision { decision, message, domaine, id, pack, remplacer }
+     POST admin/soumissions/<id>/bloquer { raison }
+     POST admin/soumissions/<id>/dossier       ouvre le dossier de l'archive téléchargée
 
    Tout ce qui s'écrit ici va dans l'espace du profil ; explore/ ne change que par
    le catalogue (installer, supprimer). Voir _outils/ula/README.md. */
@@ -30,6 +50,9 @@ const { spawn } = require('child_process');
 const espace = require('../lib/espace');
 const catalogue = require('../lib/catalogue');
 const proposition = require('../lib/proposition');
+const soumission = require('../lib/soumission');
+const envoi = require('../lib/envoi');
+const admin = require('../lib/admin');
 const { tr } = require('../../quiz/serveur/lib/langue');
 
 function etat(RACINE) {
@@ -155,6 +178,99 @@ async function appliquerCursus(RACINE, profil, id, telecharger) {
   };
 }
 
+// Les vérifications interrompues par l'arrêt du serveur deviennent suspendues, une fois
+let soumissionsReprises = false;
+
+async function routesSoumissions(route, m, RACINE, corps, ok, q) {
+  if (!soumissionsReprises) {
+    soumissionsReprises = true;
+    soumission.reprendreInterrompues(RACINE);
+  }
+  const duProfil = (s) => s.profil === espace.profilActif(RACINE);
+  if (route === 'soumissions' && m === 'GET') {
+    const liste = soumission.lister(RACINE).filter(duProfil);
+    envoi.actualiserAnciennes(RACINE, liste);
+    return ok({ soumissions: liste.map(soumission.publique), service: envoi.service() });
+  }
+  if (route === 'soumissions/actives' && m === 'GET')
+    return ok({ soumissions: soumission.actives(RACINE).filter(duProfil).map(soumission.publique) });
+  if (route === 'soumissions/apercu' && m === 'GET')
+    return ok(soumission.apercu(RACINE, profilRequis(RACINE), q.get('chemin') || ''));
+  if (route === 'soumissions' && m === 'POST') {
+    const b = await corps();
+    return ok(soumission.publique(soumission.creer(RACINE, profilRequis(RACINE), b, optionsSoumission(RACINE))));
+  }
+  const r = route.match(/^soumissions\/([0-9]{8}-[0-9]{6}-[0-9a-f]{6})(\/action)?$/);
+  if (!r) return false;
+  const s = soumission.lire(RACINE, r[1]);
+  if (!duProfil(s)) throw new Error(tr('Soumission inconnue.', 'Unknown submission.'));
+  if (!r[2] && m === 'GET') return ok(soumission.publique(s));
+  if (r[2] && m === 'POST') {
+    const b = await corps();
+    return ok(soumission.publique(await agirSoumission(RACINE, r[1], String(b.action || ''))));
+  }
+  return false;
+}
+
+// Une soumission vérifiée part aussitôt vers le service de soumission
+function optionsSoumission(RACINE) {
+  return { apresVerification: (s) => envoi.envoyer(RACINE, s.id).catch(() => {}) };
+}
+async function agirSoumission(RACINE, id, action) {
+  if (action === 'envoyer') {
+    envoi.envoyer(RACINE, id).catch(() => {});
+    await new Promise((r) => setTimeout(r, 50));
+    return soumission.lire(RACINE, id);
+  }
+  if (action === 'actualiser') return envoi.actualiser(RACINE, id);
+  if (action === 'exporter') {
+    const s = soumission.lire(RACINE, id);
+    ouvrirDossier(soumission.dossierDe(RACINE, id));
+    return s;
+  }
+  return soumission.agir(RACINE, id, action, optionsSoumission(RACINE));
+}
+
+async function routesAdmin(route, m, RACINE, corps, ok, q, res, o) {
+  const fs = require('fs');
+  if (route === 'etat' && m === 'GET')
+    return ok({
+      configure: admin.configure(),
+      depot: fs.existsSync(path.join(RACINE, 'app', 'scripts', 'accepter-proposition.mjs')),
+    });
+  if (route === 'jeton' && m === 'PUT') {
+    const b = await corps();
+    admin.definirJeton(b.jeton || '');
+    return ok({ configure: admin.configure() });
+  }
+  if (route === 'soumissions' && m === 'GET')
+    return ok({ soumissions: await admin.lister(RACINE, q.get('etat') || ''), service: envoi.service() });
+  if (route === 'analyses' && m === 'GET') return ok(admin.etatAnalyses());
+  if (route === 'analyser' && m === 'POST') {
+    const b = await corps();
+    return ok(admin.analyser(RACINE, (Array.isArray(b.ids) ? b.ids : []).map(String), String(b.fournisseur || '')));
+  }
+  const r = route.match(/^soumissions\/([0-9]{8}-[0-9a-f]{8})(?:\/(decision|bloquer|dossier))?$/);
+  if (!r) return false;
+  if (!r[2] && m === 'GET') return ok(await admin.detail(RACINE, r[1]));
+  if (m !== 'POST') return false;
+  const b = await corps();
+  if (r[2] === 'decision') {
+    try {
+      return ok(await admin.decider(RACINE, r[1], b));
+    } catch (e) {
+      return o.envoyerJson(res, 422, { erreur: e.message, problemes: e.detail || [] });
+    }
+  }
+  if (r[2] === 'bloquer') return ok(await admin.bloquer(RACINE, r[1], b.raison));
+  if (r[2] === 'dossier') {
+    await admin.telecharger(RACINE, r[1]);
+    ouvrirDossier(admin.dossierDe(RACINE, r[1]));
+    return ok({ ok: true });
+  }
+  return false;
+}
+
 async function api(route, req, res, o) {
   const { RACINE } = o.chemins;
   const m = req.method;
@@ -264,6 +380,18 @@ async function api(route, req, res, o) {
       } catch (e) {
         return o.envoyerJson(res, 422, { erreur: e.message, problemes: e.problemes || [] });
       }
+    }
+
+    if (route.startsWith('admin/')) {
+      const q = new URL(req.url, 'http://local').searchParams;
+      const r = await routesAdmin(route.slice(6), m, RACINE, corps, ok, q, res, o);
+      if (r !== false) return r;
+    }
+
+    if (route.startsWith('soumissions')) {
+      const q = new URL(req.url, 'http://local').searchParams;
+      const r = await routesSoumissions(route, m, RACINE, corps, ok, q);
+      if (r !== false) return r;
     }
 
     if (route === 'ouvrir' && m === 'POST') {

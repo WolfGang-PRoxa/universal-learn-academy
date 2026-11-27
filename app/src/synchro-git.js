@@ -42,7 +42,16 @@ const os = require('os');
 const path = require('path');
 
 // Dossiers de la racine jamais synchronisés par la synchro automatique
-const RESERVES = new Set(['explore', '_outils', 'app', 'node_modules', 'propositions', '.git']);
+const RESERVES = new Set([
+  'explore',
+  '_outils',
+  'app',
+  'node_modules',
+  'propositions',
+  'soumissions',
+  'soumissions-recues',
+  '.git',
+]);
 const GROS_FICHIER = 50 * 1024 * 1024; // GitHub refuse au-delà de 100 Mo
 
 /* -- Exécution de Git ------------------------------------------------------------- */

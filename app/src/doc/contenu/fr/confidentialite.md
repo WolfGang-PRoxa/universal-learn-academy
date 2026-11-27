@@ -28,7 +28,8 @@ Ni l’installeur, ni le catalogue, ni le dépôt public ne contiennent de donn�
 1. seuls les outils autorisés sont copiés dans l’installeur, avec un manifeste d’empreintes ;
 2. après l’empaquetage, tout le paquet est parcouru : un fichier personnel ou un fichier de cours fait échouer la construction ;
 3. la publication du catalogue et du dépôt public contrôle chaque fichier (règles, empreintes des fichiers de TP, adresse électronique) ;
-4. « Proposer ce cours » ne garde que les pages générées et refuse une archive qui contient une donnée personnelle ;
+4. « Soumettre ce cours » ne garde que les pages générées, refuse une archive qui contient une donnée personnelle, et n’envoie jamais le nom du profil, un chemin du poste ni une conversation avec l’IA ;
+   le service de soumission (`ula.romainpiau.dev`) reçoit seulement l’archive, le manifeste et une clé d’installation tirée au hasard ; l’adresse IP n’y est gardée que sous forme d’empreinte salée, le temps de limiter le débit ;
 5. `npm run check` vérifie que des paquets, archives et propositions piégés sont bien refusés.
 
 Les règles sont dans `_outils/ula/lib/regles.js`.

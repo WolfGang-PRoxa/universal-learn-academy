@@ -1,0 +1,246 @@
+/* Cadre de suivi des soumissions (cadre-soumission.html) : carte flottante, en bas à
+   droite, qui glisse depuis le bas. Mêmes couleurs que la charte des cours. */
+
+:root {
+  --fond: #ffffff;
+  --texte: #1f1d1a;
+  --texte-2: #5d5a54;
+  --bordure: #e3e0d8;
+  --accent: oklch(44% 0.14 68); /* ambre de l'accueil (charte, matière « licence ») */
+  --ok: #2f8a4c;
+  --alerte: #b7791f;
+  --echec: #c0392b;
+  --piste: #ecebe6;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='clair']) {
+    --fond: #1b1c20;
+    --texte: #e8e6e1;
+    --texte-2: #a9a59c;
+    --bordure: #2e3036;
+    --accent: oklch(76% 0.13 68);
+    --ok: #5cc27f;
+    --alerte: #e0a948;
+    --echec: #ef7466;
+    --piste: #2a2c31;
+  }
+}
+:root[data-theme='sombre'] {
+  --fond: #1b1c20;
+  --texte: #e8e6e1;
+  --texte-2: #a9a59c;
+  --bordure: #2e3036;
+  --accent: oklch(76% 0.13 68);
+  --ok: #5cc27f;
+  --alerte: #e0a948;
+  --echec: #ef7466;
+  --piste: #2a2c31;
+}
+
+html,
+body {
+  margin: 0;
+  background: transparent;
+  font:
+    14px/1.4 system-ui,
+    'Segoe UI',
+    sans-serif;
+  color: var(--texte);
+  overflow: hidden;
+}
+
+.cadre {
+  box-sizing: border-box;
+  position: fixed;
+  right: 8px;
+  bottom: 8px;
+  width: calc(100% - 16px);
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+  padding: 12px 14px 14px;
+  background: var(--fond);
+  border: 1px solid var(--bordure);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 18%);
+  transform: translateY(24px);
+  opacity: 0;
+  transition:
+    transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.2),
+    opacity 0.25s ease;
+}
+.cadre.visible {
+  transform: none;
+  opacity: 1;
+}
+
+.tete {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.tete h1 {
+  flex: 1;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.tete p {
+  margin: 2px 0 0;
+  color: var(--texte-2);
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.icone-bouton {
+  border: 0;
+  background: transparent;
+  color: var(--texte-2);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.icone-bouton:hover,
+.icone-bouton:focus-visible {
+  background: var(--piste);
+  color: var(--texte);
+}
+
+.progression {
+  height: 6px;
+  margin: 10px 0 8px;
+  border-radius: 3px;
+  background: var(--piste);
+  overflow: hidden;
+}
+.progression i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+.cadre[data-fin='suspendue'] .progression i {
+  background: var(--alerte);
+}
+.cadre[data-fin='ok'] .progression i {
+  background: var(--ok);
+}
+
+ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+li .etat {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--fond);
+  background: var(--piste);
+}
+li[data-etat='attente'] {
+  color: var(--texte-2);
+}
+li[data-etat='en_cours'] .etat {
+  background: transparent;
+  border: 2px solid var(--piste);
+  border-top-color: var(--accent);
+  box-sizing: border-box;
+  animation: tourne 0.8s linear infinite;
+}
+li[data-etat='ok'] .etat {
+  background: var(--ok);
+}
+li[data-etat='avertissement'] .etat {
+  background: var(--alerte);
+}
+li[data-etat='echec'] .etat {
+  background: var(--echec);
+}
+li[data-etat='non_faite'] .etat {
+  background: var(--texte-2);
+}
+@keyframes tourne {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.bilan {
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.actions button {
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--bordure);
+  background: transparent;
+  color: var(--texte);
+  cursor: pointer;
+}
+.actions button.principal {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--fond);
+}
+
+/* Réduit : une pastille */
+.cadre.reduit {
+  width: auto;
+  left: auto;
+  padding: 8px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.cadre.reduit .detail {
+  display: none;
+}
+.pastille {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.cadre.reduit .pastille {
+  display: flex;
+}
+.cadre.reduit .tete {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cadre,
+  .progression i {
+    transition: none;
+  }
+  li[data-etat='en_cours'] .etat {
+    animation-duration: 3s;
+  }
+}

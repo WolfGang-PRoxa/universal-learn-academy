@@ -35,6 +35,9 @@ const DEFAUT = {
   // Connexion à ChatGPT (Codex CLI) et à Gemini (Gemini CLI), même principe (ia.js)
   codex: { mode: 'compte', cle: '' },
   gemini: { mode: 'compte', cle: '' },
+  // Jeton d'administration du service de soumission (chiffré : « enc:… »), seulement
+  // dans l'installation de l'administrateur du catalogue (admin-soumissions.js)
+  admin: { jeton: '' },
   // Synchronisation automatique du dossier des données quand c'est un dépôt Git suivi
   // (synchro.js) : null tant que l'utilisateur n'a pas répondu à la proposition
   synchro: { auto: null },

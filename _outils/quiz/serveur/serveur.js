@@ -138,7 +138,14 @@ function relayer(res, session, appel) {
     fin() {
       appel.promesse
         .then((r) => {
-          envoyer('fin', { texte: r.texte, session: r.session || session, modele: r.modele, duree: r.duree });
+          envoyer('fin', {
+            texte: r.texte,
+            session: r.session || session,
+            modele: r.modele,
+            duree: r.duree,
+            fournisseur: r.fournisseur,
+            bascules: r.bascules,
+          });
         })
         .catch((e) => {
           envoyer('erreur', { message: e.message });
@@ -211,6 +218,10 @@ function estAccueil(chemin, abs) {
 function servirFichier(req, res, chemin) {
   let abs = depuisUrl(chemin);
   if (!abs) return erreur(res, 403, tr('Chemin refusé.', 'Path refused.'));
+  // Soumissions (archives) et soumissions reçues : jamais servies, pour qu'une page
+  // soumise ne tourne pas sur l'origine des routes d'administration
+  if (/^soumissions(-recues)?$/i.test(path.relative(RACINE, abs).split(path.sep)[0]))
+    return erreur(res, 403, tr('Chemin refusé.', 'Path refused.'));
   if (estAccueil(decodeURIComponent(chemin), abs) && fs.existsSync(ACCUEIL)) abs = ACCUEIL;
   let stat;
   try {
@@ -306,7 +317,7 @@ async function api(req, res, url) {
     if (m === 'PUT') {
       const r = reglages.modifier(await lireCorps(req));
       claude.trouver(true);
-      claude.trouverOutil(r.fournisseur, true);
+      for (const f of r.ordre) claude.trouverOutil(f, true);
       return envoyerJson(res, 200, r);
     }
   }
@@ -359,6 +370,10 @@ async function api(req, res, url) {
     }).promesse;
     return envoyerJson(res, 200, { ok: true, texte: r.texte, modele: r.modele, duree: Date.now() - debut });
   }
+
+  // IA connectées sur ce poste, dans l'ordre des préférences (carte « IA préférées »)
+  if (route === 'ia/connectees' && m === 'GET')
+    return envoyerJson(res, 200, { ia: await claude.connectees(q.get('forcer') === '1') });
 
   // Comptes de ChatGPT (Codex CLI) et de Gemini (Gemini CLI) : état, connexion dans un
   // terminal (chez l'éditeur de l'outil), déconnexion

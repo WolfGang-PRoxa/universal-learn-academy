@@ -63,6 +63,14 @@ contextBridge.exposeInMainWorld('studies', {
     etat: () => appeler('quiz:etat'),
     reglages: (r) => appeler('quiz:reglages', r),
     tester: (usage) => appeler('quiz:tester', usage),
+    ia: () => appeler('quiz:ia'),
+  },
+
+  // Soumissions reçues : jeton d'administration du service de soumission
+  admin: {
+    statut: () => appeler('admin:statut'),
+    enregistrerJeton: (valeur) => appeler('admin:jeton', valeur),
+    ouvrir: () => appeler('admin:ouvrir'),
   },
 
   maj: {

@@ -48,6 +48,10 @@ Where downloaded courses and profile spaces are stored: `%LOCALAPPDATA%\Universa
 
 Syncing the data folder between several computers, when it is a Git repository: see [Sync](page:synchronisation). [Open](parametres:synchro)
 
+## Received submissions
+
+Only for the catalogue administrator: the administration token of the submission service is saved here (kept encrypted), then received submissions are managed on the home page. The card appears in repository mode, when a token is saved, or after five clicks on the version in About. See [Courses](page:cours). [Open](parametres:administration)
+
 ## About
 
 Versions, settings folder and logs folder, restarting the application. [Open](parametres:a-propos)

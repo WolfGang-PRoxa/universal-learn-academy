@@ -48,11 +48,13 @@ module.exports = {
   'p.nav.claude': 'Claude',
   'p.nav.modeles': 'Modèles',
   'p.nav.assistant': 'Assistant IA',
+  'p.nav.preferees': 'IA préférées',
   'p.nav.chatgpt': 'ChatGPT',
   'p.nav.gemini': 'Gemini',
   'p.nav.profil': 'Profil',
   'p.nav.donnees': 'Données',
   'p.nav.synchro': 'Synchro',
+  'p.nav.admin': 'Soumissions reçues',
   'p.nav.apropos': 'À propos',
 
   'p.langue.titre': 'Langue',
@@ -241,6 +243,32 @@ module.exports = {
     'Connexion, modèle et effort pour chaque usage : cartes « Connexion à Claude » et « Modèles de Claude et exécution du code ».',
   'p.assistant.reglagesAutre':
     'Connexion et modèle : carte « Connexion à {nom} ». L’effort choisi pour chaque usage dans « Modèles de Claude et exécution du code » s’applique aussi à ChatGPT ; Gemini garde le sien.',
+
+  'p.admin.titre': 'Soumissions reçues',
+  'p.admin.description':
+    'Administration du catalogue : les cours soumis par les utilisateurs, à analyser puis accepter ou refuser.',
+  'p.admin.aide':
+    'Coller le jeton d’administration du service de soumission (le secret ADMIN_JETON du Worker). Il est essayé auprès du service, puis gardé chiffré sur ce poste.',
+  'p.admin.exemple': 'Jeton d’administration',
+  'p.admin.enregistrer': 'Enregistrer',
+  'p.admin.retirer': 'Retirer le jeton',
+  'p.admin.ouvrir': 'Ouvrir les soumissions reçues',
+  'p.admin.actif': 'Jeton enregistré : les soumissions reçues de {service} se gèrent dans l’accueil.',
+  'p.admin.enregistre': 'Jeton enregistré.',
+  'p.admin.retire': 'Jeton retiré.',
+  'p.admin.refuse': 'Jeton refusé par le service de soumission.',
+  'p.admin.injoignable': 'Service de soumission injoignable : vérifier la connexion.',
+  'p.admin.statut': 'Le service de soumission a répondu {statut}.',
+  'p.preferees.titre': 'IA préférées',
+  'p.preferees.description':
+    'Ordre dans lequel les quiz font appel à vos IA connectées. Si la première ne répond pas, la suivante prend le relais.',
+  'p.preferees.aide':
+    'Faites glisser les blocs, ou utilisez ↑ et ↓. À chaque nouvelle demande, l’application vérifie les IA dans cet ordre et reprend la première disponible, même si une autre a pris le relais la fois précédente.',
+  'p.preferees.principale': 'IA principale',
+  'p.preferees.relais': 'Relais n° {n}',
+  'p.preferees.monter': 'Monter {nom}',
+  'p.preferees.descendre': 'Descendre {nom}',
+  'p.preferees.note': '{nom} passe en premier.',
 
   'p.ia.installer': 'Installer {outil}',
   'p.ia.connecte': '{outil} est connecté.',

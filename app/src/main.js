@@ -38,6 +38,7 @@ const majs = require('./mises-a-jour');
 const raccourcis = require('./raccourcis');
 const claude = require('./claude');
 const ia = require('./ia');
+const adminSoumissions = require('./admin-soumissions');
 const donnees = require('./donnees');
 const deplacement = require('./deplacement');
 const diagnostic = require('./diagnostic');
@@ -638,6 +639,18 @@ function enregistrerIpc() {
   traiter('quiz:etat', () => apiQuiz('GET', 'etat?forcer=1'));
   traiter('quiz:reglages', (r) => apiQuiz('PUT', 'reglages', r));
   traiter('quiz:tester', (usage) => apiQuiz('POST', 'claude/test', { usage: String(usage) }));
+  traiter('quiz:ia', () => apiQuiz('GET', 'ia/connectees?forcer=1'));
+
+  // Soumissions reçues (installation de l'administrateur du catalogue)
+  traiter('admin:statut', () => adminSoumissions.statut());
+  traiter('admin:jeton', (valeur) => adminSoumissions.enregistrer(valeur, apiQuiz));
+  traiter('admin:ouvrir', () => {
+    const f = integres.fenetre();
+    integres.fermer();
+    if (!f || f.isDestroyed()) return false;
+    require(path.join(outils, 'app', 'fenetres.js')).allerA(f, 'index.html#administration');
+    return true;
+  });
 
   // Synchronisation du dossier des données (dépôt Git suivi)
   traiter('synchro:statut', () => synchro.statut());
@@ -754,6 +767,7 @@ async function demarrer() {
   installerPglite();
   claude.appliquer();
   ia.appliquer();
+  adminSoumissions.appliquer();
   nettoyerAnciensRaccourcis();
 
   // Les pages reconnaissent l'application installée à son agent utilisateur et ajoutent

@@ -43,11 +43,13 @@ module.exports = {
   'p.nav.claude': 'Claude',
   'p.nav.modeles': 'Models',
   'p.nav.assistant': 'AI assistant',
+  'p.nav.preferees': 'Preferred AIs',
   'p.nav.chatgpt': 'ChatGPT',
   'p.nav.gemini': 'Gemini',
   'p.nav.profil': 'Profile',
   'p.nav.donnees': 'Data',
   'p.nav.synchro': 'Sync',
+  'p.nav.admin': 'Received submissions',
   'p.nav.apropos': 'About',
 
   'p.langue.titre': 'Language',
@@ -232,6 +234,31 @@ module.exports = {
     'Sign-in, model and effort for each use: “Connection to Claude” and “Claude models and code execution” cards.',
   'p.assistant.reglagesAutre':
     'Sign-in and model: “Connection to {nom}” card. The effort chosen for each use in “Claude models and code execution” also applies to ChatGPT; Gemini keeps its own.',
+
+  'p.admin.titre': 'Received submissions',
+  'p.admin.description': 'Catalogue administration: courses submitted by users, to review then accept or refuse.',
+  'p.admin.aide':
+    'Paste the administration token of the submission service (the Worker’s ADMIN_JETON secret). It is tried against the service, then kept encrypted on this computer.',
+  'p.admin.exemple': 'Administration token',
+  'p.admin.enregistrer': 'Save',
+  'p.admin.retirer': 'Remove the token',
+  'p.admin.ouvrir': 'Open received submissions',
+  'p.admin.actif': 'Token saved: submissions received from {service} are managed on the home page.',
+  'p.admin.enregistre': 'Token saved.',
+  'p.admin.retire': 'Token removed.',
+  'p.admin.refuse': 'Token refused by the submission service.',
+  'p.admin.injoignable': 'Submission service unreachable: check the connection.',
+  'p.admin.statut': 'The submission service answered {statut}.',
+  'p.preferees.titre': 'Preferred AIs',
+  'p.preferees.description':
+    'Order in which quizzes call your connected AIs. If the first one does not respond, the next one takes over.',
+  'p.preferees.aide':
+    'Drag the blocks, or use ↑ and ↓. On every new request, the app checks the AIs in this order and goes back to the first available one, even if another took over last time.',
+  'p.preferees.principale': 'Main AI',
+  'p.preferees.relais': 'Fallback {n}',
+  'p.preferees.monter': 'Move {nom} up',
+  'p.preferees.descendre': 'Move {nom} down',
+  'p.preferees.note': '{nom} now comes first.',
 
   'p.ia.installer': 'Install {outil}',
   'p.ia.connecte': '{outil} is signed in.',

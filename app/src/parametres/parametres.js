@@ -854,6 +854,130 @@ function carteAssistant() {
   return carte('assistant', 'bulle', t('p.assistant.titre'), t('p.assistant.description'), zone);
 }
 
+/* -- IA préférées : ordre d'essai des IA connectées, avec bascule automatique ---------- */
+
+// Visible seulement quand au moins deux IA sont connectées : avec une seule, il n'y a
+// rien à ordonner. L'ordre se règle en faisant glisser les blocs, ou au clavier avec
+// les boutons ↑ et ↓ de chaque bloc. Les IA non connectées gardent leur place à la
+// fin de la liste enregistrée (elles reprennent leur rang si on les reconnecte).
+function carteIaPreferees() {
+  const liste = h('ol', { class: 'ia-ordre', 'aria-label': t('p.preferees.titre') });
+  const zone = h('div', { class: 'pile' }, liste, h('p', { class: 'aide' }, t('p.preferees.aide')));
+  const c = carte('preferees', 'bulle', t('p.preferees.titre'), t('p.preferees.description'), zone);
+  c.hidden = true;
+  let ordre = [];
+  let connectees = [];
+
+  const afficher = (visible) => {
+    c.hidden = !visible;
+    const lien = document.querySelector('.sommaire a[href="#preferees"]');
+    if (lien) lien.hidden = !visible;
+    document.dispatchEvent(new Event('cartes:changement'));
+  };
+
+  async function enregistrer(nouvel) {
+    const autres = ordre.filter((f) => !nouvel.includes(f));
+    ordre = nouvel.concat(autres);
+    peindre();
+    try {
+      await api.quiz.reglages({ ordre });
+      note(t('p.preferees.note', { nom: t('p.assistant.nom.' + nouvel[0]) }));
+    } catch (err) {
+      note(messageErreur(err), { erreur: true });
+      charger();
+    }
+  }
+
+  function deplacer(f, sens) {
+    const l = connectees.slice();
+    const i = l.indexOf(f);
+    const j = i + sens;
+    if (i < 0 || j < 0 || j >= l.length) return;
+    [l[i], l[j]] = [l[j], l[i]];
+    enregistrer(l).then(() =>
+      liste.querySelector(`[data-ia="${f}"] .ia-${sens < 0 ? 'monter' : 'descendre'}`)?.focus(),
+    );
+  }
+
+  let glisse = null;
+  function peindre() {
+    connectees = ordre.filter((f) => connectees.includes(f));
+    liste.replaceChildren(
+      ...connectees.map((f, i) =>
+        h(
+          'li',
+          {
+            class: 'ia-bloc',
+            draggable: 'true',
+            dataset: { ia: f },
+            onDragstart: (e) => {
+              glisse = f;
+              e.dataTransfer.effectAllowed = 'move';
+              e.currentTarget.classList.add('glisse');
+            },
+            onDragend: (e) => {
+              glisse = null;
+              e.currentTarget.classList.remove('glisse');
+              for (const x of liste.children) x.classList.remove('cible');
+            },
+            onDragover: (e) => {
+              if (!glisse || glisse === f) return;
+              e.preventDefault();
+              e.currentTarget.classList.add('cible');
+            },
+            onDragleave: (e) => e.currentTarget.classList.remove('cible'),
+            onDrop: (e) => {
+              e.preventDefault();
+              if (!glisse || glisse === f) return;
+              const l = connectees.filter((x) => x !== glisse);
+              l.splice(l.indexOf(f) + (connectees.indexOf(glisse) < connectees.indexOf(f) ? 1 : 0), 0, glisse);
+              enregistrer(l);
+            },
+          },
+          h('span', { class: 'ia-rang', 'aria-hidden': 'true' }, String(i + 1)),
+          h(
+            'span',
+            { class: 'ia-nom' },
+            h('strong', {}, t('p.assistant.nom.' + f)),
+            h('span', {}, i === 0 ? t('p.preferees.principale') : t('p.preferees.relais', { n: i })),
+          ),
+          h(
+            'span',
+            { class: 'ia-actions' },
+            bouton('↑', {
+              genre: 'leger ia-monter',
+              titre: t('p.preferees.monter', { nom: t('p.assistant.nom.' + f) }),
+              desactive: i === 0,
+              onClick: () => deplacer(f, -1),
+            }),
+            bouton('↓', {
+              genre: 'leger ia-descendre',
+              titre: t('p.preferees.descendre', { nom: t('p.assistant.nom.' + f) }),
+              desactive: i === connectees.length - 1,
+              onClick: () => deplacer(f, 1),
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+
+  async function charger() {
+    try {
+      const [e, r] = await Promise.all([api.quiz.etat(), api.quiz.ia()]);
+      ordre = (e.reglages && e.reglages.ordre) || ASSISTANTS.slice();
+      connectees = r.ia.filter((x) => x.ok).map((x) => x.fournisseur);
+      peindre();
+      afficher(connectees.length >= 2);
+    } catch {
+      afficher(false);
+    }
+  }
+
+  charger();
+  return c;
+}
+
 /* -- Connexion à ChatGPT (Codex CLI) et à Gemini (Gemini CLI), comme pour Claude ------- */
 
 function carteFournisseur(f) {
@@ -1605,6 +1729,19 @@ function carteSynchro() {
 
 /* -- À propos ------------------------------------------------------------------------- */
 
+// Cinq clics sur la version révèlent la carte des soumissions reçues
+let clicsVersion = 0;
+let minuterieClics = null;
+function compterClics() {
+  clicsVersion++;
+  clearTimeout(minuterieClics);
+  minuterieClics = setTimeout(() => (clicsVersion = 0), 1500);
+  if (clicsVersion >= 5) {
+    clicsVersion = 0;
+    document.dispatchEvent(new Event('admin:reveler'));
+  }
+}
+
 function carteAPropos() {
   return carte(
     'a-propos',
@@ -1613,7 +1750,7 @@ function carteAPropos() {
     null,
     h(
       'p',
-      {},
+      { onClick: compterClics },
       t(info.installee ? 'p.apropos.versionInstallee' : 'p.apropos.versionDev', {
         version: info.version,
         electron: info.electron,
@@ -1631,6 +1768,94 @@ function carteAPropos() {
       bouton(t('p.apropos.redemarrer'), { genre: 'leger', onClick: () => api.redemarrer() }),
     ),
   );
+}
+
+/* -- Soumissions reçues (administrateur du catalogue) ---------------------------------- */
+
+// Carte visible en mode dépôt, quand un jeton est enregistré, ou après cinq clics sur la
+// version (carte « À propos ») : les autres utilisateurs n'en ont pas l'usage
+const CLE_ADMIN_VISIBLE = 'ula-parametres-admin';
+function carteAdministration() {
+  const zone = h('div', { class: 'pile' });
+  const c = carte('administration', 'livre', t('p.admin.titre'), t('p.admin.description'), zone);
+  const saisie = h('input', {
+    class: 'saisie',
+    type: 'password',
+    placeholder: t('p.admin.exemple'),
+    autocomplete: 'off',
+    spellcheck: false,
+  });
+  let statut = { configure: false };
+  let revele = false;
+  try {
+    revele = localStorage.getItem(CLE_ADMIN_VISIBLE) === '1';
+  } catch {
+    /* stockage indisponible */
+  }
+  const afficher = () => {
+    const visible = statut.configure || info.modeDonnees === 'depot' || revele;
+    c.hidden = !visible;
+    const lien = document.querySelector('.sommaire a[href="#administration"]');
+    if (lien) lien.hidden = !visible;
+    document.dispatchEvent(new Event('cartes:changement'));
+  };
+  async function enregistrer(valeur) {
+    try {
+      const r = await api.admin.enregistrerJeton(valeur);
+      note(t(r.supprime ? 'p.admin.retire' : 'p.admin.enregistre'));
+      saisie.value = '';
+      await actualiser();
+    } catch (e) {
+      note(e.message, { erreur: true, duree: 6000 });
+    }
+  }
+  function peindre() {
+    const blocs = [];
+    if (statut.configure) {
+      blocs.push(
+        etat('ok', t('p.admin.actif', { service: statut.service })),
+        h(
+          'div',
+          { class: 'ligne' },
+          bouton(t('p.admin.ouvrir'), { genre: 'principal', onClick: () => api.admin.ouvrir() }),
+          bouton(t('p.admin.retirer'), { genre: 'leger', onClick: () => enregistrer('') }),
+        ),
+      );
+    } else {
+      blocs.push(
+        h('p', { class: 'aide' }, t('p.admin.aide')),
+        h(
+          'div',
+          { class: 'ligne' },
+          saisie,
+          bouton(t('p.admin.enregistrer'), { genre: 'principal', onClick: () => enregistrer(saisie.value) }),
+        ),
+      );
+    }
+    zone.replaceChildren(...blocs);
+  }
+  async function actualiser() {
+    try {
+      statut = await api.admin.statut();
+    } catch {
+      statut = { configure: false };
+    }
+    peindre();
+    afficher();
+  }
+  c.hidden = true;
+  document.addEventListener('admin:reveler', () => {
+    revele = true;
+    try {
+      localStorage.setItem(CLE_ADMIN_VISIBLE, '1');
+    } catch {
+      /* stockage indisponible */
+    }
+    afficher();
+    c.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+  actualiser();
+  return c;
 }
 
 /* -- Redémarrage ---------------------------------------------------------------------- */
@@ -1672,6 +1897,7 @@ const SECTIONS = [
   ['fenetre', 'p.nav.fenetre', carteFenetre],
   ['raccourcis', 'p.nav.raccourcis', carteRaccourcis],
   ['assistant', 'p.nav.assistant', carteAssistant],
+  ['preferees', 'p.nav.preferees', carteIaPreferees],
   ['claude', 'p.nav.claude', carteClaude],
   ['claude-modeles', 'p.nav.modeles', carteModeles],
   ['chatgpt', 'p.nav.chatgpt', () => carteFournisseur('codex')],
@@ -1679,6 +1905,7 @@ const SECTIONS = [
   ['profil', 'p.nav.profil', carteProfils],
   ['donnees', 'p.nav.donnees', carteDonnees],
   ['synchro', 'p.nav.synchro', carteSynchro],
+  ['administration', 'p.nav.admin', carteAdministration],
   ['a-propos', 'p.nav.apropos', carteAPropos],
 ];
 
@@ -1724,7 +1951,7 @@ export function plan(larges, n) {
 }
 let dernierPlan = '';
 function ranger() {
-  const liste = [...cartes.children].filter((c) => c.classList.contains('carte'));
+  const liste = [...cartes.children].filter((c) => c.classList.contains('carte') && !c.hidden);
   const n = colonnes();
   const tailles = plan(
     liste.map((c) => c.classList.contains('large')),
@@ -1740,6 +1967,11 @@ function ranger() {
 }
 ranger();
 new ResizeObserver(() => ranger()).observe(cartes);
+// Carte affichée ou masquée après coup (IA préférées)
+document.addEventListener('cartes:changement', () => {
+  dernierPlan = '';
+  ranger();
+});
 
 /* Navigation : sur le côté dès 860 px de panneau, section courante surlignée */
 const liens = [...document.querySelectorAll('.sommaire a')];

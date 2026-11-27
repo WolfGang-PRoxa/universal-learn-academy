@@ -218,6 +218,15 @@
           if (m.id) progression[m.id] = m;
         });
         rendre();
+        if (etat.profil && !domaineSeul)
+          chargerSoumissions().then(function () {
+            if (
+              soumissions.some(function (x) {
+                return x.cadre;
+              })
+            )
+              montrerCadre();
+          });
         api('GET', 'ula/catalogue/travail')
           .then(function (t) {
             if (t.actif) suivreTravail();
@@ -257,7 +266,13 @@
       return;
     }
     main.appendChild(sectionProfils());
-    if (etat.profil) main.appendChild(sectionCursus());
+    if (etat.profil) {
+      main.appendChild(sectionCursus());
+      var so = sectionSoumissions();
+      if (so) main.appendChild(so);
+    }
+    // Soumissions reçues : seulement chez l'administrateur du catalogue (admin-soumissions.js)
+    if (window.ULA_ADMIN) window.ULA_ADMIN.rendre(main);
     main.appendChild(sectionCours(null));
     main.appendChild(sectionCatalogue());
     main.appendChild(sectionOutils());
@@ -547,8 +562,8 @@
     }
     if (n.type === 'perso')
       b.push(
-        bouton(T('cursus.proposer'), null, function () {
-          return proposer(n);
+        bouton(T('cursus.soumettre'), null, function () {
+          return soumettre(n);
         }),
       );
     b.push(
@@ -783,6 +798,7 @@
 
   function sectionCursus() {
     var s = el('section');
+    s.id = 'cursus-section';
     s.appendChild(el('h2', null, T('cursus.titre')));
     var a = cursus.arbre;
     if (!a || !a.enfants.length) {
@@ -909,43 +925,411 @@
     });
   }
 
-  function proposer(n) {
-    return demander({
-      titre: T('proposer.titre', { nom: n.nom }),
-      texte: T('proposer.texte'),
-      champs: [
-        { nom: 'titre', libelle: T('proposer.titreCours'), valeur: n.nom },
-        {
-          nom: 'domaine',
-          libelle: T('proposer.domaine'),
-          choix: DOMAINES.map(function (k) {
-            return { valeur: k, texte: nomDomaine(k) };
-          }),
-        },
-        { nom: 'niveau', libelle: T('proposer.niveau') },
-        { nom: 'origine', libelle: T('proposer.origine') },
-        { nom: 'description', libelle: T('proposer.description'), long: true },
-      ],
-      ok: T('proposer.preparer'),
-    }).then(function (r) {
-      if (!r) return;
-      return api('POST', 'ula/proposer', { chemin: n.chemin, infos: r }).then(function (p) {
-        var texte =
-          T('proposer.prete', { archive: p.archive, n: p.fichiers }) +
-          (p.avertissements.length
-            ? '\n\n' + T('proposer.verifier') + '\n- ' + p.avertissements.slice(0, 10).join('\n- ')
-            : '') +
-          '\n\n' +
-          T('proposer.github');
-        return demander({ titre: T('proposer.preteTitre'), texte: texte, ok: T('proposer.ouvrirGithub') }).then(
-          function (ok) {
-            api('POST', 'ula/ouvrir', { chemin: 'propositions' }).catch(function () {});
-            if (ok) window.open(p.url, '_blank', 'noopener');
+  /* -- Soumissions de cours (« Soumettre ce cours », « Mes soumissions ») --------------- */
+
+  var soumissions = [];
+  var ACTIFS = { verification: 1, correction: 1, envoi: 1 };
+  var OUTILS_IA = ['', 'Claude', 'ChatGPT', 'Gemini', 'other'];
+
+  function duree(ms) {
+    if (ms == null) return '';
+    var m = Math.round(ms / 60000);
+    return m < 1
+      ? Math.max(1, Math.round(ms / 1000)) + ' s'
+      : m < 60
+        ? m + ' min'
+        : Math.floor(m / 60) + ' h ' + (m % 60) + ' min';
+  }
+  function dateHeure(iso) {
+    try {
+      return new Date(iso).toLocaleString(locale(), { dateStyle: 'medium', timeStyle: 'short' });
+    } catch (e) {
+      return iso;
+    }
+  }
+
+  function resumeGenerations(g, court) {
+    if (!g.length) return T(court ? 'soumettre.aucuneMesureCourt' : 'soumettre.aucuneMesure');
+    var ia = {};
+    var total = 0;
+    g.forEach(function (x) {
+      var cle = (x.fournisseur || '?') + (x.modele ? ' · ' + x.modele : '') + (x.effort ? ' · ' + x.effort : '');
+      ia[cle] = (ia[cle] || 0) + 1;
+      total += x.dureeMs || 0;
+    });
+    return T(court ? 'soumettre.mesuresCourt' : 'soumettre.mesures', {
+      n: g.length,
+      ia: Object.keys(ia)
+        .map(function (k) {
+          return k + ' (' + ia[k] + ')';
+        })
+        .join(', '),
+      duree: duree(total),
+    });
+  }
+
+  function soumettre(n) {
+    return api('GET', 'ula/soumissions/apercu?chemin=' + encodeURIComponent(n.chemin)).then(function (a) {
+      var f = a.fiche || {};
+      return demander({
+        titre: T('soumettre.titre', { nom: n.nom }),
+        texte: T('soumettre.texte') + '\n\n' + resumeGenerations(a.generations || []),
+        champs: [
+          { nom: 'titre', libelle: T('proposer.titreCours'), valeur: f.titre || n.nom },
+          {
+            nom: 'domaine',
+            libelle: T('proposer.domaine'),
+            valeur: f.domaine,
+            choix: DOMAINES.map(function (k) {
+              return { valeur: k, texte: nomDomaine(k) };
+            }),
           },
-        );
+          { nom: 'niveau', libelle: T('proposer.niveau'), valeur: f.niveau },
+          { nom: 'origine', libelle: T('proposer.origine'), valeur: f.origine },
+          { nom: 'description', libelle: T('proposer.description'), valeur: f.description, long: true },
+          {
+            nom: 'outil',
+            libelle: T('soumettre.outil'),
+            choix: OUTILS_IA.map(function (k) {
+              return {
+                valeur: k,
+                texte: k === '' ? T('soumettre.outilAucun') : k === 'other' ? T('soumettre.outilAutre') : k,
+              };
+            }),
+          },
+          { nom: 'modele', libelle: T('soumettre.modele') },
+          { nom: 'effort', libelle: T('soumettre.effort') },
+          { nom: 'duree', libelle: T('soumettre.duree') },
+          { nom: 'ressources', libelle: T('soumettre.ressources'), long: true },
+          { nom: 'notes', libelle: T('soumettre.notes'), long: true },
+          { nom: 'pseudonyme', libelle: T('soumettre.pseudonyme') },
+          { nom: 'licence', libelle: T('soumettre.licence'), case: true, valeur: false },
+        ],
+        ok: T('soumettre.verifier'),
+      }).then(function (r) {
+        if (!r) return;
+        return api('POST', 'ula/soumissions', {
+          chemin: n.chemin,
+          infos: {
+            titre: r.titre,
+            domaine: r.domaine,
+            niveau: r.niveau,
+            origine: r.origine,
+            description: r.description,
+          },
+          declare: {
+            outil: r.outil,
+            modele: r.modele,
+            effort: r.effort,
+            duree: r.duree,
+            ressources: r.ressources,
+            notes: r.notes,
+          },
+          pseudonyme: r.pseudonyme,
+          licence: r.licence === true,
+        }).then(function () {
+          montrerCadre();
+          return chargerSoumissions();
+        });
       });
     });
   }
+
+  function chargerSoumissions() {
+    return api('GET', 'ula/soumissions')
+      .then(function (r) {
+        soumissions = r.soumissions || [];
+        var ancienne = document.getElementById('soumissions');
+        var nouvelle = sectionSoumissions();
+        if (ancienne && nouvelle) ancienne.replaceWith(nouvelle);
+        else if (ancienne) ancienne.remove();
+        else if (nouvelle) {
+          var apres = document.getElementById('cursus-section');
+          if (apres && apres.nextSibling) main.insertBefore(nouvelle, apres.nextSibling);
+          else main.appendChild(nouvelle);
+        }
+        ouvrirDepuisAncre();
+        suivreSoumissions();
+      })
+      .catch(function () {});
+  }
+
+  var suiviSoumissions = null;
+  function suivreSoumissions() {
+    clearTimeout(suiviSoumissions);
+    if (
+      soumissions.some(function (x) {
+        return ACTIFS[x.etat];
+      })
+    )
+      suiviSoumissions = setTimeout(chargerSoumissions, 1500);
+  }
+
+  function agirSoumission(id, action) {
+    return api('POST', 'ula/soumissions/' + id + '/action', { action: action }).then(function () {
+      montrerCadre();
+      return chargerSoumissions();
+    });
+  }
+
+  function sectionSoumissions() {
+    if (!soumissions.length) return null;
+    var s = el('section');
+    s.id = 'soumissions';
+    s.appendChild(el('h2', null, T('soumissions.titre')));
+    s.appendChild(el('p', 'ula-note', T('soumissions.aide')));
+    soumissions.forEach(function (x) {
+      s.appendChild(carteSoumission(x));
+    });
+    return s;
+  }
+
+  function carteSoumission(x) {
+    var d = el('details', 'ula-soumission');
+    d.id = 'soumission-' + x.id;
+    d.dataset.etat = x.etat;
+    if (ouvertes[x.id] || ACTIFS[x.etat] || x.etat === 'suspendue' || x.cadre) d.open = true;
+    d.addEventListener('toggle', function () {
+      ouvertes[x.id] = d.open;
+    });
+    var sum = el('summary');
+    sum.appendChild(el('span', 'ula-soumission-titre', x.fiche.titre));
+    sum.appendChild(el('span', 'ula-etat ula-etat-' + x.etat, T('etatSoumission.' + x.etat)));
+    sum.appendChild(el('span', 'ula-note', dateHeure(x.cree)));
+    d.appendChild(sum);
+
+    // Suspendue : les trois choix
+    if (x.etat === 'suspendue' && x.suspension) {
+      var b = el('div', 'ula-suspension');
+      b.appendChild(
+        el('p', null, T(x.suspension.raison === 'python' ? 'soumissions.python' : 'soumissions.suspendue')),
+      );
+      var ul = el('ul');
+      x.suspension.problemes.slice(0, 15).forEach(function (p) {
+        ul.appendChild(el('li', null, p));
+      });
+      if (x.suspension.problemes.length > 15)
+        ul.appendChild(el('li', null, T('soumissions.etAutres', { n: x.suspension.problemes.length - 15 })));
+      b.appendChild(ul);
+      var actions = el('div', 'ula-actions');
+      if (x.suspension.raison === 'python') {
+        var py = lien(T('soumissions.installerPython'), 'https://www.python.org/downloads/', 'ula-bouton principal');
+        py.target = '_blank';
+        py.rel = 'noopener';
+        actions.appendChild(py);
+      } else
+        actions.appendChild(
+          bouton(T('soumissions.corrigerIa'), 'principal', function () {
+            return agirSoumission(x.id, 'corriger-ia');
+          }),
+        );
+      actions.appendChild(
+        bouton(T('soumissions.reverifier'), null, function () {
+          return agirSoumission(x.id, 'reverifier');
+        }),
+      );
+      actions.appendChild(
+        bouton(T('soumissions.annuler'), null, function () {
+          return demander({
+            titre: T('soumissions.annulerTitre'),
+            texte: T('soumissions.annulerTexte'),
+            ok: T('soumissions.annuler'),
+          }).then(function (ok) {
+            if (ok) return agirSoumission(x.id, 'annuler');
+          });
+        }),
+      );
+      b.appendChild(actions);
+      d.appendChild(b);
+    }
+    if (x.etat === 'prete') {
+      var pr = el('div', x.erreurEnvoi ? 'ula-suspension' : null);
+      pr.appendChild(
+        el(
+          'p',
+          x.erreurEnvoi ? null : 'ula-note',
+          x.erreurEnvoi ? T('soumissions.erreurEnvoi', { erreur: x.erreurEnvoi }) : T('soumissions.prete'),
+        ),
+      );
+      var ap = el('div', 'ula-actions');
+      if (x.erreurEnvoi) {
+        ap.appendChild(
+          bouton(T('soumissions.reessayer'), 'principal', function () {
+            return agirSoumission(x.id, 'envoyer');
+          }),
+        );
+        ap.appendChild(
+          bouton(T('soumissions.exporter'), null, function () {
+            return agirSoumission(x.id, 'exporter');
+          }),
+        );
+      }
+      ap.appendChild(
+        bouton(T('soumissions.annuler'), null, function () {
+          return agirSoumission(x.id, 'annuler');
+        }),
+      );
+      pr.appendChild(ap);
+      d.appendChild(pr);
+    }
+    if (x.distant) {
+      var ds = el('div', 'ula-distant');
+      ds.appendChild(el('p', null, T('soumissions.numero', { id: x.distant.id, etat: T('etatSoumission.' + x.etat) })));
+      if (x.distant.analyse && x.distant.analyse.recommandation)
+        ds.appendChild(
+          el(
+            'p',
+            null,
+            T('soumissions.analyse', {
+              ia: x.distant.analyse.ia || '',
+              recommandation: T('recommandation.' + x.distant.analyse.recommandation),
+            }) + (x.distant.analyse.resume ? ' ' + x.distant.analyse.resume : ''),
+          ),
+        );
+      if (x.distant.message)
+        ds.appendChild(el('p', 'ula-message', T('soumissions.message', { message: x.distant.message })));
+      if (x.distant.verifie)
+        ds.appendChild(el('p', 'ula-note', T('soumissions.verifie', { date: dateHeure(x.distant.verifie) })));
+      var ad = el('div', 'ula-actions');
+      ad.appendChild(
+        bouton(T('soumissions.actualiser'), null, function () {
+          return agirSoumission(x.id, 'actualiser');
+        }),
+      );
+      ds.appendChild(ad);
+      d.appendChild(ds);
+    }
+    if (x.etat === 'correction' && x.correction) {
+      var c = el('div', 'ula-suspension');
+      c.appendChild(el('p', null, T('soumissions.correction')));
+      if (x.correction.journal && x.correction.journal.length)
+        c.appendChild(el('p', 'ula-note', x.correction.journal[x.correction.journal.length - 1]));
+      d.appendChild(c);
+    }
+
+    // Étapes de la vérification
+    if (x.etapes && x.etapes.length) {
+      d.appendChild(el('h3', null, T('soumissions.verification')));
+      var ol = el('ol', 'ula-etapes');
+      x.etapes.forEach(function (e) {
+        var li = el('li');
+        li.dataset.etat = e.etat;
+        li.appendChild(el('span', 'ula-etape-nom', e.libelle));
+        li.appendChild(el('span', 'ula-note', T('etatEtape.' + e.etat)));
+        if (e.detail && e.detail.length) {
+          var dd = el('details');
+          dd.appendChild(el('summary', null, T('soumissions.detail', { n: e.detail.length })));
+          var pre = el('pre', null, e.detail.join('\n'));
+          dd.appendChild(pre);
+          li.appendChild(dd);
+        }
+        ol.appendChild(li);
+      });
+      d.appendChild(ol);
+    }
+
+    // Informations envoyées avec le cours
+    d.appendChild(el('h3', null, T('soumissions.infos')));
+    var m = x.manifeste || {};
+    var dl = el('dl', 'ula-infos');
+    function ligne(k, v) {
+      if (v == null || v === '') return;
+      dl.appendChild(el('dt', null, T(k)));
+      dl.appendChild(el('dd', null, v));
+    }
+    ligne('proposer.domaine', nomDomaine(x.fiche.domaine));
+    ligne('proposer.niveau', x.fiche.niveau);
+    ligne('soumettre.pseudonyme', m.pseudonyme);
+    var dec = m.declare || {};
+    ligne('soumettre.outil', dec.outil === 'other' ? T('soumettre.outilAutre') : dec.outil);
+    ligne('soumettre.modele', dec.modele);
+    ligne('soumettre.effort', dec.effort);
+    ligne('soumettre.duree', dec.duree);
+    ligne('soumettre.ressources', dec.ressources);
+    ligne('soumettre.notes', dec.notes);
+    ligne('soumissions.mesurees', resumeGenerations(m.generations || [], true));
+    d.appendChild(dl);
+    if ((m.generations || []).length) {
+      var t = el('table', 'ula-generations');
+      var th = el('tr');
+      [
+        'soumissions.colFichier',
+        'soumissions.colIa',
+        'soumissions.colModele',
+        'soumissions.colEffort',
+        'soumissions.colDuree',
+        'soumissions.colRessources',
+      ].forEach(function (k) {
+        th.appendChild(el('th', null, T(k)));
+      });
+      t.appendChild(th);
+      m.generations.forEach(function (g) {
+        var tr = el('tr');
+        [g.fichier, g.fournisseur, g.modele, g.effort, duree(g.dureeMs), (g.ressources || []).join(', ')].forEach(
+          function (v) {
+            tr.appendChild(el('td', null, v == null ? '' : String(v)));
+          },
+        );
+        t.appendChild(tr);
+      });
+      d.appendChild(t);
+    }
+
+    // Historique complet
+    d.appendChild(el('h3', null, T('soumissions.historique')));
+    var h = el('ol', 'ula-historique');
+    x.historique
+      .slice()
+      .reverse()
+      .forEach(function (e) {
+        var li = el('li');
+        li.appendChild(el('time', 'ula-note', dateHeure(e.date)));
+        li.appendChild(el('span', null, ' ' + e.texte));
+        h.appendChild(li);
+      });
+    d.appendChild(h);
+    return d;
+  }
+
+  var ouvertes = {};
+  function ouvrirDepuisAncre() {
+    var m = location.hash.match(/^#soumission=([\w-]+)/);
+    if (!m) return;
+    var d = document.getElementById('soumission-' + decodeURIComponent(m[1]));
+    if (!d) return;
+    d.open = true;
+    ouvertes[m[1]] = true;
+    d.scrollIntoView({ block: 'start' });
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+  window.addEventListener('hashchange', ouvrirDepuisAncre);
+
+  // Cadre en bas à droite : l'application installée le pose elle-même sur la fenêtre ;
+  // ailleurs (navigateur, outils seuls), l'accueil le montre dans une iframe
+  var cadre = null;
+  function montrerCadre() {
+    if (/\bStudiesApp\//.test(navigator.userAgent) || domaineSeul) return;
+    if (cadre) {
+      cadre.contentWindow.location.reload();
+      cadre.hidden = false;
+      return;
+    }
+    cadre = el('iframe', 'ula-cadre');
+    cadre.title = T('cadre.titre');
+    cadre.src = '/_outils/ula/cadre-soumission.html';
+    document.body.appendChild(cadre);
+  }
+  window.addEventListener('message', function (e) {
+    if (!cadre || e.source !== cadre.contentWindow || !e.data || e.data.ula !== 'cadre') return;
+    if (e.data.type === 'taille') {
+      cadre.hidden = false;
+      cadre.style.height = Math.min(Number(e.data.hauteur) || 200, window.innerHeight - 24) + 'px';
+    } else if (e.data.type === 'masquer') cadre.hidden = true;
+    else if (e.data.type === 'ouvrir') {
+      location.hash = e.data.hash;
+      ouvrirDepuisAncre();
+    }
+  });
 
   /* -- Cours installés ---------------------------------------------------------------- */
 
@@ -1448,6 +1832,20 @@
     textesPage();
     if (etat) rendre();
   });
+
+  // Aides partagées avec la section des soumissions reçues (admin-soumissions.js)
+  window.ULA_ACCUEIL = {
+    el: el,
+    bouton: bouton,
+    T: T,
+    api: api,
+    demander: demander,
+    afficherErreur: afficherErreur,
+    dateHeure: dateHeure,
+    duree: duree,
+    resumeGenerations: resumeGenerations,
+    nomDomaine: nomDomaine,
+  };
 
   textesPage();
   charger();

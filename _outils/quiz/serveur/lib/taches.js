@@ -13,6 +13,8 @@ const claude = require('./claude');
 const assistant = require('./assistant');
 const catalogue = require('./catalogue');
 const archives = require('./archives');
+const journal = require('./journal');
+const reglages = require('./reglages');
 
 const taches = new Map();
 const LIBELLES_TYPES = {
@@ -136,7 +138,11 @@ function creer(page, options) {
     erreur: null,
     session: crypto.randomUUID(),
     quota: null,
+    fournisseur: null,
+    modele: null,
   };
+  // Ce que l'IA a lu, pour le journal de génération (ula-generation.json)
+  const lectures = [];
   const noter = (type, texte) => {
     tache.journal.push({ t: Date.now() - tache.debut, type, texte: String(texte).slice(0, 400) });
     if (tache.journal.length > 400) tache.journal.shift();
@@ -160,11 +166,23 @@ function creer(page, options) {
     dossiers: [OUTILS],
     journalTexte: true,
     delai: 40 * 60 * 1000,
+    ecritureBloquante: true,
     surEvenement(e) {
-      if (e.type === 'debut') noter('etape', tr('Modèle : ', 'Model: ') + e.modele);
-      else if (e.type === 'outil')
+      if (e.type === 'bascule')
+        noter(
+          'etape',
+          tr(
+            `${claude.NOMS[e.de]} ne répond pas (${e.raison}) : suite avec ${claude.NOMS[e.vers]}.`,
+            `${claude.NOMS[e.de]} is not responding (${e.raison}): continuing with ${claude.NOMS[e.vers]}.`,
+          ),
+        );
+      else if (e.type === 'debut') {
+        tache.modele = e.modele;
+        noter('etape', tr('Modèle : ', 'Model: ') + e.modele);
+      } else if (e.type === 'outil') {
+        lectures.push({ nom: e.nom, detail: e.detail });
         noter('outil', e.nom + (e.detail ? ' · ' + e.detail.replace(RACINE.split(path.sep).join('/'), '') : ''));
-      else if (e.type === 'etape' && e.texte.trim()) noter('texte', e.texte.trim().split('\n')[0]);
+      } else if (e.type === 'etape' && e.texte.trim()) noter('texte', e.texte.trim().split('\n')[0]);
       else if (e.type === 'quota') tache.quota = e.info;
     },
   });
@@ -179,7 +197,37 @@ function creer(page, options) {
         if (nouveaux.length) fichier = relatif(path.join(sortie, nouveaux[0]));
       }
       tache.fichier = fichier;
+      tache.fournisseur = r.fournisseur || null;
       tache.etat = fichier ? 'terminee' : 'erreur';
+      if (fichier) {
+        try {
+          const u = reglages.lire().usages.generation || {};
+          journal.ajouter(q.matiere, {
+            type: 'quiz',
+            fichier: path
+              .relative(q.matiere, depuisUrl('/' + fichier))
+              .split(path.sep)
+              .join('/'),
+            fournisseur: r.fournisseur || 'claude',
+            modele: r.modele || tache.modele || null,
+            effort: r.fournisseur === 'gemini' ? null : u.effort || null,
+            dureeMs: Date.now() - tache.debut,
+            cout: typeof r.cout === 'number' ? r.cout : null,
+            demande: {
+              depart: relatif(q.abs).startsWith('explore/') ? relatif(q.abs) : path.basename(q.abs),
+              sujet: options.sujet || 'meme',
+              types: Array.isArray(options.types) ? options.types : null,
+              nombre: Number(options.nombre) || null,
+              difficulte: options.difficulte || 'comparable',
+              consignes: options.consignes ? String(options.consignes).slice(0, 2000) : null,
+            },
+            ressources: journal.ressources(lectures, q.matiere),
+            bascules: (r.bascules || []).map((b) => ({ de: b.de, raison: b.raison })),
+          });
+        } catch (e) {
+          noter('etape', tr('Journal de génération non écrit : ', 'Generation log not written: ') + e.message);
+        }
+      }
       if (!fichier)
         tache.erreur =
           tr(

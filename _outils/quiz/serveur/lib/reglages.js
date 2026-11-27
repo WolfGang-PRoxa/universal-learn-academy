@@ -48,6 +48,10 @@ const MODELE_VALIDE = /^[A-Za-z0-9.\-_[\]]*$/;
 const DEFAUT = {
   port: 5178,
   fournisseur: 'claude',
+  // IA préférées, dans l'ordre d'essai : la première disponible répond, les suivantes
+  // prennent le relais si elle ne répond pas (lib/claude.js). « fournisseur » est
+  // toujours la première de la liste.
+  ordre: ['claude', 'codex', 'gemini'],
   claude: { executable: '' },
   // Modèle vide : celui du compte (réglage par défaut de Codex ou de Gemini)
   codex: { executable: '', modele: '' },
@@ -69,7 +73,15 @@ function fusion(base, ajout) {
   if (!ajout || typeof ajout !== 'object') return r;
   if (Number.isInteger(ajout.port) && ajout.port > 1023 && ajout.port < 65536) r.port = ajout.port;
   if (ajout.claude && typeof ajout.claude.executable === 'string') r.claude.executable = ajout.claude.executable.trim();
-  if (FOURNISSEURS.includes(ajout.fournisseur)) r.fournisseur = ajout.fournisseur;
+  if (Array.isArray(ajout.ordre)) {
+    const vus = ajout.ordre.filter((f, i, l) => FOURNISSEURS.includes(f) && l.indexOf(f) === i);
+    r.ordre = vus.concat(FOURNISSEURS.filter((f) => !vus.includes(f)));
+    r.fournisseur = r.ordre[0];
+  } else if (FOURNISSEURS.includes(ajout.fournisseur) && !ajout.ordre) {
+    // Ancien réglage (une seule IA) ou choix fait dans un menu : elle passe en tête
+    r.fournisseur = ajout.fournisseur;
+    r.ordre = [ajout.fournisseur].concat(r.ordre.filter((f) => f !== ajout.fournisseur));
+  }
   for (const f of ['codex', 'gemini']) {
     const a = ajout[f];
     if (!a || typeof a !== 'object') continue;
@@ -108,4 +120,4 @@ function modifier(ajout) {
   return r;
 }
 
-module.exports = { USAGES, MODELES, EFFORTS, FOURNISSEURS, DEFAUT, lire, modifier, FICHIER };
+module.exports = { USAGES, MODELES, EFFORTS, FOURNISSEURS, DEFAUT, fusion, lire, modifier, FICHIER };

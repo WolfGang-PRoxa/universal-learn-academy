@@ -288,6 +288,98 @@ ipcMain.on('recherche:fermer', (e) => {
   if (f) fermerRecherche(f);
 });
 
+/* Cadre de suivi des soumissions (application installée) ---------------------------
+   Une petite vue posée en bas à droite de la fenêtre des cours, comme la recherche :
+   elle reste en place quand on change de page. Elle apparaît dès qu'une soumission
+   du profil est en cours (vérification, correction, envoi) ou finie et pas encore
+   vue, et disparaît quand le cadre le demande. Sans l'application installée, l'accueil
+   montre le même cadre dans une iframe. */
+
+const CADRE = { largeur: 380, hauteur: 260, marge: 8, intervalle: 2500 };
+
+function placerCadre(f) {
+  if (!f.cadre || f.isDestroyed()) return;
+  const [largeur, hauteur] = f.getContentSize();
+  const h = Math.max(60, Math.min(f.cadreHauteur || CADRE.hauteur, hauteur - 2 * CADRE.marge));
+  const l = Math.min(CADRE.largeur, largeur - 2 * CADRE.marge);
+  f.cadre.setBounds({
+    x: Math.max(0, largeur - l - CADRE.marge),
+    y: Math.max(0, hauteur - h - CADRE.marge),
+    width: l,
+    height: h,
+  });
+}
+
+function montrerCadre(f) {
+  if (f.cadreAffiche || !origine) return;
+  if (!f.cadre) {
+    f.cadre = new WebContentsView({
+      webPreferences: { preload: path.join(__dirname, 'cadre-pont.js'), contextIsolation: true, sandbox: true },
+    });
+    f.cadre.setBackgroundColor('#00000000');
+    f.on('resize', () => placerCadre(f));
+    f.once('closed', () => {
+      if (f.cadre) f.cadre.webContents.close();
+    });
+  }
+  // Invisible tant que le cadre n'a pas donné sa taille : une vue transparente
+  // intercepterait quand même les clics sur la page
+  f.cadre.setVisible(false);
+  f.contentView.addChildView(f.cadre);
+  f.cadreAffiche = true;
+  placerCadre(f);
+  f.cadre.webContents.loadURL(origine + '/_outils/ula/cadre-soumission.html').catch(() => {});
+}
+
+function masquerCadre(f) {
+  if (!f.cadre || !f.cadreAffiche) return;
+  f.cadre.setVisible(false);
+  f.contentView.removeChildView(f.cadre);
+  f.cadreAffiche = false;
+}
+
+function fenetreDuCadre(emetteur) {
+  return BrowserWindow.getAllWindows().find((f) => f.cadre && f.cadre.webContents === emetteur);
+}
+
+ipcMain.on('cadre:taille', (e, hauteur) => {
+  const f = fenetreDuCadre(e.sender);
+  if (!f || !f.cadreAffiche) return;
+  f.cadreHauteur = Number(hauteur) || CADRE.hauteur;
+  placerCadre(f);
+  f.cadre.setVisible(true);
+});
+ipcMain.on('cadre:masquer', (e) => {
+  const f = fenetreDuCadre(e.sender);
+  if (f) masquerCadre(f);
+});
+ipcMain.on('cadre:ouvrir', (e, ancre) => {
+  const f = fenetreDuCadre(e.sender);
+  if (!f || !origine) return;
+  if (f.isMinimized()) f.restore();
+  f.show();
+  charger(f, origine + '/' + PORTAIL + (/^#[\w=-]*$/.test(ancre) ? ancre : ''));
+});
+
+// Soumissions actives du profil : le cadre apparaît sur les fenêtres des cours
+let suiviCadre = null;
+function suivreSoumissions() {
+  if (suiviCadre || !global.studiesHote) return;
+  suiviCadre = setInterval(async () => {
+    if (!origine) return;
+    const fenetres = BrowserWindow.getAllWindows().filter((f) => !f.isDestroyed() && !f.studiesAnnexe && f.isVisible());
+    if (!fenetres.length || fenetres.every((f) => f.cadreAffiche)) return;
+    try {
+      const r = await fetch(origine + '/api/ula/soumissions/actives', { signal: AbortSignal.timeout(4000) });
+      const d = r.ok ? await r.json() : null;
+      if (d && d.soumissions && d.soumissions.length) for (const f of fenetres) montrerCadre(f);
+    } catch (e) {
+      /* serveur occupé ou arrêté : on réessaiera */
+    }
+  }, CADRE.intervalle);
+  suiviCadre.unref();
+}
+
 /* Impression -------------------------------------------------------------------- */
 
 function imprimer(f) {
@@ -413,6 +505,7 @@ function noter(f, ligne) {
 
 function relier(adresse) {
   origine = new URL(adresse).origin;
+  suivreSoumissions();
 }
 
 // Rouvre la dernière page, si elle existe encore ; sinon l'accueil

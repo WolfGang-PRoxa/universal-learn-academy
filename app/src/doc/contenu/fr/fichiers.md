@@ -23,7 +23,9 @@ La désinstallation conserve les paramètres et le dossier des données.
 │       ├── quiz_results/        tentatives
 │       ├── td_results/          travail des TD interactifs
 │       └── TP/                  travail de TP
-└── propositions/                archives de « Proposer ce cours »
+├── propositions/                archives de « Proposer ce cours » (jusqu’à la version 2.8)
+├── soumissions/                 « Soumettre ce cours » : suivi et archive de chaque soumission
+└── soumissions-recues/          administrateur seulement : archives reçues, analyses, décisions
 ```
 
 Règle d’or : rien de ce que l’utilisateur produit n’est écrit dans `explore/`. Un dépôt Git d’ula (il contient `_outils/app` et `explore/`) est aussi reconnu comme dossier des données : outils et catalogue sont alors ceux du dépôt.

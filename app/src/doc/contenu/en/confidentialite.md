@@ -28,7 +28,8 @@ Neither the installer, nor the catalogue, nor the public repository contains per
 1. only allowed tools are copied into the installer, with a manifest of checksums;
 2. after packaging, the whole package is scanned: a personal file or a course file makes the build fail;
 3. publishing the catalogue and the public repository checks every file (rules, checksums of lab files, email address);
-4. “Propose this course” only keeps the generated pages and refuses an archive containing personal data;
+4. “Submit this course” only keeps the generated pages, refuses an archive containing personal data, and never sends the profile name, a path on the computer or a conversation with the AI;
+   the submission service (`ula.romainpiau.dev`) only receives the archive, the manifest and a random installation key; the IP address is only kept as a salted hash, long enough to limit the rate;
 5. `npm run check` verifies that trapped packages, archives and proposals are refused.
 
 The rules are in `_outils/ula/lib/regles.js`.

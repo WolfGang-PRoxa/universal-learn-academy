@@ -6,6 +6,25 @@ Les changements notables d'Universal Learn Academy sont notés dans ce fichier. 
 
 ## [Unreleased]
 
+## [2.9.0] - 2026-11-27
+
+### Ajouts
+
+- Paramètres › IA préférées : quand au moins deux IA sont connectées (Claude, ChatGPT, Gemini), leurs blocs se rangent par ordre de préférence en les faisant glisser (ou avec ↑ et ↓). La carte reste cachée avec une seule IA connectée.
+- Relais automatique : à chaque demande, l'application vérifie les IA dans l'ordre des préférences (outil trouvé, compte connecté) et fait appel à la première disponible ; si elle échoue avant de répondre (outil absent, compte déconnecté, quota, réseau, 90 s sans réponse), la suivante prend le relais et un message l'indique. Dans une conversation, l'IA qui prend le relais reçoit les échanges précédents. Chaque demande repart de l'IA préférée. Une génération qui a déjà écrit un fichier ne bascule pas.
+- Tests automatisés de l'ordre des IA et du relais.
+- « Soumettre ce cours » remplace « Proposer ce cours » : formulaire complet (fiche du cours, IA, modèle, effort, temps passé et ressources utilisées hors de l'application, pseudonyme facultatif, accord sur la licence CC BY-NC-ND 4.0), puis vérification locale étape par étape (fichiers, informations de génération, charte, quiz, ateliers, archive).
+- Journal de génération (`ula-generation.json` dans le dossier du cours) : chaque quiz généré par l'IA y note l'IA, le modèle réellement utilisé, l'effort, la durée, le coût quand l'outil le donne, la demande, les ressources lues et les relais d'IA, sans aucun chemin local ni nom de profil. La soumission le reprend.
+- Cadre de suivi en bas à droite : il glisse depuis le bas, montre chaque étape de la vérification avec une barre de progression, reste en place quand on change de page, se réduit en pastille et respecte « réduire les animations ».
+- Soumissions suspendues : une vérification qui échoue ou ne peut pas tourner (Python absent) suspend la soumission, rien ne part ; l'utilisateur choisit de la faire corriger par son IA (puis revérification automatique), de corriger lui-même puis revérifier, ou d'annuler.
+- Accueil › Mes soumissions : pour chaque soumission, son état, le détail de chaque vérification, les informations envoyées (mesurées ou déclarées) et l'historique complet daté.
+- Tests automatisés de la vérification, des suspensions et de ce qui part.
+- Envoi au service de soumission (`ula.romainpiau.dev`, Cloudflare) dès que la vérification locale réussit : l'archive et le manifeste partent avec une clé d'installation anonyme, le serveur refait ses propres contrôles (un refus suspend la soumission comme une vérification locale) et remet un numéro et un jeton de suivi. Sans réseau, la soumission reste prête et se renvoie d'un clic.
+- Suivi chez l'administrateur : Mes soumissions et le cadre en bas à droite montrent l'état distant (reçue, en analyse, acceptée, refusée), le message de l'administrateur et l'historique du service ; l'état est relu toutes les 10 minutes ou à la demande.
+- Dossier `cloudflare/` : le Worker du service de soumission (R2 pour les archives, D1 pour les états, limites par clé et par adresse, blocage d'une installation, routes d'administration protégées par jeton), avec ses tests.
+- Soumissions reçues (administrateur du catalogue) : jeton d'administration du service rangé chiffré (Paramètres › Soumissions reçues, carte visible en mode dépôt ou après cinq clics sur la version), puis section de l'accueil avec la liste (à traiter, acceptées, refusées), le détail de chaque soumission, des analyses par l'IA choisie (Claude, ChatGPT ou Gemini, sans relais) pour une soumission, une sélection ou toutes celles à analyser, après les vérifications refaites sur le poste ; verdict (accepter, corriger, refuser), résumé, points précis et note envoyés au service. Accepter fait entrer le cours dans `explore/` en mode dépôt (`accepter-proposition` reconnaît les archives des soumissions) ; refuser demande un message pour l'auteur ; bloquer refuse les prochaines soumissions d'une installation. Rien n'est accepté sans décision.
+- Tests automatisés de l'administration des soumissions.
+
 ## [2.8.0] - 2026-11-27
 
 ### Ajouts
@@ -187,7 +206,8 @@ Les changements notables d'Universal Learn Academy sont notés dans ce fichier. 
 - Première application installable, nommée Studies (Electron, electron-builder, electron-updater) : mise à jour automatique au démarrage, fenêtre au lancement réglable, raccourcis Bureau, menu Démarrer ou dossier choisi, connexion à Claude par Claude Code ou par une clé d'API chiffrée. Installeur NSIS et AppImage avec leurs fichiers `.blockmap`, publiés par la GitHub CLI.
 - Données personnelles exclues des exécutables, avec un contrôle qui fait échouer la construction.
 
-[Unreleased]: https://github.com/WolfGang-PRoxa/universal-learn-academy/compare/v2.8.0...HEAD
+[Unreleased]: https://github.com/WolfGang-PRoxa/universal-learn-academy/compare/v2.9.0...HEAD
+[2.9.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.9.0
 [2.8.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.8.0
 [2.7.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.7.0
 [2.6.2]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.6.2

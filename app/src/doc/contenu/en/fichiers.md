@@ -23,7 +23,9 @@ Uninstalling keeps the settings and the data folder.
 │       ├── quiz_results/        attempts
 │       ├── td_results/          interactive tutorial work
 │       └── TP/                  lab work
-└── propositions/                archives from “Propose this course”
+├── propositions/                archives from “Propose this course” (up to version 2.8)
+├── soumissions/                 “Submit this course”: tracking and archive of each submission
+└── soumissions-recues/          administrator only: received archives, reviews, decisions
 ```
 
 Golden rule: nothing the user produces is written in `explore/`. A Git repository of ula (it contains `_outils/app` and `explore/`) is also recognised as a data folder: tools and catalogue are then those of the repository.

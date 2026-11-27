@@ -32,6 +32,14 @@ Dans les quiz et les TD, le nom de l’assistant (barre du haut, panneau de conv
 
 > **Note** Comme pour Claude, l’application ne recueille ni identifiant ni jeton : la connexion se fait dans l’outil, chez l’éditeur. Une clé enregistrée ou un changement de mode s’applique au redémarrage de l’application.
 
+## IA préférées et relais automatique
+
+Dès que deux IA au moins sont connectées, la carte [Paramètres › IA préférées](parametres:preferees) apparaît : un bloc par IA connectée, à ranger par ordre de préférence en les faisant glisser (ou avec les boutons ↑ et ↓). Avec une seule IA connectée, la carte reste cachée.
+
+À chaque demande (aide, correction, évaluation, génération), l’application vérifie les IA dans cet ordre (outil trouvé, compte connecté) et fait appel à la première disponible. Si elle échoue avant d’avoir commencé à répondre (outil absent, compte déconnecté, quota atteint, réseau, aucune réponse en 90 secondes), la suivante prend le relais et un message l’indique. Dans une conversation, l’IA qui prend le relais reçoit les échanges précédents. La demande suivante repart toujours de la première de la liste : votre IA préférée reprend la main dès qu’elle répond de nouveau. Une génération de quiz qui a déjà commencé à écrire un fichier ne bascule pas : elle s’arrête, et on peut la relancer.
+
+Choisir une IA dans le menu du nom de l’assistant la place en tête de la liste.
+
 ## Si l’assistant ne répond pas
 
 1. Vérifier dans [Paramètres › Claude](parametres:claude) (ou la carte de ChatGPT ou de Gemini) que l’outil est détecté et connecté (**Vérifier à nouveau**).

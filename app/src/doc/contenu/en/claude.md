@@ -32,6 +32,14 @@ In quizzes and TDs, the assistant’s name (top bar, conversation panel, worksho
 
 > **Note** As with Claude, the application collects no credentials or tokens: sign-in happens in the tool, at the publisher. A saved key or a mode change applies when the application restarts.
 
+## Preferred AIs and automatic fallback
+
+As soon as at least two AIs are connected, the [Settings › Preferred AIs](parametres:preferees) card appears: one block per connected AI, to put in order of preference by dragging them (or with the ↑ and ↓ buttons). With a single connected AI, the card stays hidden.
+
+On every request (help, grading, evaluation, generation), the app checks the AIs in this order (tool found, account connected) and calls the first available one. If it fails before starting to answer (tool missing, account signed out, quota reached, network, no response within 90 seconds), the next one takes over and a message says so. In a conversation, the AI taking over receives the earlier exchanges. The next request always starts again from the top of the list: your preferred AI takes over again as soon as it responds. A quiz generation that has already started writing a file does not switch: it stops, and you can start it again.
+
+Choosing an AI in the assistant name menu puts it at the top of the list.
+
 ## If the assistant does not answer
 
 1. Check in [Settings › Claude](parametres:claude) (or the ChatGPT or Gemini card) that the tool is detected and connected (**Check again**).

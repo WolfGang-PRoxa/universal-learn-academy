@@ -45,8 +45,8 @@ const PERSONNELS = [
     tp: true,
   },
   {
-    motif: /(^|\/)(administratif|Hop3x|propositions)\//,
-    raison: 'documents personnels, traces de TP, propositions en attente',
+    motif: /(^|\/)(administratif|Hop3x|propositions|soumissions|soumissions-recues)\//,
+    raison: 'documents personnels, traces de TP, propositions et soumissions en attente',
   },
   { motif: /(^|\/)(Site Portfolio|website_project)\//, raison: "portfolio ou projet de site de l'étudiant" },
   { motif: /(^|\/)L\d\/Communication\//i, raison: "communication : travaux de groupe et productions de l'étudiant" },

@@ -45,4 +45,19 @@ In course and quiz pages, the left panel (contents) collapses and expands with t
 
 ## Proposing a course
 
-A course created in a profile’s space can be proposed to the catalogue: **⋯ › Propose this course…**. The application prepares an archive that only contains the generated pages (no teacher sources, no personal work), checks that no personal data is included, then opens a GitHub page where the archive is attached.
+A course created in a profile’s space can be submitted to the catalogue: **⋯ › Submit this course…**. The form takes the course card and what the application measured of its generation (AI, model, effort, duration, resources read); you add what was done outside the application (AI, model, effort, time spent, resources), an optional pseudonym, and accept the CC BY-NC-ND 4.0 licence.
+
+The course is then checked on the computer, step by step: files (only the generated pages, no personal data), generation details, page guidelines, quizzes, workshops, archive. A small box at the bottom right follows the progress; one click minimises it to a badge.
+
+If a check fails, or cannot run (Python missing), the submission is **suspended**: nothing is sent. In **My submissions** (home page), three choices: **Fix with my AI** (the AI fixes the reported problems, then the check starts again), **I fixed it: check again**, or **Cancel the submission**. Each submission keeps its full dated history there, its checks and the details sent.
+
+Once the check passes, the submission is sent on its own to the submission service (`ula.romainpiau.dev`), which runs its own checks and gives it a number. Without a network it stays **ready**: **Try sending again** sends it. Then **My submissions** and the box follow its status on the administrator’s side: received, under review, accepted or refused, with their message. The status is read again every 10 minutes, or right away with **Refresh status**.
+
+### Received submissions (administrator)
+
+With the administration token saved ([Settings › Received submissions](parametres:administration)), the home page shows the **Received submissions** section: to handle, accepted, refused. For each submission: the course card, what the author’s application measured and what they declared, their checks, and the history.
+
+- **Review** (one submission, the selection, or all those to review) with the AI chosen in the list (Claude, ChatGPT or Gemini, with no fallback to another one): the archive is downloaded to `soumissions-recues/`, the checks run again on this computer, then the AI reads the course without changing anything and gives a recommendation (accept, needs fixes, decline), a summary, specific points and a score. The author sees the recommendation and the summary.
+- **Accept**: in repository mode, the course goes into `explore/` (same checks as the catalogue, optional pack); elsewhere, the archive stays in `soumissions-recues/`. **Refuse** asks for a message for the author. **Block the author** refuses future submissions from their installation.
+
+Nothing is accepted without your decision.

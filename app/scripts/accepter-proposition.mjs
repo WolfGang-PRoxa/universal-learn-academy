@@ -1,5 +1,5 @@
-// Accepte une proposition de cours (« Proposer ce cours » de l'application) et
-// l'ajoute au catalogue : `npm run accepter-proposition -- <archive.zip> [options]`.
+// Accepte une proposition de cours (« Soumettre ce cours » de l'application, ou
+// l'interface des soumissions reçues) et l'ajoute au catalogue : `npm run accepter-proposition -- <archive.zip> [options]`.
 //
 //   --domaine <d>    domaine du catalogue (sinon celui de la fiche du cours)
 //   --id <id>        identifiant du cours (sinon celui de la fiche)
@@ -51,7 +51,7 @@ try {
   const fiche = JSON.parse(fs.readFileSync(path.join(temp, 'ula-cours.json'), 'utf8'));
   const autres = fs
     .readdirSync(temp)
-    .filter((n) => !['ula-cours.json', 'generated_courses', 'generated_quizzes'].includes(n));
+    .filter((n) => !['ula-cours.json', 'ula-soumission.json', 'generated_courses', 'generated_quizzes'].includes(n));
   if (autres.length) echec(`L'archive contient autre chose que les pages générées : ${autres.join(', ')}`);
   const { problemes, avertissements, fichiers } = proposition.controler(temp, {});
   if (problemes.length) echec(`Proposition refusée :\n- ${problemes.join('\n- ')}`);

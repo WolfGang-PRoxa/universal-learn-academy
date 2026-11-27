@@ -45,4 +45,19 @@ Dans les pages des cours et des quiz, le bandeau de gauche (sommaire) se replie 
 
 ## Proposer un cours
 
-Un cours créé dans l’espace d’un profil peut être proposé au catalogue : **⋯ › Proposer ce cours…**. L’application prépare une archive qui ne contient que les pages générées (ni sources d’enseignants, ni travail personnel), vérifie qu’aucune donnée personnelle n’y figure, puis ouvre une page GitHub où joindre l’archive.
+Un cours créé dans l’espace d’un profil peut être soumis au catalogue : **⋯ › Soumettre ce cours…**. Le formulaire reprend la fiche du cours et ce que l’application a mesuré de sa génération (IA, modèle, effort, durée, ressources lues) ; on y précise ce qui a été fait hors de l’application (IA, modèle, effort, temps passé, ressources), un pseudonyme facultatif, et on accepte la licence CC BY-NC-ND 4.0.
+
+Le cours est ensuite vérifié sur le poste, étape par étape : fichiers (seulement les pages générées, aucune donnée personnelle), informations de génération, charte des pages, quiz, ateliers, archive. Un petit cadre en bas à droite suit l’avancement ; il se réduit en pastille d’un clic.
+
+Si une vérification échoue, ou ne peut pas tourner (Python absent), la soumission est **suspendue** : rien ne part. Dans **Mes soumissions** (accueil), trois choix : **Corriger avec mon IA** (l’IA corrige les problèmes signalés, puis la vérification reprend), **J’ai corrigé : revérifier**, ou **Annuler la soumission**. Chaque soumission y garde son historique complet et daté, ses vérifications et les informations envoyées.
+
+Une fois la vérification réussie, la soumission part d’elle-même au service de soumission (`ula.romainpiau.dev`), qui refait ses propres contrôles et lui donne un numéro. Sans réseau, elle reste **prête** : **Réessayer l’envoi** la fait repartir. Ensuite, **Mes soumissions** et le cadre suivent son état chez l’administrateur : reçue, en analyse, acceptée ou refusée, avec son message. L’état est relu toutes les 10 minutes, ou tout de suite avec **Actualiser l’état**.
+
+### Soumissions reçues (administrateur)
+
+Avec le jeton d’administration enregistré ([Paramètres › Soumissions reçues](parametres:administration)), l’accueil montre la section **Soumissions reçues** : à traiter, acceptées, refusées. Pour chaque soumission : la fiche, ce que l’application de l’auteur a mesuré et ce qu’il a déclaré, ses vérifications, et l’historique.
+
+- **Analyser** (une soumission, la sélection, ou toutes celles à analyser) avec l’IA choisie dans la liste (Claude, ChatGPT ou Gemini, sans relais vers une autre) : l’archive est téléchargée dans `soumissions-recues/`, les vérifications sont refaites sur le poste, puis l’IA relit le cours sans rien modifier et rend une recommandation (accepter, corriger, refuser), un résumé, des points précis et une note. L’auteur voit la recommandation et le résumé.
+- **Accepter** : en mode dépôt, le cours entre dans `explore/` (mêmes contrôles que le catalogue, pack au choix) ; ailleurs, l’archive reste dans `soumissions-recues/`. **Refuser** demande un message pour l’auteur. **Bloquer l’auteur** refuse les prochaines soumissions de son installation.
+
+Rien n’est accepté sans votre décision.

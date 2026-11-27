@@ -115,11 +115,10 @@ function controler(dossier, { interdits = [] } = {}) {
 }
 
 /**
- * Prépare la proposition d'un cours de l'espace du profil.
- * @param {object} infos  { titre, domaine, niveau, origine, description } (complètent ula-cours.json)
- * @returns {{ archive, nom, url, fichiers, avertissements }}
+ * Dossier et fiche (ula-cours.json) d'un cours de l'espace du profil, prêts pour une
+ * proposition ou une soumission : { dossier, fiche, interdits }.
  */
-function preparer(racine, nomProfil, cheminCours, infos = {}) {
+function fiche(racine, nomProfil, cheminCours, infos = {}) {
   const p = espace.profil(racine, nomProfil);
   if (!p) throw new Error(tr('Aucun profil choisi.', 'No profile selected.'));
   const dossier = path.resolve(racine, String(cheminCours));
@@ -141,7 +140,7 @@ function preparer(racine, nomProfil, cheminCours, infos = {}) {
     : DOMAINES.includes(ancienne.domaine)
       ? ancienne.domaine
       : 'autres';
-  const fiche = {
+  const f = {
     format: 'ula-cours-1',
     id: /^[a-z0-9][a-z0-9-]{0,80}$/.test(ancienne.id || '') ? ancienne.id : slugId(titre),
     titre,
@@ -151,7 +150,17 @@ function preparer(racine, nomProfil, cheminCours, infos = {}) {
     teinte: ancienne.teinte || '',
     description: String(infos.description || ancienne.description || '').slice(0, 600),
   };
-  const { fichiers, problemes, avertissements } = controler(dossier, { interdits: [nomProfil, espace.nomSession()] });
+  return { dossier, fiche: f, interdits: [nomProfil, espace.nomSession()] };
+}
+
+/**
+ * Prépare la proposition d'un cours de l'espace du profil.
+ * @param {object} infos  { titre, domaine, niveau, origine, description } (complètent ula-cours.json)
+ * @returns {{ archive, nom, url, fichiers, avertissements }}
+ */
+function preparer(racine, nomProfil, cheminCours, infos = {}) {
+  const { dossier, fiche: f, interdits } = fiche(racine, nomProfil, cheminCours, infos);
+  const { fichiers, problemes, avertissements } = controler(dossier, { interdits });
   if (problemes.length) {
     const e = new Error(
       tr(
@@ -163,22 +172,22 @@ function preparer(racine, nomProfil, cheminCours, infos = {}) {
     throw e;
   }
   const date = new Date().toISOString().slice(0, 10);
-  const nom = `${fiche.id}-${date}.zip`;
+  const nom = `${f.id}-${date}.zip`;
   const archive = path.join(racine, 'propositions', nom);
   zip.ecrire(archive, [
-    { nom: espace.FICHE_COURS, donnees: Buffer.from(JSON.stringify(fiche, null, 2) + '\n') },
+    { nom: espace.FICHE_COURS, donnees: Buffer.from(JSON.stringify(f, null, 2) + '\n') },
     ...fichiers,
   ]);
   const corps = [
     "Proposition d'un cours pour le catalogue d'Universal Learn Academy.",
     '',
-    `- Titre : ${fiche.titre}`,
-    `- Domaine : ${fiche.domaine}`,
-    fiche.niveau ? `- Niveau : ${fiche.niveau}` : null,
-    fiche.origine ? `- Origine : ${fiche.origine}` : null,
+    `- Titre : ${f.titre}`,
+    `- Domaine : ${f.domaine}`,
+    f.niveau ? `- Niveau : ${f.niveau}` : null,
+    f.origine ? `- Origine : ${f.origine}` : null,
     `- Pages : ${fichiers.filter((f) => /\.html?$/i.test(f.nom)).length} (${fichiers.length} fichiers)`,
     '',
-    fiche.description,
+    f.description,
     '',
     `**Archive à joindre** : faire glisser \`${nom}\` (dossier \`propositions\` de ULA) dans ce message.`,
     '',
@@ -188,8 +197,8 @@ function preparer(racine, nomProfil, cheminCours, infos = {}) {
     .join('\n');
   const url =
     `https://github.com/${DEPOT.proprietaire}/${DEPOT.nom}/issues/new?` +
-    new URLSearchParams({ title: `Proposition de cours : ${fiche.titre}`, body: corps }).toString();
+    new URLSearchParams({ title: `Proposition de cours : ${f.titre}`, body: corps }).toString();
   return { archive, nom, url, fichiers: fichiers.length, avertissements };
 }
 
-module.exports = { controler, preparer, DOMAINES, slugId };
+module.exports = { controler, fiche, preparer, DOMAINES, PERMIS, slugId };
