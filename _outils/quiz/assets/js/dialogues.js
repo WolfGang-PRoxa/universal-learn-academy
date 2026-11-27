@@ -3,10 +3,12 @@
    --------------------------------------------------------------------------
    ouvrir()      boîte générique (<dialog>)
    confirmer()   question à plusieurs réponses, renvoie une promesse
-   reglages()    modèle et effort de Claude pour chaque usage, chemin de
-                 Claude Code, langages disponibles, quota de l'abonnement
+   reglages()    assistant IA (Claude, ChatGPT ou Gemini), modèle et effort de
+                 Claude pour chaque usage, chemin de Claude Code, langages
+                 disponibles, quota de l'abonnement
    generer()     génération d'un nouveau quiz par Claude Code, puis suivi
    serveur()     explications quand le serveur local n'est pas lancé
+   menuIa(ancre) petit menu de l'assistant IA : le choisir, ou le configurer
    ========================================================================== */
 (function (A) {
   'use strict';
@@ -171,7 +173,7 @@
     // Application installée (studies/app) : ces réglages sont dans ses paramètres,
     // que la fenêtre ouvre quand une page va vers /_app/parametres (_outils/app/fenetres.js)
     if (/\bStudiesApp\//.test(navigator.userAgent)) {
-      location.href = '/_app/parametres#claude-modeles';
+      location.href = '/_app/parametres#assistant';
       return;
     }
     var C = A.connexion;
@@ -183,6 +185,59 @@
       .then(function (e) {
         var r = JSON.parse(JSON.stringify(e.reglages));
         var c = el('div', 'reglages');
+
+        // Assistant : Claude (Claude Code), ChatGPT (Codex CLI) ou Gemini (Gemini CLI)
+        var sa = el('section', 'reglages-section');
+        sa.appendChild(el('h3', null, T('reglages.assistant')));
+        var choixIa = el('select', 'champ');
+        var NOMS_IA = { claude: 'Claude (Claude Code)', codex: 'ChatGPT (Codex CLI)', gemini: 'Gemini (Gemini CLI)' };
+        (e.fournisseurs || ['claude']).forEach(function (f) {
+          var o = el('option', null, NOMS_IA[f] || f);
+          o.value = f;
+          o.selected = (r.fournisseur || 'claude') === f;
+          choixIa.appendChild(o);
+        });
+        sa.appendChild(choixIa);
+        var ia = e.assistant;
+        if (ia && ia.fournisseur !== 'claude')
+          sa.appendChild(
+            el(
+              'p',
+              'reglages-etat ' + (ia.disponible ? 'ok' : 'ko'),
+              ia.disponible ? ia.outil + ' ' + ia.version + ' : ' + ia.executable : ia.erreur,
+            ),
+          );
+        var champsIa = {};
+        ['codex', 'gemini'].forEach(function (f) {
+          if (!r[f]) return;
+          var bloc = el('div', 'reglages-outil');
+          var outil = f === 'codex' ? 'Codex CLI' : 'Gemini CLI';
+          var lm = el('label', 'reglages-champ');
+          lm.appendChild(el('span', null, T('reglages.modeleOutil')));
+          var modele = el('input', 'champ');
+          modele.type = 'text';
+          modele.value = r[f].modele || '';
+          lm.appendChild(modele);
+          var lc = el('label', 'reglages-champ');
+          lc.appendChild(el('span', null, T('reglages.cheminOutil', { outil: outil })));
+          var ch = el('input', 'champ');
+          ch.type = 'text';
+          ch.value = r[f].executable || '';
+          lc.appendChild(ch);
+          bloc.appendChild(lm);
+          bloc.appendChild(lc);
+          sa.appendChild(bloc);
+          champsIa[f] = { bloc: bloc, modele: modele, chemin: ch };
+        });
+        function montrerChampsIa() {
+          Object.keys(champsIa).forEach(function (f) {
+            champsIa[f].bloc.hidden = choixIa.value !== f;
+          });
+        }
+        choixIa.addEventListener('change', montrerChampsIa);
+        montrerChampsIa();
+        sa.appendChild(el('p', 'reglages-note', T('reglages.assistantNote')));
+        c.appendChild(sa);
 
         // Claude Code
         var sc = el('section', 'reglages-section');
@@ -350,6 +405,11 @@
               classe: 'principal',
               action: function (f) {
                 r.claude.executable = chemin.value.trim();
+                r.fournisseur = choixIa.value;
+                Object.keys(champsIa).forEach(function (f) {
+                  r[f].modele = champsIa[f].modele.value.trim();
+                  r[f].executable = champsIa[f].chemin.value.trim();
+                });
                 C.modifierReglages(r)
                   .then(function () {
                     return C.rafraichir(true);
@@ -369,6 +429,129 @@
       .catch(function (err) {
         O.notifier('Serveur injoignable : ' + err.message, 'erreur');
       });
+  }
+
+  /* Menu de l'assistant IA ------------------------------------------------------------------
+     Ouvert par les libellés de l'assistant (témoin de la barre du haut, puce du panneau
+     de conversation, bouton de l'atelier) : choisir l'assistant des quiz, ou ouvrir les
+     réglages de l'un d'eux. ancre : élément sous lequel le menu s'ouvre. */
+
+  var SECTIONS_IA = { claude: 'claude', codex: 'chatgpt', gemini: 'gemini' };
+
+  function configurerIa(f) {
+    // Application installée : carte de connexion de l'assistant dans ses paramètres
+    if (/\bStudiesApp\//.test(navigator.userAgent)) {
+      location.href = '/_app/parametres#' + (SECTIONS_IA[f] || 'assistant');
+      return;
+    }
+    reglages();
+  }
+
+  var menuOuvert = null;
+  function menuIa(ancre) {
+    var C = A.connexion;
+    if (menuOuvert) {
+      var deja = menuOuvert.ancre === ancre;
+      menuOuvert.fermer();
+      if (deja) return;
+    }
+    if (!C.enLigne) {
+      serveur();
+      return;
+    }
+    var actuel = C.assistant().fournisseur;
+    var m = el('div', 'menu-ia');
+    m.setAttribute('role', 'menu');
+    m.setAttribute('aria-label', T('ia.menu'));
+    m.appendChild(el('p', 'menu-ia-titre', T('ia.menu')));
+    C.ASSISTANTS.forEach(function (f) {
+      var info = C.infosAssistant(f);
+      var ligne = el('div', 'menu-ia-ligne' + (f === actuel ? ' actuel' : ''));
+      var choix = el('button', 'menu-ia-choix');
+      choix.type = 'button';
+      choix.setAttribute('role', 'menuitemradio');
+      choix.setAttribute('aria-checked', String(f === actuel));
+      choix.title = T('ia.choix', { nom: info.nom });
+      choix.innerHTML =
+        '<span class="menu-ia-coche" aria-hidden="true">' + (f === actuel ? O.icone('verifier') : '') + '</span>';
+      var textes = el('span', 'menu-ia-textes');
+      textes.appendChild(el('strong', null, info.nom));
+      textes.appendChild(el('span', null, T('ia.aide.' + f)));
+      choix.appendChild(textes);
+      choix.addEventListener('click', function () {
+        fermer();
+        if (f === actuel) return;
+        ancre.classList.add('occupe');
+        C.choisirAssistant(f)
+          .then(function (e) {
+            var a = e && e.assistant;
+            if (a && !a.disponible) O.notifier(T('ia.introuvable', { nom: info.nom, outil: info.outil }), 'erreur');
+            else O.notifier(T('ia.choisi', { nom: info.nom }));
+          })
+          .catch(function (err) {
+            O.notifier(err.message, 'erreur');
+          })
+          .then(function () {
+            ancre.classList.remove('occupe');
+          });
+      });
+      var regler = el('button', 'menu-ia-regler');
+      regler.type = 'button';
+      regler.setAttribute('role', 'menuitem');
+      regler.innerHTML = O.icone('reglages');
+      regler.title = T('ia.configurer', { nom: info.nom });
+      regler.setAttribute('aria-label', regler.title);
+      regler.addEventListener('click', function () {
+        fermer();
+        configurerIa(f);
+      });
+      ligne.appendChild(choix);
+      ligne.appendChild(regler);
+      m.appendChild(ligne);
+    });
+    document.body.appendChild(m);
+
+    // Sous l'ancre, aligné sur son bord droit, sans sortir de l'écran
+    var r = ancre.getBoundingClientRect();
+    var largeur = m.offsetWidth,
+      hauteur = m.offsetHeight;
+    var gauche = Math.min(Math.max(8, r.right - largeur), window.innerWidth - largeur - 8);
+    var haut = r.bottom + 6;
+    if (haut + hauteur > window.innerHeight - 8) haut = Math.max(8, r.top - hauteur - 6);
+    m.style.left = gauche + 'px';
+    m.style.top = haut + 'px';
+    ancre.setAttribute('aria-expanded', 'true');
+
+    var boutons = Array.prototype.slice.call(m.querySelectorAll('button'));
+    (m.querySelector('.actuel .menu-ia-choix') || boutons[0]).focus();
+    function dehors(e) {
+      if (!m.contains(e.target) && !ancre.contains(e.target)) fermer();
+    }
+    function clavier(e) {
+      var i = boutons.indexOf(document.activeElement);
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        fermer();
+        ancre.focus();
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        boutons[(i + (e.key === 'ArrowDown' ? 1 : boutons.length - 1)) % boutons.length].focus();
+      } else if (e.key === 'Tab') fermer();
+    }
+    function fermer() {
+      m.remove();
+      ancre.setAttribute('aria-expanded', 'false');
+      document.removeEventListener('pointerdown', dehors, true);
+      window.removeEventListener('resize', fermer);
+      menuOuvert = null;
+    }
+    m.addEventListener('keydown', clavier);
+    setTimeout(function () {
+      document.addEventListener('pointerdown', dehors, true);
+    }, 0);
+    window.addEventListener('resize', fermer);
+    menuOuvert = { ancre: ancre, fermer: fermer };
   }
 
   /* Génération d'un quiz ------------------------------------------------------------------ */
@@ -658,6 +841,8 @@
     confirmer: confirmer,
     serveur: serveur,
     reglages: reglages,
+    menuIa: menuIa,
+    configurerIa: configurerIa,
     generer: generer,
     suivre: suivre,
     tacheEnCours: tacheEnCours,

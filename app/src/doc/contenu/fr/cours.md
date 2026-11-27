@@ -31,9 +31,13 @@ Un cours du cursus qui n’est pas encore installé affiche « à télécharger 
 - **Packs** : tous les cours d’un niveau. **Télécharger le pack** les installe un par un ; un cours en échec n’arrête pas les autres, et relancer le pack reprend seulement ceux qui manquent. **Ranger dans mon cursus…** les ajoute dans un dossier.
 - **Cours** : chaque cours peut être téléchargé, mis à jour (« Mise à jour disponible ») ou supprimé. Supprimer retire les pages du cours, jamais le travail.
 
+## Le sommaire
+
+Dans les pages des cours et des quiz, le bandeau de gauche (sommaire) se replie et se déplie par le premier bouton de la barre du haut, à gauche ; la page prend alors toute la largeur. Le choix est retenu d’une page à l’autre. Sur un écran étroit, le même bouton ouvre le sommaire par-dessus la page. La documentation et les paramètres ont le même bouton.
+
 ## Quiz, TD et TP
 
-- **Quiz** : questions à choix, réponses rédigées, code, SQL… Chaque tentative est enregistrée. Avec [Claude](page:claude), une aide est disponible pendant le quiz et les réponses rédigées sont corrigées.
+- **Quiz** : questions à choix, réponses rédigées, code, SQL… Chaque tentative est enregistrée. En mode entraînement, on navigue librement entre les questions : les pastilles numérotées et les flèches ‹ › mènent à n’importe quelle question, **Passer** laisse une question pour plus tard, et la couleur de chaque pastille indique son état (à faire, répondue, juste, partielle, fausse). Avec un [assistant IA](page:claude) (Claude, ChatGPT ou Gemini), une aide est disponible pendant le quiz et les réponses rédigées sont corrigées.
 - **TD interactifs** : les exercices se font directement dans la page (éditeurs de code, tableaux, schémas). Le travail est enregistré au fur et à mesure dans le dossier du profil.
 - **TP** : les fichiers fournis sont dans le cours ; le travail se fait dans le dossier du cours de l’espace du profil.
 

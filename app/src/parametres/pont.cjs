@@ -49,6 +49,15 @@ contextBridge.exposeInMainWorld('studies', {
     lien: (nom) => appeler('claude:lien', nom),
   },
 
+  // ChatGPT (« codex ») et Gemini (« gemini »)
+  ia: {
+    statut: (f) => appeler('ia:statut', f),
+    connecter: (f) => appeler('ia:connecter', f),
+    deconnecter: (f) => appeler('ia:deconnecter', f),
+    enregistrerCle: (f, valeur) => appeler('ia:cle', f, valeur),
+    lien: (f, nom) => appeler('ia:lien', f, nom),
+  },
+
   quiz: {
     etat: () => appeler('quiz:etat'),
     reglages: (r) => appeler('quiz:reglages', r),

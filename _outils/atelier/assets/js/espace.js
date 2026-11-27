@@ -298,16 +298,17 @@
       }
       if (this.mode === 'exercice' || this.mode === 'annoter') {
         var bc = N.bouton(
-          'Claude',
+          A.nomIa(),
           'petit bouton-claude',
           function (e) {
             self.menuClaude(bc, e);
           },
           tr(
-            "Demander de l'aide à Claude, ou faire corriger son travail",
-            'Ask Claude for help, or have the work marked',
+            "Demander de l'aide à " + A.nomIa() + ', faire corriger son travail, ou changer d’assistant',
+            'Ask ' + A.nomIa() + ' for help, have the work marked, or switch assistant',
           ),
         );
+        bc.setAttribute('aria-haspopup', 'menu');
         actions.appendChild(bc);
       }
     }
@@ -860,7 +861,7 @@
         tr(
           !msgs.length
             ? 'Aucun problème de forme détecté.' +
-                (this.solution ? ' Pour la justesse, comparer à la solution ou demander à Claude.' : '')
+                (this.solution ? ' Pour la justesse, comparer à la solution ou demander à ' + A.nomIa() + '.' : '')
             : N.pluriel(
                 msgs.filter(function (m) {
                   return m.niveau === 'erreur';
@@ -885,7 +886,7 @@
                 '.',
           !msgs.length
             ? 'No form problem found.' +
-                (this.solution ? ' For correctness, compare with the solution or ask Claude.' : '')
+                (this.solution ? ' For correctness, compare with the solution or ask ' + A.nomIa() + '.' : '')
             : N.pluriel(
                 msgs.filter(function (m) {
                   return m.niveau === 'erreur';
@@ -1023,8 +1024,10 @@
           'p',
           'atelier-aide',
           tr(
-            'Pas de comparaison automatique pour ce type de travail : afficher la solution, ou demander une correction à Claude.',
-            'No automatic comparison for this kind of work: show the solution, or ask Claude to mark it.',
+            'Pas de comparaison automatique pour ce type de travail : afficher la solution, ou demander une correction à ' +
+              A.nomIa() +
+              '.',
+            'No automatic comparison for this kind of work: show the solution, or ask ' + A.nomIa() + ' to mark it.',
           ),
         ),
       );
@@ -1055,8 +1058,12 @@
         'p',
         'atelier-aide',
         tr(
-          "Une modélisation admet souvent plusieurs réponses justes : un écart n'est pas forcément une erreur. En cas de doute, demander à Claude.",
-          'A model often has several correct answers: a difference is not necessarily a mistake. When in doubt, ask Claude.',
+          "Une modélisation admet souvent plusieurs réponses justes : un écart n'est pas forcément une erreur. En cas de doute, demander à " +
+            A.nomIa() +
+            '.',
+          'A model often has several correct answers: a difference is not necessarily a mistake. When in doubt, ask ' +
+            A.nomIa() +
+            '.',
         ),
       ),
     );
@@ -1265,13 +1272,17 @@
             trouves.length +
             ' des ' +
             attendu.length +
-            ' éléments attendus sont annotés. La justesse des explications se juge avec la solution, ou avec Claude.',
+            ' éléments attendus sont annotés. La justesse des explications se juge avec la solution, ou avec ' +
+            A.nomIa() +
+            '.',
           N.pluriel(faites.length, 'remark') +
             ' added; ' +
             trouves.length +
             ' of the ' +
             attendu.length +
-            ' expected elements are annotated. Whether the explanations are right is judged with the solution, or with Claude.',
+            ' expected elements are annotated. Whether the explanations are right is judged with the solution, or with ' +
+            A.nomIa() +
+            '.',
         ),
       ),
     );
@@ -1387,6 +1398,15 @@
           A.claudeAtelier.corriger(self);
         },
       ],
+      // Menu de l'assistant IA de l'outil de quiz : changer d'assistant, ou le configurer
+      Q() && Q().dialogues && Q().connexion.enLigne
+        ? [
+            tr('Changer d’assistant ou le configurer…', 'Switch or set up the assistant…'),
+            function () {
+              Q().dialogues.menuIa(ancre);
+            },
+          ]
+        : null,
     ]);
   };
 
@@ -1424,7 +1444,7 @@
   /* Correction de Claude ------------------------------------------------------------------ */
 
   P.afficherCorrection = function (c) {
-    var s = this.section('correction', tr('Correction de Claude', 'Claude’s marking'), 'correction');
+    var s = this.section('correction', tr('Correction de ' + A.nomIa(), A.nomIa() + '’s marking'), 'correction');
     if (c.note != null) {
       var mots = tr(
         c.note >= 1

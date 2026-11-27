@@ -3,9 +3,9 @@
    (%APPDATA%\Universal Learn Academy sous Windows, ~/.config/Universal Learn
    Academy sous Linux ; repris de %APPDATA%\Studies à la première ouverture).
 
-   Les clés manquantes reprennent leur valeur par défaut. La clé d'API Anthropic
-   y est rangée chiffrée par le système (safeStorage, voir claude.js) et n'est
-   jamais envoyée à l'interface des paramètres. */
+   Les clés manquantes reprennent leur valeur par défaut. Les clés d'API (Anthropic,
+   OpenAI, Gemini) y sont rangées chiffrées par le système (safeStorage, voir
+   claude.js et ia.js) et ne sont jamais envoyées à l'interface des paramètres. */
 
 const { app } = require('electron');
 const fs = require('fs');
@@ -30,6 +30,9 @@ const DEFAUT = {
   // Connexion à Claude : « compte » (Claude Code, connecté par l'utilisateur) ou
   // « cle » (clé d'API personnelle, chiffrée : « enc:… »)
   claude: { mode: 'compte', cle: '' },
+  // Connexion à ChatGPT (Codex CLI) et à Gemini (Gemini CLI), même principe (ia.js)
+  codex: { mode: 'compte', cle: '' },
+  gemini: { mode: 'compte', cle: '' },
   // Synchronisation automatique du dossier des données quand c'est un dépôt Git suivi
   // (synchro.js) : null tant que l'utilisateur n'a pas répondu à la proposition
   synchro: { auto: null },
@@ -90,8 +93,10 @@ function modifier(partiel) {
 /** Réglages sans la clé chiffrée, pour l'interface. */
 function publics(reglages = lire()) {
   const r = copie(reglages);
-  r.claude.cleEnregistree = Boolean(r.claude.cle);
-  delete r.claude.cle;
+  for (const f of ['claude', 'codex', 'gemini']) {
+    r[f].cleEnregistree = Boolean(r[f].cle);
+    delete r[f].cle;
+  }
   return r;
 }
 

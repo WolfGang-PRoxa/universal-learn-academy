@@ -9,7 +9,11 @@
      { type: "texte", texte }             un morceau de réponse
      { type: "outil", nom, detail }       Claude consulte un fichier, lance une commande…
      { type: "quota", info }              utilisation de l'abonnement (fenêtres de 5 h et 7 jours)
-   et se termine par un objet { texte, session, structure, duree, cout, modele }. */
+   et se termine par un objet { texte, session, structure, duree, cout, modele }.
+
+   lancer() passe la demande à l'assistant choisi dans les réglages (« fournisseur ») :
+   Claude Code ici même, Codex CLI (lib/codex.js) ou Gemini CLI (lib/gemini.js), qui
+   prennent les mêmes options et émettent les mêmes événements. */
 
 const fs = require('fs');
 const os = require('os');
@@ -111,7 +115,7 @@ function detailOutil(nom, entree) {
   }
   Renvoie { promesse, arreter }.
 */
-function lancer(options) {
+function lancerClaude(options) {
   const info = trouver();
   if (!info.executable) {
     return { promesse: Promise.reject(new Error(info.erreur)), arreter() {} };
@@ -268,4 +272,43 @@ function lancer(options) {
   };
 }
 
-module.exports = { trouver, lancer, arreterArbre };
+/* Assistant choisi --------------------------------------------------------------- */
+
+const NOMS = { claude: 'Claude', codex: 'ChatGPT', gemini: 'Gemini' };
+const OUTILS = { claude: 'Claude Code', codex: 'Codex CLI', gemini: 'Gemini CLI' };
+
+function module_(f) {
+  return f === 'codex' ? require('./codex') : f === 'gemini' ? require('./gemini') : null;
+}
+
+function fournisseur() {
+  return reglages.lire().fournisseur || 'claude';
+}
+
+/** Outil d'un assistant : { executable, version } ou { erreur }. */
+function trouverOutil(f, forcer) {
+  const m = module_(f);
+  return m ? m.trouver(forcer) : trouver(forcer);
+}
+
+/** L'assistant choisi : { fournisseur, nom, outil, disponible, version, executable, erreur }. */
+function assistant(forcer) {
+  const f = fournisseur();
+  const c = trouverOutil(f, forcer);
+  return {
+    fournisseur: f,
+    nom: NOMS[f],
+    outil: OUTILS[f],
+    disponible: Boolean(c.executable),
+    version: c.version || null,
+    executable: c.chemin || c.executable || null,
+    erreur: c.executable ? null : c.erreur,
+  };
+}
+
+function lancer(options) {
+  const m = module_(fournisseur());
+  return m ? m.lancer(options) : lancerClaude(options);
+}
+
+module.exports = { trouver, lancer, lancerClaude, arreterArbre, assistant, trouverOutil, NOMS, OUTILS };

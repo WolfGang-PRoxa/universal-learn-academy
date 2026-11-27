@@ -64,7 +64,7 @@ def classes_css(fichier, vus=None):
 
 def lire_charte():
     css = FEUILLE.read_text(encoding="utf-8")
-    matieres = set(re.findall(r'\[data-matiere="([\w-]+)"\]', css))
+    matieres = set(re.findall(r"\[data-matiere=[\"']([\w-]+)[\"']\]", css))
     return classes_css(FEUILLE), matieres
 
 

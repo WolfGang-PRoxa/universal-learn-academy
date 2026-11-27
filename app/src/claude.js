@@ -272,4 +272,13 @@ function ouvrirLien(nom) {
   if (url) shell.openExternal(url);
 }
 
-module.exports = { statut, connecter, deconnecter, enregistrerCle, appliquer, ouvrirLien, trouver };
+module.exports = {
+  statut,
+  connecter,
+  deconnecter,
+  enregistrerCle,
+  appliquer,
+  ouvrirLien,
+  trouver,
+  chiffrementDisponible,
+};

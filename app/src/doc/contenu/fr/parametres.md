@@ -1,6 +1,6 @@
 # Paramètres
 
-Les paramètres s’ouvrent par la roue dentée de la barre du haut, par **Ctrl+,** ou par **Fichier › Paramètres de l’application…**. Ils s’affichent dans la fenêtre des cours, par-dessus la page ; la croix, **Échap** ou un clic à côté du panneau les referment. Chaque changement s’applique dès qu’il est fait ; quelques-uns demandent un redémarrage, proposé alors par l’application.
+Les paramètres s’ouvrent par la roue dentée de la barre du haut, par **Ctrl+,** ou par **Fichier › Paramètres de l’application…**. Ils s’affichent dans la fenêtre des cours, par-dessus la page ; la croix, **Échap** ou un clic à côté du panneau les referment. Le bouton à gauche du titre replie ou déplie la liste des sections. Chaque changement s’applique dès qu’il est fait ; quelques-uns demandent un redémarrage, proposé alors par l’application.
 
 > **Astuce** Le [paramétrage guidé](guide:) présente les mêmes réglages un par un, avec une courte explication.
 
@@ -32,9 +32,9 @@ Activé, fermer la fenêtre la cache seulement : l’application reste disponibl
 
 Crée, répare ou remplace les raccourcis du Bureau, du menu Démarrer (menu des applications sous Linux) ou de n’importe quel dossier. [Ouvrir](parametres:raccourcis)
 
-## Claude et modèles
+## Assistant IA, Claude, ChatGPT et Gemini
 
-Connexion à Claude et choix des modèles : voir [Claude](page:claude). [Ouvrir](parametres:claude)
+Choix de l’assistant des quiz (Claude, ChatGPT ou Gemini), connexion à chacun et choix des modèles : voir [Claude, ChatGPT et Gemini](page:claude). [Ouvrir](parametres:assistant)
 
 ## Profil
 

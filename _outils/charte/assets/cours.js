@@ -23,6 +23,14 @@
 
   var racine = document.documentElement;
   var CLE_THEME = 'charte-theme';
+  var CLE_SOMMAIRE = 'charte-sommaire-replie';
+
+  // Sommaire replié sur grand écran : appliqué dès le chargement, sans clignement
+  try {
+    if (localStorage.getItem(CLE_SOMMAIRE) === '1') racine.classList.add('sommaire-replie');
+  } catch (e) {
+    /* stockage indisponible */
+  }
 
   /* Thème ------------------------------------------------------------------ */
 
@@ -102,7 +110,7 @@
       soutienTitre: "Soutenir Universal Learn Academy : m'offrir un café (Buy Me a Coffee)",
       soutienAria: 'Offrir un café sur Buy Me a Coffee',
       soutien: 'Offrir un café',
-      parametresTitre: 'Paramètres : application, Claude, mises à jour (Ctrl+,)',
+      parametresTitre: 'Paramètres : application, assistant IA, mises à jour (Ctrl+,)',
       parametres: 'Paramètres',
       aideTitre: 'Aide : documentation et paramétrage guidé (F1)',
       aide: 'Aide',
@@ -125,6 +133,7 @@
       lienVers: 'Lien vers « {texte} »',
       sommaire: 'Sommaire',
       afficherSommaire: 'Afficher le sommaire',
+      masquerSommaire: 'Masquer le sommaire',
       copier: 'Copier',
       copie: 'Copié',
       texte: 'Texte',
@@ -137,7 +146,7 @@
       soutienTitre: 'Support Universal Learn Academy: buy me a coffee (Buy Me a Coffee)',
       soutienAria: 'Buy me a coffee on Buy Me a Coffee',
       soutien: 'Buy me a coffee',
-      parametresTitre: 'Settings: application, Claude, updates (Ctrl+,)',
+      parametresTitre: 'Settings: application, AI assistant, updates (Ctrl+,)',
       parametres: 'Settings',
       aideTitre: 'Help: documentation and guided setup (F1)',
       aide: 'Help',
@@ -160,6 +169,7 @@
       lienVers: 'Link to “{texte}”',
       sommaire: 'Contents',
       afficherSommaire: 'Show the contents',
+      masquerSommaire: 'Hide the contents',
       copier: 'Copy',
       copie: 'Copied',
       texte: 'Text',
@@ -557,31 +567,53 @@
     page.insertBefore(nav, page.firstChild);
     page.classList.add('avec-sommaire');
 
-    // Tiroir sur petit écran
+    // Grand écran : colonne repliable, état mémorisé. Petit écran : tiroir.
     var voile = creer('div', 'voile');
     document.body.appendChild(voile);
     var barre = document.querySelector('.barre');
     var bouton = null;
+    var etroit = window.matchMedia ? matchMedia('(max-width: 64rem)') : { matches: false };
+    function visible() {
+      return etroit.matches
+        ? document.body.classList.contains('sommaire-ouvert')
+        : !racine.classList.contains('sommaire-replie');
+    }
+    function majBouton() {
+      if (!bouton) return;
+      var v = visible();
+      var libelle = tb(v ? 'masquerSommaire' : 'afficherSommaire');
+      bouton.setAttribute('aria-label', libelle);
+      bouton.title = libelle;
+      bouton.setAttribute('aria-expanded', String(v));
+    }
     if (barre) {
       bouton = creer('button', 'bouton-icone bouton-sommaire');
       bouton.type = 'button';
-      var libelleBouton = function () {
-        bouton.setAttribute('aria-label', tb('afficherSommaire'));
-      };
-      libelleBouton();
-      relibeller.push(libelleBouton);
+      majBouton();
+      relibeller.push(majBouton);
       bouton.setAttribute('aria-controls', 'sommaire');
-      bouton.setAttribute('aria-expanded', 'false');
       barre.insertBefore(bouton, barre.firstChild);
     }
     function basculer(ouvrir) {
       document.body.classList.toggle('sommaire-ouvert', ouvrir);
-      if (bouton) bouton.setAttribute('aria-expanded', String(ouvrir));
+      majBouton();
+    }
+    function replier(replie) {
+      racine.classList.toggle('sommaire-replie', replie);
+      try {
+        if (replie) localStorage.setItem(CLE_SOMMAIRE, '1');
+        else localStorage.removeItem(CLE_SOMMAIRE);
+      } catch (e) {
+        /* stockage indisponible */
+      }
+      majBouton();
     }
     if (bouton)
       bouton.addEventListener('click', function () {
-        basculer(!document.body.classList.contains('sommaire-ouvert'));
+        if (etroit.matches) basculer(!document.body.classList.contains('sommaire-ouvert'));
+        else replier(!racine.classList.contains('sommaire-replie'));
       });
+    if (etroit.addEventListener) etroit.addEventListener('change', majBouton);
     voile.addEventListener('click', function () {
       basculer(false);
     });

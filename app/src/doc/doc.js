@@ -6,7 +6,16 @@
 //   guide:                paramétrage guidé
 //   https://…             navigateur du système
 
-import { h, icone, bouton, chargerTextes, t, antiRebond, messageErreur } from '../parametres/outils.js';
+import {
+  h,
+  icone,
+  bouton,
+  chargerTextes,
+  t,
+  antiRebond,
+  messageErreur,
+  sommaireRepliable,
+} from '../parametres/outils.js';
 import { rendre } from './markdown.js';
 
 const api = window.studies;
@@ -16,9 +25,35 @@ api.i18n.surChangement(() => location.reload());
 document.title = t('d.titreFenetre');
 document.getElementById('titre').textContent = t('d.titre');
 document.getElementById('sommaire').setAttribute('aria-label', t('d.sommaire'));
+sommaireRepliable(document.getElementById('volet'), 'ula-doc-sommaire-replie');
 const recherche = document.getElementById('recherche');
 recherche.placeholder = t('d.rechercherIndice');
 recherche.setAttribute('aria-label', t('d.rechercher'));
+
+// Posée par-dessus la page des cours (2.7.0), comme les paramètres : la croix, Échap
+// (une fois la recherche vidée) et un clic sur le voile la referment.
+const defilement = document.getElementById('defilement');
+let fermeture = false;
+function fermer() {
+  if (fermeture) return;
+  fermeture = true;
+  document.body.classList.add('fermeture');
+  const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setTimeout(() => api.aide.fermer(), reduit ? 0 : 130);
+}
+const boutonFermer = document.getElementById('fermer');
+boutonFermer.append(icone('x', 20));
+boutonFermer.setAttribute('aria-label', t('commun.fermer'));
+boutonFermer.title = t('p.fermerAide');
+boutonFermer.addEventListener('click', fermer);
+document.getElementById('voile').addEventListener('click', fermer);
+document.getElementById('panneau').setAttribute('aria-label', t('d.titre'));
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape' || e.defaultPrevented) return;
+  e.preventDefault();
+  fermer();
+});
+
 const boutonGuide = document.getElementById('guide');
 boutonGuide.append(icone('guide', 16), t('d.guide'));
 boutonGuide.addEventListener('click', () => api.aide.guide());
@@ -108,7 +143,7 @@ async function aller(cible, { historique = true } = {}) {
   if (historique) history.replaceState(null, '', '#' + page + (ancre ? '#' + ancre : ''));
   const el = ancre && document.getElementById(ancre);
   if (el) el.scrollIntoView();
-  else window.scrollTo({ top: 0 });
+  else defilement.scrollTo({ top: 0 });
   zone.focus({ preventScroll: true });
 }
 
@@ -192,7 +227,8 @@ const chercher = antiRebond(async () => {
 }, 200);
 recherche.addEventListener('input', chercher);
 recherche.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
+  if (e.key === 'Escape' && recherche.value) {
+    e.preventDefault();
     recherche.value = '';
     chercher();
   }

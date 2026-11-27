@@ -1,6 +1,6 @@
 # Settings
 
-The settings open with the gear of the top bar, with **Ctrl+,** or with **File › Application settings…**. They appear in the courses window, over the page; the cross, **Esc** or a click outside the panel closes them. Each change applies as soon as it is made; a few require a restart, which the application then offers.
+The settings open with the gear of the top bar, with **Ctrl+,** or with **File › Application settings…**. They appear in the courses window, over the page; the cross, **Esc** or a click outside the panel closes them. The button left of the title collapses or expands the list of sections. Each change applies as soon as it is made; a few require a restart, which the application then offers.
 
 > **Tip** The [guided setup](guide:) presents the same settings one by one, with a short explanation.
 
@@ -32,9 +32,9 @@ When enabled, closing the window only hides it: the application stays available 
 
 Creates, repairs or replaces the shortcuts on the Desktop, in the Start menu (applications menu on Linux) or in any folder. [Open](parametres:raccourcis)
 
-## Claude and models
+## AI assistant, Claude, ChatGPT and Gemini
 
-Connection to Claude and choice of models: see [Claude](page:claude). [Open](parametres:claude)
+Choice of the quiz assistant (Claude, ChatGPT or Gemini), connection to each and choice of models: see [Claude, ChatGPT and Gemini](page:claude). [Open](parametres:assistant)
 
 ## Profile
 

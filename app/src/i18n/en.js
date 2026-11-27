@@ -13,6 +13,8 @@ module.exports = {
   'commun.chargement': 'Loading…',
   'commun.plusTard': 'Later',
   'commun.fermer': 'Close',
+  'commun.afficherSommaire': 'Show the contents',
+  'commun.masquerSommaire': 'Hide the contents',
   'commun.precedent': 'Previous',
   'commun.suivant': 'Next',
   'commun.passer': 'Skip',
@@ -40,6 +42,9 @@ module.exports = {
   'p.nav.raccourcis': 'Shortcuts',
   'p.nav.claude': 'Claude',
   'p.nav.modeles': 'Models',
+  'p.nav.assistant': 'AI assistant',
+  'p.nav.chatgpt': 'ChatGPT',
+  'p.nav.gemini': 'Gemini',
   'p.nav.profil': 'Profile',
   'p.nav.donnees': 'Data',
   'p.nav.synchro': 'Sync',
@@ -210,6 +215,82 @@ module.exports = {
   'p.claude.modeCleAide': 'To use Claude without a plan: usage is billed to the key. Claude Code is still required.',
   'p.claude.aide':
     'Anthropic does not allow a third-party application to offer sign-in with a claude.ai account or to keep its credentials: account sign-in therefore goes through Claude Code, at Anthropic.',
+
+  'p.assistant.titre': 'Quiz AI assistant',
+  'p.assistant.description':
+    'Assistant that answers during quizzes, grades written answers, writes reviews and generates new quizzes.',
+  'p.assistant.nom.claude': 'Claude',
+  'p.assistant.nom.codex': 'ChatGPT',
+  'p.assistant.nom.gemini': 'Gemini',
+  'p.assistant.aide.claude': 'Through Claude Code: a Claude account or an Anthropic API key.',
+  'p.assistant.aide.codex': 'Through Codex CLI, OpenAI’s tool: a ChatGPT account or an OpenAI API key.',
+  'p.assistant.aide.gemini': 'Through Gemini CLI, Google’s tool: a Google account or a Gemini API key.',
+  'p.assistant.note': 'Quizzes now use {nom}.',
+  'p.assistant.pret': '{outil} found (version {version}).',
+  'p.assistant.absent': '{outil} cannot be found on this computer: install it from the sign-in card below.',
+  'p.assistant.reglagesClaude':
+    'Sign-in, model and effort for each use: “Connection to Claude” and “Claude models and code execution” cards.',
+  'p.assistant.reglagesAutre':
+    'Sign-in and model: “Connection to {nom}” card. The effort chosen for each use in “Claude models and code execution” also applies to ChatGPT; Gemini keeps its own.',
+
+  'p.ia.installer': 'Install {outil}',
+  'p.ia.connecte': '{outil} is signed in.',
+  'p.ia.connecteEmail': '{outil} is signed in with the account {email}.',
+  'p.ia.connecteCleOutil': '{outil} is signed in with an API key saved in the tool itself.',
+  'p.ia.deconnecte': '{outil} is not signed in to any account.',
+  'p.ia.deconnecterTitre': 'Sign out of {outil}?',
+  'p.ia.noteDeconnecte': '{outil} is signed out.',
+  'p.ia.verification': 'Checking {outil}…',
+  'p.ia.modele': 'Model (empty: the account’s default model)',
+  'p.ia.chemin': '{outil} path (empty: automatic search)',
+  'p.ia.cheminExemple': 'Automatic search: PATH, npm install…',
+  'p.ia.noteReglages': '{nom} settings saved.',
+
+  'p.ia.codex.titre': 'Connection to ChatGPT',
+  'p.ia.codex.description': 'To use ChatGPT in quizzes instead of Claude, through Codex CLI.',
+  'p.ia.codex.absent':
+    'Codex CLI is not installed on this computer. It installs with Node.js: “npm install -g @openai/codex”.',
+  'p.ia.codex.noteTerminal':
+    'A terminal opened on “codex login”: sign-in happens in the browser, on OpenAI’s site. Then come back here and “Check”.',
+  'p.ia.codex.deconnecterTexte':
+    'Codex CLI will be signed out on this computer, for Universal Learn Academy and for every other use of Codex.',
+  'p.ia.codex.modeCompte': 'A ChatGPT account, through Codex CLI',
+  'p.ia.codex.modeCompteAide':
+    'Sign-in uses a ChatGPT plan (Plus, Pro…), on OpenAI’s site. Universal Learn Academy never sees the credentials.',
+  'p.ia.codex.modeCle': 'An OpenAI API key',
+  'p.ia.codex.modeCleAide': 'Without a plan: usage is billed to the key. Codex CLI is still required.',
+  'p.ia.codex.cleLibelle': 'OpenAI API key',
+  'p.ia.codex.cleAide':
+    'The key is checked with OpenAI, then encrypted by the system; it never leaves this computer and is never shown again.',
+  'p.ia.codex.creerCle': 'Create a key on the OpenAI platform',
+  'p.ia.codex.modeleExemple': 'gpt-…',
+  'p.ia.codex.modeleAide': 'The same model is used for every use; reasoning effort follows each use’s effort.',
+  'p.ia.codex.aide':
+    'As with Claude, account sign-in goes through the official tool (Codex CLI, at OpenAI): Universal Learn Academy collects no credentials or tokens.',
+
+  'p.ia.gemini.titre': 'Connection to Gemini',
+  'p.ia.gemini.description': 'To use Gemini in quizzes instead of Claude, through Gemini CLI.',
+  'p.ia.gemini.absent':
+    'Gemini CLI is not installed on this computer. It installs with Node.js: “npm install -g @google/gemini-cli”.',
+  'p.ia.gemini.noteTerminal':
+    'A terminal opened on Gemini CLI: choose “Sign in with Google” and sign in in the browser, then close the terminal, come back here and “Check”.',
+  'p.ia.gemini.deconnecterTexte':
+    'Gemini CLI credentials are erased from this computer, for Universal Learn Academy and for every other use of Gemini CLI.',
+  'p.ia.gemini.connecteVertex': 'Gemini CLI is set up for Vertex AI (Google Cloud).',
+  'p.ia.gemini.modeCompte': 'A Google account, through Gemini CLI',
+  'p.ia.gemini.modeCompteAide':
+    'Sign-in uses a Google account (free tier or a Google AI plan), on Google’s site. Universal Learn Academy never sees the credentials.',
+  'p.ia.gemini.modeCle': 'A Gemini API key',
+  'p.ia.gemini.modeCleAide':
+    'Key created in Google AI Studio: usage counts against the key. Gemini CLI is still required.',
+  'p.ia.gemini.cleLibelle': 'Gemini API key',
+  'p.ia.gemini.cleAide':
+    'The key is checked with Google, then encrypted by the system; it never leaves this computer and is never shown again.',
+  'p.ia.gemini.creerCle': 'Create a key in Google AI Studio',
+  'p.ia.gemini.modeleExemple': 'gemini-…',
+  'p.ia.gemini.modeleAide': 'The same model is used for every use.',
+  'p.ia.gemini.aide':
+    'As with Claude, account sign-in goes through the official tool (Gemini CLI, at Google): Universal Learn Academy collects no credentials or tokens.',
 
   'p.modeles.titre': 'Claude models and code execution',
   'p.modeles.description':
@@ -554,6 +635,12 @@ module.exports = {
   'c.absent': 'Claude Code is not installed on this computer.',
   'c.sansTerminal': 'No terminal found: run “claude auth login” in a terminal.',
   'c.deconnexionEchec': 'Sign-out failed.',
+  'ia.inconnu': 'Unknown assistant.',
+  'ia.cleRefusee': '{editeur} rejects this key (invalid or revoked).',
+  'ia.verificationStatut': 'Cannot check the key ({editeur} answered {statut}).',
+  'ia.verificationReseau': 'Cannot check the key: no connection to {editeur}.',
+  'ia.pasUneCle.codex': 'This is not an OpenAI API key (it starts with “sk-”).',
+  'ia.pasUneCle.gemini': 'This is not a Gemini API key (at least 30 letters and digits, often “AIza…”).',
   'r.inconnu': 'Unknown shortcut location.',
   'r.ecriture': 'The shortcut could not be written to {dossier}.',
   'r.verification': 'The shortcut was written, but it does not open the application.',

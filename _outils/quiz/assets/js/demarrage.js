@@ -1,7 +1,8 @@
 /* ==========================================================================
    Quiz · démarrage (dernier module chargé)
    Détecte le serveur local, complète la barre du haut (état de la
-   connexion, portail, réglages), puis lance le quiz ou le portail.
+   connexion, qui ouvre le menu de l'assistant IA, portail, réglages), puis
+   lance le quiz ou le portail.
    ========================================================================== */
 (function (A) {
   'use strict';
@@ -33,8 +34,9 @@
     var groupe = el('div', 'barre-quiz');
     var etat = el('button', 'etat-serveur');
     etat.type = 'button';
+    // Serveur joignable : menu de l'assistant IA (le choisir, ou le configurer)
     etat.addEventListener('click', function () {
-      if (C.enLigne) A.dialogues.reglages();
+      if (C.enLigne) A.dialogues.menuIa(etat);
       else A.dialogues.serveur();
     });
     groupe.appendChild(etat);
@@ -61,10 +63,11 @@
 
     function maj() {
       var classe, texte, titre;
+      var a = C.etat && C.etat.assistant;
       if (C.claudeDisponible()) {
         classe = 'ok';
-        texte = 'Claude';
-        titre = T('barre.claudeTitre', { version: C.etat.claude.version });
+        texte = C.assistant().nom;
+        titre = T('barre.claudeTitre', { version: a ? a.version : C.etat.claude.version });
       } else if (C.enLigne) {
         classe = 'partiel';
         texte = T('barre.sansClaude');
@@ -74,9 +77,11 @@
         texte = T('barre.horsLigne');
         titre = T('barre.horsLigneTitre');
       }
-      etat.className = 'etat-serveur ' + classe;
+      etat.className = 'etat-serveur ' + classe + (C.enLigne ? ' menu' : '');
       etat.textContent = texte;
-      etat.title = titre;
+      etat.title = C.enLigne ? titre + '\n' + T('ia.menuTitre') : titre;
+      if (C.enLigne) etat.setAttribute('aria-haspopup', 'menu');
+      else etat.removeAttribute('aria-haspopup');
     }
     maj();
     C.surChangement(maj);

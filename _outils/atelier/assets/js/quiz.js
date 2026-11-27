@@ -125,8 +125,10 @@
             rapport: {
               type: 'indisponible',
               message: tr(
-                "Pas de correction automatique : comparer à la solution et s'auto-évaluer, ou demander à Claude.",
-                'No automatic marking: compare with the solution and self-assess, or ask Claude.',
+                "Pas de correction automatique : comparer à la solution et s'auto-évaluer, ou demander à " +
+                  A.nomIa() +
+                  '.',
+                'No automatic marking: compare with the solution and self-assess, or ask ' + A.nomIa() + '.',
               ),
             },
           });

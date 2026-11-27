@@ -101,6 +101,13 @@ body {
   .sommaire-doc ul {
     display: grid;
   }
+  .sommaire-replie .corps {
+    grid-template-columns: minmax(0, 1fr);
+    padding-left: 28px;
+  }
+  .sommaire-replie .page-doc {
+    margin-inline: auto;
+  }
 }
 
 .page-doc {
@@ -328,4 +335,71 @@ mark {
   background: color-mix(in srgb, var(--alerte) 30%, transparent);
   color: inherit;
   border-radius: 3px;
+}
+
+/* -- Documentation dans la fenêtre des cours (2.7.0) ---------------------------------
+   Comme les paramètres (<html class="integre">, règles communes dans parametres.css) :
+   voile et panneau centré. Le sommaire et la page défilent chacun dans le panneau ;
+   sous 900 px de panneau, le sommaire passe au-dessus de la page. */
+.integre.doc body {
+  min-height: 0;
+}
+.integre.doc .entete {
+  align-items: center;
+}
+.integre.doc .bouton-fermer {
+  align-self: center;
+}
+.integre.doc .corps {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+.integre.doc .sommaire-doc {
+  position: static;
+  flex: none;
+  max-height: 32%;
+  overflow-y: auto;
+  margin: 0;
+  padding: 2px 24px 10px;
+  border-bottom: 1px solid var(--bordure);
+}
+.integre.doc .defilement {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0 6px 10px 0;
+  padding: 16px 18px 28px 24px;
+  scroll-padding-top: 16px;
+}
+@container panneau (min-width: 900px) {
+  .integre.doc .corps {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 8px;
+  }
+  .integre.doc .sommaire-doc {
+    max-height: none;
+    padding: 4px 8px 24px 18px;
+    border-bottom: 0;
+  }
+  .integre.doc .sommaire-doc ul {
+    display: grid;
+  }
+  .integre.doc .defilement {
+    padding: 4px 22px 30px 8px;
+  }
+  .sommaire-replie.integre.doc .corps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sommaire-replie.integre.doc .defilement {
+    padding-left: 28px;
+  }
+  .sommaire-replie.integre.doc .page-doc {
+    margin-inline: auto;
+  }
 }

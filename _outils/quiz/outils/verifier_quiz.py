@@ -15,6 +15,9 @@ La vérification comprend :
     jeux de données et tests des questions de code ;
   - le HTML des questions : classes connues, code non échappé, formules ;
   - les liens « revoir » et « cours » : fichier existant, ancre présente ;
+  - l'autonomie des questions : l'étudiant navigue librement entre elles, et
+    l'ordre peut être tiré au sort, donc aucune ne renvoie à une autre
+    (« la question précédente », « la question suivante ») ;
   - les questions de type « atelier » (diagrammes, schémas, tables…), par le
     vérificateur de l'atelier (_outils/atelier/outils/verifier.js, qui demande Node) ;
     la page doit alors charger atelier.css et atelier.js.
@@ -64,6 +67,12 @@ CHAMPS = {
 }
 CHAMPS_RACINE = {"id", "titre", "description", "melanger", "questions", "cours", "jeux", "penalite_indice"}
 SOLUTIONS = QUIZ / "serveur" / "outils" / "verifier-solutions.js"
+# Renvois à une autre question du quiz : interdits, la navigation est libre et l'ordre peut être mélangé
+RENVOI = re.compile(
+    r"\b(?:questions?|q\.)\s+(?:pr[ée]c[ée]dentes?|suivantes?|d'avant|ci-dessus|ci-dessous)\b"
+    r"|\b(?:previous|next|preceding|following)\s+questions?\b",
+    re.IGNORECASE,
+)
 ATELIER = OUTILS / "atelier" / "outils" / "verifier.js"
 
 
@@ -371,6 +380,18 @@ def verifier_donnees(d, page, connues, err, avert):
         for i, p in enumerate(q.get("paires") or []):
             for x in (p if isinstance(p, list) else []):
                 verifier_fragment(x, f"{ou}, paires[{i}]", connues, err, avert)
+
+        # Autonomie : pas de renvoi à une autre question
+        for k in ("enonce", "texte", "consigne", "explication"):
+            v = q.get(k)
+            if isinstance(v, str):
+                m = RENVOI.search(re.sub(r"<[^>]+>", " ", v))
+                if m:
+                    err(f"{ou}, {k} : renvoi à une autre question (« {m.group(0)} ») ; "
+                        "chaque question doit se comprendre seule, les données redonnées en entier")
+        for i, x in enumerate(q.get("indices") or []):
+            if isinstance(x, str) and RENVOI.search(re.sub(r"<[^>]+>", " ", x)):
+                err(f"{ou}, indices[{i}] : renvoi à une autre question ; chaque question doit se comprendre seule")
 
         # Lien vers le cours
         rv = q.get("revoir")

@@ -1,6 +1,6 @@
 // Page des paramètres de l'application installée : langue, aide, mises à jour,
-// échelle, arrière-plan, fenêtre au lancement, raccourcis, connexion à Claude,
-// modèles, profils, dossier des données, synchronisation, à propos.
+// échelle, arrière-plan, fenêtre au lancement, raccourcis, assistant des quiz,
+// connexion à Claude, modèles, connexion à ChatGPT et à Gemini, profils, dossier des données, synchronisation, à propos.
 // Textes : dictionnaires de src/i18n (clés « p. »), chargés avant tout.
 
 import {
@@ -19,6 +19,7 @@ import {
   locale,
   messageCreation,
   libelleLieu,
+  sommaireRepliable,
 } from './outils.js';
 import { creerCadre } from './cadre-fenetre.js';
 
@@ -791,6 +792,339 @@ function carteClaude() {
   );
 }
 
+/* -- Assistant utilisé par les quiz : Claude, ChatGPT (Codex CLI) ou Gemini ------------ */
+
+const ASSISTANTS = ['claude', 'codex', 'gemini'];
+
+function carteAssistant() {
+  const zone = h('div', { class: 'pile' }, etat('', t('p.modeles.lecture')));
+  let choisi = null;
+
+  function peindre(e) {
+    const a = e.assistant || { fournisseur: 'claude', disponible: e.claude.disponible };
+    choisi = a.fournisseur;
+    const option = (f) =>
+      h(
+        'label',
+        {},
+        h('input', {
+          type: 'radio',
+          name: 'assistant',
+          value: f,
+          checked: choisi === f,
+          onChange: async () => {
+            try {
+              await api.quiz.reglages({ fournisseur: f });
+              note(t('p.assistant.note', { nom: t('p.assistant.nom.' + f) }));
+            } catch (err) {
+              note(messageErreur(err), { erreur: true });
+            }
+            charger();
+          },
+        }),
+        h('span', {}, h('strong', {}, t('p.assistant.nom.' + f)), h('span', {}, t('p.assistant.aide.' + f))),
+      );
+    zone.replaceChildren(
+      h('div', { class: 'choix' }, ...ASSISTANTS.map(option)),
+      a.disponible
+        ? etat('ok', t('p.assistant.pret', { outil: a.outil || 'Claude Code', version: a.version || '' }))
+        : etat('alerte', t('p.assistant.absent', { outil: a.outil || 'Claude Code' })),
+      h(
+        'p',
+        { class: 'aide' },
+        t(choisi === 'claude' ? 'p.assistant.reglagesClaude' : 'p.assistant.reglagesAutre', {
+          nom: t('p.assistant.nom.' + choisi),
+        }),
+      ),
+    );
+  }
+
+  async function charger() {
+    try {
+      peindre(await api.quiz.etat());
+    } catch (err) {
+      zone.replaceChildren(
+        etat('erreur', messageErreur(err)),
+        h('div', { class: 'ligne' }, bouton(t('commun.reessayer'), { genre: 'leger', onClick: charger })),
+      );
+    }
+  }
+
+  charger();
+  return carte('assistant', 'bulle', t('p.assistant.titre'), t('p.assistant.description'), zone);
+}
+
+/* -- Connexion à ChatGPT (Codex CLI) et à Gemini (Gemini CLI), comme pour Claude ------- */
+
+function carteFournisseur(f) {
+  const cle = (k, x) => t(`p.ia.${f}.${k}`, x);
+  const nom = t('p.assistant.nom.' + f);
+  const outil = f === 'codex' ? 'Codex CLI' : 'Gemini CLI';
+  const zoneEtat = h('div', { class: 'choix-etat' });
+  const zoneCle = h('div', {});
+  const zoneOutil = h('div', { class: 'pile' });
+  let statut = null;
+  let mode = (reglages[f] && reglages[f].mode) || 'compte';
+
+  const saisie = h('input', {
+    class: 'saisie',
+    type: 'password',
+    placeholder: f === 'codex' ? 'sk-…' : 'AIza…',
+    autocomplete: 'off',
+    spellcheck: false,
+  });
+  const chemin = h('input', {
+    class: 'saisie',
+    type: 'text',
+    placeholder: t('p.ia.cheminExemple'),
+    spellcheck: false,
+  });
+  const modele = h('input', {
+    class: 'saisie',
+    type: 'text',
+    placeholder: cle('modeleExemple'),
+    spellcheck: false,
+  });
+
+  function libelleCompte(c) {
+    if (c.methode === 'cle') return t('p.ia.connecteCleOutil', { outil });
+    if (c.methode === 'vertex') return t('p.ia.gemini.connecteVertex');
+    if (c.email) return t('p.ia.connecteEmail', { outil, email: c.email });
+    return t('p.ia.connecte', { outil });
+  }
+
+  function peindre() {
+    const s = statut;
+    const blocs = [];
+    if (s.serveur) blocs.push(etat('erreur', s.serveur));
+    else if (!s.outil) {
+      blocs.push(
+        etat('alerte', cle('absent')),
+        h(
+          'div',
+          { class: 'ligne' },
+          bouton(t('p.ia.installer', { outil }), { genre: 'principal', onClick: () => api.ia.lien(f, 'installation') }),
+          bouton(t('p.claude.reverifier'), { genre: 'leger', onClick: actualiser }),
+        ),
+      );
+    } else {
+      blocs.push(
+        h(
+          'p',
+          { class: 'aide' },
+          outil + ' ',
+          h('code', {}, s.outil.version),
+          ' : ',
+          h('code', {}, s.outil.executable),
+        ),
+      );
+      if (mode === 'compte') {
+        const c = s.compte || {};
+        blocs.push(c.connecte ? etat('ok', libelleCompte(c)) : etat('alerte', t('p.ia.deconnecte', { outil })));
+        blocs.push(
+          h(
+            'div',
+            { class: 'ligne' },
+            bouton(t(c.connecte ? 'p.claude.changerCompte' : 'p.claude.seConnecter'), {
+              genre: c.connecte ? '' : 'principal',
+              onClick: async () => {
+                try {
+                  await api.ia.connecter(f);
+                  note(cle('noteTerminal'), { duree: 10000 });
+                } catch (e) {
+                  note(messageErreur(e), { erreur: true });
+                }
+              },
+            }),
+            c.connecte && c.methode !== 'vertex'
+              ? bouton(t('p.claude.seDeconnecter'), {
+                  genre: 'discret-danger',
+                  onClick: async () => {
+                    if (
+                      !(await confirmer({
+                        titre: t('p.ia.deconnecterTitre', { outil }),
+                        message: cle('deconnecterTexte'),
+                        valider: t('p.claude.deconnecter'),
+                        danger: true,
+                      }))
+                    )
+                      return;
+                    try {
+                      await api.ia.deconnecter(f);
+                      note(t('p.ia.noteDeconnecte', { outil }));
+                    } catch (e) {
+                      note(messageErreur(e), { erreur: true });
+                    }
+                    actualiser();
+                  },
+                })
+              : null,
+            bouton(t('p.claude.verifier'), { genre: 'leger', onClick: actualiser }),
+          ),
+        );
+      }
+    }
+    zoneEtat.replaceChildren(...blocs);
+
+    zoneCle.hidden = mode !== 'cle';
+    const etats = [];
+    if (s.cleEnregistree && s.cleLisible)
+      etats.push(etat('ok', t(s.cleActive ? 'p.claude.cleActive' : 'p.claude.cleApresRedemarrage')));
+    else if (s.cleEnregistree) etats.push(etat('erreur', t('p.claude.cleIllisible')));
+    else etats.push(etat('alerte', t('p.claude.cleAucune')));
+    if (!s.chiffrementDisponible) etats.push(etat('erreur', t('p.claude.sansChiffrement')));
+    zoneCle.replaceChildren(
+      h('label', { class: 'champ' }, h('span', {}, cle('cleLibelle')), saisie),
+      h(
+        'p',
+        { class: 'aide' },
+        cle('cleAide') + ' ',
+        h(
+          'a',
+          {
+            href: '#',
+            onClick: (e) => {
+              e.preventDefault();
+              api.ia.lien(f, 'cles');
+            },
+          },
+          cle('creerCle'),
+        ),
+        '.',
+      ),
+      h(
+        'div',
+        { class: 'ligne' },
+        bouton(t('p.claude.enregistrerCle'), {
+          genre: 'principal',
+          desactive: !s.chiffrementDisponible,
+          onClick: async () => {
+            const v = saisie.value.trim();
+            if (!v) {
+              note(t('p.claude.collerCle'), { erreur: true });
+              return;
+            }
+            try {
+              const r = await api.ia.enregistrerCle(f, v);
+              saisie.value = '';
+              note(
+                r.avertissement
+                  ? t('p.claude.cleEnregistreeAvert', { avertissement: r.avertissement })
+                  : t('p.claude.cleEnregistree'),
+                { duree: 5000 },
+              );
+              proposerRedemarrage();
+            } catch (e) {
+              note(messageErreur(e), { erreur: true, duree: 6000 });
+            }
+            actualiser();
+          },
+        }),
+        s.cleEnregistree
+          ? bouton(t('p.claude.supprimerCle'), {
+              genre: 'discret-danger',
+              onClick: async () => {
+                if (
+                  !(await confirmer({
+                    titre: t('p.claude.supprimerCleTitre'),
+                    message: t('p.claude.supprimerCleTexte'),
+                    valider: t('commun.supprimer'),
+                    danger: true,
+                  }))
+                )
+                  return;
+                await api.ia.enregistrerCle(f, '');
+                note(t('p.claude.cleSupprimee'));
+                actualiser();
+              },
+            })
+          : null,
+      ),
+      ...etats,
+    );
+  }
+
+  async function actualiser() {
+    zoneEtat.replaceChildren(etat('', t('p.ia.verification', { outil })));
+    try {
+      statut = await api.ia.statut(f);
+      peindre();
+    } catch (e) {
+      zoneEtat.replaceChildren(etat('erreur', messageErreur(e)));
+    }
+  }
+
+  // Modèle et chemin de l'outil : réglages du serveur local des quiz
+  async function chargerOutil() {
+    try {
+      const e = await api.quiz.etat();
+      const r = e.reglages[f] || {};
+      chemin.value = r.executable || '';
+      modele.value = r.modele || '';
+      zoneOutil.replaceChildren(
+        h('label', { class: 'champ' }, h('span', {}, t('p.ia.modele')), modele),
+        h('p', { class: 'aide' }, cle('modeleAide')),
+        h('label', { class: 'champ' }, h('span', {}, t('p.ia.chemin', { outil })), chemin),
+        h(
+          'div',
+          { class: 'ligne' },
+          bouton(t('commun.enregistrer'), {
+            onClick: async () => {
+              try {
+                await api.quiz.reglages({ [f]: { executable: chemin.value.trim(), modele: modele.value.trim() } });
+                note(t('p.ia.noteReglages', { nom }));
+                actualiser();
+              } catch (err) {
+                note(messageErreur(err), { erreur: true });
+              }
+            },
+          }),
+        ),
+      );
+    } catch (err) {
+      zoneOutil.replaceChildren();
+    }
+  }
+
+  const option = (valeur, titre, description) =>
+    h(
+      'label',
+      {},
+      h('input', {
+        type: 'radio',
+        name: 'mode-' + f,
+        value: valeur,
+        checked: mode === valeur,
+        onChange: async () => {
+          await enregistrer({ [f]: { mode: valeur } });
+          mode = valeur;
+          if (statut) peindre();
+          proposerRedemarrage();
+        },
+      }),
+      h('span', {}, h('strong', {}, titre), h('span', {}, description)),
+    );
+
+  actualiser();
+  chargerOutil();
+  return carte(
+    f === 'codex' ? 'chatgpt' : 'gemini',
+    'claude',
+    cle('titre'),
+    cle('description'),
+    h(
+      'div',
+      { class: 'choix' },
+      option('compte', cle('modeCompte'), cle('modeCompteAide')),
+      option('cle', cle('modeCle'), cle('modeCleAide')),
+    ),
+    zoneEtat,
+    zoneCle,
+    zoneOutil,
+    h('p', { class: 'aide' }, cle('aide')),
+  );
+}
+
 /* -- Modèles de Claude et exécution du code (ex-« Réglages » des quiz) ------------------- */
 
 // Libellés des usages connus dans la langue de l'interface (le serveur les donne en français)
@@ -1325,8 +1659,11 @@ const SECTIONS = [
   ['arriere-plan', 'p.nav.arriere', carteArrierePlan],
   ['fenetre', 'p.nav.fenetre', carteFenetre],
   ['raccourcis', 'p.nav.raccourcis', carteRaccourcis],
+  ['assistant', 'p.nav.assistant', carteAssistant],
   ['claude', 'p.nav.claude', carteClaude],
   ['claude-modeles', 'p.nav.modeles', carteModeles],
+  ['chatgpt', 'p.nav.chatgpt', () => carteFournisseur('codex')],
+  ['gemini', 'p.nav.gemini', () => carteFournisseur('gemini')],
   ['profil', 'p.nav.profil', carteProfils],
   ['donnees', 'p.nav.donnees', carteDonnees],
   ['synchro', 'p.nav.synchro', carteSynchro],
@@ -1335,6 +1672,7 @@ const SECTIONS = [
 
 const sommaire = document.querySelector('.sommaire');
 sommaire.setAttribute('aria-label', t('p.nav.aria'));
+sommaireRepliable(document.getElementById('volet'), 'ula-parametres-sommaire-replie');
 sommaire.replaceChildren(...SECTIONS.map(([id, cle]) => h('a', { href: '#' + id }, t(cle))));
 
 const cartes = document.getElementById('cartes');

@@ -6,6 +6,8 @@ All notable changes to Universal Learn Academy are documented in this file. The 
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-11-27
+
 ### Added
 
 - License: CC BY-NC-ND 4.0 (`LICENSE`), declared in `app/package.json` and copied to the public repository; original course materials remain their authors' property.
@@ -14,12 +16,22 @@ All notable changes to Universal Learn Academy are documented in this file. The 
 - First automated tests (`npm test`, Node's built-in test runner): personal data rules and catalogue pack and curriculum manifests.
 - Prettier and ESLint (`npm run format`, `npm run lint`), run first by `npm run check`; the code of the app (`app/`) and of the tools (`_outils/`) is formatted.
 - Continuous integration on every push and pull request (`npm ci`, `npm run check`, `npm test`), in the working repository and in the public repository.
+- Quizzes can use ChatGPT or Gemini instead of Claude. Settings › AI assistant chooses the assistant; "Connection to ChatGPT" (Codex CLI) and "Connection to Gemini" (Gemini CLI) cards work like Claude's: account sign-in in the official tool (the app never sees credentials) or an API key encrypted by the system, plus the model and the tool's path. Without the app, the quiz settings dialog offers the same choice.
+- The assistant's name is a button everywhere it appears (top bar of quizzes, conversation panel, TD workshops): a small menu switches between Claude, ChatGPT and Gemini, or opens the settings of each one. Quiz and TD labels follow the chosen assistant ("Ask ChatGPT", "Gemini is thinking…").
+- Collapsible left panel everywhere: course and quiz pages (contents), documentation and settings. The choice is remembered.
 - The whole interface follows the language chosen in the app (French or English): home page, search, menus, error pages from the local server, course toolbar (contents, copy buttons), "My revisions" portal, quiz screens (home, questions, corrections, results, Claude panel, generation and follow-up dialogs) and TD workshops (editors, drawing tools, checks, comparison with the solution, Claude help and marking). Claude answers in English when the app is in English. Course, quiz and TD content stays in its original language for now.
 
 ### Changed
 
+- The documentation opens like the settings, over the page in the course window (overlay and centred panel; Esc, the cross or a click outside close it), instead of a separate window. A settings link opens the settings on top of it.
 - `.gitignore` ignores local environment files (`.env`).
 - TD workshop messages no longer use the informal French “tu” form.
+- Quizzes: free navigation between questions in both modes. In practice mode too, the numbered dots and the ‹ › arrows lead to any question, "Skip" leaves a question to come back to later (the answer in progress is kept), a corrected question takes the colour of its result, and "Finish" marks the rest after confirmation.
+- Quizzes: every question stands on its own. Catalogue quizzes no longer refer to another question ("previous question", "same urn", "with the same code"…): the data is restated in each question. The quiz generator requires it, and `verifier_quiz.py` reports any such reference.
+
+### Fixed
+
+- Style guide checker (`verifier.py`): it no longer recognised any subject since `cours.css` switched to single quotes, and so reported an error on every page.
 
 ## [2.6.2] - 2026-11-21
 
@@ -162,7 +174,8 @@ All notable changes to Universal Learn Academy are documented in this file. The 
 - First installable app, named Studies (Electron, electron-builder, electron-updater): automatic update at startup, configurable window at launch, Desktop, Start menu or chosen-folder shortcuts, connection to Claude through Claude Code or an encrypted API key. NSIS installer and AppImage with their `.blockmap` files, published with the GitHub CLI.
 - Personal data excluded from the executables, with a check that makes the build fail.
 
-[Unreleased]: https://github.com/WolfGang-PRoxa/universal-learn-academy/compare/v2.6.2...HEAD
+[Unreleased]: https://github.com/WolfGang-PRoxa/universal-learn-academy/compare/v2.7.0...HEAD
+[2.7.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.7.0
 [2.6.2]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.6.2
 [2.6.1]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.6.1
 [2.6.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.6.0

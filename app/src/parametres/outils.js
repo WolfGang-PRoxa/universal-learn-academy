@@ -62,6 +62,8 @@ const ICONES = {
   dossier: '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2Z"/>',
   claude:
     '<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8Z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8Z"/>',
+  bulle:
+    '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12Z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/>',
   livre:
     '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5Z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
@@ -75,6 +77,7 @@ const ICONES = {
   ok: '<path d="M20 6 9 17l-5-5"/>',
   x: '<path d="M18 6 6 18M6 6l12 12"/>',
   attention: '<path d="M12 3 2 21h20Z"/><path d="M12 10v5M12 18v.5"/>',
+  volet: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>',
 };
 
 export function icone(nom, taille = 18) {
@@ -83,6 +86,39 @@ export function icone(nom, taille = 18) {
   s.setAttribute('aria-hidden', 'true');
   s.innerHTML = `<svg viewBox="0 0 24 24" width="${taille}" height="${taille}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONES[nom] || ''}</svg>`;
   return s;
+}
+
+/**
+ * Sommaire repliable (documentation, paramètres) : le bouton replie ou déplie la
+ * colonne de gauche, en posant la classe « sommaire-replie » sur <html> ; l'état
+ * est gardé dans le navigateur de la fenêtre, sous la clé donnée.
+ */
+export function sommaireRepliable(boutonVolet, cle) {
+  const racine = document.documentElement;
+  try {
+    racine.classList.toggle('sommaire-replie', localStorage.getItem(cle) === '1');
+  } catch {
+    /* stockage indisponible */
+  }
+  const maj = () => {
+    const replie = racine.classList.contains('sommaire-replie');
+    const libelle = t(replie ? 'commun.afficherSommaire' : 'commun.masquerSommaire');
+    boutonVolet.setAttribute('aria-label', libelle);
+    boutonVolet.title = libelle;
+    boutonVolet.setAttribute('aria-expanded', String(!replie));
+  };
+  if (!boutonVolet.firstChild) boutonVolet.append(icone('volet', 20));
+  boutonVolet.addEventListener('click', () => {
+    const replie = racine.classList.toggle('sommaire-replie');
+    try {
+      if (replie) localStorage.setItem(cle, '1');
+      else localStorage.removeItem(cle);
+    } catch {
+      /* stockage indisponible */
+    }
+    maj();
+  });
+  maj();
 }
 
 export function bouton(libelle, { genre = '', onClick, titre, desactive } = {}) {

@@ -278,6 +278,9 @@ function etatServeur(forcer) {
     claude: c.executable
       ? { disponible: true, executable: c.executable, version: c.version }
       : { disponible: false, erreur: c.erreur },
+    // Assistant choisi dans les réglages (Claude, ChatGPT par Codex CLI, Gemini CLI)
+    assistant: claude.assistant(forcer),
+    fournisseurs: reglages.FOURNISSEURS,
     executeurs: Object.fromEntries(
       Object.entries(executer.disponibilite(forcer)).map(([k, v]) => [k, v ? v.version : null]),
     ),
@@ -303,6 +306,7 @@ async function api(req, res, url) {
     if (m === 'PUT') {
       const r = reglages.modifier(await lireCorps(req));
       claude.trouver(true);
+      claude.trouverOutil(r.fournisseur, true);
       return envoyerJson(res, 200, r);
     }
   }
@@ -354,6 +358,27 @@ async function api(req, res, url) {
       },
     }).promesse;
     return envoyerJson(res, 200, { ok: true, texte: r.texte, modele: r.modele, duree: Date.now() - debut });
+  }
+
+  // Comptes de ChatGPT (Codex CLI) et de Gemini (Gemini CLI) : état, connexion dans un
+  // terminal (chez l'éditeur de l'outil), déconnexion
+  const ia = route.match(/^ia\/(statut|connecter|deconnecter)$/);
+  if (ia) {
+    const f = m === 'GET' ? q.get('f') : (await lireCorps(req)).f;
+    if (f !== 'codex' && f !== 'gemini') return erreur(res, 400, tr('Assistant inconnu.', 'Unknown assistant.'));
+    const outil = require('./lib/' + f);
+    if (ia[1] === 'statut' && m === 'GET') {
+      const t = outil.trouver(true);
+      return envoyerJson(res, 200, {
+        fournisseur: f,
+        outil: t.executable ? { version: t.version, executable: t.chemin || t.executable } : null,
+        erreur: t.executable ? null : t.erreur,
+        compte: t.executable ? await outil.compte() : null,
+        cle: f === 'codex' ? Boolean(process.env.CODEX_API_KEY) : Boolean(process.env.GEMINI_API_KEY),
+      });
+    }
+    if (ia[1] === 'connecter' && m === 'POST') return envoyerJson(res, 200, outil.connecter());
+    if (ia[1] === 'deconnecter' && m === 'POST') return envoyerJson(res, 200, await outil.deconnecter());
   }
 
   if (route === 'claude/aide' && m === 'POST') {
@@ -488,6 +513,15 @@ async function demarrer() {
   executer.installerPglite((m) => console.log(m));
   const c = claude.trouver(true);
   console.log(c.executable ? 'Claude Code ' + c.version + ' : ' + c.executable : 'Attention : ' + c.erreur);
+  const ia = claude.assistant(true);
+  if (ia.fournisseur !== 'claude')
+    console.log(
+      'Assistant : ' +
+        ia.nom +
+        (ia.disponible
+          ? ' (' + ia.outil + ' ' + ia.version + ' : ' + ia.executable + ')'
+          : ' · attention : ' + ia.erreur),
+    );
   const d = executer.disponibilite(true);
   console.log(
     'Exécution du code : ' +

@@ -14,7 +14,8 @@
       dossier local ; les cours, eux, se téléchargent depuis l'accueil ;
    2. il installe PGlite (questions SQL) dans le dossier local de l'outil s'il
       manque, à partir de la copie livrée : pas besoin de Node sur le poste ;
-   3. il applique la clé d'API Anthropic s'il y en a une (claude.js) ;
+   3. il applique les clés d'API enregistrées (Anthropic : claude.js ; OpenAI et
+      Gemini : ia.js) ;
    4. il publie global.studiesHote et ULA_RACINE, puis charge le programme des outils ;
    5. il recherche une mise à jour si le paramètre est activé ;
    6. si le dossier des données est un dépôt Git suivi, il le synchronise
@@ -34,6 +35,7 @@ const lancement = require('./fenetre-lancement');
 const majs = require('./mises-a-jour');
 const raccourcis = require('./raccourcis');
 const claude = require('./claude');
+const ia = require('./ia');
 const donnees = require('./donnees');
 const diagnostic = require('./diagnostic');
 const arrierePlan = require('./arriere-plan');
@@ -42,6 +44,7 @@ const i18n = require('./i18n');
 const choixLangue = require('./choix-langue');
 const annexe = require('./annexe');
 const integres = require('./parametres-integres');
+const docIntegree = integres.documentation;
 const doc = require('./documentation');
 const { ID_APP, URL_RELEASES } = require('./depot');
 
@@ -87,7 +90,6 @@ app.on('window-all-closed', () => {});
 i18n.brancher(reglages);
 const { t } = i18n;
 
-let fenetreDoc = null;
 let fenetreGuide = null;
 
 /* -- Échelle de l'interface ------------------------------------------------------- */
@@ -113,6 +115,7 @@ function annoncerEchelle() {
     }
   }
   integres.zoomer(e);
+  docIntegree.zoomer(e);
 }
 
 let racine = null;
@@ -293,38 +296,23 @@ function ouvrirParametres(section) {
   }
 }
 
-/** Fenêtre d'un appel : celle de la page, ou celle qui porte les paramètres. */
+/** Fenêtre d'un appel : celle de la page, ou celle qui porte les paramètres (ou la doc). */
 function fenetreDe(emetteur) {
   if (emetteur && emetteur === integres.contenu()) return integres.fenetre();
+  if (emetteur && emetteur === docIntegree.contenu()) return docIntegree.fenetre();
   return BrowserWindow.fromWebContents(emetteur);
 }
 
 /* -- Documentation et paramétrage guidé (2.6.0) ------------------------------------- */
 
-// Documentation (doc/) : grande fenêtre annexe, environ 70 % x 85 % de l'écran de la
-// fenêtre des cours, centrée sur elle ; une seule à la fois, ramenée devant si elle
-// est déjà ouverte (et menée à la page demandée).
+// Documentation (doc/) : depuis la version 2.7.0, posée par-dessus la page dans la
+// fenêtre des cours, comme les paramètres (parametres-integres.js) ; déjà ouverte, elle
+// passe devant et va à la page demandée.
 function ouvrirDocumentation(page) {
-  if (fenetreDoc && !fenetreDoc.isDestroyed()) {
-    if (fenetreDoc.isMinimized()) fenetreDoc.restore();
-    fenetreDoc.show();
-    fenetreDoc.focus();
-    if (page) fenetreDoc.webContents.send('doc:aller', page);
-    return;
+  if (!docIntegree.ouvrir(page)) {
+    montrerFenetre();
+    docIntegree.ouvrir(page);
   }
-  fenetreDoc = annexe.creer({
-    page: path.join(__dirname, 'doc', 'index.html'),
-    hash: page || '',
-    preload: path.join(__dirname, 'parametres', 'pont.cjs'),
-    titre: t('d.titreFenetre'),
-    largeur: 0.7,
-    hauteur: 0.85,
-    min: { width: lancement.MIN_LARGEUR, height: lancement.MIN_HAUTEUR },
-    zoom: facteurEchelle,
-  });
-  fenetreDoc.on('closed', () => {
-    fenetreDoc = null;
-  });
 }
 
 // Paramétrage guidé (guide/) : fenêtre moyenne, une étape à la fois. Les réglages
@@ -371,7 +359,6 @@ function surLangueChangee(code) {
     if (agentDeBase) f.webContents.setUserAgent(agentUtilisateur());
     if (f.studiesAnnexe) {
       f.webContents.send('i18n:changee', code);
-      if (f === fenetreDoc) f.setTitle(t('d.titreFenetre'));
       if (f === fenetreGuide) f.setTitle(t('g.titreFenetre'));
     } else {
       f.webContents
@@ -380,6 +367,7 @@ function surLangueChangee(code) {
     }
   }
   integres.envoyer('i18n:changee', code);
+  docIntegree.envoyer('i18n:changee', code);
   for (const fn of auditeursLangue) {
     try {
       fn(code);
@@ -479,7 +467,8 @@ function enregistrerIpc() {
     // L'interface ne touche ni à la clé d'API, ni à la liste des dossiers de raccourcis,
     // ni au dossier des données (qui passe par donnees:choisir)
     const sur = Object.assign({}, partiel);
-    if (sur.claude) sur.claude = { mode: sur.claude.mode === 'cle' ? 'cle' : 'compte' };
+    for (const f of ['claude', 'codex', 'gemini'])
+      if (sur[f]) sur[f] = { mode: sur[f].mode === 'cle' ? 'cle' : 'compte' };
     delete sur.raccourcis;
     delete sur.cours;
     delete sur.donnees;
@@ -553,6 +542,12 @@ function enregistrerIpc() {
   traiter('claude:deconnecter', () => claude.deconnecter(outils));
   traiter('claude:cle', (valeur) => claude.enregistrerCle(valeur));
   traiter('claude:lien', (nom) => claude.ouvrirLien(String(nom)));
+  // ChatGPT (Codex CLI) et Gemini (Gemini CLI) : l'outil est géré par le serveur local
+  traiter('ia:statut', (f) => ia.statut(String(f), apiQuiz));
+  traiter('ia:connecter', (f) => apiQuiz('POST', 'ia/connecter', { f: String(f) }));
+  traiter('ia:deconnecter', (f) => apiQuiz('POST', 'ia/deconnecter', { f: String(f) }));
+  traiter('ia:cle', (f, valeur) => ia.enregistrerCle(String(f), valeur));
+  traiter('ia:lien', (f, nom) => ia.ouvrirLien(String(f), String(nom)));
 
   // Réglages de l'outil de quiz (modèles de Claude par usage, chemin de Claude Code,
   // exécution du code) : lus et modifiés par l'API du serveur local
@@ -580,6 +575,7 @@ function enregistrerIpc() {
   traiter('aide:parametres', (section) => ouvrirParametres(section ? String(section) : undefined));
   traiter('aide:fermer', (evenement) => {
     if (evenement.sender === integres.contenu()) return integres.fermer();
+    if (evenement.sender === docIntegree.contenu()) return docIntegree.fermer();
     const f = BrowserWindow.fromWebContents(evenement.sender);
     if (f && f.studiesAnnexe) f.close();
   });
@@ -612,6 +608,7 @@ function montrerFenetre() {
 // s'affiche la première fois, et la recherche de mise à jour est examinée peu après
 function fenetreCachee() {
   integres.fermer();
+  docIntegree.fermer();
   majs.bientot();
   if ((reglages.lire().arrierePlan || {}).bulleMontree) return;
   arrierePlan.annoncer();
@@ -666,6 +663,7 @@ async function demarrer() {
 
   installerPglite();
   claude.appliquer();
+  ia.appliquer();
   nettoyerAnciensRaccourcis();
 
   // Les pages reconnaissent l'application installée à son agent utilisateur et ajoutent

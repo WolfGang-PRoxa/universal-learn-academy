@@ -44,7 +44,7 @@ The language is saved in `parametres.json` (`langue`). The host announces it to 
 
 ## Documentation
 
-`documentation.js` reads `doc/contenu/sommaire.json` and each language’s Markdown pages (a missing page is taken in French). The `doc/` window formats them with `doc/markdown.js` and recognises special links:
+`documentation.js` reads `doc/contenu/sommaire.json` and each language’s Markdown pages (a missing page is taken in French). The `doc/` page, laid over the course window like the settings (`parametres-integres.js`), formats them with `doc/markdown.js` and recognises special links:
 
 | Link                   | Effect                         |
 | ---------------------- | ------------------------------ |

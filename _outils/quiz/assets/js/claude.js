@@ -119,23 +119,42 @@
 
   /* Affichage ------------------------------------------------------------------ */
 
+  // Libellé de l'assistant : bouton qui ouvre son menu (le choisir, ou le configurer)
+  function boutonIa() {
+    var b = el('button', 'claude-puce bouton-ia');
+    b.type = 'button';
+    b.textContent = A.connexion.assistant().nom;
+    b.title = T('ia.menuTitre');
+    b.setAttribute('aria-haspopup', 'menu');
+    b.addEventListener('click', function () {
+      A.dialogues.menuIa(b);
+    });
+    return b;
+  }
+
   function majInfos() {
     if (!P) return;
     P.infos.innerHTML = '';
     var C = A.connexion;
+    if (C.enLigne) P.infos.appendChild(boutonIa());
     if (C.claudeDisponible()) {
       var u = C.etat.reglages.usages.aide;
+      var f = C.assistant().fournisseur;
+      // Claude : modèle et effort de l'usage « aide » ; ChatGPT : modèle de Codex et effort
+      // de l'usage ; Gemini : son modèle seul
+      var modele = f === 'claude' ? u.modele : (C.etat.reglages[f] || {}).modele;
+      var effort = f === 'gemini' ? '' : u.effort;
       P.infos.appendChild(
         el(
           'span',
           'claude-puce',
-          T(u.effort ? 'claude.modeleEffort' : 'claude.modele', {
-            modele: u.modele || T('resultats.parDefaut'),
-            effort: u.effort,
+          T(effort ? 'claude.modeleEffort' : 'claude.modele', {
+            modele: modele || T(f === 'claude' ? 'resultats.parDefaut' : 'ia.modeleCompte'),
+            effort: effort,
           }),
         ),
       );
-      var q = C.etat.quota && C.etat.quota.unifiedWindows;
+      var q = f === 'claude' && C.etat.quota && C.etat.quota.unifiedWindows;
       if (q && q.five_hour) {
         var pct = Math.round(q.five_hour.utilization * 100);
         var puce = el('span', 'claude-puce' + (pct >= 90 ? ' alerte' : ''), T('claude.quota', { pourcent: pct }));
@@ -384,7 +403,7 @@
     }
     courant = options;
     if (!options.conversation.messages) options.conversation.messages = [];
-    P.titre.textContent = options.titre || 'Claude';
+    P.titre.textContent = options.titre || A.connexion.assistant().nom;
     P.sousTitre.textContent = options.sousTitre || '';
     majInfos();
     afficherFil();

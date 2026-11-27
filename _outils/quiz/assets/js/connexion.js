@@ -194,7 +194,38 @@
     return C.json('POST', 'taches/' + id + '/annuler', {});
   };
   C.claudeDisponible = function () {
-    return Boolean(C.enLigne && C.etat && C.etat.claude && C.etat.claude.disponible);
+    // Assistant choisi dans les réglages (Claude, ChatGPT ou Gemini) ; ancien serveur : Claude
+    var e = C.etat;
+    if (!C.enLigne || !e) return false;
+    return Boolean(e.assistant ? e.assistant.disponible : e.claude && e.claude.disponible);
+  };
+  /* Assistant IA choisi : Claude (Claude Code), ChatGPT (Codex CLI) ou Gemini (Gemini CLI).
+     Sans serveur, ou serveur d'avant la version 2.7.0 : Claude. */
+  var ASSISTANTS = {
+    claude: { nom: 'Claude', outil: 'Claude Code' },
+    codex: { nom: 'ChatGPT', outil: 'Codex CLI' },
+    gemini: { nom: 'Gemini', outil: 'Gemini CLI' },
+  };
+  C.ASSISTANTS = Object.keys(ASSISTANTS);
+  C.infosAssistant = function (f) {
+    var a = ASSISTANTS[f] || ASSISTANTS.claude;
+    return { fournisseur: ASSISTANTS[f] ? f : 'claude', nom: a.nom, outil: a.outil };
+  };
+  C.assistant = function () {
+    var a = C.enLigne && C.etat && C.etat.assistant;
+    return C.infosAssistant(a ? a.fournisseur : 'claude');
+  };
+  // Change d'assistant, puis fait refaire les textes de la page (même événement que
+  // pour un changement de langue : tous les libellés le suivent déjà)
+  C.choisirAssistant = function (f) {
+    return C.modifierReglages({ fournisseur: f })
+      .then(function () {
+        return C.rafraichir(true);
+      })
+      .then(function (e) {
+        document.dispatchEvent(new CustomEvent('ula:langue', { detail: A.langue() }));
+        return e;
+      });
   };
   C.executable = function (langage) {
     return Boolean(C.enLigne && C.etat && C.etat.executeurs && C.etat.executeurs[langage]);

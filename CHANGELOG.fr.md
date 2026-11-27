@@ -6,6 +6,8 @@ Les changements notables d'Universal Learn Academy sont notés dans ce fichier. 
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-11-27
+
 ### Ajouts
 
 - Licence : CC BY-NC-ND 4.0 (`LICENSE`), déclarée dans `app/package.json` et recopiée vers le dépôt public ; les supports d'origine restent la propriété de leurs auteurs.
@@ -14,12 +16,22 @@ Les changements notables d'Universal Learn Academy sont notés dans ce fichier. 
 - Premiers tests automatisés (`npm test`, lanceur de tests intégré à Node) : règles des données personnelles et manifestes des packs et cursus du catalogue.
 - Prettier et ESLint (`npm run format`, `npm run lint`), lancés en premier par `npm run check` ; le code de l'application (`app/`) et des outils (`_outils/`) est formaté.
 - Intégration continue à chaque push et pull request (`npm ci`, `npm run check`, `npm test`), dans le dépôt de travail et dans le dépôt public.
+- Les quiz peuvent faire appel à ChatGPT ou à Gemini à la place de Claude. Paramètres › Assistant IA choisit l'assistant ; les cartes « Connexion à ChatGPT » (Codex CLI) et « Connexion à Gemini » (Gemini CLI) fonctionnent comme celle de Claude : connexion par compte dans l'outil officiel (l'application ne voit jamais les identifiants) ou clé d'API chiffrée par le système, plus le modèle et le chemin de l'outil. Sans l'application, le dialogue des réglages des quiz propose le même choix.
+- Le nom de l'assistant est un bouton partout où il apparaît (barre du haut des quiz, panneau de conversation, ateliers des TD) : un petit menu permet de passer de Claude à ChatGPT ou à Gemini, ou d'ouvrir les réglages de chacun. Les libellés des quiz et des TD suivent l'assistant choisi (« Demander à ChatGPT », « Gemini réfléchit… »).
+- Bandeau de gauche repliable partout : pages des cours et des quiz (sommaire), documentation et paramètres. Le choix est retenu.
 - Toute l'interface suit la langue choisie dans l'application (français ou anglais) : accueil, recherche, menus, pages d'erreur du serveur local, barre des cours (sommaire, boutons de copie), portail « Mes révisions », écrans des quiz (accueil, questions, corrections, résultats, panneau Claude, dialogues de génération et de suivi) et ateliers des TD (éditeurs, outils de dessin, contrôles, comparaison avec la solution, aide et correction de Claude). Claude répond en anglais quand l'application est en anglais. Le contenu des cours, quiz et TD reste pour l'instant dans sa langue d'origine.
 
 ### Améliorations
 
+- La documentation s'ouvre comme les paramètres, par-dessus la page dans la fenêtre des cours (voile et panneau centré ; Échap, la croix ou un clic à côté la referment), et non plus dans une fenêtre à part. Un lien vers les paramètres les ouvre par-dessus elle.
 - `.gitignore` ignore les fichiers d'environnement locaux (`.env`).
 - Les messages des ateliers des TD ne tutoient plus (« la requête », « l'automate proposé », « l'arbre dessiné »…).
+- Quiz : navigation libre entre les questions dans les deux modes. En entraînement aussi, les pastilles numérotées et les flèches ‹ › mènent à n'importe quelle question, « Passer » laisse une question pour y revenir plus tard (la réponse commencée est gardée), une question corrigée prend la couleur de son résultat, et « Terminer » corrige le reste après confirmation.
+- Quiz : chaque question se comprend seule. Les quiz du catalogue ne renvoient plus à une autre question (« question précédente », « même urne », « avec le même code »…) : les données sont redonnées dans chaque énoncé. Le générateur de quiz l'exige, et `verifier_quiz.py` signale tout renvoi.
+
+### Corrections
+
+- Vérificateur de la charte (`verifier.py`) : il ne reconnaissait plus aucune matière depuis le passage de `cours.css` aux guillemets simples, et signalait donc une erreur sur chaque page.
 
 ## [2.6.2] - 2026-11-21
 
@@ -162,7 +174,8 @@ Les changements notables d'Universal Learn Academy sont notés dans ce fichier. 
 - Première application installable, nommée Studies (Electron, electron-builder, electron-updater) : mise à jour automatique au démarrage, fenêtre au lancement réglable, raccourcis Bureau, menu Démarrer ou dossier choisi, connexion à Claude par Claude Code ou par une clé d'API chiffrée. Installeur NSIS et AppImage avec leurs fichiers `.blockmap`, publiés par la GitHub CLI.
 - Données personnelles exclues des exécutables, avec un contrôle qui fait échouer la construction.
 
-[Unreleased]: https://github.com/WolfGang-PRoxa/universal-learn-academy/compare/v2.6.2...HEAD
+[Unreleased]: https://github.com/WolfGang-PRoxa/universal-learn-academy/compare/v2.7.0...HEAD
+[2.7.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.7.0
 [2.6.2]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.6.2
 [2.6.1]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.6.1
 [2.6.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.6.0

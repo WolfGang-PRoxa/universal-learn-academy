@@ -10,9 +10,9 @@ The local server starts with the application. Reload the page (**F5**). If the m
 - Start the download again: a pack or “Download all” only retries the missing courses.
 - While the releases repository is private, only a GitHub CLI session signed in on the computer (`gh auth login`) can read the catalogue.
 
-## Claude does not answer
+## The AI assistant does not answer
 
-See [Claude](page:claude#if-claude-does-not-answer).
+See [If the assistant does not answer](page:claude#if-the-assistant-does-not-answer).
 
 ## The update does not install
 

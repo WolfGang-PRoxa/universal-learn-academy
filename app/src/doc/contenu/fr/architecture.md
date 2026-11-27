@@ -44,7 +44,7 @@ La langue est enregistrée dans `parametres.json` (`langue`). L’hôte l’anno
 
 ## Documentation
 
-`documentation.js` lit `doc/contenu/sommaire.json` et les pages Markdown de chaque langue (une page absente est prise en français). La fenêtre `doc/` les met en forme avec `doc/markdown.js` et reconnaît des liens particuliers :
+`documentation.js` lit `doc/contenu/sommaire.json` et les pages Markdown de chaque langue (une page absente est prise en français). La page `doc/`, posée par-dessus la fenêtre des cours comme les paramètres (`parametres-integres.js`), les met en forme avec `doc/markdown.js` et reconnaît des liens particuliers :
 
 | Lien                   | Effet                           |
 | ---------------------- | ------------------------------- |

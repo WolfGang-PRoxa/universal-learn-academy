@@ -10,9 +10,9 @@ Le serveur local démarre avec l’application. Recharger la page (**F5**). Si l
 - Relancer le téléchargement : un pack ou « Tout télécharger » reprend seulement les cours manquants.
 - Tant que le dépôt des versions est privé, seule une session GitHub CLI connectée sur le poste (`gh auth login`) permet de lire le catalogue.
 
-## Claude ne répond pas
+## L’assistant IA ne répond pas
 
-Voir [Claude](page:claude#si-claude-ne-repond-pas).
+Voir [Si l’assistant ne répond pas](page:claude#si-l-assistant-ne-repond-pas).
 
 ## La mise à jour ne s’installe pas
 

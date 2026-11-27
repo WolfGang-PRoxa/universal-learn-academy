@@ -121,7 +121,7 @@
       return;
     }
     q.claude.ouvrir({
-      titre: 'Claude · ' + (esp.config.titre || esp.ed.libelle),
+      titre: A.nomIa() + ' · ' + (esp.config.titre || esp.ed.libelle),
       sousTitre: esp.ctx.section ? esp.ctx.section() : '',
       conversation: esp.etat.conversation,
       route: 'atelier/aide',
@@ -129,9 +129,13 @@
         return contexte(esp);
       },
       accueil: tr(
-        "Une question sur l'exercice ? Claude voit l'énoncé et le travail tel qu'il est maintenant" +
+        "Une question sur l'exercice ? " +
+          A.nomIa() +
+          " voit l'énoncé et le travail tel qu'il est maintenant" +
           (esp.solution ? ' ; il connaît la solution, mais ne la donne que si on la demande.' : '.'),
-        'A question about the exercise? Claude sees the statement and the work as it is now' +
+        'A question about the exercise? ' +
+          A.nomIa() +
+          ' sees the statement and the work as it is now' +
           (esp.solution ? '; it knows the solution, but only gives it when asked.' : '.'),
       ),
       texteHorsLigne: function (message) {
@@ -196,8 +200,10 @@
       );
       return;
     }
-    var s = esp.section('correction', tr('Correction de Claude', 'Claude’s marking'), 'correction');
-    s.appendChild(N.el('p', 'atelier-aide attente', tr('Claude corrige le travail…', 'Claude is marking the work…')));
+    var s = esp.section('correction', tr('Correction de ' + A.nomIa(), A.nomIa() + '’s marking'), 'correction');
+    s.appendChild(
+      N.el('p', 'atelier-aide attente', tr(A.nomIa() + ' corrige le travail…', A.nomIa() + ' is marking the work…')),
+    );
     var ctx = contexte(esp);
     C.json('POST', 'atelier/corriger', {
       page: C.page(),

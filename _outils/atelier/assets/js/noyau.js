@@ -25,6 +25,13 @@
   A.langue = langue;
   A.tr = tr;
 
+  // Nom de l'assistant IA choisi dans les réglages du serveur local (outil de quiz :
+  // Claude, ChatGPT ou Gemini) ; Claude sans serveur
+  A.nomIa = function () {
+    var q = typeof window !== 'undefined' ? window.QuizApp : null;
+    return q && q.connexion && q.connexion.assistant ? q.connexion.assistant().nom : 'Claude';
+  };
+
   /* Textes ------------------------------------------------------------------ */
 
   // Retire les accents : on filtre les signes diacritiques après décomposition

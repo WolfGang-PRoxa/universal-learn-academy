@@ -37,7 +37,8 @@ Sans serveur, une page de quiz ouverte depuis le disque fonctionne quand même, 
   - En bas, l'historique des tentatives, avec la courbe des scores.
 - **Deux modes.**
   - _Entraînement_ : correction et explication après chaque question.
-  - _Examen_ : correction à la fin, chronomètre, navigation libre entre les questions.
+  - _Examen_ : correction à la fin, avec chronomètre.
+- **Navigation libre**, dans les deux modes. Les pastilles numérotées au-dessus de l'énoncé mènent à n'importe quelle question, et les flèches ‹ › qui les encadrent à la précédente ou à la suivante. En entraînement, « Passer » laisse une question sans la valider pour y revenir plus tard : la réponse commencée est gardée. Une question corrigée prend la couleur de son résultat (juste, en partie juste, fausse, à évaluer). « Terminer » corrige les questions restantes ; s'il en reste sans réponse, une confirmation propose d'y revenir.
 - **Indices.** Certaines questions en ont : on les dévoile un par un. Un quiz peut retirer des points par indice (`penalite_indice`).
 - **Demander à Claude.** Le bouton ouvre un panneau de conversation sur la question. Des demandes toutes prêtes s'affichent au-dessus du champ, et elles changent une fois la question corrigée (« Pourquoi ma réponse est fausse ? »…).
   - Claude reçoit la question, ta réponse du moment, les indices vus et l'extrait du cours correspondant.
@@ -227,6 +228,7 @@ Exemple de question SQL :
 ## Règles de rédaction des questions
 
 - **Une question, une notion.** L'énoncé se comprend seul, sans avoir lu la question précédente.
+- **Des questions autonomes.** L'étudiant navigue librement entre les questions, dans n'importe quel ordre, et l'ordre peut être tiré au sort : aucune question ne renvoie à une autre (« la question précédente », « la question suivante », « même urne », « avec le même code »…). Quand plusieurs questions portent sur les mêmes données (un graphe, une table, un code, une loi), chacune les redonne en entier. Pour une annale, le numéro de la question du sujet (« Ex. 1, q. 2 ») peut rester, mais pas « avec la question suivante ». `verifier_quiz.py` signale les renvois explicites à une autre question.
 - **Des distracteurs plausibles** : les erreurs que font réellement les étudiants (confondre `WHERE` et `HAVING`, mettre la clé étrangère du côté `1`…), jamais des réponses absurdes. Les choix ont une forme et une longueur comparables. On évite « Toutes les réponses ci-dessus » ; si un choix doit rester en dernier, `"melanger": false`.
 - **Pas de piège de formulation** : pas de double négation. Quand la négation est le sujet, elle est en gras : « laquelle n'est **pas** … ».
 - **Des indices qui mettent sur la voie** : le premier rappelle la notion ou la méthode, le second resserre ; aucun ne donne la réponse.

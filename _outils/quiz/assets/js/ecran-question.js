@@ -1,7 +1,8 @@
 /* ==========================================================================
    Quiz · écran d'une question (prototype de QuizApp.Quiz)
    Énoncé, réponse, indices, aide de Claude, validation et correction ;
-   navigation libre en mode examen ; enregistrement à chaque changement.
+   navigation libre entre les questions, dans les deux modes ; enregistrement
+   à chaque changement.
    ========================================================================== */
 (function (A) {
   'use strict';
@@ -60,7 +61,7 @@
     barre.appendChild(rempli);
     carte.appendChild(barre);
 
-    if (S.mode === 'examen') carte.appendChild(this.navigateur(qs, i));
+    carte.appendChild(this.navigateur(qs, i));
 
     var enonce = html(
       'div',
@@ -117,38 +118,77 @@
       q = this.questionCourante();
     if (!q || S.valide[q.id] || !this.widget) return;
     S.reponses[q.id] = this.widget.lire();
-    if (S.mode === 'examen' && this.navigation) this.majNavigateur();
+    if (this.navigation) this.majNavigateur();
     this.sauver();
   };
 
-  /* Navigation en mode examen ------------------------------------------------------ */
+  /* Navigation libre entre les questions ---------------------------------------------
+     Les pastilles mènent à n'importe quelle question, dans les deux modes. En
+     entraînement, une question corrigée prend la couleur de son résultat ; une
+     réponse commencée mais pas encore validée est gardée comme brouillon. */
+
+  P.allerA = function (k) {
+    if (!this.session || k < 0 || k >= this.session.ordre.length || k === this.session.index) return;
+    this.enregistrer();
+    this.afficherQuestion(k);
+    this.sauver();
+  };
 
   P.navigateur = function (qs, i) {
     var self = this;
     var nav = el('nav', 'quiz-navigateur');
     nav.setAttribute('aria-label', T('accueil.questions'));
     this.navigation = nav;
+    var fleche = function (texte, libelle, k) {
+      var f = el('button', 'quiz-fleche', texte);
+      f.type = 'button';
+      f.setAttribute('aria-label', libelle);
+      f.title = libelle;
+      f.disabled = k < 0 || k >= qs.length;
+      f.addEventListener('click', function () {
+        self.allerA(k);
+      });
+      return f;
+    };
+    nav.appendChild(fleche('‹', T('navigation.precedente'), i - 1));
     qs.forEach(function (q, k) {
       var b = el('button', 'quiz-pastille', String(k + 1));
       b.type = 'button';
-      b.setAttribute('aria-label', T('question.numero', { n: k + 1 }));
       if (k === i) b.setAttribute('aria-current', 'step');
       b.addEventListener('click', function () {
-        if (k === self.session.index) return;
-        self.enregistrer();
-        self.afficherQuestion(k);
-        self.sauver();
+        self.allerA(k);
       });
       nav.appendChild(b);
     });
+    nav.appendChild(fleche('›', T('navigation.suivante'), i + 1));
     this.majNavigateur();
     return nav;
   };
+
+  // État d'une question pour sa pastille : a-faire, repondue, juste, partielle, fausse, a-evaluer
+  P.etatQuestion = function (id) {
+    var S = this.session;
+    if (S.mode !== 'examen' && S.valide[id]) {
+      var s = S.scores[id];
+      if (s === null || s === undefined) return 'a-evaluer';
+      return s === 1 ? 'juste' : s > 0 ? 'partielle' : 'fausse';
+    }
+    return this.repondue(id) ? 'repondue' : 'a-faire';
+  };
+
   P.majNavigateur = function () {
     var self = this,
       qs = this.questions();
-    Array.prototype.forEach.call(this.navigation.children, function (b, k) {
-      b.classList.toggle('repondue', self.repondue(qs[k].id));
+    if (!this.navigation) return;
+    var etats = ['a-faire', 'repondue', 'juste', 'partielle', 'fausse', 'a-evaluer'];
+    Array.prototype.forEach.call(this.navigation.querySelectorAll('.quiz-pastille'), function (b, k) {
+      var etat = self.etatQuestion(qs[k].id);
+      etats.forEach(function (e) {
+        b.classList.toggle(e, e === etat);
+      });
+      var libelle = T('question.numero', { n: k + 1 }) + ' · ' + T('navigation.' + etat);
+      b.setAttribute('aria-label', libelle);
+      b.title = libelle;
     });
   };
 
@@ -312,8 +352,17 @@
         }),
       );
     } else {
+      // Entraînement : on peut aussi passer à une autre question sans valider celle-ci
+      // (flèches et pastilles du navigateur, ou ce bouton)
       this.actions.appendChild(quitter);
       this.actions.appendChild(el('span', 'espace'));
+      if (!dernier) {
+        var passer = O.bouton(T('question.passer'), 'discret', function () {
+          self.allerA(i + 1);
+        });
+        passer.title = T('question.suivanteSansValider');
+        this.actions.appendChild(passer);
+      }
       this.actions.appendChild(
         O.bouton(T('question.jeNeSaisPas'), 'discret', function () {
           self.valider(true);
@@ -354,20 +403,23 @@
     });
   };
 
-  // Examen : prévenir s'il reste des questions sans réponse
+  // Fin du quiz : prévenir s'il reste des questions sans réponse (ni réponse ni « Je ne sais pas »)
   P.confirmerFin = function () {
-    var self = this;
+    var self = this,
+      S = this.session;
     var vides = this.questions().filter(function (q) {
-      return !self.repondue(q.id);
-    }).length;
-    if (!vides) return this.terminer();
+      return !self.repondue(q.id) && !S.valide[q.id];
+    });
+    if (!vides.length) return this.terminer();
     A.dialogues
-      .confirmer(T('question.terminerTitre'), '<p>' + Tn('question.sansReponse', vides) + '</p>', [
+      .confirmer(T('question.terminerTitre'), '<p>' + Tn('question.sansReponse', vides.length) + '</p>', [
         { libelle: T('question.continuer'), valeur: false, classe: 'discret' },
         { libelle: T('question.terminerQuandMeme'), valeur: true, classe: 'principal' },
       ])
       .then(function (oui) {
-        if (oui) self.terminer();
+        if (oui) return self.terminer();
+        // Retour à la première question restée sans réponse
+        if (self.ecran === 'question') self.allerA(S.ordre.indexOf(vides[0].id));
       });
   };
 
@@ -419,6 +471,7 @@
     this.widget.verrouiller();
     this.widget.corriger(v);
     this.majOutils();
+    this.majNavigateur();
     if (S.scores[q.id] === null) {
       // Auto-évaluation (question ouverte, ou code non exécutable) : le retour attend la note
       var modele = this.blocModele(q, function (note) {
@@ -587,6 +640,7 @@
       texte += ' · ' + Tn('question.indicesUtilises', S.indices[q.id]);
     this.retour.className = 'quiz-retour ' + classe;
     this.retour.appendChild(el('p', 'quiz-retour-titre', texte));
+    this.majNavigateur();
     if (S.rapports[q.id] && S.rapports[q.id].type !== 'indisponible')
       this.retour.appendChild(A.code.rapport(S.rapports[q.id]));
     if (type.attendu && s < 1) {
@@ -631,12 +685,15 @@
       ),
     );
     this.actions.appendChild(el('span', 'espace'));
+    if (!dernier)
+      this.actions.appendChild(
+        O.bouton(T('question.terminer'), 'discret', function () {
+          self.confirmerFin();
+        }),
+      );
     var b = O.bouton(dernier ? T('question.resultats') : T('question.suivante'), 'principal', function () {
-      if (dernier) self.terminer();
-      else {
-        self.afficherQuestion(i + 1);
-        self.sauver();
-      }
+      if (dernier) self.confirmerFin();
+      else self.allerA(i + 1);
     });
     this.actions.appendChild(b);
     b.focus({ preventScroll: true });
