@@ -20,7 +20,7 @@ Later versions install themselves at startup (see "Updates"). Moving from Studie
 A small window in the app's style (`src/langue/`) first asks for the **language**: French or English, with the system language suggested (arrow keys and Enter are enough). Closed without a choice, the system language is used this time and the question comes back at the next launch. Then the home page asks for the user name, prefilled with the Windows or Linux session name: it is the name of the user's space folder. It also offers an example curriculum ("Informatique": L1, L2, L3 folders with all their courses) and to download its courses right away, in the background. Then the home page's "Online catalogue" lists the courses; each downloaded course goes into a folder of the curriculum (see `_outils/ula/README.md`).
 
 ```
-Documents/ULA/                    data folder (default)
+<local app data>/Universal Learn Academy/donnees/   data folder (default)
 ├── explore/<domain>/<course>/    downloaded courses, read-only
 └── <profile>/<curriculum>/<course>/   link to the course (ula-lien.json) and progress
 ```
@@ -50,7 +50,7 @@ Since version 2.6.2, the settings are no longer a system window: like those of M
 - **Claude models and code execution** (formerly the quizzes' "Settings"): Claude Code path, model and effort for hints, grading, evaluation and quiz generation (with a "Test" button), executable languages. Read and saved through the local server's API (`_outils/quiz/reglages.json` of the tools).
 - **Profile**: the active profile (remembered on the computer), adding and renaming a profile. The home page can also switch profiles.
 - **Synchronisation**: see "Synchronisation between several PCs" below.
-- **Data folder**: `Documents/ULA` by default, or another folder. A git repository of ula (it contains `_outils/app` and `explore/`) is recognised: it is the catalogue author's "repository mode", where tools and catalogue are the repository's and where `git pull` / `git push` synchronise everything.
+- **Data folder**: `%LOCALAPPDATA%\Universal Learn Academy\donnees` (`~/.local/share/Universal Learn Academy/donnees` on Linux) by default, or another folder. "Choose another folder…" switches folders without copying; "Move…" copies the data to the chosen folder at the next start, checks the copy (same files, same sizes) and only then removes the old folder. A git repository of ula (it contains `_outils/app` and `explore/`) is recognised: it is the catalogue author's "repository mode", where tools and catalogue are the repository's and where `git pull` / `git push` synchronise everything.
 
 ## Connection to Claude
 
@@ -118,7 +118,7 @@ What is **never** published (neither in an installer, nor in the catalogue, nor 
 
 ### Where the app writes
 
-- **Data folder** (`Documents/ULA` by default): downloaded courses (`explore/`, versions in `.ula-version.json`) and the profile spaces. Nothing the user produces goes into `explore/`: updating or removing a course never touches their work.
+- **Data folder** (`%LOCALAPPDATA%\Universal Learn Academy\donnees` by default, `~/.local/share/Universal Learn Academy/donnees` on Linux; never in Documents): downloaded courses (`explore/`, versions in `.ula-version.json`) and the profile spaces. Nothing the user produces goes into `explore/`: updating or removing a course never touches their work.
 - **Tools**: copied at first launch, then at each new version, to `%LOCALAPPDATA%\Universal Learn Academy\outils` (`~/.local/share/Universal Learn Academy/outils` on Linux), according to the manifest: a file modified since it was copied (the quiz settings…) is never overwritten.
 - **ula git repository** (student's mode): the repository is used as is, tools, catalogue and work included, and `git pull` / `git push` synchronise them as before.
 - **Settings**: `%APPDATA%\Universal Learn Academy\parametres.json` (`~/.config/Universal Learn Academy`). Uninstalling keeps them.
@@ -220,7 +220,8 @@ app/
   package.json            version, dependencies, electron-builder configuration
   src/
     main.js               host: data and tools folders, PGlite, API key, profiles, then loads _outils/app/principal.js
-    donnees.js            data folder (Documents/ULA or repository), local copy of the shipped tools
+    donnees.js            data folder (local app folder or repository), local copy of the shipped tools
+    deplacement.js        checked move of the data folder (2.8 migration from Documents/ULA, "Move…")
     reglages.js           settings (parametres.json)
     mises-a-jour.js       electron-updater, gh token for a private repository
     fenetre-lancement.js  window size and position at launch

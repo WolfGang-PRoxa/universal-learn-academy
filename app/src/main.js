@@ -9,7 +9,9 @@
    raccourcis, connexion à Claude, dossier des données, profils.
 
    Au démarrage :
-   1. il lit les paramètres et choisit le dossier des données et celui des
+   1. il lit les paramètres, déplace le dossier des données s'il le faut
+      (ancien Documents/ULA, ou « Déplacer… » demandé dans les paramètres :
+      deplacement.js), puis choisit le dossier des données et celui des
       outils (donnees.js) ; les outils livrés sont copiés ou mis à jour dans le
       dossier local ; les cours, eux, se téléchargent depuis l'accueil ;
    2. il installe PGlite (questions SQL) dans le dossier local de l'outil s'il
@@ -37,6 +39,7 @@ const raccourcis = require('./raccourcis');
 const claude = require('./claude');
 const ia = require('./ia');
 const donnees = require('./donnees');
+const deplacement = require('./deplacement');
 const diagnostic = require('./diagnostic');
 const arrierePlan = require('./arriere-plan');
 const synchro = require('./synchro');
@@ -124,7 +127,7 @@ let modeDonnees = null;
 
 /* -- Fenêtre de préparation des outils (première ouverture, nouvelle version) -- */
 
-function fenetrePreparation() {
+function fenetrePreparation(titre = t('m.preparation.titre'), texte = t('m.preparation.texte'), indetermine = false) {
   const sombre = nativeTheme.shouldUseDarkColors;
   const f = new BrowserWindow({
     width: 460,
@@ -142,12 +145,18 @@ function fenetrePreparation() {
     body{margin:0;padding:28px 32px;font:15px system-ui,"Segoe UI",sans-serif;color:${sombre ? '#e8e6e1' : '#1f1d1a'};background:${sombre ? '#131417' : '#fafaf8'}}
     h1{font-size:17px;margin:0 0 6px}p{margin:0 0 16px;opacity:.75}
     .barre{height:8px;border-radius:4px;background:${sombre ? '#2a2c31' : '#e6e3dc'};overflow:hidden}
-    .barre i{display:block;height:100%;width:0;background:#3d6fb6;transition:width .2s}</style>
-    <h1>${t('m.preparation.titre')}</h1><p id="t">${t('m.preparation.texte')}</p>
-    <div class="barre"><i id="b"></i></div>`;
+    .barre i{display:block;height:100%;width:0;background:#3d6fb6;transition:width .2s}
+    .barre.indetermine i{width:30%;animation:va 1.4s ease-in-out infinite alternate}
+    @keyframes va{from{margin-left:0}to{margin-left:70%}}</style>
+    <h1>${echapper(titre)}</h1><p id="t">${echapper(texte)}</p>
+    <div class="barre${indetermine ? ' indetermine' : ''}"><i id="b"></i></div>`;
   f.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
   f.once('ready-to-show', () => f.show());
   return f;
+}
+
+function echapper(texte) {
+  return String(texte).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 }
 
 function attendre(ms) {
@@ -180,6 +189,59 @@ async function synchroniserOutils(cible) {
     );
   }
   return resultat;
+}
+
+/* -- Déplacement du dossier des données au démarrage -------------------------------- */
+
+// Avant le serveur local : rien n'est ouvert dans le dossier pendant la copie
+async function deplacerAvecFenetre(source, cible) {
+  const f = fenetrePreparation(t('m.deplacement.titre'), t('m.deplacement.texte', { cible }), true);
+  await attendre(150);
+  try {
+    return await deplacement.deplacer(source, cible);
+  } finally {
+    if (!f.isDestroyed()) f.destroy();
+  }
+}
+
+function signalerDeplacement(r, source, cible) {
+  if (r.ok && r.ancienRestant)
+    dialog.showMessageBoxSync({
+      type: 'warning',
+      title: NOM,
+      message: t('m.deplacement.ancienRestant', { dossier: r.ancienRestant }),
+      detail: r.message,
+    });
+  else if (!r.ok)
+    dialog.showMessageBoxSync({
+      type: 'error',
+      title: NOM,
+      message: t('m.deplacement.echec', { source, cible }),
+      detail: t('m.deplacement.raison.' + r.raison, { cible }) + (r.raison === 'copie' ? '\n' + r.message : ''),
+    });
+}
+
+async function preparerDossier() {
+  const r = reglages.lire();
+  // « Déplacer… » demandé dans les paramètres
+  const demande = r.donnees && r.donnees.deplacement;
+  if (demande) {
+    reglages.modifier({ donnees: { deplacement: '' } });
+    const source = donnees.racineChoisie(r);
+    const res = await deplacerAvecFenetre(source, demande);
+    if (res.ok) {
+      const dossier = path.resolve(demande) === path.resolve(donnees.dossierParDefaut()) ? '' : demande;
+      reglages.modifier({ donnees: { dossier }, cours: { mode: 'integre', dossier: '' } });
+    }
+    signalerDeplacement(res, source, demande);
+    return;
+  }
+  // Version 2.8.0 : l'ancien dossier par défaut Documents/ULA quitte Documents
+  const ancien = donnees.ancienDossierParDefaut();
+  const nouveau = donnees.dossierParDefaut();
+  const action = deplacement.migrationAFaire(r, ancien, nouveau);
+  if (action === 'noter') reglages.modifier({ donnees: { dossier: ancien } });
+  else if (action === 'deplacer') signalerDeplacement(await deplacerAvecFenetre(ancien, nouveau), ancien, nouveau);
 }
 
 /* -- Choix du dossier des données au démarrage ------------------------------------ */
@@ -492,12 +554,34 @@ function enregistrerIpc() {
       properties: ['openDirectory', 'createDirectory'],
     });
     if (r.canceled || !r.filePaths[0]) return { ok: false, annule: true };
-    reglages.modifier({ donnees: { dossier: r.filePaths[0] }, cours: { mode: 'integre', dossier: '' } });
+    reglages.modifier({
+      donnees: { dossier: r.filePaths[0], deplacement: '' },
+      cours: { mode: 'integre', dossier: '' },
+    });
     return { ok: true, dossier: r.filePaths[0], depot: donnees.estDepot(r.filePaths[0]) };
   });
   traiter('donnees:defaut', () => {
-    reglages.modifier({ donnees: { dossier: '' }, cours: { mode: 'integre', dossier: '' } });
+    reglages.modifier({ donnees: { dossier: '', deplacement: '' }, cours: { mode: 'integre', dossier: '' } });
     return { ok: true, dossier: donnees.dossierParDefaut() };
+  });
+  // « Déplacer… » : copie vérifiée au prochain démarrage, avant le serveur local.
+  // Un dossier choisi qui n'est pas vide reçoit un sous-dossier « ULA ».
+  traiter('donnees:deplacer', async (evenement) => {
+    const r = await dialog.showOpenDialog(fenetreDe(evenement.sender), {
+      title: t('m.deplacement.choisir'),
+      defaultPath: donnees.dossierLocalApp(),
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    if (r.canceled || !r.filePaths[0]) return { ok: false, annule: true };
+    let cible = r.filePaths[0];
+    let raison = deplacement.empechement(racine, cible);
+    if (raison === 'cible-non-vide') {
+      cible = path.join(cible, 'ULA');
+      raison = deplacement.empechement(racine, cible);
+    }
+    if (raison) return { ok: false, message: t('m.deplacement.raison.' + raison, { cible }) };
+    reglages.modifier({ donnees: { deplacement: cible } });
+    return { ok: true, dossier: cible };
   });
 
   // Profils : par l'API du serveur local (extension ula), comme l'accueil
@@ -647,12 +731,18 @@ async function demarrer() {
   // Premier écran après l'installation : le choix de la langue
   if (!i18n.choisie()) await choixLangue.demander();
 
+  await preparerDossier();
   const choix = await dossierDesDonnees();
   if (!choix) return app.quit();
   // Ancien réglage « cours » (Studies 1.x) ou dossier renommé : le dossier retenu est
   // noté dans le nouveau réglage, une fois pour toutes
   const r0 = reglages.lire();
-  if (choix.racine !== donnees.dossierParDefaut() && (r0.donnees || {}).dossier !== choix.racine) {
+  // (sauf l'ancien Documents/ULA après une migration échouée : elle sera retentée)
+  if (
+    choix.racine !== donnees.dossierParDefaut() &&
+    choix.racine !== donnees.ancienDossierParDefaut() &&
+    (r0.donnees || {}).dossier !== choix.racine
+  ) {
     reglages.modifier({ donnees: { dossier: choix.racine }, cours: { mode: 'integre', dossier: '' } });
   }
   racine = choix.racine;

@@ -24,7 +24,7 @@ The app updates itself: a new version is looked for at startup and then every 6 
 On first launch, the app asks for the language, then for a user name (the session name is suggested) and offers an example curriculum: "Informatique" sorts the three years of the bachelor's degree into the L1, L2 and L3 folders at once, and can download all their courses in the background. Several profiles can share a computer. Each one sorts catalogue courses into their curriculum, with the folders they want (L1, L2, Prépa, Perso…): a course is a link there, and its progress (attempts, TD, labs, tracking) is saved next to it, in the profile folder. Updating a course never touches the work.
 
 ```
-ULA/                         (Documents/ULA by default, can be changed in the settings)
+donnees/                     (%LOCALAPPDATA%\Universal Learn Academy\donnees by default, can be changed or moved in the settings)
 ├── explore/<domain>/<course>/   downloaded courses, read-only
 └── <profile>/<curriculum>/<course>/   link to the course and progress
 ```

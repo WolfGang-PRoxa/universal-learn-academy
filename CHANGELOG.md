@@ -6,6 +6,19 @@ All notable changes to Universal Learn Academy are documented in this file. The 
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-11-27
+
+### Added
+
+- Settings › Data folder: "Move…" takes the data to another folder. At the next start, before the local server, the folder is copied, the copy is checked (same files and folders, same sizes) and only then is the old folder removed; if anything fails, nothing is deleted and the app stays on the old folder. A chosen folder that is not empty gets a `ULA` subfolder.
+- Automated tests of the data folder move and of the migration rules.
+
+### Changed
+
+- The data folder (downloaded catalogue and profile spaces) leaves Documents: it is now `%LOCALAPPDATA%\Universal Learn Academy\donnees` by default (`~/.local/share/Universal Learn Academy/donnees` on Linux), next to the local copy of the tools. Settings stay in `%APPDATA%`.
+- At the first launch of 2.8, an existing `Documents\ULA` is moved there the same way (copy, check, then removal), unless a data folder was chosen in the settings. If the move fails, nothing is deleted, the app keeps using `Documents\ULA`, says so, and tries again at the next launch. A `Documents\ULA` that is a Git repository (repository mode or Git sync) is not moved: its path is recorded as the chosen data folder.
+- "Open the folder" is now labelled "Open the data folder".
+
 ## [2.7.0] - 2026-11-27
 
 ### Added
@@ -174,7 +187,8 @@ All notable changes to Universal Learn Academy are documented in this file. The 
 - First installable app, named Studies (Electron, electron-builder, electron-updater): automatic update at startup, configurable window at launch, Desktop, Start menu or chosen-folder shortcuts, connection to Claude through Claude Code or an encrypted API key. NSIS installer and AppImage with their `.blockmap` files, published with the GitHub CLI.
 - Personal data excluded from the executables, with a check that makes the build fail.
 
-[Unreleased]: https://github.com/WolfGang-PRoxa/universal-learn-academy/compare/v2.7.0...HEAD
+[Unreleased]: https://github.com/WolfGang-PRoxa/universal-learn-academy/compare/v2.8.0...HEAD
+[2.8.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.8.0
 [2.7.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.7.0
 [2.6.2]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.6.2
 [2.6.1]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.6.1

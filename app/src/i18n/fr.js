@@ -377,9 +377,12 @@ module.exports = {
   'p.donnees.noteChoisi': 'Dossier choisi.',
   'p.donnees.defaut': 'Dossier par défaut',
   'p.donnees.noteDefaut': 'Dossier par défaut : {dossier}',
-  'p.donnees.ouvrir': 'Ouvrir le dossier',
+  'p.donnees.ouvrir': 'Ouvrir le dossier des données',
+  'p.donnees.deplacer': 'Déplacer…',
+  'p.donnees.noteDeplacer':
+    'Les données seront déplacées dans {dossier} au prochain démarrage : copiées, vérifiées, puis retirées du dossier actuel.',
   'p.donnees.aide':
-    'Par défaut : {dossier}. Les cours se téléchargent depuis le catalogue de l’accueil ; une mise à jour d’un cours ne touche jamais au travail rangé dans le dossier d’un profil.',
+    'Par défaut : {dossier}. « Choisir un autre dossier » change de dossier sans rien copier ; « Déplacer… » emporte les données. Les cours se téléchargent depuis le catalogue de l’accueil ; une mise à jour d’un cours ne touche jamais au travail rangé dans le dossier d’un profil.',
 
   'p.synchro.titre': 'Synchronisation',
   'p.synchro.description': 'Retrouver ses cours et sa progression d’un PC à l’autre.',
@@ -556,6 +559,20 @@ module.exports = {
   'm.preparation.texte': 'Copie des outils de cette version dans le dossier local.',
   'm.preparation.fichiers': '{fait} fichiers sur {total}',
   'm.preparation.echec': 'La copie des outils a échoué : {message}',
+  'm.deplacement.titre': 'Déplacement des données…',
+  'm.deplacement.texte': 'Copie et vérification du dossier des données dans {cible}.',
+  'm.deplacement.choisir': 'Déplacer les données vers…',
+  'm.deplacement.echec':
+    'Le dossier des données n’a pas pu être déplacé de {source} vers {cible}. Rien n’a été effacé : l’application continue d’utiliser {source}.',
+  'm.deplacement.ancienRestant':
+    'Les données ont été déplacées, mais l’ancien dossier n’a pas pu être entièrement supprimé : {dossier}. Il peut être effacé à la main.',
+  'm.deplacement.raison.source-introuvable': 'Le dossier des données actuel est introuvable.',
+  'm.deplacement.raison.cible-manquante': 'Aucun dossier de destination.',
+  'm.deplacement.raison.cible-dans-source': 'La destination est à l’intérieur du dossier des données actuel.',
+  'm.deplacement.raison.source-dans-cible': 'Le dossier des données actuel est à l’intérieur de la destination.',
+  'm.deplacement.raison.cible-non-vide': 'Le dossier de destination n’est pas vide : {cible}',
+  'm.deplacement.raison.verification': 'La copie ne correspond pas à l’original (fichiers ou tailles différents).',
+  'm.deplacement.raison.copie': 'La copie a échoué.',
   'm.donnees.titre': 'Dossier des données',
   'm.donnees.detail':
     'Choisir le dossier des données (celui qui contient explore et les dossiers des profils), ou revenir au dossier par défaut ({dossier}).',

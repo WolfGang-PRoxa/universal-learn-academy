@@ -42,7 +42,7 @@ Profil actif, création (avec cursus exemple) et renommage. L’accueil permet a
 
 ## Dossier des données
 
-Où sont rangés les cours téléchargés et les espaces des profils : `Documents/ULA` par défaut, ou tout autre dossier. Le changement s’applique au redémarrage. [Ouvrir](parametres:donnees)
+Où sont rangés les cours téléchargés et les espaces des profils : `%LOCALAPPDATA%\Universal Learn Academy\donnees` par défaut, ou tout autre dossier. **Choisir un autre dossier…** change de dossier sans rien copier ; **Déplacer…** emporte les données : au démarrage suivant, elles sont copiées dans le dossier choisi, la copie est vérifiée, et l’ancien dossier n’est supprimé qu’ensuite (rien n’est effacé en cas de problème). **Ouvrir le dossier des données** l’affiche dans l’explorateur de fichiers. Le changement s’applique au redémarrage. Jusqu’à la version 2.7, le dossier par défaut était `Documents/ULA` : il est déplacé automatiquement au premier lancement de la 2.8, sauf s’il s’agit d’un dépôt Git, qui reste en place. [Ouvrir](parametres:donnees)
 
 ## Synchronisation
 

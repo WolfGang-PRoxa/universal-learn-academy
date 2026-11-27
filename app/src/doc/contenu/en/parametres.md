@@ -42,7 +42,7 @@ Active profile, creation (with a sample curriculum) and renaming. The home page 
 
 ## Data folder
 
-Where downloaded courses and profile spaces are stored: `Documents/ULA` by default, or any other folder. The change applies after a restart. [Open](parametres:donnees)
+Where downloaded courses and profile spaces are stored: `%LOCALAPPDATA%\Universal Learn Academy\donnees` by default, or any other folder. **Choose another folder…** switches folders without copying anything; **Move…** takes the data along: at the next start, it is copied to the chosen folder, the copy is checked, and only then is the old folder removed (nothing is deleted if something goes wrong). **Open the data folder** shows it in the file explorer. The change applies after a restart. Up to version 2.7 the default folder was `Documents/ULA`: it is moved automatically at the first launch of 2.8, unless it is a Git repository, which stays where it is. [Open](parametres:donnees)
 
 ## Sync
 

@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('studies', {
   donnees: {
     choisir: () => appeler('donnees:choisir'),
     defaut: () => appeler('donnees:defaut'),
+    deplacer: () => appeler('donnees:deplacer'),
   },
 
   profils: {

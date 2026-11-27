@@ -32,10 +32,10 @@ An installed course also appears in the **Explore** section, sorted by domain. *
 
 ## Where the work goes
 
-Everything produced (quiz attempts, tutorials, labs, tracking) is written in the profile’s folder, inside the [data folder](parametres:donnees) (`Documents/ULA` by default). Downloaded courses stay apart, read-only: updating or deleting a course never touches the work.
+Everything produced (quiz attempts, tutorials, labs, tracking) is written in the profile’s folder, inside the [data folder](parametres:donnees) (`%LOCALAPPDATA%\Universal Learn Academy\donnees` by default). Downloaded courses stay apart, read-only: updating or deleting a course never touches the work.
 
 ```
-Documents/ULA/
+<data folder>/
 ├── explore/<domain>/<course>/     downloaded courses
 └── <profile>/<folder>/<course>/   link to the course and progress
 ```

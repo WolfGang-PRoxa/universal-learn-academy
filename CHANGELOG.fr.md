@@ -6,6 +6,19 @@ Les changements notables d'Universal Learn Academy sont notés dans ce fichier. 
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-11-27
+
+### Ajouts
+
+- Paramètres › Dossier des données : « Déplacer… » emporte les données dans un autre dossier. Au démarrage suivant, avant le serveur local, le dossier est copié, la copie est vérifiée (mêmes fichiers et dossiers, mêmes tailles), et l'ancien dossier n'est supprimé qu'ensuite ; en cas d'échec, rien n'est effacé et l'application reste sur l'ancien dossier. Un dossier choisi qui n'est pas vide reçoit un sous-dossier `ULA`.
+- Tests automatisés du déplacement du dossier des données et des règles de migration.
+
+### Améliorations
+
+- Le dossier des données (catalogue téléchargé et espaces des profils) quitte Documents : il est désormais par défaut dans `%LOCALAPPDATA%\Universal Learn Academy\donnees` (`~/.local/share/Universal Learn Academy/donnees` sous Linux), à côté de la copie locale des outils. Les paramètres restent dans `%APPDATA%`.
+- Au premier lancement de la 2.8, un `Documents\ULA` existant y est déplacé de la même façon (copie, vérification, puis suppression), sauf si un dossier des données a été choisi dans les paramètres. Si le déplacement échoue, rien n'est effacé, l'application continue d'utiliser `Documents\ULA`, le signale et réessaie au lancement suivant. Un `Documents\ULA` qui est un dépôt Git (mode dépôt ou synchronisation Git) n'est pas déplacé : son chemin est noté comme dossier des données choisi.
+- « Ouvrir le dossier » devient « Ouvrir le dossier des données ».
+
 ## [2.7.0] - 2026-11-27
 
 ### Ajouts
@@ -174,7 +187,8 @@ Les changements notables d'Universal Learn Academy sont notés dans ce fichier. 
 - Première application installable, nommée Studies (Electron, electron-builder, electron-updater) : mise à jour automatique au démarrage, fenêtre au lancement réglable, raccourcis Bureau, menu Démarrer ou dossier choisi, connexion à Claude par Claude Code ou par une clé d'API chiffrée. Installeur NSIS et AppImage avec leurs fichiers `.blockmap`, publiés par la GitHub CLI.
 - Données personnelles exclues des exécutables, avec un contrôle qui fait échouer la construction.
 
-[Unreleased]: https://github.com/WolfGang-PRoxa/universal-learn-academy/compare/v2.7.0...HEAD
+[Unreleased]: https://github.com/WolfGang-PRoxa/universal-learn-academy/compare/v2.8.0...HEAD
+[2.8.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.8.0
 [2.7.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.7.0
 [2.6.2]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.6.2
 [2.6.1]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.6.1

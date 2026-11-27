@@ -32,10 +32,10 @@ Un cours installé apparaît aussi dans la section **Explorer**, classé par dom
 
 ## Où va le travail
 
-Tout ce qui est produit (tentatives de quiz, TD, TP, suivi) est écrit dans le dossier du profil, à l’intérieur du [dossier des données](parametres:donnees) (`Documents/ULA` par défaut). Les cours téléchargés restent à part, en lecture seule : une mise à jour ou une suppression d’un cours ne touche jamais au travail.
+Tout ce qui est produit (tentatives de quiz, TD, TP, suivi) est écrit dans le dossier du profil, à l’intérieur du [dossier des données](parametres:donnees) (`%LOCALAPPDATA%\Universal Learn Academy\donnees` par défaut). Les cours téléchargés restent à part, en lecture seule : une mise à jour ou une suppression d’un cours ne touche jamais au travail.
 
 ```
-Documents/ULA/
+<dossier des données>/
 ├── explore/<domaine>/<cours>/     cours téléchargés
 └── <profil>/<dossier>/<cours>/    lien vers le cours et progression
 ```

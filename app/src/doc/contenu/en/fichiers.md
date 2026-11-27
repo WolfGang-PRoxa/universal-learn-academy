@@ -2,13 +2,13 @@
 
 ## Where the application writes
 
-| Content                              | Windows                                         | Linux                                           |
-| ------------------------------------ | ----------------------------------------------- | ----------------------------------------------- |
-| Data folder (default)                | `Documents\ULA`                                 | `~/Documents/ULA`                               |
-| Settings (`parametres.json`)         | `%APPDATA%\Universal Learn Academy`             | `~/.config/Universal Learn Academy`             |
-| Logs (`logs/gels.log`)               | `%APPDATA%\Universal Learn Academy\logs`        | `~/.config/Universal Learn Academy/logs`        |
-| Local copy of the tools              | `%LOCALAPPDATA%\Universal Learn Academy\outils` | `~/.local/share/Universal Learn Academy/outils` |
-| Active profile, quiz temporary files | `%LOCALAPPDATA%\studies-quiz`                   | `~/.cache/studies-quiz`                         |
+| Content                              | Windows                                          | Linux                                            |
+| ------------------------------------ | ------------------------------------------------ | ------------------------------------------------ |
+| Data folder (default)                | `%LOCALAPPDATA%\Universal Learn Academy\donnees` | `~/.local/share/Universal Learn Academy/donnees` |
+| Settings (`parametres.json`)         | `%APPDATA%\Universal Learn Academy`              | `~/.config/Universal Learn Academy`              |
+| Logs (`logs/gels.log`)               | `%APPDATA%\Universal Learn Academy\logs`         | `~/.config/Universal Learn Academy/logs`         |
+| Local copy of the tools              | `%LOCALAPPDATA%\Universal Learn Academy\outils`  | `~/.local/share/Universal Learn Academy/outils`  |
+| Active profile, quiz temporary files | `%LOCALAPPDATA%\studies-quiz`                    | `~/.cache/studies-quiz`                          |
 
 Uninstalling keeps the settings and the data folder.
 

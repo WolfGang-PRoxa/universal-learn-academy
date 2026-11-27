@@ -2,13 +2,13 @@
 
 ## Où l’application écrit
 
-| Contenu                                    | Windows                                         | Linux                                           |
-| ------------------------------------------ | ----------------------------------------------- | ----------------------------------------------- |
-| Dossier des données (par défaut)           | `Documents\ULA`                                 | `~/Documents/ULA`                               |
-| Paramètres (`parametres.json`)             | `%APPDATA%\Universal Learn Academy`             | `~/.config/Universal Learn Academy`             |
-| Journaux (`logs/gels.log`)                 | `%APPDATA%\Universal Learn Academy\logs`        | `~/.config/Universal Learn Academy/logs`        |
-| Copie locale des outils                    | `%LOCALAPPDATA%\Universal Learn Academy\outils` | `~/.local/share/Universal Learn Academy/outils` |
-| Profil actif, fichiers temporaires du quiz | `%LOCALAPPDATA%\studies-quiz`                   | `~/.cache/studies-quiz`                         |
+| Contenu                                    | Windows                                          | Linux                                            |
+| ------------------------------------------ | ------------------------------------------------ | ------------------------------------------------ |
+| Dossier des données (par défaut)           | `%LOCALAPPDATA%\Universal Learn Academy\donnees` | `~/.local/share/Universal Learn Academy/donnees` |
+| Paramètres (`parametres.json`)             | `%APPDATA%\Universal Learn Academy`              | `~/.config/Universal Learn Academy`              |
+| Journaux (`logs/gels.log`)                 | `%APPDATA%\Universal Learn Academy\logs`         | `~/.config/Universal Learn Academy/logs`         |
+| Copie locale des outils                    | `%LOCALAPPDATA%\Universal Learn Academy\outils`  | `~/.local/share/Universal Learn Academy/outils`  |
+| Profil actif, fichiers temporaires du quiz | `%LOCALAPPDATA%\studies-quiz`                    | `~/.cache/studies-quiz`                          |
 
 La désinstallation conserve les paramètres et le dossier des données.
 

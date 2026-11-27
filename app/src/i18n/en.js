@@ -367,9 +367,12 @@ module.exports = {
   'p.donnees.noteChoisi': 'Folder chosen.',
   'p.donnees.defaut': 'Default folder',
   'p.donnees.noteDefaut': 'Default folder: {dossier}',
-  'p.donnees.ouvrir': 'Open the folder',
+  'p.donnees.ouvrir': 'Open the data folder',
+  'p.donnees.deplacer': 'Move…',
+  'p.donnees.noteDeplacer':
+    'The data will be moved to {dossier} at the next start: copied, checked, then removed from the current folder.',
   'p.donnees.aide':
-    'Default: {dossier}. Courses are downloaded from the home page catalogue; updating a course never touches the work stored in a profile’s folder.',
+    'Default: {dossier}. “Choose another folder” switches folders without copying anything; “Move…” takes the data along. Courses are downloaded from the home page catalogue; updating a course never touches the work stored in a profile’s folder.',
 
   'p.synchro.titre': 'Sync',
   'p.synchro.description': 'Find courses and progress from one PC to another.',
@@ -542,6 +545,20 @@ module.exports = {
   'm.preparation.texte': 'Copying this version’s tools to the local folder.',
   'm.preparation.fichiers': '{fait} of {total} files',
   'm.preparation.echec': 'Copying the tools failed: {message}',
+  'm.deplacement.titre': 'Moving the data…',
+  'm.deplacement.texte': 'Copying and checking the data folder in {cible}.',
+  'm.deplacement.choisir': 'Move the data to…',
+  'm.deplacement.echec':
+    'The data folder could not be moved from {source} to {cible}. Nothing was deleted: the application keeps using {source}.',
+  'm.deplacement.ancienRestant':
+    'The data was moved, but the old folder could not be fully removed: {dossier}. It can be deleted by hand.',
+  'm.deplacement.raison.source-introuvable': 'The current data folder cannot be found.',
+  'm.deplacement.raison.cible-manquante': 'No destination folder.',
+  'm.deplacement.raison.cible-dans-source': 'The destination is inside the current data folder.',
+  'm.deplacement.raison.source-dans-cible': 'The current data folder is inside the destination.',
+  'm.deplacement.raison.cible-non-vide': 'The destination folder is not empty: {cible}',
+  'm.deplacement.raison.verification': 'The copy does not match the original (files or sizes differ).',
+  'm.deplacement.raison.copie': 'The copy failed.',
   'm.donnees.titre': 'Data folder',
   'm.donnees.detail':
     'Choose the data folder (the one containing explore and the profile folders), or go back to the default folder ({dossier}).',

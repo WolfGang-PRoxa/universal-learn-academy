@@ -20,7 +20,7 @@ Les versions suivantes s'installent d'elles-mêmes au démarrage (voir « Mises 
 Une petite fenêtre au style de l'application (`src/langue/`) demande d'abord la **langue** : français ou anglais, celle du système proposée (flèches et Entrée suffisent). Fermée sans choix, la langue du système sert pour cette fois et la question revient au lancement suivant. Ensuite, l'accueil demande le nom d'utilisateur, prérempli avec celui de la session Windows ou Linux : c'est le nom du dossier de son espace. Il propose aussi un cursus exemple (« Informatique » : dossiers L1, L2, L3 avec tous leurs cours) et de télécharger ses cours tout de suite, en arrière-plan. Puis le « Catalogue en ligne » de l'accueil propose les cours ; chaque cours téléchargé se range dans un dossier de son cursus (voir `_outils/ula/README.md`).
 
 ```
-Documents/ULA/                    dossier des données (par défaut)
+<données locales>/Universal Learn Academy/donnees/   dossier des données (par défaut)
 ├── explore/<domaine>/<cours>/    cours téléchargés, en lecture seule
 └── <profil>/<cursus>/<cours>/    lien vers le cours (ula-lien.json) et progression
 ```
@@ -50,7 +50,7 @@ Depuis la version 2.6.2, les paramètres ne sont plus une fenêtre du système :
 - **Modèles de Claude et exécution du code** (ex-« Réglages » des quiz) : chemin de Claude Code, modèle et effort pour l'aide, la correction, l'évaluation et la génération de quiz (avec un bouton « Tester »), langages exécutables. Lus et enregistrés par l'API du serveur local (`_outils/quiz/reglages.json` des outils).
 - **Profil** : le profil actif (mémorisé sur le poste), l'ajout et le renommage d'un profil. L'accueil permet aussi d'en changer.
 - **Synchronisation** : voir « Synchronisation entre plusieurs PC » ci-dessous.
-- **Dossier des données** : `Documents/ULA` par défaut, ou un autre dossier. Un dépôt git d'ula (il contient `_outils/app` et `explore/`) est reconnu : c'est le « mode dépôt » de l'auteur du catalogue, où outils et catalogue sont ceux du dépôt et où `git pull` / `git push` synchronisent tout.
+- **Dossier des données** : `%LOCALAPPDATA%\Universal Learn Academy\donnees` (`~/.local/share/Universal Learn Academy/donnees` sous Linux) par défaut, ou un autre dossier. « Choisir un autre dossier… » change de dossier sans rien copier ; « Déplacer… » copie les données dans le dossier choisi au démarrage suivant, vérifie la copie (mêmes fichiers, mêmes tailles) et ne supprime l'ancien dossier qu'ensuite. Un dépôt git d'ula (il contient `_outils/app` et `explore/`) est reconnu : c'est le « mode dépôt » de l'auteur du catalogue, où outils et catalogue sont ceux du dépôt et où `git pull` / `git push` synchronisent tout.
 
 ## Connexion à Claude
 
@@ -118,7 +118,7 @@ Ce qui n'est **jamais** publié (ni dans un installeur, ni dans le catalogue, ni
 
 ### Où l'application écrit
 
-- **Dossier des données** (`Documents/ULA` par défaut) : les cours téléchargés (`explore/`, versions dans `.ula-version.json`) et les espaces des profils. Rien de ce que l'utilisateur produit ne va dans `explore/` : une mise à jour ou une suppression d'un cours ne touche jamais à son travail.
+- **Dossier des données** (`%LOCALAPPDATA%\Universal Learn Academy\donnees` par défaut, `~/.local/share/Universal Learn Academy/donnees` sous Linux ; jamais dans Documents) : les cours téléchargés (`explore/`, versions dans `.ula-version.json`) et les espaces des profils. Rien de ce que l'utilisateur produit ne va dans `explore/` : une mise à jour ou une suppression d'un cours ne touche jamais à son travail.
 - **Outils** : copiés au premier lancement, puis à chaque nouvelle version, dans `%LOCALAPPDATA%\Universal Learn Academy\outils` (`~/.local/share/Universal Learn Academy/outils` sous Linux), d'après le manifeste : un fichier modifié depuis sa copie (les réglages du quiz…) n'est jamais écrasé.
 - **Dépôt git d'ula** (mode de l'étudiant) : le dépôt est utilisé tel quel, outils, catalogue et travail compris, et `git pull` / `git push` les synchronisent comme avant.
 - **Paramètres** : `%APPDATA%\Universal Learn Academy\parametres.json` (`~/.config/Universal Learn Academy`). La désinstallation les conserve.
@@ -220,7 +220,8 @@ app/
   package.json            version, dépendances, configuration d'electron-builder
   src/
     main.js               hôte : dossier des données et des outils, PGlite, clé d'API, profils, puis charge _outils/app/principal.js
-    donnees.js            dossier des données (Documents/ULA ou dépôt), copie locale des outils livrés
+    donnees.js            dossier des données (dossier local de l'application ou dépôt), copie locale des outils livrés
+    deplacement.js        déplacement vérifié du dossier des données (migration 2.8 depuis Documents/ULA, « Déplacer… »)
     reglages.js           paramètres (parametres.json)
     mises-a-jour.js       electron-updater, jeton de gh pour un dépôt privé
     fenetre-lancement.js  taille et position de la fenêtre au lancement

@@ -2,8 +2,14 @@
 /* Dossier des données et outils de l'application installée.
 
    Racine des données (ula/) : le catalogue téléchargé (explore/) et les espaces
-   des profils. Par défaut « Documents/ULA » ; un autre dossier se choisit dans
-   les paramètres. Si ce dossier est un dépôt git d'ula (il contient _outils/app),
+   des profils. Par défaut dans le dossier local de l'application :
+     Windows  %LOCALAPPDATA%\Universal Learn Academy\donnees
+     Linux    ~/.local/share/Universal Learn Academy/donnees
+   Un autre dossier se choisit dans les paramètres (ou s'y déplace avec
+   « Déplacer… », voir deplacement.js). Jusqu'à la version 2.7, le dossier par
+   défaut était « Documents/ULA » : il est déplacé au premier lancement de la 2.8
+   (main.js, preparerDossier), sauf s'il est un dépôt Git, qui reste en place.
+   Les paramètres, eux, sont dans %APPDATA% (reglages.js). Si ce dossier est un dépôt git d'ula (il contient _outils/app),
    c'est le « mode dépôt » de l'auteur du catalogue : les outils et le catalogue
    sont ceux du dépôt, git pull et git push synchronisent tout.
 
@@ -40,6 +46,10 @@ function depotDeDeveloppement() {
   return path.resolve(app.getAppPath(), '..');
 }
 function dossierParDefaut() {
+  return path.join(dossierLocalApp(), 'donnees');
+}
+/** Dossier par défaut jusqu'à la version 2.7 (migré au premier lancement de la 2.8). */
+function ancienDossierParDefaut() {
   return path.join(app.getPath('documents'), 'ULA');
 }
 
@@ -163,7 +173,11 @@ function racineChoisie(reglages) {
     const voisin = path.join(path.dirname(d), 'ula');
     if (estDepot(voisin)) d = voisin;
   }
-  return d || dossierParDefaut();
+  if (d) return d;
+  // Ancien dossier par défaut encore là (migration échouée, à retenter) : on y reste
+  const ancienDefaut = ancienDossierParDefaut();
+  if (fs.existsSync(ancienDefaut)) return ancienDefaut;
+  return dossierParDefaut();
 }
 
 /**
@@ -207,6 +221,8 @@ module.exports = {
   dossierOutilsLocal,
   outilsLivres,
   dossierParDefaut,
+  ancienDossierParDefaut,
+  racineChoisie,
   contientOutils,
   estDepot,
   resoudre,

@@ -1454,6 +1454,18 @@ function carteDonnees() {
           proposerRedemarrage();
         },
       }),
+      bouton(t('p.donnees.deplacer'), {
+        genre: 'leger',
+        onClick: async () => {
+          const r = await api.donnees.deplacer();
+          if (!r.ok) {
+            if (r.message) note(r.message, { erreur: true, duree: 8000 });
+            return;
+          }
+          note(t('p.donnees.noteDeplacer', { dossier: r.dossier }), { duree: 8000 });
+          proposerRedemarrage();
+        },
+      }),
       bouton(t('p.donnees.ouvrir'), { genre: 'leger', onClick: () => api.ouvrirDossier('donnees') }),
     ),
     h('p', { class: 'aide' }, t('p.donnees.aide', { dossier: info.dossierParDefaut })),
