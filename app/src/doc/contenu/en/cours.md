@@ -2,15 +2,14 @@
 
 ## The home page
 
-The home page (**Alt+Home**, or the house button of the top bar) gathers, from top to bottom:
+The home page (**Alt+Home**, or the house button of the top bar) gathers:
 
-| Section          | Content                                                              |
-| ---------------- | -------------------------------------------------------------------- |
-| Profile          | The active profile, switching profiles, creating and renaming        |
-| My curriculum    | The curriculum’s folders and their courses, with each one’s progress |
-| Explore          | The courses installed on this computer, by domain                    |
-| Online catalogue | Sample curricula, packs and every course to download                 |
-| Tools            | Revisions, C compilation, Python notebooks, demos                    |
+| Section          | Content                                                                                                                 |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Profiles (panel) | On the left: profiles, switching profiles, creating and renaming. The ☰ button of the top bar folds the panel          |
+| My curriculum    | The curriculum’s folders and their courses, with each one’s progress                                                    |
+| Catalogue        | Two tabs: **Installed on this computer** (by domain) and **All courses** (sample curricula, packs, courses to download) |
+| Tools            | Revisions, C compilation, Python notebooks, demos                                                                       |
 
 ## The curriculum
 

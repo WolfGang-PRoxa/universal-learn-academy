@@ -42,6 +42,7 @@ window.ULA_TEXTES = {
       "Les cours de ce domaine installés sur ce poste. D'autres cours se téléchargent depuis le catalogue de l'accueil.",
 
     'profil.titre': 'Profil',
+    'profil.titrePluriel': 'Profils',
     'profil.bienvenue':
       "Bienvenue ! Choisir un nom d'utilisateur : le travail (quiz, TD, TP, suivi) sera rangé dans un dossier à ce nom, à côté du catalogue.",
     'profil.nomAria': "Nom d'utilisateur",
@@ -132,6 +133,8 @@ window.ULA_TEXTES = {
     'admin.verif.quiz': 'quiz',
     'admin.verif.atelier': 'ateliers',
     'admin.verif.archive': 'archive',
+    'admin.aucuneRecue': 'Aucune soumission reçue pour l’instant.',
+    'admin.verifiee': 'Liste relevée à {heure}.',
     'admin.titre': 'Soumissions reçues',
     'admin.aide':
       'Cours soumis par les utilisateurs au service de soumission. Une analyse relance les vérifications sur ce poste puis fait relire le cours par l’IA choisie ; rien n’est accepté sans votre décision. Hors du mode dépôt, un cours accepté reste dans soumissions-recues/, à intégrer au dépôt.',
@@ -298,21 +301,21 @@ window.ULA_TEXTES = {
     'proposer.description': 'Description',
 
     'explorer.cours': 'Cours',
-    'explorer.titre': 'Explorer',
-    'explorer.aucun':
-      "Aucun cours installé. Le catalogue en ligne, plus bas sur l'accueil, propose de les télécharger.",
+    'explorer.aucun': 'Aucun cours installé sur ce poste : l’onglet « Tous les cours » propose de les télécharger.',
     'explorer.aucunDomaine':
-      "Aucun cours installé dans ce domaine. Le catalogue en ligne, plus bas sur l'accueil, propose de les télécharger.",
+      'Aucun cours installé dans ce domaine : le catalogue de l’accueil (onglet « Tous les cours ») propose de les télécharger.',
     'explorer.dansCursus': 'Dans mon cursus',
     'explorer.ajouter': 'Ajouter à mon cursus…',
 
-    'catalogue.titre': 'Catalogue en ligne',
+    'catalogue.titre': 'Catalogue',
+    'catalogue.vueInstalles': 'Installés sur ce poste ({n})',
+    'catalogue.vueTous': 'Tous les cours ({n})',
+    'catalogue.vueTousSans': 'Tous les cours',
     'catalogue.source':
       'Ce dossier est la source du catalogue (dépôt git) : ses cours se modifient dans explore/ et se publient avec npm run catalogue (app/). Le catalogue en ligne est affiché pour comparaison.',
     'catalogue.intro':
       "Les cours se téléchargent à la demande, un par un. Une mise à jour d'un cours ne touche jamais au travail rangé dans l'espace du profil.",
     'catalogue.actualiser': 'Actualiser',
-    'catalogue.afficher': 'Afficher le catalogue',
     'catalogue.lecture': 'Lecture du catalogue…',
     'catalogue.installe': 'Installé',
     'catalogue.maj': 'Mise à jour disponible',
@@ -400,6 +403,7 @@ window.ULA_TEXTES = {
       'The courses of this domain installed on this computer. More courses can be downloaded from the home page catalogue.',
 
     'profil.titre': 'Profile',
+    'profil.titrePluriel': 'Profiles',
     'profil.bienvenue':
       'Welcome! Choose a user name: the work (quizzes, tutorials, labs, tracking) will be stored in a folder with that name, next to the catalogue.',
     'profil.nomAria': 'User name',
@@ -487,6 +491,8 @@ window.ULA_TEXTES = {
     'admin.verif.quiz': 'quizzes',
     'admin.verif.atelier': 'workshops',
     'admin.verif.archive': 'archive',
+    'admin.aucuneRecue': 'No submission received yet.',
+    'admin.verifiee': 'List checked at {heure}.',
     'admin.titre': 'Received submissions',
     'admin.aide':
       'Courses submitted by users to the submission service. A review runs the checks again on this computer, then has the chosen AI read the course; nothing is accepted without your decision. Outside repository mode, an accepted course stays in soumissions-recues/, to be added to the repository.',
@@ -654,20 +660,21 @@ window.ULA_TEXTES = {
     'proposer.description': 'Description',
 
     'explorer.cours': 'Courses',
-    'explorer.titre': 'Explore',
-    'explorer.aucun': 'No course installed. The online catalogue, further down the home page, offers to download them.',
+    'explorer.aucun': 'No course installed on this computer: the “All courses” tab offers to download them.',
     'explorer.aucunDomaine':
-      'No course installed in this domain. The online catalogue, further down the home page, offers to download them.',
+      'No course installed in this domain: the home page catalogue (“All courses” tab) offers to download them.',
     'explorer.dansCursus': 'In my curriculum',
     'explorer.ajouter': 'Add to my curriculum…',
 
-    'catalogue.titre': 'Online catalogue',
+    'catalogue.titre': 'Catalogue',
+    'catalogue.vueInstalles': 'Installed on this computer ({n})',
+    'catalogue.vueTous': 'All courses ({n})',
+    'catalogue.vueTousSans': 'All courses',
     'catalogue.source':
       'This folder is the catalogue source (git repository): its courses are edited in explore/ and published with npm run catalogue (app/). The online catalogue is shown for comparison.',
     'catalogue.intro':
       'Courses are downloaded on demand, one by one. Updating a course never touches the work stored in the profile’s space.',
     'catalogue.actualiser': 'Refresh',
-    'catalogue.afficher': 'Show the catalogue',
     'catalogue.lecture': 'Reading the catalogue…',
     'catalogue.installe': 'Installed',
     'catalogue.maj': 'Update available',

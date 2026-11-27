@@ -2,15 +2,14 @@
 
 ## L’accueil
 
-L’accueil (**Alt+Origine**, ou bouton maison de la barre du haut) réunit, de haut en bas :
+L’accueil (**Alt+Origine**, ou bouton maison de la barre du haut) réunit :
 
-| Section            | Contenu                                                               |
-| ------------------ | --------------------------------------------------------------------- |
-| Profil             | Le profil actif, le changement de profil, la création et le renommage |
-| Mon cursus         | Les dossiers du cursus et leurs cours, avec la progression de chacun  |
-| Explorer           | Les cours installés sur ce poste, par domaine                         |
-| Catalogue en ligne | Les cursus exemples, les packs et tous les cours à télécharger        |
-| Outils             | Révisions, compilation C, notebooks Python, démonstrations            |
+| Section         | Contenu                                                                                                                     |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Profils (volet) | À gauche : les profils, le changement de profil, la création et le renommage. Le bouton ☰ de la barre replie le volet      |
+| Mon cursus      | Les dossiers du cursus et leurs cours, avec la progression de chacun                                                        |
+| Catalogue       | Deux onglets : **Installés sur ce poste** (par domaine) et **Tous les cours** (cursus exemples, packs, cours à télécharger) |
+| Outils          | Révisions, compilation C, notebooks Python, démonstrations                                                                  |
 
 ## Le cursus
 

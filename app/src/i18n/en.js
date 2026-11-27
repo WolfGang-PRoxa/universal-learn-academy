@@ -235,6 +235,23 @@ module.exports = {
   'p.assistant.reglagesAutre':
     'Sign-in and model: “Connection to {nom}” card. The effort chosen for each use in “Claude models and code execution” also applies to ChatGPT; Gemini keeps its own.',
 
+  'p.admin.intervalle': 'Automatic check',
+  'p.admin.intervalleNote': 'Automatic check set.',
+  'p.admin.intervalleInconnu': 'Unexpected interval.',
+  'p.admin.toutes.30': 'Every 30 min',
+  'p.admin.toutes.60': 'Every hour',
+  'p.admin.toutes.120': 'Every 2 h',
+  'p.admin.toutes.360': 'Every 6 h',
+  'p.admin.toutes.720': 'Every 12 h',
+  'p.admin.toutes.1440': 'Every 24 h',
+  'p.admin.verifier': 'Check now',
+  'p.admin.jamaisVerifie': 'First check in a minute.',
+  'p.admin.verifAucune': 'Checked at {heure}: no submission received yet.',
+  'p.admin.verifRecues': 'Checked at {heure}: {n} submission(s) to handle, {nouvelles} new.',
+  'p.admin.verifErreur': 'Check at {heure} failed: {erreur}',
+  'p.admin.notifTitre': 'Received submissions',
+  'p.admin.notifUne': 'New submission: “{titre}”.',
+  'p.admin.notifPlusieurs': '{n} new submissions to handle.',
   'p.admin.titre': 'Received submissions',
   'p.admin.description': 'Catalogue administration: courses submitted by users, to review then accept or refuse.',
   'p.admin.aide':

@@ -22,13 +22,13 @@ The home page then opens and asks for a **user name**, prefilled with the sessio
 
 ## Adding courses
 
-The **Online catalogue** section of the home page lists every available course:
+The **Catalogue** section of the home page, **All courses** tab, lists every available course:
 
-1. **Show the catalogue**, then choose a pack (all the courses of a level) or a single course.
+1. Choose a pack (all the courses of a level) or a single course.
 2. **Download**: the course is installed on the computer.
 3. The application offers to place it in a folder of the curriculum.
 
-An installed course also appears in the **Explore** section, sorted by domain. **Add to my curriculum…** places it in a folder.
+An installed course also appears in the **Installed on this computer** tab, sorted by domain. **Add to my curriculum…** places it in a folder.
 
 ## Where the work goes
 

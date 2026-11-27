@@ -71,6 +71,8 @@ contextBridge.exposeInMainWorld('studies', {
     statut: () => appeler('admin:statut'),
     enregistrerJeton: (valeur) => appeler('admin:jeton', valeur),
     ouvrir: () => appeler('admin:ouvrir'),
+    intervalle: (minutes) => appeler('admin:intervalle', minutes),
+    verifier: () => appeler('admin:verifier'),
   },
 
   maj: {

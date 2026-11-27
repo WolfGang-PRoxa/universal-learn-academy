@@ -490,6 +490,16 @@ async function apiQuiz(methode, route, corps) {
   return d;
 }
 
+// Accueil, section « Soumissions reçues » (bouton des paramètres, clic sur une notification)
+function ouvrirSoumissionsRecues() {
+  integres.fermer();
+  montrerFenetre();
+  const f = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed() && !w.studiesAnnexe);
+  if (!f) return false;
+  require(path.join(outils, 'app', 'fenetres.js')).allerA(f, 'index.html#administration');
+  return true;
+}
+
 function enregistrerIpc() {
   const traiter = (canal, fn) =>
     ipcMain.handle(canal, (evenement, ...args) => diagnostic.suivre(canal, () => fn(...args, evenement)));
@@ -644,13 +654,9 @@ function enregistrerIpc() {
   // Soumissions reçues (installation de l'administrateur du catalogue)
   traiter('admin:statut', () => adminSoumissions.statut());
   traiter('admin:jeton', (valeur) => adminSoumissions.enregistrer(valeur, apiQuiz));
-  traiter('admin:ouvrir', () => {
-    const f = integres.fenetre();
-    integres.fermer();
-    if (!f || f.isDestroyed()) return false;
-    require(path.join(outils, 'app', 'fenetres.js')).allerA(f, 'index.html#administration');
-    return true;
-  });
+  traiter('admin:ouvrir', () => ouvrirSoumissionsRecues());
+  traiter('admin:intervalle', (minutes) => adminSoumissions.definirIntervalle(minutes));
+  traiter('admin:verifier', () => adminSoumissions.verifier().then(() => adminSoumissions.statut()));
 
   // Synchronisation du dossier des données (dépôt Git suivi)
   traiter('synchro:statut', () => synchro.statut());
@@ -768,6 +774,7 @@ async function demarrer() {
   claude.appliquer();
   ia.appliquer();
   adminSoumissions.appliquer();
+  adminSoumissions.suivre({ ouvrir: () => ouvrirSoumissionsRecues() });
   nettoyerAnciensRaccourcis();
 
   // Les pages reconnaissent l'application installée à son agent utilisateur et ajoutent

@@ -50,7 +50,7 @@ Syncing the data folder between several computers, when it is a Git repository: 
 
 ## Received submissions
 
-Only for the catalogue administrator: the administration token of the submission service is saved here (kept encrypted), then received submissions are managed on the home page. The card appears in repository mode, when a token is saved, or after five clicks on the version in About. See [Courses](page:cours). [Open](parametres:administration)
+Only for the catalogue administrator: the administration token of the submission service is saved here (kept encrypted), then received submissions are managed on the home page. The service is checked automatically every 30 min (or every 1 h, 2 h, 6 h, 12 h or 24 h) and a notification announces each new submission. The card appears in repository mode, when a token is saved, or after five clicks on the version in About. See [Courses](page:cours). [Open](parametres:administration)
 
 ## About
 

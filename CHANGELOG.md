@@ -6,6 +6,22 @@ All notable changes to Universal Learn Academy are documented in this file. The 
 
 ## [Unreleased]
 
+## [2.10.0] - 2026-11-27
+
+### Added
+
+- Received submissions: automatic check of the service every 30 min (or every 1 h, 2 h, 6 h, 12 h or 24 h, Settings › Received submissions), even with the app minimised to the notification area; a system notification announces each new submission and opens the home page section. The settings card and the home page section show the time of the last check, and “No submission received yet” when there is none; “Check now” checks right away.
+- Home page: side panel for profiles (switch, create, rename, open the folder), folded with the top bar button; it replaces the “Profile” section.
+- Quizzes: the left column (title, course, date) folds with the top bar button, like the course contents; the state is remembered.
+
+### Changed
+
+- Home page: “Explore” and “Online catalogue” become a single “Catalogue” section with two tabs: “Installed on this computer” (by domain) and “All courses” (sample curricula, packs, courses to download, loaded without a “Show” button). An installed course opens and is added to the curriculum from both tabs.
+
+### Fixed
+
+- Home page: a single line under the header (the first section's title added a second one).
+
 ## [2.9.0] - 2026-11-27
 
 ### Added
@@ -206,7 +222,8 @@ All notable changes to Universal Learn Academy are documented in this file. The 
 - First installable app, named Studies (Electron, electron-builder, electron-updater): automatic update at startup, configurable window at launch, Desktop, Start menu or chosen-folder shortcuts, connection to Claude through Claude Code or an encrypted API key. NSIS installer and AppImage with their `.blockmap` files, published with the GitHub CLI.
 - Personal data excluded from the executables, with a check that makes the build fail.
 
-[Unreleased]: https://github.com/WolfGang-PRoxa/universal-learn-academy/compare/v2.9.0...HEAD
+[Unreleased]: https://github.com/WolfGang-PRoxa/universal-learn-academy/compare/v2.10.0...HEAD
+[2.10.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.10.0
 [2.9.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.9.0
 [2.8.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.8.0
 [2.7.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.7.0

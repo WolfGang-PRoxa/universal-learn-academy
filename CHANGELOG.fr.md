@@ -6,6 +6,22 @@ Les changements notables d'Universal Learn Academy sont notés dans ce fichier. 
 
 ## [Unreleased]
 
+## [2.10.0] - 2026-11-27
+
+### Ajouts
+
+- Soumissions reçues : vérification automatique du service toutes les 30 min (au choix 1 h, 2 h, 6 h, 12 h ou 24 h, Paramètres › Soumissions reçues), même application réduite dans la zone de notification ; une notification du système signale chaque nouvelle soumission et ouvre la section de l'accueil. La carte des paramètres et la section de l'accueil disent l'heure de la dernière vérification, et « Aucune soumission reçue pour l'instant » quand il n'y en a pas ; « Vérifier maintenant » relève tout de suite.
+- Accueil : volet latéral des profils (changer, créer, renommer, ouvrir le dossier), repliable par le bouton de la barre ; il remplace la section « Profil ».
+- Quiz : la colonne de gauche (titre, cours, date) se replie par le bouton de la barre, comme le sommaire des cours ; l'état est mémorisé.
+
+### Améliorations
+
+- Accueil : « Explorer » et « Catalogue en ligne » ne font plus qu'une section « Catalogue », avec deux onglets : « Installés sur ce poste » (par domaine) et « Tous les cours » (cursus exemples, packs, cours à télécharger, chargés sans bouton « Afficher »). Un cours installé s'ouvre et s'ajoute au cursus depuis les deux onglets.
+
+### Corrections
+
+- Accueil : un seul trait sous l'en-tête (le titre de la première section en ajoutait un second).
+
 ## [2.9.0] - 2026-11-27
 
 ### Ajouts
@@ -206,7 +222,8 @@ Les changements notables d'Universal Learn Academy sont notés dans ce fichier. 
 - Première application installable, nommée Studies (Electron, electron-builder, electron-updater) : mise à jour automatique au démarrage, fenêtre au lancement réglable, raccourcis Bureau, menu Démarrer ou dossier choisi, connexion à Claude par Claude Code ou par une clé d'API chiffrée. Installeur NSIS et AppImage avec leurs fichiers `.blockmap`, publiés par la GitHub CLI.
 - Données personnelles exclues des exécutables, avec un contrôle qui fait échouer la construction.
 
-[Unreleased]: https://github.com/WolfGang-PRoxa/universal-learn-academy/compare/v2.9.0...HEAD
+[Unreleased]: https://github.com/WolfGang-PRoxa/universal-learn-academy/compare/v2.10.0...HEAD
+[2.10.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.10.0
 [2.9.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.9.0
 [2.8.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.8.0
 [2.7.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.7.0

@@ -35,7 +35,7 @@ Règle d'or : **rien de ce que l'utilisateur produit n'est écrit dans `explore/
 
 - Une page du catalogue (`explore/<d>/<cours>/…`) écrit son travail dans le dossier du lien vers ce cours, dans l'espace du profil actif. Si le cours n'est pas encore dans le cursus, un lien est ajouté dans `<profil>/Cours suivis/`.
 - Un fichier absent d'un cours est cherché dans le dossier de ce cours de l'espace du profil : les liens relatifs des pages (`../TP/TP1/script.txt`) mènent ainsi au travail de l'utilisateur.
-- `/index.html` est l'accueil dynamique (`accueil.html`) : profils, cursus, cours installés, catalogue en ligne, outils. Un accueil de domaine absent (cours téléchargés) l'est aussi, filtré sur le domaine.
+- `/index.html` est l'accueil dynamique (`accueil.html`) : volet des profils, cursus, catalogue (onglets « Installés sur ce poste » et « Tous les cours »), outils. Un accueil de domaine absent (cours téléchargés) l'est aussi, filtré sur le domaine.
 - Une page d'un cours non installé renvoie au catalogue.
 
 Routes de l'extension (`serveur/extension.js`) : `POST profils` (avec `cursus`, `telecharger`), `POST cursus/appliquer`, `POST catalogue/installer-tout`, `GET catalogue/travail`, `POST catalogue/installer-pack`, `POST cursus/ajouter-pack`, `GET etat`, `PUT profil`, `POST profils`, `POST profils/renommer`, `GET cursus`, `POST cursus/dossier|renommer|deplacer|retirer|ajouter`, `GET catalogue`, `POST catalogue/installer|supprimer`, `POST proposer`, `POST ouvrir`.
@@ -52,7 +52,7 @@ Dans le dépôt git d'ula (mode « source »), `explore/` est la source du catal
 
 Un pack regroupe les cours d'un niveau (« Licence 1 informatique ») : `explore/packs/<id>.json`, format `ula-pack-1` (`id`, `titre`, `origine`, `dossier` proposé dans le cursus, par exemple `L1`, `description`, liste ordonnée `cours`). Un cours peut être dans plusieurs packs. Il n'y a pas d'archive de pack : `catalogue.json` publie les packs, et l'application télécharge les archives des cours (empreintes vérifiées).
 
-Dans l'accueil, la section « Packs » est en tête du catalogue en ligne, avec le nombre de cours et la taille totale. « Télécharger le pack » installe les cours un par un, avec une progression globale ; un cours en échec n'arrête pas les autres, et relancer le pack ne reprend que ceux qui manquent. Puis « Ranger dans mon cursus » ajoute les cours dans un dossier (nom proposé modifiable, `L1`…) : un cours déjà dans le cursus reste où il est, rien n'est écrasé.
+Dans l'accueil, la section « Packs » est en tête de l'onglet « Tous les cours » du catalogue, avec le nombre de cours et la taille totale. « Télécharger le pack » installe les cours un par un, avec une progression globale ; un cours en échec n'arrête pas les autres, et relancer le pack ne reprend que ceux qui manquent. Puis « Ranger dans mon cursus » ajoute les cours dans un dossier (nom proposé modifiable, `L1`…) : un cours déjà dans le cursus reste où il est, rien n'est écrasé.
 
 Packs actuels : Licence 1, 2 et 3 informatique (toutes les matières de chaque année, y compris mathématiques, langues, communication et projet). Un cours accepté se range dans un pack avec `npm run accepter-proposition -- <zip> --pack <id>` ; `npm run catalogue` vérifie que chaque pack ne cite que des cours existants.
 

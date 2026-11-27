@@ -265,7 +265,15 @@
       main.appendChild(sectionCours(domaineSeul));
       return;
     }
-    main.appendChild(sectionProfils());
+    // Profils : volet latéral repliable dès qu'il en existe un ; sinon, accueil de création
+    var page = main.parentNode;
+    var ancien = page.querySelector(':scope > .ula-volet-profils');
+    if (ancien) ancien.remove();
+    page.classList.toggle('avec-volet', etat.profils.length > 0);
+    if (etat.profils.length) {
+      page.insertBefore(voletProfils(), main);
+      if (window.charteVoletLateral) window.charteVoletLateral();
+    } else main.appendChild(sectionProfils());
     if (etat.profil) {
       main.appendChild(sectionCursus());
       var so = sectionSoumissions();
@@ -273,7 +281,6 @@
     }
     // Soumissions reçues : seulement chez l'administrateur du catalogue (admin-soumissions.js)
     if (window.ULA_ADMIN) window.ULA_ADMIN.rendre(main);
-    main.appendChild(sectionCours(null));
     main.appendChild(sectionCatalogue());
     main.appendChild(sectionOutils());
     if (location.hash === '#catalogue') {
@@ -338,9 +345,20 @@
       s.appendChild(el('p', 'ula-note', T('profil.cursusNote')));
       return s;
     }
+    return s;
+  }
+
+  function voletProfils() {
+    var s = el('aside', 'volet-lateral ula-volet-profils');
+    s.id = 'profils';
+    s.setAttribute('aria-labelledby', 'profils-titre');
+    var titre = el('h2', null, T('profil.titrePluriel'));
+    titre.id = 'profils-titre';
+    s.appendChild(titre);
     var liste = el('div', 'ula-profils');
     etat.profils.forEach(function (p) {
       var b = el('button', 'ula-profil', p.nom);
+      b.title = p.nom;
       b.type = 'button';
       b.setAttribute('aria-pressed', String(p.nom === etat.profil));
       b.addEventListener('click', function () {
@@ -1335,7 +1353,22 @@
 
   function sectionCours(domaine) {
     var s = el('section');
-    s.appendChild(el('h2', null, domaine ? T('explorer.cours') : T('explorer.titre')));
+    s.appendChild(el('h2', null, T('explorer.cours')));
+    remplirCours(s, domaine);
+    return s;
+  }
+
+  // Cours installés sur ce poste (d'un domaine, ou tous, rangés par domaine)
+  function coursDejaDansCursus() {
+    var dejaLa = {};
+    (function p(n) {
+      if (n && n.type === 'lien') dejaLa[n.cours] = true;
+      ((n && n.enfants) || []).forEach(p);
+    })(cursus && cursus.arbre);
+    return dejaLa;
+  }
+
+  function remplirCours(s, domaine) {
     var cours = etat.cours.filter(function (c) {
       return !domaine || c.domaine === domaine;
     });
@@ -1347,11 +1380,7 @@
     cours.forEach(function (c) {
       (parDomaine[c.domaine] = parDomaine[c.domaine] || []).push(c);
     });
-    var dejaLa = {};
-    (function p(n) {
-      if (n && n.type === 'lien') dejaLa[n.cours] = true;
-      ((n && n.enfants) || []).forEach(p);
-    })(cursus && cursus.arbre);
+    var dejaLa = coursDejaDansCursus();
     Object.keys(parDomaine).forEach(function (d) {
       if (!domaine) s.appendChild(el('h3', null, nomDomaine(d)));
       var ul = el('ul', 'ula-cartes');
@@ -1392,22 +1421,71 @@
 
   /* -- Catalogue en ligne ------------------------------------------------------------------ */
 
+  // Catalogue : un seul endroit pour les cours, en deux vues. « Installés » : les cours
+  // déjà sur ce poste (ouvrir, ajouter au cursus) ; « Tous les cours » : le catalogue en
+  // ligne (télécharger, mettre à jour, supprimer, packs et cursus exemples).
+  var vueCatalogue = null;
   function sectionCatalogue() {
     var s = el('section');
     s.id = 'catalogue';
     s.appendChild(el('h2', null, T('catalogue.titre')));
     if (etat.source) s.appendChild(el('p', 'ula-note', T('catalogue.source')));
     else s.appendChild(el('p', null, T('catalogue.intro')));
+    if (!vueCatalogue) {
+      try {
+        vueCatalogue = localStorage.getItem('ula-vue-catalogue');
+      } catch (e) {
+        /* stockage indisponible */
+      }
+      if (vueCatalogue !== 'installes' && vueCatalogue !== 'tous')
+        vueCatalogue = etat.cours.length ? 'installes' : 'tous';
+    }
+    var onglets = el('div', 'ula-onglets');
+    onglets.setAttribute('role', 'tablist');
+    var contenu = el('div');
+    contenu.setAttribute('role', 'tabpanel');
+    [
+      ['installes', T('catalogue.vueInstalles', { n: etat.cours.length })],
+      ['tous', catalogue ? T('catalogue.vueTous', { n: catalogue.cours.length }) : T('catalogue.vueTousSans')],
+    ].forEach(function (o) {
+      var b = el('button', 'ula-onglet', o[1]);
+      b.type = 'button';
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', String(o[0] === vueCatalogue));
+      b.addEventListener('click', function () {
+        if (vueCatalogue === o[0]) return;
+        vueCatalogue = o[0];
+        try {
+          localStorage.setItem('ula-vue-catalogue', vueCatalogue);
+        } catch (e) {
+          /* stockage indisponible */
+        }
+        s.replaceWith(sectionCatalogue());
+      });
+      onglets.appendChild(b);
+    });
+    s.appendChild(onglets);
+    s.appendChild(contenu);
+    if (vueCatalogue === 'installes') {
+      remplirCours(contenu, null);
+      return s;
+    }
     var zone = el('div');
-    s.appendChild(zone);
+    contenu.appendChild(zone);
     var act = el('div', 'ula-actions');
     act.appendChild(
-      bouton(catalogue ? T('catalogue.actualiser') : T('catalogue.afficher'), 'principal', function () {
-        return chargerCatalogue(zone);
+      bouton(T('catalogue.actualiser'), 'discret', function () {
+        return chargerCatalogue(zone).then(function () {
+          s.replaceWith(sectionCatalogue());
+        });
       }),
     );
-    s.appendChild(act);
+    contenu.appendChild(act);
     if (catalogue) rendreCatalogue(zone);
+    else
+      chargerCatalogue(zone).then(function () {
+        if (catalogue && s.isConnected) s.replaceWith(sectionCatalogue());
+      });
     return s;
   }
 
@@ -1664,12 +1742,20 @@
     zone.innerHTML = '';
     rendreCursus(zone);
     rendrePacks(zone);
+    var dejaLa = coursDejaDansCursus();
     var ul = el('ul', 'ula-cartes');
     catalogue.cours.forEach(function (c) {
       var li = el('li', 'ula-carte');
       if (c.teinte) li.dataset.matiere = c.teinte;
       if (c.etat !== 'partiel' && libelleEtat(c.etat)) li.appendChild(el('span', 'ula-etat', libelleEtat(c.etat)));
-      li.appendChild(el('h3', null, c.titre));
+      var local = etat.cours.find(function (x) {
+        return x.id === c.id;
+      });
+      var titre = el('h3');
+      titre.appendChild(
+        local && local.accueil ? lien(c.titre, urlPage(local.accueil)) : document.createTextNode(c.titre),
+      );
+      li.appendChild(titre);
       li.appendChild(
         el(
           'p',
@@ -1682,6 +1768,15 @@
           el('p', 'ula-note', c.description.length > 180 ? c.description.slice(0, 177) + '…' : c.description),
         );
       var act = el('div', 'ula-actions');
+      if (local && etat.profil) {
+        if (dejaLa[c.id]) act.appendChild(el('span', 'ula-etat', T('explorer.dansCursus')));
+        else
+          act.appendChild(
+            bouton(T('explorer.ajouter'), 'petit', function () {
+              return ajouterCours(c.id, null);
+            }),
+          );
+      }
       if (!catalogue.source) {
         if (c.etat === 'absent')
           act.appendChild(

@@ -24,10 +24,13 @@
   var racine = document.documentElement;
   var CLE_THEME = 'charte-theme';
   var CLE_SOMMAIRE = 'charte-sommaire-replie';
+  var CLE_VOLET = 'charte-volet-replie';
 
-  // Sommaire replié sur grand écran : appliqué dès le chargement, sans clignement
+  // Sommaire (et volet latéral) repliés sur grand écran : appliqué dès le chargement,
+  // sans clignement
   try {
     if (localStorage.getItem(CLE_SOMMAIRE) === '1') racine.classList.add('sommaire-replie');
+    if (localStorage.getItem(CLE_VOLET) === '1') racine.classList.add('volet-replie');
   } catch (e) {
     /* stockage indisponible */
   }
@@ -134,6 +137,8 @@
       sommaire: 'Sommaire',
       afficherSommaire: 'Afficher le sommaire',
       masquerSommaire: 'Masquer le sommaire',
+      afficherVolet: 'Afficher le volet latéral',
+      masquerVolet: 'Masquer le volet latéral',
       copier: 'Copier',
       copie: 'Copié',
       texte: 'Texte',
@@ -170,6 +175,8 @@
       sommaire: 'Contents',
       afficherSommaire: 'Show the contents',
       masquerSommaire: 'Hide the contents',
+      afficherVolet: 'Show the side panel',
+      masquerVolet: 'Hide the side panel',
       copier: 'Copy',
       copie: 'Copied',
       texte: 'Text',
@@ -627,6 +634,45 @@
     return { nav: nav, liens: liens };
   }
 
+  /* Volet latéral repliable (sans sommaire) -------------------------------- */
+
+  // Colonne de gauche d'une page sans sommaire : en-tête d'un quiz (.quiz > .entete)
+  // ou volet d'une page (.page > .volet-lateral, comme les profils de l'accueil). Sur
+  // grand écran, un bouton de la barre la replie ; l'état est mémorisé pour toutes les
+  // pages. Les règles de mise en page (classe « volet-replie ») sont dans la feuille de
+  // chaque page. Sur petit écran, le volet passe au-dessus du contenu et le bouton se cache.
+  function voletLateral() {
+    var barre = document.querySelector('.barre');
+    if (!barre || document.querySelector('.bouton-sommaire')) return;
+    var volet = document.querySelector('.page > .quiz > .entete, .page > .volet-lateral');
+    if (!volet) return;
+    if (!volet.id) volet.id = 'volet-lateral';
+    var bouton = creer('button', 'bouton-icone bouton-sommaire bouton-volet');
+    bouton.type = 'button';
+    bouton.setAttribute('aria-controls', volet.id);
+    function maj() {
+      var v = !racine.classList.contains('volet-replie');
+      var libelle = tb(v ? 'masquerVolet' : 'afficherVolet');
+      bouton.setAttribute('aria-label', libelle);
+      bouton.title = libelle;
+      bouton.setAttribute('aria-expanded', String(v));
+    }
+    maj();
+    relibeller.push(maj);
+    bouton.addEventListener('click', function () {
+      var replie = racine.classList.toggle('volet-replie');
+      try {
+        if (replie) localStorage.setItem(CLE_VOLET, '1');
+        else localStorage.removeItem(CLE_VOLET);
+      } catch (e) {
+        /* stockage indisponible */
+      }
+      maj();
+    });
+    barre.insertBefore(bouton, barre.firstChild);
+  }
+  window.charteVoletLateral = voletLateral;
+
   /* Suivi du défilement : progression + section courante ------------------ */
 
   function suivreDefilement(sommaire) {
@@ -920,7 +966,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     var contenu = document.querySelector('.cours');
     etape('barre', installerBarre);
-    if (!contenu) return;
+    if (!contenu) return etape('volet latéral', voletLateral);
 
     var titres = [],
       sommaire = null;
@@ -932,6 +978,9 @@
     });
     etape('sommaire', function () {
       sommaire = construireSommaire(contenu, titres);
+    });
+    etape('volet latéral', function () {
+      if (!sommaire) voletLateral();
     });
     etape('code', function () {
       preparerCode(contenu);

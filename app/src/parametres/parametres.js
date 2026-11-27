@@ -1775,6 +1775,14 @@ function carteAPropos() {
 // Carte visible en mode dépôt, quand un jeton est enregistré, ou après cinq clics sur la
 // version (carte « À propos ») : les autres utilisateurs n'en ont pas l'usage
 const CLE_ADMIN_VISIBLE = 'ula-parametres-admin';
+function resumeVerification(d) {
+  if (!d) return t('p.admin.jamaisVerifie');
+  const heure = new Date(d.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  if (d.erreur) return t('p.admin.verifErreur', { heure, erreur: d.erreur });
+  if (!d.recues) return t('p.admin.verifAucune', { heure });
+  return t('p.admin.verifRecues', { heure, n: d.recues, nouvelles: d.nouvelles });
+}
+
 function carteAdministration() {
   const zone = h('div', { class: 'pile' });
   const c = carte('administration', 'livre', t('p.admin.titre'), t('p.admin.description'), zone);
@@ -1812,12 +1820,40 @@ function carteAdministration() {
   function peindre() {
     const blocs = [];
     if (statut.configure) {
+      const choix = h(
+        'select',
+        {
+          class: 'saisie',
+          'aria-label': t('p.admin.intervalle'),
+          onChange: async (e) => {
+            try {
+              statut = await api.admin.intervalle(Number(e.target.value));
+              note(t('p.admin.intervalleNote'));
+              peindre();
+            } catch (err) {
+              note(err.message, { erreur: true });
+            }
+          },
+        },
+        ...(statut.intervalles || []).map((m) =>
+          h('option', { value: String(m), selected: m === statut.intervalle }, t('p.admin.toutes.' + m)),
+        ),
+      );
       blocs.push(
         etat('ok', t('p.admin.actif', { service: statut.service })),
+        h('label', { class: 'ligne' }, h('span', {}, t('p.admin.intervalle')), choix),
+        h('p', { class: 'aide' }, resumeVerification(statut.derniere)),
         h(
           'div',
           { class: 'ligne' },
           bouton(t('p.admin.ouvrir'), { genre: 'principal', onClick: () => api.admin.ouvrir() }),
+          bouton(t('p.admin.verifier'), {
+            genre: 'leger',
+            onClick: async () => {
+              statut = await api.admin.verifier();
+              peindre();
+            },
+          }),
           bouton(t('p.admin.retirer'), { genre: 'leger', onClick: () => enregistrer('') }),
         ),
       );

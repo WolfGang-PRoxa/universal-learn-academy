@@ -657,3 +657,104 @@ a.ula-cours-bouton::after {
   margin: 0 0 0.35rem;
   font-size: 1em;
 }
+
+/* Première section sous l'en-tête : le trait du titre doublerait celui de l'en-tête
+   (la charte ne l'enlève que pour une section collée à l'en-tête, or <noscript> s'intercale) */
+#ula > .entete ~ section:first-of-type > h2:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.ula-vide {
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px dashed var(--bordure-forte);
+  border-radius: 8px;
+  color: var(--texte-2);
+}
+
+/* Volet latéral des profils (accueil) : colonne à gauche sur grand écran, repliable par
+   le bouton de la barre (cours.js, classe « volet-replie ») ; au-dessus du contenu sinon */
+.page.avec-volet {
+  grid-template-columns: minmax(0, var(--mesure));
+  grid-template-areas: 'volet' 'contenu';
+}
+.ula-volet-profils {
+  grid-area: volet;
+  min-width: 0;
+  margin-bottom: 2rem;
+}
+.ula-volet-profils h2 {
+  margin: 0 0 0.75rem;
+  padding: 0;
+  border: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-3);
+}
+.ula-volet-profils .ula-actions {
+  flex-direction: column;
+  align-items: stretch;
+}
+@media (min-width: 72rem) {
+  .page.avec-volet {
+    grid-template-columns: 14rem minmax(0, var(--mesure));
+    grid-template-areas: 'volet contenu';
+  }
+  .ula-volet-profils {
+    position: sticky;
+    top: calc(var(--hauteur-barre, 3.25rem) + 2rem);
+    align-self: start;
+    max-height: calc(100vh - var(--hauteur-barre, 3.25rem) - 4rem);
+    overflow-y: auto;
+    margin: 0;
+    padding-right: 1.25rem;
+    border-right: 1px solid var(--bordure);
+    scrollbar-width: thin;
+  }
+  .ula-volet-profils .ula-profils {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ula-volet-profils .ula-profil {
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .volet-replie .page.avec-volet {
+    grid-template-columns: minmax(0, var(--mesure));
+    grid-template-areas: 'contenu';
+  }
+  .volet-replie .ula-volet-profils {
+    display: none;
+  }
+}
+
+/* Onglets du catalogue (Installés / Tous les cours) */
+.ula-onglets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 1rem 0 1.25rem;
+  border-bottom: 1px solid var(--bordure);
+}
+.ula-onglet {
+  font: inherit;
+  padding: 0.45rem 0.85rem;
+  color: var(--texte-2);
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+}
+.ula-onglet:hover {
+  color: var(--texte);
+}
+.ula-onglet[aria-selected='true'] {
+  color: var(--texte);
+  font-weight: 600;
+  border-bottom-color: var(--accent);
+}

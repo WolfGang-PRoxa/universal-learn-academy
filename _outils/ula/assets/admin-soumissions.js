@@ -20,6 +20,8 @@
   var details = {};
   var file = [];
   var minuterie = null;
+  var verifiee = null;
+  var releve = null; // relecture automatique, toutes les 5 min tant que la page est ouverte
   var FILTRES = {
     atraiter: ['recue', 'analyse'],
     acceptee: ['acceptee'],
@@ -39,6 +41,7 @@
       .then(function (r) {
         liste = r.soumissions || [];
         section.dataset.erreur = '';
+        verifiee = new Date();
       })
       .catch(function (e) {
         liste = [];
@@ -54,6 +57,8 @@
         peindre();
         clearTimeout(minuterie);
         if (file.length) minuterie = setTimeout(charger, 3000);
+        clearTimeout(releve);
+        releve = setTimeout(charger, 5 * 60 * 1000);
       });
   }
 
@@ -201,7 +206,21 @@
       );
 
     var v = visibles();
-    if (!v.length) section.appendChild(el('p', 'ula-note', T('admin.vide')));
+    if (!liste.length) section.appendChild(el('p', 'ula-vide', T('admin.aucuneRecue')));
+    else if (!v.length) section.appendChild(el('p', 'ula-note', T('admin.vide')));
+    if (verifiee)
+      section.appendChild(
+        el(
+          'p',
+          'ula-note',
+          T('admin.verifiee', {
+            heure: verifiee.toLocaleTimeString(document.documentElement.lang || 'fr', {
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+          }),
+        ),
+      );
     v.forEach(function (s) {
       section.appendChild(carte(s, sel));
     });

@@ -244,6 +244,23 @@ module.exports = {
   'p.assistant.reglagesAutre':
     'Connexion et modèle : carte « Connexion à {nom} ». L’effort choisi pour chaque usage dans « Modèles de Claude et exécution du code » s’applique aussi à ChatGPT ; Gemini garde le sien.',
 
+  'p.admin.intervalle': 'Vérification automatique',
+  'p.admin.intervalleNote': 'Vérification automatique réglée.',
+  'p.admin.intervalleInconnu': 'Intervalle non prévu.',
+  'p.admin.toutes.30': 'Toutes les 30 min',
+  'p.admin.toutes.60': 'Toutes les heures',
+  'p.admin.toutes.120': 'Toutes les 2 h',
+  'p.admin.toutes.360': 'Toutes les 6 h',
+  'p.admin.toutes.720': 'Toutes les 12 h',
+  'p.admin.toutes.1440': 'Toutes les 24 h',
+  'p.admin.verifier': 'Vérifier maintenant',
+  'p.admin.jamaisVerifie': 'Première vérification dans une minute.',
+  'p.admin.verifAucune': 'Vérifié à {heure} : aucune soumission reçue pour l’instant.',
+  'p.admin.verifRecues': 'Vérifié à {heure} : {n} soumission(s) à traiter, dont {nouvelles} nouvelle(s).',
+  'p.admin.verifErreur': 'Vérification de {heure} impossible : {erreur}',
+  'p.admin.notifTitre': 'Soumissions reçues',
+  'p.admin.notifUne': 'Nouvelle soumission : « {titre} ».',
+  'p.admin.notifPlusieurs': '{n} nouvelles soumissions à traiter.',
   'p.admin.titre': 'Soumissions reçues',
   'p.admin.description':
     'Administration du catalogue : les cours soumis par les utilisateurs, à analyser puis accepter ou refuser.',

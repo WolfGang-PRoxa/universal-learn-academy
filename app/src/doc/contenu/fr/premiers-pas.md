@@ -22,13 +22,13 @@ L’accueil s’ouvre ensuite et demande un **nom d’utilisateur**, prérempli 
 
 ## Ajouter des cours
 
-La section **Catalogue en ligne** de l’accueil liste tous les cours disponibles :
+La section **Catalogue** de l’accueil, onglet **Tous les cours**, liste tous les cours disponibles :
 
-1. **Afficher le catalogue**, puis choisir un pack (tous les cours d’un niveau) ou un cours seul.
+1. Choisir un pack (tous les cours d’un niveau) ou un cours seul.
 2. **Télécharger** : le cours est installé sur le poste.
 3. L’application propose de le ranger dans un dossier du cursus.
 
-Un cours installé apparaît aussi dans la section **Explorer**, classé par domaine. **Ajouter à mon cursus…** le range dans un dossier.
+Un cours installé apparaît aussi dans l’onglet **Installés sur ce poste**, classé par domaine. **Ajouter à mon cursus…** le range dans un dossier.
 
 ## Où va le travail
 
