@@ -20,6 +20,7 @@ import {
   messageCreation,
   libelleLieu,
 } from '../parametres/outils.js';
+import * as infobulles from '../parametres/infobulles.js';
 
 const api = window.studies;
 const textes = await chargerTextes();
@@ -28,6 +29,7 @@ document.title = t('g.titreFenetre');
 
 let info = await api.info();
 let reglages = await api.reglages();
+infobulles.installer((reglages.affichage && reglages.affichage.infobulle) || 0);
 const enregistrer = async (partiel) => {
   reglages = await api.modifier(partiel);
   return reglages;

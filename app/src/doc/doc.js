@@ -17,9 +17,14 @@ import {
   sommaireRepliable,
 } from '../parametres/outils.js';
 import { rendre } from './markdown.js';
+import * as infobulles from '../parametres/infobulles.js';
 
 const api = window.studies;
 await chargerTextes();
+api
+  .reglages()
+  .then((r) => infobulles.installer((r.affichage && r.affichage.infobulle) || 0))
+  .catch(() => infobulles.installer(0));
 api.i18n.surChangement(() => location.reload());
 
 document.title = t('d.titreFenetre');

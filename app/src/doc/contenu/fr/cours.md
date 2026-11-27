@@ -4,12 +4,12 @@
 
 L’accueil (**Alt+Origine**, ou bouton maison de la barre du haut) réunit :
 
-| Section         | Contenu                                                                                                                     |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Profils (volet) | À gauche : les profils, le changement de profil, la création et le renommage. Le bouton ☰ de la barre replie le volet      |
-| Mon cursus      | Les dossiers du cursus et leurs cours, avec la progression de chacun                                                        |
-| Catalogue       | Deux onglets : **Installés sur ce poste** (par domaine) et **Tous les cours** (cursus exemples, packs, cours à télécharger) |
-| Outils          | Révisions, compilation C, notebooks Python, démonstrations                                                                  |
+| Section         | Contenu                                                                                                                                                               |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Profils (volet) | À gauche : les profils, le changement de profil, la création, le renommage et la suppression (en retapant le nom du profil). Le bouton ☰ de la barre replie le volet |
+| Mon cursus      | Les dossiers du cursus et leurs cours, avec la progression de chacun                                                                                                  |
+| Catalogue       | Deux onglets : **Installés sur ce poste** (par domaine) et **Tous les cours** (cursus exemples, packs, cours à télécharger)                                           |
+| Outils          | Révisions, compilation C, notebooks Python, démonstrations                                                                                                            |
 
 ## Le cursus
 
@@ -44,7 +44,7 @@ Dans les pages des cours et des quiz, le bandeau de gauche (sommaire) se replie 
 
 ## Proposer un cours
 
-Un cours créé dans l’espace d’un profil peut être soumis au catalogue : **⋯ › Soumettre ce cours…**. Le formulaire reprend la fiche du cours et ce que l’application a mesuré de sa génération (IA, modèle, effort, durée, ressources lues) ; on y précise ce qui a été fait hors de l’application (IA, modèle, effort, temps passé, ressources), un pseudonyme facultatif, et on accepte la licence CC BY-NC-ND 4.0.
+Un cours créé dans l’espace d’un profil peut être soumis au catalogue : **⋯ › Soumettre ce cours…**, ou depuis sa carte dans l’onglet **Mes cours** du catalogue (accueil), qui réunit les cours personnels et l’état de leur soumission. Le formulaire reprend la fiche du cours et ce que l’application a mesuré de sa génération (IA, modèle, effort, durée, ressources lues) ; on y précise ce qui a été fait hors de l’application (IA, modèle, effort, temps passé, ressources), un pseudonyme facultatif, et on accepte la licence CC BY-NC-ND 4.0.
 
 Le cours est ensuite vérifié sur le poste, étape par étape : fichiers (seulement les pages générées, aucune donnée personnelle), informations de génération, charte des pages, quiz, ateliers, archive. Un petit cadre en bas à droite suit l’avancement ; il se réduit en pastille d’un clic.
 
@@ -52,11 +52,18 @@ Si une vérification échoue, ou ne peut pas tourner (Python absent), la soumiss
 
 Une fois la vérification réussie, la soumission part d’elle-même au service de soumission (`ula.romainpiau.dev`), qui refait ses propres contrôles et lui donne un numéro. Sans réseau, elle reste **prête** : **Réessayer l’envoi** la fait repartir. Ensuite, **Mes soumissions** et le cadre suivent son état chez l’administrateur : reçue, en analyse, acceptée ou refusée, avec son message. L’état est relu toutes les 10 minutes, ou tout de suite avec **Actualiser l’état**.
 
+### Proposer un pack, un cursus ou des cours de profs
+
+- **Pack** : le menu **⋯** d’un dossier de Mon cursus propose **Proposer comme pack…** quand il contient au moins deux cours du catalogue. Le pack reprend ces cours, avec un titre, le dossier proposé et une description.
+- **Cursus** : **Proposer comme cursus…** sur un dossier dont au moins deux sous-dossiers contiennent des cours (L1, L2, L3…) ; chaque sous-dossier devient un pack.
+- Un pack ou un cursus ne reprend que des cours du catalogue : les cours personnels du dossier sont signalés et laissés de côté, à soumettre d’abord comme cours. La vérification relit le catalogue en ligne ; sans réseau, la soumission est suspendue jusqu’à **J’ai corrigé : revérifier**.
+- **Cours de profs** : dans **Mes cours**, **Proposer des cours de profs…** envoie à l’administrateur des fichiers bruts (PDF, diaporamas, documents, textes, images, code ; 50 Mo au plus) pour qu’il en génère un cours. Deux déclarations sont obligatoires : avoir le droit de partager ces documents, et en avoir retiré les informations personnelles. Une fois le cours généré, son titre apparaît dans le suivi de la soumission.
+
 ### Soumissions reçues (administrateur)
 
-Avec le jeton d’administration enregistré ([Paramètres › Soumissions reçues](parametres:administration)), l’accueil montre la section **Soumissions reçues** : à traiter, acceptées, refusées. Pour chaque soumission : la fiche, ce que l’application de l’auteur a mesuré et ce qu’il a déclaré, ses vérifications, et l’historique.
+Avec le jeton d’administration enregistré ([Paramètres › Soumissions reçues](parametres:administration)), l’accueil montre la section **Soumissions reçues** : à traiter, acceptées, refusées, et un filtre par sorte (cours, packs, cursus, cours de profs) quand il y en a plusieurs. Pour chaque soumission : la fiche, ce que l’application de l’auteur a mesuré et ce qu’il a déclaré, ses vérifications, et l’historique.
 
 - **Analyser** (une soumission, la sélection, ou toutes celles à analyser) avec l’IA choisie dans la liste (Claude, ChatGPT ou Gemini, sans relais vers une autre) : l’archive est téléchargée dans `soumissions-recues/`, les vérifications sont refaites sur le poste, puis l’IA relit le cours sans rien modifier et rend une recommandation (accepter, corriger, refuser), un résumé, des points précis et une note. L’auteur voit la recommandation et le résumé.
-- **Accepter** : en mode dépôt, le cours entre dans `explore/` (mêmes contrôles que le catalogue, pack au choix) ; ailleurs, l’archive reste dans `soumissions-recues/`. **Refuser** demande un message pour l’auteur. **Bloquer l’auteur** refuse les prochaines soumissions de son installation.
+- **Accepter** : en mode dépôt, le cours entre dans `explore/` (mêmes contrôles que le catalogue, pack au choix) ; ailleurs, l’archive reste dans `soumissions-recues/`. Un pack ou un cursus accepté en mode dépôt entre dans `explore/packs/` ou `explore/cursus/` (identifiant au choix). Des cours de profs acceptés restent dans `soumissions-recues/` : **Relier le cours généré…** indique ensuite à l’auteur le cours qui en est sorti. Seuls les cours sont analysés par l’IA. **Refuser** demande un message pour l’auteur. **Bloquer l’auteur** refuse les prochaines soumissions de son installation.
 
 Rien n’est accepté sans votre décision.

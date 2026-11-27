@@ -129,6 +129,13 @@ module.exports = {
   'p.echelle.aide':
     'En automatique, les pages s’adaptent seules à la largeur de la fenêtre : les accueils occupent toute la largeur et tout grandit sur un grand écran. Un pourcentage agrandit ou réduit tout en plus, tout de suite et à chaque lancement. Ctrl + et Ctrl − (ou Ctrl et la molette) ajustent en plus, jusqu’à la fermeture ; Ctrl 0 revient à l’échelle choisie ici.',
 
+  'p.infobulle.libelle': 'Délai d’apparition des infobulles',
+  'p.infobulle.valeur': '{s} s',
+  'p.infobulle.note': 'Infobulles après {v}',
+  'p.infobulle.noteImmediat': 'Infobulles immédiates',
+  'p.infobulle.aide':
+    'Temps de survol avant que s’affiche le texte d’aide d’un bouton, dans les pages comme dans ces fenêtres. 0 s : tout de suite.',
+
   'p.racc.titre': 'Raccourcis',
   'p.racc.description': 'Ouvrir Universal Learn Academy depuis le Bureau, le menu Démarrer ou un dossier au choix.',
   'p.racc.bureau': 'Bureau',

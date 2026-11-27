@@ -6,6 +6,32 @@ All notable changes to Universal Learn Academy are documented in this file. The 
 
 ## [Unreleased]
 
+## [2.11.0] - 2026-11-27
+
+### Added
+
+- Catalogue: “My courses” tab with the profile’s personal courses, the status of their submission and a “Submit” (or “Track the submission”) button on each card.
+- Pack and curriculum submissions: “Propose as a pack…” and “Propose as a curriculum…” in the ⋯ menu of a My curriculum folder. Only catalogue courses are taken; personal courses are flagged and left out. The check reads the online catalogue.
+- Teachers’ courses: “Propose teachers’ courses…” (My courses tab) sends raw files (PDFs, slides, documents, texts, images, code; 50 MB at most) to the administrator, with two required declarations (right to share, personal information removed). The tracking then shows the course generated from them.
+- Received submissions (administrator): filter by kind, accepting a pack or curriculum into `explore/packs/` and `explore/cursus/` in repository mode (`node app/scripts/catalogue.mjs importer`), “Link the generated course…” for teachers’ courses; only courses are reviewed by the AI. The submission service (1.1.0) checks each kind and keeps its type (D1 migration `0002_sortes.sql`).
+- Top bar: GitHub button, the same as Interactive Music Player’s (the cat’s tail waves and its head tilts on hover; a long press opens a menu Star the project, Share the project, Submit an issue), and a link to the project on GitHub at the bottom of every page. The links open in the system browser.
+- Top bar: “Quit” button at the far right, which closes the application completely (it does not stay in the background), as its tooltip says.
+- Scrollbar in the app’s style: the page’s one sits over the content, below the top bar, and no longer takes width from the window; faint at rest, it shows up when scrolling and on hover, can be grabbed and dragged (a click on the rail jumps there). Panels that scroll on their own (contents, code, settings) have a thin rounded bar.
+- Tooltips in the app’s style (a bubble near the pointer, or under the element with the keyboard) instead of the system ones, in the pages and the application windows. Settings › Interface scale: appearance delay from 0 to 2.5 s in steps of 0.1 s (0 s by default).
+
+- Home page: a profile can be deleted from the profiles panel (“Delete “name”…”). A window on the home page explains what will be erased (curriculum, progress, results, practicals, created courses) and asks to retype the profile name; the “Delete permanently” button only becomes active with the exact name, and the local server checks the name again before erasing.
+- Side panels (course table of contents, home page profiles, left column of quizzes): animated opening and closing; the column slides and the panel fades in or out. Nothing moves when a page loads, or when the system asks for reduced motion.
+
+### Changed
+
+- Settings: the “Received submissions” card is always shown (without a token, it offers to save one); the hidden five-click action on the version, in About, is removed.
+- Full width: the home page, courses, quizzes and portals use the whole width of the window, with fluid margins, instead of a centred column (46rem for courses, 80 or 84rem elsewhere). The top bar follows the same margins.
+
+### Fixed
+
+- “Complément” boxes: the dashed border has the same thickness and dashes on all four edges (it was 1 px, very tight, on the top, right and bottom).
+- Home page: pressing Enter in a field of a window (rename, new folder…) confirms instead of cancelling.
+
 ## [2.10.0] - 2026-11-27
 
 ### Added
@@ -222,7 +248,8 @@ All notable changes to Universal Learn Academy are documented in this file. The 
 - First installable app, named Studies (Electron, electron-builder, electron-updater): automatic update at startup, configurable window at launch, Desktop, Start menu or chosen-folder shortcuts, connection to Claude through Claude Code or an encrypted API key. NSIS installer and AppImage with their `.blockmap` files, published with the GitHub CLI.
 - Personal data excluded from the executables, with a check that makes the build fail.
 
-[Unreleased]: https://github.com/WolfGang-PRoxa/universal-learn-academy/compare/v2.10.0...HEAD
+[Unreleased]: https://github.com/WolfGang-PRoxa/universal-learn-academy/compare/v2.11.0...HEAD
+[2.11.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.11.0
 [2.10.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.10.0
 [2.9.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.9.0
 [2.8.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.8.0

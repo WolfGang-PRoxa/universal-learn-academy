@@ -22,6 +22,7 @@ import {
   sommaireRepliable,
 } from './outils.js';
 import { creerCadre } from './cadre-fenetre.js';
+import * as infobulles from './infobulles.js';
 
 const api = window.studies;
 const MIN = { width: 640, height: 480 };
@@ -29,6 +30,7 @@ const MIN = { width: 640, height: 480 };
 const textes = await chargerTextes();
 let info = await api.info();
 let reglages = await api.reglages();
+infobulles.installer((reglages.affichage && reglages.affichage.infobulle) || 0);
 
 async function enregistrer(partiel) {
   reglages = await api.modifier(partiel);
@@ -353,6 +355,37 @@ function carteAffichage() {
     ...options,
   );
   choix.value = String(actuelle);
+
+  // Délai des infobulles (2.11.0) : 0 à 2,5 s par pas de 0,1 s, 0 par défaut
+  const secondes = (ms) =>
+    t('p.infobulle.valeur', {
+      s: (ms / 1000).toLocaleString(document.documentElement.lang || 'fr', {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      }),
+    });
+  const delai = (reglages.affichage && reglages.affichage.infobulle) || 0;
+  const valeur = h('output', { class: 'curseur-valeur' }, secondes(delai));
+  const lire = (e) => Math.round(Number(e.target.value) * 10) * 100;
+  const curseur = h('input', {
+    class: 'curseur',
+    type: 'range',
+    min: '0',
+    max: '2.5',
+    step: '0.1',
+    value: String(delai / 1000),
+    'aria-label': t('p.infobulle.libelle'),
+    onInput: (e) => {
+      valeur.textContent = secondes(lire(e));
+      infobulles.regler(lire(e));
+    },
+    onChange: async (e) => {
+      const r = await enregistrer({ affichage: { infobulle: lire(e) } });
+      const v = (r.affichage && r.affichage.infobulle) || 0;
+      infobulles.regler(v);
+      note(v ? t('p.infobulle.note', { v: secondes(v) }) : t('p.infobulle.noteImmediat'));
+    },
+  });
   return carte(
     'affichage',
     'echelle',
@@ -360,6 +393,13 @@ function carteAffichage() {
     t('p.echelle.description'),
     h('label', { class: 'champ' }, h('span', {}, t('p.echelle.libelle')), choix),
     h('p', { class: 'aide' }, t('p.echelle.aide')),
+    h(
+      'label',
+      { class: 'champ' },
+      h('span', {}, t('p.infobulle.libelle')),
+      h('span', { class: 'curseur-ligne' }, curseur, valeur),
+    ),
+    h('p', { class: 'aide' }, t('p.infobulle.aide')),
   );
 }
 
@@ -1729,19 +1769,6 @@ function carteSynchro() {
 
 /* -- À propos ------------------------------------------------------------------------- */
 
-// Cinq clics sur la version révèlent la carte des soumissions reçues
-let clicsVersion = 0;
-let minuterieClics = null;
-function compterClics() {
-  clicsVersion++;
-  clearTimeout(minuterieClics);
-  minuterieClics = setTimeout(() => (clicsVersion = 0), 1500);
-  if (clicsVersion >= 5) {
-    clicsVersion = 0;
-    document.dispatchEvent(new Event('admin:reveler'));
-  }
-}
-
 function carteAPropos() {
   return carte(
     'a-propos',
@@ -1750,7 +1777,7 @@ function carteAPropos() {
     null,
     h(
       'p',
-      { onClick: compterClics },
+      {},
       t(info.installee ? 'p.apropos.versionInstallee' : 'p.apropos.versionDev', {
         version: info.version,
         electron: info.electron,
@@ -1772,9 +1799,7 @@ function carteAPropos() {
 
 /* -- Soumissions reçues (administrateur du catalogue) ---------------------------------- */
 
-// Carte visible en mode dépôt, quand un jeton est enregistré, ou après cinq clics sur la
-// version (carte « À propos ») : les autres utilisateurs n'en ont pas l'usage
-const CLE_ADMIN_VISIBLE = 'ula-parametres-admin';
+// Carte toujours visible (2.11.0) : sans jeton, elle propose de l'enregistrer
 function resumeVerification(d) {
   if (!d) return t('p.admin.jamaisVerifie');
   const heure = new Date(d.date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
@@ -1794,19 +1819,6 @@ function carteAdministration() {
     spellcheck: false,
   });
   let statut = { configure: false };
-  let revele = false;
-  try {
-    revele = localStorage.getItem(CLE_ADMIN_VISIBLE) === '1';
-  } catch {
-    /* stockage indisponible */
-  }
-  const afficher = () => {
-    const visible = statut.configure || info.modeDonnees === 'depot' || revele;
-    c.hidden = !visible;
-    const lien = document.querySelector('.sommaire a[href="#administration"]');
-    if (lien) lien.hidden = !visible;
-    document.dispatchEvent(new Event('cartes:changement'));
-  };
   async function enregistrer(valeur) {
     try {
       const r = await api.admin.enregistrerJeton(valeur);
@@ -1877,19 +1889,8 @@ function carteAdministration() {
       statut = { configure: false };
     }
     peindre();
-    afficher();
+    document.dispatchEvent(new Event('cartes:changement'));
   }
-  c.hidden = true;
-  document.addEventListener('admin:reveler', () => {
-    revele = true;
-    try {
-      localStorage.setItem(CLE_ADMIN_VISIBLE, '1');
-    } catch {
-      /* stockage indisponible */
-    }
-    afficher();
-    c.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  });
   actualiser();
   return c;
 }

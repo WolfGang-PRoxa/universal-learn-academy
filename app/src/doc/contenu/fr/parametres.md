@@ -18,7 +18,7 @@ Affiche la version installée. Activées par défaut, les mises à jour sont rec
 
 ## Échelle de l’interface
 
-Taille des textes et des boutons dans toutes les fenêtres. **Automatique** (100 %) convient à la plupart des écrans ; sinon de 50 à 200 %. **Ctrl +**, **Ctrl −** et **Ctrl + molette** ajustent en plus jusqu’à la fermeture ; **Ctrl+0** revient à l’échelle choisie. [Ouvrir](parametres:affichage)
+Taille des textes et des boutons dans toutes les fenêtres. **Automatique** (100 %) convient à la plupart des écrans ; sinon de 50 à 200 %. **Ctrl +**, **Ctrl −** et **Ctrl + molette** ajustent en plus jusqu’à la fermeture ; **Ctrl+0** revient à l’échelle choisie. Le **délai d’apparition des infobulles** (texte d’aide d’un bouton au survol) se règle juste en dessous, de 0 à 2,5 s par pas de 0,1 s ; 0 s par défaut. [Ouvrir](parametres:affichage)
 
 ## Arrière-plan
 
@@ -50,7 +50,7 @@ Synchronisation du dossier des données entre plusieurs PC, quand c’est un dé
 
 ## Soumissions reçues
 
-Seulement pour l’administrateur du catalogue : on y enregistre le jeton d’administration du service de soumission (gardé chiffré), puis les soumissions reçues se gèrent dans l’accueil. Le service est vérifié automatiquement toutes les 30 min (au choix 1 h, 2 h, 6 h, 12 h ou 24 h) et une notification signale chaque nouvelle soumission. La carte apparaît en mode dépôt, quand un jeton est enregistré, ou après cinq clics sur la version dans À propos. Voir [Cours](page:cours). [Ouvrir](parametres:administration)
+Seulement pour l’administrateur du catalogue : on y enregistre le jeton d’administration du service de soumission (gardé chiffré), puis les soumissions reçues se gèrent dans l’accueil. Le service est vérifié automatiquement toutes les 30 min (au choix 1 h, 2 h, 6 h, 12 h ou 24 h) et une notification signale chaque nouvelle soumission. Sans jeton, la carte propose d’en enregistrer un. Voir [Cours](page:cours). [Ouvrir](parametres:administration)
 
 ## À propos
 

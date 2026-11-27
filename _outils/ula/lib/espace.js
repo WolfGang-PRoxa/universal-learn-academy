@@ -244,6 +244,36 @@ function renommerProfil(racine, ancien, nouveau) {
   return n;
 }
 
+/**
+ * Supprime un profil et tout son espace (cursus, progression, travail), sans retour.
+ * confirmation : le nom du profil, retapé par l'utilisateur (garde-fou côté serveur
+ * en plus de celui de l'interface).
+ */
+function supprimerProfil(racine, nom, confirmation) {
+  const p = profil(racine, String(nom));
+  if (!p) throw new Error(tr(`Profil introuvable : ${nom}`, `Profile not found: ${nom}`));
+  if (String(confirmation == null ? '' : confirmation).trim() !== p.nom)
+    throw new Error(
+      tr(
+        `Le nom saisi ne correspond pas au profil « ${p.nom} » : rien n'a été supprimé.`,
+        `The name typed does not match the profile “${p.nom}”: nothing was deleted.`,
+      ),
+    );
+  // Un dossier direct de la racine, jamais la racine ni un dossier réservé
+  if (path.dirname(path.resolve(p.dossier)) !== path.resolve(racine) || RESERVES.has(p.nom.toLowerCase()))
+    throw new Error(tr('Ce dossier ne peut pas être supprimé.', 'This folder cannot be deleted.'));
+  fs.rmSync(p.dossier, { recursive: true, force: true, maxRetries: 3 });
+  // Plus de profil actif s'il s'agissait de lui
+  const memo = lireMemo();
+  const cle = path.resolve(racine);
+  if (memo[cle] === p.nom) {
+    delete memo[cle];
+    ecrireMemo(memo);
+  }
+  oublierCache();
+  return p.nom;
+}
+
 /* Profil actif : mémorisé sur le poste (pas dans la racine, qui peut être partagée
    par git), par racine. Sans choix, le seul profil existant. */
 
@@ -543,6 +573,7 @@ module.exports = {
   profil,
   creerProfil,
   renommerProfil,
+  supprimerProfil,
   profilActif,
   choisirProfil,
   arbre,

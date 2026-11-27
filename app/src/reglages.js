@@ -18,7 +18,8 @@ const DEFAUT = {
   fenetre: { mode: 'agrandie', bornes: { x: 120, y: 80, width: 1400, height: 900 } },
   // Échelle de l'interface, en % : 0 pour « Automatique » (100 %, la page s'adapte
   // seule à la largeur de la fenêtre), sinon de 50 à 200 par pas de 10
-  affichage: { echelle: 0 },
+  // infobulle : délai d'apparition des infobulles des pages, en ms (0 à 2500, pas de 100)
+  affichage: { echelle: 0, infobulle: 0 },
   // Fermer la fenêtre la cache et garde l'application en arrière-plan (icône de la
   // zone de notification, comme Modding Manager) ; bulle d'explication déjà montrée ?
   arrierePlan: { fermeture: true, bulleMontree: false },

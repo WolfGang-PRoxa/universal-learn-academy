@@ -124,6 +124,13 @@ module.exports = {
   'p.echelle.aide':
     'On automatic, pages adapt to the window width by themselves: home pages use the full width and everything grows on a large screen. A percentage enlarges or shrinks everything on top of that, at once and at every launch. Ctrl + and Ctrl − (or Ctrl and the mouse wheel) adjust further until the window closes; Ctrl 0 returns to the scale chosen here.',
 
+  'p.infobulle.libelle': 'Tooltip delay',
+  'p.infobulle.valeur': '{s} s',
+  'p.infobulle.note': 'Tooltips after {v}',
+  'p.infobulle.noteImmediat': 'Tooltips right away',
+  'p.infobulle.aide':
+    'How long to hover before a button’s help text appears, in the pages as in these windows. 0 s: right away.',
+
   'p.racc.titre': 'Shortcuts',
   'p.racc.description': 'Open Universal Learn Academy from the desktop, the Start menu or any folder.',
   'p.racc.bureau': 'Desktop',

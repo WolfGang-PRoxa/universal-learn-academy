@@ -6,6 +6,32 @@ Les changements notables d'Universal Learn Academy sont notés dans ce fichier. 
 
 ## [Unreleased]
 
+## [2.11.0] - 2026-11-27
+
+### Ajouts
+
+- Catalogue : onglet « Mes cours » avec les cours personnels du profil, l'état de leur soumission et un bouton « Soumettre » (ou « Suivre la soumission ») sur chaque carte.
+- Soumissions de packs et de cursus : « Proposer comme pack… » et « Proposer comme cursus… » dans le menu ⋯ d'un dossier de Mon cursus. Seuls les cours du catalogue sont repris ; les cours personnels sont signalés et laissés de côté. La vérification relit le catalogue en ligne.
+- Cours de profs : « Proposer des cours de profs… » (onglet Mes cours) envoie à l'administrateur des fichiers bruts (PDF, diaporamas, documents, textes, images, code ; 50 Mo au plus), avec deux déclarations obligatoires (droit de partager, informations personnelles retirées). Le suivi montre ensuite le cours généré à partir d'eux.
+- Soumissions reçues (administrateur) : filtre par sorte, acceptation d'un pack ou d'un cursus dans `explore/packs/` et `explore/cursus/` en mode dépôt (`node app/scripts/catalogue.mjs importer`), « Relier le cours généré… » pour des cours de profs ; seuls les cours sont analysés par l'IA. Le service de soumission (1.1.0) contrôle chaque sorte et garde son type (migration D1 `0002_sortes.sql`).
+- Barre du haut : bouton GitHub, le même que celui d'Interactive Music Player (la queue du chat ondule et sa tête s'incline au survol ; un appui long ouvre un menu Mettre en favori, Partager le projet, Soumettre une issue), et lien vers le projet sur GitHub en bas de chaque page. Les liens s'ouvrent dans le navigateur du système.
+- Barre du haut : bouton « Quitter » tout à droite, qui ferme complètement l'application (elle ne reste pas en arrière-plan), comme le dit son infobulle.
+- Barre de défilement à la charte : celle de la page est posée par-dessus le contenu, sous la barre du haut, et ne prend plus de largeur à la fenêtre ; discrète au repos, elle se montre au défilement et au survol, se saisit et se déplace (un clic sur le rail saute à cet endroit). Les panneaux qui défilent seuls (sommaire, code, paramètres) ont une barre fine et arrondie.
+- Infobulles à la charte (bulle près du pointeur, ou sous l'élément au clavier) à la place de celles du système, dans les pages et les fenêtres de l'application. Paramètres › Échelle de l'interface : délai d'apparition réglable de 0 à 2,5 s par pas de 0,1 s (0 s par défaut).
+
+- Accueil : un profil se supprime depuis le volet des profils (« Supprimer « nom »… »). Une fenêtre de l'accueil explique ce qui sera effacé (cursus, progression, résultats, TP, cours créés) et demande de retaper le nom du profil ; le bouton « Supprimer définitivement » ne s'active qu'avec le nom exact, et le serveur local vérifie de nouveau le nom avant d'effacer.
+- Volets latéraux (sommaire des cours, profils de l'accueil, colonne de gauche des quiz) : ouverture et fermeture animées, la colonne glisse et le volet apparaît ou s'efface en fondu. Rien ne bouge au chargement d'une page, ni quand le système demande de réduire les animations.
+
+### Améliorations
+
+- Paramètres : la carte « Soumissions reçues » est toujours affichée (sans jeton, elle propose d'en enregistrer un) ; l'action cachée des cinq clics sur la version, dans À propos, est retirée.
+- Pleine largeur : l'accueil, les cours, les quiz et les portails occupent toute la largeur de la fenêtre, avec des marges fluides, au lieu d'une colonne centrée (46rem pour les cours, 80 ou 84rem ailleurs). La barre du haut suit les mêmes marges.
+
+### Corrections
+
+- Cadres « Complément » : le pointillé a la même épaisseur et les mêmes tirets sur les quatre bords (il était de 1 px, très serré, en haut, à droite et en bas).
+- Accueil : la touche Entrée dans un champ d'une fenêtre (renommer, nouveau dossier…) valide au lieu d'annuler.
+
 ## [2.10.0] - 2026-11-27
 
 ### Ajouts
@@ -222,7 +248,8 @@ Les changements notables d'Universal Learn Academy sont notés dans ce fichier. 
 - Première application installable, nommée Studies (Electron, electron-builder, electron-updater) : mise à jour automatique au démarrage, fenêtre au lancement réglable, raccourcis Bureau, menu Démarrer ou dossier choisi, connexion à Claude par Claude Code ou par une clé d'API chiffrée. Installeur NSIS et AppImage avec leurs fichiers `.blockmap`, publiés par la GitHub CLI.
 - Données personnelles exclues des exécutables, avec un contrôle qui fait échouer la construction.
 
-[Unreleased]: https://github.com/WolfGang-PRoxa/universal-learn-academy/compare/v2.10.0...HEAD
+[Unreleased]: https://github.com/WolfGang-PRoxa/universal-learn-academy/compare/v2.11.0...HEAD
+[2.11.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.11.0
 [2.10.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.10.0
 [2.9.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.9.0
 [2.8.0]: https://github.com/WolfGang-PRoxa/universal-learn-academy/releases/tag/v2.8.0

@@ -53,6 +53,26 @@
   color: var(--texte);
   border-color: var(--bordure);
 }
+/* Action destructrice (suppression d'un profil) : rouge, discret ou plein */
+.ula-bouton.danger {
+  --rouge: oklch(0.55 0.19 25);
+  background: var(--rouge);
+  border-color: var(--rouge);
+  color: #fff;
+}
+.ula-bouton.danger:hover {
+  background: oklch(0.5 0.19 25);
+  border-color: oklch(0.5 0.19 25);
+}
+.ula-bouton.discret.danger {
+  background: transparent;
+  border-color: transparent;
+  color: oklch(0.6 0.17 25);
+}
+.ula-bouton.discret.danger:hover {
+  border-color: oklch(0.6 0.17 25);
+  background: transparent;
+}
 .ula-bouton:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -116,12 +136,6 @@ a.ula-bouton::after {
   border-radius: 50%;
   background: var(--accent);
   flex: none;
-}
-
-/* Les grilles de fiches et de blocs prennent toute la largeur de la page : la
-   charte limite les listes d'un accueil à la largeur de lecture */
-.sans-sommaire > section > :is(.ula-cartes, .ula-blocs) {
-  max-width: none;
 }
 
 /* Blocs (dossiers du cursus, packs du catalogue) : même carte que les matières,
@@ -401,6 +415,8 @@ a.ula-cours-bouton::after {
 }
 .ula-dialogue h2 {
   margin: 0 0 0.5rem;
+  padding: 0;
+  border: 0;
   font-size: 1.15rem;
 }
 .ula-dialogue h2::before {
@@ -474,6 +490,21 @@ a.ula-cours-bouton::after {
 .ula-soumission h3 {
   margin: 1rem 0 0.4rem;
   font-size: 0.95rem;
+}
+/* Sorte d'une soumission (pack, cursus, cours de prof) : petite étiquette */
+.ula-sorte {
+  padding: 0.05rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: var(--texte-2);
+  border: 1px solid var(--bordure-forte);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.ula-dialogue input[type='file'] {
+  padding: 0.5rem;
+  border-style: dashed;
+  cursor: pointer;
 }
 .ula-etat-suspendue {
   color: oklch(0.55 0.14 70);
@@ -676,7 +707,7 @@ a.ula-cours-bouton::after {
 /* Volet latéral des profils (accueil) : colonne à gauche sur grand écran, repliable par
    le bouton de la barre (cours.js, classe « volet-replie ») ; au-dessus du contenu sinon */
 .page.avec-volet {
-  grid-template-columns: minmax(0, var(--mesure));
+  grid-template-columns: minmax(0, 1fr);
   grid-template-areas: 'volet' 'contenu';
 }
 .ula-volet-profils {
@@ -699,7 +730,7 @@ a.ula-cours-bouton::after {
 }
 @media (min-width: 72rem) {
   .page.avec-volet {
-    grid-template-columns: 14rem minmax(0, var(--mesure));
+    grid-template-columns: 14rem minmax(0, 1fr);
     grid-template-areas: 'volet contenu';
   }
   .ula-volet-profils {
@@ -711,7 +742,6 @@ a.ula-cours-bouton::after {
     margin: 0;
     padding-right: 1.25rem;
     border-right: 1px solid var(--bordure);
-    scrollbar-width: thin;
   }
   .ula-volet-profils .ula-profils {
     flex-direction: column;
@@ -723,12 +753,22 @@ a.ula-cours-bouton::after {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* Replié : la colonne tombe à zéro (animée par la charte, section 12 de cours.css),
+     le contenu du volet garde sa largeur pendant le mouvement */
+  .ula-volet-profils {
+    overflow-x: hidden;
+  }
+  .ula-volet-profils > * {
+    min-width: 12.75rem;
+  }
   .volet-replie .page.avec-volet {
-    grid-template-columns: minmax(0, var(--mesure));
-    grid-template-areas: 'contenu';
+    grid-template-columns: 0rem minmax(0, 1fr);
+    column-gap: 0rem;
   }
   .volet-replie .ula-volet-profils {
-    display: none;
+    visibility: hidden;
+    opacity: 0;
+    border-right-color: transparent;
   }
 }
 

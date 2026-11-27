@@ -185,3 +185,86 @@ test('refus du contrôle du serveur : suspendue ; réseau coupé : reste prête'
   assert.equal(c.etat, 'prete');
   assert.ok(c.erreurEnvoi);
 });
+
+/* Packs, cursus et cours de profs (sortes.js) ------------------------------------------ */
+
+function lienVers(ecrire, chemin, cours) {
+  ecrire(chemin + '/ula-lien.json', JSON.stringify({ format: 'ula-lien-1', cours }));
+}
+const catalogue = (ids) => () => Promise.resolve({ cours: ids.map((id) => ({ id, titre: 'Cours ' + id })) });
+
+test('pack : cours du catalogue repris, cours personnel signalé, archive avec ula-pack.json', async () => {
+  const { racine, ecrire } = bac();
+  lienVers(ecrire, 'alice/L2/Unix', 'unix');
+  lienVers(ecrire, 'alice/L2/Web', 'web-statique');
+  ecrire('alice/L2/Mon cours/generated_courses/index.html', '<html></html>');
+  const a = soumission.apercuListe(racine, 'alice', 'alice/L2', 'pack');
+  assert.deepEqual(a.contenu.cours, ['unix', 'web-statique']);
+  assert.deepEqual(a.ignores, ['Mon cours']);
+  assert.throws(() => soumission.creer(racine, 'alice', { type: 'pack', chemin: 'alice/L2', licence: false }));
+  const s = soumission.creer(
+    racine,
+    'alice',
+    { type: 'pack', chemin: 'alice/L2', infos: { titre: 'Ma L2', dossier: 'L2' }, licence: true },
+    { catalogue: catalogue(['unix', 'web-statique']) },
+  );
+  const fin = await attendreFin(racine, s.id);
+  assert.equal(fin.etat, 'prete', JSON.stringify(fin.etapes));
+  assert.equal(fin.etapes.find((e) => e.id === 'contenu').etat, 'avertissement');
+  const noms = zip.lire(path.join(soumission.dossierDe(racine, s.id), 'cours.zip')).map((e) => e.nom);
+  assert.deepEqual(noms.sort(), ['ula-pack.json', 'ula-soumission.json']);
+  const m = soumission.manifeste(fin);
+  assert.equal(m.type, 'pack');
+  assert.equal(m.titres.unix, 'Cours unix');
+  assert.ok(!JSON.stringify(m).includes('alice'));
+});
+
+test('cursus : un pack par sous-dossier ; cours inconnu du catalogue ou réseau coupé : suspendu', async () => {
+  const { racine, ecrire } = bac();
+  lienVers(ecrire, 'alice/Info/L1/Unix', 'unix');
+  lienVers(ecrire, 'alice/Info/L2/Web', 'web-statique');
+  const s = soumission.creer(
+    racine,
+    'alice',
+    { type: 'cursus', chemin: 'alice/Info', licence: true },
+    { catalogue: catalogue(['unix']) },
+  );
+  const fin = await attendreFin(racine, s.id);
+  assert.equal(fin.contenu.packs.length, 2);
+  assert.equal(fin.etat, 'suspendue');
+  assert.equal(fin.suspension.raison, 'echec');
+  assert.throws(() => soumission.agir(racine, s.id, 'corriger-ia', { claude: {} }));
+  soumission.agir(racine, s.id, 'reverifier', { catalogue: () => Promise.reject(new Error('hors ligne')) });
+  const encore = await attendreFin(racine, s.id);
+  assert.equal(encore.suspension.raison, 'reseau');
+});
+
+test('cours de profs : déclarations, brouillon, fichiers filtrés, archive sous sources/', async () => {
+  const { racine } = bac();
+  const infos = { titre: 'Réseaux', domaine: 'informatique' };
+  assert.throws(() => soumission.creer(racine, 'alice', { type: 'sources', infos, declarations: { droits: true } }));
+  const s = soumission.creer(racine, 'alice', {
+    type: 'sources',
+    infos,
+    declarations: { droits: true, personnel: true },
+  });
+  assert.equal(s.etat, 'brouillon');
+  const b64 = (t) => Buffer.from(t).toString('base64');
+  assert.throws(() => soumission.ajouterFichier(racine, s.id, 'virus.exe', b64('MZ')), /type/);
+  soumission.ajouterFichier(racine, s.id, 'CM 1.pdf', b64('%PDF-1.4'));
+  const x = soumission.ajouterFichier(racine, s.id, '../CM 1.pdf', b64('%PDF-1.5'));
+  assert.deepEqual(
+    x.fichiers.map((f) => f.nom),
+    ['CM 1 (2).pdf', 'CM 1.pdf'],
+  );
+  soumission.agir(racine, s.id, 'verifier');
+  const fin = await attendreFin(racine, s.id);
+  assert.equal(fin.etat, 'prete', JSON.stringify(fin.etapes));
+  const noms = zip.lire(path.join(soumission.dossierDe(racine, s.id), 'cours.zip')).map((e) => e.nom);
+  assert.deepEqual(noms.sort(), ['sources/CM 1 (2).pdf', 'sources/CM 1.pdf', 'ula-soumission.json']);
+  const m = soumission.manifeste(fin);
+  assert.equal(m.type, 'sources');
+  assert.deepEqual(m.declarations, { droits: true, personnel: true });
+  assert.equal(m.licence, undefined);
+  assert.throws(() => soumission.ajouterFichier(racine, s.id, 'b.pdf', b64('x')));
+});

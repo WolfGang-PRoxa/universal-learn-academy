@@ -5,6 +5,9 @@
    choisie (une, la sélection, ou toutes celles à analyser), puis décision :
    accepter (le cours entre dans explore/ en mode dépôt), refuser avec un message,
    bloquer l'installation de l'auteur. Ancre : #administration.
+   Sortes : cours (analysés par l'IA), packs et cursus (acceptés dans explore/packs/ et
+   explore/cursus/ en mode dépôt), cours de profs (l'administrateur en génère un cours,
+   qu'il relie ensuite à la soumission : l'auteur le voit dans son suivi).
    Aides de la page (el, T, api, demander…) : window.ULA_ACCUEIL (accueil.js).
    ========================================================================== */
 (function () {
@@ -15,6 +18,8 @@
   var liste = [];
   var ia = [];
   var filtre = 'atraiter';
+  var filtreSorte = 'toutes';
+  var SORTES = ['toutes', 'cours', 'pack', 'cursus', 'sources'];
   var choisies = {};
   var ouvertes = {};
   var details = {};
@@ -75,10 +80,16 @@
       });
   }
 
+  function sorteDe(s) {
+    return s.type || 'cours';
+  }
+  function deLaSorte(s) {
+    return filtreSorte === 'toutes' || sorteDe(s) === filtreSorte;
+  }
   function visibles() {
     var etats = FILTRES[filtre];
     return liste.filter(function (s) {
-      return !etats || etats.indexOf(s.etat) >= 0;
+      return deLaSorte(s) && (!etats || etats.indexOf(s.etat) >= 0);
     });
   }
 
@@ -159,7 +170,7 @@
       }),
     );
     var aAnalyser = liste.filter(function (s) {
-      return s.etat === 'recue' && !(s.local && s.local.analyse) && !enFile(s.id);
+      return sorteDe(s) === 'cours' && s.etat === 'recue' && !(s.local && s.local.analyse) && !enFile(s.id);
     });
     barre.appendChild(
       a.bouton(T('admin.analyserTout', { n: aAnalyser.length }), null, function () {
@@ -179,7 +190,7 @@
     Object.keys(FILTRES).forEach(function (f) {
       var etats = FILTRES[f];
       var n = liste.filter(function (s) {
-        return !etats || etats.indexOf(s.etat) >= 0;
+        return deLaSorte(s) && (!etats || etats.indexOf(s.etat) >= 0);
       }).length;
       var b = el('button', 'ula-admin-filtre', T('admin.filtre.' + f) + ' (' + n + ')');
       b.type = 'button';
@@ -192,6 +203,41 @@
       onglets.appendChild(b);
     });
     section.appendChild(onglets);
+
+    // Sortes présentes : le filtre n'apparaît que s'il y en a plusieurs
+    var presentes = SORTES.filter(function (k) {
+      return (
+        k === 'toutes' ||
+        liste.some(function (s) {
+          return sorteDe(s) === k;
+        })
+      );
+    });
+    if (presentes.indexOf(filtreSorte) < 0) filtreSorte = 'toutes';
+    if (presentes.length > 2) {
+      var sortes = el('div', 'ula-admin-filtres ula-admin-sortes');
+      sortes.setAttribute('role', 'tablist');
+      sortes.setAttribute('aria-label', T('admin.sortes'));
+      presentes.forEach(function (k) {
+        var n = liste.filter(function (s) {
+          return k === 'toutes' || sorteDe(s) === k;
+        }).length;
+        var b = el(
+          'button',
+          'ula-admin-filtre',
+          T(k === 'toutes' ? 'admin.sorte.toutes' : 'admin.sorte.' + k) + ' (' + n + ')',
+        );
+        b.type = 'button';
+        b.setAttribute('role', 'tab');
+        b.setAttribute('aria-selected', String(k === filtreSorte));
+        b.addEventListener('click', function () {
+          filtreSorte = k;
+          peindre();
+        });
+        sortes.appendChild(b);
+      });
+      section.appendChild(sortes);
+    }
 
     if (file.length)
       section.appendChild(
@@ -258,6 +304,7 @@
     });
     resume.appendChild(cocher);
     resume.appendChild(el('strong', null, ' ' + (s.titre || s.id) + ' '));
+    if (sorteDe(s) !== 'cours') resume.appendChild(badge(T('sorte.' + sorteDe(s)), 'sorte'));
     resume.appendChild(badge(T('etatSoumission.' + s.etat), s.etat));
     var an = s.analyse || (s.local && s.local.analyse);
     if (an && an.recommandation)
@@ -271,9 +318,8 @@
         'span',
         'ula-note',
         ' · ' +
-          a.nomDomaine(s.domaine) +
-          (s.pseudonyme ? ' · ' + s.pseudonyme : '') +
-          ' · ' +
+          (sorteDe(s) === 'pack' || sorteDe(s) === 'cursus' ? '' : a.nomDomaine(s.domaine) + ' · ') +
+          (s.pseudonyme ? s.pseudonyme + ' · ' : '') +
           a.dateHeure(s.recue) +
           ' · n° ' +
           s.id,
@@ -316,10 +362,53 @@
     corps.replaceChildren();
     var m = x.manifeste || {};
     var fiche = m.fiche || {};
+    var sorte = sorteDe(s);
     var dl = el('dl', 'ula-infos');
     ligneInfo(dl, T('admin.info.description'), fiche.description);
     ligneInfo(dl, T('admin.info.niveau'), fiche.niveau);
+    ligneInfo(dl, T('admin.info.origine'), fiche.origine);
+    ligneInfo(dl, T('admin.info.dossier'), sorte === 'pack' ? fiche.dossier || (m.contenu || {}).dossier : '');
+    ligneInfo(dl, T('admin.info.etablissement'), fiche.etablissement);
+    ligneInfo(dl, T('admin.info.attentes'), fiche.attentes);
     ligneInfo(dl, T('admin.info.pseudonyme'), m.pseudonyme);
+    if (m.contenu) {
+      var titres = m.titres || {};
+      var nom = function (id) {
+        return titres[id] ? titres[id] + ' (' + id + ')' : id;
+      };
+      ligneInfo(
+        dl,
+        T('liste.cours'),
+        Array.isArray(m.contenu.cours)
+          ? m.contenu.cours.map(nom).join(', ')
+          : (m.contenu.packs || [])
+              .map(function (p) {
+                return T('liste.packDossier', { dossier: p.dossier }) + ' : ' + p.cours.map(nom).join(', ');
+              })
+              .join('\n'),
+      );
+    }
+    if (sorte === 'sources') {
+      ligneInfo(
+        dl,
+        T('sources.fichiers'),
+        (m.fichiers || [])
+          .map(function (f) {
+            return f.nom + ' (' + Math.max(1, Math.round(f.taille / 1024)) + ' Ko)';
+          })
+          .join('\n'),
+      );
+      var decl = m.declarations || {};
+      ligneInfo(
+        dl,
+        T('admin.info.declarations'),
+        [decl.droits ? T('admin.info.droits') : '', decl.personnel ? T('admin.info.personnel') : '']
+          .filter(Boolean)
+          .join(' · '),
+      );
+    }
+    var res = x.resultat || s.resultat;
+    if (res) ligneInfo(dl, T('admin.info.resultat'), res.titre + (res.cours ? ' (' + res.cours + ')' : ''));
     ligneInfo(dl, T('admin.info.generations'), a.resumeGenerations(m.generations || [], true));
     var dec = m.declare || {};
     ligneInfo(dl, T('admin.info.declare'), [dec.outil, dec.modele, dec.effort, dec.duree].filter(Boolean).join(' · '));
@@ -381,7 +470,7 @@
     if (x.message) corps.appendChild(el('p', 'ula-note', T('admin.messageEnvoye') + ' ' + x.message));
 
     var actions = el('div', 'ula-actions');
-    if (!enFile(s.id))
+    if (sorte === 'cours' && !enFile(s.id))
       actions.appendChild(
         a.bouton(T(an ? 'admin.reanalyser' : 'admin.analyser'), an ? null : 'principal', function () {
           return analyser([s.id], sel.value).then(function () {
@@ -390,14 +479,24 @@
         }),
       );
     actions.appendChild(
-      a.bouton(T('admin.dossier'), null, function () {
-        return a.api('POST', 'ula/admin/soumissions/' + s.id + '/dossier', {});
-      }),
+      a.bouton(
+        T(sorte === 'sources' ? 'admin.dossierSources' : 'admin.dossier'),
+        sorte === 'sources' ? 'principal' : null,
+        function () {
+          return a.api('POST', 'ula/admin/soumissions/' + s.id + '/dossier', {});
+        },
+      ),
     );
     if (s.etat !== 'acceptee')
       actions.appendChild(
         a.bouton(T('admin.accepter'), an && an.recommandation === 'accepter' ? 'principal' : null, function () {
-          return accepter(s, fiche);
+          return accepter(s, fiche, m);
+        }),
+      );
+    if (sorte === 'sources' && s.etat === 'acceptee')
+      actions.appendChild(
+        a.bouton(T(res ? 'admin.relierAutre' : 'admin.relier'), res ? null : 'principal', function () {
+          return relier(s, res);
         }),
       );
     if (s.etat !== 'refusee')
@@ -423,7 +522,20 @@
     if (hist.children.length) corps.appendChild(hist);
   }
 
-  function accepter(s, fiche) {
+  // Identifiant proposé pour un pack ou un cursus (même règle que manifestes.mjs)
+  function slug(t) {
+    return String(t || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60);
+  }
+
+  function accepter(s, fiche, m) {
+    var sorte = sorteDe(s);
+    if (sorte !== 'cours') return accepterAutre(s, fiche, m || {}, sorte);
     var a = A();
     var T = a.T;
     var champs = [
@@ -465,6 +577,91 @@
             seulementOk: true,
           })
           .then(charger);
+      });
+  }
+
+  // Pack, cursus ou cours de profs
+  function accepterAutre(s, fiche, m, sorte) {
+    var a = A();
+    var T = a.T;
+    var liste_ = sorte === 'pack' || sorte === 'cursus';
+    var champs = [];
+    if (liste_) {
+      if (etat.depot)
+        champs.push(
+          { nom: 'id', libelle: T('admin.champ.idListe'), valeur: slug(fiche.titre || s.titre) },
+          { nom: 'remplacer', libelle: T('admin.champ.remplacerListe'), case: true, valeur: false },
+        );
+    } else
+      champs.push(
+        { nom: 'titre', libelle: T('admin.champ.titreGenere'), valeur: '' },
+        { nom: 'cours', libelle: T('admin.champ.coursGenere'), valeur: '' },
+      );
+    champs.push({
+      nom: 'message',
+      libelle: T('admin.champ.messageAccepter'),
+      long: true,
+      valeur: T('admin.messageAccepter.' + sorte),
+    });
+    return a
+      .demander({
+        titre: T('admin.accepterTitre', { titre: s.titre || s.id }),
+        texte: liste_
+          ? T(etat.depot ? 'admin.accepterListeDepot' : 'admin.accepterListeArchive')
+          : T('admin.accepterSources'),
+        champs: champs,
+        ok: T('admin.accepter'),
+      })
+      .then(function (r) {
+        if (!r) return;
+        return a.api(
+          'POST',
+          'ula/admin/soumissions/' + s.id + '/decision',
+          Object.assign({ decision: 'accepter', type: sorte }, r),
+        );
+      })
+      .then(function (x) {
+        if (!x) return;
+        delete details[s.id];
+        var i = x.decision && x.decision.integration;
+        var texte = !liste_
+          ? T('admin.accepteeSources')
+          : i && i.mode === 'depot'
+            ? T('admin.accepteeListeDepot') + (i.sortie && i.sortie.length ? '\n\n' + i.sortie.join('\n') : '')
+            : T('admin.accepteeListeArchive', { archive: (i && i.archive) || '' });
+        return a.demander({ titre: T('admin.accepteeTitre'), texte: texte, seulementOk: true }).then(charger);
+      });
+  }
+
+  // Relier aux cours de profs le cours généré à partir d'eux
+  function relier(s, res) {
+    var a = A();
+    var T = a.T;
+    return a
+      .demander({
+        titre: T('admin.relierTitre', { titre: s.titre || s.id }),
+        texte: T('admin.relierAide'),
+        champs: [
+          { nom: 'titre', libelle: T('admin.champ.titreGenere'), valeur: (res && res.titre) || '' },
+          { nom: 'cours', libelle: T('admin.champ.coursGenere'), valeur: (res && res.cours) || '' },
+        ],
+        ok: T('admin.relier'),
+        valider: function (c) {
+          return c.titre.value.trim() !== '';
+        },
+      })
+      .then(function (r) {
+        if (!r) return;
+        return a
+          .api('POST', 'ula/admin/soumissions/' + s.id + '/decision', {
+            decision: 'relier',
+            titre: r.titre,
+            cours: r.cours,
+          })
+          .then(function () {
+            delete details[s.id];
+            return charger();
+          });
       });
   }
 

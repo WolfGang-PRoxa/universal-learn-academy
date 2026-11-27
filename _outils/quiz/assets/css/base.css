@@ -31,13 +31,9 @@
 }
 
 /* Grand écran : l'en-tête du quiz devient une colonne à gauche, qui reste en vue,
-   et la zone du quiz (accueil, question, résultats) occupe le reste. L'ensemble
-   prend la largeur de la barre du haut (80rem), pas seulement celle de la colonne
-   de lecture : la question commence en haut de l'écran. */
+   et la zone du quiz (accueil, question, résultats) occupe le reste de la largeur :
+   la question commence en haut de l'écran. */
 @media (min-width: 72rem) {
-  .page:has(> .quiz) {
-    grid-template-columns: minmax(0, 80rem);
-  }
   .quiz {
     display: grid;
     grid-template-columns: minmax(13rem, 1fr) minmax(0, 3fr);
@@ -53,11 +49,11 @@
     position: sticky;
     top: calc(var(--hauteur-barre) + 2rem);
     max-height: calc(100vh - var(--hauteur-barre) - 4rem);
+    overflow-x: hidden;
     overflow-y: auto;
     margin: 0;
     padding: 0 0 0.5rem;
     border-bottom: 0;
-    scrollbar-width: thin;
   }
   .quiz > .entete h1 {
     font-size: clamp(1.6rem, 1rem + 1vw, 2.1rem);
@@ -65,13 +61,19 @@
   .quiz > .entete .chapeau {
     font-size: 0.98rem;
   }
-  /* Volet replié (bouton de la barre, _outils/charte/assets/cours.js) : le quiz prend
-     toute la largeur et l'en-tête (titre, cours, date) se cache */
+  /* Volet replié (bouton de la barre, _outils/charte/assets/cours.js) : la colonne de
+     l'en-tête tombe à zéro (animée par la charte, section 12 de cours.css), le quiz
+     prend toute la largeur et l'en-tête (titre, cours, date) se cache */
+  .quiz > .entete > * {
+    min-width: 13rem;
+  }
   .volet-replie .quiz {
-    display: block;
+    grid-template-columns: minmax(0rem, 0fr) minmax(0, 3fr);
+    column-gap: 0rem;
   }
   .volet-replie .quiz > .entete {
-    display: none;
+    visibility: hidden;
+    opacity: 0;
   }
   .quiz > .entete .meta {
     flex-direction: column;

@@ -8,6 +8,12 @@
 //   npm run catalogue -- cursus-ajouter-pack <cursus> <pack> [dossier]
 //   npm run catalogue -- pack-ajouter-cours <pack> <cours> [<cours>…]
 //   npm run catalogue -- verifier
+//   npm run catalogue -- importer <ula-pack.json|ula-cursus.json> [--id <id>] [--remplacer oui]
+//
+// « importer » ajoute un pack ou un cursus proposé par un utilisateur (soumission acceptée
+// dans « Soumissions reçues » : _outils/ula/lib/admin.js) : identifiant tiré du titre par
+// défaut, chaque pack d'un cursus devient explore/packs/<cursus>-<dossier>.json ; tout est
+// vérifié (cours existants, identifiants libres) avant d'écrire quoi que ce soit.
 //
 // Manifestes : explore/packs/<id>.json (ula-pack-1) et explore/cursus/<id>.json
 // (ula-cursus-1). Chaque commande vérifie les identifiants (cours et packs existants, pas
@@ -21,13 +27,76 @@ import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const { verifierPack, verifierCursus } = require('../../_outils/ula/lib/catalogue.js');
+const { slugId } = require('../../_outils/ula/lib/proposition.js');
 
 const app = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const racine = path.resolve(app, '..');
 const EXPLORE = path.join(racine, 'explore');
 const ID = /^[a-z0-9][a-z0-9-]{0,80}$/;
 
-export const COMMANDES = ['cursus-ajouter', 'pack-ajouter', 'cursus-ajouter-pack', 'pack-ajouter-cours', 'verifier'];
+export const COMMANDES = [
+  'cursus-ajouter',
+  'pack-ajouter',
+  'cursus-ajouter-pack',
+  'pack-ajouter-cours',
+  'verifier',
+  'importer',
+];
+
+const court = (v, n) =>
+  String(v || '')
+    .trim()
+    .slice(0, n);
+
+/** Pack ou cursus proposé (contenu de la soumission) → manifestes à écrire, vérifiés. */
+export function importer(proposition, { id, remplacer = false } = {}) {
+  const echec = (m) => {
+    throw new Error(m);
+  };
+  const connus = idsCours();
+  const packs = lireDossier('packs');
+  const cursus = lireDossier('cursus');
+  const base = id || slugId(proposition.titre);
+  if (!ID.test(base)) echec(`Identifiant invalide : ${base}`);
+  const nouveauPack = (pid, p) => {
+    if (packs.has(pid) && !remplacer) echec(`Le pack ${pid} existe déjà (--remplacer oui pour le remplacer).`);
+    const m = {
+      format: 'ula-pack-1',
+      id: pid,
+      titre: court(p.titre, 120),
+      origine: court(proposition.origine, 120),
+      dossier: court(p.dossier, 60),
+      description: court(p.description || '', 2000),
+      cours: [...new Set(p.cours)],
+    };
+    const pb = verifierPack(m, connus);
+    if (pb.length) echec(`Pack ${pid} : ${pb.join(' ; ')}`);
+    return m;
+  };
+  const aEcrire = [];
+  if (proposition.format === 'ula-pack-1') {
+    aEcrire.push(['packs', nouveauPack(base, proposition)]);
+  } else if (proposition.format === 'ula-cursus-1') {
+    if (cursus.has(base) && !remplacer) echec(`Le cursus ${base} existe déjà (--remplacer oui pour le remplacer).`);
+    const lignes = (proposition.packs || []).map((p) => {
+      const pid = `${base}-${slugId(p.dossier)}`.slice(0, 80);
+      aEcrire.push(['packs', nouveauPack(pid, Object.assign({ description: '' }, p))]);
+      return { pack: pid, dossier: court(p.dossier, 60) };
+    });
+    const c = {
+      format: 'ula-cursus-1',
+      id: base,
+      titre: court(proposition.titre, 120),
+      origine: court(proposition.origine, 120),
+      description: court(proposition.description, 2000),
+      packs: lignes,
+    };
+    const pb = verifierCursus(c, new Set([...packs.keys(), ...lignes.map((l) => l.pack)]));
+    if (pb.length) echec(`Cursus ${base} : ${pb.join(' ; ')}`);
+    aEcrire.push(['cursus', c]);
+  } else echec('Format inconnu : ula-pack-1 ou ula-cursus-1 attendu.');
+  return aEcrire.map(([dossier, m]) => ecrire(dossier, m));
+}
 
 function lireDossier(nom) {
   const d = path.join(EXPLORE, nom);
@@ -144,6 +213,11 @@ export function executer(commande, args) {
     }
     p.cours.push(...ids);
     ecrit = ecrire('packs', p);
+  } else if (commande === 'importer') {
+    const [fichier] = reste;
+    if (!fichier) echec('Usage : importer <ula-pack.json|ula-cursus.json> [--id <id>] [--remplacer oui]');
+    const proposition = JSON.parse(fs.readFileSync(fichier, 'utf8'));
+    for (const f of importer(proposition, { id: o.id, remplacer: o.remplacer === 'oui' })) console.log(`✓ ${f}`);
   } else if (commande !== 'verifier') {
     echec(`Commande inconnue : ${commande} (${COMMANDES.join(', ')})`);
   }

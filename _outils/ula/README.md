@@ -38,7 +38,7 @@ Règle d'or : **rien de ce que l'utilisateur produit n'est écrit dans `explore/
 - `/index.html` est l'accueil dynamique (`accueil.html`) : volet des profils, cursus, catalogue (onglets « Installés sur ce poste » et « Tous les cours »), outils. Un accueil de domaine absent (cours téléchargés) l'est aussi, filtré sur le domaine.
 - Une page d'un cours non installé renvoie au catalogue.
 
-Routes de l'extension (`serveur/extension.js`) : `POST profils` (avec `cursus`, `telecharger`), `POST cursus/appliquer`, `POST catalogue/installer-tout`, `GET catalogue/travail`, `POST catalogue/installer-pack`, `POST cursus/ajouter-pack`, `GET etat`, `PUT profil`, `POST profils`, `POST profils/renommer`, `GET cursus`, `POST cursus/dossier|renommer|deplacer|retirer|ajouter`, `GET catalogue`, `POST catalogue/installer|supprimer`, `POST proposer`, `POST ouvrir`.
+Routes de l'extension (`serveur/extension.js`) : `POST profils` (avec `cursus`, `telecharger`), `POST cursus/appliquer`, `POST catalogue/installer-tout`, `GET catalogue/travail`, `POST catalogue/installer-pack`, `POST cursus/ajouter-pack`, `GET etat`, `PUT profil`, `POST profils`, `POST profils/renommer`, `POST profils/supprimer` (`{ nom, confirmation }`, le nom retapé), `GET cursus`, `POST cursus/dossier|renommer|deplacer|retirer|ajouter`, `GET catalogue`, `POST catalogue/installer|supprimer`, `POST proposer`, `POST ouvrir`.
 
 ## Catalogue à la demande
 

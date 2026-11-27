@@ -106,6 +106,25 @@ function echelleValide(v) {
   const n = Math.round(Number(v) / 10) * 10;
   return Number.isFinite(n) && n >= 50 && n <= 200 ? n : 0;
 }
+// Réglage « affichage.infobulle » (2.11.0) : délai d'apparition des infobulles, en ms,
+// de 0 à 2500 par pas de 100. Les pages le lisent dans l'agent utilisateur
+// (« ULA-infobulle/<ms> », cours.js) ; à chaque changement, window.ulaInfobulles(ms).
+function infobulleValide(v) {
+  const n = Math.round(Number(v) / 100) * 100;
+  return Number.isFinite(n) ? Math.min(2500, Math.max(0, n)) : 0;
+}
+function delaiInfobulle() {
+  return infobulleValide((reglages.lire().affichage || {}).infobulle);
+}
+function annoncerInfobulle() {
+  const ms = delaiInfobulle();
+  if (agentDeBase) session.defaultSession.setUserAgent(agentUtilisateur());
+  for (const f of BrowserWindow.getAllWindows()) {
+    if (f.isDestroyed() || f.studiesAnnexe) continue;
+    if (agentDeBase) f.webContents.setUserAgent(agentUtilisateur());
+    f.webContents.executeJavaScript(`window.ulaInfobulles && window.ulaInfobulles(${ms})`, false).catch(() => {});
+  }
+}
 function facteurEchelle() {
   return (echelleValide((reglages.lire().affichage || {}).echelle) || 100) / 100;
 }
@@ -407,7 +426,7 @@ function ouvrirGuide() {
 // (« ULA-langue/en ») : cours.js (barre du haut) et l'accueil.
 let agentDeBase = null;
 function agentUtilisateur() {
-  return `${agentDeBase} StudiesApp/${app.getVersion()} ULA-langue/${i18n.langue()}`;
+  return `${agentDeBase} StudiesApp/${app.getVersion()} ULA-langue/${i18n.langue()} ULA-infobulle/${delaiInfobulle()}`;
 }
 
 // Changement de langue : agent utilisateur de toutes les pages, barre du haut et
@@ -545,12 +564,18 @@ function enregistrerIpc() {
     delete sur.raccourcis;
     delete sur.cours;
     delete sur.donnees;
-    if (sur.affichage) sur.affichage = { echelle: echelleValide(sur.affichage.echelle) };
+    if (sur.affichage) {
+      const a = sur.affichage;
+      sur.affichage = {};
+      if (a.echelle !== undefined) sur.affichage.echelle = echelleValide(a.echelle);
+      if (a.infobulle !== undefined) sur.affichage.infobulle = infobulleValide(a.infobulle);
+    }
     if (sur.arrierePlan) sur.arrierePlan = { fermeture: sur.arrierePlan.fermeture !== false };
     delete sur.synchro;
     delete sur.langue;
     const r = reglages.publics(reglages.modifier(sur));
-    if (sur.affichage) annoncerEchelle();
+    if (sur.affichage && sur.affichage.echelle !== undefined) annoncerEchelle();
+    if (sur.affichage && sur.affichage.infobulle !== undefined) annoncerInfobulle();
     return r;
   });
   traiter('fenetre:ecrans', () => lancement.ecrans());
@@ -823,6 +848,9 @@ async function demarrer() {
     ouvrirGuide: () => {
       ouvrirGuide();
     },
+    // Bouton « Quitter » de la barre des pages (/_app/quitter, 2.11.0) : ferme vraiment
+    // l'application, même quand la croix la garde en arrière-plan
+    quitterApplication: () => app.quit(),
   };
 
   try {

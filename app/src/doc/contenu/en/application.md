@@ -6,7 +6,7 @@ By default, closing the window (the close button, **Ctrl+W**) does not quit the 
 
 - **Reopen**: click the icon, or start the application again. Only one instance runs: the window reopens on the same page.
 - **Icon menu** (right click): Open, Documentation, Check for updates, Quit.
-- **Quit**: the icon’s Quit entry, or **Ctrl+Q**. If a quiz generation is in progress, the application asks for confirmation first.
+- **Quit**: the power button at the very top right of the pages, the icon’s Quit entry, or **Ctrl+Q**. The application then closes completely. If a quiz generation is in progress, the application asks for confirmation first.
 
 This behaviour can be turned off in [Settings › Background](parametres:arriere-plan). On Linux, it depends on the desktop having a notification area; without one, the close button quits the application.
 

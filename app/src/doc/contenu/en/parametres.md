@@ -18,7 +18,7 @@ Shows the installed version. Enabled by default, updates are looked for at start
 
 ## Interface scale
 
-Size of texts and buttons in every window. **Automatic** (100 %) suits most screens; otherwise from 50 to 200 %. **Ctrl +**, **Ctrl −** and **Ctrl + wheel** adjust further until the application closes; **Ctrl+0** returns to the chosen scale. [Open](parametres:affichage)
+Size of texts and buttons in every window. **Automatic** (100 %) suits most screens; otherwise from 50 to 200 %. **Ctrl +**, **Ctrl −** and **Ctrl + wheel** adjust further until the application closes; **Ctrl+0** returns to the chosen scale. The **tooltip delay** (a button’s help text on hover) is set just below, from 0 to 2.5 s in steps of 0.1 s; 0 s by default. [Open](parametres:affichage)
 
 ## Background
 
@@ -50,7 +50,7 @@ Syncing the data folder between several computers, when it is a Git repository: 
 
 ## Received submissions
 
-Only for the catalogue administrator: the administration token of the submission service is saved here (kept encrypted), then received submissions are managed on the home page. The service is checked automatically every 30 min (or every 1 h, 2 h, 6 h, 12 h or 24 h) and a notification announces each new submission. The card appears in repository mode, when a token is saved, or after five clicks on the version in About. See [Courses](page:cours). [Open](parametres:administration)
+Only for the catalogue administrator: the administration token of the submission service is saved here (kept encrypted), then received submissions are managed on the home page. The service is checked automatically every 30 min (or every 1 h, 2 h, 6 h, 12 h or 24 h) and a notification announces each new submission. Without a token, the card offers to save one. See [Courses](page:cours). [Open](parametres:administration)
 
 ## About
 

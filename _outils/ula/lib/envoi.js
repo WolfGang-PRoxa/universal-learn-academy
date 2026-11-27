@@ -132,6 +132,8 @@ async function actualiser(racine, id, options = {}) {
       etat: d.etat,
       message: d.message || null,
       analyse: d.analyse || null,
+      // Cours généré par l'administrateur à partir de cours de profs
+      resultat: d.resultat || null,
       verifie: new Date().toISOString(),
     });
     fusionnerHistorique(s, d.historique);

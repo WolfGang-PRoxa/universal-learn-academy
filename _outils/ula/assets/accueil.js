@@ -133,7 +133,12 @@
           x.appendChild(op);
         });
       } else if (c.long) x = el('textarea');
-      else if (c.case) {
+      else if (c.fichiers) {
+        x = el('input');
+        x.type = 'file';
+        x.multiple = true;
+        if (c.accept) x.accept = c.accept;
+      } else if (c.case) {
         x = el('input');
         x.type = 'checkbox';
         x.checked = c.valeur !== false;
@@ -159,6 +164,19 @@
     err.hidden = true;
     var ok = document.getElementById('dialogue-ok');
     ok.textContent = o.ok || 'OK';
+    ok.classList.toggle('danger', Boolean(o.danger));
+    // valider(champs) : le bouton OK reste grisé tant qu'elle renvoie faux
+    ok.disabled = false;
+    zone.oninput = null;
+    zone.onchange = null;
+    if (o.valider) {
+      var verifier = function () {
+        ok.disabled = !o.valider(champs);
+      };
+      zone.oninput = verifier;
+      zone.onchange = verifier;
+      verifier();
+    }
     d.querySelector('[value=annuler]').textContent = T('dialogue.annuler');
     d.querySelector('[value=annuler]').hidden = Boolean(o.seulementOk);
     return new Promise(function (resolve) {
@@ -175,16 +193,27 @@
         if (valeur !== 'ok') return resolve(null);
         var r = {};
         Object.keys(champs).forEach(function (k) {
-          r[k] = champs[k].type === 'checkbox' ? champs[k].checked : champs[k].value;
+          r[k] =
+            champs[k].type === 'checkbox'
+              ? champs[k].checked
+              : champs[k].type === 'file'
+                ? Array.prototype.slice.call(champs[k].files || [])
+                : champs[k].value;
         });
         resolve(r);
       }
       var form = d.querySelector('form');
       form.onsubmit = function (e) {
         e.preventDefault();
-        finir(e.submitter ? e.submitter.value : 'ok');
+        var v = e.submitter ? e.submitter.value : 'ok';
+        if (v === 'ok' && ok.disabled) return;
+        finir(v);
       };
       d.oncancel = function () {
+        finir(null);
+      };
+      // Annuler n'est pas un bouton d'envoi : Entrée dans un champ valide (bouton OK)
+      d.querySelector('[value=annuler]').onclick = function () {
         finir(null);
       };
       d.onclose = function () {
@@ -348,6 +377,23 @@
     return s;
   }
 
+  // Suppression d'un profil : confirmée en retapant son nom, dans le dialogue de la page
+  function supprimerProfil(nom) {
+    return demander({
+      titre: T('profil.supprimerTitre', { nom: nom }),
+      texte: T('profil.supprimerTexte', { nom: nom }),
+      champs: [{ nom: 'nom', libelle: T('profil.supprimerLibelle', { nom: nom }), valeur: '' }],
+      ok: T('profil.supprimerOk'),
+      danger: true,
+      valider: function (c) {
+        return c.nom.value.trim() === nom;
+      },
+    }).then(function (r) {
+      if (r && r.nom.trim() === nom)
+        return api('POST', 'ula/profils/supprimer', { nom: nom, confirmation: r.nom.trim() }).then(charger);
+    });
+  }
+
   function voletProfils() {
     var s = el('aside', 'volet-lateral ula-volet-profils');
     s.id = 'profils';
@@ -391,6 +437,12 @@
       act2.appendChild(
         bouton(T('profil.ouvrirDossier'), 'discret', function () {
           return api('POST', 'ula/ouvrir', { chemin: etat.profil });
+        }),
+      );
+    if (etat.profil)
+      act2.appendChild(
+        bouton(T('profil.supprimer', { nom: etat.profil }), 'discret danger', function () {
+          return supprimerProfil(etat.profil);
         }),
       );
     s.appendChild(act2);
@@ -577,6 +629,22 @@
           return nouveauDossier(n.chemin);
         }),
       );
+      if (nombreCours(n) > 1)
+        b.push(
+          bouton(T('liste.proposerPack'), null, function () {
+            return proposerListe(n, 'pack');
+          }),
+        );
+      if (
+        (n.enfants || []).filter(function (e) {
+          return e.type === 'dossier' && nombreCours(e);
+        }).length > 1
+      )
+        b.push(
+          bouton(T('liste.proposerCursus'), null, function () {
+            return proposerListe(n, 'cursus');
+          }),
+        );
     }
     if (n.type === 'perso')
       b.push(
@@ -1053,6 +1121,216 @@
     });
   }
 
+  // Titres des cours liés dans le cursus (id → titre), pour les listes proposées
+  function titresDuCursus() {
+    var t = {};
+    (function p(n) {
+      if (!n) return;
+      if (n.type === 'lien') t[n.cours] = (coursInstalle(n.cours) || {}).titre || n.nom;
+      (n.enfants || []).forEach(p);
+    })(cursus && cursus.arbre);
+    return t;
+  }
+
+  /* Proposer un dossier du cursus comme pack ou comme cursus du catalogue */
+  function proposerListe(n, type) {
+    var titre = T(type === 'pack' ? 'liste.titrePack' : 'liste.titreCursus', { nom: n.nom });
+    return api('GET', 'ula/soumissions/apercu-liste?type=' + type + '&chemin=' + encodeURIComponent(n.chemin)).then(
+      function (a) {
+        if (a.problemes.length)
+          return demander({ titre: titre, texte: a.problemes.concat(a.avertissements).join('\n'), seulementOk: true });
+        var titres = titresDuCursus();
+        var nom = function (id) {
+          return titres[id] || id;
+        };
+        var lignes = [];
+        if (type === 'pack')
+          lignes.push(
+            Tn('liste.coursRepris', a.contenu.cours.length) + ' ' + a.contenu.cours.map(nom).join(', ') + '.',
+          );
+        else
+          a.contenu.packs.forEach(function (p) {
+            lignes.push('• ' + p.dossier + ' : ' + p.cours.map(nom).join(', ') + '.');
+          });
+        var champs = [{ nom: 'titre', libelle: T('liste.titre'), valeur: a.contenu.titre }];
+        if (type === 'pack') champs.push({ nom: 'dossier', libelle: T('liste.dossier'), valeur: a.contenu.dossier });
+        champs.push(
+          { nom: 'description', libelle: T('proposer.description'), long: true },
+          { nom: 'origine', libelle: T('liste.origine') },
+          { nom: 'pseudonyme', libelle: T('soumettre.pseudonyme') },
+          { nom: 'licence', libelle: T('liste.licence'), case: true, valeur: false },
+        );
+        return demander({
+          titre: titre,
+          texte: [T(type === 'pack' ? 'liste.textePack' : 'liste.texteCursus'), lignes.join('\n')]
+            .concat(a.avertissements.length ? [a.avertissements.join('\n')] : [])
+            .join('\n\n'),
+          champs: champs,
+          ok: T('soumettre.verifier'),
+          valider: function (c) {
+            return c.licence.checked && c.titre.value.trim() !== '';
+          },
+        }).then(function (r) {
+          if (!r) return;
+          return api('POST', 'ula/soumissions', {
+            type: type,
+            chemin: n.chemin,
+            infos: { titre: r.titre, dossier: r.dossier, description: r.description, origine: r.origine },
+            pseudonyme: r.pseudonyme,
+            licence: r.licence === true,
+          }).then(function () {
+            montrerCadre();
+            return chargerSoumissions();
+          });
+        });
+      },
+    );
+  }
+
+  /* Proposer des cours de profs (fichiers bruts) à l'administrateur */
+  var SOURCES_MAX = 50 * 1024 * 1024;
+  var SOURCES_TYPES =
+    '.pdf,.ppt,.pptx,.pps,.ppsx,.doc,.docx,.odt,.odp,.ods,.xls,.xlsx,.csv,.rtf,.txt,.md,.tex,.png,.jpg,.jpeg,.gif,.webp,.svg,.c,.h,.cpp,.hpp,.java,.py,.ipynb,.js,.ts,.sql,.sh,.html,.htm,.css,.json,.xml,.yml,.yaml';
+  function base64(fichier) {
+    return new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      r.onload = function () {
+        resolve(String(r.result).split(',')[1] || '');
+      };
+      r.onerror = function () {
+        reject(r.error || new Error(fichier.name));
+      };
+      r.readAsDataURL(fichier);
+    });
+  }
+  function proposerSources() {
+    return demander({
+      titre: T('sources.titre'),
+      texte: T('sources.texte'),
+      champs: [
+        { nom: 'titre', libelle: T('sources.matiere') },
+        {
+          nom: 'domaine',
+          libelle: T('proposer.domaine'),
+          choix: DOMAINES.map(function (k) {
+            return { valeur: k, texte: nomDomaine(k) };
+          }),
+        },
+        { nom: 'niveau', libelle: T('proposer.niveau') },
+        { nom: 'etablissement', libelle: T('sources.etablissement') },
+        { nom: 'attentes', libelle: T('sources.attentes'), long: true },
+        { nom: 'fichiers', libelle: T('sources.fichiers'), fichiers: true, accept: SOURCES_TYPES },
+        { nom: 'pseudonyme', libelle: T('soumettre.pseudonyme') },
+        { nom: 'droits', libelle: T('sources.droits'), case: true, valeur: false },
+        { nom: 'personnel', libelle: T('sources.personnel'), case: true, valeur: false },
+      ],
+      ok: T('soumettre.verifier'),
+      valider: function (c) {
+        return c.droits.checked && c.personnel.checked && c.titre.value.trim() !== '' && c.fichiers.files.length > 0;
+      },
+    }).then(function (r) {
+      if (!r) return;
+      var total = r.fichiers.reduce(function (t, f) {
+        return t + f.size;
+      }, 0);
+      if (total > SOURCES_MAX) throw new Error(T('sources.tropGros', { mo: Math.round(total / 1048576) }));
+      return api('POST', 'ula/soumissions', {
+        type: 'sources',
+        infos: {
+          titre: r.titre,
+          domaine: r.domaine,
+          niveau: r.niveau,
+          etablissement: r.etablissement,
+          attentes: r.attentes,
+        },
+        pseudonyme: r.pseudonyme,
+        declarations: { droits: r.droits === true, personnel: r.personnel === true },
+      }).then(function (s) {
+        // Fichiers un par un, puis vérification ; un échec annule l'envoi
+        return r.fichiers
+          .reduce(function (suite, f) {
+            return suite.then(function () {
+              return base64(f).then(function (d) {
+                return api('POST', 'ula/soumissions/' + s.id + '/fichier', { nom: f.name, donnees: d });
+              });
+            });
+          }, Promise.resolve())
+          .then(function () {
+            return agirSoumission(s.id, 'verifier');
+          })
+          .catch(function (e) {
+            return api('POST', 'ula/soumissions/' + s.id + '/action', { action: 'annuler' })
+              .catch(function () {})
+              .then(function () {
+                throw e;
+              });
+          });
+      });
+    });
+  }
+
+  /* Onglet « Mes cours » du catalogue : les cours créés dans l'espace du profil */
+  function coursPersonnels() {
+    var l = [];
+    (function p(n) {
+      if (!n) return;
+      if (n.type === 'perso') l.push(n);
+      (n.enfants || []).forEach(p);
+    })(cursus && cursus.arbre);
+    return l;
+  }
+  function soumissionDuCours(chemin) {
+    return (
+      soumissions.find(function (x) {
+        return (x.type || 'cours') === 'cours' && x.chemin === chemin && x.etat !== 'annulee';
+      }) || null
+    );
+  }
+  function remplirMesCours(z) {
+    z.appendChild(el('p', null, T('mesCours.intro')));
+    var act = el('div', 'ula-actions');
+    act.appendChild(bouton(T('sources.proposer'), null, proposerSources));
+    z.appendChild(act);
+    var persos = coursPersonnels();
+    if (!persos.length) {
+      z.appendChild(el('p', 'ula-vide', T('mesCours.aucun')));
+      return;
+    }
+    var ul = el('ul', 'ula-cartes');
+    persos.forEach(function (n) {
+      var li = el('li', 'ula-carte');
+      var x = soumissionDuCours(n.chemin);
+      if (x) li.appendChild(el('span', 'ula-etat ula-etat-' + x.etat, T('etatSoumission.' + x.etat)));
+      var h = el('h3');
+      h.appendChild(lien(n.nom, urlPage(n.chemin + '/generated_courses/index.html')));
+      li.appendChild(h);
+      var parent = n.chemin.split('/').slice(0, -1).join('/');
+      li.appendChild(el('p', 'ula-cours-info', T('mesCours.rangeDans', { dossier: libelleDossier(parent) })));
+      var a = el('div', 'ula-actions');
+      if (!x || x.etat === 'refusee')
+        a.appendChild(
+          bouton(T(x ? 'mesCours.resoumettre' : 'cursus.soumettre'), 'principal', function () {
+            return soumettre(n);
+          }),
+        );
+      else
+        a.appendChild(
+          bouton(T('mesCours.suivi'), null, function () {
+            location.hash = '#soumission=' + x.id;
+            ouvrirDepuisAncre();
+          }),
+        );
+      a.appendChild(
+        bouton(T('cursus.ouvrirDossier'), 'discret', function () {
+          return api('POST', 'ula/ouvrir', { chemin: n.chemin });
+        }),
+      );
+      li.appendChild(a);
+      ul.appendChild(li);
+    });
+    z.appendChild(ul);
+  }
+
   function chargerSoumissions() {
     return api('GET', 'ula/soumissions')
       .then(function (r) {
@@ -1068,6 +1346,9 @@
         }
         ouvrirDepuisAncre();
         suivreSoumissions();
+        // L'onglet « Mes cours » montre l'état de la soumission de chaque cours
+        var cat = document.getElementById('catalogue');
+        if (cat && vueCatalogue === 'mes') cat.replaceWith(sectionCatalogue());
       })
       .catch(function () {});
   }
@@ -1110,8 +1391,10 @@
     d.addEventListener('toggle', function () {
       ouvertes[x.id] = d.open;
     });
+    var sorte = x.type || 'cours';
     var sum = el('summary');
     sum.appendChild(el('span', 'ula-soumission-titre', x.fiche.titre));
+    if (sorte !== 'cours') sum.appendChild(el('span', 'ula-sorte', T('sorte.' + sorte)));
     sum.appendChild(el('span', 'ula-etat ula-etat-' + x.etat, T('etatSoumission.' + x.etat)));
     sum.appendChild(el('span', 'ula-note', dateHeure(x.cree)));
     d.appendChild(sum);
@@ -1120,7 +1403,19 @@
     if (x.etat === 'suspendue' && x.suspension) {
       var b = el('div', 'ula-suspension');
       b.appendChild(
-        el('p', null, T(x.suspension.raison === 'python' ? 'soumissions.python' : 'soumissions.suspendue')),
+        el(
+          'p',
+          null,
+          T(
+            x.suspension.raison === 'python'
+              ? 'soumissions.python'
+              : x.suspension.raison === 'reseau'
+                ? 'soumissions.reseau'
+                : sorte === 'cours'
+                  ? 'soumissions.suspendue'
+                  : 'soumissions.suspendueListe',
+          ),
+        ),
       );
       var ul = el('ul');
       x.suspension.problemes.slice(0, 15).forEach(function (p) {
@@ -1135,14 +1430,14 @@
         py.target = '_blank';
         py.rel = 'noopener';
         actions.appendChild(py);
-      } else
+      } else if (sorte === 'cours')
         actions.appendChild(
           bouton(T('soumissions.corrigerIa'), 'principal', function () {
             return agirSoumission(x.id, 'corriger-ia');
           }),
         );
       actions.appendChild(
-        bouton(T('soumissions.reverifier'), null, function () {
+        bouton(T('soumissions.reverifier'), sorte === 'cours' ? null : 'principal', function () {
           return agirSoumission(x.id, 'reverifier');
         }),
       );
@@ -1190,6 +1485,18 @@
       pr.appendChild(ap);
       d.appendChild(pr);
     }
+    if (x.etat === 'brouillon') {
+      var br = el('div', 'ula-suspension');
+      br.appendChild(el('p', null, T('soumissions.brouillon')));
+      var ab = el('div', 'ula-actions');
+      ab.appendChild(
+        bouton(T('soumissions.annuler'), null, function () {
+          return agirSoumission(x.id, 'annuler');
+        }),
+      );
+      br.appendChild(ab);
+      d.appendChild(br);
+    }
     if (x.distant) {
       var ds = el('div', 'ula-distant');
       ds.appendChild(el('p', null, T('soumissions.numero', { id: x.distant.id, etat: T('etatSoumission.' + x.etat) })));
@@ -1206,6 +1513,8 @@
         );
       if (x.distant.message)
         ds.appendChild(el('p', 'ula-message', T('soumissions.message', { message: x.distant.message })));
+      if (x.distant.resultat && x.distant.resultat.titre)
+        ds.appendChild(el('p', 'ula-message', T('soumissions.resultat', { titre: x.distant.resultat.titre })));
       if (x.distant.verifie)
         ds.appendChild(el('p', 'ula-note', T('soumissions.verifie', { date: dateHeure(x.distant.verifie) })));
       var ad = el('div', 'ula-actions');
@@ -1255,9 +1564,34 @@
       dl.appendChild(el('dt', null, T(k)));
       dl.appendChild(el('dd', null, v));
     }
-    ligne('proposer.domaine', nomDomaine(x.fiche.domaine));
+    if (x.fiche.domaine) ligne('proposer.domaine', nomDomaine(x.fiche.domaine));
     ligne('proposer.niveau', x.fiche.niveau);
     ligne('soumettre.pseudonyme', m.pseudonyme);
+    ligne('liste.dossier', x.fiche.dossier);
+    ligne('liste.origine', x.fiche.origine);
+    ligne('proposer.description', sorte === 'cours' ? null : x.fiche.description);
+    ligne('sources.etablissement', x.fiche.etablissement);
+    ligne('sources.attentes', x.fiche.attentes);
+    if (m.contenu) {
+      var titres = m.titres || {};
+      var nomCours = function (id) {
+        return titres[id] || id;
+      };
+      if (m.contenu.cours) ligne('liste.cours', m.contenu.cours.map(nomCours).join(', '));
+      (m.contenu.packs || []).forEach(function (p) {
+        dl.appendChild(el('dt', null, T('liste.packDossier', { dossier: p.dossier })));
+        dl.appendChild(el('dd', null, p.cours.map(nomCours).join(', ')));
+      });
+    }
+    if (sorte === 'sources')
+      ligne(
+        'sources.fichiers',
+        (x.fichiers || [])
+          .map(function (f) {
+            return f.nom + ' (' + Math.max(1, Math.round(f.taille / 1024)) + ' Ko)';
+          })
+          .join(', '),
+      );
     var dec = m.declare || {};
     ligne('soumettre.outil', dec.outil === 'other' ? T('soumettre.outilAutre') : dec.outil);
     ligne('soumettre.modele', dec.modele);
@@ -1437,9 +1771,10 @@
       } catch (e) {
         /* stockage indisponible */
       }
-      if (vueCatalogue !== 'installes' && vueCatalogue !== 'tous')
+      if (vueCatalogue !== 'installes' && vueCatalogue !== 'tous' && vueCatalogue !== 'mes')
         vueCatalogue = etat.cours.length ? 'installes' : 'tous';
     }
+    if (vueCatalogue === 'mes' && !etat.profil) vueCatalogue = 'tous';
     var onglets = el('div', 'ula-onglets');
     onglets.setAttribute('role', 'tablist');
     var contenu = el('div');
@@ -1447,27 +1782,33 @@
     [
       ['installes', T('catalogue.vueInstalles', { n: etat.cours.length })],
       ['tous', catalogue ? T('catalogue.vueTous', { n: catalogue.cours.length }) : T('catalogue.vueTousSans')],
-    ].forEach(function (o) {
-      var b = el('button', 'ula-onglet', o[1]);
-      b.type = 'button';
-      b.setAttribute('role', 'tab');
-      b.setAttribute('aria-selected', String(o[0] === vueCatalogue));
-      b.addEventListener('click', function () {
-        if (vueCatalogue === o[0]) return;
-        vueCatalogue = o[0];
-        try {
-          localStorage.setItem('ula-vue-catalogue', vueCatalogue);
-        } catch (e) {
-          /* stockage indisponible */
-        }
-        s.replaceWith(sectionCatalogue());
+    ]
+      .concat(etat.profil ? [['mes', T('catalogue.vueMes', { n: coursPersonnels().length })]] : [])
+      .forEach(function (o) {
+        var b = el('button', 'ula-onglet', o[1]);
+        b.type = 'button';
+        b.setAttribute('role', 'tab');
+        b.setAttribute('aria-selected', String(o[0] === vueCatalogue));
+        b.addEventListener('click', function () {
+          if (vueCatalogue === o[0]) return;
+          vueCatalogue = o[0];
+          try {
+            localStorage.setItem('ula-vue-catalogue', vueCatalogue);
+          } catch (e) {
+            /* stockage indisponible */
+          }
+          s.replaceWith(sectionCatalogue());
+        });
+        onglets.appendChild(b);
       });
-      onglets.appendChild(b);
-    });
     s.appendChild(onglets);
     s.appendChild(contenu);
     if (vueCatalogue === 'installes') {
       remplirCours(contenu, null);
+      return s;
+    }
+    if (vueCatalogue === 'mes') {
+      remplirMesCours(contenu);
       return s;
     }
     var zone = el('div');

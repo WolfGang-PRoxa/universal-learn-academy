@@ -8,6 +8,7 @@
      POST cursus/appliquer { id, telecharger }  range un cursus exemple dans l'espace du profil actif
      POST catalogue/installer-tout { ids }       téléchargements en arrière-plan ; GET catalogue/travail : leur état
      POST profils/renommer { ancien, nouveau }
+     POST profils/supprimer { nom, confirmation }  supprime un profil et son espace (confirmation : le nom retapé)
      GET  cursus                       arbre du cursus du profil actif, avec les cours
      POST cursus/dossier { parent, nom }        crée un dossier de cursus
      POST cursus/renommer { chemin, nom }
@@ -25,6 +26,10 @@
      GET  soumissions/actives          celles que montre le cadre en bas à droite
      GET  soumissions/apercu?chemin=   fiche et générations mesurées d'un cours (formulaire)
      POST soumissions { chemin, infos, declare, pseudonyme, licence }  crée et vérifie
+          type pack ou cursus : { type, chemin (dossier du cursus), infos, pseudonyme, licence }
+          type sources : { type, infos, pseudonyme, declarations } → brouillon, puis fichiers
+     GET  soumissions/apercu-liste?type=&chemin=  pack ou cursus composé depuis un dossier
+     POST soumissions/<id>/fichier { nom, donnees (base64) }  fichier d'un envoi de sources
      GET  soumissions/<id>             une soumission, avec son historique complet
      POST soumissions/<id>/action { action }  reverifier, corriger-ia, annuler, vue, envoyer,
                                        actualiser (état chez l'administrateur), exporter
@@ -196,15 +201,23 @@ async function routesSoumissions(route, m, RACINE, corps, ok, q) {
     return ok({ soumissions: soumission.actives(RACINE).filter(duProfil).map(soumission.publique) });
   if (route === 'soumissions/apercu' && m === 'GET')
     return ok(soumission.apercu(RACINE, profilRequis(RACINE), q.get('chemin') || ''));
+  if (route === 'soumissions/apercu-liste' && m === 'GET')
+    return ok(soumission.apercuListe(RACINE, profilRequis(RACINE), q.get('chemin') || '', q.get('type') || ''));
   if (route === 'soumissions' && m === 'POST') {
     const b = await corps();
     return ok(soumission.publique(soumission.creer(RACINE, profilRequis(RACINE), b, optionsSoumission(RACINE))));
   }
-  const r = route.match(/^soumissions\/([0-9]{8}-[0-9]{6}-[0-9a-f]{6})(\/action)?$/);
+  const r = route.match(/^soumissions\/([0-9]{8}-[0-9]{6}-[0-9a-f]{6})(\/action|\/fichier)?$/);
   if (!r) return false;
   const s = soumission.lire(RACINE, r[1]);
   if (!duProfil(s)) throw new Error(tr('Soumission inconnue.', 'Unknown submission.'));
   if (!r[2] && m === 'GET') return ok(soumission.publique(s));
+  if (r[2] === '/fichier' && m === 'POST') {
+    // Un fichier de cours de profs (50 Mo au plus, en base64)
+    const b = await corps(72 * 1024 * 1024);
+    const x = soumission.ajouterFichier(RACINE, r[1], String(b.nom || ''), String(b.donnees || ''));
+    return ok(soumission.publique(x));
+  }
   if (r[2] && m === 'POST') {
     const b = await corps();
     return ok(soumission.publique(await agirSoumission(RACINE, r[1], String(b.action || ''))));
@@ -274,7 +287,7 @@ async function routesAdmin(route, m, RACINE, corps, ok, q, res, o) {
 async function api(route, req, res, o) {
   const { RACINE } = o.chemins;
   const m = req.method;
-  const corps = () => o.lireCorps(req);
+  const corps = (limite) => o.lireCorps(req, limite);
   const ok = (x) => o.envoyerJson(res, 200, x);
   try {
     if (route === 'etat' && m === 'GET') return ok(etat(RACINE));
@@ -317,6 +330,12 @@ async function api(route, req, res, o) {
     if (route === 'profils/renommer' && m === 'POST') {
       const b = await corps();
       espace.renommerProfil(RACINE, String(b.ancien), b.nouveau);
+      return ok(etat(RACINE));
+    }
+
+    if (route === 'profils/supprimer' && m === 'POST') {
+      const b = await corps();
+      espace.supprimerProfil(RACINE, String(b.nom || ''), b.confirmation);
       return ok(etat(RACINE));
     }
 

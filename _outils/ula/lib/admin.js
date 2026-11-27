@@ -13,6 +13,12 @@
      app/scripts/accepter-proposition.mjs) ou refuser, avec un message pour l'auteur ;
    - bloquer : refuse les prochaines soumissions de cette installation.
 
+   Sortes (type) : cours (ci-dessus) ; pack et cursus, acceptés en mode dépôt par
+   `node app/scripts/catalogue.mjs importer` (explore/packs/, explore/cursus/) ; sources
+   (cours de profs bruts) : « accepter » veut dire que l'administrateur en génère une
+   alternative, qu'il peut relier ensuite (décision « relier » : { cours, titre }).
+   Seuls les cours s'analysent par l'IA.
+
    Rien n'est jamais accepté sans une décision de l'administrateur. Le jeton vient de
    l'environnement (ULA_ADMIN_JETON, posé par l'application) ou de definirJeton(). */
 
@@ -88,21 +94,22 @@ function ecrireLocal(racine, id, maj) {
   return x;
 }
 
-/** Archive téléchargée (une fois) puis extraite dans <id>/cours/. */
+/** Archive téléchargée (une fois) puis extraite dans <id>/cours/ (un cours) ou <id>/contenu/. */
 async function telecharger(racine, id, options = {}) {
   const d = dossierDe(racine, id);
   const archive = path.join(d, 'cours.zip');
-  const cours = path.join(d, 'cours');
   if (!fs.existsSync(archive)) {
     const octets = await appel(`soumissions/${id}/archive`, Object.assign({}, options, { brut: true }));
     fs.mkdirSync(d, { recursive: true });
     fs.writeFileSync(archive, octets);
   }
-  if (!fs.existsSync(path.join(cours, 'ula-cours.json'))) {
-    fs.rmSync(cours, { recursive: true, force: true });
-    zip.extraire(archive, cours);
+  const estCours = zip.lire(archive).some((e) => e.nom === 'ula-cours.json');
+  const cible = path.join(d, estCours ? 'cours' : 'contenu');
+  if (!fs.existsSync(path.join(cible, 'ula-soumission.json')) && !fs.existsSync(path.join(cible, 'ula-cours.json'))) {
+    fs.rmSync(cible, { recursive: true, force: true });
+    zip.extraire(archive, cible);
   }
-  return { archive, cours };
+  return { archive, cours: cible, dossier: cible };
 }
 
 /* Liste et détail -------------------------------------------------------------------- */
@@ -247,6 +254,8 @@ async function analyserUne(racine, x, options = {}) {
   const id = x.id;
   x.etape = 'telechargement';
   const s = await detail(racine, id, options);
+  if ((s.type || 'cours') !== 'cours')
+    throw new Error(tr('Seuls les cours s’analysent par l’IA.', 'Only courses are reviewed by the AI.'));
   const { cours } = await telecharger(racine, id, options);
   x.etape = 'verification';
   const verifs = await verifications(racine, cours, options);
@@ -308,6 +317,7 @@ async function analyserUne(racine, x, options = {}) {
 async function decider(racine, id, b = {}, options = {}) {
   verifierId(id);
   const message = String(b.message || '').trim();
+  if (b.decision === 'relier') return relier(racine, id, b, options);
   if (b.decision === 'refuser') {
     if (!message)
       throw new Error(tr('Un message pour l’auteur est nécessaire.', 'A message for the author is needed.'));
@@ -319,6 +329,8 @@ async function decider(racine, id, b = {}, options = {}) {
     return ecrireLocal(racine, id, { decision: { decision: 'refuser', message, date: new Date().toISOString() } });
   }
   if (b.decision !== 'accepter') throw new Error(tr('Décision inconnue.', 'Unknown decision.'));
+  const sorte = b.type || (await detail(racine, id, options)).type || 'cours';
+  if (sorte !== 'cours') return accepterAutre(racine, id, sorte, b, message, options);
   const { archive } = await telecharger(racine, id, options);
   const script = path.join(racine, 'app', 'scripts', 'accepter-proposition.mjs');
   let integration;
@@ -351,6 +363,87 @@ async function decider(racine, id, b = {}, options = {}) {
   return ecrireLocal(racine, id, {
     decision: { decision: 'accepter', message, date: new Date().toISOString(), integration },
   });
+}
+
+const texte = (v, n) =>
+  String(v || '')
+    .trim()
+    .slice(0, n);
+
+/**
+ * Accepter un pack ou un cursus (en mode dépôt : explore/packs/, explore/cursus/), ou des
+ * cours de profs (l'administrateur en génère une alternative ; resultat facultatif).
+ */
+async function accepterAutre(racine, id, sorte, b, message, options) {
+  const { dossier } = await telecharger(racine, id, options);
+  let integration = null;
+  let resultat;
+  if (sorte === 'pack' || sorte === 'cursus') {
+    const fichier = path.join(dossier, sorte === 'pack' ? 'ula-pack.json' : 'ula-cursus.json');
+    const script = path.join(racine, 'app', 'scripts', 'catalogue.mjs');
+    if (fs.existsSync(script) && fs.existsSync(path.join(racine, 'explore'))) {
+      const args = [script, 'importer', fichier];
+      if (b.id) args.push('--id', String(b.id));
+      if (b.remplacer) args.push('--remplacer', 'oui');
+      const r = spawnSync(process.execPath, args, {
+        cwd: racine,
+        encoding: 'utf8',
+        windowsHide: true,
+        timeout: 120000,
+      });
+      const sortie = soumission.lignesUtiles((r.stdout || '') + (r.stderr || ''), racine, 'explore');
+      if (r.status !== 0)
+        throw Object.assign(
+          new Error(tr('Intégration au catalogue refusée.', 'Adding to the catalogue was refused.')),
+          {
+            detail: sortie,
+          },
+        );
+      integration = { mode: 'depot', sortie };
+    } else integration = { mode: 'archive', archive: path.relative(racine, fichier).split(path.sep).join('/') };
+  } else if (b.cours || b.titre) resultat = { cours: texte(b.cours, 80), titre: texte(b.titre, 160) };
+  await appel('soumissions/' + id, {
+    methode: 'POST',
+    corps: {
+      etat: 'acceptee',
+      ...(message ? { message } : {}),
+      ...(resultat ? { resultat } : {}),
+      note:
+        sorte === 'sources'
+          ? tr(
+              'Documents acceptés : un cours va en être généré.',
+              'Documents accepted: a course will be generated from them.',
+            )
+          : tr('Proposition acceptée pour le catalogue.', 'Proposal accepted for the catalogue.'),
+    },
+    fetch: options.fetch,
+  });
+  return ecrireLocal(racine, id, {
+    decision: {
+      decision: 'accepter',
+      message,
+      date: new Date().toISOString(),
+      integration,
+      resultat: resultat || null,
+    },
+  });
+}
+
+/** Relie à des cours de profs le cours généré à partir d'eux (visible par l'auteur). */
+async function relier(racine, id, b, options) {
+  const resultat = { cours: texte(b.cours, 80), titre: texte(b.titre, 160) };
+  if (!resultat.titre)
+    throw new Error(tr('Indiquer le titre du cours généré.', 'State the title of the generated course.'));
+  await appel('soumissions/' + id, {
+    methode: 'POST',
+    corps: {
+      resultat,
+      note: tr(`Cours généré : ${resultat.titre}.`, `Generated course: ${resultat.titre}.`),
+    },
+    fetch: options.fetch,
+  });
+  const l = lireLocal(racine, id);
+  return ecrireLocal(racine, id, { decision: Object.assign({}, l.decision || {}, { resultat }) });
 }
 
 async function bloquer(racine, id, raison, options = {}) {

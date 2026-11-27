@@ -6,7 +6,7 @@ Par défaut, fermer la fenêtre (la croix, **Ctrl+W**) ne quitte pas l’applica
 
 - **Rouvrir** : clic sur l’icône, ou relancer l’application. Une seule instance tourne : la fenêtre se rouvre à la même page.
 - **Menu de l’icône** (clic droit) : Ouvrir, Documentation, Rechercher les mises à jour, Quitter.
-- **Quitter** : entrée Quitter de l’icône, ou **Ctrl+Q**. Si une génération de quiz est en cours, l’application demande d’abord confirmation.
+- **Quitter** : bouton d’alimentation tout en haut à droite des pages, entrée Quitter de l’icône, ou **Ctrl+Q**. L’application se ferme alors complètement. Si une génération de quiz est en cours, l’application demande d’abord confirmation.
 
 Ce comportement se désactive dans [Paramètres › Arrière-plan](parametres:arriere-plan). Sous Linux, il dépend de la présence d’une zone de notification sur le bureau ; sans elle, la croix ferme l’application.
 

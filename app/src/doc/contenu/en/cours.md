@@ -4,12 +4,12 @@
 
 The home page (**Alt+Home**, or the house button of the top bar) gathers:
 
-| Section          | Content                                                                                                                 |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Profiles (panel) | On the left: profiles, switching profiles, creating and renaming. The ☰ button of the top bar folds the panel          |
-| My curriculum    | The curriculum’s folders and their courses, with each one’s progress                                                    |
-| Catalogue        | Two tabs: **Installed on this computer** (by domain) and **All courses** (sample curricula, packs, courses to download) |
-| Tools            | Revisions, C compilation, Python notebooks, demos                                                                       |
+| Section          | Content                                                                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Profiles (panel) | On the left: profiles, switching profiles, creating, renaming and deleting (by retyping the profile name). The ☰ button of the top bar folds the panel |
+| My curriculum    | The curriculum’s folders and their courses, with each one’s progress                                                                                    |
+| Catalogue        | Two tabs: **Installed on this computer** (by domain) and **All courses** (sample curricula, packs, courses to download)                                 |
+| Tools            | Revisions, C compilation, Python notebooks, demos                                                                                                       |
 
 ## The curriculum
 
@@ -44,7 +44,7 @@ In course and quiz pages, the left panel (contents) collapses and expands with t
 
 ## Proposing a course
 
-A course created in a profile’s space can be submitted to the catalogue: **⋯ › Submit this course…**. The form takes the course card and what the application measured of its generation (AI, model, effort, duration, resources read); you add what was done outside the application (AI, model, effort, time spent, resources), an optional pseudonym, and accept the CC BY-NC-ND 4.0 licence.
+A course created in a profile’s space can be submitted to the catalogue: **⋯ › Submit this course…**, or from its card in the **My courses** tab of the catalogue (home page), which gathers personal courses and the status of their submission. The form takes the course card and what the application measured of its generation (AI, model, effort, duration, resources read); you add what was done outside the application (AI, model, effort, time spent, resources), an optional pseudonym, and accept the CC BY-NC-ND 4.0 licence.
 
 The course is then checked on the computer, step by step: files (only the generated pages, no personal data), generation details, page guidelines, quizzes, workshops, archive. A small box at the bottom right follows the progress; one click minimises it to a badge.
 
@@ -52,11 +52,18 @@ If a check fails, or cannot run (Python missing), the submission is **suspended*
 
 Once the check passes, the submission is sent on its own to the submission service (`ula.romainpiau.dev`), which runs its own checks and gives it a number. Without a network it stays **ready**: **Try sending again** sends it. Then **My submissions** and the box follow its status on the administrator’s side: received, under review, accepted or refused, with their message. The status is read again every 10 minutes, or right away with **Refresh status**.
 
+### Proposing a pack, a curriculum or teachers’ courses
+
+- **Pack**: the **⋯** menu of a My curriculum folder offers **Propose as a pack…** when it holds at least two catalogue courses. The pack takes these courses, with a title, the suggested folder and a description.
+- **Curriculum**: **Propose as a curriculum…** on a folder where at least two sub-folders hold courses (L1, L2, L3…); each sub-folder becomes a pack.
+- A pack or curriculum only takes catalogue courses: the folder’s personal courses are flagged and left out, to be submitted as courses first. The check reads the online catalogue; without a network, the submission is suspended until **I fixed it: check again**.
+- **Teachers’ courses**: in **My courses**, **Propose teachers’ courses…** sends raw files (PDFs, slides, documents, texts, images, code; 50 MB at most) to the administrator so they can generate a course from them. Two declarations are required: having the right to share these documents, and having removed personal information from them. Once the course is generated, its title appears in the submission’s tracking.
+
 ### Received submissions (administrator)
 
-With the administration token saved ([Settings › Received submissions](parametres:administration)), the home page shows the **Received submissions** section: to handle, accepted, refused. For each submission: the course card, what the author’s application measured and what they declared, their checks, and the history.
+With the administration token saved ([Settings › Received submissions](parametres:administration)), the home page shows the **Received submissions** section: to handle, accepted, refused, and a filter by kind (courses, packs, curricula, teachers’ courses) when there are several. For each submission: the course card, what the author’s application measured and what they declared, their checks, and the history.
 
 - **Review** (one submission, the selection, or all those to review) with the AI chosen in the list (Claude, ChatGPT or Gemini, with no fallback to another one): the archive is downloaded to `soumissions-recues/`, the checks run again on this computer, then the AI reads the course without changing anything and gives a recommendation (accept, needs fixes, decline), a summary, specific points and a score. The author sees the recommendation and the summary.
-- **Accept**: in repository mode, the course goes into `explore/` (same checks as the catalogue, optional pack); elsewhere, the archive stays in `soumissions-recues/`. **Refuse** asks for a message for the author. **Block the author** refuses future submissions from their installation.
+- **Accept**: in repository mode, the course goes into `explore/` (same checks as the catalogue, optional pack); elsewhere, the archive stays in `soumissions-recues/`. A pack or curriculum accepted in repository mode goes into `explore/packs/` or `explore/cursus/` (identifier of your choice). Accepted teachers’ courses stay in `soumissions-recues/`: **Link the generated course…** then tells the author which course came out of them. Only courses are reviewed by the AI. **Refuse** asks for a message for the author. **Block the author** refuses future submissions from their installation.
 
 Nothing is accepted without your decision.

@@ -112,6 +112,10 @@ function parametres(url) {
     hote.ouvrirGuide();
     return true;
   }
+  if (u.pathname === '/_app/quitter' && typeof hote.quitterApplication === 'function') {
+    hote.quitterApplication();
+    return true;
+  }
   if (u.pathname === '/_app/synchro' && typeof hote.synchroniserMaintenant === 'function') {
     hote.synchroniserMaintenant();
     return true;

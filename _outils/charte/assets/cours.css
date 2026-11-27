@@ -77,7 +77,10 @@
   --interligne: 1.7;
 
   /* Dimensions */
-  --mesure: 46rem; /* largeur de la colonne de lecture */
+  --mesure: 46rem; /* largeur d'un encadré isolé (formulaires, messages) */
+  /* Marge latérale de la page et de la barre : fluide, sans palier ; la page occupe
+     toute la largeur de la fenêtre */
+  --marge: clamp(1rem, 2.5vw, 2.75rem);
   --largeur-sommaire: 15rem;
   --hauteur-barre: 3.25rem;
   --rayon: 10px;
@@ -423,7 +426,7 @@ video {
   align-items: center;
   gap: 0.75rem;
   height: var(--hauteur-barre);
-  padding: 0 max(1rem, calc((100vw - 80rem) / 2));
+  padding: 0 var(--marge);
   background: color-mix(in oklab, var(--fond) 86%, transparent);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
@@ -722,6 +725,309 @@ a.bouton-soutien::after {
   cursor: default;
 }
 
+/* Barres de défilement ------------------------------------------------------
+   La page : la barre du système est masquée (cours.js pose html.avec-ascenseur dès
+   le chargement) et remplacée par un ascenseur posé par-dessus le contenu, sous la
+   barre du haut (cours.js, installerAscenseur) : elle ne prend plus de largeur.
+   Les panneaux qui défilent seuls (sommaire, code, tableaux) : barre fine, rail
+   transparent, curseur arrondi. */
+html.avec-ascenseur {
+  scrollbar-width: none;
+}
+html.avec-ascenseur::-webkit-scrollbar {
+  display: none;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 20px;
+  background-color: color-mix(in oklab, var(--texte-3) 45%, transparent);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--texte-3);
+}
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--texte-3) 45%, transparent) transparent;
+  }
+}
+.ula-ascenseur {
+  position: fixed;
+  top: calc(var(--hauteur-barre) + 4px);
+  right: 2px;
+  bottom: 4px;
+  z-index: 35;
+  width: 12px;
+  border-radius: 20px;
+  opacity: 0.55;
+  transition:
+    opacity 0.25s ease,
+    background-color 0.2s ease;
+}
+.ula-ascenseur[hidden] {
+  display: none;
+}
+.ula-ascenseur.actif,
+.ula-ascenseur:hover,
+.ula-ascenseur.saisi {
+  opacity: 1;
+}
+.ula-ascenseur:hover,
+.ula-ascenseur.saisi {
+  background: color-mix(in oklab, var(--texte-3) 12%, transparent);
+}
+.ula-ascenseur-curseur {
+  position: absolute;
+  top: 0;
+  left: 3px;
+  right: 3px;
+  border-radius: 20px;
+  background: color-mix(in oklab, var(--texte-3) 55%, transparent);
+  cursor: grab;
+  transition:
+    left 0.15s ease,
+    right 0.15s ease,
+    background-color 0.15s ease;
+}
+.ula-ascenseur:hover .ula-ascenseur-curseur,
+.ula-ascenseur.saisi .ula-ascenseur-curseur {
+  left: 2px;
+  right: 2px;
+  background: var(--texte-3);
+}
+.ula-ascenseur.saisi .ula-ascenseur-curseur,
+html.defilement-saisi,
+html.defilement-saisi * {
+  cursor: grabbing;
+  user-select: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ula-ascenseur,
+  .ula-ascenseur-curseur {
+    transition: none;
+  }
+}
+
+/* Bouton GitHub (cours.js, installerGithub) : le chat du logo en trois tracés, animés
+   au survol ; un appui long déplie le menu juste en dessous */
+.gh-ancre {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+.bouton-github {
+  text-decoration: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.bouton-github::before,
+a.bouton-github::after,
+a.gh-menu-entree::after {
+  content: none;
+}
+.bouton-github svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  overflow: visible;
+}
+
+/* Panneau sorti d'un bouton de la barre : apparition avec rebond, repli net */
+.ula-pop[hidden] {
+  display: none;
+}
+.ula-pop {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  z-index: 40;
+  border: 1px solid var(--bordure-forte);
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--surface) 94%, transparent);
+  box-shadow:
+    var(--ombre),
+    0 8px 24px rgb(0 0 0 / 0.18);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  transform-origin: 50% 0;
+  animation: ula-pop-entree 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes ula-pop-entree {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px) scale(0.72);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+.ula-pop.se-ferme {
+  animation: ula-pop-sortie 0.16s ease-in both;
+}
+@keyframes ula-pop-sortie {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px) scale(0.88);
+  }
+}
+.gh-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 210px;
+  padding: 0.35rem;
+}
+.gh-menu-entree {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--texte);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.12s ease;
+}
+.gh-menu-entree svg {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+}
+.gh-menu-entree:hover,
+.gh-menu-entree:focus-visible {
+  background: var(--surface-2);
+  color: var(--accent-fort);
+  outline: none;
+}
+.gh-menu-entree:active {
+  transform: scale(0.97);
+}
+
+/* Quitter l'application installée (cours.js, installerQuitter) : tout à droite */
+.bouton-quitter {
+  --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v8'/%3E%3Cpath d='M6.4 6.6a8 8 0 1 0 11.2 0'/%3E%3C/svg%3E");
+  text-decoration: none;
+}
+.bouton-quitter:hover {
+  color: oklch(0.58 0.19 25);
+  border-color: oklch(0.58 0.19 25 / 0.55);
+}
+
+/* Infobulles (cours.js, installerInfobulles) : à la place des title du système */
+#ula-infobulle {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2147483647;
+  max-width: 280px;
+  padding: 7px 12px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--surface) 92%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow:
+    var(--ombre),
+    0 6px 18px rgb(0 0 0 / 0.16);
+  color: var(--texte);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  white-space: pre-line;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px) scale(0.96);
+  transform-origin: 0 0;
+  transition:
+    opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#ula-infobulle.visible {
+  opacity: 1;
+  transform: none;
+}
+#ula-infobulle .astuce {
+  display: block;
+  margin-top: 0.3rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid var(--bordure);
+  color: var(--texte-3);
+  font-size: 0.72rem;
+}
+
+/* Annonce brève en bas de la fenêtre (lien copié, astuce) */
+.ula-annonce {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  z-index: 2147483646;
+  max-width: min(32rem, calc(100vw - 2rem));
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--bordure-forte);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--ombre);
+  color: var(--texte);
+  font-size: 0.85rem;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 8px);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+.ula-annonce.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Lien vers le projet en pied de page (cours.js, installerPied) */
+.pied-github {
+  white-space: nowrap;
+}
+.pied-github svg {
+  width: 1.05em;
+  height: 1.05em;
+  margin-right: 0.3em;
+  vertical-align: -0.17em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ula-pop,
+  .ula-pop.se-ferme {
+    animation-duration: 0.01s;
+    animation-timing-function: linear;
+  }
+  .gh-menu-entree,
+  #ula-infobulle,
+  .ula-annonce {
+    transition: none;
+  }
+}
+
 /* Lien vers le ou les quiz de la page (<link rel="quiz">, ajouté par cours.js) */
 .bouton-quiz {
   flex: none;
@@ -790,14 +1096,24 @@ a.bouton-soutien::after {
     display: inline-grid;
   }
 }
-/* Sommaire repliable sur grand écran (bouton de la barre, état mémorisé) */
+/* Sommaire repliable sur grand écran (bouton de la barre, état mémorisé). Replié, sa
+   colonne tombe à zéro (même nombre de colonnes, pour que la largeur puisse s'animer :
+   section 12) et il se cache ; son contenu garde sa largeur pour ne pas se recomposer
+   pendant le mouvement. */
 @media (min-width: 64.01rem) {
+  .page.avec-sommaire > .sommaire {
+    overflow-x: hidden;
+  }
+  .page.avec-sommaire > .sommaire > * {
+    min-width: var(--largeur-sommaire);
+  }
   .sommaire-replie .page.avec-sommaire {
-    grid-template-columns: minmax(0, var(--mesure));
-    grid-template-areas: 'contenu';
+    grid-template-columns: 0rem minmax(0, 1fr);
+    column-gap: 0rem;
   }
   .sommaire-replie .page.avec-sommaire > .sommaire {
-    display: none;
+    visibility: hidden;
+    opacity: 0;
   }
 }
 
@@ -822,18 +1138,18 @@ a.bouton-soutien::after {
   }
 }
 
-/* Grille : colonne de lecture seule, ou sommaire + lecture (classe ajoutée
-   par cours.js quand il construit le sommaire). */
+/* Grille : contenu seul, ou sommaire + contenu (classe ajoutée par cours.js quand
+   il construit le sommaire). Le contenu occupe toute la largeur disponible, quelle
+   que soit la fenêtre : pas de colonne de lecture fixe ni de palier. */
 .page {
   display: grid;
-  grid-template-columns: minmax(0, var(--mesure));
+  grid-template-columns: minmax(0, 1fr);
   grid-template-areas: 'contenu';
-  justify-content: center;
-  column-gap: 3.5rem;
-  padding: 2.75rem 1.5rem 5rem;
+  column-gap: clamp(2rem, 3vw, 3.5rem);
+  padding: 2.75rem var(--marge) 5rem;
 }
 .page.avec-sommaire {
-  grid-template-columns: var(--largeur-sommaire) minmax(0, var(--mesure));
+  grid-template-columns: var(--largeur-sommaire) minmax(0, 1fr);
   grid-template-areas: 'sommaire contenu';
 }
 .cours {
@@ -852,7 +1168,6 @@ a.bouton-soutien::after {
   overscroll-behavior: contain;
   font-size: 0.86rem;
   line-height: 1.45;
-  scrollbar-width: thin;
 }
 .sommaire-titre {
   margin: 0 0 0.6rem;
@@ -911,9 +1226,9 @@ a.bouton-soutien::after {
 @media (max-width: 64rem) {
   .page,
   .page.avec-sommaire {
-    grid-template-columns: minmax(0, var(--mesure));
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas: 'contenu';
-    padding: 1.75rem 1rem 4rem;
+    padding: 1.75rem var(--marge) 4rem;
   }
   .sommaire {
     position: fixed;
@@ -1249,9 +1564,9 @@ a.bouton-soutien::after {
   --b-trait: var(--bordure-forte);
   --b-doux: transparent;
   --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M8 12h8'/%3E%3Cpath d='M12 8v8'/%3E%3C/svg%3E");
-  border-style: dashed;
-  border-left-style: dashed;
-  border-left-width: 2px;
+  /* Même trait sur les quatre bords : un pointillé de 1 px a des tirets si courts
+     qu'ils paraissent serrés à côté de ceux du bord gauche (2 px) */
+  border: 2px dashed var(--b-trait);
 }
 
 /* Dépliants : preuve, indice, solution, ou tout <details class="depliant"> */
@@ -2246,20 +2561,9 @@ a.chapitre:hover {
   background: var(--accent-trait);
 }
 
-/* Accueils sans sommaire (matière, accueil général) : dès que la fenêtre dépasse
-   la colonne de lecture (48rem), la page prend toute la largeur disponible
-   (jusqu'à 84rem, qui grandit avec la taille de base au-delà de 1 440 px) et les
-   fiches se rangent sur plusieurs colonnes ; les paragraphes gardent la largeur
-   de lecture. Les pages de cours (colonne + sommaire) ne sont pas concernées. */
-@media (min-width: 48rem) {
-  .page:has(> .sans-sommaire) {
-    grid-template-columns: minmax(0, 84rem);
-  }
-  .sans-sommaire .chapeau,
-  .sans-sommaire > section > :is(p, ul) {
-    max-width: var(--mesure);
-  }
-}
+/* Accueils sans sommaire (matière, accueil général) : comme toute page, ils
+   occupent toute la largeur ; sur grand écran, les fiches se rangent sur
+   plusieurs colonnes. */
 @media (min-width: 72rem) {
   .sans-sommaire ol.chapitres {
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 30rem), 1fr));
@@ -2314,13 +2618,17 @@ a.chapitre:hover {
   }
   .barre,
   .sommaire,
+  .ula-ascenseur,
   .progression,
   .voile,
   .pagination,
   .bouton-copier,
   .ancre,
   .ecoute audio,
-  .ecoute video {
+  .ecoute video,
+  #ula-infobulle,
+  .ula-annonce,
+  .pied-github {
     display: none !important;
   }
   .page,
@@ -2455,6 +2763,33 @@ a.chapitre:hover {
       animation-timeline: view();
       animation-range: entry 0% entry 55%;
     }
+  }
+
+  /* Volets latéraux (sommaire, profils de l'accueil, en-tête d'un quiz) : la colonne
+     s'ouvre et se ferme en glissant, le volet s'efface ou apparaît en fondu. Seulement
+     après un clic sur le bouton de la barre (classe « volets-animes », cours.js) : une
+     page qui s'ouvre volet replié ne joue pas l'animation. */
+  .volets-animes :is(.page.avec-sommaire, .page.avec-volet, .quiz) {
+    transition:
+      grid-template-columns 0.35s var(--courbe-sortie),
+      column-gap 0.35s var(--courbe-sortie);
+  }
+  .volets-animes :is(.page.avec-sommaire > .sommaire, .ula-volet-profils, .quiz > .entete) {
+    transition:
+      opacity 0.3s ease 0.04s,
+      transform 0.35s var(--courbe-sortie),
+      visibility 0s;
+  }
+  .volets-animes.sommaire-replie .page.avec-sommaire > .sommaire,
+  .volets-animes.volet-replie :is(.ula-volet-profils, .quiz > .entete) {
+    transition:
+      opacity 0.18s ease,
+      transform 0.35s var(--courbe-sortie),
+      visibility 0s linear 0.35s;
+  }
+  .sommaire-replie .page.avec-sommaire > .sommaire,
+  .volet-replie :is(.ula-volet-profils, .quiz > .entete) {
+    transform: translateX(-1.25rem);
   }
 
   /* Dépliants (preuve, indice, solution, carte…) : ouverture et fermeture en douceur */
